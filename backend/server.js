@@ -2,11 +2,12 @@ const express = require("express");
 const mongoose = require("mongoose");
 const dotenv = require("dotenv").config();
 const morgan = require("morgan");
+const userRouter = require("./routes/userRoutes");
 
 //configure our node env
 // dotenv.config({ path: "./.env" });
 const app = express();
-
+app.use(express.json());
 // connection to mongoose - MONGODB ATLAS
 // const DB = process.env.DATABASE.replace(
 //   "<PASSWORD>",
@@ -26,9 +27,8 @@ mongoose
 
 app.use(morgan("dev"));
 
-app.get("/", (req, res) => {
-  res.send("Testing");
-});
+//routers mounting
+app.use("/api/v1/users", userRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

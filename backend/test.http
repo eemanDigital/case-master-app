@@ -1,0 +1,23 @@
+
+POST http://localhost:3000/api/v1/users  
+
+    content-type: application/json
+
+{
+  "firstName": "Kolade",
+  "lastName": "Deji",
+  "middleName": "Ola",
+  "email": "ola@example.com",
+  "password": "password123",
+  "passwordConfirm": "password123",
+  "position": "Intern",
+  "photo": "https://example.com/photo.jpg",
+  "yearOfCall": "2014-01-01",
+  "practiceArea": "Property Law",
+  "universityAttended": "University of Ilorin",
+  "lawSchoolAttended": "Enugu, Law School"
+}
+
+
+
+
