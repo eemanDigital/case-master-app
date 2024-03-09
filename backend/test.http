@@ -1,23 +1,24 @@
 
-POST http://localhost:3000/api/v1/users  
-
-    content-type: application/json
-
-{
-  "firstName": "Kolade",
-  "lastName": "Deji",
-  "middleName": "Ola",
-  "email": "ola@example.com",
-  "password": "password123",
-  "passwordConfirm": "password123",
-  "position": "Intern",
-  "photo": "https://example.com/photo.jpg",
-  "yearOfCall": "2014-01-01",
-  "practiceArea": "Property Law",
-  "universityAttended": "University of Ilorin",
-  "lawSchoolAttended": "Enugu, Law School"
-}
+# POST http://localhost:3000/api/v1/tasks  HTTP/1.1 
+# content-type: application/json
 
 
+# {
+#   "description": "Prepare cross-examination questions",
+#   "case": "65eb95d4c01ab9677c341bfb",
+#   "assignedTo": "65e9bda64e044bfb16b64406",
+#   "dateAssigned": "2023-03-15T08:00:00.000Z",
+#   "dueDate": "2023-03-20T08:00:00.000Z",
+#   "status": "pending",
+#   "taskPriority": "high"
+# }
 
 
+# GET CASES
+# GET http://localhost:3000/api/v1/cases  HTTP/1.1 
+# content-type: application/json
+
+
+# GET USERS
+GET http://localhost:3000/api/v1/users  HTTP/1.1 
+content-type: application/json
