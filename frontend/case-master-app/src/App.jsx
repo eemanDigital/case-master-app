@@ -1,24 +1,22 @@
-import { BackgroundContextProvider } from "./context/bg-context";
+import Header from "./components/Header";
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Route,
+  RouterProvider,
+  Navigate,
+} from "react-router-dom";
+import Layout from "./components/Layout";
 
 function App() {
-  const { BackgroundContext, background, toggleBg } =
-    BackgroundContextProvider();
-
-  // console.log(background);
-
-  let bg_color = " bg-slate-600";
-
-  if (background) {
-    bg_color = " bg-slate-100";
-  }
-
+  const router = createBrowserRouter(
+    createRoutesFromElements(<Route path="/" element={<Layout />}></Route>)
+  );
   return (
-    <BackgroundContext.Provider>
-      <button onClick={toggleBg}>CLICK</button>
-      <div className={` p-10 w-full min-h-screen ${bg_color} `}>
-        <h1 className="text-3xl ">Hello ooo</h1>
-      </div>
-    </BackgroundContext.Provider>
+    <>
+      {/* <Header /> */}
+      <RouterProvider router={router} />
+    </>
   );
 }
 
