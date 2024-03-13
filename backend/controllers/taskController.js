@@ -9,7 +9,7 @@ exports.createTask = async (req, res, next) => {
 };
 
 exports.getTasks = async (req, res, next) => {
-  const tasks = await Task.find({});
+  const tasks = await Task.findOne({}).populate("assignedTo");
 
   res.status(200).json({
     results: tasks.length,

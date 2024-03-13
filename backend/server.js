@@ -5,6 +5,7 @@ const morgan = require("morgan");
 const userRouter = require("./routes/userRoutes");
 const caseRouter = require("./routes/caseRoutes");
 const taskRouter = require("./routes/taskRoutes");
+const clientRouter = require("./routes/clientRoutes");
 
 //configure our node env
 // dotenv.config({ path: "./.env" });
@@ -33,6 +34,7 @@ app.use(morgan("dev"));
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
+app.use("/api/v1/clients", clientRouter);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {

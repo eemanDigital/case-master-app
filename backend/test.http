@@ -1,24 +1,79 @@
+#CREATE USER
+POST http://localhost:3000/api/v1/users  HTTP/1.1 
+content-type: application/json
 
-# POST http://localhost:3000/api/v1/tasks  HTTP/1.1 
-# content-type: application/json
+{
+  "firstName": "Ademola",
+  "lastName": "Luke",
+  "email": "ademola.luke@example.com",
+  "password": "password123",
+  "passwordConfirm": "password123",
+  "position": "Associate",
+  "photo": "https://example.com/photo.jpg",
+  "yearOfCall": "2010-01-01",
+  "practiceArea": "Property Law",
+  "universityAttended": "University of UI",
+  "lawSchoolAttended": "Lagos, Law School"
+}
+
+###
+
+GET http://localhost:3000/api/v1/users  HTTP/1.1 
+content-type: application/json
+
+###
+
+#CREATE TASKS
+POST http://localhost:3000/api/v1/tasks  HTTP/1.1 
+content-type: application/json
+
+{
+  "description": "Prepare cross-examination questions",
+  "case": "65eb95d4c01ab9677c341bfb",
+  "assignedTo": "65e9bda64e044bfb16b64406",
+  "dateAssigned": "2023-03-15T08:00:00.000Z",
+  "dueDate": "2023-03-20T08:00:00.000Z",
+  "status": "pending",
+  "taskPriority": "high"
+}
 
 
-# {
-#   "description": "Prepare cross-examination questions",
-#   "case": "65eb95d4c01ab9677c341bfb",
-#   "assignedTo": "65e9bda64e044bfb16b64406",
-#   "dateAssigned": "2023-03-15T08:00:00.000Z",
-#   "dueDate": "2023-03-20T08:00:00.000Z",
-#   "status": "pending",
-#   "taskPriority": "high"
-# }
+###
 
+# GET TASKS
+GET http://localhost:3000/api/v1/tasks  HTTP/1.1 
+content-type: application/json
+
+
+###
 
 # GET CASES
-# GET http://localhost:3000/api/v1/cases  HTTP/1.1 
-# content-type: application/json
+GET http://localhost:3000/api/v1/cases  HTTP/1.1 
+content-type: application/json
 
+###
 
 # GET USERS
 GET http://localhost:3000/api/v1/users  HTTP/1.1 
+content-type: application/json
+
+###
+
+#CREATE CLIENT
+POST http://localhost:3000/api/v1/clients  HTTP/1.1 
+content-type: application/json
+
+{
+  "firstName": "John",
+  "secondName": "Doe",
+  "middleName": "Michael",
+  "email": "john.doe@example.com",
+  "case": "61630f9d070f9c27a8350c21" 
+}
+
+
+###
+
+# GET CLIENTS
+GET http://localhost:3000/api/v1/clients  HTTP/1.1 
 content-type: application/json

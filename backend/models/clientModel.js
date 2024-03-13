@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const validator = require("validator");
 
 const clientSchema = new mongoose.Schema({
   firstName: {
@@ -23,3 +24,7 @@ const clientSchema = new mongoose.Schema({
     ref: "Case",
   },
 });
+
+const Client = mongoose.model("Client", clientSchema);
+
+module.exports = Client;

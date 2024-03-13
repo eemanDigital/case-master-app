@@ -9,7 +9,7 @@ exports.createCase = async (req, res, next) => {
 };
 
 exports.getCases = async (req, res, next) => {
-  const cases = await Case.find({});
+  const cases = await Case.findOne({}).populate("task");
 
   res.status(200).json({
     results: cases.length,
