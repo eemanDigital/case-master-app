@@ -1,9 +1,15 @@
 const express = require("express");
-const { getCases, createCase } = require("../controllers/caseController");
+const {
+  getCases,
+  createCase,
+  getCase,
+  updateCase,
+  deleteCase,
+} = require("../controllers/caseController");
 
 const caseRouter = express.Router();
 
-caseRouter.get("/", getCases);
-caseRouter.post("/", createCase);
+caseRouter.route("/").get(getCases).post(createCase);
+caseRouter.route("/:caseId").get(getCase).put(updateCase).delete(deleteCase);
 
 module.exports = caseRouter;

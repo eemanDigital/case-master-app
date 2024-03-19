@@ -1,14 +1,14 @@
 #CREATE USER
-POST http://localhost:3000/api/v1/users  HTTP/1.1 
+POST http://localhost:3000/api/v1/users/signup  HTTP/1.1 
 content-type: application/json
 
 {
-  "firstName": "Ademola",
-  "lastName": "Luke",
-  "email": "ademola.luke@example.com",
-  "password": "password123",
-  "passwordConfirm": "password123",
-  "position": "Associate",
+  "firstName": "test  ",
+  "lastName": "Lukmans",
+  "email": "luk@example.com",
+  "password": "test1234",
+  "passwordConfirm": "test1234",
+  "position": "Principal",
   "photo": "https://example.com/photo.jpg",
   "yearOfCall": "2010-01-01",
   "practiceArea": "Property Law",
@@ -53,7 +53,81 @@ content-type: application/json
 
 ###
 
-# GET USERS
+POST http://localhost:3000/api/v1/cases  HTTP/1.1 
+content-type: application/json
+
+{
+  "firstParty": {
+    "title": "Applicant",
+    "processesFiled": ["Complaint", "Interrogatories"],
+    "name": ["Adeleke"]
+  },
+  "secondParty": {
+    "title": "Respondent",
+    "processesFiled": ["Answer to Complaint", "Motion to Dismiss"],
+    "name": ["Aduku"]
+  },
+  "otherParty": {
+    "title": "Third Party",
+    "processesFiled": ["Cross-claim"],
+    "name": ["Charlie Brown"]
+  },
+  "suitNo": "MA/567/2023",
+  "caseOfficeFileNo": "COF/890/2023",
+  "courtName": "Court of Appeal",
+  "judge": {
+    "name": ["Justice Sarah Clark"]
+  },
+  "caseSummary": "The case involves a dispute over contract terms between the plaintiff and the defendant. Both parties have presented evidence supporting their claims.",
+  "caseStatus": "Pending",
+  "natureOfCase": "Contract Dispute",
+  "filingDate": "2023-05-10T00:00:00.000Z",
+  "modeOfCommencement": "Originating Summons",
+  "otherModeOfCommencement": "",
+  "caseStrengths": ["Clear contract terms"],
+  "caseWeaknesses": ["Ambiguity in clauses"],
+  "casePriority": "Medium",
+  "stepToBeTaken": ["Schedule mediation session"],
+  "caseUpdates": [
+    {
+      "date": "2023-05-12T00:00:00.000Z",
+      "update": "Complaint filed"
+    },
+    {
+      "date": "2023-05-15T00:00:00.000Z",
+      "update": "Defendant responded to complaint"
+    }
+  ],
+  "task": [],
+  "accountOfficer": [],
+  "client": ["ABC Corporation", "XYZ Inc."],
+  "generalComment": "Parties are willing to explore settlement options."
+}
+
+
+
+###
+
+# GET CASE
+GET http://localhost:3000/api/v1/cases/65eb95d4c01ab9677c341bfb  HTTP/1.1 
+content-type: application/json
+
+###
+#UPDATE CASE
+PUT http://localhost:3000/api/v1/cases/65eb95d4c01ab9677c341bfb  HTTP/1.1 
+
+{
+  "caseStatus":"Closed"
+}
+
+
+###
+
+DELETE http://localhost:3000/api/v1/cases/65f2115493203c719c17392e  HTTP/1.1 
+content-type: application/json
+
+###
+ #GET USERS
 GET http://localhost:3000/api/v1/users  HTTP/1.1 
 content-type: application/json
 

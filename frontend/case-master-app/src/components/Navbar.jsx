@@ -37,7 +37,7 @@ const Navbar = () => {
   // const [click, setClick] = useState(false);
 
   return (
-    <nav className="md:px-10 px-8 md:py-0 py-2 md:flex items-center bg-white justify-between">
+    <nav className="md:px-10 px-8 md:py-0 py-2 md:flex items-center bg-white justify-between  z-50">
       {/* logo */}
       <div className=" gap-2 ">
         <Link className="md:flex items-center gap-1 ">
@@ -48,7 +48,8 @@ const Navbar = () => {
           />
 
           <span className=" text-2xl text-gray-600 font-bold tracking-wider ">
-            CaseMaster
+            case<span className="text-slate-400  font-bold ml-0 p-0">m</span>
+            aster
           </span>
         </Link>
       </div>
@@ -72,7 +73,7 @@ const Navbar = () => {
             <NavLink>Sign in</NavLink>
           </li>
           <li className="my-4">
-            <NavLink className=" btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block w-28 hover:bg-gray-500 md:static">
+            <NavLink className=" btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block w-32 hover:bg-gray-500 md:static">
               Get Started
             </NavLink>
           </li>

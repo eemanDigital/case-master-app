@@ -6,6 +6,7 @@ const userRouter = require("./routes/userRoutes");
 const caseRouter = require("./routes/caseRoutes");
 const taskRouter = require("./routes/taskRoutes");
 const clientRouter = require("./routes/clientRoutes");
+const errorController = require("./controllers/errorController");
 
 //configure our node env
 // dotenv.config({ path: "./.env" });
@@ -36,6 +37,7 @@ app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/clients", clientRouter);
 
+app.use(errorController);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server connected on ${PORT}`);
