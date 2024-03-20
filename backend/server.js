@@ -6,6 +6,7 @@ const userRouter = require("./routes/userRoutes");
 const caseRouter = require("./routes/caseRoutes");
 const taskRouter = require("./routes/taskRoutes");
 const clientRouter = require("./routes/clientRoutes");
+const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 
 //configure our node env
@@ -37,7 +38,14 @@ app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/clients", clientRouter);
 
+//handles non-existing route
+app.all("*", (res, req, next) => {
+  next(new AppError(`Can't find ${req.originalUrl} on this server`, 400));
+});
+
+// global error handler
 app.use(errorController);
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server connected on ${PORT}`);

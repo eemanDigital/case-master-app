@@ -1,21 +1,21 @@
 const User = require("../models/userModel");
+const AppError = require("../utils/appError");
+const catchAsync = require("../utils/catchAsync");
 
-exports.signup = async (req, res, next) => {
-  const { email, password, firstName, lastName } = req.body;
+exports.signup = catchAsync(
+  async (req, res, next) => {
+    const { email, password, firstName, lastName } = req.body;
+    // console.log(req.originalUrl);
+    // console.log(req.baseUrl);
 
-  try {
     if (!email || !password || !firstName || !lastName) {
-      res.status(400).json({
-        error: "Required fields must be fielded",
-      });
+      next(new AppError("Required fields must be fielded", 400));
     }
 
     let existingEmail = await User.findOne({ email });
 
     if (existingEmail) {
-      return res.status(400).json({
-        error: "email already exist",
-      });
+      next(new AppError("email already exist", 400));
     }
 
     const user = await User.create({
@@ -37,20 +37,20 @@ exports.signup = async (req, res, next) => {
       message: "User created",
       user,
     });
-  } catch (err) {
-    console.log(err);
-    // let error = err.Path;
-    let msg = err.message;
-    let name = err.name;
-    res.status(400).json({
-      err,
-      name,
-      message: msg,
-    });
+
+    // console.log(err);
+    // // let error = err.Path;
+    // let msg = err.message;
+    // let name = err.name;
+    // res.status(400).json({
+    //   err,
+    //   name,
+    //   message: msg,
+    // });
   }
 
   // res.status(400).json({});
-};
+);
 
 // exports.login = async (res, req, next) => {
 //   const { email, password } = req.body;
