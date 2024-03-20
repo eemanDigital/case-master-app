@@ -30,7 +30,13 @@ const caseSchema = new mongoose.Schema({
       },
     ],
   },
-  suitNo: String,
+  suitNo: {
+    type: String,
+    required: [true, "A case must have a suit no"],
+    unique: [true, "This suit no. has been used"],
+
+    trim: true,
+  },
   caseOfficeFileNo: String,
   courtName: {
     type: String,
