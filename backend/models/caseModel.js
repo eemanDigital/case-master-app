@@ -34,7 +34,6 @@ const caseSchema = new mongoose.Schema({
     type: String,
     required: [true, "A case must have a suit no"],
     unique: [true, "This suit no. has been used"],
-
     trim: true,
   },
   caseOfficeFileNo: String,

@@ -4,7 +4,6 @@ const catchAsync = require("../utils/catchAsync");
 
 exports.createCase = catchAsync(async (req, res, next) => {
   const singleCase = await Case.create(req.body);
-
   res.status(201).json({
     data: singleCase,
   });
@@ -12,7 +11,6 @@ exports.createCase = catchAsync(async (req, res, next) => {
 
 exports.getCases = catchAsync(async (req, res, next) => {
   const cases = await Case.find().populate("task");
-
   res.status(200).json({
     results: cases.length,
     data: cases,
@@ -20,16 +18,13 @@ exports.getCases = catchAsync(async (req, res, next) => {
 });
 
 exports.getCase = catchAsync(async (req, res, next) => {
+  //if id/caseId provided does not exist
   const _id = req.params.caseId;
-  // console.log(id);
-
   const data = await Case.findById({ _id });
-
-  //if id/caseid provided does not exist
+  // console.log(id);
   if (!data) {
     return next(new AppError("no case found with that Id", 404));
   }
-
   res.status(200).json({
     data,
   });
@@ -41,7 +36,6 @@ exports.updateCase = catchAsync(async (req, res, next) => {
     runValidators: true,
   });
   // console.log(updatedCase);
-
   res.status(200).json({
     message: "case successfully updated",
     doc,
