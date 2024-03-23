@@ -1,70 +1,90 @@
 import { Link, NavLink } from "react-router-dom";
 import caseMasterLogo from "../assets/case-master-logo.svg";
-import { RiMenu3Fill } from "react-icons/ri";
-import { AiOutlineClose } from "react-icons/ai";
-import {} from "react-icons/ri";
+import { RiCustomerService2Line } from "react-icons/ri";
+import avatar from "../assets/avatar.png";
 import { useState } from "react";
+import { RxDashboard } from "react-icons/rx";
+import {
+  IoBriefcaseSharp,
+  IoHelpCircleOutline,
+  IoMenuOutline,
+} from "react-icons/io5";
+import { FaMoneyBill, FaTasks } from "react-icons/fa";
+import { FaListUl } from "react-icons/fa6";
+import { GrDocument } from "react-icons/gr";
 
 const navItems = [
   {
     name: "Dashboard",
     path: "dashboard",
+    icon: <RxDashboard />,
   },
   {
     name: "Cases",
     path: "admin/cases",
+    icon: <IoBriefcaseSharp />,
   },
   {
     name: "Tasks",
     path: "tasks",
+    icon: <FaTasks />,
   },
-  {
-    name: "Lawyers",
-    path: "lawyers",
-  },
+
   {
     name: "Billings",
     path: "billings",
+    icon: <FaMoneyBill />,
   },
   {
     name: "Cause List",
     path: "cause-list",
+    icon: <FaListUl />,
   },
   {
     name: "Clients",
     path: "client",
+    icon: <RiCustomerService2Line />,
   },
   {
     name: "Help Center",
     path: "help-center",
+    icon: <IoHelpCircleOutline />,
   },
   {
     name: "Documents",
     path: "documents",
+    icon: <GrDocument />,
   },
 ];
-
-let mainNav = navItems.map((item, index) => {
-  return (
-    <>
-      <li className="my-5">
-        <NavLink className="hover:scale-110 tracking-wider" key={index}>
-          {item.name}
-        </NavLink>
-      </li>
-    </>
-  );
-});
 
 const SideBar = () => {
   const [isOpen, setIsOpen] = useState(false);
   // const [click, setClick] = useState(false);
-
+  let mainNav = navItems.map((item, index) => {
+    return (
+      <>
+        {/* menu items mapping */}
+        <li className="my-3 hover:bg-gray-500  rounded-md">
+          <NavLink
+            className="flex  tracking-wider items-center gap-2 text-gray-200 hover:bg-gray-600 px-4 py-3 rounded-md"
+            key={index}>
+            <i className="text-2xl hover:text-gray-400 ">{item.icon}</i>
+            <p
+              className={` transition-all  duration-700 ease-out   ${
+                isOpen ? "hidden" : "flex"
+              }`}>
+              {item.name}
+            </p>
+          </NavLink>
+        </li>
+      </>
+    );
+  });
   return (
-    <nav className="md:px-10 px-8 md:py-0 py-2 md:flex items-center bg-white justify-between  z-50">
+    <nav className="    md:py-0  md:flex flex-col items-start relative  z-50">
       {/* logo */}
-      <div className=" gap-2 ">
-        <Link className="md:flex items-center gap-1 ">
+      <div className=" bg-white  fixed pl-2 shadow-md w-full  z-50 ">
+        <Link className="md:flex items-center gap-1 m-2 ">
           <img
             src={caseMasterLogo}
             alt="case master logo"
@@ -78,29 +98,33 @@ const SideBar = () => {
         </Link>
       </div>
 
-      {/* menu icon */}
-      <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="   absolute right-6 top-8 cursor-pointer md:hidden">
-        {isOpen ? <AiOutlineClose /> : <RiMenu3Fill />}
-      </div>
-
       {/* menu */}
       <div
-        className={`md:flex justify-between gap-4 shadow-md md:shadow-none items-center  text-gray-600 absolute md:static  md:p-0 pt-20 pl-7  md:z-auto z-[-1] w-full left-0 md:transition-all md:w-auto bg-white duration-700 md:ease-out ${
-          isOpen ? "top-12" : "top-[-490px]"
-        } `}>
-        <ul className=" md:flex gap-4 pr-10 items-center justify-between ">
-          {mainNav}
+        className={`flex-col justify-between gap-4 shadow-md md:shadow-none items-center absolute  md:p-0  pt-10 md:pl-7 pl-2  md:z-auto z-[-1]  top-20   `}>
+        <ul
+          className={`bg-gradient-to-r from-slate-600 to-slate-800 bg-blend-lighten  md:flex flex-col  gap-4 md:p-5 p-2    rounded-md  justify-start transition-all  duration-400 ease-out ${
+            isOpen ? "md:w-auto   " : " w-auto "
+          } `}>
+          {/* Hamburger icon*/}
+          <div
+            onClick={() => setIsOpen(!isOpen)}
+            className=" text-4xl  text-gray-300 flex items-center justify-center cursor-pointer hover:text-gray-500 ">
+            {isOpen ? <IoMenuOutline /> : <IoMenuOutline />}
+          </div>
 
-          <li className="md:ml-10">
-            <NavLink>Sign in</NavLink>
-          </li>
-          <li className="my-4">
-            <NavLink className=" btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block w-32 hover:bg-gray-500 md:static">
-              Get Started
-            </NavLink>
-          </li>
+          {/* profile */}
+          <div className="flex flex-col gap-5 items-start ">
+            <img
+              src={avatar}
+              alt=""
+              className="w-12 h-12 mt-6  object-contain rounded-full"
+            />
+            <h3 className={`text-gray-200 ${isOpen ? "hidden" : "flex"} `}>
+              A.T. Lukman, Esq.
+            </h3>
+          </div>
+
+          {mainNav}
         </ul>
       </div>
       {/* <ul className=" ">{mainNav.slice(3, 4)}</ul> */}
