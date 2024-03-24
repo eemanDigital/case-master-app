@@ -1,24 +1,34 @@
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
-// import Layout from "./components/Layout";
-// import Hero from "./components/Hero";
-import SideBar from "./components/SideBar";
-import ErrorPage from "./components/error-page";
-
-import Root from "./components/Root";
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Route,
+  RouterProvider,
+} from "react-router-dom";
+import Hero from "./components/Hero";
+import HomeLayout from "./components/HomeLayout";
+import Dashboard from "./components/Dashboard.jsx";
+import DashboardLayout from "./components/DashboardLayout.jsx";
+import Cases from "./pages/Cases.jsx";
+import Task from "./pages/Task.jsx";
+import Billing from "./pages/Billing.jsx";
 
 function App() {
-  const router = createBrowserRouter([
-    {
-      path: "/",
-      element: <Root />,
-      errorElement: <ErrorPage />,
-    },
+  const router = createBrowserRouter(
+    createRoutesFromElements(
+      <Route path="/" element={<HomeLayout />}>
+        <Route path="/" element={<Hero />} />
 
-    {
-      path: "/admin",
-      element: <SideBar />,
-    },
-  ]);
+        <Route path="dashboard" element={<DashboardLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="cases" element={<Cases />} />
+          <Route path="tasks" element={<Task />} />
+          <Route path="billing" element={<Billing />} />
+
+          {/* errorElement= {<ErrorPage />} */}
+        </Route>
+      </Route>
+    )
+  );
 
   return (
     <>

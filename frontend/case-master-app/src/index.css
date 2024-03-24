@@ -18,3 +18,35 @@ html {
 body {
   background-color: rgb(30 41 59);
 } */
+
+/* Tooltip container */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black;
+}
+
+/* Tooltip text */
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  background-color: rgb(240, 240, 240);
+  color: rgb(79, 79, 79);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 5px;
+  border-radius: 6px;
+
+  /* Position the tooltip text - see examples below! */
+  position: absolute;
+  top: -8px;
+  left: 48px;
+  z-index: 1;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+}

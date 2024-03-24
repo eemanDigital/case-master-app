@@ -1,13 +1,14 @@
-import Header from "./Header";
-import Hero from "./Hero";
+// // import { Outlet } from "react-router-dom";
+// import Header from "./Header";
+// import Hero from "./Hero";
 
-const Root = () => {
-  return (
-    <>
-      <Header />
-      <Hero />
-    </>
-  );
-};
+// const Root = () => {
+//   return (
+//     <>
 
-export default Root;
+//       {/* <Outlet /> */}
+//     </>
+//   );
+// };
+
+// export default Root;
