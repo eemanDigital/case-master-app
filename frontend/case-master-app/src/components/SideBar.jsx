@@ -1,8 +1,7 @@
 import { Link } from "react-router-dom";
-import caseMasterLogo from "../assets/case-master-logo.svg";
 import { RiCustomerService2Line } from "react-icons/ri";
 import avatar from "../assets/avatar.png";
-import { useState } from "react";
+
 import { RxDashboard } from "react-icons/rx";
 import {
   IoBriefcaseSharp,
@@ -58,9 +57,8 @@ const navItems = [
   },
 ];
 
-const SideBar = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  // const [click, setClick] = useState(false);
+const SideBar = ({ isOpen, handleOpen }) => {
+  // nav item mapping
   let mainNav = navItems.map((item, index) => {
     return (
       <>
@@ -91,59 +89,40 @@ const SideBar = () => {
   });
   return (
     <>
-      <nav className="    md:py-0  md:flex flex-col items-start relative  z-50">
-        {/* logo */}
-        <div className=" bg-white  fixed pl-2 shadow-md w-full  z-50 ">
-          <Link className="md:flex items-center gap-1 m-2 ">
-            <img
-              src={caseMasterLogo}
-              alt="case master logo"
-              className="w-12 h-12"
-            />
+      <aside
+        className={` justify-between gap-4 bg-gradient-to-r from-slate-600 to-slate-800 bg-blend-lighten shadow-md  items-center rounded-md   `}>
+        <ul
+          className={`md:flex flex-col  gap-4 md:p-5 p-2   ${
+            isOpen ? "md:w-auto   " : " w-auto "
+          } `}>
+          {/* Hamburger icon*/}
+          <div
+            onClick={handleOpen}
+            className=" text-4xl  text-gray-300 flex items-center justify-center cursor-pointer hover:text-gray-500 ">
+            {isOpen ? <IoMenuOutline /> : <IoMenuOutline />}
 
-            <span className=" text-2xl text-gray-600 font-bold tracking-wider ">
-              case<span className="text-slate-400  font-bold ml-0 p-0">m</span>
-              aster
-            </span>
-          </Link>
-        </div>
-
-        {/* menu */}
-        <div
-          className={`flex-col justify-between gap-4 shadow-md md:shadow-none items-center absolute  md:p-0  pt-10 md:pl-7 pl-2  md:z-auto z-[-1]  top-20   `}>
-          <ul
-            className={`bg-gradient-to-r from-slate-600 to-slate-800 bg-blend-lighten  md:flex flex-col  gap-4 md:p-5 p-2    rounded-md  justify-start transition-all  duration-400 ease-out ${
-              isOpen ? "md:w-auto   " : " w-auto "
-            } `}>
-            {/* Hamburger icon*/}
-            <div
-              onClick={() => setIsOpen(!isOpen)}
-              className=" text-4xl  text-gray-300 flex items-center justify-center cursor-pointer hover:text-gray-500 ">
-              {isOpen ? <IoMenuOutline /> : <IoMenuOutline />}
-
-              {/* <span className="tooltiptext">
+            {/* <span className="tooltiptext">
               {!isOpen ? "close sidebar" : "open sidebar"}
             </span> */}
-            </div>
+          </div>
 
-            {/* profile */}
-            <div className="flex flex-col gap-5 items-start  tooltip">
-              <img
-                src={avatar}
-                alt=""
-                className="w-12 h-12 mt-6  object-contain rounded-full"
-              />
-              <span className="tooltiptext">Profile</span>
+          {/* profile */}
+          <div className="flex flex-col gap-5 items-start  tooltip">
+            <img
+              src={avatar}
+              alt=""
+              className="w-12 h-12 mt-6  object-contain rounded-full"
+            />
+            <span className="tooltiptext">Profile</span>
 
-              <h3 className={`text-gray-200 ${isOpen ? "hidden" : "flex"} `}>
-                A.T. Lukman, Esq.
-              </h3>
-            </div>
+            <h3 className={`text-gray-200 ${isOpen ? "hidden" : "flex"} `}>
+              A.T. Lukman, Esq.
+            </h3>
+          </div>
 
-            {mainNav}
-          </ul>
-        </div>
-      </nav>
+          {mainNav}
+        </ul>
+      </aside>
     </>
   );
 };

@@ -3,10 +3,12 @@ import { FaPlay } from "react-icons/fa6";
 import SummaryFeatures from "./SummaryFeatures";
 import DetailsSection from "./DetailsSection";
 import GetStarted from "./GetStarted";
+import Header from "./Header";
 
 const Hero = () => {
   return (
     <>
+      <Header />
       <section className=" bg-gray-700">
         <div className="flex md:flex-col items-center  w-full gap-5 p-20   ">
           <div className="flex w-full flex-col md:pt-20  pt-14 mt-7 gap-5 items-center justify-center ">
