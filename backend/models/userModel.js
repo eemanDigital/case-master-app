@@ -24,6 +24,7 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
+      select: false,
       required: [true, "You must provide a password"],
       minLength: [6, "Password must have at least 6 character"],
       maxLength: [15, "Password must not be more than 15 character"],
@@ -54,7 +55,7 @@ const userSchema = new mongoose.Schema(
 
     position: {
       type: String,
-      required: [true, "user's position must be provided"],
+      required: true,
       enum: [
         "Principal",
         "Managing Partner",
@@ -70,7 +71,35 @@ const userSchema = new mongoose.Schema(
         "Other",
       ],
       default: "Counsel",
+      validate: (value) => {
+        if (
+          !value.match(
+            /^(Principal|Managing Partner|Head of Chambers|Associate|Senior Associate|Junior Associate|Counsel|Intern|Secretary|Para-legal|Client|Other)$/
+          )
+        ) {
+          return "Invalid position. Please select a valid option from the list.";
+        }
+      },
     },
+    // position: {
+    //   type: String,
+    //   required: [true, "user's position must be provided"],
+    //   enum: [
+    //     "Principal",
+    //     "Managing Partner",
+    //     "Head of Chambers",
+    //     "Associate",
+    //     "Senior Associate",
+    //     "Junior Associate",
+    //     "Counsel",
+    //     "Intern",
+    //     "Secretary",
+    //     "Para-legal",
+    //     "Client",
+    //     "Other",
+    //   ],
+    //   default: "Counsel",
+    // },
 
     otherPosition: String,
     practiceArea: String,
@@ -85,6 +114,20 @@ const userSchema = new mongoose.Schema(
           this.position
         );
       },
+    },
+
+    passwordChangedAt: {
+      type: Date,
+      // required: true,
+    },
+    passwordResetToken: String,
+    passwordResetExpire: Date,
+
+    //handles user's deletion of account
+    active: {
+      type: Boolean,
+      default: true,
+      select: false,
     },
   },
 

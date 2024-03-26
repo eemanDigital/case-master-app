@@ -9,6 +9,17 @@ const clientRouter = require("./routes/clientRoutes");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 
+/**
+ * //UNCAUGHT EXCEPTIONS: all errors/bugs that
+ *  occur in a synchronous code and not handled
+ * anywhere in the app
+ */
+process.on("uncaughtException", (err) => {
+  console.log("UNCAUGHT ERROR 🔥. Shutting down...");
+  console.log(err.name, err.message);
+  process.exit(1);
+});
+
 //configure our node env
 dotenv.config({ path: "./config.env" });
 
@@ -35,12 +46,12 @@ mongoose
 
 console.log(app.get("env"));
 
-// if (process.env.NODE_ENV === "development") {
-app.use(morgan("dev"));
-// }
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+}
 
 // console.log(process.env);
-//routers mounting
+//routes mounting
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
@@ -63,4 +74,16 @@ app.use(errorController);
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server connected on ${PORT}`);
+});
+
+//ALL PROMISE REJECTION
+//UNHANDLED REJECTION ERROR: e.g. where BD is down
+process.on("unhandledRejection", (err) => {
+  console.log(err.name, err.message);
+  //to shut down out application due to the DB error
+  console.log("UNHANDLED REJECTION! Shutting down...");
+
+  server.close(() => {
+    process.exit(1);
+  });
 });

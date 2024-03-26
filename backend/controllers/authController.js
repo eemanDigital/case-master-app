@@ -1,30 +1,27 @@
 const User = require("../models/userModel");
-// const AppError = require("../utils/appError");
+const AppError = require("../utils/appError");
+const catchAsync = require("../utils/catchAsync");
+const bcrypt = require("bcryptjs");
+const createSendToken = require("../utils/handleSendToken");
 // const catchAsync = require("../utils/catchAsync");
 
 exports.signup = async (req, res, next) => {
-  const { email, password, firstName, lastName } = req.body;
+  const { email, password, passwordConfirm, firstName, lastName } = req.body;
   // console.log(req.originalUrl);
   // console.log(req.baseUrl);
 
   if (!email || !password || !firstName || !lastName) {
-    // next(new AppError("Required fields must be fielded", 400));
-    next(
-      res.status(400).json({
-        message: "Required fields must be fielded",
-      })
-    );
+    next(new AppError("Required fields must be fielded", 400));
+  }
+
+  if (password !== passwordConfirm) {
+    next(new AppError("Password and passwordConfirm must be the same", 400));
   }
 
   let existingEmail = await User.findOne({ email });
 
   if (existingEmail) {
-    // next(new AppError("email already exist", 400));
-    next(
-      res.status(400).json({
-        message: "email already exist",
-      })
-    );
+    next(new AppError("email already exist", 400));
   }
 
   const user = await User.create({
@@ -42,41 +39,23 @@ exports.signup = async (req, res, next) => {
     practiceArea: req.body.practiceArea,
   });
 
-  res.status(201).json({
-    message: "User created",
-    user,
-  });
-
-  // console.log(err);
-  // // let error = err.Path;
-  // let msg = err.message;
-  // let name = err.name;
-  // res.status(400).json({
-  //   err,
-  //   name,
-  //   message: msg,
-  // });
+  createSendToken(user, 201, res);
 };
 
-// res.status(400).json({});
+exports.login = catchAsync(async (req, res, next) => {
+  let { email, password } = req.body;
+  // console.log(email, password);
 
-// exports.login = async (res, req, next) => {
-//   const { email, password } = req.body;
+  // 1) Check if email and password exist
+  if (!email || !password) {
+    next(new AppError("Provide email and password", 400));
+  }
+  //2) compare email and password with data in db
+  let user = await User.findOne({ email }).select("+password");
 
-//   if (!email || !password) {
-//     return res.status(400).json({
-//       message: "no email or password",
-//     });
-//   }
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return next(new AppError("Incorrect email or password", 401));
+  }
 
-//   const { existingMail } = await User.findOne({ email });
-
-//   if (existingMail) {
-//     return res.status(400).json({ message: "email exist" });
-//   }
-
-//   return res.status(200).status({
-//     message: "Sign up successful",
-//     data: {},
-//   });
-// };
+  createSendToken(user, 200, res);
+});

@@ -18,7 +18,16 @@ content-type: application/json
 
 ###
 
-GET http://localhost:3000/api/v1/users  HTTP/1.1 
+POST http://localhost:3000/api/v1/users/login  HTTP/1.1 
+content-type: application/json
+
+{
+  
+}
+
+###
+
+GET http://localhost:3000/api/v1/users/www  HTTP/1.1 
 content-type: application/json
 
 ###
@@ -109,12 +118,12 @@ content-type: application/json
 ###
 
 # GET CASE
-GET http://localhost:3000/api/v1/cases/65eb95d4c01ab9677c341bfb  HTTP/1.1 
+GET http://localhost:3000/api/v1/case  HTTP/1.1 
 content-type: application/json
 
 ###
 #UPDATE CASE
-PUT http://localhost:3000/api/v1/cases/65eb95d4c01ab9677c341bfb  HTTP/1.1 
+PUT http://localhost:3000/api/v1/cases/65eb95d4c01ab9677c341bfbc  HTTP/1.1 
 
 {
   "caseStatus":"Closed"
