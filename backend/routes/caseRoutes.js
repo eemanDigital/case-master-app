@@ -6,11 +6,14 @@ const {
   updateCase,
   deleteCase,
 } = require("../controllers/caseController");
-const { protect } = require("../controllers/authController");
+const { protect, restrictTo } = require("../controllers/authController");
 
 const caseRouter = express.Router();
 
-caseRouter.route("/").get(protect, getCases).post(createCase);
+caseRouter
+  .route("/")
+  .get(protect, restrictTo("admin"), getCases)
+  .post(createCase);
 caseRouter.route("/:caseId").get(getCase).put(updateCase).delete(deleteCase);
 
 module.exports = caseRouter;

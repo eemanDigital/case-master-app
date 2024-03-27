@@ -67,14 +67,14 @@ exports.login = catchAsync(async (req, res, next) => {
 //1) check if user has token
 exports.protect = catchAsync(async (req, res, next) => {
   let token;
-
+  // console.log(req.headers.authorization);
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
   }
-
+  // console.log(token);
   if (!token) {
     return next(new AppError("Kindly login before accessing this page", 401));
   }
@@ -98,5 +98,18 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   //5) give user access
   req.user = currentUser;
+  // console.log(req.user.position);
   next();
 });
+
+//Middleware to implement restriction by role
+exports.restrictTo = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new AppError("You are not eligible to perform this operation")
+      );
+    }
+    next();
+  };
+};
