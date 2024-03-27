@@ -152,18 +152,22 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// userSchema.pre("save", function (next) {
-//   // Check if the position is not one of the specified roles
-//   if (!["Secretary", "Para-legal", "Other", "Client"].includes(this.position)) {
-//     // If it's not one of the specified roles, set yearOfCall to required
-//     this.schema.path("yearOfCall").required(false);
-//   } else {
-//     // Otherwise, remove the requirement for yearOfCall
-//     this.schema.path("yearOfCall").required(true);
-//   }
-
-//   next();
-// });
+// function to check if password was changed
+// If the user changed their password after the time represented by 1605105300, the method would return true.
+// If the user has not changed their password since that time, the method would return false
+userSchema.methods.changePasswordAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    // we need to convert our passwordChangedAt to normal timestamp
+    const convertToTimeStamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10
+    );
+    //means the date the jwt was issued is less than the changed timestamp
+    return JWTTimestamp < convertToTimeStamp; //100 < 200
+  }
+  //false means pwd not changed
+  return false;
+};
 
 const User = mongoose.model("User", userSchema);
 

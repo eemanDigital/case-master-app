@@ -3,7 +3,7 @@ const jwt = require("jsonwebtoken");
 // Function to generate a JWT token with the user's ID embedded
 const signToken = (id) => {
   // Sign the JWT token with the user's ID and the JWT secret key
-  // Set expiration time for the token based on the environment variable
+  // Set expiration time
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
@@ -19,7 +19,7 @@ const createSendToken = (user, statusCode, res) => {
     expires: new Date(
       Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000
     ),
-    httpOnly: true, // Cookie accessible only via HTTP(S) and not by JavaScript
+    httpOnly: false, // Cookie accessible only via HTTP(S) and not by JavaScript
   };
 
   // Set 'secure' option for cookie if in production environment (HTTPS)
