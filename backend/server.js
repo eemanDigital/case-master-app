@@ -2,6 +2,7 @@ const dotenv = require("dotenv");
 const express = require("express");
 const mongoose = require("mongoose");
 const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
 const userRouter = require("./routes/userRoutes");
 const caseRouter = require("./routes/caseRoutes");
 const taskRouter = require("./routes/taskRoutes");
@@ -22,9 +23,10 @@ process.on("uncaughtException", (err) => {
 
 //configure our node env
 dotenv.config({ path: "./config.env" });
-
+// MIDDLEWARES
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 // connection to mongoose - MONGODB ATLAS
 // const DB = process.env.DATABASE.replace(
 //   "<PASSWORD>",
