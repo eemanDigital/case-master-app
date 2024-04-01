@@ -23,7 +23,7 @@ exports.getCase = catchAsync(async (req, res, next) => {
   const data = await Case.findById({ _id });
   // console.log(id);
   if (!data) {
-    return next(new AppError("no case found with that Id", 404));
+    return next(new AppError("No case found with that Id", 404));
   }
   res.status(200).json({
     data,

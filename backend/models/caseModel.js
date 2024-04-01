@@ -7,6 +7,7 @@ const caseSchema = new mongoose.Schema({
     name: [
       {
         type: String,
+        trim: true,
         required: [true, "A case must have a name"],
       },
     ],
@@ -17,6 +18,7 @@ const caseSchema = new mongoose.Schema({
     name: [
       {
         type: String,
+        trim: true,
         required: [true, "A case must have a name"],
       },
     ],
@@ -27,11 +29,13 @@ const caseSchema = new mongoose.Schema({
     name: [
       {
         type: String,
+        trim: true,
       },
     ],
   },
   suitNo: {
     type: String,
+    trim: true,
     required: [true, "A case must have a suit no"],
     unique: [true, "This suit no. has been used"],
     trim: true,
@@ -39,6 +43,7 @@ const caseSchema = new mongoose.Schema({
   caseOfficeFileNo: String,
   courtName: {
     type: String,
+    trim: true,
     required: [true, "Court's name is required"],
     enum: {
       values: [
@@ -63,15 +68,18 @@ const caseSchema = new mongoose.Schema({
     name: [
       {
         type: String,
+        trim: true,
       },
     ],
   },
   caseSummary: {
     type: String,
+    trim: true,
     maxlength: [500, "Case summary should not be more than 500 characters"],
   },
   caseStatus: {
     type: String,
+    trim: true,
     enum: {
       values: ["Pending", "Closed", "Decided"],
     },
@@ -83,6 +91,7 @@ const caseSchema = new mongoose.Schema({
   },
   modeOfCommencement: {
     type: String,
+    trim: true,
     required: [true, "State the mode of commencement of the case"],
     enum: {
       values: [

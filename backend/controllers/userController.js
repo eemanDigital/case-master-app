@@ -21,13 +21,13 @@ const filterObj = (obj, ...allowedFields) => {
 // };
 
 // GET ALL USERS
-exports.getUsers = async (req, res, next) => {
+exports.getUsers = catchAsync(async (req, res, next) => {
   const users = await User.find({});
 
   res.status(200).json({
     data: users,
   });
-};
+});
 
 //GET A USER
 exports.getUser = catchAsync(async (req, res, next) => {
@@ -62,6 +62,9 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "lastName",
     "middleName",
     "photo",
+    "address",
+    "bio",
+    "phone",
     "position",
     "yearOfCall",
     "otherPosition",

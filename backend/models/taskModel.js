@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const taskSchema = new mongoose.Schema({
   description: {
     type: String,
+    trim: true,
     required: [true, "A task must have a description"],
   },
   case: {
@@ -25,6 +26,7 @@ const taskSchema = new mongoose.Schema({
   },
   status: {
     type: String,
+    trim: true,
     enum: {
       values: ["pending", "completed"],
       message: "Please, state the task's status",
@@ -33,6 +35,7 @@ const taskSchema = new mongoose.Schema({
   },
   taskPriority: {
     type: String,
+    trim: true,
     enum: ["low", "middle", "high"],
     default: "low", // Example default value
   },

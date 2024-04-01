@@ -8,7 +8,7 @@ const User = require("../models/userModel");
 const createSendToken = require("../utils/handleSendToken");
 
 ///// function to implement user signup
-exports.signup = async (req, res, next) => {
+exports.signup = catchAsync(async (req, res, next) => {
   const { email, password, passwordConfirm, firstName, lastName } = req.body;
   // console.log(req.originalUrl);
   // console.log(req.baseUrl);
@@ -35,15 +35,20 @@ exports.signup = async (req, res, next) => {
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
     photo: req.body.photo,
+    address: req.body.address,
     role: req.body.role,
+    bio: req.body.bio,
     position: req.body.position,
+    phone: req.body.phone,
     yearOfCall: req.body.yearOfCall,
     otherPosition: req.body.otherPosition,
     practiceArea: req.body.practiceArea,
+    // passwordResetToken: req.body.passwordResetToken,
+    // passwordResetExpire: req.body.passwordResetExpire,
   });
 
   createSendToken(user, 201, res);
-};
+});
 
 ///// function to handle login
 exports.login = catchAsync(async (req, res, next) => {
@@ -151,13 +156,14 @@ exports.isLoggedIn = async (req, res, next) => {
   }
 };
 
-//LOGOUT USER
+//LOGOUT USER HANDLER
 exports.logout = (req, res, next) => {
   // Set the 'jwt' cookie to null and expire it immediately
   res.cookie("jwt", "", { expires: new Date(0), httpOnly: true });
   res.status(200).json({ status: "success" });
 };
 
+//FORGOT PASSWORD HANDLER
 exports.forgotPassword = catchAsync(async (req, res, next) => {
   // 1) Get user based on POSTed email
   const user = await User.findOne({ email: req.body.email });
@@ -192,6 +198,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   }
 });
 
+//RESET PASSWORD HANDLER
 exports.resetPassword = catchAsync(async (req, res, next) => {
   // 1) Get user based on the token
   const hashedToken = crypto
@@ -219,6 +226,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
+//CHANGE PASSWORD HANDLER
 exports.updatePassword = catchAsync(async (req, res, next) => {
   // 1) Get user from collection
   const user = await User.findById(req.user.id).select("+password");

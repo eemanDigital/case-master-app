@@ -1,3 +1,4 @@
+const crypto = require("crypto");
 const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
@@ -6,16 +7,19 @@ const userSchema = new mongoose.Schema(
   {
     firstName: {
       type: String,
+      trim: true,
       required: [true, "A user must provide first Name"],
     },
     lastName: {
       type: String,
+      trim: true,
       required: [true, "A user must provide first name"],
     },
     middleName: String,
 
     email: {
       type: String,
+      trim: true,
       unique: [true, "The email address is taken."],
       lowercase: true,
       required: [true, "a user must provide an email"],
@@ -24,6 +28,7 @@ const userSchema = new mongoose.Schema(
 
     password: {
       type: String,
+      trim: true,
       select: false,
       required: [true, "You must provide a password"],
       minLength: [6, "Password must have at least 6 character"],
@@ -32,6 +37,7 @@ const userSchema = new mongoose.Schema(
 
     passwordConfirm: {
       type: String,
+      trim: true,
       required: [true, "Please confirm your password"],
       validate: {
         //only work on CREATE and SAVE
@@ -44,17 +50,26 @@ const userSchema = new mongoose.Schema(
 
     photo: {
       type: String,
+
       default: "",
+    },
+
+    address: {
+      type: String,
+      trim: true,
+      required: [true, "Please provide your residential address"],
     },
 
     role: {
       type: String,
+      trim: true,
       enum: ["user", "admin", "secretary"],
       default: "user",
     },
 
     position: {
       type: String,
+      trim: true,
       required: true,
       enum: [
         "Principal",
@@ -81,7 +96,7 @@ const userSchema = new mongoose.Schema(
         }
       },
     },
-    // position: {
+
     //   type: String,
     //   required: [true, "user's position must be provided"],
     //   enum: [
@@ -100,7 +115,15 @@ const userSchema = new mongoose.Schema(
     //   ],
     //   default: "Counsel",
     // },
-
+    bio: {
+      type: String,
+      trim: true,
+    },
+    phone: {
+      type: String,
+      trim: true,
+      required: [true, "Please provide your phone number"],
+    },
     otherPosition: String,
     practiceArea: String,
     universityAttended: String,
@@ -150,8 +173,10 @@ userSchema.pre(/^find/, function (next) {
 });
 
 userSchema.methods.createPasswordResetToken = function () {
+  //generate reset token
   const resetToken = crypto.randomBytes(32).toString("hex");
 
+  //encrypt the reset token and save in the db
   this.passwordResetToken = crypto
     .createHash("sha256")
     .update(resetToken)
@@ -159,7 +184,7 @@ userSchema.methods.createPasswordResetToken = function () {
 
   console.log({ resetToken }, this.passwordResetToken);
 
-  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000; //expires in 10m
 
   return resetToken;
 };
