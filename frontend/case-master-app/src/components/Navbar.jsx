@@ -70,7 +70,7 @@ const Navbar = () => {
           {mainNav.slice(0, 3)}
 
           <li className="md:ml-10">
-            <NavLink>Sign in</NavLink>
+            <NavLink to="signup">Sign in</NavLink>
           </li>
           <li className="my-4">
             <NavLink className=" btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block w-32 hover:bg-gray-500 md:static">

@@ -41,12 +41,14 @@ body {
 
   /* Position the tooltip text - see examples below! */
   position: absolute;
-  top: -8px;
-  left: 48px;
+  top: 4px;
+  left: 64px;
   z-index: 1;
 }
 
 /* Show the tooltip text when you mouse over the tooltip container */
 .tooltip:hover .tooltiptext {
   visibility: visible;
+  box-shadow: rgba(50, 50, 93, 0.25) 0px 6px 12px -2px,
+    rgba(0, 0, 0, 0.3) 0px 3px 7px -3px;
 }

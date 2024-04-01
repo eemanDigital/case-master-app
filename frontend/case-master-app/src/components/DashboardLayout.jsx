@@ -10,7 +10,7 @@ const DashboardLayout = ({ isOpen, handleOpen }) => {
       <DashboardNav />
       <div className="flex gap-4 justify-start md:mt-20 mt-28  p-6">
         <SideBar isOpen={isOpen} handleOpen={handleOpen} />
-        <div className=" bg-gray-100 rounded-md  shadow-inner p-8">
+        <div className=" bg-gray-100 rounded-md  w-screen  shadow-inner p-8">
           <Outlet />
         </div>
       </div>

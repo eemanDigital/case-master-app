@@ -15,7 +15,7 @@ import { GrDocument } from "react-icons/gr";
 const navItems = [
   {
     name: "Dashboard",
-    path: "dashboard",
+
     icon: <RxDashboard />,
   },
   {
@@ -90,7 +90,7 @@ const SideBar = ({ isOpen, handleOpen }) => {
   return (
     <>
       <aside
-        className={` justify-between gap-4 bg-gradient-to-r from-slate-600 to-slate-800 bg-blend-lighten shadow-md  items-center rounded-md   `}>
+        className={` justify-between gap-4 bg-gradient-to-r from-slate-600 to-slate-800 bg-blend-lighten  shadow-inner items-center rounded-md   `}>
         <ul
           className={`md:flex flex-col  gap-4 md:p-5 p-2   ${
             isOpen ? "md:w-auto   " : " w-auto "

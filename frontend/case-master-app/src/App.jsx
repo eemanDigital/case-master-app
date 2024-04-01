@@ -12,6 +12,9 @@ import DashboardLayout from "./components/DashboardLayout.jsx";
 import Cases from "./pages/Cases.jsx";
 import Task from "./pages/Task.jsx";
 import Billing from "./pages/Billing.jsx";
+import Login from "./pages/Login.jsx";
+import SignUp from "./pages/SignUp.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,6 +28,9 @@ function App() {
     createRoutesFromElements(
       <Route path="/" element={<HomeLayout />}>
         <Route path="/" element={<Hero />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/forgotpassword" element={<ForgotPassword />} />
 
         <Route
           path="dashboard"
