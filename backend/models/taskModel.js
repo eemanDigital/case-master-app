@@ -6,15 +6,17 @@ const taskSchema = new mongoose.Schema({
     trim: true,
     required: [true, "A task must have a description"],
   },
-  case: {
-    type: mongoose.Schema.ObjectId,
+  caseToWorkOn: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: "Case",
   },
-  assignedTo: {
-    type: mongoose.Schema.ObjectId,
-    ref: "User",
-    required: [true, "A task must be assigned to a staff"],
-  },
+  assignedTo: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "A task must be assigned to a staff"],
+    },
+  ],
   dateAssigned: {
     type: Date,
     default: Date.now,

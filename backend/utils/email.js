@@ -43,12 +43,21 @@
 //   try {
 //     // Email transporter setup
 //     const transporter = nodemailer.createTransport({
-//       host: process.env.EMAIL_HOST,
-//       port: 465,
-//       secure: true,
+//       // host: process.env.EMAIL_HOST,
+//       // host: "smtp-mail.outlook.com",
+//       host: "smtp.office365.com",
+//       port: 587,
+//       secure: false,
+//       // secure: true,
+//       // service: "Outlook365",
 //       auth: {
-//         user: process.env.EMAIL_USER,
-//         pass: process.env.EMAIL_PASS,
+//         // user: process.env.EMAIL_USER,
+//         // pass: process.env.EMAIL_PASS,
+//         user: "eemantech@outlook.com",
+//         pass: "Salamat&029",
+//       },
+//       tls: {
+//         ciphers: "SSLv3",
 //       },
 //     });
 
@@ -71,6 +80,7 @@
 // };
 
 // module.exports = sendMail;
+
 const nodemailer = require("nodemailer");
 //"Gmail" is not a good idea for this kind of app/or production app generally
 //you can only send 500 mail per day using gmail

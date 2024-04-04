@@ -39,6 +39,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     photo: req.body.photo,
     address: req.body.address,
     role: req.body.role,
+    task: req.body.task,
     bio: req.body.bio,
     position: req.body.position,
     phone: req.body.phone,
@@ -49,6 +50,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     // passwordResetExpire: req.body.passwordResetExpire,
   });
 
+  console.log({ task: req.body.task });
   createSendToken(user, 201, res);
 });
 

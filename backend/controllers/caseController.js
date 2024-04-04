@@ -10,7 +10,12 @@ exports.createCase = catchAsync(async (req, res, next) => {
 });
 
 exports.getCases = catchAsync(async (req, res, next) => {
-  const cases = await Case.find().populate("task");
+  const cases = await Case.find()
+    .populate({
+      path: "task",
+      select: "description status dateAssigned dueDate taskPriority",
+    })
+    .populate({ path: "accountOfficer", select: "firstName lastName" });
   res.status(200).json({
     results: cases.length,
     data: cases,
@@ -20,7 +25,15 @@ exports.getCases = catchAsync(async (req, res, next) => {
 exports.getCase = catchAsync(async (req, res, next) => {
   //if id/caseId provided does not exist
   const _id = req.params.caseId;
-  const data = await Case.findById({ _id });
+  const data = await Case.findById({ _id })
+    .populate({
+      path: "task",
+      select: "description status dateAssigned dueDate taskPriority",
+    })
+    .populate({ path: "accountOfficer", select: "firstName lastName" });
+  res.status(200).json({
+    data,
+  });
   // console.log(id);
   if (!data) {
     return next(new AppError("No case found with that Id", 404));

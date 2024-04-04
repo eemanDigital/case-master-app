@@ -129,6 +129,11 @@ const userSchema = new mongoose.Schema(
     universityAttended: String,
     lawSchoolAttended: String,
 
+    task: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Task",
+    },
+
     yearOfCall: {
       type: Date,
       // required: null,
@@ -144,7 +149,7 @@ const userSchema = new mongoose.Schema(
       // required: true,
     },
     passwordResetToken: String,
-    passwordResetExpire: Date,
+    passwordResetExpires: Date,
 
     //handles user's deletion of account
     active: {
