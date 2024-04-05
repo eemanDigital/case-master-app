@@ -6,7 +6,7 @@ const DashboardNav = () => {
     <nav className="md:py-0  md:flex flex-col items-start relative  z-50">
       {/* logo */}
       <div className=" bg-white top-0 fixed pl-2 shadow-md w-full  z-50 ">
-        <Link className="md:flex items-center gap-1 m-2 ">
+        <Link to="/" className="md:flex items-center gap-1 m-2 ">
           <img
             src={caseMasterLogo}
             alt="case master logo"
