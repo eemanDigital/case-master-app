@@ -1,14 +1,25 @@
+// import { useContext } from "react";
 import Input from "../components/Inputs";
 import lawyer1 from "../assets/lawyer1.svg";
 import Select from "../components/Select";
 import { Link } from "react-router-dom";
 import Button from "../components/Button";
+// import { FormContext } from "../context/FormContextProvider";
 import { useState } from "react";
+// import useFetch from "../hooks/useFetch";
+
+// const URL = "http://localhost:3000/api/v1/users/signup";
 
 const SignUp = () => {
-  const positions = ["counsel", "principal", "intern"];
+  const positions = ["Counsel", "Principal", "Intern"];
+  // const { data, loading, error, fetchData } = login();
+
+  // const { inputValue, click, handleChange, handleClick, handleSubmit } =
+  //   useContext(FormContext);
+
   const [click, setClick] = useState(false);
-  const [photo, setPhoto] = useState("");
+  // const [photo, setPhoto] = useState("");
+
   const [inputValue, setInputValue] = useState({
     firstName: "",
     lastName: "",
@@ -18,8 +29,6 @@ const SignUp = () => {
     passwordConfirm: "",
     photo: "",
     address: "",
-    role: "",
-    task: "",
     bio: "",
     position: "",
     phone: "",
@@ -41,24 +50,29 @@ const SignUp = () => {
   }
 
   // function to handle for submission
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
 
-    if (!inputValue.firstName || inputValue.lastName) return;
+    try {
+      // Call fetchData with your endpoint, method, payload, and any additional arguments
+      // await fetchData("users/signup", "post", inputValue);
+      // Handle successful response
+    } catch (err) {
+      // Handle error
+    }
   }
 
   function handleClick() {
     setClick(() => !click);
   }
 
-  // console.log(photo);
   return (
     <section className=" bg-gray-200 ">
       <h1 className="text-5xl bold text-center p-5">Register</h1>
-
+      {/* 
       <h3>{click && inputValue.firstName}</h3>
       <h3>{click && inputValue.lastName}</h3>
-      <h3>{click && inputValue.email}</h3>
+      <h3>{click && inputValue.email}</h3> */}
 
       <div className="flex flex-col md:flex-row  justify-center  ">
         <div className="flex flex-col  flex-none basis-2/5 text-center  items-center  rounded-md p-4 ">
@@ -195,7 +209,7 @@ const SignUp = () => {
                 name="photo" // Use 'file' to match Multer configuration
                 id=""
                 // value={file}
-                onChange={(e) => setPhoto(e.target.files[0])}
+                // onChange={}
                 label="upload photo"
                 htmlFor="photo"
               />

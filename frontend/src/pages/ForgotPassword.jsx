@@ -1,14 +1,51 @@
+import { useState } from "react";
 import Input from "../components/Inputs";
 import lawyer1 from "../assets/lawyer1.svg";
 import Button from "../components/Button";
 import { Link } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 const ForgotPassword = () => {
-  // const selectOptions =(position) positions.map((element) => {
-  //   // return element;
-  //   console.log(element);
-  // });
+  //getting data from our custom hooks for auth
+  const { data, loading, error, authenticate } = useAuth();
 
+  // console.log(data);
+  // console.log(error?.response.data.message);
+
+  const [click, setClick] = useState(false);
+  // const [photo, setPhoto] = useState("");
+
+  const [inputValue, setInputValue] = useState({
+    email: "",
+    password: "",
+  });
+
+  // handleChange function
+  function handleChange(e) {
+    const inputText = e.target.value;
+    const inputName = e.target.name;
+
+    setInputValue((prevValue) => {
+      return { ...prevValue, [inputName]: inputText };
+    });
+  }
+
+  // function to handle for submission
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    try {
+      // Call fetchData with your endpoint, method, payload, and any additional arguments
+      await authenticate("users/forgotpassword", "post", inputValue);
+      // Handle successful response
+    } catch (err) {
+      // Handle error
+    }
+  }
+
+  function handleClick() {
+    setClick(() => !click);
+  }
   let inputStyle =
     " appearance-none block  sm:w-[344px] bg-gray-200 text-red border border-red-500 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white";
 
@@ -32,7 +69,9 @@ const ForgotPassword = () => {
           </p>
         </div>
 
-        <form className=" flex justify-center items-center bg-white  basis-2/5  shadow-md rounded-md px-8 pt-6 pb-8 m-4">
+        <form
+          onSubmit={handleSubmit}
+          className=" flex justify-center items-center bg-white  basis-2/5  shadow-md rounded-md px-8 pt-6 pb-8 m-4">
           <div className="flex  flex-col items-center -mx-3  mb-6 gap-2">
             <div>
               <Input
@@ -41,10 +80,15 @@ const ForgotPassword = () => {
                 label="Email"
                 placeholder="Email"
                 htmlFor="Email"
+                value={inputValue.email}
+                name="email"
+                onChange={handleChange}
               />
             </div>
 
-            <Button buttonStyle="bg-slate-500 m-2 px-5 py-2 rounded w-full text-slate-200 hover:bg-slate-400">
+            <Button
+              onClick={handleClick}
+              buttonStyle="bg-slate-500 m-2 px-5 py-2 rounded w-full text-slate-200 hover:bg-slate-400">
               Submit
             </Button>
             <div className=" text-center">

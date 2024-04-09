@@ -1,5 +1,5 @@
 const Input = ({ label, text, textarea, inputStyle, ...props }) => {
-  console.log(props);
+  // console.log(props);
   return (
     <p>
       <label
