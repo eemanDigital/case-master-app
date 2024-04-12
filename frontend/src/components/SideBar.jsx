@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { RiCustomerService2Line } from "react-icons/ri";
 import avatar from "../assets/avatar.png";
-
+import { useLogout } from "../hooks/useLogout";
 import { RxDashboard } from "react-icons/rx";
 import {
   IoBriefcaseSharp,
@@ -11,6 +11,10 @@ import {
 import { FaMoneyBill, FaTasks } from "react-icons/fa";
 import { FaListUl } from "react-icons/fa6";
 import { GrDocument } from "react-icons/gr";
+import { ToastContainer, toast, Bounce } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useAuthContext } from "../hooks/useAuthContext";
+import { useNavigate } from "react-router-dom";
 
 const navItems = [
   {
@@ -58,6 +62,30 @@ const navItems = [
 ];
 
 const SideBar = ({ isOpen, handleOpen }) => {
+  const { logout } = useLogout();
+  const navigate = useNavigate();
+  const { user } = useAuthContext();
+  // const { data } = user;
+  // console.log("TESTING", user?.data.user.photo);
+  // console.log("DATA", data);
+
+  function handleLogout() {
+    toast.success("Logout successful", {
+      position: "top-right",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      id: "logoutId",
+      progress: undefined,
+      theme: "light",
+      transition: Bounce,
+    });
+    logout();
+    navigate("/");
+  }
+
   // nav item mapping
   let mainNav = navItems.map((item, index) => {
     return (
@@ -105,23 +133,30 @@ const SideBar = ({ isOpen, handleOpen }) => {
               {!isOpen ? "close sidebar" : "open sidebar"}
             </span> */}
           </div>
-
           {/* profile */}
           <div className="flex flex-col gap-5 items-start  tooltip">
-            <img
-              src={avatar}
-              alt=""
-              className="w-12 h-12 mt-6  object-contain rounded-full"
-            />
-            <span className="tooltiptext">Profile</span>
-
+            <Link to="profile">
+              <img
+                // use avatar as default image if user does not upload image
+                src={
+                  user
+                    ? `http://localhost:3000/images/${user?.data.user.photo}`
+                    : avatar
+                }
+                alt={`${user?.data.user}'s profile image`}
+                className="w-12 h-12 mt-6  object-contain rounded-full"
+              />
+              <span className="tooltiptext">Profile</span>
+            </Link>
             <h3 className={`text-gray-200 ${isOpen ? "hidden" : "flex"} `}>
-              A.T. Lukman, Esq.
+              {user?.data.user.firstName} {user?.data.user.lastName}
             </h3>
           </div>
-
           {mainNav}
+          <Link onClick={handleLogout}>logout</Link>
         </ul>
+
+        <ToastContainer />
       </aside>
     </>
   );

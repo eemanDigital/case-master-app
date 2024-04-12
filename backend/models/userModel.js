@@ -48,11 +48,7 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    photo: {
-      type: String,
-
-      default: "",
-    },
+    photo: String,
 
     address: {
       type: String,
@@ -97,6 +93,8 @@ const userSchema = new mongoose.Schema(
       },
     },
 
+    otherPosition: String,
+
     //   type: String,
     //   required: [true, "user's position must be provided"],
     //   enum: [
@@ -124,15 +122,14 @@ const userSchema = new mongoose.Schema(
       trim: true,
       required: [true, "Please provide your phone number"],
     },
-    otherPosition: String,
     practiceArea: String,
     universityAttended: String,
     lawSchoolAttended: String,
 
-    task: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Task",
-    },
+    // task: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   ref: "Task",
+    // },
 
     yearOfCall: {
       type: Date,

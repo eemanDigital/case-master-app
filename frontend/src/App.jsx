@@ -16,6 +16,7 @@ import Login from "./pages/Login.jsx";
 import SignUp from "./pages/SignUp.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
+import Profile from "./pages/Profile.jsx";
 // import { FormContextProvider } from "./context/FormContextProvider.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
 
@@ -43,6 +44,7 @@ function App() {
           <Route path="cases" element={<Cases open={isOpen} />} />
           <Route path="tasks" element={<Task />} />
           <Route path="billing" element={<Billing />} />
+          <Route path="profile" element={<Profile />} />
 
           {/* errorElement= {<ErrorPage />} */}
         </Route>

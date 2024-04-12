@@ -13,12 +13,13 @@ const {
   updatePassword,
   forgotPassword,
   resetPassword,
+  uploadUserPhoto,
 } = require("../controllers/authController");
 
 const userRouter = express.Router();
 
 userRouter.get("/", getUsers);
-userRouter.post("/signup", signup);
+userRouter.post("/signup", uploadUserPhoto, signup);
 userRouter.post("/login", login);
 userRouter.post("/forgotpassword", forgotPassword);
 userRouter.patch("/resetpassword/:token", resetPassword);

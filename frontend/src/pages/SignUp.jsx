@@ -4,18 +4,17 @@ import lawyer1 from "../assets/lawyer1.svg";
 import Select from "../components/Select";
 import { Link } from "react-router-dom";
 import Button from "../components/Button";
-// import { FormContext } from "../context/FormContextProvider";
+import { useAuth } from "../hooks/useAuth";
 import { useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 // import useFetch from "../hooks/useFetch";
 
 // const URL = "http://localhost:3000/api/v1/users/signup";
 
 const SignUp = () => {
   const positions = ["Counsel", "Principal", "Intern"];
-  // const { data, loading, error, fetchData } = login();
-
-  // const { inputValue, click, handleChange, handleClick, handleSubmit } =
-  //   useContext(FormContext);
+  const { data, loading, error, authenticate } = useAuth();
 
   const [click, setClick] = useState(false);
   // const [photo, setPhoto] = useState("");
@@ -39,23 +38,32 @@ const SignUp = () => {
     lawSchoolAttended: "",
   });
 
+  // const { photo } = inputValue;
+
   // handleChange function
   function handleChange(e) {
-    const inputText = e.target.value;
-    const inputName = e.target.name;
-
-    setInputValue((prevValue) => {
-      return { ...prevValue, [inputName]: inputText };
-    });
+    const { name, value, files } = e.target;
+    setInputValue((prevData) => ({
+      ...prevData,
+      [name]: name === "photo" ? files[0] : value, // Handle file or text input
+    }));
   }
 
   // function to handle for submission
   async function handleSubmit(e) {
     e.preventDefault();
 
+    // set custom headers
+    const customHeaders = {
+      // Authorization: "Bearer your_token_here",
+      "Content-Type": "multipart/form-data", // Example of custom header
+    };
+
     try {
       // Call fetchData with your endpoint, method, payload, and any additional arguments
-      // await fetchData("users/signup", "post", inputValue);
+      await authenticate("users/signup", "post", inputValue, customHeaders);
+
+      // console.log(inputValue);
       // Handle successful response
     } catch (err) {
       // Handle error
@@ -69,10 +77,6 @@ const SignUp = () => {
   return (
     <section className=" bg-gray-200 ">
       <h1 className="text-5xl bold text-center p-5">Register</h1>
-      {/* 
-      <h3>{click && inputValue.firstName}</h3>
-      <h3>{click && inputValue.lastName}</h3>
-      <h3>{click && inputValue.email}</h3> */}
 
       <div className="flex flex-col md:flex-row  justify-center  ">
         <div className="flex flex-col  flex-none basis-2/5 text-center  items-center  rounded-md p-4 ">
@@ -208,8 +212,8 @@ const SignUp = () => {
                 type="file"
                 name="photo" // Use 'file' to match Multer configuration
                 id=""
-                // value={file}
-                // onChange={}
+                accept=".pdf,.docx,.jpg,.jpeg, .png"
+                onChange={handleChange}
                 label="upload photo"
                 htmlFor="photo"
               />
@@ -299,6 +303,7 @@ const SignUp = () => {
           </div>
         </form>
       </div>
+      <ToastContainer />
     </section>
   );
 };

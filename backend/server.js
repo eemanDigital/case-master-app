@@ -26,16 +26,25 @@ process.on("uncaughtException", (err) => {
 dotenv.config({ path: "./config.env" });
 // MIDDLEWARES
 const app = express();
-app.use(cors());
-app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+// app.use(cors());
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    credentials: true,
+  })
+);
+app.use(express.static("public"));
+
 app.use(cookieParser());
 // connection to mongoose - MONGODB ATLAS
-// const DB = process.env.DATABASE.replace(
-//   "<PASSWORD>",
-//   process.env.DATABASE_PASSWORD
-// );
-// mongoose.connect(DB, {}).then(() => {
+const DB = process.env.DATABASE.replace(
+  "<PASSWORD>",
+  process.env.DATABASE_PASSWORD
+);
+// mongoose.connect(DB, { autoIndex: true }).then(() => {
 //   console.log("Cloud Database connected");
 // });
 

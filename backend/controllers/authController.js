@@ -6,8 +6,29 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
 // const Token = require("../models/tokenModel");
+const path = require("path");
+const multer = require("multer");
 const createSendToken = require("../utils/handleSendToken");
 const sendEmail = require("../utils/email");
+
+const multerStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "public/images");
+  },
+  filename: (req, file, cb) => {
+    // Generate a unique filename for the uploaded file
+    cb(
+      null,
+      file.fieldname + "_" + Date.now() + path.extname(file.originalname)
+    );
+  },
+});
+
+const upload = multer({
+  storage: multerStorage,
+});
+
+exports.uploadUserPhoto = upload.single("photo");
 
 ///// function to implement user signup
 exports.signup = catchAsync(async (req, res, next) => {
@@ -29,6 +50,8 @@ exports.signup = catchAsync(async (req, res, next) => {
     next(new AppError("email already exist", 400));
   }
 
+  const filename = req.file ? req.file.filename : null; // Handle optional file
+
   const user = await User.create({
     firstName: req.body.firstName,
     lastName: req.body.lastName,
@@ -36,29 +59,31 @@ exports.signup = catchAsync(async (req, res, next) => {
     email: req.body.email,
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
-    photo: req.body.photo,
+    photo: filename,
     address: req.body.address,
     role: req.body.role,
-    task: req.body.task,
+    // task: req.body.task,
     bio: req.body.bio,
     position: req.body.position,
     phone: req.body.phone,
     yearOfCall: req.body.yearOfCall,
     otherPosition: req.body.otherPosition,
     practiceArea: req.body.practiceArea,
+    universityAttended: req.body.universityAttended,
+    lawSchoolAttended: req.body.lawSchoolAttended,
     // passwordResetToken: req.body.passwordResetToken,
     // passwordResetExpire: req.body.passwordResetExpire,
   });
 
-  console.log({ task: req.body.task });
+  // console.log({ task: req.body.task });
   createSendToken(user, 201, res);
 });
 
 ///// function to handle login
 exports.login = catchAsync(async (req, res, next) => {
+  // console.log(req.cookies);
   let { email, password } = req.body;
-  // console.log(email, password);
-  console.log(req.headers.authorization);
+
   // 1) Check if email and password exist
   if (!email || !password) {
     next(new AppError("Provide email and password", 400));
