@@ -128,10 +128,6 @@ const SideBar = ({ isOpen, handleOpen }) => {
             onClick={handleOpen}
             className=" text-4xl  text-gray-300 flex items-center justify-center cursor-pointer hover:text-gray-500 ">
             {isOpen ? <IoMenuOutline /> : <IoMenuOutline />}
-
-            {/* <span className="tooltiptext">
-              {!isOpen ? "close sidebar" : "open sidebar"}
-            </span> */}
           </div>
           {/* profile */}
           <div className="flex flex-col gap-5 items-start  tooltip">
@@ -140,20 +136,22 @@ const SideBar = ({ isOpen, handleOpen }) => {
                 // use avatar as default image if user does not upload image
                 src={
                   user
-                    ? `http://localhost:3000/images/${user?.data.user.photo}`
+                    ? `http://localhost:3000/images/${user?.data?.user?.photo}`
                     : avatar
                 }
                 alt={`${user?.data.user}'s profile image`}
-                className="w-12 h-12 mt-6  object-contain rounded-full"
+                className="w-12 h-12  mt-6  object-cover object-right-top rounded-full"
               />
               <span className="tooltiptext">Profile</span>
             </Link>
             <h3 className={`text-gray-200 ${isOpen ? "hidden" : "flex"} `}>
-              {user?.data.user.firstName} {user?.data.user.lastName}
+              {user?.data?.user?.firstName} {user?.data?.user?.lastName}
             </h3>
           </div>
           {mainNav}
-          <Link onClick={handleLogout}>logout</Link>
+          <Link className="text-gray-200" onClick={handleLogout}>
+            logout
+          </Link>
         </ul>
 
         <ToastContainer />

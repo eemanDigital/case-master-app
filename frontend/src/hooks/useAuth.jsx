@@ -38,7 +38,7 @@ export const useAuth = () => {
       // console.log("TOEKN", token);
 
       if (
-        (method === "POST" || method === "PUT") &&
+        (method === "POST" || method === "PUT" || method === "PATCH") &&
         customHeaders["Content-Type"] === "multipart/form-data"
       ) {
         // If so, create a FormData object and append JSON data to it

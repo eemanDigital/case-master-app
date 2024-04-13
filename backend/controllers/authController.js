@@ -6,31 +6,10 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
 // const Token = require("../models/tokenModel");
-const path = require("path");
-const multer = require("multer");
 const createSendToken = require("../utils/handleSendToken");
 const sendEmail = require("../utils/email");
 
-const multerStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/images");
-  },
-  filename: (req, file, cb) => {
-    // Generate a unique filename for the uploaded file
-    cb(
-      null,
-      file.fieldname + "_" + Date.now() + path.extname(file.originalname)
-    );
-  },
-});
-
-const upload = multer({
-  storage: multerStorage,
-});
-
-exports.uploadUserPhoto = upload.single("photo");
-
-///// function to implement user signup
+// ///// function to implement user signup
 exports.signup = catchAsync(async (req, res, next) => {
   const { email, password, passwordConfirm, firstName, lastName } = req.body;
   // console.log(req.originalUrl);
@@ -50,7 +29,8 @@ exports.signup = catchAsync(async (req, res, next) => {
     next(new AppError("email already exist", 400));
   }
 
-  const filename = req.file ? req.file.filename : null; // Handle optional file
+  // extract file
+  const filename = req.file ? req.file.filename : null;
 
   const user = await User.create({
     firstName: req.body.firstName,
@@ -71,11 +51,8 @@ exports.signup = catchAsync(async (req, res, next) => {
     practiceArea: req.body.practiceArea,
     universityAttended: req.body.universityAttended,
     lawSchoolAttended: req.body.lawSchoolAttended,
-    // passwordResetToken: req.body.passwordResetToken,
-    // passwordResetExpire: req.body.passwordResetExpire,
   });
 
-  // console.log({ task: req.body.task });
   createSendToken(user, 201, res);
 });
 

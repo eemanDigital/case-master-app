@@ -54,9 +54,29 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     );
   }
 
+  // extracting file from the req
+  const filename = req.file ? req.file.filename : null; // Handle optional file
+
   // 2) Filtered out unwanted fields names that are not allowed to be updated
   const filteredBody = filterObj(
-    req.body,
+    {
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      middleName: req.body.middleName,
+      email: req.body.email,
+      photo: filename,
+      address: req.body.address,
+      role: req.body.role,
+      bio: req.body.bio,
+      position: req.body.position,
+      phone: req.body.phone,
+      yearOfCall: req.body.yearOfCall,
+      otherPosition: req.body.otherPosition,
+      practiceArea: req.body.practiceArea,
+      universityAttended: req.body.universityAttended,
+      lawSchoolAttended: req.body.lawSchoolAttended,
+    },
+
     "email",
     "firstName",
     "lastName",
@@ -70,8 +90,6 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "otherPosition",
     "practiceArea"
   );
-
-  // console.log(filteredBody);
 
   // 3) Update user document
   const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {

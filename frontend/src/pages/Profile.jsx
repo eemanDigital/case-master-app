@@ -2,9 +2,11 @@ import Input from "../components/Inputs";
 import Button from "../components/Button";
 import { Link } from "react-router-dom";
 import avatar from "../assets/avatar.png";
-
+import { formatYear } from "../utils/formatDate";
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
+import { FaAddressBook, FaVoicemail, FaPhone } from "react-icons/fa";
+import { MdEmail, MdMail } from "react-icons/md";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -22,9 +24,8 @@ const Profile = () => {
   });
 
   // getting data from out custom hook
-  const { data, loading, error, authenticate } = useAuth();
+  const { loading, error, authenticate } = useAuth();
 
-  console.log("DATA", data);
   function handleChange(e) {
     const inputText = e.target.value;
     const inputName = e.target.name;
@@ -67,8 +68,63 @@ const Profile = () => {
   } rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`;
 
   return (
-    <section className="flex justify-between">
-      <div className="flex md:flex-col items-center shadow-md bg-white p-6 rounded-md">
+    <section className="flex flex-col justify-between items-center">
+      {/* PROFILE CARD */}
+      <div className="flex justify-center md:flex-row flex-col  flex-wrap items-center shadow-md bg-white gap-10 p-8 rounded-md">
+        <div className="">
+          <h1 className="text-2xl font-bold text-center text-rose-700">
+            {user?.data.user.firstName} {user?.data.user.lastName}{" "}
+            {user?.data.user.middleName}
+          </h1>
+          <hr className=" w-72 " />
+          <small className=" text-center mb-4 block">
+            {user?.data.user.position}
+          </small>
+          <small className="block">
+            <strong>Practice Area:</strong> {user?.data.user.practiceArea}
+          </small>
+          <small className="block">
+            {" "}
+            <strong>Year of Call: </strong>
+            {formatYear(user?.data.user.yearOfCall)}
+          </small>
+          <small className="block">
+            {" "}
+            <strong>University Attended: </strong>
+            {user?.data.user.universityAttended}
+          </small>
+          <small className="block">
+            {" "}
+            <strong>Law School Attended: </strong>
+            {user?.data.user.lawSchoolAttended}
+          </small>
+          <hr className=" w-72 " />
+
+          <small className="mt-6 flex flex-col  ">
+            <p className="flex  items-center  gap-2">
+              <MdMail className=" text-rose-700" /> {user?.data.user.email}
+            </p>
+            <p className="flex  items-center gap-2">
+              <FaPhone className=" text-rose-700" />
+              {user?.data.user.phone}
+            </p>
+            <p className="flex  items-center gap-2">
+              <FaAddressBook className=" text-rose-700" />{" "}
+              {user?.data.user.address}
+            </p>
+            <p>{user?.data.user.otherPosition}</p>
+            <hr />
+            <p className=" mt-4 w-96">
+              {" "}
+              <strong>Bio:</strong> <i>{user?.data.user.bio}</i>
+            </p>
+          </small>
+
+          <Link to="edit" className="mt-5 block">
+            <Button>Edit Profile</Button>
+          </Link>
+        </div>
+
         <img
           // use avatar as default image if user does not upload image
           src={
@@ -77,25 +133,11 @@ const Profile = () => {
               : avatar
           }
           alt={`${user?.data.user}'s profile image`}
-          className="w-44 h-44 mt-6  object-cover rounded-full border-4 border-slate-500"
+          className="object-cover object-right-top h-48 w-48   rounded-full border-4 border-slate-500"
         />
-        <h1>
-          Full Name: {user?.data.user.firstName} {user?.data.user.lastName}{" "}
-        </h1>
-        <p>
-          <strong>Email:</strong> {user?.data.user.email}
-        </p>
-        <p>Phone: {user?.data.user.phone}</p>
-        <p>Address: {user?.data.user.address}</p>
-        <p>Position: {user?.data.user.position}</p>
-        <p>Year of Call: {user?.data.user.yearOfCall}</p>
-        <p>{user?.data.user.otherPosition}</p>
-        <p>Practice Area: {user?.data.user.practiceArea}</p>
-        <p>University Attended: {user?.data.user.universityAttended}</p>
-        <p>Law School Attended: {user?.data.user.lawSchoolAttended}</p>
-        <p>Bio: {user?.data.user.bio}</p>
       </div>
 
+      {/* RESET PASSWORD FORM */}
       <div>
         <form
           onSubmit={handleSubmit}

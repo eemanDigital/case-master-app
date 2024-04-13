@@ -10,15 +10,12 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const Login = () => {
-  // const { inputValue, handleChange } = useContext(FormContext);
   const [click, setClick] = useState(false);
-  // const [photo, setPhoto] = useState("");
-  // const { login, isLoading, error, setError } = useLogin();
   const navigate = useNavigate();
 
   const { user } = useAuthContext();
 
-  console.log(user);
+  // console.log("USER", user.data.user);
 
   const [inputValue, setInputValue] = useState({
     email: "",
@@ -28,7 +25,6 @@ const Login = () => {
   // getting data from out custom hook
   const { data, loading, error, authenticate } = useAuth();
 
-  console.log("DATA", data);
   function handleChange(e) {
     const inputText = e.target.value;
     const inputName = e.target.name;

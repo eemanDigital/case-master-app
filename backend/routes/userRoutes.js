@@ -13,8 +13,9 @@ const {
   updatePassword,
   forgotPassword,
   resetPassword,
-  uploadUserPhoto,
 } = require("../controllers/authController");
+
+const { uploadUserPhoto } = require("../utils/handleFile");
 
 const userRouter = express.Router();
 
@@ -27,7 +28,7 @@ userRouter.patch("/resetpassword/:token", resetPassword);
 userRouter.get("/logout", logout);
 userRouter.get("/loggedIn", isLoggedIn);
 userRouter.get("/:userId", getUser);
-userRouter.patch("/updateUser", protect, updateUser);
+userRouter.patch("/updateUser", protect, uploadUserPhoto, updateUser);
 userRouter.patch("/changepassword", protect, updatePassword);
 
 module.exports = userRouter;

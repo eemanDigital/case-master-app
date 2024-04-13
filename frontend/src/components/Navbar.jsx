@@ -4,6 +4,7 @@ import { RiMenu3Fill } from "react-icons/ri";
 import { AiOutlineClose } from "react-icons/ai";
 import {} from "react-icons/ri";
 import { useState } from "react";
+import { useAuthContext } from "../hooks/useAuthContext";
 
 const navItems = [
   {
@@ -34,7 +35,7 @@ let mainNav = navItems.map((item, index) => {
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  // const [click, setClick] = useState(false);
+  const { user } = useAuthContext();
 
   return (
     <nav className="md:px-10 px-8 md:py-0 py-2 md:flex items-center bg-white justify-between  z-50">
@@ -69,9 +70,15 @@ const Navbar = () => {
         <ul className=" md:flex gap-4 pr-10 items-center justify-between ">
           {mainNav.slice(0, 3)}
 
-          <li className="md:ml-10">
-            <NavLink to="signup">Sign in</NavLink>
-          </li>
+          {!user ? (
+            <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
+              <NavLink to="signup">Sign in</NavLink>
+            </li>
+          ) : (
+            <li className="btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block ">
+              <NavLink to="dashboard">Dashboard</NavLink>
+            </li>
+          )}
           <li className="my-4">
             <NavLink className=" btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block w-32 hover:bg-gray-500 md:static">
               Get Started
