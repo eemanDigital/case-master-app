@@ -88,7 +88,9 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "position",
     "yearOfCall",
     "otherPosition",
-    "practiceArea"
+    "practiceArea",
+    "universityAttended",
+    "lawSchoolAttended"
   );
 
   // 3) Update user document

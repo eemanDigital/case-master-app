@@ -13,11 +13,23 @@ import "react-toastify/dist/ReactToastify.css";
 // const URL = "http://localhost:3000/api/v1/users/signup";
 
 const SignUp = () => {
-  const positions = ["Counsel", "Principal", "Intern"];
+  const positions = [
+    "Select a position",
+    "Principal",
+    "Managing Partner",
+    "Head of Chambers",
+    "Associate",
+    "Senior Associate",
+    "Junior Associate",
+    "Counsel",
+    "Intern",
+    "Secretary",
+    "Para-legal",
+    "Client",
+    "Other",
+  ];
   const { data, loading, error, authenticate } = useAuth();
-
   const [click, setClick] = useState(false);
-  // const [photo, setPhoto] = useState("");
 
   const [inputValue, setInputValue] = useState({
     firstName: "",
@@ -38,11 +50,13 @@ const SignUp = () => {
     lawSchoolAttended: "",
   });
 
-  // const { photo } = inputValue;
+  // derived state to check if user select "Other"
+  const getOtherFieldSelected = inputValue.position === "Other";
 
   // handleChange function
   function handleChange(e) {
     const { name, value, files } = e.target;
+
     setInputValue((prevData) => ({
       ...prevData,
       [name]: name === "photo" ? files[0] : value, // Handle file or text input
@@ -55,18 +69,14 @@ const SignUp = () => {
 
     // set custom headers
     const customHeaders = {
-      // Authorization: "Bearer your_token_here",
-      "Content-Type": "multipart/form-data", // Example of custom header
+      "Content-Type": "multipart/form-data",
     };
 
     try {
       // Call fetchData with your endpoint, method, payload, and any additional arguments
       await authenticate("users/signup", "post", inputValue, customHeaders);
-
-      // console.log(inputValue);
-      // Handle successful response
     } catch (err) {
-      // Handle error
+      console.log(err);
     }
   }
 
@@ -227,18 +237,21 @@ const SignUp = () => {
                 onChange={handleChange}
               />
             </div>
-
-            <div>
-              <Input
-                type="text"
-                label="other"
-                placeholder="specify position"
-                htmlFor="otherPosition"
-                value={inputValue.otherPosition}
-                name="otherPosition"
-                onChange={handleChange}
-              />
-            </div>
+            {/* conditionally render select position field */}
+            {getOtherFieldSelected && (
+              <div>
+                <Input
+                  required
+                  type="text"
+                  label="other"
+                  placeholder="specify position"
+                  htmlFor="otherPosition"
+                  value={inputValue.otherPosition}
+                  name="otherPosition"
+                  onChange={handleChange}
+                />
+              </div>
+            )}
 
             <div>
               <Input

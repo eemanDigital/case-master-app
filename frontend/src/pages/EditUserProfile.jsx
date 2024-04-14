@@ -9,7 +9,21 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const EditUserProfile = () => {
-  const positions = ["Counsel", "Principal", "Intern"];
+  const positions = [
+    "Select a position",
+    "Principal",
+    "Managing Partner",
+    "Head of Chambers",
+    "Associate",
+    "Senior Associate",
+    "Junior Associate",
+    "Counsel",
+    "Intern",
+    "Secretary",
+    "Para-legal",
+    "Client",
+    "Other",
+  ];
   const { data, loading, error, authenticate } = useAuth();
 
   const [click, setClick] = useState(false);
@@ -30,6 +44,7 @@ const EditUserProfile = () => {
     universityAttended: "",
     lawSchoolAttended: "",
   });
+  const getOtherFieldSelected = inputValue.position === "Other";
 
   // handleChange function
   function handleChange(e) {
@@ -203,17 +218,21 @@ const EditUserProfile = () => {
             />
           </div>
 
-          <div>
-            <Input
-              type="text"
-              label="other"
-              placeholder="specify position"
-              htmlFor="otherPosition"
-              value={inputValue.otherPosition}
-              name="otherPosition"
-              onChange={handleChange}
-            />
-          </div>
+          {/* conditionally render select position field */}
+          {getOtherFieldSelected ? (
+            <div>
+              <Input
+                required
+                type="text"
+                label="other"
+                placeholder="specify position"
+                htmlFor="otherPosition"
+                value={inputValue.otherPosition}
+                name="otherPosition"
+                onChange={handleChange}
+              />
+            </div>
+          ) : null}
 
           <div>
             <Input

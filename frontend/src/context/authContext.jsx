@@ -9,6 +9,8 @@ export const authReducer = (state, action) => {
       return { user: action.payload };
     case "LOGOUT":
       return { user: null };
+    // case "GETDATA":
+    //   return { fetchData: action.payload };
     default:
       return state;
   }
@@ -19,7 +21,10 @@ export const authReducer = (state, action) => {
 // export const AuthContext = createContext(initialState);
 
 const AuthContextProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, { user: null });
+  const [state, dispatch] = useReducer(authReducer, {
+    user: null,
+    fetchData: null,
+  });
 
   //ensure we the token is retained when page is refreshed/reloaded
   useEffect(() => {

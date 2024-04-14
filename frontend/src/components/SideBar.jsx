@@ -135,11 +135,11 @@ const SideBar = ({ isOpen, handleOpen }) => {
               <img
                 // use avatar as default image if user does not upload image
                 src={
-                  user
+                  user?.data?.user?.photo
                     ? `http://localhost:3000/images/${user?.data?.user?.photo}`
                     : avatar
                 }
-                alt={`${user?.data.user}'s profile image`}
+                alt={`${user?.data?.user}'s profile image`}
                 className="w-12 h-12  mt-6  object-cover object-right-top rounded-full"
               />
               <span className="tooltiptext">Profile</span>

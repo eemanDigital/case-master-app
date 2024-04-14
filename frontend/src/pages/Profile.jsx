@@ -5,8 +5,8 @@ import avatar from "../assets/avatar.png";
 import { formatYear } from "../utils/formatDate";
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { FaAddressBook, FaVoicemail, FaPhone } from "react-icons/fa";
-import { MdEmail, MdMail } from "react-icons/md";
+import { FaAddressBook, FaPhone } from "react-icons/fa";
+import { MdMail } from "react-icons/md";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -16,6 +16,8 @@ const Profile = () => {
   const [click, setClick] = useState(false);
 
   const { user } = useAuthContext();
+
+  // console.log(user?.data.user.otherPosition, user?.data.user.position);
 
   const [inputValue, setInputValue] = useState({
     passwordCurrent: "",
@@ -62,61 +64,65 @@ const Profile = () => {
     setClick(() => !click);
   }
 
+  // make position falsy when "Other" is selected to avoid having both "position" and "otherPosition" fields truthy
+  if (user?.data?.user?.position === "Other") {
+    user.data.user.position = null;
+  }
+
   //form input styling
   let inputStyle = ` appearance-none block  sm:w-[344px] bg-gray-200 text-red border ${
     error && "border-red-500"
   } rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`;
 
   return (
-    <section className="flex flex-col justify-between items-center">
+    <section className="flex flex-col justify-center items-center ">
       {/* PROFILE CARD */}
       <div className="flex justify-center md:flex-row flex-col  flex-wrap items-center shadow-md bg-white gap-10 p-8 rounded-md">
-        <div className="">
+        <div className="flex flex-col items-center md:items-start  justify-start">
           <h1 className="text-2xl font-bold text-center text-rose-700">
-            {user?.data.user.firstName} {user?.data.user.lastName}{" "}
-            {user?.data.user.middleName}
+            {user?.data?.user?.firstName} {user?.data?.user?.lastName}{" "}
+            {user?.data?.user?.middleName}
           </h1>
           <hr className=" w-72 " />
-          <small className=" text-center mb-4 block">
-            {user?.data.user.position}
+          <small className="text-center mb-4 block">
+            {user?.data?.user?.position ?? user?.data?.user?.otherPosition}
           </small>
           <small className="block">
-            <strong>Practice Area:</strong> {user?.data.user.practiceArea}
+            <strong>Practice Area:</strong> {user?.data?.user?.practiceArea}
           </small>
           <small className="block">
             {" "}
             <strong>Year of Call: </strong>
-            {formatYear(user?.data.user.yearOfCall)}
+            {formatYear(user?.data?.user?.yearOfCall)}
           </small>
           <small className="block">
             {" "}
             <strong>University Attended: </strong>
-            {user?.data.user.universityAttended}
+            {user?.data?.user?.universityAttended}
           </small>
           <small className="block">
             {" "}
             <strong>Law School Attended: </strong>
-            {user?.data.user.lawSchoolAttended}
+            {user?.data?.user?.lawSchoolAttended}
           </small>
           <hr className=" w-72 " />
 
           <small className="mt-6 flex flex-col  ">
             <p className="flex  items-center  gap-2">
-              <MdMail className=" text-rose-700" /> {user?.data.user.email}
+              <MdMail className=" text-rose-700" /> {user?.data?.user?.email}
             </p>
             <p className="flex  items-center gap-2">
               <FaPhone className=" text-rose-700" />
-              {user?.data.user.phone}
+              {user?.data?.user?.phone}
             </p>
             <p className="flex  items-center gap-2">
               <FaAddressBook className=" text-rose-700" />{" "}
-              {user?.data.user.address}
+              {user?.data?.user?.address}
             </p>
-            <p>{user?.data.user.otherPosition}</p>
             <hr />
             <p className=" mt-4 w-96">
               {" "}
-              <strong>Bio:</strong> <i>{user?.data.user.bio}</i>
+              <strong>Bio:</strong> <i>{user?.data?.user?.bio}</i>
             </p>
           </small>
 
@@ -125,23 +131,26 @@ const Profile = () => {
           </Link>
         </div>
 
-        <img
-          // use avatar as default image if user does not upload image
-          src={
-            user
-              ? `http://localhost:3000/images/${user?.data.user.photo}`
-              : avatar
-          }
-          alt={`${user?.data.user}'s profile image`}
-          className="object-cover object-right-top h-48 w-48   rounded-full border-4 border-slate-500"
-        />
+        <div className=" w-max-[300px]">
+          <img
+            // use avatar as default image if user does not upload image
+            src={
+              // user
+              user?.data?.user?.photo
+                ? `http://localhost:3000/images/${user?.data?.user?.photo}`
+                : avatar
+            }
+            alt={`${user?.data?.user}'s profile image`}
+            className="object-cover object-right-top h-36 w-36  sm:h-48 sm:w-48   rounded-full border-4 border-slate-500"
+          />
+        </div>
       </div>
 
       {/* RESET PASSWORD FORM */}
       <div>
         <form
           onSubmit={handleSubmit}
-          className=" flex  flex-col justify-center items-center bg-white  basis-2/5  shadow-md rounded-md px-8 pt-6 pb-8 m-4">
+          className=" flex  flex-col justify-center items-center bg-white  sm:basis-2/5  shadow-md rounded-md px-8 pt-6 pb-8 m-4">
           <div className="flex  flex-col items-center -mx-3  mb-6 gap-2">
             <h1 className="text-4xl font-bold mb-5  capitalize">
               reset password
