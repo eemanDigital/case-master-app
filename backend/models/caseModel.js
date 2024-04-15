@@ -23,16 +23,18 @@ const caseSchema = new mongoose.Schema({
       },
     ],
   },
-  otherParty: {
-    title: String,
-    processesFiled: [String],
-    name: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
-  },
+  otherParty: [
+    {
+      title: String,
+      processesFiled: [String],
+      name: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+    },
+  ],
   suitNo: {
     type: String,
     trim: true,
