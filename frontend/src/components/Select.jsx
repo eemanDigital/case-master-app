@@ -1,5 +1,7 @@
+// import { useForm } from "react-hook-form";
+
 const Select = ({ label, options, ...props }) => {
-  //   console.log(options);
+  // const { register } = useForm();
 
   return (
     <div className="w-full  px-3 mb-6 md:mb-0">
@@ -9,11 +11,17 @@ const Select = ({ label, options, ...props }) => {
       <div className="relative">
         <select
           {...props}
+          // {...register(selectFieldName)}
           className="appearance-none block w-full bg-gray-200 text-gray-700 border border-red-500 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white"
           // className="block appearance-none w-full bg-gray-200 border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
           id="grid-state">
           {options.map((el, index) => {
-            return <option key={index}>{el}</option>;
+            // console.log(el);
+            return (
+              <option value={el} key={index}>
+                {el}
+              </option>
+            );
           })}
         </select>
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">

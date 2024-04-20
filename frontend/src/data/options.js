@@ -1,7 +1,8 @@
 // case status options
-export const status = ["Pending", "Closed", "Decided"];
+export const status = ["---Select---", "Pending", "Closed", "Decided"];
 // court names options
 export const courts = [
+  "---Select---",
   "Supreme Court",
   "Court of Appeal",
   "Federal High Court",
@@ -15,10 +16,12 @@ export const courts = [
   "Area Court",
   "Coroner",
   "Tribunal",
+  "Others",
 ];
 
 // modes of commencement of case options
 export const modes = [
+  "---Select---",
   "Writ of Summons",
   "Originating Summons",
   "Originating Motion",
@@ -26,4 +29,4 @@ export const modes = [
   "Other",
 ];
 // case priority options
-export const casePriority = ["Low", "Medium", "High"];
+export const casePriority = ["---Select---", "Low", "Medium", "High"];

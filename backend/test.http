@@ -160,3 +160,10 @@ content-type: application/json
 # GET CLIENTS
 GET http://localhost:3000/api/v1/clients  HTTP/1.1 
 content-type: application/json
+
+
+
+
+
+
+

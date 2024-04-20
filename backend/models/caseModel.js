@@ -3,12 +3,11 @@ const mongoose = require("mongoose");
 const caseSchema = new mongoose.Schema({
   firstParty: {
     title: String,
-    processesFiled: [String],
     name: [
       {
         type: String,
         trim: true,
-        required: [true, "A case must have a name"],
+        // required: [true, "A case must have a name"],
       },
     ],
   },
@@ -19,7 +18,7 @@ const caseSchema = new mongoose.Schema({
       {
         type: String,
         trim: true,
-        required: [true, "A case must have a name"],
+        // required: [true, "A case must have a name"],
       },
     ],
   },
@@ -35,10 +34,11 @@ const caseSchema = new mongoose.Schema({
       ],
     },
   ],
+
   suitNo: {
     type: String,
     trim: true,
-    required: [true, "A case must have a suit no"],
+    // required: [true, "A case must have a suit no"],
     unique: [true, "This suit no. has been used"],
     trim: true,
   },
@@ -46,7 +46,7 @@ const caseSchema = new mongoose.Schema({
   courtName: {
     type: String,
     trim: true,
-    required: [true, "Court's name is required"],
+    // required: [true, "Court's name is required"],
     enum: {
       values: [
         "Supreme Court",
@@ -94,7 +94,7 @@ const caseSchema = new mongoose.Schema({
   modeOfCommencement: {
     type: String,
     trim: true,
-    required: [true, "State the mode of commencement of the case"],
+    // required: [true, "State the mode of commencement of the case"],
     enum: {
       values: [
         "Writ of Summons",
