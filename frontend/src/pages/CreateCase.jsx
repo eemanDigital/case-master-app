@@ -108,6 +108,33 @@ export default function CreateCase() {
     name: "otherParty", // Array field path
   });
 
+  // const addProcessFiled = (index) => {
+  //   const processesFiled = otherPartyFields[index].processesFiled || [];
+  //   processesFiled.push("");
+  //   updateOtherPartyField(index, "processesFiled", processesFiled);
+  //   // Add this line to prevent adding a new title and name field
+  //   updateOtherPartyField(index, "title", "");
+  //   updateOtherPartyField(index, "name", "");
+  // };
+
+  const addProcessFiled = (index) => {
+    appendOtherParty({
+      processesFiled: ["", ...otherPartyFields[index].processesFiled],
+    });
+  };
+
+  const removeProcessFiled = (index, processIndex) => {
+    const processesFiled = otherPartyFields[index].processesFiled || [];
+    processesFiled.splice(processIndex, 1);
+    updateOtherPartyField(index, "processesFiled", processesFiled);
+  };
+
+  const updateOtherPartyField = (index, fieldName, value) => {
+    const updatedOtherParty = [...otherPartyFields];
+    updatedOtherParty[index][fieldName] = value;
+    appendOtherParty(updatedOtherParty);
+  };
+
   // JUDGE FIELD
   const {
     fields: judgeFields,
@@ -346,67 +373,59 @@ export default function CreateCase() {
         {/* OTHER PARTY */}
         <div>
           <h1 className="text-4xl capitalize">Other Party</h1>
-          {otherPartyFields.map((party, partyIndex) => (
-            <div key={partyIndex}>
-              <label htmlFor={`otherParty[${partyIndex}].title`}>Title</label>
-              <input
-                className={inputFieldStyle}
-                type="text"
-                {...register(`otherParty[${partyIndex}].title`)}
-                defaultValue={party.title}
-              />
+          {otherPartyFields.map((item, index) => (
+            <div key={item.id}>
+              <label>
+                Title:
+                <input type="text" {...register(`otherParty.${index}.title`)} />
+                {errors.otherParty?.[index]?.title && (
+                  <div>{errors.otherParty[index].title.message}</div>
+                )}
+              </label>
 
-              <label htmlFor={`otherParty[${partyIndex}].name`}>Name</label>
-              <input
-                className={inputFieldStyle}
-                type="text"
-                {...register(`otherParty[${partyIndex}].name`)}
-                defaultValue={party.name}
-              />
+              <label>
+                Name:
+                <input type="text" {...register(`otherParty.${index}.name`)} />
+                {errors.otherParty?.[index]?.name && (
+                  <div>{errors.otherParty[index].name.message}</div>
+                )}
+              </label>
 
-              <label>Processes Filed</label>
-              {party?.processesFiled?.map((process, processIndex) => (
-                <div key={processIndex}>
-                  <input
-                    className={inputFieldStyle}
-                    type="text"
-                    {...register(
-                      `otherParty[${partyIndex}].processesFiled[${processIndex}]`
-                    )}
-                    defaultValue={process}
-                  />
-                  <button
-                    className={btnStyle}
-                    type="button"
-                    onClick={() => removeOtherParty(partyIndex, processIndex)}>
-                    Remove Process
-                  </button>
-                </div>
-              ))}
-              <button
-                className={btnStyle}
-                type="button"
-                onClick={() => appendOtherParty(partyIndex)}>
-                Add Process
-              </button>
-              <button
-                className={btnStyle}
-                type="button"
-                onClick={() => removeOtherParty(partyIndex)}>
-                Remove Party
+              <label>
+                Processes Filed:
+                {item.processesFiled &&
+                  item.processesFiled.map((process, processIndex) => (
+                    <div key={processIndex}>
+                      <input
+                        type="text"
+                        {...register(
+                          `otherParty.${index}.processesFiled.${processIndex}`
+                        )}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeProcessFiled(index, processIndex)}>
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                <button type="button" onClick={() => addProcessFiled(index)}>
+                  Add Process Filed
+                </button>
+              </label>
+
+              <button type="button" onClick={() => removeOtherParty(index)}>
+                Remove
               </button>
             </div>
           ))}
-          <button
-            className={btnStyle}
-            type="button"
-            onClick={() =>
-              appendOtherParty({ title: "", name: "", processesFiled: [] })
-            }>
+
+          <button type="button" onClick={() => appendOtherParty({})}>
             Add Other Party
           </button>
-        </div>
 
+          {/* <input type="submit" value="Submit" /> */}
+        </div>
         {/* mode of commencement */}
         <div className="flex flex-wrap gap-4 justify-between  items-center rounded-md  shadow-inner bg-slate-100 p-4 my-3">
           <div className="relative">
