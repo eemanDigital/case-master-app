@@ -1,58 +1,24 @@
-import { useState } from "react";
 import Input from "../components/Inputs";
+import usePartyChangeHooks from "../hooks/usePartyHook";
 import Label from "../components/Label";
 import Button from "../components/Button";
-import { RiDeleteBin5Line } from "react-icons/ri";
+import DeleteIcon from "../components/DeleteIcon";
 
 const Forms = () => {
-  const [formData, setFormData] = useState({
-    firstParty: {
-      title: "",
-      name: [],
-      processesFiled: [],
-    },
-  });
-
-  const [newItem, setNewItem] = useState(""); // New state variable
-
-  const handleTitleChange = (e) => {
-    setFormData((prevState) => {
-      return {
-        ...prevState,
-        firstParty: {
-          ...prevState.firstParty,
-          title: e.target.value,
-        },
-      };
-    });
-  };
-
-  const handleNameChange = (e) => {
-    setNewItem(e.target.value); // Update the newItem state
-  };
-
-  const addItems = (name) => {
-    setFormData((prevValue) => {
-      return {
-        firstParty: {
-          ...prevValue.firstParty,
-          [name]: prevValue.firstParty[name].concat(newItem),
-        },
-      };
-    });
-    setNewItem(""); // Reset the newItem state to an empty string
-  };
-
-  const removeItem = (index, name) => {
-    setFormData((prevValue) => {
-      return {
-        firstParty: {
-          ...prevValue.firstParty,
-          [name]: prevValue.firstParty[name].filter((_, i) => i !== index),
-        },
-      };
-    });
-  };
+  const {
+    formData,
+    newFirstPartyName,
+    newFirstPartyProcessesFiled,
+    newSecondPartyName,
+    newSecondPartyProcessesFiled,
+    handleFirstPartyNameChange,
+    handleFirstPartyProcessesFiledChange,
+    handleTitleChange,
+    handleSecondPartyNameChange,
+    handleSecondPartyProcessesFiledChange,
+    addItems,
+    removeItem,
+  } = usePartyChangeHooks();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -60,70 +26,170 @@ const Forms = () => {
     console.log("Form submitted:", formData);
   };
 
-  //   console.log("DATA", formData);
+  const ulStyle = "flex flex-col text-[.8rem]";
+
+  const liStyle =
+    "flex gap-1 m-[1px] justify-between bg-white rounded-md px-2 py-1";
 
   return (
     <div>
       <form onSubmit={handleSubmit}>
+        {/* FIRST PARTY */}
+
         {/* firstParty title */}
-        <Label text="title" />
-        <Input
-          type="text"
-          name="title"
-          value={formData.firstParty.title}
-          onChange={handleTitleChange}
-        />
+        <h1 className="text-4xl">First Party</h1>
 
-        {/* firstParty name field */}
-        <div>
-          <Label text="name" />
-          <Input
-            type="text"
-            name="name"
-            value={newItem}
-            onChange={handleNameChange}
-          />
-          <ul>
-            {formData.firstParty.name.map((field, index) => (
-              <li key={index}>
-                {field}
-                <button type="button" onClick={() => removeItem(index, "name")}>
-                  <RiDeleteBin5Line />
-                </button>
-              </li>
-            ))}
-            <Button type="button" onClick={() => addItems("name")}>
-              {" "}
-              add item
-            </Button>
-          </ul>
+        <div className="flex justify-between  flex-wrap bg-gray-200 p-3 mt-2 rounded-md">
+          <div>
+            <Label text="title" />
+            <Input
+              type="text"
+              name="title"
+              placeholder="e.g. Plaintiff"
+              value={formData.firstParty?.title}
+              onChange={(e) => handleTitleChange("firstParty", e.target.value)}
+            />
+
+            {/* firstParty name field */}
+          </div>
+          <div>
+            <Label text="name" />
+            <Input
+              type="text"
+              name="name"
+              value={newFirstPartyName}
+              onChange={handleFirstPartyNameChange}
+            />
+
+            <ul className={ulStyle}>
+              {formData.firstParty.name &&
+                formData.firstParty.name.map((field, index) => (
+                  <li key={index} className={liStyle}>
+                    {field}
+                    <button
+                      type="button"
+                      onClick={() => removeItem(index, "firstParty", "name")}>
+                      <DeleteIcon />
+                    </button>
+                  </li>
+                ))}
+              <Button
+                type="button"
+                onClick={() => addItems("firstParty", "name")}>
+                {" "}
+                add item
+              </Button>
+            </ul>
+          </div>
+
+          {/* firstParty processesFiled  */}
+          <div>
+            <Label text="process filed" />
+            <Input
+              type="text"
+              name="processesFiled"
+              value={newFirstPartyProcessesFiled}
+              onChange={handleFirstPartyProcessesFiledChange}
+            />
+            <ul className={ulStyle}>
+              {formData.firstParty.processesFiled &&
+                formData.firstParty.processesFiled.map((field, index) => (
+                  <li key={index} className={liStyle}>
+                    {field}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        removeItem(index, "firstParty", "processesFiled")
+                      }>
+                      <DeleteIcon />
+                    </button>
+                  </li>
+                ))}
+              <Button
+                type="button"
+                onClick={() => addItems("firstParty", "processesFiled")}>
+                {" "}
+                add item
+              </Button>
+            </ul>
+          </div>
         </div>
+        <br />
+        <br />
+        {/* SECOND PARTY */}
+        {/* secondParty title */}
+        <h1 className="text-4xl">second Party</h1>
 
-        {/* firstParty processesFiled  */}
-        <div>
-          <Label text="process filed" />
-          <Input
-            type="text"
-            name="processesFiled"
-            value={newItem}
-            onChange={handleNameChange}
-          />
-          <ul>
-            {formData.firstParty.processesFiled.map((field, index) => (
-              <li key={index}>
-                {field}
-                <button
-                  type="button"
-                  onClick={() => removeItem(index, "processesFiled")}>
-                  <RiDeleteBin5Line />
-                </button>
-              </li>
-            ))}
-            <Button type="button" onClick={() => addItems("processesFiled")}>
-              {" "}
-              add item
-            </Button>
-          </ul>
+        <div className="flex justify-between  flex-wrap bg-gray-200 p-3 rounded-md">
+          <div>
+            <Label text="title" />
+            <Input
+              type="text"
+              name="title"
+              placeholder="e.g. Defendant"
+              value={formData.secondParty?.title}
+              onChange={(e) => handleTitleChange("secondParty", e.target.value)}
+            />
+          </div>
+          {/* secondParty name field */}
+          <div>
+            <Label text="name" />
+            <Input
+              type="text"
+              name="name"
+              value={newSecondPartyName}
+              onChange={handleSecondPartyNameChange}
+            />
+            <ul className={ulStyle}>
+              {formData.secondParty?.name.map((field, index) => (
+                <li key={index} className={liStyle}>
+                  {field}
+                  <button
+                    type="button"
+                    onClick={() => removeItem(index, "secondParty", "name")}>
+                    <DeleteIcon />
+                  </button>
+                </li>
+              ))}
+              <Button
+                type="button"
+                onClick={() => addItems("secondParty", "name")}>
+                {" "}
+                add item
+              </Button>
+            </ul>
+          </div>
+
+          {/* secondParty processesFiled  */}
+          <div>
+            <Label text="process filed" />
+            <Input
+              type="text"
+              name="processesFiled"
+              value={newSecondPartyProcessesFiled}
+              onChange={handleSecondPartyProcessesFiledChange}
+            />
+            <ul className={ulStyle}>
+              {formData.secondParty?.processesFiled.map((field, index) => (
+                <li key={index} className={liStyle}>
+                  {field}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      removeItem(index, "secondParty", "processesFiled")
+                    }>
+                    <DeleteIcon />
+                  </button>
+                </li>
+              ))}
+              <Button
+                type="button"
+                onClick={() => addItems("secondParty", "processesFiled")}>
+                {" "}
+                add item
+              </Button>
+            </ul>
+          </div>
         </div>
 
         <Button type="submit">Submit Form</Button>

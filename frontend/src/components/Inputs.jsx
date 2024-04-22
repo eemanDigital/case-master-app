@@ -11,7 +11,7 @@ const Input = ({ label, text, textarea, inputStyle, ...props }) => {
         <textarea
           {...props}
           placeholder
-          className="appearance-none block w-full bg-gray-200 text-gray-700 border border-red-500 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white"
+          className="appearance-none block w-full bg-gray-200 text-gray-700 border  rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white"
         />
       ) : (
         <input
@@ -19,7 +19,7 @@ const Input = ({ label, text, textarea, inputStyle, ...props }) => {
           {...props}
           className={
             inputStyle ||
-            `appearance-none block w-full bg-gray-200 text-gray-700 border border-red-500 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`
+            `appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-900 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`
           }
         />
       )}
