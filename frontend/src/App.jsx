@@ -19,7 +19,8 @@ import ResetPassword from "./pages/ResetPassword.jsx";
 import Profile from "./pages/Profile.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
 import EditUserProfile from "./pages/EditUserProfile.jsx";
-import CreateCase from "./pages/CreateCase.jsx";
+// import CreateCase from "./pages/CreateCase.jsx";
+import Forms from "./pages/Forms";
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -43,7 +44,8 @@ function App() {
           element={<DashboardLayout isOpen={isOpen} handleOpen={handleOpen} />}>
           <Route index element={<Dashboard />} />
           <Route path="cases" element={<Cases open={isOpen} />} />
-          <Route path="create-case" element={<CreateCase />} />
+          {/* <Route path="create-case" element={<CreateCase />} /> */}
+          <Route path="create-case" element={<Forms />} />
           <Route path="tasks" element={<Task />} />
           <Route path="billing" element={<Billing />} />
           <Route path="profile" element={<Profile />} />
