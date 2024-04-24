@@ -1,37 +1,33 @@
 const mongoose = require("mongoose");
+// sub-document for party name
+const partyNameSchema = new mongoose.Schema({
+  name: {
+    type: "string",
+    trim: true,
+    // required: [true, "A case must have a name"],
+  },
+});
+
+// sub-document for processes
+const partyProcessSchema = new mongoose.Schema({ name: String });
 
 const caseSchema = new mongoose.Schema({
   firstParty: {
     title: String,
-    name: [
-      {
-        type: String,
-        trim: true,
-        // required: [true, "A case must have a name"],
-      },
-    ],
+    processesFiled: [partyProcessSchema],
+    description: [partyNameSchema],
   },
   secondParty: {
     title: String,
-    processesFiled: [String],
-    name: [
-      {
-        type: String,
-        trim: true,
-        // required: [true, "A case must have a name"],
-      },
-    ],
+    processesFiled: [partyProcessSchema],
+    description: [partyNameSchema],
   },
+
   otherParty: [
     {
       title: String,
-      processesFiled: [String],
-      name: [
-        {
-          type: String,
-          trim: true,
-        },
-      ],
+      processesFiled: [partyProcessSchema],
+      description: [partyNameSchema],
     },
   ],
 
@@ -39,7 +35,7 @@ const caseSchema = new mongoose.Schema({
     type: String,
     trim: true,
     // required: [true, "A case must have a suit no"],
-    unique: [true, "This suit no. has been used"],
+    // unique: [true, "This suit no. has been used"],
     trim: true,
   },
   caseOfficeFileNo: String,

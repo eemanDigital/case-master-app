@@ -68,21 +68,28 @@ content-type: application/json
 {
   "firstParty": {
     "title": "Applicant",
-    "processesFiled": ["Complaint", "Interrogatories"],
-    "name": ["Adeleke"]
+    "processesFiled": [{"name":"Complaint", "name": "Interrogatories"}],
+    "description": [{"name":"Adeleke"}]
   },
   "secondParty": {
     "title": "Respondent",
-    "processesFiled": ["Answer to Complaint", "Motion to Dismiss"],
-    "name": ["Aduku"]
+    "processesFiled": [{"name":"Answer to Complaint"},  {"name":"Motion to Dismiss"}],
+    "description": [{"name":"Aduku"}]
   },
-  "otherParty": {
+  "otherParty": [{
     "title": "Third Party",
-    "processesFiled": ["Cross-claim"],
-    "name": ["Charlie Brown"]
+    "processesFiled": [{"name":"Answer to Complaint"},  {"name":"Motion to Dismiss"}],
+    "description": [{"name":"Aduku"}]
   },
-  "suitNo": "MA/567/2023",
-  "caseOfficeFileNo": "COF/890/2023",
+  
+  {
+    "title": "Respondent",
+    "processesFiled": [{"name":"Answer to Complaint"},  {"name":"Motion to Dismiss"}],
+    "description": [{"name":"Aduku"}]
+  }
+  ],
+  "suitNo": "SC/56723/2023",
+  "caseOfficeFileNo": "FA/890/2023",
   "courtName": "Court of Appeal",
   "judge": {
     "name": ["Justice Sarah Clark"]

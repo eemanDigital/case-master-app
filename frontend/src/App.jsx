@@ -20,7 +20,7 @@ import Profile from "./pages/Profile.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
 import EditUserProfile from "./pages/EditUserProfile.jsx";
 // import CreateCase from "./pages/CreateCase.jsx";
-import Forms from "./pages/Forms";
+import CaseForm from "./pages/CaseForm.jsx";
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,7 +45,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="cases" element={<Cases open={isOpen} />} />
           {/* <Route path="create-case" element={<CreateCase />} /> */}
-          <Route path="create-case" element={<Forms />} />
+          <Route path="create-case" element={<CaseForm />} />
           <Route path="tasks" element={<Task />} />
           <Route path="billing" element={<Billing />} />
           <Route path="profile" element={<Profile />} />
