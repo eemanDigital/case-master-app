@@ -50,7 +50,7 @@ const DB = process.env.DATABASE.replace(
 
 // connection to mongoose - MONGODB LOCAL DATABASE
 mongoose
-  .connect(process.env.DATABASE_LOCAL, { autoIndex: true })
+  .connect(process.env.DATABASE_LOCAL, {})
   .then(() => {
     console.log("Database connected");
   })

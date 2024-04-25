@@ -810,3 +810,90 @@
 //     </>
 //   );
 // }
+
+<Form.List name="otherParty">
+  {(fields, { add, remove }) => (
+    <div>
+      {fields.map((field) => (
+        <Card
+          className=""
+          size="small"
+          title={`Other Parties ${field.name + 1}`}
+          key={field.key}
+          extra={
+            <DeleteOutlined
+              className="text-red-700"
+              onClick={() => {
+                remove(field.name);
+              }}
+            />
+          }>
+          <Form.Item label="Title" name={[field.name, "title"]}>
+            <Input />
+          </Form.Item>
+
+          {/* Nest Form.otherParty */}
+          <div className="flex justify-between  items-center">
+            <Form.Item label="Name" noStyle>
+              <Form.List name={[field.name, "description"]}>
+                {(subFields, subOpt) => (
+                  <div>
+                    {subFields.map((subField) => (
+                      <Space.Compact key={subField.key} className="flex my-2 ">
+                        <Form.Item noStyle name={[subField.name, "name"]}>
+                          <Input placeholder="Enter Party's name" />
+                        </Form.Item>
+                        <Button>
+                          <DeleteOutlined
+                            className="text-red-700"
+                            onClick={() => {
+                              subOpt.remove(subField.name);
+                            }}
+                          />
+                        </Button>
+                      </Space.Compact>
+                    ))}
+                    <Button type="dashed" onClick={() => subOpt.add()}>
+                      + Add Name
+                    </Button>
+                  </div>
+                )}
+              </Form.List>
+
+              {/* other party processes */}
+
+              <Form.List name={[field.name, "processesFiled"]}>
+                {(subFields, subOpt) => (
+                  <div>
+                    {subFields.map((subField) => (
+                      <Space.Compact key={subField.key} className="flex my-2">
+                        <Form.Item noStyle name={[subField.name, "name"]}>
+                          <Input placeholder="Enter Processes filed by the party" />
+                        </Form.Item>
+                        <Button>
+                          <DeleteOutlined
+                            className="text-red-700"
+                            onClick={() => {
+                              subOpt.remove(subField.name);
+                            }}
+                          />
+                        </Button>
+                      </Space.Compact>
+                    ))}
+                    <Button type="dashed" onClick={() => subOpt.add()}>
+                      + Add Processes
+                    </Button>
+                  </div>
+                )}
+              </Form.List>
+            </Form.Item>
+          </div>
+        </Card>
+      ))}
+
+      <Button type="dashed" onClick={() => add()}>
+        + Add Item
+      </Button>
+    </div>
+  )}
+</Form.List>;

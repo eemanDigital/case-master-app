@@ -1,7 +1,26 @@
 const mongoose = require("mongoose");
 // sub-document for party name
-const partyNameSchema = new mongoose.Schema({
+const nameSchema = new mongoose.Schema({
   name: {
+    type: "string",
+    trim: true,
+    // required: [true, "A case must have a name"],
+  },
+});
+const judgeSchema = new mongoose.Schema({
+  name: {
+    type: "string",
+    trim: true,
+    // required: [true, "A case must have a name"],
+  },
+});
+const caseUpdateSchema = new mongoose.Schema({
+  date: {
+    type: Date,
+    default: Date.now,
+    // required: [true, "A case must have a name"],
+  },
+  update: {
     type: "string",
     trim: true,
     // required: [true, "A case must have a name"],
@@ -15,19 +34,19 @@ const caseSchema = new mongoose.Schema({
   firstParty: {
     title: String,
     processesFiled: [partyProcessSchema],
-    description: [partyNameSchema],
+    description: [nameSchema],
   },
   secondParty: {
     title: String,
     processesFiled: [partyProcessSchema],
-    description: [partyNameSchema],
+    description: [nameSchema],
   },
 
   otherParty: [
     {
       title: String,
       processesFiled: [partyProcessSchema],
-      description: [partyNameSchema],
+      description: [nameSchema],
     },
   ],
 
@@ -62,14 +81,8 @@ const caseSchema = new mongoose.Schema({
       message: "Invalid court name",
     },
   },
-  judge: {
-    name: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
-  },
+  otherCourt: String,
+  judge: [judgeSchema],
   caseSummary: {
     type: String,
     trim: true,
@@ -102,22 +115,14 @@ const caseSchema = new mongoose.Schema({
     },
   },
   otherModeOfCommencement: String,
-  caseStrengths: [String],
-  caseWeaknesses: [String],
+  caseStrengths: [nameSchema],
+  caseWeaknesses: [nameSchema],
   casePriority: {
     type: String,
     enum: ["Low", "Medium", "High"],
   },
-  stepToBeTaken: [String],
-  caseUpdates: [
-    {
-      date: {
-        type: Date,
-        default: Date.now,
-      },
-      update: String,
-    },
-  ],
+  stepToBeTaken: [nameSchema],
+  caseUpdates: [caseUpdateSchema],
   task: [
     {
       type: mongoose.Schema.ObjectId,
@@ -130,7 +135,7 @@ const caseSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
-  client: [String],
+  client: [nameSchema],
   generalComment: String,
 });
 
