@@ -1,5 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
+import { useDataFetch } from "../context/useDataFectch";
 import { DeleteOutlined } from "@ant-design/icons";
+
 import {
   Button,
   Input,
@@ -12,7 +14,7 @@ import {
   Select,
 } from "antd";
 // import DeleteIcon from "../components/DeleteIcon";
-import { useAuth } from "../hooks/useAuth";
+// import { useAuth } from "../hooks/useAuth";
 // import TextArea from "antd/es/input/TextArea";
 import {
   courtOptions,
@@ -61,19 +63,32 @@ const CaseForm = () => {
     stepToBeTaken: [],
     caseUpdates: [{ date: "", update: "" }],
     // task: [],
-    accountOfficer: [],
+    accountOfficer: [{ name: "" }],
     client: [],
     generalComment: "",
   });
+  // destructor authenticate from useAuth
+  const { dataFetcher, data } = useDataFetch();
+  // const { firstName } = data;
+  // console.log("USERS", data.data[3].firstName);
+  // const users = data?.data.map((user, index) => {
+  //   console.log(user, index);
+  // });
 
-  const { authenticate } = useAuth();
+  // getAllUsers
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        await dataFetcher("users");
+      } catch (err) {
+        console.log(err);
+      }
+    };
 
-  // const onFinish = (values) => {
-  //   console.log(values);
+    fetchData(); // Call the async function to fetch data
+  }, []);
 
-  //   authenticate("cases", "POST", values);
-  // };
-
+  // form submit functionalities
   const handleSubmission = useCallback(
     (result) => {
       if (result?.error) {
@@ -86,6 +101,7 @@ const CaseForm = () => {
     [form]
   );
 
+  // submit data
   const onSubmit = useCallback(async () => {
     let values;
     try {
@@ -93,10 +109,10 @@ const CaseForm = () => {
     } catch (errorInfo) {
       return;
     }
-    const result = await authenticate("cases", "POST", values); // Submit the form data to the backend
+    const result = await dataFetcher("cases", "POST", values); // Submit the form data to the backend
     console.log(values);
     handleSubmission(result); // Handle the submission after the API Call
-  }, [form, handleSubmission, authenticate]);
+  }, [form, handleSubmission, dataFetcher]);
 
   return (
     <>
@@ -588,7 +604,24 @@ const CaseForm = () => {
           </Form.Item>
         </div>
 
-        {/* GENERAL COMMENT */}
+        {/* CASE PRIORITY */}
+        <div>
+          <Form.Item
+            name="casePriority"
+            label="Case Priority"
+            initialValue={formData.casePriority}>
+            <Select
+              showSearch
+              style={{
+                width: 200,
+              }}
+              placeholder="Search to Select"
+              options={casePriorityOptions}
+            />
+          </Form.Item>
+        </div>
+
+        {/* CASE SUMMARY */}
         <div>
           <Form.Item
             label="Case Summary"
@@ -762,7 +795,58 @@ const CaseForm = () => {
           </div>
         </div>
 
-        {/* CASE STRENGTH */}
+        {/* ACCOUNT OFFICER */}
+        <div>
+          <div className="flex flex-wrap justify-between ">
+            <div>
+              <Form.List name="accountOfficer" noStyle>
+                {(fields, { add, remove }) => (
+                  <div>
+                    {fields.map(({ key, name, ...restField }) => {
+                      return (
+                        <div key={key}>
+                          <Form.Item
+                            className="m-0 p-0"
+                            {...restField}
+                            name={[name, "name"]}
+                            initialValue={formData?.accountOfficer[name]?.name}
+                            label={`${key + 1}- Account Officer`}>
+                            <Space.Compact>
+                              <Select
+                                showSearch
+                                style={{
+                                  width: 200,
+                                }}
+                                placeholder="Search to Select"
+                                options={data?.data.map((user, index) => ({
+                                  value: `${user.firstName} ${user.lastName}`,
+                                  label: `${user.firstName} ${user.lastName}`,
+                                }))}
+                              />
+
+                              <Form.Item onClick={() => remove(name)}>
+                                <Button>
+                                  <DeleteOutlined className="text-red-700" />
+                                </Button>
+                              </Form.Item>
+                            </Space.Compact>
+                          </Form.Item>
+                        </div>
+                      );
+                    })}
+                    <Form.Item>
+                      <Button onClick={() => add()}>
+                        + Add Account Officer
+                      </Button>
+                    </Form.Item>
+                  </div>
+                )}
+              </Form.List>
+            </div>
+          </div>
+        </div>
+
+        {/* CLIENT */}
         <div>
           <div className="flex flex-wrap justify-between ">
             <div>
@@ -777,7 +861,7 @@ const CaseForm = () => {
                             {...restField}
                             name={[name, "name"]}
                             initialValue={formData?.client[name]?.name}
-                            label={`${key + 1}- Strength`}>
+                            label={`${key + 1}- Client`}>
                             <Space.Compact>
                               <Input placeholder="" className="h-8" />
                               <Form.Item onClick={() => remove(name)}>
@@ -800,52 +884,44 @@ const CaseForm = () => {
           </div>
         </div>
 
-        {/* CASE UPDATE */}
+        {/* CASE UPDATE/REPORT */}
         <div>
           <div className="flex flex-wrap justify-between ">
             <div>
-              <Form.List name="caseUpdates" noStyle>
-                {(fields, { add: add, remove: remove }) => (
+              <Form.List name="caseUpdates">
+                {(fields, { add, remove }) => (
                   <div>
-                    {fields.map(({ key, name, ...restField }) => {
-                      return (
-                        <div key={key}>
-                          <Form.Item
-                            className="m-0 p-0"
-                            {...restField}
-                            name={[name, "date"]}
-                            initialValue={formData?.caseUpdates[name]?.date}
-                            label="Report Date">
-                            <Space.Compact>
-                              <DatePicker placeholder="" className="h-8" />
-                            </Space.Compact>
-                          </Form.Item>
-                          <Form.Item
-                            className="m-0 p-0"
-                            {...restField}
-                            name={[name, "update"]}
-                            initialValue={formData?.caseUpdates[name]?.update}
-                            label={`${key + 1}- Report`}>
-                            <Space.Compact>
-                              <TextArea
-                                rows={4}
-                                placeholder="Your report here..."
-                                maxLength={500}
-                              />
-                            </Space.Compact>
-                          </Form.Item>
-
-                          <Form.Item onClick={() => remove(name)}>
-                            <Button>
-                              <DeleteOutlined className="text-red-700" />
-                            </Button>
-                          </Form.Item>
-                        </div>
-                      );
-                    })}
-                    <Form.Item>
-                      <Button onClick={() => add()}>+ Add Case Report</Button>
-                    </Form.Item>
+                    {fields.map((field) => (
+                      <Space.Compact key={field.key} className="flex my-2">
+                        <Form.Item
+                          noStyle
+                          name={[field.name, "date"]}
+                          initialValue={
+                            formData?.caseUpdates[field.name]?.date
+                          }>
+                          <DatePicker placeholder="Select Date" />
+                        </Form.Item>
+                        <Form.Item
+                          noStyle
+                          name={[field.name, "update"]}
+                          initialValue={
+                            formData?.caseUpdates[field.name]?.update
+                          }>
+                          <TextArea placeholder="Enter Update" />
+                        </Form.Item>
+                        <Button>
+                          <DeleteOutlined
+                            className="text-red-700"
+                            onClick={() => {
+                              remove(field.name);
+                            }}
+                          />
+                        </Button>
+                      </Space.Compact>
+                    ))}
+                    <Button type="dashed" onClick={() => add()}>
+                      + Add Update
+                    </Button>
                   </div>
                 )}
               </Form.List>
