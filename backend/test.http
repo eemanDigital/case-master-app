@@ -88,8 +88,8 @@ content-type: application/json
     "description": [{"name":"Aduku"}]
   }
   ],
-  "suitNo": "SC/56723/2023",
-  "caseOfficeFileNo": "FA/890/2023",
+  "suitNo": "SC/723/2023",
+  "caseOfficeFileNo": "FA/89/2023",
   "courtName": "Court of Appeal",
   "judge": {
     "name": ["Justice Sarah Clark"]

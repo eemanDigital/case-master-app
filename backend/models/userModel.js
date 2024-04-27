@@ -15,7 +15,10 @@ const userSchema = new mongoose.Schema(
       trim: true,
       required: [true, "A user must provide first name"],
     },
+
     middleName: String,
+
+    // virtuals to get user's full name
 
     email: {
       type: String,
@@ -95,24 +98,6 @@ const userSchema = new mongoose.Schema(
 
     otherPosition: String,
 
-    //   type: String,
-    //   required: [true, "user's position must be provided"],
-    //   enum: [
-    //     "Principal",
-    //     "Managing Partner",
-    //     "Head of Chambers",
-    //     "Associate",
-    //     "Senior Associate",
-    //     "Junior Associate",
-    //     "Counsel",
-    //     "Intern",
-    //     "Secretary",
-    //     "Para-legal",
-    //     "Client",
-    //     "Other",
-    //   ],
-    //   default: "Counsel",
-    // },
     bio: {
       type: String,
       trim: true,
@@ -157,9 +142,19 @@ const userSchema = new mongoose.Schema(
   },
 
   {
-    timestamps: true,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
+  //   {
+  //     timestamps: true,
+  //   }
 );
+
+// virtuals for user full Name
+
+userSchema.virtual("fullName").get(function () {
+  return this.firstName + " " + this.lastName + " " + this.middleName;
+});
 
 userSchema.methods.correctPassword = async function (
   candidatePassword,

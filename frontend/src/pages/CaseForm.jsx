@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { useDataFetch } from "../context/useDataFectch";
 import { DeleteOutlined } from "@ant-design/icons";
+import DebounceSelect from "../components/DebounceSelect";
 
 import {
   Button,
@@ -64,29 +65,62 @@ const CaseForm = () => {
     caseUpdates: [{ date: "", update: "" }],
     // task: [],
     accountOfficer: [{ name: "" }],
-    client: [],
+    client: [{ name: "" }],
     generalComment: "",
   });
   // destructor authenticate from useAuth
   const { dataFetcher, data } = useDataFetch();
   // const { firstName } = data;
   // console.log("USERS", data.data[3].firstName);
-  // const users = data?.data.map((user, index) => {
-  //   console.log(user, index);
-  // });
+
+  const users = data?.data.map((user) => {
+    return {
+      value: user?.fullName,
+      label: user?.fullName,
+    };
+  });
+
+  // console.log(users);
 
   // getAllUsers
+  const fetchData = async () => {
+    try {
+      await dataFetcher("users");
+    } catch (err) {
+      console.log(err);
+    }
+  };
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        await dataFetcher("users");
-      } catch (err) {
-        console.log(err);
-      }
-    };
-
     fetchData(); // Call the async function to fetch data
   }, []);
+
+  // async function fetchAccountOfficer(users) {
+  //   console.log("fetching user", users);
+  //   return await fetch("http://localhost:3000/api/v1/users")
+  //     .then((response) => response.json())
+  //     .then((body) =>
+  //       body.results?.data.map((user) => ({
+  //         label: user.fullName,
+  //         value: user.fullName,
+  //       }))
+  //     );
+  // }
+  // console.log(fetchUserList());
+
+  // fetch users for accounOfficcer Select field
+  // async function fetchAccountOfficer(users) {
+  //   console.log("fetching user", users);
+  //   return fetch("http://localhost:3000/api/v1/users")
+  //     .then((response) => response.json())
+  //     .then((body) =>
+  //       body?.data.map((user) => ({
+  //         // label: user?.fullName,
+  //         // value: user?.fullName,
+  //         label: user.firstName,
+  //         value: user.firstName,
+  //       }))
+  //     );
+  // }
 
   // form submit functionalities
   const handleSubmission = useCallback(
@@ -95,10 +129,11 @@ const CaseForm = () => {
         // Handle Error here
       } else {
         // Handle Success here
-        form.resetFields();
+        // form.resetFields();
       }
     },
-    [form]
+    []
+    // [form]
   );
 
   // submit data
@@ -113,6 +148,8 @@ const CaseForm = () => {
     console.log(values);
     handleSubmission(result); // Handle the submission after the API Call
   }, [form, handleSubmission, dataFetcher]);
+
+  // console.log(setFormData());
 
   return (
     <>
@@ -134,12 +171,13 @@ const CaseForm = () => {
             <Form.Item
               name={["firstParty", "title"]}
               label="Title"
-              rules={[
-                {
-                  required: true,
-                  message: "Please provide the party's title",
-                },
-              ]}>
+              // rules={[
+              //   {
+              //     required: true,
+              //     message: "Please provide the party's title",
+              //   },
+              // ]}
+            >
               <Input placeholder="e.g. Plaintiff" />
             </Form.Item>
           </div>
@@ -148,7 +186,7 @@ const CaseForm = () => {
             {/* firstParty description field */}
             <Form.List
               name={["firstParty", "description"]}
-              initialValue={formData.firstParty.title}>
+              initialValue={formData?.firstParty?.title}>
               {(nameFields, { add: addName, remove: removeName }) => (
                 <div>
                   {nameFields.map(({ key, name, ...restField }) => (
@@ -247,14 +285,15 @@ const CaseForm = () => {
 
             <Form.Item
               name={["secondParty", "title"]}
-              initialValue={formData.secondParty.title}
+              initialValue={formData?.secondParty?.title}
               label="Title"
-              rules={[
-                {
-                  required: true,
-                  message: "Please provide the party's title",
-                },
-              ]}>
+              // rules={[
+              //   {
+              //     required: true,
+              //     message: "Please provide the party's title",
+              //   },
+              // ]}
+            >
               <Input placeholder="e.g. Plaintiff" />
             </Form.Item>
           </div>
@@ -470,13 +509,14 @@ const CaseForm = () => {
             name="suitNo"
             label="Suit No."
             tooltip="This is a required field"
-            initialValue={formData.suitNo}
-            rules={[
-              {
-                required: true,
-                message: "Please enter suit no!",
-              },
-            ]}>
+            initialValue={formData?.suitNo}
+            // rules={[
+            //   {
+            //     required: true,
+            //     message: "Please enter suit no!",
+            //   },
+            // ]}
+          >
             <Input />
           </Form.Item>
         </div>
@@ -485,7 +525,7 @@ const CaseForm = () => {
           <Form.Item
             name="modeOfCommencement"
             label="Mode of Commencement"
-            initialValue={formData.modeOfCommencement}>
+            initialValue={formData?.modeOfCommencement}>
             <Select
               showSearch
               style={{
@@ -511,7 +551,7 @@ const CaseForm = () => {
           <Form.Item
             label="Specify Court"
             name="otherModeOfCommencement"
-            initialValue={formData.otherModeOfCommencement}>
+            initialValue={formData?.otherModeOfCommencement}>
             <Input />
           </Form.Item>
         </div>
@@ -521,7 +561,7 @@ const CaseForm = () => {
           <Form.Item
             name="courtName"
             label="Assigned Court"
-            initialValue={formData.courtName}>
+            initialValue={formData?.courtName}>
             <Select
               showSearch
               style={{
@@ -547,7 +587,7 @@ const CaseForm = () => {
           <Form.Item
             label="Specify Court"
             name="otherCourt"
-            initialValue={formData.otherCourt}>
+            initialValue={formData?.otherCourt}>
             <Input />
           </Form.Item>
         </div>
@@ -557,7 +597,7 @@ const CaseForm = () => {
           <Form.Item
             label="Nature of Case"
             name="natureOfCase"
-            initialValue={formData.natureOfCase}>
+            initialValue={formData?.natureOfCase}>
             <Input />
           </Form.Item>
         </div>
@@ -566,7 +606,7 @@ const CaseForm = () => {
           <Form.Item
             label="Case file Number"
             name="caseOfficeFileNo"
-            initialValue={formData.caseOfficeFileNo}>
+            initialValue={formData?.caseOfficeFileNo}>
             <Input />
           </Form.Item>
         </div>
@@ -583,7 +623,7 @@ const CaseForm = () => {
           <Form.Item
             name="caseStatus"
             label="Case Status"
-            initialValue={formData.caseStatus}>
+            initialValue={formData?.caseStatus}>
             <Select
               showSearch
               style={{
@@ -609,7 +649,7 @@ const CaseForm = () => {
           <Form.Item
             name="casePriority"
             label="Case Priority"
-            initialValue={formData.casePriority}>
+            initialValue={formData?.casePriority}>
             <Select
               showSearch
               style={{
@@ -626,7 +666,7 @@ const CaseForm = () => {
           <Form.Item
             label="Case Summary"
             name="caseSummary"
-            initialValue={formData.caseSummary}>
+            initialValue={formData?.caseSummary}>
             <TextArea
               autoSize={{
                 minRows: 2,
@@ -796,55 +836,41 @@ const CaseForm = () => {
         </div>
 
         {/* ACCOUNT OFFICER */}
-        <div>
-          <div className="flex flex-wrap justify-between ">
-            <div>
-              <Form.List name="accountOfficer" noStyle>
-                {(fields, { add, remove }) => (
-                  <div>
-                    {fields.map(({ key, name, ...restField }) => {
-                      return (
-                        <div key={key}>
-                          <Form.Item
-                            className="m-0 p-0"
-                            {...restField}
-                            name={[name, "name"]}
-                            initialValue={formData?.accountOfficer[name]?.name}
-                            label={`${key + 1}- Account Officer`}>
-                            <Space.Compact>
-                              <Select
-                                showSearch
-                                style={{
-                                  width: 200,
-                                }}
-                                placeholder="Search to Select"
-                                options={data?.data.map((user, index) => ({
-                                  value: `${user.firstName} ${user.lastName}`,
-                                  label: `${user.firstName} ${user.lastName}`,
-                                }))}
-                              />
 
-                              <Form.Item onClick={() => remove(name)}>
-                                <Button>
-                                  <DeleteOutlined className="text-red-700" />
-                                </Button>
-                              </Form.Item>
-                            </Space.Compact>
-                          </Form.Item>
-                        </div>
-                      );
-                    })}
-                    <Form.Item>
-                      <Button onClick={() => add()}>
-                        + Add Account Officer
-                      </Button>
-                    </Form.Item>
-                  </div>
-                )}
-              </Form.List>
-            </div>
-          </div>
-        </div>
+        <Form.Item
+          name="accountOfficer"
+          label="Account Officer"
+          initialValue={formData?.accountOfficer}>
+          <Select
+            mode="multiple"
+            // value={formData?.accountOfficer?.name}
+            placeholder="Select users"
+            // fetchOptions={fetchAccountOfficer}
+            // onChange={(newValue) => {
+            //   setFormData(newValue);
+            // }}
+            options={users}
+            className=" w-96"
+          />
+        </Form.Item>
+        {/* 
+          <Select
+              showSearch
+              style={{
+                width: 200,
+              }}
+              placeholder="Search to Select"
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                (option?.label ?? "").includes(input)
+              }
+              filterSort={(optionA, optionB) =>
+                (optionA?.label ?? "")
+                  .toLowerCase()
+                  .localeCompare((optionB?.label ?? "").toLowerCase())
+              }
+              options={statusOptions}
+            /> */}
 
         {/* CLIENT */}
         <div>
@@ -934,7 +960,7 @@ const CaseForm = () => {
           <Form.Item
             label="General Comment"
             name="generalComment"
-            initialValue={formData.generalComment}>
+            initialValue={formData?.generalComment}>
             <TextArea
               rows={4}
               placeholder="Your comment here..."

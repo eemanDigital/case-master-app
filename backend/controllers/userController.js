@@ -23,6 +23,7 @@ const filterObj = (obj, ...allowedFields) => {
 // GET ALL USERS
 exports.getUsers = catchAsync(async (req, res, next) => {
   const users = await User.find({});
+  // console.log(users);
 
   res.status(200).json({
     data: users,

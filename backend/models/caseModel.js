@@ -129,12 +129,7 @@ const caseSchema = new mongoose.Schema({
       ref: "Task",
     },
   ],
-  accountOfficer: [
-    {
-      type: mongoose.Schema.ObjectId,
-      ref: "User",
-    },
-  ],
+  accountOfficer: [String],
   client: [nameSchema],
   generalComment: String,
 });
