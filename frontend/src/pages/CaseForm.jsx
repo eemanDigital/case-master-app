@@ -1,19 +1,10 @@
 import { useState, useCallback, useEffect } from "react";
 import { useDataFetch } from "../context/useDataFectch";
 import { DeleteOutlined } from "@ant-design/icons";
-import DebounceSelect from "../components/DebounceSelect";
+import TextDivider from "../components/TextDivider";
+// import DebounceSelect from "../components/DebounceSelect";
 
-import {
-  Button,
-  Input,
-  Form,
-  Divider,
-  Typography,
-  Card,
-  Space,
-  DatePicker,
-  Select,
-} from "antd";
+import { Button, Input, Form, Card, Space, DatePicker, Select } from "antd";
 // import DeleteIcon from "../components/DeleteIcon";
 // import { useAuth } from "../hooks/useAuth";
 // import TextArea from "antd/es/input/TextArea";
@@ -25,7 +16,7 @@ import {
 } from "../data/options";
 
 const CaseForm = () => {
-  // destruture textarea from input
+  // destructure textarea from input
   const { TextArea } = Input;
 
   const [form] = Form.useForm();
@@ -63,26 +54,16 @@ const CaseForm = () => {
     casePriority: "",
     stepToBeTaken: [],
     caseUpdates: [{ date: "", update: "" }],
-    // task: [],
+    listOfJudicialAuthorities: [{ name: "" }],
+    listOfStatutoryAuthorities: [{ name: "" }],
     accountOfficer: [{ name: "" }],
     client: [{ name: "" }],
     generalComment: "",
   });
-  // destructor authenticate from useAuth
+  // destructure dataFetcher from useDataFetch
   const { dataFetcher, data } = useDataFetch();
-  // const { firstName } = data;
-  // console.log("USERS", data.data[3].firstName);
 
-  const users = data?.data.map((user) => {
-    return {
-      value: user?.fullName,
-      label: user?.fullName,
-    };
-  });
-
-  // console.log(users);
-
-  // getAllUsers
+  // fetch all user/accountOfficers
   const fetchData = async () => {
     try {
       await dataFetcher("users");
@@ -94,33 +75,13 @@ const CaseForm = () => {
     fetchData(); // Call the async function to fetch data
   }, []);
 
-  // async function fetchAccountOfficer(users) {
-  //   console.log("fetching user", users);
-  //   return await fetch("http://localhost:3000/api/v1/users")
-  //     .then((response) => response.json())
-  //     .then((body) =>
-  //       body.results?.data.map((user) => ({
-  //         label: user.fullName,
-  //         value: user.fullName,
-  //       }))
-  //     );
-  // }
-  // console.log(fetchUserList());
-
-  // fetch users for accounOfficcer Select field
-  // async function fetchAccountOfficer(users) {
-  //   console.log("fetching user", users);
-  //   return fetch("http://localhost:3000/api/v1/users")
-  //     .then((response) => response.json())
-  //     .then((body) =>
-  //       body?.data.map((user) => ({
-  //         // label: user?.fullName,
-  //         // value: user?.fullName,
-  //         label: user.firstName,
-  //         value: user.firstName,
-  //       }))
-  //     );
-  // }
+  // checks if data?.data (users/accountOfficers) is an array before mapping, otherwise, assigns an empty array [] to users
+  const users = Array.isArray(data?.data)
+    ? data.data.map((user) => ({
+        value: user?.fullName,
+        label: user?.fullName,
+      }))
+    : [];
 
   // form submit functionalities
   const handleSubmission = useCallback(
@@ -149,11 +110,10 @@ const CaseForm = () => {
     handleSubmission(result); // Handle the submission after the API Call
   }, [form, handleSubmission, dataFetcher]);
 
-  // console.log(setFormData());
-
   return (
     <>
       <Form
+        className="h-[100%]"
         layout="vertical"
         form={form}
         name="dynamic_form_complex"
@@ -161,9 +121,7 @@ const CaseForm = () => {
         // initialValues={formData}
       >
         {/* FIRST PARTY FIELD */}
-        <Divider orientation="left" orientationMargin="0">
-          <Typography.Title level={4}>First Party</Typography.Title>
-        </Divider>
+        <TextDivider text="First Party" />
         <div className="flex flex-wrap justify-between ">
           <div>
             {/* firstParty title field */}
@@ -276,10 +234,9 @@ const CaseForm = () => {
         </div>
 
         {/* SECOND PARTY FIELD */}
-        <Divider orientation="left" orientationMargin="0">
-          <Typography.Title level={4}>Second Party</Typography.Title>
-        </Divider>
-        <div className="flex flex-wrap justify-between ">
+        <TextDivider text="Second Party" />
+
+        <div className="flex flex-wrap justify-between  ">
           <div>
             {/* secondParty title field */}
 
@@ -387,11 +344,8 @@ const CaseForm = () => {
           </div>
         </div>
 
-        <br />
-        <br />
-        <br />
-
         {/* OTHER PARTIES FIELD */}
+        <TextDivider text="Other Party" />
 
         <div className="">
           <Form.List name="otherParty">
@@ -503,472 +457,537 @@ const CaseForm = () => {
           </Form.List>
         </div>
 
-        {/* SUIT NO FIELD */}
-        <div>
-          <Form.Item
-            name="suitNo"
-            label="Suit No."
-            tooltip="This is a required field"
-            initialValue={formData?.suitNo}
-            // rules={[
-            //   {
-            //     required: true,
-            //     message: "Please enter suit no!",
-            //   },
-            // ]}
-          >
-            <Input />
-          </Form.Item>
-        </div>
-        {/* MODE OF COMMENCEMENT */}
-        <div>
-          <Form.Item
-            name="modeOfCommencement"
-            label="Mode of Commencement"
-            initialValue={formData?.modeOfCommencement}>
-            <Select
-              showSearch
-              style={{
-                width: 200,
-              }}
-              placeholder="Search to Select"
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                (option?.label ?? "").includes(input)
-              }
-              filterSort={(optionA, optionB) =>
-                (optionA?.label ?? "")
-                  .toLowerCase()
-                  .localeCompare((optionB?.label ?? "").toLowerCase())
-              }
-              options={modesOptions}
-            />
-          </Form.Item>
-        </div>
+        <div className="flex flex-wrap  justify-around gap-14 items-center mt-7">
+          {/* SUIT NO FIELD */}
+          {/* <TextDivider text="Suit No" /> */}
+          <div>
+            <Form.Item
+              name="suitNo"
+              label="Suit No."
+              tooltip="This is a required field"
+              initialValue={formData?.suitNo}
+              // rules={[
+              //   {
+              //     required: true,
+              //     message: "Please enter suit no!",
+              //   },
+              // ]}
+            >
+              <Input />
+            </Form.Item>
+          </div>
+          {/* MODE OF COMMENCEMENT */}
+          {/* <TextDivider text="Mode of Commencement" /> */}
+          <div>
+            <Form.Item
+              name="modeOfCommencement"
+              label="Mode of Commencement"
+              initialValue={formData?.modeOfCommencement}>
+              <Select
+                style={{
+                  width: 200,
+                }}
+                placeholder="Search to Select"
+                options={modesOptions}
+              />
+            </Form.Item>
+          </div>
+          {/* OTHER MODE OF COMMENCEMENT*/}
+          <div>
+            <Form.Item
+              label="Specify other Mode"
+              name="otherModeOfCommencement"
+              initialValue={formData?.otherModeOfCommencement}>
+              <Input />
+            </Form.Item>
+          </div>
 
-        {/* OTHER MODE OF COMMENCEMENT*/}
-        <div>
-          <Form.Item
-            label="Specify Court"
-            name="otherModeOfCommencement"
-            initialValue={formData?.otherModeOfCommencement}>
-            <Input />
-          </Form.Item>
-        </div>
-
-        {/* COURTS */}
-        <div>
-          <Form.Item
-            name="courtName"
-            label="Assigned Court"
-            initialValue={formData?.courtName}>
-            <Select
-              showSearch
-              style={{
-                width: 200,
-              }}
-              placeholder="Search to Select"
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                (option?.label ?? "").includes(input)
-              }
-              filterSort={(optionA, optionB) =>
-                (optionA?.label ?? "")
-                  .toLowerCase()
-                  .localeCompare((optionB?.label ?? "").toLowerCase())
-              }
-              options={courtOptions}
-            />
-          </Form.Item>
-        </div>
-
-        {/* OTHER COURT*/}
-        <div>
-          <Form.Item
-            label="Specify Court"
-            name="otherCourt"
-            initialValue={formData?.otherCourt}>
-            <Input />
-          </Form.Item>
-        </div>
-
-        {/* NATURE OF CASE*/}
-        <div>
-          <Form.Item
-            label="Nature of Case"
-            name="natureOfCase"
-            initialValue={formData?.natureOfCase}>
-            <Input />
-          </Form.Item>
-        </div>
-        {/* CASE FILE NO FIELD */}
-        <div>
-          <Form.Item
-            label="Case file Number"
-            name="caseOfficeFileNo"
-            initialValue={formData?.caseOfficeFileNo}>
-            <Input />
-          </Form.Item>
-        </div>
-
-        {/* DATE FILED */}
-        <div>
-          <Form.Item name="filingDate" label="Filing Date">
-            <DatePicker />
-          </Form.Item>
-        </div>
-
-        {/* CASE STATUS */}
-        <div>
-          <Form.Item
-            name="caseStatus"
-            label="Case Status"
-            initialValue={formData?.caseStatus}>
-            <Select
-              showSearch
-              style={{
-                width: 200,
-              }}
-              placeholder="Search to Select"
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                (option?.label ?? "").includes(input)
-              }
-              filterSort={(optionA, optionB) =>
-                (optionA?.label ?? "")
-                  .toLowerCase()
-                  .localeCompare((optionB?.label ?? "").toLowerCase())
-              }
-              options={statusOptions}
-            />
-          </Form.Item>
-        </div>
-
-        {/* CASE PRIORITY */}
-        <div>
-          <Form.Item
-            name="casePriority"
-            label="Case Priority"
-            initialValue={formData?.casePriority}>
-            <Select
-              showSearch
-              style={{
-                width: 200,
-              }}
-              placeholder="Search to Select"
-              options={casePriorityOptions}
-            />
-          </Form.Item>
-        </div>
-
-        {/* CASE SUMMARY */}
-        <div>
-          <Form.Item
-            label="Case Summary"
-            name="caseSummary"
-            initialValue={formData?.caseSummary}>
-            <TextArea
-              autoSize={{
-                minRows: 2,
-                maxRows: 6,
-              }}
-              rows={4}
-              placeholder="Your case summary here..."
-              maxLength={300}
-            />
-          </Form.Item>
-        </div>
-
-        {/* JUDGE FIELD */}
-        <div>
-          <div className="flex flex-wrap justify-between ">
-            <div>
-              <Form.List name="judge" noStyle>
-                {(processesFiledFields, { add: add, remove: remove }) => (
-                  <div>
-                    {processesFiledFields.map(({ key, name, ...restField }) => {
-                      return (
-                        <div key={key}>
-                          <Form.Item
-                            className="m-0 p-0"
-                            {...restField}
-                            name={[name, "name"]}
-                            initialValue={formData?.judge[name]?.name}
-                            label={`${key + 1}- Judge`}>
-                            <Space.Compact>
-                              <Input
-                                placeholder="Enter the name of the judge"
-                                className="h-8"
-                              />
-                              <Form.Item onClick={() => remove(name)}>
-                                <Button>
-                                  <DeleteOutlined className="text-red-700" />
-                                </Button>
+          {/* COURTS */}
+          {/* <TextDivider text="Court" /> */}
+          <div>
+            <Form.Item
+              name="courtName"
+              label="Assigned Court"
+              initialValue={formData?.courtName}>
+              <Select
+                showSearch
+                style={{
+                  width: 200,
+                }}
+                placeholder="Search to Select"
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  (option?.label ?? "").includes(input)
+                }
+                filterSort={(optionA, optionB) =>
+                  (optionA?.label ?? "")
+                    .toLowerCase()
+                    .localeCompare((optionB?.label ?? "").toLowerCase())
+                }
+                options={courtOptions}
+              />
+            </Form.Item>
+          </div>
+          {/* OTHER COURT*/}
+          <div>
+            <Form.Item
+              label="Specify Court"
+              name="otherCourt"
+              initialValue={formData?.otherCourt}>
+              <Input />
+            </Form.Item>
+          </div>
+          {/* JUDGE FIELD */}
+          {/* <TextDivider text="Judges/Justices" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="judge" noStyle>
+                  {(processesFiledFields, { add: add, remove: remove }) => (
+                    <div>
+                      {processesFiledFields.map(
+                        ({ key, name, ...restField }) => {
+                          return (
+                            <div key={key}>
+                              <Form.Item
+                                className="m-0 p-0"
+                                {...restField}
+                                name={[name, "name"]}
+                                initialValue={formData?.judge[name]?.name}
+                                label={`${key + 1}- Judge`}>
+                                <Space.Compact>
+                                  <Input
+                                    placeholder="Enter the name of the judge"
+                                    className="h-8"
+                                  />
+                                  <Form.Item onClick={() => remove(name)}>
+                                    <Button>
+                                      <DeleteOutlined className="text-red-700" />
+                                    </Button>
+                                  </Form.Item>
+                                </Space.Compact>
                               </Form.Item>
-                            </Space.Compact>
-                          </Form.Item>
-                        </div>
-                      );
-                    })}
-                    <Form.Item>
-                      <Button onClick={() => add()}>+ Add Judge</Button>
-                    </Form.Item>
-                  </div>
-                )}
-              </Form.List>
+                            </div>
+                          );
+                        }
+                      )}
+                      <Form.Item>
+                        <Button onClick={() => add()}>+ Add Judge</Button>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
             </div>
           </div>
-        </div>
-        {/* CASE STRENGTH */}
-        <div>
-          <div className="flex flex-wrap justify-between ">
-            <div>
-              <Form.List name="caseStrengths" noStyle>
-                {(fields, { add: add, remove: remove }) => (
-                  <div>
-                    {fields.map(({ key, name, ...restField }) => {
-                      return (
-                        <div key={key}>
-                          <Form.Item
-                            className="m-0 p-0"
-                            {...restField}
-                            name={[name, "name"]}
-                            initialValue={formData?.caseStrengths[name]?.name}
-                            label={`${key + 1}- Strength`}>
-                            <Space.Compact>
-                              <Input placeholder="" className="h-8" />
-                              <Form.Item onClick={() => remove(name)}>
-                                <Button>
-                                  <DeleteOutlined className="text-red-700" />
-                                </Button>
-                              </Form.Item>
-                            </Space.Compact>
-                          </Form.Item>
-                        </div>
-                      );
-                    })}
-                    <Form.Item>
-                      <Button onClick={() => add()}>
-                        + Add Case&apos;s Strengths
-                      </Button>
-                    </Form.Item>
-                  </div>
-                )}
-              </Form.List>
-            </div>
+          {/* NATURE OF CASE*/}
+          {/* <TextDivider text="Nature of Case" /> */}
+          <div>
+            <Form.Item
+              label="Nature of Case"
+              name="natureOfCase"
+              initialValue={formData?.natureOfCase}>
+              <Input />
+            </Form.Item>
           </div>
-        </div>
-        {/* CASE WEAKNESS */}
-        <div>
-          <div className="flex flex-wrap justify-between ">
-            <div>
-              <Form.List name="caseWeaknesses" noStyle>
-                {(fields, { add: add, remove: remove }) => (
-                  <div>
-                    {fields.map(({ key, name, ...restField }) => {
-                      return (
-                        <div key={key}>
-                          <Form.Item
-                            className="m-0 p-0"
-                            {...restField}
-                            name={[name, "name"]}
-                            initialValue={formData?.caseWeaknesses[name]?.name}
-                            label={`${key + 1}- Weakness`}>
-                            <Space.Compact>
-                              <Input placeholder="" className="h-8" />
-                              <Form.Item onClick={() => remove(name)}>
-                                <Button>
-                                  <DeleteOutlined className="text-red-700" />
-                                </Button>
-                              </Form.Item>
-                            </Space.Compact>
-                          </Form.Item>
-                        </div>
-                      );
-                    })}
-                    <Form.Item>
-                      <Button onClick={() => add()}>
-                        + Add Case&apos;s Weaknesses
-                      </Button>
-                    </Form.Item>
-                  </div>
-                )}
-              </Form.List>
-            </div>
+
+          {/* CASE FILE NO FIELD */}
+          {/* <TextDivider text="Case file Number" /> */}
+          <div>
+            <Form.Item
+              label="Case file Number"
+              name="caseOfficeFileNo"
+              initialValue={formData?.caseOfficeFileNo}>
+              <Input />
+            </Form.Item>
           </div>
-        </div>
-        {/* STEPS TO BE TAKEN FIELD */}
-        <div>
-          <div className="flex flex-wrap justify-between ">
-            <div>
-              <Form.List name="stepToBeTaken" noStyle>
-                {(fields, { add: add, remove: remove }) => (
-                  <div>
-                    {fields.map(({ key, name, ...restField }) => {
-                      return (
-                        <div key={key}>
-                          <Form.Item
-                            className="m-0 p-0"
-                            {...restField}
-                            name={[name, "name"]}
-                            initialValue={formData?.stepToBeTaken[name]?.name}
-                            label={`${key + 1}- Step`}>
-                            <Space.Compact>
-                              <Input placeholder="" className="h-8" />
-                              <Form.Item onClick={() => remove(name)}>
-                                <Button>
-                                  <DeleteOutlined className="text-red-700" />
-                                </Button>
-                              </Form.Item>
-                            </Space.Compact>
-                          </Form.Item>
-                        </div>
-                      );
-                    })}
-                    <Form.Item>
-                      <Button onClick={() => add()}>+ Add Steps</Button>
-                    </Form.Item>
-                  </div>
-                )}
-              </Form.List>
-            </div>
+
+          {/* DATE FILED */}
+          {/* <TextDivider text="Filing Date" /> */}
+          <div>
+            <Form.Item name="filingDate" label="Filing Date">
+              <DatePicker />
+            </Form.Item>
           </div>
-        </div>
 
-        {/* ACCOUNT OFFICER */}
-
-        <Form.Item
-          name="accountOfficer"
-          label="Account Officer"
-          initialValue={formData?.accountOfficer}>
-          <Select
-            mode="multiple"
-            // value={formData?.accountOfficer?.name}
-            placeholder="Select users"
-            // fetchOptions={fetchAccountOfficer}
-            // onChange={(newValue) => {
-            //   setFormData(newValue);
-            // }}
-            options={users}
-            className=" w-96"
-          />
-        </Form.Item>
-        {/* 
-          <Select
-              showSearch
-              style={{
-                width: 200,
-              }}
-              placeholder="Search to Select"
-              optionFilterProp="children"
-              filterOption={(input, option) =>
-                (option?.label ?? "").includes(input)
-              }
-              filterSort={(optionA, optionB) =>
-                (optionA?.label ?? "")
-                  .toLowerCase()
-                  .localeCompare((optionB?.label ?? "").toLowerCase())
-              }
-              options={statusOptions}
-            /> */}
-
-        {/* CLIENT */}
-        <div>
-          <div className="flex flex-wrap justify-between ">
-            <div>
-              <Form.List name="client" noStyle>
-                {(fields, { add: add, remove: remove }) => (
-                  <div>
-                    {fields.map(({ key, name, ...restField }) => {
-                      return (
-                        <div key={key}>
-                          <Form.Item
-                            className="m-0 p-0"
-                            {...restField}
-                            name={[name, "name"]}
-                            initialValue={formData?.client[name]?.name}
-                            label={`${key + 1}- Client`}>
-                            <Space.Compact>
-                              <Input placeholder="" className="h-8" />
-                              <Form.Item onClick={() => remove(name)}>
-                                <Button>
-                                  <DeleteOutlined className="text-red-700" />
-                                </Button>
-                              </Form.Item>
-                            </Space.Compact>
-                          </Form.Item>
-                        </div>
-                      );
-                    })}
-                    <Form.Item>
-                      <Button onClick={() => add()}>+ Add Clients</Button>
-                    </Form.Item>
-                  </div>
-                )}
-              </Form.List>
-            </div>
+          {/* CASE STATUS */}
+          {/* <TextDivider text="Case Status" /> */}
+          <div>
+            <Form.Item
+              name="caseStatus"
+              label="Case Status"
+              initialValue={formData?.caseStatus}>
+              <Select
+                style={{
+                  width: 200,
+                }}
+                options={statusOptions}
+              />
+            </Form.Item>
           </div>
-        </div>
 
-        {/* CASE UPDATE/REPORT */}
-        <div>
-          <div className="flex flex-wrap justify-between ">
-            <div>
-              <Form.List name="caseUpdates">
-                {(fields, { add, remove }) => (
-                  <div>
-                    {fields.map((field) => (
-                      <Space.Compact key={field.key} className="flex my-2">
-                        <Form.Item
-                          noStyle
-                          name={[field.name, "date"]}
-                          initialValue={
-                            formData?.caseUpdates[field.name]?.date
-                          }>
-                          <DatePicker placeholder="Select Date" />
-                        </Form.Item>
-                        <Form.Item
-                          noStyle
-                          name={[field.name, "update"]}
-                          initialValue={
-                            formData?.caseUpdates[field.name]?.update
-                          }>
-                          <TextArea placeholder="Enter Update" />
-                        </Form.Item>
-                        <Button>
-                          <DeleteOutlined
-                            className="text-red-700"
-                            onClick={() => {
-                              remove(field.name);
-                            }}
-                          />
+          {/* CASE PRIORITY */}
+          {/* <TextDivider text="Case Priority/ Rating" /> */}
+          <div>
+            <Form.Item
+              label="Case Priority/ Rating"
+              name="casePriority"
+              initialValue={formData?.casePriority}>
+              <Select
+                showSearch
+                style={{
+                  width: 200,
+                }}
+                placeholder="Search to Select"
+                options={casePriorityOptions}
+              />
+            </Form.Item>
+          </div>
+
+          {/* CASE STRENGTH */}
+          {/* <TextDivider text="Case Strengths" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="caseStrengths" noStyle>
+                  {(fields, { add: add, remove: remove }) => (
+                    <div>
+                      {fields.map(({ key, name, ...restField }) => {
+                        return (
+                          <div key={key}>
+                            <Form.Item
+                              className="m-0 p-0"
+                              {...restField}
+                              name={[name, "name"]}
+                              initialValue={formData?.caseStrengths[name]?.name}
+                              label={`${key + 1}- Strength`}>
+                              <Space.Compact>
+                                <Input placeholder="" className="h-8" />
+                                <Form.Item onClick={() => remove(name)}>
+                                  <Button>
+                                    <DeleteOutlined className="text-red-700" />
+                                  </Button>
+                                </Form.Item>
+                              </Space.Compact>
+                            </Form.Item>
+                          </div>
+                        );
+                      })}
+                      <Form.Item>
+                        <Button onClick={() => add()}>
+                          + Add Case&apos;s Strengths
                         </Button>
-                      </Space.Compact>
-                    ))}
-                    <Button type="dashed" onClick={() => add()}>
-                      + Add Update
-                    </Button>
-                  </div>
-                )}
-              </Form.List>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
             </div>
           </div>
-        </div>
+          {/* CASE WEAKNESS */}
+          {/* <TextDivider text="Case Weaknesses" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="caseWeaknesses" noStyle>
+                  {(fields, { add: add, remove: remove }) => (
+                    <div>
+                      {fields.map(({ key, name, ...restField }) => {
+                        return (
+                          <div key={key}>
+                            <Form.Item
+                              className="m-0 p-0"
+                              {...restField}
+                              name={[name, "name"]}
+                              initialValue={
+                                formData?.caseWeaknesses[name]?.name
+                              }
+                              label={`${key + 1}- Weakness`}>
+                              <Space.Compact>
+                                <Input placeholder="" className="h-8" />
+                                <Form.Item onClick={() => remove(name)}>
+                                  <Button>
+                                    <DeleteOutlined className="text-red-700" />
+                                  </Button>
+                                </Form.Item>
+                              </Space.Compact>
+                            </Form.Item>
+                          </div>
+                        );
+                      })}
+                      <Form.Item>
+                        <Button onClick={() => add()}>
+                          + Add Case&apos;s Weaknesses
+                        </Button>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div>
 
-        {/* GENERAL COMMENT */}
+          {/* STEPS TO BE TAKEN FIELD */}
+          {/* <TextDivider text="Steps/Case Strategies" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="stepToBeTaken" noStyle>
+                  {(fields, { add: add, remove: remove }) => (
+                    <div>
+                      {fields.map(({ key, name, ...restField }) => {
+                        return (
+                          <div key={key}>
+                            <Form.Item
+                              className="m-0 p-0"
+                              {...restField}
+                              name={[name, "name"]}
+                              initialValue={formData?.stepToBeTaken[name]?.name}
+                              label={`${key + 1}- Step`}>
+                              <Space.Compact>
+                                <Input placeholder="" className="h-8" />
+                                <Form.Item onClick={() => remove(name)}>
+                                  <Button>
+                                    <DeleteOutlined className="text-red-700" />
+                                  </Button>
+                                </Form.Item>
+                              </Space.Compact>
+                            </Form.Item>
+                          </div>
+                        );
+                      })}
+                      <Form.Item>
+                        <Button onClick={() => add()}>+ Add Steps</Button>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div>
+
+          {/* CLIENT */}
+          {/* <TextDivider text="Client" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="client" noStyle>
+                  {(fields, { add: add, remove: remove }) => (
+                    <div>
+                      {fields.map(({ key, name, ...restField }) => {
+                        return (
+                          <div key={key}>
+                            <Form.Item
+                              className="m-0 p-0"
+                              {...restField}
+                              name={[name, "name"]}
+                              initialValue={formData?.client[name]?.name}
+                              label={`${key + 1}- Client`}>
+                              <Space.Compact>
+                                <Input placeholder="" className="h-8" />
+                                <Form.Item onClick={() => remove(name)}>
+                                  <Button>
+                                    <DeleteOutlined className="text-red-700" />
+                                  </Button>
+                                </Form.Item>
+                              </Space.Compact>
+                            </Form.Item>
+                          </div>
+                        );
+                      })}
+                      <Form.Item>
+                        <Button onClick={() => add()}>+ Add Clients</Button>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div>
+
+          {/* CASE UPDATE/REPORT */}
+          {/* <TextDivider text="Case Update/Report" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="caseUpdates">
+                  {(fields, { add, remove }) => (
+                    <div>
+                      {fields.map((field) => (
+                        <Space.Compact key={field.key} className="flex my-2">
+                          <Form.Item
+                            noStyle
+                            label="Case Update/Report"
+                            name={[field.name, "date"]}
+                            initialValue={
+                              formData?.caseUpdates[field.name]?.date
+                            }>
+                            <DatePicker placeholder="Select Date" />
+                          </Form.Item>
+                          <Form.Item
+                            noStyle
+                            name={[field.name, "update"]}
+                            initialValue={
+                              formData?.caseUpdates[field.name]?.update
+                            }>
+                            <TextArea placeholder="Enter Update" />
+                          </Form.Item>
+                          <Button>
+                            <DeleteOutlined
+                              className="text-red-700"
+                              onClick={() => {
+                                remove(field.name);
+                              }}
+                            />
+                          </Button>
+                        </Space.Compact>
+                      ))}
+                      <Button type="dashed" onClick={() => add()}>
+                        + Add Update
+                      </Button>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div>
+
+          {/* JUDICIAL AUTHORITIES IN SUPPORT */}
+          {/* <TextDivider text="Judicial Authorities" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="listOfJudicialAuthorities" noStyle>
+                  {(fields, { add, remove }) => (
+                    <div>
+                      {fields.map(({ key, name, ...restField }) => {
+                        return (
+                          <div key={key}>
+                            <Form.Item
+                              className="m-0 p-0"
+                              {...restField}
+                              name={[name, "name"]}
+                              initialValue={
+                                formData?.listOfJudicialAuthorities[name]?.name
+                              }
+                              label={`${key + 1}- Case`}>
+                              <Space.Compact>
+                                <Input placeholder="" className="h-8" />
+                                <Form.Item onClick={() => remove(name)}>
+                                  <Button>
+                                    <DeleteOutlined className="text-red-700" />
+                                  </Button>
+                                </Form.Item>
+                              </Space.Compact>
+                            </Form.Item>
+                          </div>
+                        );
+                      })}
+                      <Form.Item>
+                        <Button onClick={() => add()}>+ Add Case</Button>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div>
+
+          {/* ACCOUNT OFFICER */}
+          {/* <TextDivider text="Account Officer(s)" /> */}
+          <div>
+            <Form.Item
+              name="accountOfficer"
+              label="Account Officer"
+              initialValue={formData?.accountOfficer}>
+              <Select
+                noStyle
+                mode="multiple"
+                placeholder="Select users"
+                options={users}
+                allowClear
+                style={{
+                  width: "100%",
+                }}
+              />
+            </Form.Item>
+          </div>
+          {/* STATUTORY AUTHORITIES IN SUPPORT */}
+          {/* <TextDivider text="Statutory Authorities" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="listOfStatutoryAuthorities" noStyle>
+                  {(fields, { add, remove }) => (
+                    <div>
+                      {fields.map(({ key, name, ...restField }) => {
+                        return (
+                          <div key={key}>
+                            <Form.Item
+                              className="m-0 p-0"
+                              {...restField}
+                              name={[name, "name"]}
+                              initialValue={
+                                formData?.listOfStatutoryAuthorities[name]?.name
+                              }
+                              label={`${key + 1}- Case`}>
+                              <Space.Compact>
+                                <Input placeholder="" className="h-8" />
+                                <Form.Item onClick={() => remove(name)}>
+                                  <Button>
+                                    <DeleteOutlined className="text-red-700" />
+                                  </Button>
+                                </Form.Item>
+                              </Space.Compact>
+                            </Form.Item>
+                          </div>
+                        );
+                      })}
+                      <Form.Item>
+                        <Button onClick={() => add()}>+ Add Statute</Button>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div>
+          {/* CASE SUMMARY */}
+        </div>
         <div>
-          <Form.Item
-            label="General Comment"
-            name="generalComment"
-            initialValue={formData?.generalComment}>
-            <TextArea
-              rows={4}
-              placeholder="Your comment here..."
-              maxLength={300}
-            />
-          </Form.Item>
+          <div>
+            <Form.Item
+              label="Case Summary"
+              name="caseSummary"
+              initialValue={formData?.caseSummary}>
+              <TextArea
+                // autoSize={{
+                //   minRows: 2,
+                //   maxRows: 6,
+                // }}
+                rows={5}
+                placeholder="Your case summary here..."
+                maxLength={300}
+                className="w-96"
+              />
+            </Form.Item>
+          </div>
+          {/* GENERAL COMMENT */}
+          {/* <TextDivider text="General Comments" /> */}
+          <div>
+            <Form.Item
+              label="General Comment"
+              name="generalComment"
+              initialValue={formData?.generalComment}>
+              <TextArea
+                rows={5}
+                placeholder="Your comment here..."
+                maxLength={300}
+                className="w-96"
+              />
+            </Form.Item>
+          </div>
         </div>
-
         <Form.Item>
           <Button onClick={onSubmit} type="default" htmlType="submit">
             Submit

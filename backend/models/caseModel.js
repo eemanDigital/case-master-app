@@ -131,6 +131,8 @@ const caseSchema = new mongoose.Schema({
   ],
   accountOfficer: [String],
   client: [nameSchema],
+  listOfJudicialAuthorities: [nameSchema],
+  listOfStatutoryAuthorities: [nameSchema],
   generalComment: String,
 });
 
