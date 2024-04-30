@@ -17,7 +17,9 @@ import SignUp from "./pages/SignUp.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import Profile from "./pages/Profile.jsx";
+import CaseReport from "./pages/CaseReport.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
+import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
 import EditUserProfile from "./pages/EditUserProfile.jsx";
 // import CreateCase from "./pages/CreateCase.jsx";
 import CaseForm from "./pages/CaseForm.jsx";
@@ -45,7 +47,8 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="cases" element={<Cases open={isOpen} />} />
           {/* <Route path="create-case" element={<CreateCase />} /> */}
-          <Route path="create-case" element={<CaseForm />} />
+          <Route path="add-case" element={<CaseForm />} />
+          <Route path="add-report" element={<CaseReport />} />
           <Route path="tasks" element={<Task />} />
           <Route path="billing" element={<Billing />} />
           <Route path="profile" element={<Profile />} />
@@ -58,9 +61,11 @@ function App() {
   );
 
   return (
-    <AuthContextProvider>
-      <RouterProvider router={router} />
-    </AuthContextProvider>
+    <DataFetcherContext>
+      <AuthContextProvider>
+        <RouterProvider router={router} />
+      </AuthContextProvider>
+    </DataFetcherContext>
   );
 }
 

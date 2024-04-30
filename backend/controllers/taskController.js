@@ -44,7 +44,7 @@ exports.getTask = catchAsync(async (req, res, next) => {
     .populate({ path: "assignedTo", select: "firstName lastName" })
     .populate({
       path: "caseToWorkOn",
-      select: "firstParty.name secondParty.name",
+      select: "firstParty.description.name secondParty.description.name ",
     });
   if (!task) {
     return next(new AppError("The task does not exist", 404));

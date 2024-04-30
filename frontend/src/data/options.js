@@ -1,6 +1,5 @@
 // case status options
 export const statusOptions = [
-  { label: "---Select---", value: "" },
   { label: "Pending", value: "Pending" },
   { label: "Closed", value: "Closed" },
   { label: "Decided", value: "Decided" },
@@ -8,7 +7,6 @@ export const statusOptions = [
 
 // court names options
 export const courtOptions = [
-  { label: "---Select---", value: "" },
   { label: "Supreme Court", value: "Supreme Court" },
   { label: "Court of Appeal", value: "Court of Appeal" },
   { label: "Federal High Court", value: "Federal High Court" },
@@ -27,7 +25,6 @@ export const courtOptions = [
 
 // modes of commencement of case options
 export const modesOptions = [
-  { label: "---Select---", value: "" },
   { label: "Writ of Summons", value: "Writ of Summons" },
   { label: "Originating Summons", value: "Originating Summons" },
   { label: "Originating Motion", value: "Originating Motion" },
@@ -37,7 +34,6 @@ export const modesOptions = [
 
 // case priority options
 export const casePriorityOptions = [
-  { label: "---Select---", value: "" },
   { label: "Low", value: "Low" },
   { label: "Medium", value: "Medium" },
   { label: "High", value: "High" },

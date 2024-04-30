@@ -8,6 +8,7 @@ import {
   IoHelpCircleOutline,
   IoMenuOutline,
 } from "react-icons/io5";
+import { MdEditNote } from "react-icons/md";
 import { FaMoneyBill, FaTasks } from "react-icons/fa";
 import { FaListUl } from "react-icons/fa6";
 import { GrDocument } from "react-icons/gr";
@@ -31,6 +32,16 @@ const navItems = [
     name: "Tasks",
     path: "tasks",
     icon: <FaTasks />,
+  },
+  {
+    name: "Add Case",
+    path: "add-case",
+    icon: <MdEditNote />,
+  },
+  {
+    name: "Add Report",
+    path: "add-report",
+    icon: <MdEditNote />,
   },
 
   {

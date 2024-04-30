@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
-import { useDataFetch } from "../context/useDataFectch";
+import { useDataFetch } from "../context/useDataFetch";
 import { DeleteOutlined } from "@ant-design/icons";
+<<<<<<< HEAD
 import TextDivider from "../components/TextDivider";
 // import DebounceSelect from "../components/DebounceSelect";
 
@@ -8,6 +9,28 @@ import { Button, Input, Form, Card, Space, DatePicker, Select } from "antd";
 // import DeleteIcon from "../components/DeleteIcon";
 // import { useAuth } from "../hooks/useAuth";
 // import TextArea from "antd/es/input/TextArea";
+=======
+import {
+  PartyDynamicInputs,
+  SelectInputs,
+  DynamicInputArrays,
+  TextAreaInput,
+} from "../components/DynamicInputs";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
+
+import {
+  Button,
+  Input,
+  Form,
+  Divider,
+  Typography,
+  Card,
+  Select,
+  Space,
+  DatePicker,
+} from "antd";
+
+>>>>>>> refactor_field
 import {
   courtOptions,
   statusOptions,
@@ -54,14 +77,20 @@ const CaseForm = () => {
     casePriority: "",
     stepToBeTaken: [],
     caseUpdates: [{ date: "", update: "" }],
+<<<<<<< HEAD
     listOfJudicialAuthorities: [{ name: "" }],
     listOfStatutoryAuthorities: [{ name: "" }],
     accountOfficer: [{ name: "" }],
+=======
+    // task: [],
+    accountOfficer: [],
+>>>>>>> refactor_field
     client: [{ name: "" }],
     generalComment: "",
   });
   // destructure dataFetcher from useDataFetch
   const { dataFetcher, data } = useDataFetch();
+<<<<<<< HEAD
 
   // fetch all user/accountOfficers
   const fetchData = async () => {
@@ -81,6 +110,19 @@ const CaseForm = () => {
         value: user?.fullName,
         label: user?.fullName,
       }))
+=======
+  // destructure user data for accountOfficers
+  const { users } = useDataGetterHook();
+
+  //  get users/account officer's data
+  const userData = Array.isArray(users?.data)
+    ? users?.data.map((user) => {
+        return {
+          value: user?.fullName,
+          label: user?.fullName,
+        };
+      })
+>>>>>>> refactor_field
     : [];
 
   // form submit functionalities
@@ -121,119 +163,31 @@ const CaseForm = () => {
         // initialValues={formData}
       >
         {/* FIRST PARTY FIELD */}
+<<<<<<< HEAD
         <TextDivider text="First Party" />
         <div className="flex flex-wrap justify-between ">
           <div>
             {/* firstParty title field */}
+=======
+        <Divider orientation="left" orientationMargin="0">
+          <Typography.Title level={4}>First Party</Typography.Title>
+        </Divider>
+>>>>>>> refactor_field
 
-            <Form.Item
-              name={["firstParty", "title"]}
-              label="Title"
-              // rules={[
-              //   {
-              //     required: true,
-              //     message: "Please provide the party's title",
-              //   },
-              // ]}
-            >
-              <Input placeholder="e.g. Plaintiff" />
-            </Form.Item>
-          </div>
-
-          <div>
-            {/* firstParty description field */}
-            <Form.List
-              name={["firstParty", "description"]}
-              initialValue={formData?.firstParty?.title}>
-              {(nameFields, { add: addName, remove: removeName }) => (
-                <div>
-                  {nameFields.map(({ key, name, ...restField }) => (
-                    <div key={key}>
-                      <Form.Item
-                        className="m-0 p-0"
-                        {...restField}
-                        name={[name, "name"]}
-                        initialValue={
-                          formData?.firstParty?.description[name]?.name
-                        }
-                        rules={[
-                          {
-                            required: true,
-                            message: "Parties name(es) is required",
-                          },
-                        ]}
-                        label={`${key + 1}- Party's Name`}>
-                        <Space.Compact className="flex  justify-center item-center">
-                          <Input
-                            placeholder="enter party's name(s)"
-                            className="h-8"
-                          />{" "}
-                          <Form.Item onClick={() => removeName(name)}>
-                            <Button>
-                              <DeleteOutlined className="text-red-700" />
-                            </Button>
-                          </Form.Item>
-                        </Space.Compact>
-                      </Form.Item>
-                      <div></div>
-                    </div>
-                  ))}
-                  <Form.Item onClick={() => addName()}>
-                    <Button className="">+ Add Name</Button>
-                  </Form.Item>
-                </div>
-              )}
-            </Form.List>
-          </div>
-
-          <div>
-            {/* firstParty processFiled field */}
-
-            <Form.List
-              name={["firstParty", "processesFiled"]}
-              // initialValue={[{ name: "" }]}
-            >
-              {(
-                processesFiledFields,
-                { add: addProcess, remove: removeProcess }
-              ) => (
-                <div>
-                  {processesFiledFields.map(({ key, name, ...restField }) => {
-                    return (
-                      <div key={key}>
-                        <Form.Item
-                          className="m-0 p-0"
-                          {...restField}
-                          name={[name, "name"]}
-                          initialValue={
-                            formData?.firstParty?.processesFiled[name]?.name
-                          }
-                          label={`${key + 1}- Process Filed`}>
-                          <Space.Compact>
-                            <Input
-                              placeholder="Enter process field"
-                              className="h-8"
-                            />
-                            <Form.Item onClick={() => removeProcess(name)}>
-                              <Button>
-                                <DeleteOutlined className="text-red-700" />
-                              </Button>
-                            </Form.Item>
-                          </Space.Compact>
-                        </Form.Item>
-                      </div>
-                    );
-                  })}
-                  <Form.Item>
-                    <Button onClick={() => addProcess()}>+ Add Process</Button>
-                  </Form.Item>
-                </div>
-              )}
-            </Form.List>
-          </div>
-        </div>
+        <PartyDynamicInputs
+          parentKey="firstParty"
+          firstKeyVal="title"
+          label="Title"
+          placeholderVal="e.g. Plaintiff"
+          secondKeyVal="description"
+          firstInitialValue={formData?.firstParty?.title}
+          secondInitialValue={formData?.firstParty?.description}
+          thirdKeyVal="processesFiled"
+          thirdInitialValue={formData?.firstParty?.processesFiled}
+        />
 
         {/* SECOND PARTY FIELD */}
+<<<<<<< HEAD
         <TextDivider text="Second Party" />
 
         <div className="flex flex-wrap justify-between  ">
@@ -347,6 +301,27 @@ const CaseForm = () => {
         {/* OTHER PARTIES FIELD */}
         <TextDivider text="Other Party" />
 
+=======
+        <Divider orientation="left" orientationMargin="0">
+          <Typography.Title level={4}>Second Party</Typography.Title>
+        </Divider>
+        <PartyDynamicInputs
+          parentKey="secondParty"
+          firstKeyVal="title"
+          label="Title"
+          placeholderVal="e.g. Defendant"
+          secondKeyVal="description"
+          firstInitialValue={formData?.secondParty?.title}
+          secondInitialValue={formData?.secondParty?.description}
+          thirdKeyVal="processesFiled"
+          thirdInitialValue={formData?.secondParty?.processesFiled}
+        />
+
+        {/* OTHER PARTIES FIELD */}
+        <Divider orientation="left" orientationMargin="0">
+          <Typography.Title level={4}>Other Party</Typography.Title>
+        </Divider>
+>>>>>>> refactor_field
         <div className="">
           <Form.List name="otherParty">
             {(fields, { add, remove }) => (
@@ -456,7 +431,9 @@ const CaseForm = () => {
             )}
           </Form.List>
         </div>
+        <Divider />
 
+<<<<<<< HEAD
         <div className="flex flex-wrap  justify-around gap-14 items-center mt-7">
           {/* SUIT NO FIELD */}
           {/* <TextDivider text="Suit No" /> */}
@@ -496,12 +473,28 @@ const CaseForm = () => {
           <div>
             <Form.Item
               label="Specify other Mode"
+=======
+        {/* SUIT NO FIELD */}
+        <div className="flex justify-between items-center gap-9 flex-wrap">
+          {/* MODE OF COMMENCEMENT */}
+          <SelectInputs
+            fieldName="modeOfCommencement"
+            label="Mode of Commencement"
+            initialValue={formData?.modeOfCommencement}
+            options={modesOptions}
+          />
+          {/* OTHER MODE OF COMMENCEMENT*/}
+          <div>
+            <Form.Item
+              label="Specify Court"
+>>>>>>> refactor_field
               name="otherModeOfCommencement"
               initialValue={formData?.otherModeOfCommencement}>
               <Input />
             </Form.Item>
           </div>
 
+<<<<<<< HEAD
           {/* COURTS */}
           {/* <TextDivider text="Court" /> */}
           <div>
@@ -528,6 +521,49 @@ const CaseForm = () => {
               />
             </Form.Item>
           </div>
+=======
+          {/* NATURE OF CASE*/}
+          <div>
+            <Form.Item
+              label="Nature of Case"
+              name="natureOfCase"
+              initialValue={formData?.natureOfCase}>
+              <Input placeholder="e.g. Breach of Contract" />
+            </Form.Item>
+          </div>
+
+          {/* DATE FILED */}
+          <div>
+            <Form.Item name="filingDate" label="Filing Date">
+              <DatePicker />
+            </Form.Item>
+          </div>
+          <Divider />
+          <div>
+            <Form.Item
+              name="suitNo"
+              label="Suit No."
+              tooltip="This is a required field"
+              initialValue={formData?.suitNo}
+              // rules={[
+              //   {
+              //     required: true,
+              //     message: "Please enter suit no!",
+              //   },
+              // ]}
+            >
+              <Input />
+            </Form.Item>
+          </div>
+
+          {/* COURTS */}
+          <SelectInputs
+            fieldName="courtName"
+            label="Assigned Court"
+            initialValue={formData?.courtName}
+            options={courtOptions}
+          />
+>>>>>>> refactor_field
           {/* OTHER COURT*/}
           <div>
             <Form.Item
@@ -537,6 +573,7 @@ const CaseForm = () => {
               <Input />
             </Form.Item>
           </div>
+<<<<<<< HEAD
           {/* JUDGE FIELD */}
           {/* <TextDivider text="Judges/Justices" /> */}
           <div>
@@ -593,6 +630,10 @@ const CaseForm = () => {
 
           {/* CASE FILE NO FIELD */}
           {/* <TextDivider text="Case file Number" /> */}
+=======
+
+          {/* CASE FILE NO FIELD */}
+>>>>>>> refactor_field
           <div>
             <Form.Item
               label="Case file Number"
@@ -601,6 +642,7 @@ const CaseForm = () => {
               <Input />
             </Form.Item>
           </div>
+<<<<<<< HEAD
 
           {/* DATE FILED */}
           {/* <TextDivider text="Filing Date" /> */}
@@ -622,10 +664,77 @@ const CaseForm = () => {
                   width: 200,
                 }}
                 options={statusOptions}
+=======
+          <Divider />
+          {/* CASE STATUS */}
+          <SelectInputs
+            name="caseStatus"
+            label="Case Status"
+            initialValue={formData?.caseStatus}
+            options={statusOptions}
+          />
+
+          {/* CASE PRIORITY */}
+          <SelectInputs
+            name="casePriority"
+            label="Case Priority"
+            initialValue={formData?.casePriority}
+            options={casePriorityOptions}
+          />
+
+          {/* JUDGE FIELD */}
+          <DynamicInputArrays
+            parentKey="judge"
+            initialValue={formData?.judge}
+            label="Judge/Justices"
+            placeholder="Enter judges  name"
+          />
+
+          {/* CASE STRENGTH */}
+          <DynamicInputArrays
+            parentKey="caseStrengths"
+            initialValue={formData?.caseStrengths}
+            label="Case Strength"
+            placeholder="Enter case's Strength"
+          />
+          <Divider />
+          {/* CASE WEAKNESS */}
+          <DynamicInputArrays
+            parentKey="caseWeaknesses"
+            initialValue={formData?.caseWeaknesses}
+            label="Case Weaknesses"
+            placeholder="Enter case's Weaknesses"
+          />
+
+          {/* STEPS TO BE TAKEN FIELD */}
+          <DynamicInputArrays
+            parentKey="stepToBeTaken"
+            initialValue={formData?.stepToBeTaken}
+            label="Steps/Strategies"
+          />
+
+          {/* ACCOUNT OFFICER */}
+          {/* <TextDivider text="Account Officer(s)" /> */}
+          <div>
+            <Form.Item
+              name="accountOfficer"
+              label="Account Officer"
+              initialValue={formData?.accountOfficer.name}>
+              <Select
+                noStyle
+                mode="multiple"
+                placeholder="Select account officer"
+                options={userData}
+                allowClear
+                style={{
+                  width: "100%",
+                }}
+>>>>>>> refactor_field
               />
             </Form.Item>
           </div>
 
+<<<<<<< HEAD
           {/* CASE PRIORITY */}
           {/* <TextDivider text="Case Priority/ Rating" /> */}
           <div>
@@ -676,6 +785,62 @@ const CaseForm = () => {
                       <Form.Item>
                         <Button onClick={() => add()}>
                           + Add Case&apos;s Strengths
+=======
+          {/* CLIENT */}
+          <DynamicInputArrays
+            parentKey="client"
+            initialValue={formData?.client}
+            label="Client"
+          />
+
+          {/* CASE UPDATE/REPORT */}
+          {/* <Divider orientation="left" orientationMargin="0">
+            <Typography.Title level={4}>Case Update/ Report</Typography.Title>
+          </Divider> */}
+
+          {/* <div className="">
+            <div>
+              <Form.List name="caseUpdates">
+                {(fields, { add, remove }) => (
+                  <div>
+                    {fields.map((field) => (
+                      <Space.Compact
+                        key={field.key}
+                        className="flex justify-center items-center my-2">
+                        <div className="flex flex-col  items-center gap-5">
+                          <div>
+                            <Form.Item
+                              noStyle
+                              className=" w-4/5"
+                              name={[field.name, "date"]}
+                              initialValue={
+                                formData?.caseUpdates[field.name]?.date
+                              }>
+                              <DatePicker placeholder="Select Date" />
+                            </Form.Item>
+                          </div>
+                          <div>
+                            <Form.Item
+                              noStyle
+                              name={[field.name, "update"]}
+                              initialValue={
+                                formData?.caseUpdates[field.name]?.update
+                              }>
+                              <TextArea
+                                placeholder="Enter Update"
+                                className="w-96 "
+                              />
+                            </Form.Item>
+                          </div>
+                        </div>
+                        <Button>
+                          <DeleteOutlined
+                            className="text-red-700"
+                            onClick={() => {
+                              remove(field.name);
+                            }}
+                          />
+>>>>>>> refactor_field
                         </Button>
                       </Form.Item>
                     </div>
@@ -725,6 +890,7 @@ const CaseForm = () => {
                 </Form.List>
               </div>
             </div>
+<<<<<<< HEAD
           </div>
 
           {/* STEPS TO BE TAKEN FIELD */}
@@ -988,6 +1154,27 @@ const CaseForm = () => {
             </Form.Item>
           </div>
         </div>
+=======
+          </div> */}
+        </div>
+
+        <Divider />
+
+        {/* CASE SUMMARY */}
+        <TextAreaInput
+          fieldName="caseSummary"
+          initialValue={formData?.caseSummary}
+          label="Case Summary"
+        />
+        {/* GENERAL COMMENT */}
+        <TextAreaInput
+          fieldName="generalComment"
+          initialValue={formData?.generalComment}
+          label="General Comment"
+        />
+        <Divider />
+
+>>>>>>> refactor_field
         <Form.Item>
           <Button onClick={onSubmit} type="default" htmlType="submit">
             Submit
