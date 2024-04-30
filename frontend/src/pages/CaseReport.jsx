@@ -1,23 +1,19 @@
-import { useState, useCallback, useEffect } from "react";
-import { useDataFetch } from "../context/useDataFectch";
-import { DeleteOutlined } from "@ant-design/icons";
-import {
-  PartyDynamicInputs,
-  SelectInputs,
-  DynamicInputArrays,
-  TextAreaInput,
-} from "../components/DynamicInputs";
+import { useState, useCallback } from "react";
+import { useDataFetch } from "../context/useDataFetch";
 
 import {
   Button,
   Input,
   Form,
+  Space,
+  Card,
   Divider,
   Typography,
   Spin,
   Select,
   DatePicker,
 } from "antd";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
 const CaseReport = () => {
   // destructure textarea from input
@@ -28,36 +24,38 @@ const CaseReport = () => {
     date: "",
     update: "",
     adjournedDate: "",
-    reporter: "",
+    reportedBy: "",
     caseReported: [],
   });
   // destructor authenticate from useAuth
   const { dataFetcher, data } = useDataFetch();
+  const { cases, users } = useDataGetterHook();
 
-  //  get users/account officer's data
-  const cases = Array.isArray(data?.data)
-    ? data?.data.map((singleCase) => {
-        // console.log(singleCase?._id);
+  //  map over cases value
+  const casesData = Array.isArray(cases?.data)
+    ? cases?.data.map((singleCase) => {
+        const { firstParty, secondParty } = singleCase;
+        const firstName = firstParty?.description[0]?.name;
+        const secondName = secondParty?.description[0]?.name;
+
         return {
           value: singleCase?._id,
-          label: singleCase?.caseFullTitle,
+          label: `${firstName || ""} vs ${secondName || ""}`,
         };
       })
     : [];
 
-  // console.log("CASES", cases);
+  //  get users/reporter data
+  const usersData = Array.isArray(users?.data)
+    ? users?.data.map((user) => {
+        return {
+          value: user?._id,
+          label: user?.fullName,
+        };
+      })
+    : [];
 
-  // getAllUsers
-  const fetchData = async () => {
-    try {
-      await dataFetcher("cases");
-    } catch (err) {
-      console.log(err);
-    }
-  };
-  useEffect(() => {
-    fetchData(); // Call the async function to fetch data
-  }, []);
+  console.log(users);
 
   // form submit functionalities
   const handleSubmission = useCallback(
@@ -93,90 +91,87 @@ const CaseReport = () => {
         form={form}
         name="dynamic_form_complex"
         // autoComplete="off"
-        // initialValues={formData}
-      >
-        {/* DATE*/}
-        <Divider orientation="left" orientationMargin="0">
-          <Typography.Title level={4}>Date</Typography.Title>
-        </Divider>
-
-        {/* Report Date */}
-        <div>
+        className="flex  justify-center">
+        {/* <h1 className="text-4xl">Case Report</h1> */}
+        <Card title="Case Report" bordered={false} style={{ width: 700 }}>
           <Form.Item name="date" label="Report Date">
             <DatePicker />
           </Form.Item>
-        </div>
-        <Divider />
+          {/* UPDATE */}
 
-        {/* UPDATE */}
-        <div>
           <Form.Item
             name="update"
             label="Write update here..."
             //   tooltip="This is a required field"
             initialValue={formData?.update}
-            // rules={[
-            //   {
-            //     required: true,
-            //     message: "Please enter suit no!",
-            //   },
-            // ]}
-          >
-            <TextArea />
+            rules={[
+              {
+                required: true,
+                message: "Please write your update!",
+              },
+            ]}>
+            <TextArea rows={8} placeholder="Your text here..." />
           </Form.Item>
-        </div>
 
-        {/*  */}
+          {/* CASE REPORTED */}
 
-        {/* ACCOUNT OFFICER */}
-
-        <div>
           <Form.Item
             name="caseReported"
             label="Case To Work On"
-            initialValue={formData?.caseReported}>
+            initialValue={formData?.caseReported}
+            rules={[
+              {
+                required: true,
+                message: "Please, provide the case you are reporting on",
+              },
+            ]}>
             <Select
               noStyle
-              mode="multiple"
               notFoundContent={data ? <Spin size="small" /> : null}
               placeholder="Select a case here"
-              options={cases}
+              options={casesData}
               allowClear
               style={{
                 width: "100%",
               }}
             />
           </Form.Item>
-        </div>
+          {/* REPORTER */}
 
-        {/* ADJOURNED DATE */}
-        <div>
-          <Form.Item name="adjournedDate" label="Report Date">
+          <Form.Item
+            name="reportedBy"
+            label="Case Reporter"
+            initialValue={formData?.reportedBy}
+            rules={[
+              {
+                required: true,
+                message: "Please, select reporter!",
+              },
+            ]}>
+            <Select
+              noStyle
+              notFoundContent={data ? <Spin size="small" /> : null}
+              placeholder="Select a reporter"
+              options={usersData}
+              allowClear
+              style={{
+                width: "100%",
+              }}
+            />
+          </Form.Item>
+
+          {/* ADJOURNED DATE */}
+
+          <Form.Item name="adjournedDate" label="Next Adjourned Date">
             <DatePicker />
           </Form.Item>
-        </div>
 
-        <Divider />
-
-        {/* CASE SUMMARY */}
-        {/* <TextAreaInput
-          fieldName="caseSummary"
-          initialValue={formData?.caseSummary}
-          label="Case Summary"
-        /> */}
-        {/* GENERAL COMMENT */}
-        {/* <TextAreaInput
-          fieldName="generalComment"
-          initialValue={formData?.generalComment}
-          label="General Comment"
-        /> */}
-        <Divider />
-
-        <Form.Item>
-          <Button onClick={onSubmit} type="default" htmlType="submit">
-            Submit
-          </Button>
-        </Form.Item>
+          <Form.Item>
+            <Button onClick={onSubmit} type="default" htmlType="submit">
+              Submit
+            </Button>
+          </Form.Item>
+        </Card>
       </Form>
     </>
   );

@@ -153,20 +153,34 @@ const caseSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   }
 );
-caseSchema.virtual("caseFullTitle").get(function () {
-  return (
-    this.firstParty.description[0].name +
-    " " +
-    "Vs" +
-    " " +
-    this.secondParty.description[0].name
-  );
-});
+// caseSchema.virtual("caseFullTitle").get(function () {
+//   return (
+//     this?.firstParty?.description[0]?.name +
+//     " " +
+//     "vs" +
+//     " " +
+//     this?.secondParty?.description[0]?.name
+//   );
+// });
+// virtual for full title name
+// caseSchema.virtual("caseFullTitle").get(function () {
+//   const { firstParty, secondParty } = this;
+//   const firstName = firstParty?.description[0]?.name;
+//   const secondName = secondParty?.description[0]?.name;
+
+//   return `${firstName || ""} vs ${secondName || ""}`;
+// });
 
 // virtual populate
 caseSchema.virtual("reports", {
   ref: "Report",
   foreignField: "caseReported",
+  localField: "_id",
+});
+
+caseSchema.virtual("reporter", {
+  ref: "Report",
+  foreignField: "reportedBy",
   localField: "_id",
 });
 

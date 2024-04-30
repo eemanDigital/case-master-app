@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useDataFetch } from "../context/useDataFectch";
+import { useDataFetch } from "../context/useDataFetch";
 import { DeleteOutlined } from "@ant-design/icons";
 import {
   PartyDynamicInputs,
@@ -7,6 +7,7 @@ import {
   DynamicInputArrays,
   TextAreaInput,
 } from "../components/DynamicInputs";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
 import {
   Button,
@@ -67,38 +68,24 @@ const CaseForm = () => {
     stepToBeTaken: [],
     caseUpdates: [{ date: "", update: "" }],
     // task: [],
-    accountOfficer: [""],
+    accountOfficer: [],
     client: [{ name: "" }],
     generalComment: "",
   });
   // destructor authenticate from useAuth
   const { dataFetcher, data } = useDataFetch();
-  // const { firstName } = data;
-  // console.log("USERS", data.data[3].firstName);
+  // destructure user data for accountOfficers
+  const { users } = useDataGetterHook();
 
   //  get users/account officer's data
-  const users = Array.isArray(data?.data)
-    ? data?.data.map((user) => {
+  const userData = Array.isArray(users?.data)
+    ? users?.data.map((user) => {
         return {
           value: user?.fullName,
           label: user?.fullName,
         };
       })
     : [];
-
-  // console.log(users);
-
-  // getAllUsers
-  const fetchData = async () => {
-    try {
-      await dataFetcher("users");
-    } catch (err) {
-      console.log(err);
-    }
-  };
-  useEffect(() => {
-    fetchData(); // Call the async function to fetch data
-  }, []);
 
   // form submit functionalities
   const handleSubmission = useCallback(
@@ -417,12 +404,12 @@ const CaseForm = () => {
             <Form.Item
               name="accountOfficer"
               label="Account Officer"
-              initialValue={formData?.accountOfficer}>
+              initialValue={formData?.accountOfficer.name}>
               <Select
                 noStyle
                 mode="multiple"
                 placeholder="Select account officer"
-                options={users}
+                options={userData}
                 allowClear
                 style={{
                   width: "100%",
@@ -439,11 +426,11 @@ const CaseForm = () => {
           />
 
           {/* CASE UPDATE/REPORT */}
-          <Divider orientation="left" orientationMargin="0">
+          {/* <Divider orientation="left" orientationMargin="0">
             <Typography.Title level={4}>Case Update/ Report</Typography.Title>
-          </Divider>
+          </Divider> */}
 
-          <div className="">
+          {/* <div className="">
             <div>
               <Form.List name="caseUpdates">
                 {(fields, { add, remove }) => (
@@ -495,7 +482,7 @@ const CaseForm = () => {
                 )}
               </Form.List>
             </div>
-          </div>
+          </div> */}
         </div>
 
         <Divider />

@@ -19,6 +19,7 @@ import ResetPassword from "./pages/ResetPassword.jsx";
 import Profile from "./pages/Profile.jsx";
 import CaseReport from "./pages/CaseReport.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
+import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
 import EditUserProfile from "./pages/EditUserProfile.jsx";
 // import CreateCase from "./pages/CreateCase.jsx";
 import CaseForm from "./pages/CaseForm.jsx";
@@ -60,9 +61,11 @@ function App() {
   );
 
   return (
-    <AuthContextProvider>
-      <RouterProvider router={router} />
-    </AuthContextProvider>
+    <DataFetcherContext>
+      <AuthContextProvider>
+        <RouterProvider router={router} />
+      </AuthContextProvider>
+    </DataFetcherContext>
   );
 }
 

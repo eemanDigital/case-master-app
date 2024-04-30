@@ -6,6 +6,11 @@ const reportSchema = new mongoose.Schema({
     default: Date.now,
     // required: [true, "A case must have a name"],
   },
+  caseReported: {
+    type: mongoose.Schema.ObjectId,
+    ref: "Case",
+  },
+
   update: {
     type: "string",
     trim: true,
@@ -17,27 +22,20 @@ const reportSchema = new mongoose.Schema({
     // required: [true, "A case must have a name"],
   },
 
-  reporter: {
+  reportedBy: {
     type: mongoose.Schema.ObjectId,
     ref: "User",
   },
-
-  caseReported: [
-    {
-      type: mongoose.Schema.ObjectId,
-      ref: "Case",
-    },
-  ],
 });
 
 // populate case and reporter
 reportSchema.pre(/^find/, function (next) {
   this.populate({
-    path: "reporter",
+    path: "reportedBy",
     select: "firstName lastName middleName",
   }).populate({
     path: "caseReported",
-    select: "firstParty.description.name",
+    select: "firstParty.description.name  secondParty.description.name",
   });
   next();
 });

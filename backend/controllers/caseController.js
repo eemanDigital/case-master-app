@@ -25,7 +25,11 @@ exports.getCases = catchAsync(async (req, res, next) => {
 exports.getCase = catchAsync(async (req, res, next) => {
   //if id/caseId provided does not exist
   const _id = req.params.caseId;
-  const data = await Case.findById({ _id }).populate("reports");
+  const data = await Case.findById({ _id }).populate({
+    path: "reports",
+    select: "-caseReported",
+  });
+
   // res.status(200).json({
   //   data,
   // });
