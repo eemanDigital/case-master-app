@@ -14,17 +14,10 @@ import {
   Form,
   Divider,
   Typography,
-  Card,
-  Space,
+  Spin,
+  Select,
   DatePicker,
 } from "antd";
-
-import {
-  courtOptions,
-  statusOptions,
-  casePriorityOptions,
-  modesOptions,
-} from "../data/options";
 
 const CaseReport = () => {
   // destructure textarea from input
@@ -36,7 +29,7 @@ const CaseReport = () => {
     update: "",
     adjournedDate: "",
     reporter: "",
-    caseReported: [{ value: "" }],
+    caseReported: [],
   });
   // destructor authenticate from useAuth
   const { dataFetcher, data } = useDataFetch();
@@ -52,7 +45,7 @@ const CaseReport = () => {
       })
     : [];
 
-  console.log("CASES", cases);
+  // console.log("CASES", cases);
 
   // getAllUsers
   const fetchData = async () => {
@@ -135,13 +128,26 @@ const CaseReport = () => {
 
         {/*  */}
 
-        <SelectInputs
-          name="caseReported"
-          label="Cases"
-          initialValue={formData?.caseReported}
-          mode="multiple"
-          options={cases}
-        />
+        {/* ACCOUNT OFFICER */}
+
+        <div>
+          <Form.Item
+            name="caseReported"
+            label="Case To Work On"
+            initialValue={formData?.caseReported}>
+            <Select
+              noStyle
+              mode="multiple"
+              notFoundContent={data ? <Spin size="small" /> : null}
+              placeholder="Select a case here"
+              options={cases}
+              allowClear
+              style={{
+                width: "100%",
+              }}
+            />
+          </Form.Item>
+        </div>
 
         {/* ADJOURNED DATE */}
         <div>

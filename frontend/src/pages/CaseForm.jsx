@@ -15,6 +15,7 @@ import {
   Divider,
   Typography,
   Card,
+  Select,
   Space,
   DatePicker,
 } from "antd";
@@ -66,7 +67,7 @@ const CaseForm = () => {
     stepToBeTaken: [],
     caseUpdates: [{ date: "", update: "" }],
     // task: [],
-    accountOfficer: [{ name: "" }],
+    accountOfficer: [""],
     client: [{ name: "" }],
     generalComment: "",
   });
@@ -411,14 +412,24 @@ const CaseForm = () => {
           />
 
           {/* ACCOUNT OFFICER */}
-
-          <SelectInputs
-            name="accountOfficer"
-            label="Account Officer"
-            initialValue={formData?.accountOfficer}
-            mode="multiple"
-            options={users}
-          />
+          {/* <TextDivider text="Account Officer(s)" /> */}
+          <div>
+            <Form.Item
+              name="accountOfficer"
+              label="Account Officer"
+              initialValue={formData?.accountOfficer}>
+              <Select
+                noStyle
+                mode="multiple"
+                placeholder="Select account officer"
+                options={users}
+                allowClear
+                style={{
+                  width: "100%",
+                }}
+              />
+            </Form.Item>
+          </div>
 
           {/* CLIENT */}
           <DynamicInputArrays
