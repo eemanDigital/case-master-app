@@ -22,21 +22,21 @@ const partyProcessSchema = new mongoose.Schema({ name: String });
 const caseSchema = new mongoose.Schema(
   {
     firstParty: {
-      title: String,
+      description: String,
       processesFiled: [partyProcessSchema],
-      description: [nameSchema],
+      name: [nameSchema],
     },
     secondParty: {
-      title: String,
+      description: String,
       processesFiled: [partyProcessSchema],
-      description: [nameSchema],
+      name: [nameSchema],
     },
 
     otherParty: [
       {
-        title: String,
+        description: String,
         processesFiled: [partyProcessSchema],
-        description: [nameSchema],
+        name: [nameSchema],
       },
     ],
 
