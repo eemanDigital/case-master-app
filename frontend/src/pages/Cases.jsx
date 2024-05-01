@@ -1,49 +1,60 @@
-import { useEffect, useState } from "react";
+// import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-import axios from "axios";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
 const Cases = () => {
-  const [cases, setCases] = useState([]);
+  const { cases, loading, error } = useDataGetterHook();
 
-  // const { data, authenticate } = useAuth();
+  const casesData = Array.isArray(cases?.data)
+    ? cases?.data.map((singleCase) => {
+        const { firstParty, secondParty } = singleCase;
+        const firstName = firstParty?.name[0]?.name;
+        const secondName = secondParty?.name[0]?.name;
 
-  // console.log(data);
+        return (
+          <>
+            <Link>
+              <h1 className="text-2xl">{`${firstName || ""} vs ${
+                secondName || ""
+              }`}</h1>
+            </Link>
+          </>
+        );
+      })
+    : [];
 
-  // console.log(cases);
-  // map over data
-  const caseData = cases.map((casedetail, index) => {
-    // console.log(casedetail.firstParty.name[0]);
-    return (
-      <div key={index} className="w-full">
-        <Link className="block">
-          <ul className="block w-[100%]">
-            {casedetail.firstParty.name.map((fname) => (
-              <li key={fname}>
-                {fname} vs.{" "}
-                {casedetail.secondParty.name.map((secName) => {
-                  return <li key={secName}>{secName}</li>;
-                })}
-              </li>
-            ))}
-          </ul>
-        </Link>
-      </div>
-    );
-  });
+  // const caseData = cases?.data?.map((singleCase, index) => {
+  //   console.log(singleCase.firstParty.name[0]);
+  //   // console.log(singleCase);
+  //   return (
+  //     <div key={index} className="w-full">
+  //       <Link className="block">
+  //         <ul className="block w-[100%]">
+  //           {singleCase.firstParty.name.map((fname) => (
+  //             <li key={fname}>
+  //               {fname} vs.{" "}
+  //               {singleCase.secondParty.name.map((secName) => {
+  //                 return <li key={secName}>{secName}</li>;
+  //               })}
+  //             </li>
+  //           ))}
+  //         </ul>
+  //       </Link>
+  //     </div>
+  //   );
+  // });
 
-  // fetch case data
-  useEffect(() => {
-    // authenticate("cases");
-    axios
-      .get("http://localhost:3000/api/v1/cases")
-      .then((response) => setCases(response.data.data))
-      .catch((err) => console.log(err));
-  }, []);
-  console.log(cases);
   return (
     <section className={` `}>
-      <div className="">{caseData}</div>
+      <h1>
+        {!error && !loading && cases.length === 0 && <h1>No Data Available</h1>}
+      </h1>
+      <div className="">{!error && casesData}</div>
+      <div>
+        <h1>{error}</h1>
+      </div>
+
+      {loading && <h1>Data loading...</h1>}
     </section>
   );
 };

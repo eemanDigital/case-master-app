@@ -35,19 +35,19 @@ const CaseForm = () => {
   const [form] = Form.useForm();
   const [formData, setFormData] = useState({
     firstParty: {
-      title: "",
-      description: [{ name: "" }],
+      description: "",
+      name: [{ name: "" }],
       processesFiled: [{ name: "" }],
     },
     secondParty: {
-      title: "",
-      description: [{ name: "" }],
+      description: "",
+      name: [{ name: "" }],
       processesFiled: [{ name: "" }],
     },
     otherParty: [
       {
-        title: "",
-        description: [{ name: "" }],
+        description: "",
+        name: [{ name: "" }],
         processesFiled: [{ name: "" }],
       },
     ],
@@ -130,12 +130,12 @@ const CaseForm = () => {
 
         <PartyDynamicInputs
           parentKey="firstParty"
-          firstKeyVal="title"
-          label="Title"
+          firstKeyVal="description"
+          label="Description"
           placeholderVal="e.g. Plaintiff"
-          secondKeyVal="description"
-          firstInitialValue={formData?.firstParty?.title}
-          secondInitialValue={formData?.firstParty?.description}
+          secondKeyVal="name"
+          firstInitialValue={formData?.firstParty?.description}
+          secondInitialValue={formData?.firstParty?.name}
           thirdKeyVal="processesFiled"
           thirdInitialValue={formData?.firstParty?.processesFiled}
         />
@@ -146,12 +146,12 @@ const CaseForm = () => {
         </Divider>
         <PartyDynamicInputs
           parentKey="secondParty"
-          firstKeyVal="title"
-          label="Title"
+          firstKeyVal="description"
+          label="Description"
           placeholderVal="e.g. Defendant"
-          secondKeyVal="description"
-          firstInitialValue={formData?.secondParty?.title}
-          secondInitialValue={formData?.secondParty?.description}
+          secondKeyVal="name"
+          firstInitialValue={formData?.secondParty?.description}
+          secondInitialValue={formData?.secondParty?.name}
           thirdKeyVal="processesFiled"
           thirdInitialValue={formData?.secondParty?.processesFiled}
         />
@@ -180,9 +180,9 @@ const CaseForm = () => {
                     }>
                     {/* otherParty title field */}
                     <Form.Item
-                      label="Title"
-                      name={[field.name, "title"]}
-                      initialValue={formData.otherParty.title}>
+                      label="Description"
+                      name={[field.name, "description"]}
+                      initialValue={formData.otherParty.description}>
                       <Input />
                     </Form.Item>
 
@@ -190,7 +190,7 @@ const CaseForm = () => {
                     <div className="flex justify-between  items-center">
                       <Form.Item label="Name" noStyle>
                         {/* otherParty description field */}
-                        <Form.List name={[field.name, "description"]}>
+                        <Form.List name={[field.name, "name"]}>
                           {(subFields, { add, remove }) => (
                             <div>
                               {subFields.map((subField) => (
@@ -201,8 +201,9 @@ const CaseForm = () => {
                                     noStyle
                                     name={[subField.name, "name"]}
                                     initialValue={
-                                      formData.otherParty[field.name]
-                                        ?.description[subField?.name]?.name
+                                      formData.otherParty[field.name]?.name[
+                                        subField?.name
+                                      ]?.name
                                     }>
                                     <Input placeholder="Enter Party's description" />
                                   </Form.Item>
@@ -217,7 +218,7 @@ const CaseForm = () => {
                                 </Space.Compact>
                               ))}
                               <Button type="dashed" onClick={() => add()}>
-                                + Add Description
+                                + Add Name
                               </Button>
                             </div>
                           )}

@@ -26,7 +26,6 @@ const TasksForm = () => {
     assignedTo: "",
     dateAssigned: "",
     dueDate: "",
-    status: "",
     taskPriority: "",
   });
   // destructor authenticate from useAuth

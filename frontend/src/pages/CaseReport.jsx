@@ -31,12 +31,13 @@ const CaseReport = () => {
   const { dataFetcher, data } = useDataFetch();
   const { cases, users } = useDataGetterHook();
 
+  console.log("CASES", cases);
   //  map over cases value
   const casesData = Array.isArray(cases?.data)
     ? cases?.data.map((singleCase) => {
         const { firstParty, secondParty } = singleCase;
-        const firstName = firstParty?.description[0]?.name;
-        const secondName = secondParty?.description[0]?.name;
+        const firstName = firstParty?.name[0]?.name;
+        const secondName = secondParty?.name[0]?.name;
 
         return {
           value: singleCase?._id,
