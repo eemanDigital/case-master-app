@@ -21,6 +21,7 @@ import CaseReport from "./pages/CaseReport.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
 import EditUserProfile from "./pages/EditUserProfile.jsx";
+import UpdateCase from "./pages/UpdateCase.jsx";
 // import CreateCase from "./pages/CreateCase.jsx";
 import CaseForm from "./pages/CaseForm.jsx";
 
@@ -48,6 +49,7 @@ function App() {
           <Route path="cases" element={<Cases open={isOpen} />} />
           {/* <Route path="create-case" element={<CreateCase />} /> */}
           <Route path="add-case" element={<CaseForm />} />
+          <Route path="add-case/update" element={<UpdateCase />} />
           <Route path="add-report" element={<CaseReport />} />
           <Route path="tasks" element={<Task />} />
           <Route path="billing" element={<Billing />} />

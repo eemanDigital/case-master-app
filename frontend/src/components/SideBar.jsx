@@ -20,7 +20,6 @@ import { useNavigate } from "react-router-dom";
 const navItems = [
   {
     name: "Dashboard",
-
     icon: <RxDashboard />,
   },
   {
@@ -34,8 +33,8 @@ const navItems = [
     icon: <FaTasks />,
   },
   {
-    name: "Add Case",
-    path: "add-case",
+    name: "Update Case",
+    path: "update-case",
     icon: <MdEditNote />,
   },
   {
