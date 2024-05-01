@@ -26,14 +26,9 @@ const taskSchema = new mongoose.Schema({
     required: [true, "A task must have a due date"],
     default: Date.now,
   },
-  status: {
+  comment: {
     type: String,
     trim: true,
-    enum: {
-      values: ["pending", "completed"],
-      message: "Please, state the task's status",
-    },
-    required: true,
   },
   taskPriority: {
     type: String,
@@ -41,8 +36,28 @@ const taskSchema = new mongoose.Schema({
     enum: ["low", "middle", "high"],
     default: "low", // Example default value
   },
+
+  document: [String],
+  reminder: {
+    date: {
+      type: Date,
+      default: Date.now,
+    },
+    text: {
+      type: String,
+      trim: true,
+      required: [true, "Provide a reminder message "],
+    },
+  },
 });
 
+taskSchema.pre(/^find/, function (next) {
+  this.populate({ path: "assignedTo", select: "firstName lastName" }).populate({
+    path: "caseToWorkOn",
+    select: "firstParty.description.name secondParty.description.name ",
+  });
+  next();
+});
 const Task = mongoose.model("Task", taskSchema);
 
 module.exports = Task;

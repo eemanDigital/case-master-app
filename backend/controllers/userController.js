@@ -33,7 +33,10 @@ exports.getUsers = catchAsync(async (req, res, next) => {
 //GET A USER
 exports.getUser = catchAsync(async (req, res, next) => {
   const _id = req.params.userId;
-  const data = await User.findById({ _id });
+  const data = await User.findById({ _id }).populate({
+    path: "task",
+    select: "-assignedTo",
+  });
   // console.log(id);
   if (!data) {
     return next(new AppError("no user found with that Id", 404));
