@@ -1,14 +1,15 @@
 const mongoose = require("mongoose");
 
 const reportSchema = new mongoose.Schema({
+  caseReported: {
+    type: mongoose.Schema.ObjectId,
+    ref: "Case",
+  },
+
   date: {
     type: Date,
     default: Date.now,
     // required: [true, "A case must have a name"],
-  },
-  caseReported: {
-    type: mongoose.Schema.ObjectId,
-    ref: "Case",
   },
 
   update: {

@@ -28,7 +28,7 @@ import {
   modesOptions,
 } from "../data/options";
 
-const CaseForm = () => {
+const CreateCaseForm = () => {
   // destructure textarea from input
   const { TextArea } = Input;
 
@@ -512,4 +512,4 @@ const CaseForm = () => {
   );
 };
 
-export default CaseForm;
+export default CreateCaseForm;

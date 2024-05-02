@@ -16,6 +16,18 @@ exports.createReport = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.getReports = catchAsync(async (req, res, next) => {
+  const reports = await Report.find();
+  // .populate({
+  //   path: "task",
+  //   select: "description status dateAssigned dueDate taskPriority",
+  // })
+  // .populate({ path: "reports", select: "date update" });
+  res.status(200).json({
+    results: reports.length,
+    data: reports,
+  });
+});
 exports.getReport = catchAsync(async (req, res, next) => {
   const _id = req.params.reportId;
   const report = await Report.findById({ _id });

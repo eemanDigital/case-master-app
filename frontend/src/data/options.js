@@ -38,3 +38,10 @@ export const casePriorityOptions = [
   { label: "Medium", value: "Medium" },
   { label: "High", value: "High" },
 ];
+
+export const taskPriorityOptions = [
+  { value: "urgent", label: "Urgent" },
+  { value: "high", label: "High" },
+  { value: "medium", label: "Medium" },
+  { value: "low", label: "Low" },
+];

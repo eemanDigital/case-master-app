@@ -4,23 +4,25 @@ const catchAsync = require("../utils/catchAsync");
 
 exports.createTask = catchAsync(async (req, res, next) => {
   const {
-    description,
+    title,
+    instruction,
     caseToWorkOn,
     assignedTo,
     dateAssigned,
     dueDate,
-    status,
     taskPriority,
+    document,
   } = req.body;
 
   const task = await Task.create({
-    description,
+    title,
+    instruction,
     caseToWorkOn,
     assignedTo,
     dateAssigned,
     dueDate,
-    status,
     taskPriority,
+    document,
   });
 
   res.status(201).json({

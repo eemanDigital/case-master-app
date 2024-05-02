@@ -17,13 +17,16 @@ import SignUp from "./pages/SignUp.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import Profile from "./pages/Profile.jsx";
-import CaseReport from "./pages/CaseReport.jsx";
+import TasksForm from "./pages/CreateTaskForm.jsx";
+import CaseReports from "./pages/CaseReports.jsx";
+import CreateCaseForm from "./pages/CreateCaseForm.jsx";
+import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
 import EditUserProfile from "./pages/EditUserProfile.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
 // import CreateCase from "./pages/CreateCase.jsx";
-import CaseForm from "./pages/CaseForm.jsx";
+// import CaseForm from "./pages/CaseForm.jsx";
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -48,10 +51,17 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="cases" element={<Cases open={isOpen} />} />
           {/* <Route path="create-case" element={<CreateCase />} /> */}
-          <Route path="add-case" element={<CaseForm />} />
-          <Route path="add-case/update" element={<UpdateCase />} />
-          <Route path="add-report" element={<CaseReport />} />
+          <Route path="cases/add-case" element={<CreateCaseForm />} />
+          <Route path="cases/update" element={<UpdateCase />} />
+          <Route path="cases/update" element={<UpdateCase />} />
+          <Route path="case-reports" element={<CaseReports />} />
+          <Route
+            path="case-reports/add-report"
+            element={<CreateCaseReportForm />}
+          />
           <Route path="tasks" element={<Task />} />
+          <Route path="tasks/add-task" element={<TasksForm />} />
+
           <Route path="billing" element={<Billing />} />
           <Route path="profile" element={<Profile />} />
           <Route path="profile/edit" element={<EditUserProfile />} />

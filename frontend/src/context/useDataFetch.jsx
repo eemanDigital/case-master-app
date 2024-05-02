@@ -71,7 +71,7 @@ export const useDataFetch = () => {
 
       const { response } = err;
 
-      toast.error(response.data.message, {
+      toast.error(response?.data?.message, {
         position: "top-right",
         autoClose: 2000,
         hideProgressBar: false,
