@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDataFetch } from "../context/useDataFetch";
-
+import { taskPriorityOptions } from "./../data/options";
 import {
   Button,
   Input,
@@ -14,6 +14,7 @@ import {
   DatePicker,
 } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { SelectInputs } from "../components/DynamicInputs";
 
 const TasksForm = () => {
   // destructure textarea from input
@@ -21,12 +22,14 @@ const TasksForm = () => {
 
   const [form] = Form.useForm();
   const [formData, setFormData] = useState({
-    description: "",
+    title: "",
+    instruction: "",
     caseToWorkOn: "",
     assignedTo: "",
     dateAssigned: "",
     dueDate: "",
     taskPriority: "",
+    document: null,
   });
   // destructor authenticate from useAuth
   const { dataFetcher, data } = useDataFetch();
@@ -36,8 +39,8 @@ const TasksForm = () => {
   const casesData = Array.isArray(cases?.data)
     ? cases?.data.map((singleCase) => {
         const { firstParty, secondParty } = singleCase;
-        const firstName = firstParty?.description[0]?.name;
-        const secondName = secondParty?.description[0]?.name;
+        const firstName = firstParty?.name[0]?.name;
+        const secondName = secondParty?.name[0]?.name;
 
         return {
           value: singleCase?._id,
@@ -80,7 +83,7 @@ const TasksForm = () => {
     } catch (errorInfo) {
       return;
     }
-    const result = await dataFetcher("reports", "POST", values); // Submit the form data to the backend
+    const result = await dataFetcher("tasks", "POST", values); // Submit the form data to the backend
     console.log(values);
     handleSubmission(result); // Handle the submission after the API Call
   }, [form, handleSubmission, dataFetcher]);
@@ -93,39 +96,37 @@ const TasksForm = () => {
         name="dynamic_form_complex"
         // autoComplete="off"
         className="flex  justify-center">
-        {/* <h1 className="text-4xl">Case Report</h1> */}
-        <Card title="Case Report" bordered={false} style={{ width: 700 }}>
-          <Form.Item name="date" label="Report Date">
-            <DatePicker />
-          </Form.Item>
-          {/* UPDATE */}
+        <Card title="Add Task" bordered={false} style={{ width: 700 }}>
+          <div>
+            {/* task title */}
+            <Form.Item
+              label="Task Title"
+              name="title"
+              initialValue={formData?.title}>
+              <Input />
+            </Form.Item>
+          </div>
 
+          {/* instruction */}
           <Form.Item
-            name="update"
-            label="Write update here..."
+            name="instruction"
+            label="Write Instruction here..."
             //   tooltip="This is a required field"
-            initialValue={formData?.update}
+            initialValue={formData?.instruction}
             rules={[
               {
                 required: true,
-                message: "Please write your update!",
+                message: "Please, provide your instruction!",
               },
             ]}>
             <TextArea rows={8} placeholder="Your text here..." />
           </Form.Item>
 
-          {/* CASE REPORTED */}
-
+          {/* case to work on */}
           <Form.Item
-            name="caseReported"
+            name="caseToWorkOn"
             label="Case To Work On"
-            initialValue={formData?.caseReported}
-            rules={[
-              {
-                required: true,
-                message: "Please, provide the case you are reporting on",
-              },
-            ]}>
+            initialValue={formData?.caseToWorkOn}>
             <Select
               noStyle
               notFoundContent={data ? <Spin size="small" /> : null}
@@ -137,12 +138,13 @@ const TasksForm = () => {
               }}
             />
           </Form.Item>
-          {/* REPORTER */}
+
+          {/* assigned to */}
 
           <Form.Item
-            name="reportedBy"
-            label="Case Reporter"
-            initialValue={formData?.reportedBy}
+            name="assignedTo"
+            label="Assigned To"
+            initialValue={formData?.assignedTo}
             rules={[
               {
                 required: true,
@@ -150,9 +152,10 @@ const TasksForm = () => {
               },
             ]}>
             <Select
+              // mode="multiple"
               noStyle
               notFoundContent={data ? <Spin size="small" /> : null}
-              placeholder="Select a reporter"
+              placeholder="Select a staff"
               options={usersData}
               allowClear
               style={{
@@ -161,11 +164,33 @@ const TasksForm = () => {
             />
           </Form.Item>
 
-          {/* ADJOURNED DATE */}
-
-          <Form.Item name="adjournedDate" label="Next Adjourned Date">
+          {/* date assigned */}
+          <Form.Item name="dateAssigned" label="Assigned Date">
             <DatePicker />
           </Form.Item>
+
+          {/* due date */}
+          <Form.Item
+            name="dueDate"
+            label="Due Date"
+            rules={[
+              {
+                required: true,
+                message: "Specify date for staff to complete the task",
+              },
+            ]}>
+            <DatePicker />
+          </Form.Item>
+          {/* UPDATE */}
+
+          {/* task priority */}
+
+          <SelectInputs
+            fieldName="taskPriority"
+            label="Task Priority"
+            initialValue={formData?.taskPriority}
+            options={taskPriorityOptions}
+          />
 
           <Form.Item>
             <Button onClick={onSubmit} type="default" htmlType="submit">

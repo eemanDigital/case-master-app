@@ -9,6 +9,7 @@ import {
   IoMenuOutline,
 } from "react-icons/io5";
 import { MdEditNote } from "react-icons/md";
+import { TbReport } from "react-icons/tb";
 import { FaMoneyBill, FaTasks } from "react-icons/fa";
 import { FaListUl } from "react-icons/fa6";
 import { GrDocument } from "react-icons/gr";
@@ -33,14 +34,9 @@ const navItems = [
     icon: <FaTasks />,
   },
   {
-    name: "Update Case",
-    path: "update-case",
-    icon: <MdEditNote />,
-  },
-  {
-    name: "Add Report",
-    path: "add-report",
-    icon: <MdEditNote />,
+    name: "Case Report",
+    path: "case-reports",
+    icon: <TbReport />,
   },
 
   {

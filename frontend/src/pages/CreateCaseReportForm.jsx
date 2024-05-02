@@ -15,7 +15,7 @@ import {
 } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
-const CaseReport = () => {
+const CreateCaseReportForm = () => {
   // destructure textarea from input
   const { TextArea } = Input;
 
@@ -27,11 +27,13 @@ const CaseReport = () => {
     reportedBy: "",
     caseReported: [],
   });
-  // destructor authenticate from useAuth
+  // handle reports post and get report data
   const { dataFetcher, data } = useDataFetch();
+
+  // fetched cases and user data
   const { cases, users } = useDataGetterHook();
 
-  console.log("CASES", cases);
+  // console.log("CASES", cases);
   //  map over cases value
   const casesData = Array.isArray(cases?.data)
     ? cases?.data.map((singleCase) => {
@@ -178,4 +180,4 @@ const CaseReport = () => {
   );
 };
 
-export default CaseReport;
+export default CreateCaseReportForm;
