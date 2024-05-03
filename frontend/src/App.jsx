@@ -51,9 +51,10 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="cases" element={<Cases open={isOpen} />} />
           {/* <Route path="create-case" element={<CreateCase />} /> */}
+          
           <Route path="cases/add-case" element={<CreateCaseForm />} />
           <Route path="cases/update" element={<UpdateCase />} />
-          <Route path="cases/update" element={<UpdateCase />} />
+          {/* <Route path="cases/update" element={<UpdateCase />} /> */}
           <Route path="case-reports" element={<CaseReports />} />
           <Route
             path="case-reports/add-report"
