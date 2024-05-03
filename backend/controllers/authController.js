@@ -66,7 +66,7 @@ exports.login = catchAsync(async (req, res, next) => {
     next(new AppError("Provide email and password", 400));
   }
   //2) compare email and password with data in db
-  let user = await User.findOne({ email }).select("+password").populate("task");
+  let user = await User.findOne({ email }).select("+password");
 
   if (!user || !(await bcrypt.compare(password, user.password))) {
     return next(new AppError("Incorrect email or password", 401));
