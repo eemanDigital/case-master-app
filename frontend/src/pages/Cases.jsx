@@ -4,12 +4,12 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { ToastContainer } from "react-toastify";
 import Spinner from "../components/Spinner";
 import Button from "../components/Button";
-import { CiEdit } from "react-icons/ci";
+// import { CiEdit } from "react-icons/ci";
 
 const Cases = () => {
   const { cases, loadingCases, errorCases } = useDataGetterHook();
 
-  const casesData = Array.isArray(cases?.data)
+  const casesData = Array.isArray(cases?.data) //check if is array before mapping
     ? cases?.data.map((singleCase) => {
         const { firstParty, secondParty } = singleCase;
         const firstName = firstParty?.name[0]?.name;
@@ -19,7 +19,8 @@ const Cases = () => {
           <div
             key={singleCase._id}
             className="flex flex-col bg-slate-200 p-4 rounded-md w-[300px]">
-            <Link className="">
+            {/* link to case details */}
+            <Link to={`${singleCase._id}/casedetails`} className="">
               <h1 className="text-2xl font-semibold">{`${firstName || ""} vs ${
                 secondName || ""
               }`}</h1>

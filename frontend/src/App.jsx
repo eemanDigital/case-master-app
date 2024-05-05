@@ -10,7 +10,7 @@ import HomeLayout from "./components/HomeLayout";
 import Dashboard from "./components/Dashboard.jsx";
 import DashboardLayout from "./components/DashboardLayout.jsx";
 import Cases from "./pages/Cases.jsx";
-import Task from "./pages/Task.jsx";
+// import Task from "./pages/Task.jsx";
 import Billing from "./pages/Billing.jsx";
 import Login from "./pages/Login.jsx";
 import SignUp from "./pages/SignUp.jsx";
@@ -25,6 +25,8 @@ import AuthContextProvider from "./context/authContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
 import EditUserProfile from "./pages/EditUserProfile.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
+import UserTask from "./components/UserTask.jsx";
+import CaseDetails from "./pages/CaseDetails.jsx";
 // import CreateCase from "./pages/CreateCase.jsx";
 // import CaseForm from "./pages/CaseForm.jsx";
 
@@ -51,21 +53,22 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="cases" element={<Cases open={isOpen} />} />
           {/* <Route path="create-case" element={<CreateCase />} /> */}
-          
           <Route path="cases/add-case" element={<CreateCaseForm />} />
+          <Route path="cases/:id/casedetails" element={<CaseDetails />} />
           <Route path="cases/update" element={<UpdateCase />} />
+
           {/* <Route path="cases/update" element={<UpdateCase />} /> */}
           <Route path="case-reports" element={<CaseReports />} />
           <Route
             path="case-reports/add-report"
             element={<CreateCaseReportForm />}
           />
-          <Route path="tasks" element={<Task />} />
+          {/* <Route path="tasks" element={<Task />} /> */}
           <Route path="tasks/add-task" element={<TasksForm />} />
-
           <Route path="billing" element={<Billing />} />
           <Route path="profile" element={<Profile />} />
           <Route path="profile/edit" element={<EditUserProfile />} />
+          <Route path="tasks/:id" element={<UserTask />} />
 
           {/* errorElement= {<ErrorPage />} */}
         </Route>

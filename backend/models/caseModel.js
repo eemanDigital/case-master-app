@@ -89,12 +89,15 @@ const caseSchema = new mongoose.Schema(
     },
 
     otherCourt: String,
+
     judge: [judgeSchema],
+
     caseSummary: {
       type: String,
       trim: true,
       maxlength: [500, "Case summary should not be more than 500 characters"],
     },
+
     caseStatus: {
       type: String,
       trim: true,
@@ -102,6 +105,7 @@ const caseSchema = new mongoose.Schema(
         values: ["Pending", "Closed", "Decided"],
       },
     },
+
     natureOfCase: String,
     filingDate: {
       type: Date,

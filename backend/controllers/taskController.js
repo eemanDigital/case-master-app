@@ -43,7 +43,8 @@ exports.getTasks = catchAsync(async (req, res, next) => {
 
 exports.getTask = catchAsync(async (req, res, next) => {
   const task = await Task.findById(req.params.taskId);
-
+  // .populate("assignedTo")
+  // .populate("caseToWorkOn");
   if (!task) {
     return next(new AppError("The task does not exist", 404));
   }

@@ -156,7 +156,11 @@ userSchema.virtual("task", {
   foreignField: "assignedTo",
   localField: "_id",
 });
-
+userSchema.virtual("case", {
+  ref: "Task",
+  foreignField: "caseToWorkOn",
+  localField: "_id",
+});
 // virtuals for user full Name
 userSchema.virtual("fullName").get(function () {
   return this.firstName + " " + this.lastName + " " + this.middleName;

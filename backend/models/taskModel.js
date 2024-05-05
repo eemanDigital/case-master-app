@@ -7,10 +7,12 @@ const taskSchema = new mongoose.Schema(
       trim: true,
       required: [true, "A task must have a title"],
     },
-    caseToWorkOn: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Case",
-    },
+    caseToWorkOn: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Case",
+      },
+    ],
     assignedTo: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -62,7 +64,7 @@ const taskSchema = new mongoose.Schema(
 taskSchema.pre(/^find/, function (next) {
   this.populate({ path: "assignedTo", select: "firstName lastName" }).populate({
     path: "caseToWorkOn",
-    select: "firstParty.description.name secondParty.description.name ",
+    select: "firstParty.name.name secondParty.name.name ",
   });
   next();
 });

@@ -37,6 +37,7 @@ exports.getUser = catchAsync(async (req, res, next) => {
     path: "task",
     select: "-assignedTo",
   });
+
   // console.log(id);
   if (!data) {
     return next(new AppError("no user found with that Id", 404));

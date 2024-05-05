@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useDataFetch } from "../context/useDataFetch";
+import { useDataFetch } from "../hooks/useDataFetch";
 import { DeleteOutlined } from "@ant-design/icons";
 import {
   PartyDynamicInputs,
@@ -7,6 +7,7 @@ import {
   DynamicInputArrays,
   TextAreaInput,
 } from "../components/DynamicInputs";
+// import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
 import {
@@ -30,7 +31,7 @@ import {
 
 const CreateCaseForm = () => {
   // destructure textarea from input
-  const { TextArea } = Input;
+  // const { TextArea } = Input;
 
   const [form] = Form.useForm();
   const [formData, setFormData] = useState({
@@ -72,8 +73,8 @@ const CreateCaseForm = () => {
     client: [{ name: "" }],
     generalComment: "",
   });
-  // destructor authenticate from useAuth
-  const { dataFetcher, data } = useDataFetch();
+  // destructor authenticate from useDataFetch
+  const { dataFetcher, data } = useDataFetch(); //general data fetcher
   // destructure user data for accountOfficers
   const { users } = useDataGetterHook();
 
@@ -352,6 +353,7 @@ const CreateCaseForm = () => {
             </Form.Item>
           </div>
           <Divider />
+
           {/* CASE STATUS */}
           <SelectInputs
             name="caseStatus"

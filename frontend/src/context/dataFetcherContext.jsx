@@ -8,15 +8,15 @@ const DataFetcherContext = ({ children }) => {
   const [cases, setCases] = useState([]);
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
-  const [user, setUser] = useState([]);
+  // const [user, setUser] = useState([]);
 
   const [loadingCases, setLoadingCases] = useState(false);
   const [loadingReports, setLoadingReports] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
-  const [loadingUser, setLoadingUser] = useState(false);
+  // const [loadingUser, setLoadingUser] = useState(false);
   const [errorCases, setErrorCases] = useState("");
   const [errorUsers, setErrorUsers] = useState("");
-  const [errorUser, setErrorUser] = useState("");
+  // const [errorUser, setErrorUser] = useState("");
   const [errorReports, setErrorReports] = useState("");
 
   const params = useParams();
@@ -65,26 +65,26 @@ const DataFetcherContext = ({ children }) => {
         setLoadingReports(false);
       }
     }
-    // Fetch Reports function
-    async function fetchSingleUser() {
-      try {
-        setLoadingUser(true);
-        const response = await axios.get(
-          `http://localhost:3000/api/v1/users/${params.id}`
-        );
-        setUser(response.data);
-      } catch (err) {
-        setErrorUser(err.message || "Failed to fetch users");
-      } finally {
-        setLoadingUser(false);
-      }
-    }
+    // // Fetch Reports function
+    // async function fetchSingleUser() {
+    //   try {
+    //     setLoadingUser(true);
+    //     const response = await axios.get(
+    //       `http://localhost:3000/api/v1/users/${params.id}`
+    //     );
+    //     setUser(response.data);
+    //   } catch (err) {
+    //     setErrorUser(err.message || "Failed to fetch users");
+    //   } finally {
+    //     setLoadingUser(false);
+    //   }
+    // }
 
     // Call the functions to fetch cases and users separately
     fetchCases();
     fetchUsers();
     fetchReports();
-    fetchSingleUser();
+    // fetchSingleUser();
   }, [params.id]);
 
   return (
@@ -93,7 +93,7 @@ const DataFetcherContext = ({ children }) => {
         cases,
         users,
         reports,
-        singleUser: user,
+        // singleUser: user,
         loadingCases,
         loadingUsers,
         errorCases,

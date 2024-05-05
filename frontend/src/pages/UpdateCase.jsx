@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
-import { useDataFetch } from "../context/useDataFetch";
+import { useDataFetch } from "../hooks/useDataFetch";
 import { DeleteOutlined } from "@ant-design/icons";
 import {
   PartyDynamicInputs,
