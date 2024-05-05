@@ -25,6 +25,7 @@ import {
 import {
   courtOptions,
   statusOptions,
+  natureOfCaseOptions,
   casePriorityOptions,
   modesOptions,
 } from "../data/options";
@@ -293,14 +294,12 @@ const CreateCaseForm = () => {
           </div>
 
           {/* NATURE OF CASE*/}
-          <div>
-            <Form.Item
-              label="Nature of Case"
-              name="natureOfCase"
-              initialValue={formData?.natureOfCase}>
-              <Input placeholder="e.g. Breach of Contract" />
-            </Form.Item>
-          </div>
+          <SelectInputs
+            label="Nature of Case"
+            name="natureOfCase"
+            initialValue={formData?.natureOfCase}
+            options={natureOfCaseOptions}
+          />
 
           {/* DATE FILED */}
           <div>

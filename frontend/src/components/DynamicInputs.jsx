@@ -120,6 +120,13 @@ export const PartyDynamicInputs = ({
   );
 };
 
+const onSearch = (value) => {
+  console.log("search:", value);
+};
+
+// Filter `option.label` match the user type `input`
+const filterOption = (input, option) =>
+  (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
 export const SelectInputs = ({
   fieldName,
   label,
@@ -137,19 +144,13 @@ export const SelectInputs = ({
         <Select
           mode={mode}
           showSearch
+          onSearch={onSearch}
+          filterOption={filterOption}
           style={{
             width: 200,
           }}
           placeholder="Search to Select"
           optionFilterProp="children"
-          filterOption={(input, option) =>
-            (option?.label ?? "").includes(input)
-          }
-          filterSort={(optionA, optionB) =>
-            (optionA?.label ?? "")
-              .toLowerCase()
-              .localeCompare((optionB?.label ?? "").toLowerCase())
-          }
           options={options}
         />
       </Form.Item>

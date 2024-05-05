@@ -19,6 +19,7 @@ const judgeSchema = new mongoose.Schema({
 // sub-document for processes
 const partyProcessSchema = new mongoose.Schema({ name: String });
 
+// case Schema
 const caseSchema = new mongoose.Schema(
   {
     firstParty: {
@@ -106,7 +107,48 @@ const caseSchema = new mongoose.Schema(
       },
     },
 
-    natureOfCase: String,
+    // natureOfCase: String,
+
+    natureOfCase: {
+      type: String,
+      trim: true,
+      // required: [true, "Court's name is required"],
+      enum: {
+        values: [
+          "Contract Dispute",
+          "Personal Injury",
+          "Real Estate",
+          "Land Law",
+          "Pre-election",
+          "Election Petition",
+          "Criminal Law",
+          "Family Law",
+          "Intellectual Property",
+          "Employment Law",
+          "Bankruptcy",
+          "Estate Law",
+          "Tortous Liability ",
+          "Immigration",
+          "Maritime",
+          "Aviation",
+          "Tax Law",
+          "Other",
+        ],
+        message: "Invalid court name",
+      },
+    },
+
+    category: {
+      type: String,
+      trim: true,
+      enum: {
+        values: ["Civil", "Criminal"],
+        message: "A case must have a category",
+      },
+    },
+
+    isFiledByTheOffice: Boolean,
+
     filingDate: {
       type: Date,
       default: Date.now,

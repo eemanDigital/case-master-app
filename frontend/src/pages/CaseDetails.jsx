@@ -72,13 +72,17 @@ const CaseDetails = () => {
           <strong>SUIT NO:</strong> {data?.data?.suitNo}
         </p>
         <p className=" font-bold">
-          <strong>Filing Date:</strong> {formatDate(data?.data?.filingDate)}
+          <strong>Filing Date:</strong>{" "}
+          {data?.data?.filingDate && formatDate(data?.data?.filingDate)}
         </p>
         <p className="">
           <strong>Case Summary: </strong> {data?.data?.caseSummary}
         </p>
         <p className="">
           <strong>Mode Of Commencement</strong> {data?.data?.modeOfCommencement}
+        </p>
+        <p className="">
+          <strong>Office Case File No: </strong> {data?.data?.caseOfficeFileNo}
         </p>
         <p className="">
           <strong>Nature of Case</strong> {data?.data?.natureOfCase}
@@ -89,8 +93,11 @@ const CaseDetails = () => {
         <p className="">
           <strong>Case Status: </strong> {data?.data?.caseStatus}
         </p>
+        <p className="">
+          <strong>Case Priority/Ratings: </strong> {data?.data?.casePriority}
+        </p>
         {data?.data?.judge.map((j) => {
-          console.log(j);
+          // console.log(j);
           return (
             <p key={j._id}>
               <strong>Judge: </strong>
@@ -102,9 +109,9 @@ const CaseDetails = () => {
         })}
         <hr />
         {/* Case Updates */}
-        <h1 className=" font-bold">Case Updates</h1>
-        {Array.isArray(data?.data?.caseUpdates)
-          ? data?.data?.caseUpdates.map((u) => {
+        <h1 className=" font-bold">Case Reports</h1>
+        {Array.isArray(data?.data?.reports)
+          ? data?.data?.reports.map((u) => {
               // console.log(j);
               return (
                 <div key={u._id}>
@@ -125,8 +132,8 @@ const CaseDetails = () => {
                     )}{" "}
                   </p>
                   <p>
-                    <strong>Next adjourned date: </strong>
-                    {<p>Placeholder</p> || (
+                    <strong>Next Adjourned Date: </strong>
+                    {(u?.adjournedDate && formatDate(u?.adjournedDate)) || (
                       <span className="text-red-500 font-semibold">
                         Not provided
                       </span>
@@ -179,18 +186,26 @@ const CaseDetails = () => {
           );
         })}
         <hr />
-        {data?.data?.client.map((c) => {
-          // console.log(step);
-          return (
-           <p key={c._id}>
-              <strong>Client: </strong>
-              {c.name || (
-                <span className="text-red-500 font-semibold">Not provided</span>
-              )}{" "}
-            </p>
-          );
-        })}
+        <div>
+          <strong>Client: </strong>
+          {data?.data?.client.map((c) => {
+            // console.log(step);
+
+            return (
+              <p key={c._id}>
+                {c.name || (
+                  <span className="text-red-500 font-semibold">
+                    Not provided
+                  </span>
+                )}{" "}
+              </p>
+            );
+          })}
+        </div>
         <hr />
+        <p className="">
+          <strong>General Comment: </strong> {data?.data?.generalComment}
+        </p>
       </div>
     </section>
   );

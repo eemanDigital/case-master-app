@@ -45,3 +45,24 @@ export const taskPriorityOptions = [
   { value: "medium", label: "Medium" },
   { value: "low", label: "Low" },
 ];
+
+export const natureOfCaseOptions = [
+  { label: "Contract Dispute", value: "contract-dispute" },
+  { label: "Personal Injury", value: "personal-injury" },
+  { label: "Real Estate", value: "real-estate" },
+  { label: "Land Law", value: "land-law" },
+  { label: "Pre-election", value: "pre-election" },
+  { label: "Election Petition", value: "election-petition" },
+  { label: "Criminal Law", value: "criminal-law" },
+  { label: "Family Law", value: "family-law" },
+  { label: "Intellectual Property", value: "intellectual-property" },
+  { label: "Employment Law", value: "employment-law" },
+  { label: "Bankruptcy", value: "bankruptcy" },
+  { label: "Estate Law", value: "estate-law" },
+  { label: "Tortous Liability", value: "tortous-liability" }, // Use hyphens for consistency
+  { label: "Immigration", value: "immigration" },
+  { label: "Maritime", value: "maritime" },
+  { label: "Aviation", value: "aviation" },
+  { label: "Tax Law", value: "tax-law" },
+  { label: "Other", value: "other" },
+];
