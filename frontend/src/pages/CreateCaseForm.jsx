@@ -30,6 +30,10 @@ import {
   modesOptions,
 } from "../data/options";
 
+// filter function for Select
+const filterOption = (input, option) =>
+  (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
+
 const CreateCaseForm = () => {
   // destructure textarea from input
   // const { TextArea } = Input;
@@ -277,12 +281,30 @@ const CreateCaseForm = () => {
         {/* SUIT NO FIELD */}
         <div className="flex justify-between items-center gap-9 flex-wrap">
           {/* MODE OF COMMENCEMENT */}
-          <SelectInputs
+          {/* <SelectInputs
             fieldName="modeOfCommencement"
             label="Mode of Commencement"
             initialValue={formData?.modeOfCommencement}
             options={modesOptions}
-          />
+          /> */}
+
+          <div>
+            <Form.Item
+              name="modeOfCommencement"
+              label="Mode of Commencement"
+              initialValue={formData?.modeOfCommencement}
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select mode"
+                showSearch
+                filterOption={filterOption}
+                options={modesOptions}
+                allowClear
+              />
+            </Form.Item>
+          </div>
+
           {/* OTHER MODE OF COMMENCEMENT*/}
           <div>
             <Form.Item
@@ -294,12 +316,22 @@ const CreateCaseForm = () => {
           </div>
 
           {/* NATURE OF CASE*/}
-          <SelectInputs
-            label="Nature of Case"
-            name="natureOfCase"
-            initialValue={formData?.natureOfCase}
-            options={natureOfCaseOptions}
-          />
+          <div>
+            <Form.Item
+              name="natureOfCase"
+              label="Nature of Case"
+              initialValue={formData?.natureOfCase}
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select nature of case"
+                showSearch
+                filterOption={filterOption}
+                options={natureOfCaseOptions}
+                allowClear
+              />
+            </Form.Item>
+          </div>
 
           {/* DATE FILED */}
           <div>
@@ -326,12 +358,30 @@ const CreateCaseForm = () => {
           </div>
 
           {/* COURTS */}
-          <SelectInputs
+          {/* <SelectInputs
             fieldName="courtName"
             label="Assigned Court"
             initialValue={formData?.courtName}
             options={courtOptions}
-          />
+          /> */}
+
+          <div>
+            <Form.Item
+              name="courtName"
+              label="Court"
+              initialValue={formData?.courtName}
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select court"
+                showSearch
+                filterOption={filterOption}
+                options={courtOptions}
+                allowClear
+              />
+            </Form.Item>
+          </div>
+
           {/* OTHER COURT*/}
           <div>
             <Form.Item
@@ -354,20 +404,53 @@ const CreateCaseForm = () => {
           <Divider />
 
           {/* CASE STATUS */}
-          <SelectInputs
+          {/* <SelectInputs
             name="caseStatus"
             label="Case Status"
             initialValue={formData?.caseStatus}
             options={statusOptions}
-          />
+          /> */}
+          <div>
+            <Form.Item
+              name="caseStatus"
+              label="Case Status"
+              initialValue={formData?.caseStatus}
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select case status"
+                showSearch
+                filterOption={filterOption}
+                options={statusOptions}
+                allowClear
+              />
+            </Form.Item>
+          </div>
 
           {/* CASE PRIORITY */}
-          <SelectInputs
+          {/* <SelectInputs
             name="casePriority"
             label="Case Priority"
             initialValue={formData?.casePriority}
             options={casePriorityOptions}
-          />
+          /> */}
+
+          <div>
+            <Form.Item
+              name="casePriority"
+              label="Case Priority/Rating"
+              initialValue={formData?.casePriority}
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select case priority"
+                showSearch
+                filterOption={filterOption}
+                options={statusOptions}
+                allowClear
+              />
+            </Form.Item>
+          </div>
 
           {/* JUDGE FIELD */}
           <DynamicInputArrays
@@ -406,16 +489,17 @@ const CreateCaseForm = () => {
             <Form.Item
               name="accountOfficer"
               label="Account Officer"
+              className="w-[200px]"
               initialValue={formData?.accountOfficer.name}>
               <Select
-                noStyle
+                // noStyle
                 mode="multiple"
                 placeholder="Select account officer"
                 options={userData}
                 allowClear
-                style={{
-                  width: "100%",
-                }}
+                // style={{
+                //   width: "100%",
+                // }}
               />
             </Form.Item>
           </div>
