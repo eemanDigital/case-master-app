@@ -28,8 +28,9 @@ process.on("uncaughtException", (err) => {
 dotenv.config({ path: "./config.env" });
 // MIDDLEWARES
 const app = express();
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
 // app.use(cors());
 app.use(
   cors({
@@ -68,12 +69,12 @@ if (process.env.NODE_ENV === "development") {
 
 // console.log(process.env);
 //routes mounting
+app.use("/api/v1/uploads", fileRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/clients", clientRouter);
 app.use("/api/v1/reports", reportRouter);
-app.use("/api/v1/upload", fileRouter);
 
 //handles non-existing route
 app.all("*", (req, res, next) => {

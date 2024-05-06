@@ -31,6 +31,7 @@ const SignUp = () => {
   const { data, loading, error, authenticate } = useAuth();
   const [click, setClick] = useState(false);
 
+  console.log(data);
   const [inputValue, setInputValue] = useState({
     firstName: "",
     lastName: "",
@@ -38,7 +39,7 @@ const SignUp = () => {
     email: "",
     password: "",
     passwordConfirm: "",
-    photo: "",
+    // file:null,
     address: "",
     bio: "",
     position: "",
@@ -50,18 +51,31 @@ const SignUp = () => {
     lawSchoolAttended: "",
   });
 
+  const [fileValue, setFileValue] = useState({ file: null });
+
   // derived state to check if user select "Other"
   const getOtherFieldSelected = inputValue.position === "Other";
 
   // handleChange function
   function handleChange(e) {
-    const { name, value, files } = e.target;
+    const { name, value } = e.target;
 
     setInputValue((prevData) => ({
       ...prevData,
-      [name]: name === "photo" ? files[0] : value, // Handle file or text input
+      [name]: value, // Handle file or text input
     }));
   }
+
+  // handles file change
+  function handleFileChange(e) {
+    // const { name, value, files } = e.target;
+
+    setFileValue((prevData) => ({
+      ...prevData,
+      [e.target.name]: e.target.files[0], // Handle file or text input
+    }));
+  }
+  console.log(fileValue);
 
   // function to handle for submission
   async function handleSubmit(e) {
@@ -74,7 +88,8 @@ const SignUp = () => {
 
     try {
       // Call fetchData with your endpoint, method, payload, and any additional arguments
-      await authenticate("users/signup", "post", inputValue, customHeaders);
+      await authenticate("users/signup", "post", inputValue);
+      await authenticate("uploads", "post", fileValue);
     } catch (err) {
       console.log(err);
     }
@@ -220,12 +235,12 @@ const SignUp = () => {
             <div>
               <Input
                 type="file"
-                name="photo" // Use 'file' to match Multer configuration
+                name="file" // Use 'file' to match Multer configuration
                 id=""
                 accept=".pdf,.docx,.jpg,.jpeg, .png"
-                onChange={handleChange}
+                onChange={handleFileChange}
                 label="upload photo"
-                htmlFor="photo"
+                htmlFor="file"
               />
             </div>
             <div className="w-[300px]">

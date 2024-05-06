@@ -75,6 +75,7 @@
 // });
 const path = require("path");
 const multer = require("multer");
+const AppError = require("../utils/appError");
 
 const multerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -96,11 +97,19 @@ const fileFilter = (req, file, cb) => {
     file.mimetype === "image/jpg" ||
     file.mimetype === "image/png" ||
     file.mimetype === "application/pdf" ||
-    file.mimetype === "application/txt"
+    file.mimetype ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || // For .docx files
+    file.mimetype === "text/plain" // For plain text files
   ) {
     cb(null, true);
   } else {
-    cb(null, false);
+    cb(
+      new AppError(
+        "Not a valid document! Please upload only valid document.",
+        400
+      ),
+      false
+    );
   }
 };
 
@@ -130,7 +139,7 @@ const uploadErrorHandler = (err, req, res, next) => {
 
 exports.uploadUserPhoto = (req, res, next) => {
   // Use the upload middleware to handle file upload
-  upload.single("photo")(req, res, (err) => {
+  upload.single("file")(req, res, (err) => {
     if (err) {
       // Pass the error to the error handling middleware
       uploadErrorHandler(err, req, res, next);

@@ -51,7 +51,7 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    photo: String,
+    file: String,
 
     address: {
       type: String,
