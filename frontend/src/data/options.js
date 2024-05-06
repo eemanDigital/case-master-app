@@ -45,6 +45,10 @@ export const taskPriorityOptions = [
   { value: "medium", label: "Medium" },
   { value: "low", label: "Low" },
 ];
+export const caseCategoryOptions = [
+  { value: "Civil", label: "Civil" },
+  { value: "Criminal", label: "Criminal" },
+];
 
 export const natureOfCaseOptions = [
   { label: "Contract Dispute", value: "Contract Dispute" },

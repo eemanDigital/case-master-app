@@ -75,7 +75,7 @@ const caseSchema = new mongoose.Schema(
     },
 
     courtNo: {
-      type: Number,
+      type: String,
       trim: true,
     },
 

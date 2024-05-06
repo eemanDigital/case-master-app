@@ -3,7 +3,7 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import { DeleteOutlined } from "@ant-design/icons";
 import {
   PartyDynamicInputs,
-  SelectInputs,
+  // SelectInputs,
   DynamicInputArrays,
   TextAreaInput,
 } from "../components/DynamicInputs";
@@ -18,6 +18,7 @@ import {
   Typography,
   Card,
   Select,
+  Switch,
   Space,
   DatePicker,
 } from "antd";
@@ -26,13 +27,10 @@ import {
   courtOptions,
   statusOptions,
   natureOfCaseOptions,
+  caseCategoryOptions,
   casePriorityOptions,
   modesOptions,
 } from "../data/options";
-
-// filter function for Select
-const filterOption = (input, option) =>
-  (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
 
 const CreateCaseForm = () => {
   // destructure textarea from input
@@ -60,11 +58,15 @@ const CreateCaseForm = () => {
     suitNo: "",
     caseOfficeFileNo: "",
     courtName: "",
+    courtNo: "",
+    location: "",
     otherCourt: "",
     judge: [{ name: "" }],
     caseSummary: "",
     caseStatus: "",
     natureOfCase: "",
+    category: "",
+    isFiledByTheOffice: false,
     filingDate: "",
     modeOfCommencement: "",
     otherModeOfCommencement: "",
@@ -73,7 +75,7 @@ const CreateCaseForm = () => {
     casePriority: "",
     stepToBeTaken: [],
     caseUpdates: [{ date: "", update: "" }],
-    // task: [],
+
     accountOfficer: [],
     client: [{ name: "" }],
     generalComment: "",
@@ -117,8 +119,21 @@ const CreateCaseForm = () => {
     }
     const result = await dataFetcher("cases", "POST", values); // Submit the form data to the backend
     console.log(values);
+
     handleSubmission(result); // Handle the submission after the API Call
   }, [form, handleSubmission, dataFetcher]);
+
+  // filter function for Select
+  const filterOption = (input, option) =>
+    (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
+
+  // derived state to check "Other"
+  // const [otherMode, setOtherMode] = useState({
+  //   modeOfCommencement: "",
+  // });
+
+  // const Mode = formData?.modeOfCommencement === "Other";
+  // console.log(Mode);
 
   return (
     <>
@@ -281,12 +296,6 @@ const CreateCaseForm = () => {
         {/* SUIT NO FIELD */}
         <div className="flex justify-between items-center gap-9 flex-wrap">
           {/* MODE OF COMMENCEMENT */}
-          {/* <SelectInputs
-            fieldName="modeOfCommencement"
-            label="Mode of Commencement"
-            initialValue={formData?.modeOfCommencement}
-            options={modesOptions}
-          /> */}
 
           <div>
             <Form.Item
@@ -301,19 +310,32 @@ const CreateCaseForm = () => {
                 filterOption={filterOption}
                 options={modesOptions}
                 allowClear
+                // value={otherMode?.modeOfCommencement}
+                // onChange={(e) => setOtherMode(e.target.value)}
+                onSelect={(e) => setOtherMode(e.target.value)}
               />
             </Form.Item>
           </div>
 
-          {/* OTHER MODE OF COMMENCEMENT*/}
+          {/* OTHER MODE OF COMMENCEMENT */}
+
           <div>
             <Form.Item
-              label="Specify Court"
+              label="Specify Mode"
               name="otherModeOfCommencement"
               initialValue={formData?.otherModeOfCommencement}>
               <Input />
             </Form.Item>
           </div>
+
+          {/* WHETHER FILED BY THE OFFICE */}
+          <Form.Item
+            label="Switch if case is filed by the Office"
+            valuePropName="checked"
+            name="isFiledByTheOffice"
+            initialValue={formData?.isFiledByTheOffice}>
+            <Switch className="bg-gray-400 w-20" />
+          </Form.Item>
 
           {/* NATURE OF CASE*/}
           <div>
@@ -358,12 +380,6 @@ const CreateCaseForm = () => {
           </div>
 
           {/* COURTS */}
-          {/* <SelectInputs
-            fieldName="courtName"
-            label="Assigned Court"
-            initialValue={formData?.courtName}
-            options={courtOptions}
-          /> */}
 
           <div>
             <Form.Item
@@ -382,12 +398,42 @@ const CreateCaseForm = () => {
             </Form.Item>
           </div>
 
-          {/* OTHER COURT*/}
+          {/* COURT'S NO */}
+          <div>
+            <Form.Item
+              label="Court No"
+              name="courtNo"
+              initialValue={formData?.courtNo}>
+              <Input />
+            </Form.Item>
+          </div>
+          {/* COURT'S LOCATION */}
+          <div>
+            <Form.Item
+              label="Court's Location"
+              name="location"
+              placeholder="e.g. Ikoyi, Lagos"
+              initialValue={formData?.location}>
+              <Input />
+            </Form.Item>
+          </div>
+          {/*  STATE */}
+          <div>
+            <Form.Item
+              label="State where Court is located"
+              name="state"
+              placeholder="e.g. Lagos"
+              initialValue={formData?.state}>
+              <Input />
+            </Form.Item>
+          </div>
+
+          {/* OTHER COURT */}
           <div>
             <Form.Item
               label="Specify Court"
               name="otherCourt"
-              initialValue={formData?.otherCourt}>
+              initialValue={formData?.courtName}>
               <Input />
             </Form.Item>
           </div>
@@ -427,6 +473,24 @@ const CreateCaseForm = () => {
             </Form.Item>
           </div>
 
+          {/* CASE CATEGORY */}
+          <div>
+            <Form.Item
+              name="category"
+              label="Case Category"
+              initialValue={formData?.category}
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select case category"
+                showSearch
+                filterOption={filterOption}
+                options={caseCategoryOptions}
+                allowClear
+              />
+            </Form.Item>
+          </div>
+
           {/* CASE PRIORITY */}
           {/* <SelectInputs
             name="casePriority"
@@ -446,7 +510,7 @@ const CreateCaseForm = () => {
                 placeholder="Select case priority"
                 showSearch
                 filterOption={filterOption}
-                options={statusOptions}
+                options={casePriorityOptions}
                 allowClear
               />
             </Form.Item>

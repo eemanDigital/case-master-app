@@ -89,8 +89,27 @@ const multerStorage = multer.diskStorage({
   },
 });
 
+const fileFilter = (req, file, cb) => {
+  // filter out file if not specified here
+  if (
+    file.mimetype === "image/jpeg" ||
+    file.mimetype === "image/jpg" ||
+    file.mimetype === "image/png" ||
+    file.mimetype === "application/pdf" ||
+    file.mimetype === "application/txt"
+  ) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+};
+
 const upload = multer({
   storage: multerStorage,
+  limits: {
+    fileSize: 1024 * 1024 * 5,
+  },
+  fileFilter: fileFilter,
 });
 
 // Middleware to handle file upload errors

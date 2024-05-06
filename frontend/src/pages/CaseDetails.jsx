@@ -81,17 +81,27 @@ const CaseDetails = () => {
         <p className="">
           <strong>Mode Of Commencement</strong> {data?.data?.modeOfCommencement}
         </p>
+        <p>
+          <strong>Filed By the Office</strong>{" "}
+          {data?.data?.isFiledByTheOffice ? <h1>Yes</h1> : <h1>No</h1>}
+        </p>
         <p className="">
           <strong>Office Case File No: </strong> {data?.data?.caseOfficeFileNo}
         </p>
         <p className="">
           <strong>Nature of Case</strong> {data?.data?.natureOfCase}
         </p>{" "}
-        <p className="">
+        <p className="flex flex-col">
           <strong>Court: </strong> {data?.data?.courtName}
+          <strong>Court No: </strong> {data?.data?.courtNo}
+          <strong>Court Location: </strong> {data?.data?.location}
+          <strong>State: </strong> {data?.data?.state}
         </p>
         <p className="">
           <strong>Case Status: </strong> {data?.data?.caseStatus}
+        </p>
+        <p>
+          <strong>Case Category: </strong> {data?.data?.category}
         </p>
         <p className="">
           <strong>Case Priority/Ratings: </strong> {data?.data?.casePriority}
