@@ -23,10 +23,17 @@ import CreateCaseForm from "./pages/CreateCaseForm.jsx";
 import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
+import FileContextProvider from "./context/fileContext.jsx";
+
 import EditUserProfile from "./pages/EditUserProfile.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
 import UserTask from "./components/UserTask.jsx";
 import CaseDetails from "./pages/CaseDetails.jsx";
+import Error from "./components/Error.jsx";
+import { Result, Button } from "antd";
+import { Link } from "react-router-dom";
+import Document from "./pages/Documents.jsx";
+// import UpdateProfilePicture from "./components/UpdateProfilePicture.jsx";
 // import CreateCase from "./pages/CreateCase.jsx";
 // import CaseForm from "./pages/CaseForm.jsx";
 
@@ -40,7 +47,7 @@ function App() {
 
   const router = createBrowserRouter(
     createRoutesFromElements(
-      <Route path="/" element={<HomeLayout />}>
+      <Route path="/" element={<HomeLayout />} errorElement={<Error />}>
         <Route path="/" element={<Hero />} />
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<SignUp />} />
@@ -66,22 +73,41 @@ function App() {
           {/* <Route path="tasks" element={<Task />} /> */}
           <Route path="tasks/add-task" element={<TasksForm />} />
           <Route path="billing" element={<Billing />} />
+          <Route path="documents" element={<Document />} />
           <Route path="profile" element={<Profile />} />
           <Route path="profile/edit" element={<EditUserProfile />} />
+          {/* <Route path="profile/edit-image" element={<UpdateProfilePicture />} /> */}
           <Route path="tasks/:id" element={<UserTask />} />
 
           {/* errorElement= {<ErrorPage />} */}
         </Route>
+        <Route
+          path="*"
+          element={
+            <Result
+              status="404"
+              title="404"
+              subTitle="Sorry, the page you visited does not exist."
+              extra={
+                <Link to="/">
+                  <Button type="primary">Back Home</Button>
+                </Link>
+              }
+            />
+          }
+        />
       </Route>
     )
   );
 
   return (
-    <DataFetcherContext>
-      <AuthContextProvider>
-        <RouterProvider router={router} />
-      </AuthContextProvider>
-    </DataFetcherContext>
+    <FileContextProvider>
+      <DataFetcherContext>
+        <AuthContextProvider>
+          <RouterProvider router={router} />
+        </AuthContextProvider>
+      </DataFetcherContext>
+    </FileContextProvider>
   );
 }
 

@@ -33,6 +33,7 @@ exports.signup = catchAsync(async (req, res, next) => {
 
   // extract file
   const filename = req.file ? req.file.filename : null;
+  // console.log("FILENAME", filename);
 
   const user = await User.create({
     firstName: req.body.firstName,

@@ -5,9 +5,12 @@ import Select from "../components/Select";
 import { Link } from "react-router-dom";
 import Button from "../components/Button";
 import { useAuth } from "../hooks/useAuth";
+import { useFile } from "../hooks/useFile";
 import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useAuthContext } from "../hooks/useAuthContext";
+
 // import useFetch from "../hooks/useFetch";
 
 // const URL = "http://localhost:3000/api/v1/users/signup";
@@ -29,9 +32,11 @@ const SignUp = () => {
     "Other",
   ];
   const { data, loading, error, authenticate } = useAuth();
+  const { fileData, loadingFile, fileError, fetchFile } = useFile();
   const [click, setClick] = useState(false);
 
-  console.log(data);
+  // console.log(fileData.data?.file);
+  // console.log(data);
   const [inputValue, setInputValue] = useState({
     firstName: "",
     lastName: "",
@@ -52,7 +57,7 @@ const SignUp = () => {
   });
 
   const [fileValue, setFileValue] = useState({ file: null });
-
+  // const { dispatch } = useAuthContext();
   // derived state to check if user select "Other"
   const getOtherFieldSelected = inputValue.position === "Other";
 
@@ -75,21 +80,20 @@ const SignUp = () => {
       [e.target.name]: e.target.files[0], // Handle file or text input
     }));
   }
-  console.log(fileValue);
-
-  // function to handle for submission
+  // console.log(fileValue);
+  // dispatch({ type: "LOGIN", filPayload: fileValue });
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // set custom headers
-    const customHeaders = {
+    // set custom headers for file upload
+    const fileHeaders = {
       "Content-Type": "multipart/form-data",
     };
 
     try {
-      // Call fetchData with your endpoint, method, payload, and any additional arguments
+      // Call fetchData with endpoint, method, payload, and any additional arguments
       await authenticate("users/signup", "post", inputValue);
-      await authenticate("uploads", "post", fileValue);
+      await fetchFile("uploads", "post", fileValue, fileHeaders);
     } catch (err) {
       console.log(err);
     }

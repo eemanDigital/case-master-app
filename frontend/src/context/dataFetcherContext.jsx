@@ -8,16 +8,19 @@ const DataFetcherContext = ({ children }) => {
   const [cases, setCases] = useState([]);
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
+  const [files, setFiles] = useState([]);
   // const [user, setUser] = useState([]);
 
   const [loadingCases, setLoadingCases] = useState(false);
   const [loadingReports, setLoadingReports] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
+  const [loadingFiles, setLoadingFiles] = useState(false);
   // const [loadingUser, setLoadingUser] = useState(false);
   const [errorCases, setErrorCases] = useState("");
   const [errorUsers, setErrorUsers] = useState("");
   // const [errorUser, setErrorUser] = useState("");
   const [errorReports, setErrorReports] = useState("");
+  const [errorFiles, setErrorFiles] = useState("");
 
   const params = useParams();
 
@@ -65,27 +68,27 @@ const DataFetcherContext = ({ children }) => {
         setLoadingReports(false);
       }
     }
-    // // Fetch Reports function
-    // async function fetchSingleUser() {
-    //   try {
-    //     setLoadingUser(true);
-    //     const response = await axios.get(
-    //       `http://localhost:3000/api/v1/users/${params.id}`
-    //     );
-    //     setUser(response.data);
-    //   } catch (err) {
-    //     setErrorUser(err.message || "Failed to fetch users");
-    //   } finally {
-    //     setLoadingUser(false);
-    //   }
-    // }
+    // Fetch Reports function
+    async function fetchFiles() {
+      try {
+        setLoadingFiles(true);
+        const response = await axios.get(
+          `http://localhost:3000/api/v1/uploads/`
+        );
+        setFiles(response.data);
+      } catch (err) {
+        setErrorFiles(err.message || "Failed to fetch users");
+      } finally {
+        setLoadingFiles(false);
+      }
+    }
 
     // Call the functions to fetch cases and users separately
     fetchCases();
     fetchUsers();
     fetchReports();
-    // fetchSingleUser();
-  }, [params.id]);
+    fetchFiles();
+  }, []);
 
   return (
     <DataContext.Provider
@@ -93,13 +96,16 @@ const DataFetcherContext = ({ children }) => {
         cases,
         users,
         reports,
-        // singleUser: user,
+        files,
+
         loadingCases,
         loadingUsers,
         errorCases,
         errorUsers,
         loadingReports,
         errorReports,
+        loadingFiles,
+        errorFiles,
       }}>
       {children}
     </DataContext.Provider>

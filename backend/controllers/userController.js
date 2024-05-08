@@ -60,7 +60,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
   }
 
   // extracting file from the req
-  // const filename = req.file ? req.file.filename : null; // Handle optional file
+  const filename = req.file ? req.file.filename : null; // Handle optional file
 
   // 2) Filtered out unwanted fields names that are not allowed to be updated
   const filteredBody = filterObj(
@@ -69,7 +69,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
       lastName: req.body.lastName,
       middleName: req.body.middleName,
       email: req.body.email,
-      // photo: filename,
+      file: filename,
       address: req.body.address,
       role: req.body.role,
       bio: req.body.bio,
@@ -86,7 +86,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "firstName",
     "lastName",
     "middleName",
-    "photo",
+    "file",
     "address",
     "bio",
     "phone",

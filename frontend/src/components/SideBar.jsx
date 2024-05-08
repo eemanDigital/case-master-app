@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { RiCustomerService2Line } from "react-icons/ri";
 import avatar from "../assets/avatar.png";
 import { useLogout } from "../hooks/useLogout";
+import { useRemoveFile } from "../hooks/useRemoveFile";
 import { RxDashboard } from "react-icons/rx";
 import {
   IoBriefcaseSharp,
@@ -9,6 +10,8 @@ import {
   IoMenuOutline,
 } from "react-icons/io5";
 // import { MdEditNote } from "react-icons/md";
+import { useFileContext } from "../hooks/useFileContext";
+
 import { TbReport } from "react-icons/tb";
 import { FaMoneyBill, FaTasks } from "react-icons/fa";
 import { FaListUl } from "react-icons/fa6";
@@ -69,8 +72,13 @@ const navItems = [
 
 const SideBar = ({ isOpen, handleOpen }) => {
   const { logout } = useLogout();
+  const { remove } = useRemoveFile();
   const navigate = useNavigate();
   const { user } = useAuthContext();
+  const { file } = useFileContext();
+
+  // console.log("FILE", file?.data?.file);
+
   // const { data } = user;
   // console.log("TESTING", user?.data.user.photo);
   // console.log("DATA", data);
@@ -89,6 +97,7 @@ const SideBar = ({ isOpen, handleOpen }) => {
       transition: Bounce,
     });
     logout();
+    remove();
     navigate("/");
   }
 
@@ -141,8 +150,8 @@ const SideBar = ({ isOpen, handleOpen }) => {
               <img
                 // use avatar as default image if user does not upload image
                 src={
-                  user?.data?.user?.photo
-                    ? `http://localhost:3000/images/${user?.data?.user?.photo}`
+                  file?.data?.file
+                    ? `http://localhost:3000/images/${file?.data?.file}`
                     : avatar
                 }
                 alt={`${user?.data?.user}'s profile image`}

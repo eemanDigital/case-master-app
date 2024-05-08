@@ -55,6 +55,10 @@ exports.updateCase = catchAsync(async (req, res, next) => {
     new: true,
     runValidators: true,
   });
+
+  if (!doc) {
+    return next(new AppError(`No Case Found with that ID`, 404));
+  }
   // console.log(updatedCase);
   res.status(200).json({
     message: "case successfully updated",
