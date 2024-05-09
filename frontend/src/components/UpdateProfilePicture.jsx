@@ -1,33 +1,33 @@
 // import { useContext } from "react";
 import Input from "./Inputs";
-import Select from "./Select";
+// import Select from "./Select";
 import Button from "./Button";
-import { useAuth } from "../hooks/useAuth";
-import { useFile } from "../hooks/useFile";
-import { useFileContext } from "../hooks/useFileContext";
-import { useState, useEffect } from "react";
+// import { useAuth } from "../hooks/useAuth";
+import { usePhoto } from "../hooks/usePhoto";
+import { usePhotoContext } from "../hooks/usePhotoContext";
+import { useState } from "react";
 
 import "react-toastify/dist/ReactToastify.css";
 
 const UpdateProfilePicture = () => {
-  const { fileData, loadingFile, fileError, fetchFile } = useFile();
+  const { photoData, loadingFile, fileError, fetchPhoto } = usePhoto();
   const [click, setClick] = useState(false);
-  const [fileValue, setFileValue] = useState({ file: null });
+  const [photoValue, setPhotoValue] = useState({ photo: null });
   // const [getFile, setGetFile] = useState();
 
-  const { file } = useFileContext();
-  const fileId = file?.data?._id;
+  const { photo } = usePhotoContext();
+  const fileId = photo?.data?._id;
   // console.log(fileId);
   // handles file change
-  function handleFileChange(e) {
+  function handlePhotoChange(e) {
     // const { name, value, files } = e.target;
 
-    setFileValue((prevData) => ({
+    setPhotoValue((prevData) => ({
       ...prevData,
       [e.target.name]: e.target.files[0], // Handle file or text input
     }));
   }
-  console.log(fileValue);
+  console.log(photoValue);
 
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
@@ -44,7 +44,7 @@ const UpdateProfilePicture = () => {
     try {
       // Call fetchData with endpoint, method, payload, and any additional arguments
 
-      await fetchFile("uploads", "post", fileValue, fileHeaders);
+      await fetchPhoto("photos", "post", photoValue, fileHeaders);
 
       // await fetchFile(
       //   `uploads/update/${fileId}`,
@@ -62,7 +62,7 @@ const UpdateProfilePicture = () => {
   }
 
   const handleDelete = async () => {
-    await fetchFile(`uploads/${fileId}`, "delete", fileHeaders);
+    await fetchPhoto(`photos/${fileId}`, "delete", fileHeaders);
   };
   return (
     <form
@@ -71,12 +71,13 @@ const UpdateProfilePicture = () => {
       <div>
         <Input
           type="file"
-          name="file" // Use 'file' to match Multer configuration
+          name="photo" // Use 'file' to match Multer configuration
           id=""
-          accept=".pdf,.docx,.jpg,.jpeg, .png"
-          onChange={handleFileChange}
+          // accept=".pdf,.docx,.jpg,.jpeg, .png"
+          accept=".jpg,.jpeg, .png"
+          onChange={handlePhotoChange}
           label="upload photo"
-          htmlFor="file"
+          htmlFor="photo"
         />
       </div>
       <div>

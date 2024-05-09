@@ -7,15 +7,15 @@ const {
   updateFile,
   deleteFile,
 } = require("../controllers/fileController");
-const { uploadUserPhoto } = require("../utils/handleFile");
+const { fileUpload } = require("../utils/multerDocHandler");
 
 const fileRouter = express.Router();
 
-fileRouter.post("/", uploadUserPhoto, createFile);
-fileRouter.get("/", uploadUserPhoto, getFiles);
-fileRouter.get("/:id", uploadUserPhoto, downloadFile);
-fileRouter.get("/file/:id", uploadUserPhoto, getFile);
-// fileRouter.patch("//:id", uploadUserPhoto, updateFile);
-fileRouter.delete("/:id", uploadUserPhoto, deleteFile);
+fileRouter.post("/", fileUpload, createFile);
+fileRouter.get("/", fileUpload, getFiles);
+fileRouter.get("/:id", fileUpload, downloadFile);
+fileRouter.get("/file/:id", fileUpload, getFile);
+// fileRouter.patch("//:id", fileUpload, updateFile);
+fileRouter.delete("/:id", fileUpload, deleteFile);
 
 module.exports = fileRouter;

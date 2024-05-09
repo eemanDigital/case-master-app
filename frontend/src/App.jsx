@@ -23,7 +23,7 @@ import CreateCaseForm from "./pages/CreateCaseForm.jsx";
 import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
-import FileContextProvider from "./context/fileContext.jsx";
+import PhotoContextProvider from "./context/photoContext.jsx";
 
 import EditUserProfile from "./pages/EditUserProfile.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
@@ -101,13 +101,13 @@ function App() {
   );
 
   return (
-    <FileContextProvider>
+    <PhotoContextProvider>
       <DataFetcherContext>
         <AuthContextProvider>
           <RouterProvider router={router} />
         </AuthContextProvider>
       </DataFetcherContext>
-    </FileContextProvider>
+    </PhotoContextProvider>
   );
 }
 

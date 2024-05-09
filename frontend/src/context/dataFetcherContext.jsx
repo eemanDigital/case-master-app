@@ -73,7 +73,7 @@ const DataFetcherContext = ({ children }) => {
       try {
         setLoadingFiles(true);
         const response = await axios.get(
-          `http://localhost:3000/api/v1/uploads/`
+          `http://localhost:3000/api/v1/documents`
         );
         setFiles(response.data);
       } catch (err) {
@@ -97,7 +97,6 @@ const DataFetcherContext = ({ children }) => {
         users,
         reports,
         files,
-
         loadingCases,
         loadingUsers,
         errorCases,

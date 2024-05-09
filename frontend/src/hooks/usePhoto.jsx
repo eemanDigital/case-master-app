@@ -1,25 +1,25 @@
 import { useState } from "react";
 import axios from "axios";
-import { useFileContext } from "./useFileContext";
+import { usePhotoContext } from "./usePhotoContext";
 import { toast } from "react-toastify";
 
 const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
 
-export const useFile = () => {
-  const [fileData, setFileData] = useState(null);
-  const [loadingFile, setLoadingFile] = useState(true);
-  const [fileError, setFileError] = useState(null);
+export const usePhoto = () => {
+  const [photoData, setPhotoData] = useState(null);
+  const [loadingPhoto, setLoadingPhoto] = useState(true);
+  const [photoError, setPhotoError] = useState(null);
 
-  const { dispatch } = useFileContext();
+  const { dispatch } = usePhotoContext();
 
-  const fetchFile = async (
+  const fetchPhoto = async (
     endpoint,
     method = "GET",
     payload = null,
     customHeaders = {}
   ) => {
     try {
-      setLoadingFile(true);
+      setLoadingPhoto(true);
       const url = `${baseURL}/${endpoint}`;
 
       // Retrieve token from browser cookies
@@ -43,8 +43,8 @@ export const useFile = () => {
       ) {
         // If so, create a FormData object and append JSON data to it
         const formData = new FormData();
-        Object.keys(fileData).forEach((key) => {
-          formData.append(key, fileData[key]);
+        Object.keys(photoData).forEach((key) => {
+          formData.append(key, photoData[key]);
         });
       }
       const response = await axios({
@@ -55,7 +55,7 @@ export const useFile = () => {
         withCredentials: true,
       });
 
-      setFileData(response?.data);
+      setPhotoData(response?.data);
       toast.success(response?.data?.status, {
         position: "top-right",
         autoClose: 5000,
@@ -68,10 +68,10 @@ export const useFile = () => {
         theme: "light",
       });
 
-      localStorage.setItem("file", JSON.stringify(response.data));
-      dispatch({ type: "FILEDATA", payload: response.data });
+      localStorage.setItem("photo", JSON.stringify(response.data));
+      dispatch({ type: "PHOTODATA", payload: response.data });
     } catch (err) {
-      setFileError(err);
+      setPhotoError(err);
 
       const { response } = err;
 
@@ -87,9 +87,9 @@ export const useFile = () => {
         theme: "light",
       });
     } finally {
-      setLoadingFile(false);
+      setLoadingPhoto(false);
     }
   };
 
-  return { fileData, loadingFile, fileError, fetchFile };
+  return { photoData, loadingPhoto, photoError, fetchPhoto };
 };

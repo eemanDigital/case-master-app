@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import { RiCustomerService2Line } from "react-icons/ri";
 import avatar from "../assets/avatar.png";
 import { useLogout } from "../hooks/useLogout";
-import { useRemoveFile } from "../hooks/useRemoveFile";
+import { useRemovePhoto } from "../hooks/useRemovePhoto";
+
 import { RxDashboard } from "react-icons/rx";
 import {
   IoBriefcaseSharp,
@@ -10,7 +11,7 @@ import {
   IoMenuOutline,
 } from "react-icons/io5";
 // import { MdEditNote } from "react-icons/md";
-import { useFileContext } from "../hooks/useFileContext";
+import { usePhotoContext } from "../hooks/usePhotoContext";
 
 import { TbReport } from "react-icons/tb";
 import { FaMoneyBill, FaTasks } from "react-icons/fa";
@@ -72,10 +73,10 @@ const navItems = [
 
 const SideBar = ({ isOpen, handleOpen }) => {
   const { logout } = useLogout();
-  const { remove } = useRemoveFile();
+  const { remove } = useRemovePhoto();
   const navigate = useNavigate();
   const { user } = useAuthContext();
-  const { file } = useFileContext();
+  const { photo } = usePhotoContext();
 
   // console.log("FILE", file?.data?.file);
 
@@ -150,11 +151,11 @@ const SideBar = ({ isOpen, handleOpen }) => {
               <img
                 // use avatar as default image if user does not upload image
                 src={
-                  file?.data?.file
-                    ? `http://localhost:3000/images/${file?.data?.file}`
+                  photo?.data?.photo
+                    ? `http://localhost:3000/images/${photo?.data?.photo}`
                     : avatar
                 }
-                alt={`${user?.data?.user}'s profile image`}
+                alt={`${user?.data?.photo}'s profile image`}
                 className="w-12 h-12  mt-6  object-cover object-right-top rounded-full"
               />
               <span className="tooltiptext">Profile</span>

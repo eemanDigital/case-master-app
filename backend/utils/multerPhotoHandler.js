@@ -139,9 +139,9 @@ const uploadErrorHandler = (err, req, res, next) => {
   }
 };
 
-exports.uploadUserPhoto = (req, res, next) => {
+exports.usersPhotoUpload = (req, res, next) => {
   // Use the upload middleware to handle file upload
-  upload.single("file")(req, res, (err) => {
+  upload.single("photo")(req, res, (err) => {
     if (err) {
       // Pass the error to the error handling middleware
       uploadErrorHandler(err, req, res, next);

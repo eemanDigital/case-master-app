@@ -8,7 +8,7 @@ import { useAuth } from "../hooks/useAuth";
 import { FaAddressBook, FaPhone } from "react-icons/fa";
 import { MdMail } from "react-icons/md";
 import { useAuthContext } from "../hooks/useAuthContext";
-import { useFileContext } from "../hooks/useFileContext";
+import { usePhotoContext } from "../hooks/usePhotoContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -17,9 +17,9 @@ const Profile = () => {
   const [click, setClick] = useState(false);
 
   const { user } = useAuthContext();
-  const { file } = useFileContext();
+  const { photo } = usePhotoContext();
 
-  // console.log("FILE", file?.data?.file);
+  console.log("PHOTO", photo?.data?.photo);
 
   // console.log(user?.data.user.otherPosition, user?.data.user.position);
 
@@ -143,11 +143,11 @@ const Profile = () => {
             // use avatar as default image if user does not upload image
             src={
               // user
-              file?.data?.file
-                ? `http://localhost:3000/images/${file?.data?.file}`
+              photo?.data?.photo
+                ? `http://localhost:3000/images/${photo?.data?.photo}`
                 : avatar
             }
-            alt={`${file?.data?.file}'s profile image`}
+            alt={`${photo?.data?.photo}'s profile image`}
             className="object-cover object-right-top h-36 w-36  sm:h-48 sm:w-48   rounded-full border-4 border-slate-500"
           />
         </div>
