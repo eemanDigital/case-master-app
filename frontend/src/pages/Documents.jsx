@@ -12,12 +12,11 @@ const Document = () => {
   const { data, loading, error, dataFetcher } = useDataFetch();
   const [click, setClick] = useState(false);
   const [docData, setDocData] = useState({ fileName: "", file: null });
-  // const [docName, setDocName] = useState();
-  const { files, loadingFiles, errorFiles } = useDataGetterHook();
-  // console.log("FILES", files);
-  // const [getFile, setGetFile] = useState();
 
-  console.log("FILESS", files);
+  const { files, loadingFiles, errorFiles } = useDataGetterHook();
+
+
+  // console.log("FILESS", files);
   // const fileId = files?.data?._id;
 
   function handleFileChange(e) {

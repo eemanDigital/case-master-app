@@ -5,7 +5,6 @@ import Select from "../components/Select";
 import { Link } from "react-router-dom";
 import Button from "../components/Button";
 import { useAuth } from "../hooks/useAuth";
-import { usePhoto } from "../hooks/usePhoto";
 import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -32,7 +31,6 @@ const SignUp = () => {
     "Other",
   ];
   const { data, loading, error, authenticate } = useAuth();
-  const { photoData, loadingPhoto, photoError, fetchPhoto } = usePhoto();
   const [click, setClick] = useState(false);
 
   // console.log(fileData.data?.file);
@@ -44,7 +42,6 @@ const SignUp = () => {
     email: "",
     password: "",
     passwordConfirm: "",
-    // file:null,
     address: "",
     bio: "",
     position: "",
@@ -56,7 +53,6 @@ const SignUp = () => {
     lawSchoolAttended: "",
   });
 
-  const [photoValue, setPhotoValue] = useState({ photo: null });
   // const { dispatch } = useAuthContext();
   // derived state to check if user select "Other"
   const getOtherFieldSelected = inputValue.position === "Other";
@@ -71,29 +67,14 @@ const SignUp = () => {
     }));
   }
 
-  // handles file change
-  function handlePhotoChange(e) {
-    // const { name, value, files } = e.target;
-
-    setPhotoValue((prevData) => ({
-      ...prevData,
-      [e.target.name]: e.target.files[0], // Handle file or text input
-    }));
-  }
   // console.log(fileValue);
   // dispatch({ type: "LOGIN", filPayload: fileValue });
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // set custom headers for file upload
-    const fileHeaders = {
-      "Content-Type": "multipart/form-data",
-    };
-
     try {
       // Call fetchData with endpoint, method, payload, and any additional arguments
       await authenticate("users/signup", "post", inputValue);
-      await fetchPhoto("photos", "post", photoValue, fileHeaders);
     } catch (err) {
       console.log(err);
     }
@@ -236,7 +217,7 @@ const SignUp = () => {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row -mx-3 mb-6 flex-wrap gap-2 justify-between  sm:items-center">
-            <div>
+            {/* <div>
               <Input
                 type="file"
                 name="photo" // Use 'file' to match Multer configuration
@@ -246,7 +227,7 @@ const SignUp = () => {
                 label="upload photo"
                 htmlFor="photo"
               />
-            </div>
+            </div> */}
             <div className="w-[300px]">
               <Select
                 label="Position"

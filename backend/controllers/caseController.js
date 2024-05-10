@@ -2,11 +2,31 @@ const Case = require("../models/caseModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 
+// exports.createCase = catchAsync(async (req, res, next) => {
+//   const singleCase = await Case.create(req.body);
+//   res.status(201).json({
+//     data: singleCase,
+//   });
+// });
+
 exports.createCase = catchAsync(async (req, res, next) => {
-  const singleCase = await Case.create(req.body);
-  res.status(201).json({
-    data: singleCase,
-  });
+  const { file, body } = req;
+  if (!file || !body) {
+    return next(new AppError("Please provide a file and request body", 400));
+  }
+  const { filename } = file;
+  const { fileName, ...rest } = body;
+  if (!fileName) {
+    return next(
+      new AppError("Please provide a fileName in the request body", 400)
+    );
+  }
+  const document = {
+    name: fileName,
+    file: filename,
+  };
+  const singleCase = await Case.create({ documents: [document], ...rest });
+  res.status(201).json({ data: singleCase });
 });
 
 exports.getCases = catchAsync(async (req, res, next) => {

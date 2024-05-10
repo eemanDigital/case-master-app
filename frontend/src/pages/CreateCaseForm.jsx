@@ -31,6 +31,7 @@ import {
   casePriorityOptions,
   modesOptions,
 } from "../data/options";
+import CaseDocument from "./CaseDocument";
 
 const CreateCaseForm = () => {
   // destructure textarea from input
@@ -657,6 +658,8 @@ const CreateCaseForm = () => {
           </Button>
         </Form.Item>
       </Form>
+
+      <CaseDocument />
     </>
   );
 };

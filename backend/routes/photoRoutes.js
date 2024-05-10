@@ -1,17 +1,20 @@
-const express = require("express");
-const {
-  createPhoto,
-  getPhotos,
-  getPhoto,
-  deletePhoto,
-} = require("../controllers/photoController");
-const { usersPhotoUpload } = require("../utils/multerPhotoHandler");
+// const express = require("express");
+// const {
+//   createPhoto,
+//   getPhotos,
+//   getPhoto,
+//   deletePhoto,
+// } = require("../controllers/photoController");
+// const {
+//   uploadUserPhoto,
+//   resizeUserPhoto,
+// } = require("../utils/multerPhotoHandler");
 
-const photoRouter = express.Router();
+// const photoRouter = express.Router();
 
-photoRouter.post("/", usersPhotoUpload, createPhoto);
-photoRouter.get("/", usersPhotoUpload, getPhotos);
-photoRouter.get(":id", usersPhotoUpload, getPhoto);
-photoRouter.delete("/:id", usersPhotoUpload, deletePhoto);
+// photoRouter.post("/", resizeUserPhoto, uploadUserPhoto, createPhoto);
+// // photoRouter.get("/", usersPhotoUpload, getPhotos);
+// // photoRouter.get(":id", usersPhotoUpload, getPhoto);
+// photoRouter.delete("/:id", uploadUserPhoto, deletePhoto);
 
-module.exports = photoRouter;
+// module.exports = photoRouter;

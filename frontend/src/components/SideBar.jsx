@@ -76,7 +76,7 @@ const SideBar = ({ isOpen, handleOpen }) => {
   const { remove } = useRemovePhoto();
   const navigate = useNavigate();
   const { user } = useAuthContext();
-  const { photo } = usePhotoContext();
+  // const { photo } = usePhotoContext();
 
   // console.log("FILE", file?.data?.file);
 
@@ -151,11 +151,11 @@ const SideBar = ({ isOpen, handleOpen }) => {
               <img
                 // use avatar as default image if user does not upload image
                 src={
-                  photo?.data?.photo
-                    ? `http://localhost:3000/images/${photo?.data?.photo}`
+                  user?.data?.user?.photo
+                    ? `http://localhost:3000/images/users/${user?.data?.user?.photo}`
                     : avatar
                 }
-                alt={`${user?.data?.photo}'s profile image`}
+                alt={`${user?.data?.user.firstName}'s profile image`}
                 className="w-12 h-12  mt-6  object-cover object-right-top rounded-full"
               />
               <span className="tooltiptext">Profile</span>

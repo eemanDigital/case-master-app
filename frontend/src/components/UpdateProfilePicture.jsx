@@ -2,7 +2,7 @@
 import Input from "./Inputs";
 // import Select from "./Select";
 import Button from "./Button";
-// import { useAuth } from "../hooks/useAuth";
+import { useAuth } from "../hooks/useAuth";
 import { usePhoto } from "../hooks/usePhoto";
 import { usePhotoContext } from "../hooks/usePhotoContext";
 import { useState } from "react";
@@ -10,13 +10,14 @@ import { useState } from "react";
 import "react-toastify/dist/ReactToastify.css";
 
 const UpdateProfilePicture = () => {
-  const { photoData, loadingFile, fileError, fetchPhoto } = usePhoto();
+  // const { photoData, loadingFile, fileError, fetchPhoto } = usePhoto();
   const [click, setClick] = useState(false);
   const [photoValue, setPhotoValue] = useState({ photo: null });
+  const { authenticate } = useAuth();
   // const [getFile, setGetFile] = useState();
 
-  const { photo } = usePhotoContext();
-  const fileId = photo?.data?._id;
+  // const { photo } = usePhotoContext();
+  // const fileId = photo?.data?._id;
   // console.log(fileId);
   // handles file change
   function handlePhotoChange(e) {
@@ -44,7 +45,7 @@ const UpdateProfilePicture = () => {
     try {
       // Call fetchData with endpoint, method, payload, and any additional arguments
 
-      await fetchPhoto("photos", "post", photoValue, fileHeaders);
+      await authenticate("users/updateUser", "patch", photoValue, fileHeaders);
 
       // await fetchFile(
       //   `uploads/update/${fileId}`,
@@ -61,9 +62,9 @@ const UpdateProfilePicture = () => {
     setClick(() => !click);
   }
 
-  const handleDelete = async () => {
-    await fetchPhoto(`photos/${fileId}`, "delete", fileHeaders);
-  };
+  // const handleDelete = async () => {
+  //   await fetchPhoto(`updateUser/${fileId}`, "delete", fileHeaders);
+  // };
   return (
     <form
       onSubmit={handleSubmit}
@@ -82,17 +83,8 @@ const UpdateProfilePicture = () => {
       </div>
       <div>
         <Button onClick={handleClick} type="submit">
-          upload
+          upload new photo
         </Button>
-      </div>
-      <div>
-        <span>Delete Current Image</span>
-        <button
-          className="bg-red-700 font-bold text-white p-4"
-          onClick={handleDelete}
-          type="submit">
-          X
-        </button>
       </div>
     </form>
   );

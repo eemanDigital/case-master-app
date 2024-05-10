@@ -271,8 +271,6 @@ const EditUserProfile = () => {
         </div>
       </form>
 
-      <UpdateProfilePicture />
-
       <ToastContainer />
     </section>
   );

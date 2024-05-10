@@ -176,22 +176,19 @@ const caseSchema = new mongoose.Schema(
     },
     stepToBeTaken: [nameSchema],
 
-    // report: [
-    //   {
-    //     type: mongoose.Schema.ObjectId,
-    //     ref: "Report",
-    //   },
-    // ],
-
-    // task: [
-    //   {
-    //     type: mongoose.Schema.ObjectId,
-    //     ref: "Task",
-    //   },
-    // ],
     accountOfficer: [String],
     client: [nameSchema],
     generalComment: String,
+
+    documents: [
+      {
+        name: {
+          type: String,
+          maxLength: [20, "file name can not be more than 20 characters"],
+        },
+        file: String, //this is file upload
+      },
+    ],
   },
 
   {

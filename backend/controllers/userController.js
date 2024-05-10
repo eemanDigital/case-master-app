@@ -1,6 +1,39 @@
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const multer = require("multer");
+const sharp = require("sharp");
+
+const multerStorage = multer.memoryStorage();
+
+const multerFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith("image")) {
+    cb(null, true);
+  } else {
+    cb(new AppError("Not an image! Please upload only images.", 400), false);
+  }
+};
+
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+});
+
+exports.uploadUserPhoto = upload.single("photo");
+
+exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
+  if (!req.file) return next();
+
+  req.file.filename = `user-${req?.user?.id}-${Date.now()}.jpeg`;
+
+  await sharp(req.file.buffer)
+    .resize(500, 500)
+    .toFormat("jpeg")
+    .jpeg({ quality: 90 })
+    .toFile(`public/images/users/${req.file?.filename}`);
+
+  next();
+});
 
 // function to filter out some restricted fields
 const filterObj = (obj, ...allowedFields) => {
@@ -32,6 +65,7 @@ exports.getUsers = catchAsync(async (req, res, next) => {
 
 //GET A USER
 exports.getUser = catchAsync(async (req, res, next) => {
+  // req.params.id = req.user.id; //just added this, delete if your code has error here
   const _id = req.params.userId;
   const data = await User.findById({ _id }).populate({
     path: "task",
@@ -60,27 +94,28 @@ exports.updateUser = catchAsync(async (req, res, next) => {
   }
 
   // extracting file from the req
-  const filename = req.file ? req.file.filename : null; // Handle optional file
+  // const filename = req.file ? req.file?.filename : null; // Handle optional file
 
   // 2) Filtered out unwanted fields names that are not allowed to be updated
   const filteredBody = filterObj(
-    {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      middleName: req.body.middleName,
-      email: req.body.email,
-      photo: filename,
-      address: req.body.address,
-      role: req.body.role,
-      bio: req.body.bio,
-      position: req.body.position,
-      phone: req.body.phone,
-      yearOfCall: req.body.yearOfCall,
-      otherPosition: req.body.otherPosition,
-      practiceArea: req.body.practiceArea,
-      universityAttended: req.body.universityAttended,
-      lawSchoolAttended: req.body.lawSchoolAttended,
-    },
+    // {
+    //   firstName: req.body.firstName,
+    //   lastName: req.body.lastName,
+    //   middleName: req.body.middleName,
+    //   email: req.body.email,
+    //   photo: filename,
+    //   address: req.body.address,
+    //   role: req.body.role,
+    //   bio: req.body.bio,
+    //   position: req.body.position,
+    //   phone: req.body.phone,
+    //   yearOfCall: req.body.yearOfCall,
+    //   otherPosition: req.body.otherPosition,
+    //   practiceArea: req.body.practiceArea,
+    //   universityAttended: req.body.universityAttended,
+    //   lawSchoolAttended: req.body.lawSchoolAttended,
+    // },
+    req.body,
 
     "email",
     "firstName",
@@ -97,7 +132,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "universityAttended",
     "lawSchoolAttended"
   );
-
+  if (req.file) filteredBody.photo = req.file?.filename;
   // 3) Update user document
   const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
     new: true,
