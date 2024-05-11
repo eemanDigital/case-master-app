@@ -1,23 +1,23 @@
-const mongoose = require("mongoose");
+// const mongoose = require("mongoose");
 
-const fileSchema = mongoose.Schema({
-  fileName: {
-    type: String,
-    trim: true,
-    maxLength: [20, "file name can not be more than 20 characters"],
-  },
+// const fileSchema = mongoose.Schema({
+//   fileName: {
+//     type: String,
+//     trim: true,
+//     maxLength: [20, "file name can not be more than 20 characters"],
+//   },
 
-  file: {
-    type: String,
+//   file: {
+//     type: String,
 
-    // required: [true, "Please, select a file"],
-  },
+//     // required: [true, "Please, select a file"],
+//   },
 
-  date: {
-    type: Date,
-    default: Date.now,
-  },
-});
+//   date: {
+//     type: Date,
+//     default: Date.now,
+//   },
+// });
 
-const File = mongoose.model("File", fileSchema);
-module.exports = File;
+// const File = mongoose.model("File", fileSchema);
+// module.exports = File;

@@ -1,32 +1,79 @@
 const Case = require("../models/caseModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const multer = require("multer");
+
+const multerStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "public/cases/docs");
+  },
+  filename: (req, file, cb) => {
+    // const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(
+      null,
+      file.fieldname + "_" + Date.now() + path.extname(file.originalname)
+    );
+
+    // console.log(req.file);
+  },
+});
+
+const fileFilter = (req, file, cb) => {
+  // filter out file if not specified here
+  if (
+    file.mimetype === "image/jpeg" ||
+    file.mimetype === "image/jpg" ||
+    file.mimetype === "image/png" ||
+    file.mimetype === "application/pdf" ||
+    file.mimetype ===
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || // For .docx files
+    file.mimetype === "text/plain" // For plain text files
+  ) {
+    cb(null, true);
+  } else {
+    cb(
+      new AppError(
+        "Not a valid document! Please upload only valid document.",
+        400
+      ),
+      false
+    );
+  }
+};
+
+exports.upload = multer({
+  storage: multerStorage,
+  limits: {
+    fileSize: 1024 * 1024 * 5,
+  },
+  fileFilter: fileFilter,
+});
 
 // exports.createCase = catchAsync(async (req, res, next) => {
-//   const singleCase = await Case.create(req.body);
-//   res.status(201).json({
-//     data: singleCase,
-//   });
+//   const { file, body } = req;
+//   if (!file || !body) {
+//     return next(new AppError("Please provide a file and request body", 400));
+//   }
+//   const { filename } = file;
+//   const { fileName, ...rest } = body;
+//   if (!fileName) {
+//     return next(
+//       new AppError("Please provide a fileName in the request body", 400)
+//     );
+//   }
+//   const document = {
+//     name: fileName,
+//     file: filename,
+//   };
+//   const singleCase = await Case.create({ documents: [document], ...rest });
+//   res.status(201).json({ data: singleCase });
 // });
 
 exports.createCase = catchAsync(async (req, res, next) => {
-  const { file, body } = req;
-  if (!file || !body) {
-    return next(new AppError("Please provide a file and request body", 400));
-  }
-  const { filename } = file;
-  const { fileName, ...rest } = body;
-  if (!fileName) {
-    return next(
-      new AppError("Please provide a fileName in the request body", 400)
-    );
-  }
-  const document = {
-    name: fileName,
-    file: filename,
-  };
-  const singleCase = await Case.create({ documents: [document], ...rest });
-  res.status(201).json({ data: singleCase });
+  const singleCase = await Case.create(req.body);
+  res.status(201).json({
+    data: singleCase,
+  });
 });
 
 exports.getCases = catchAsync(async (req, res, next) => {
@@ -71,6 +118,22 @@ exports.getCase = catchAsync(async (req, res, next) => {
 });
 
 exports.updateCase = catchAsync(async (req, res, next) => {
+  // const { file, body } = req;
+  //   if (!file || !body) {
+  //     return next(new AppError("Please provide a file and request body", 400));
+  //   }
+  //   const { filename } = file;
+  //   const { fileName, ...rest } = body;
+  //   if (!fileName) {
+  //     return next(
+  //       new AppError("Please provide a fileName in the request body", 400)
+  //     );
+  //   }
+  //   const document = {
+  //     name: fileName,
+  //     file: filename,
+  //   };
+
   const doc = await Case.findByIdAndUpdate(req.params.caseId, req.body, {
     new: true,
     runValidators: true,

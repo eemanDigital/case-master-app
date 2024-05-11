@@ -5,11 +5,9 @@ const {
   getCase,
   updateCase,
   deleteCase,
+  upload,
 } = require("../controllers/caseController");
 const { protect, restrictTo } = require("../controllers/authController");
-// const { fileUpload } = require("../utils/multerDocHandler");
-const upload = require("../utils/multerDocHandler");
-// const {uploadFile}
 
 const caseRouter = express.Router();
 
@@ -18,7 +16,7 @@ caseRouter.route("/").get(getCases).post(createCase);
 caseRouter
   .route("/:caseId")
   .get(getCase)
-  .put(updateCase)
+  .patch(upload.single("file"), updateCase)
   .delete(restrictTo("admin"), deleteCase);
 
 module.exports = caseRouter;

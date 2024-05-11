@@ -44,6 +44,8 @@ const Cases = () => {
                 {singleCase.caseStatus}
               </p>
             </div>
+            {/* link to case update */}
+            <Link to={singleCase._id}>Update Case Information</Link>
           </div>
         );
       })

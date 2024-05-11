@@ -60,7 +60,7 @@ const CaseDocument = () => {
     handleSubmission(result); // Handle the submission after the API Call
   }, [form, handleSubmission, dataFetcher]);
 
-  console.log("FORMDATA", formData);
+  // console.log("FORMDATA", formData);
   return (
     <>
       <Form

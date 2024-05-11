@@ -69,25 +69,25 @@ const DataFetcherContext = ({ children }) => {
       }
     }
     // Fetch Reports function
-    async function fetchFiles() {
-      try {
-        setLoadingFiles(true);
-        const response = await axios.get(
-          `http://localhost:3000/api/v1/documents`
-        );
-        setFiles(response.data);
-      } catch (err) {
-        setErrorFiles(err.message || "Failed to fetch users");
-      } finally {
-        setLoadingFiles(false);
-      }
-    }
+    // async function fetchFiles() {
+    //   try {
+    //     setLoadingFiles(true);
+    //     const response = await axios.get(
+    //       `http://localhost:3000/api/v1/documents`
+    //     );
+    //     setFiles(response.data);
+    //   } catch (err) {
+    //     setErrorFiles(err.message || "Failed to fetch users");
+    //   } finally {
+    //     setLoadingFiles(false);
+    //   }
+    // }
 
     // Call the functions to fetch cases and users separately
     fetchCases();
     fetchUsers();
     fetchReports();
-    fetchFiles();
+    // fetchFiles();
   }, []);
 
   return (

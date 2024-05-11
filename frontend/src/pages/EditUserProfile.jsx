@@ -3,13 +3,10 @@ import Input from "../components/Inputs";
 import Select from "../components/Select";
 import Button from "../components/Button";
 import { useAuth } from "../hooks/useAuth";
-// import { useFile } from "../hooks/usePhoto";
-// import { useFileContext } from "../hooks/usePhotoContext";
 import { useState, useEffect } from "react";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import UpdateProfilePicture from "../components/UpdateProfilePicture";
 
 const EditUserProfile = () => {
   const positions = [
@@ -39,7 +36,6 @@ const EditUserProfile = () => {
     firstName: "",
     lastName: "",
     middleName: "",
-    // photo: "",
     address: "",
     bio: "",
     position: "",

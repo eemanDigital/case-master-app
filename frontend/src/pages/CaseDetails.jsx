@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useEffect } from "react";
 import { formatDate } from "../utils/formatDate";

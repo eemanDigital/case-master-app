@@ -1,22 +1,24 @@
 import { useState, useCallback, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { DeleteOutlined } from "@ant-design/icons";
 import {
   PartyDynamicInputs,
-  SelectInputs,
   DynamicInputArrays,
   TextAreaInput,
 } from "../components/DynamicInputs";
+// import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
 import {
   Button,
   Input,
   Form,
-  Divider,
-  Typography,
   Card,
   Select,
+  Divider,
+  Typography,
+  Switch,
   Space,
   DatePicker,
 } from "antd";
@@ -24,58 +26,48 @@ import {
 import {
   courtOptions,
   statusOptions,
+  natureOfCaseOptions,
+  caseCategoryOptions,
   casePriorityOptions,
   modesOptions,
 } from "../data/options";
+import { useSingleDataFetcher } from "../hooks/useSingleDataFetcher";
 
 const UpdateCase = () => {
   // destructure textarea from input
   const { TextArea } = Input;
-
-  const [form] = Form.useForm();
-  const [formData, setFormData] = useState({
-    firstParty: {
-      title: "",
-      description: [{ name: "" }],
-      processesFiled: [{ name: "" }],
-    },
-    secondParty: {
-      title: "",
-      description: [{ name: "" }],
-      processesFiled: [{ name: "" }],
-    },
-    otherParty: [
-      {
-        title: "",
-        description: [{ name: "" }],
-        processesFiled: [{ name: "" }],
-      },
-    ],
-    suitNo: "",
-    caseOfficeFileNo: "",
-    courtName: "",
-    otherCourt: "",
-    judge: [{ name: "" }],
-    caseSummary: "",
-    caseStatus: "",
-    natureOfCase: "",
-    filingDate: "",
-    modeOfCommencement: "",
-    otherModeOfCommencement: "",
-    caseStrengths: [],
-    caseWeaknesses: [],
-    casePriority: "",
-    stepToBeTaken: [],
-    caseUpdates: [{ date: "", update: "" }],
-    // task: [],
-    accountOfficer: [],
-    client: [{ name: "" }],
-    generalComment: "",
-  });
-  // destructor authenticate from useAuth
-  const { dataFetcher, data } = useDataFetch();
-  // destructure user data for accountOfficers
+  const params = useParams();
+  // console.log("PARA", params.id);
+  const [formData, setFormData] = useState({});
   const { users } = useDataGetterHook();
+  // const [form] = Form.useForm();
+  // destructor authenticate from useDataFetch
+  // const { dataFetcher, data } = useDataFetch(); //general data fetcher
+  const { singleData, singleDataFetcher } = useSingleDataFetcher();
+  // console.log("SINGLE", singleData?.data);
+
+  useEffect(() => {
+    singleDataFetcher(`cases/${params.id}`);
+  }, [params.id]);
+
+  useEffect(() => {
+    // singleDataFetcher(`cases/${params.id}`);
+    if (singleData?.data) {
+      setFormData((prevData) => ({
+        ...prevData,
+        ...singleData?.data,
+      }));
+    }
+  }, []);
+  console.log(formData?.firstParty?.description);
+
+  // get single case data
+  //  const getSingleCase = async () => {
+  //     const res
+  // }
+  // useEffect(()=> {
+
+  // }, [])
 
   //  get users/account officer's data
   const userData = Array.isArray(users?.data)
@@ -88,37 +80,42 @@ const UpdateCase = () => {
     : [];
 
   // form submit functionalities
-  const handleSubmission = useCallback(
-    (result) => {
-      if (result?.error) {
-        // Handle Error here
-      } else {
-        // Handle Success here
-        // form.resetFields();
-      }
-    },
-    []
-    // [form]
-  );
+  // const handleSubmission = useCallback(
+  //   (result) => {
+  //     if (result?.error) {
+  //       // Handle Error here
+  //     } else {
+  //       // Handle Success here
+  //       // form.resetFields();
+  //     }
+  //   },
+  //   []
+  //   // [form]
+  // );
 
   // submit data
-  const onSubmit = useCallback(async () => {
-    let values;
-    try {
-      values = await form.validateFields(); // Validate the form fields
-    } catch (errorInfo) {
-      return;
-    }
-    const result = await dataFetcher("cases", "POST", values); // Submit the form data to the backend
-    console.log(values);
-    handleSubmission(result); // Handle the submission after the API Call
-  }, [form, handleSubmission, dataFetcher]);
+  // const onSubmit = useCallback(async () => {
+  //   let values;
+  //   try {
+  //     values = await form.validateFields(); // Validate the form fields
+  //   } catch (errorInfo) {
+  //     return;
+  //   }
+  //   const result = await dataFetcher(`cases/${params.id}`, "patch", values); // Submit the form data to the backend
+  //   console.log(values);
+
+  //   handleSubmission(result); // Handle the submission after the API Call
+  // }, [form, handleSubmission, dataFetcher, params.id]);
+
+  // filter function for Select
+  const filterOption = (input, option) =>
+    (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
 
   return (
     <>
       <Form
         layout="vertical"
-        form={form}
+        // form={form}
         name="dynamic_form_complex"
         // autoComplete="off"
         // initialValues={formData}
@@ -130,12 +127,12 @@ const UpdateCase = () => {
 
         <PartyDynamicInputs
           parentKey="firstParty"
-          firstKeyVal="title"
-          label="Title"
+          firstKeyVal="description"
+          label="Description"
           placeholderVal="e.g. Plaintiff"
-          secondKeyVal="description"
-          firstInitialValue={formData?.firstParty?.title}
-          secondInitialValue={formData?.firstParty?.description}
+          secondKeyVal="name"
+          firstInitialValue={formData?.firstParty?.description}
+          secondInitialValue={formData?.firstParty?.name}
           thirdKeyVal="processesFiled"
           thirdInitialValue={formData?.firstParty?.processesFiled}
         />
@@ -146,12 +143,12 @@ const UpdateCase = () => {
         </Divider>
         <PartyDynamicInputs
           parentKey="secondParty"
-          firstKeyVal="title"
-          label="Title"
+          firstKeyVal="description"
+          label="Description"
           placeholderVal="e.g. Defendant"
-          secondKeyVal="description"
-          firstInitialValue={formData?.secondParty?.title}
-          secondInitialValue={formData?.secondParty?.description}
+          secondKeyVal="name"
+          firstInitialValue={formData?.secondParty?.description}
+          secondInitialValue={formData?.secondParty?.name}
           thirdKeyVal="processesFiled"
           thirdInitialValue={formData?.secondParty?.processesFiled}
         />
@@ -180,9 +177,9 @@ const UpdateCase = () => {
                     }>
                     {/* otherParty title field */}
                     <Form.Item
-                      label="Title"
-                      name={[field.name, "title"]}
-                      initialValue={formData.otherParty.title}>
+                      label="Description"
+                      name={[field.name, "description"]}
+                      initialValue={formData.otherParty.description}>
                       <Input />
                     </Form.Item>
 
@@ -190,7 +187,7 @@ const UpdateCase = () => {
                     <div className="flex justify-between  items-center">
                       <Form.Item label="Name" noStyle>
                         {/* otherParty description field */}
-                        <Form.List name={[field.name, "description"]}>
+                        <Form.List name={[field.name, "name"]}>
                           {(subFields, { add, remove }) => (
                             <div>
                               {subFields.map((subField) => (
@@ -201,8 +198,9 @@ const UpdateCase = () => {
                                     noStyle
                                     name={[subField.name, "name"]}
                                     initialValue={
-                                      formData.otherParty[field.name]
-                                        ?.description[subField?.name]?.name
+                                      formData.otherParty[field.name]?.name[
+                                        subField?.name
+                                      ]?.name
                                     }>
                                     <Input placeholder="Enter Party's description" />
                                   </Form.Item>
@@ -217,7 +215,7 @@ const UpdateCase = () => {
                                 </Space.Compact>
                               ))}
                               <Button type="dashed" onClick={() => add()}>
-                                + Add Description
+                                + Add Name
                               </Button>
                             </div>
                           )}
@@ -274,29 +272,62 @@ const UpdateCase = () => {
         {/* SUIT NO FIELD */}
         <div className="flex justify-between items-center gap-9 flex-wrap">
           {/* MODE OF COMMENCEMENT */}
-          <SelectInputs
-            fieldName="modeOfCommencement"
-            label="Mode of Commencement"
-            initialValue={formData?.modeOfCommencement}
-            options={modesOptions}
-          />
-          {/* OTHER MODE OF COMMENCEMENT*/}
+
           <div>
             <Form.Item
-              label="Specify Court"
+              name="modeOfCommencement"
+              label="Mode of Commencement"
+              initialValue={formData?.modeOfCommencement}
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select mode"
+                showSearch
+                filterOption={filterOption}
+                options={modesOptions}
+                allowClear
+                // value={otherMode?.modeOfCommencement}
+                // onChange={(e) => setOtherMode(e.target.value)}
+                // onSelect={(e) => setOtherMode(e.target.value)}
+              />
+            </Form.Item>
+          </div>
+
+          {/* OTHER MODE OF COMMENCEMENT */}
+
+          <div>
+            <Form.Item
+              label="Specify Mode"
               name="otherModeOfCommencement"
               initialValue={formData?.otherModeOfCommencement}>
               <Input />
             </Form.Item>
           </div>
 
+          {/* WHETHER FILED BY THE OFFICE */}
+          <Form.Item
+            label="Switch if case is filed by the Office"
+            valuePropName="checked"
+            name="isFiledByTheOffice"
+            initialValue={formData?.isFiledByTheOffice}>
+            <Switch className="bg-gray-400 w-20" />
+          </Form.Item>
+
           {/* NATURE OF CASE*/}
           <div>
             <Form.Item
-              label="Nature of Case"
               name="natureOfCase"
-              initialValue={formData?.natureOfCase}>
-              <Input placeholder="e.g. Breach of Contract" />
+              label="Nature of Case"
+              initialValue={formData?.natureOfCase}
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select nature of case"
+                showSearch
+                filterOption={filterOption}
+                options={natureOfCaseOptions}
+                allowClear
+              />
             </Form.Item>
           </div>
 
@@ -325,18 +356,60 @@ const UpdateCase = () => {
           </div>
 
           {/* COURTS */}
-          <SelectInputs
-            fieldName="courtName"
-            label="Assigned Court"
-            initialValue={formData?.courtName}
-            options={courtOptions}
-          />
-          {/* OTHER COURT*/}
+
+          <div>
+            <Form.Item
+              name="courtName"
+              label="Court"
+              initialValue={formData?.courtName}
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select court"
+                showSearch
+                filterOption={filterOption}
+                options={courtOptions}
+                allowClear
+              />
+            </Form.Item>
+          </div>
+
+          {/* COURT'S NO */}
+          <div>
+            <Form.Item
+              label="Court No"
+              name="courtNo"
+              initialValue={formData?.courtNo}>
+              <Input />
+            </Form.Item>
+          </div>
+          {/* COURT'S LOCATION */}
+          <div>
+            <Form.Item
+              label="Court's Location"
+              name="location"
+              placeholder="e.g. Ikoyi, Lagos"
+              initialValue={formData?.location}>
+              <Input />
+            </Form.Item>
+          </div>
+          {/*  STATE */}
+          <div>
+            <Form.Item
+              label="State where Court is located"
+              name="state"
+              placeholder="e.g. Lagos"
+              initialValue={formData?.state}>
+              <Input />
+            </Form.Item>
+          </div>
+
+          {/* OTHER COURT */}
           <div>
             <Form.Item
               label="Specify Court"
               name="otherCourt"
-              initialValue={formData?.otherCourt}>
+              initialValue={formData?.courtName}>
               <Input />
             </Form.Item>
           </div>
@@ -351,21 +424,73 @@ const UpdateCase = () => {
             </Form.Item>
           </div>
           <Divider />
+
           {/* CASE STATUS */}
-          <SelectInputs
-            name="caseStatus"
-            label="Case Status"
-            initialValue={formData?.caseStatus}
-            options={statusOptions}
-          />
+          {/* <SelectInputs
+      name="caseStatus"
+      label="Case Status"
+      initialValue={formData?.caseStatus}
+      options={statusOptions}
+    /> */}
+          <div>
+            <Form.Item
+              name="caseStatus"
+              label="Case Status"
+              initialValue={formData?.caseStatus}
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select case status"
+                showSearch
+                filterOption={filterOption}
+                options={statusOptions}
+                allowClear
+              />
+            </Form.Item>
+          </div>
+
+          {/* CASE CATEGORY */}
+          <div>
+            <Form.Item
+              name="category"
+              label="Case Category"
+              initialValue={formData?.category}
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select case category"
+                showSearch
+                filterOption={filterOption}
+                options={caseCategoryOptions}
+                allowClear
+              />
+            </Form.Item>
+          </div>
 
           {/* CASE PRIORITY */}
-          <SelectInputs
-            name="casePriority"
-            label="Case Priority"
-            initialValue={formData?.casePriority}
-            options={casePriorityOptions}
-          />
+          {/* <SelectInputs
+      name="casePriority"
+      label="Case Priority"
+      initialValue={formData?.casePriority}
+      options={casePriorityOptions}
+    /> */}
+
+          <div>
+            <Form.Item
+              name="casePriority"
+              label="Case Priority/Rating"
+              initialValue={formData?.casePriority}
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select case priority"
+                showSearch
+                filterOption={filterOption}
+                options={casePriorityOptions}
+                allowClear
+              />
+            </Form.Item>
+          </div>
 
           {/* JUDGE FIELD */}
           <DynamicInputArrays
@@ -404,16 +529,17 @@ const UpdateCase = () => {
             <Form.Item
               name="accountOfficer"
               label="Account Officer"
-              initialValue={formData?.accountOfficer.name}>
+              className="w-[200px]"
+              initialValue={formData?.accountOfficer?.name}>
               <Select
-                noStyle
+                // noStyle
                 mode="multiple"
                 placeholder="Select account officer"
                 options={userData}
                 allowClear
-                style={{
-                  width: "100%",
-                }}
+                // style={{
+                //   width: "100%",
+                // }}
               />
             </Form.Item>
           </div>
@@ -427,62 +553,62 @@ const UpdateCase = () => {
 
           {/* CASE UPDATE/REPORT */}
           {/* <Divider orientation="left" orientationMargin="0">
-            <Typography.Title level={4}>Case Update/ Report</Typography.Title>
-          </Divider> */}
+      <Typography.Title level={4}>Case Update/ Report</Typography.Title>
+    </Divider> */}
 
           {/* <div className="">
+      <div>
+        <Form.List name="caseUpdates">
+          {(fields, { add, remove }) => (
             <div>
-              <Form.List name="caseUpdates">
-                {(fields, { add, remove }) => (
-                  <div>
-                    {fields.map((field) => (
-                      <Space.Compact
-                        key={field.key}
-                        className="flex justify-center items-center my-2">
-                        <div className="flex flex-col  items-center gap-5">
-                          <div>
-                            <Form.Item
-                              noStyle
-                              className=" w-4/5"
-                              name={[field.name, "date"]}
-                              initialValue={
-                                formData?.caseUpdates[field.name]?.date
-                              }>
-                              <DatePicker placeholder="Select Date" />
-                            </Form.Item>
-                          </div>
-                          <div>
-                            <Form.Item
-                              noStyle
-                              name={[field.name, "update"]}
-                              initialValue={
-                                formData?.caseUpdates[field.name]?.update
-                              }>
-                              <TextArea
-                                placeholder="Enter Update"
-                                className="w-96 "
-                              />
-                            </Form.Item>
-                          </div>
-                        </div>
-                        <Button>
-                          <DeleteOutlined
-                            className="text-red-700"
-                            onClick={() => {
-                              remove(field.name);
-                            }}
-                          />
-                        </Button>
-                      </Space.Compact>
-                    ))}
-                    <Button type="dashed" onClick={() => add()}>
-                      + Add Update
-                    </Button>
+              {fields.map((field) => (
+                <Space.Compact
+                  key={field.key}
+                  className="flex justify-center items-center my-2">
+                  <div className="flex flex-col  items-center gap-5">
+                    <div>
+                      <Form.Item
+                        noStyle
+                        className=" w-4/5"
+                        name={[field.name, "date"]}
+                        initialValue={
+                          formData?.caseUpdates[field.name]?.date
+                        }>
+                        <DatePicker placeholder="Select Date" />
+                      </Form.Item>
+                    </div>
+                    <div>
+                      <Form.Item
+                        noStyle
+                        name={[field.name, "update"]}
+                        initialValue={
+                          formData?.caseUpdates[field.name]?.update
+                        }>
+                        <TextArea
+                          placeholder="Enter Update"
+                          className="w-96 "
+                        />
+                      </Form.Item>
+                    </div>
                   </div>
-                )}
-              </Form.List>
+                  <Button>
+                    <DeleteOutlined
+                      className="text-red-700"
+                      onClick={() => {
+                        remove(field.name);
+                      }}
+                    />
+                  </Button>
+                </Space.Compact>
+              ))}
+              <Button type="dashed" onClick={() => add()}>
+                + Add Update
+              </Button>
             </div>
-          </div> */}
+          )}
+        </Form.List>
+      </div>
+    </div> */}
         </div>
 
         <Divider />
@@ -502,7 +628,8 @@ const UpdateCase = () => {
         <Divider />
 
         <Form.Item>
-          <Button onClick={onSubmit} type="default" htmlType="submit">
+          {/* <Button onClick={onSubmit} type="default" htmlType="submit"> */}
+          <Button type="default" htmlType="submit">
             Submit
           </Button>
         </Form.Item>
