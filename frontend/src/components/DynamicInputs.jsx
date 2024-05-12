@@ -1,6 +1,7 @@
 import { DeleteOutlined } from "@ant-design/icons";
 
 import { Button, Input, Form, Space, Select } from "antd";
+import { isArray } from "sanity";
 
 export const PartyDynamicInputs = ({
   parentKey,
@@ -171,27 +172,29 @@ export const DynamicInputArrays = ({
         <Form.List name={parentKey} noStyle>
           {(fields, { add, remove }) => (
             <div>
-              {fields.map(({ key, name, ...restField }) => {
-                return (
-                  <div key={key}>
-                    <Form.Item
-                      className="m-0 p-0"
-                      {...restField}
-                      name={[name, "name"]}
-                      initialValue={initialValue[name]?.name}
-                      label={`${key + 1}- ${label}`}>
-                      <Space.Compact>
-                        <Input placeholder={placeholder} className="h-8" />
-                        <Form.Item onClick={() => remove(name)}>
-                          <Button>
-                            <DeleteOutlined className="text-red-700" />
-                          </Button>
+              {Array.isArray(fields)
+                ? fields.map(({ key, name, ...restField }) => {
+                    return (
+                      <div key={key}>
+                        <Form.Item
+                          className="m-0 p-0"
+                          {...restField}
+                          name={[name, "name"]}
+                          // initialValue={initialValue[name]?.name}
+                          label={`${key + 1}- ${label}`}>
+                          <Space.Compact>
+                            <Input placeholder={placeholder} className="h-8" />
+                            <Form.Item onClick={() => remove(name)}>
+                              <Button>
+                                <DeleteOutlined className="text-red-700" />
+                              </Button>
+                            </Form.Item>
+                          </Space.Compact>
                         </Form.Item>
-                      </Space.Compact>
-                    </Form.Item>
-                  </div>
-                );
-              })}
+                      </div>
+                    );
+                  })
+                : []}
               <Form.Item>
                 <Button onClick={() => add()}>+ Add {label}</Button>
               </Form.Item>

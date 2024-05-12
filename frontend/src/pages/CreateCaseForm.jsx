@@ -133,8 +133,10 @@ const CreateCaseForm = () => {
   //   modeOfCommencement: "",
   // });
 
+  // const fieldVal = form.getFieldValue("modeOfCommencement");
+
   // const Mode = formData?.modeOfCommencement === "Other";
-  // console.log(Mode);
+  // console.log(fieldVal);
 
   return (
     <>
@@ -313,7 +315,7 @@ const CreateCaseForm = () => {
                 allowClear
                 // value={otherMode?.modeOfCommencement}
                 // onChange={(e) => setOtherMode(e.target.value)}
-                onSelect={(e) => setOtherMode(e.target.value)}
+                // onSelect={(e) => setOtherMode(e.target.value)}
               />
             </Form.Item>
           </div>

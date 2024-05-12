@@ -9,6 +9,7 @@ import {
 } from "../components/DynamicInputs";
 // import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import axios from "axios";
 
 import {
   Button,
@@ -20,7 +21,7 @@ import {
   Typography,
   Switch,
   Space,
-  DatePicker,
+  // DatePicker,
 } from "antd";
 
 import {
@@ -31,44 +32,139 @@ import {
   casePriorityOptions,
   modesOptions,
 } from "../data/options";
-import { useSingleDataFetcher } from "../hooks/useSingleDataFetcher";
+// import { useSingleDataFetcher } from "../hooks/useSingleDataFetcher";
 
+// const inits = {
+//   firstParty: {
+//     description: "Plaintiff",
+//     name: [{ name: "John Doe" }],
+//     processesFiled: [{ name: "Lawsuit" }, { name: "Lawsuit 2" }],
+//   },
+//   secondParty: {
+//     description: "Defendant",
+//     name: [{ name: "Jane Smith" }],
+//     processesFiled: [{ name: "Response" }],
+//   },
+//   otherParty: [
+//     {
+//       description: "Third Party",
+//       name: [{ name: "David Johnson" }],
+//       processesFiled: [{ name: "Counterclaim" }],
+//     },
+//   ],
+//   suitNo: "AB1234",
+//   caseOfficeFileNo: "XYZ5678",
+//   courtName: "Supreme Court",
+//   courtNo: "123",
+//   location: "New York",
+//   otherCourt: "District Court",
+//   judge: [{ name: "Judge Judy" }],
+//   caseSummary: "This is a summary of the case.",
+//   caseStatus: "Pending",
+//   natureOfCase: "Civil",
+//   category: "Lawsuit",
+//   isFiledByTheOffice: false,
+//   // filingDate: "2024-05-25",
+//   filingDate: "",
+//   // filingDate: " ",
+//   modeOfCommencement: "Litigation",
+//   otherModeOfCommencement: "Other mode",
+//   caseStrengths: ["Strong evidence", "Experienced legal team"],
+//   caseWeaknesses: ["Limited resources", "Complex legal issues"],
+//   casePriority: "High",
+//   stepToBeTaken: ["Discovery process", "Negotiation"],
+//   // caseUpdates: [{ date: "2024-05-30", update: "Meeting with clients" }],
+//   // caseUpdates: [{ date: " ", update: "Meeting with clients" }],
+//   accountOfficer: ["Alice Johnson"],
+//   client: [{ name: "Company ABC" }],
+//   generalComment: "Additional comments about the case.",
+// };
+const baseURL = import.meta.env.VITE_BASE_URL;
 const UpdateCase = () => {
   // destructure textarea from input
+  const [form] = Form.useForm();
   const { TextArea } = Input;
-  const params = useParams();
-  // console.log("PARA", params.id);
-  const [formData, setFormData] = useState({});
   const { users } = useDataGetterHook();
-  // const [form] = Form.useForm();
-  // destructor authenticate from useDataFetch
-  // const { dataFetcher, data } = useDataFetch(); //general data fetcher
-  const { singleData, singleDataFetcher } = useSingleDataFetcher();
-  // console.log("SINGLE", singleData?.data);
+
+  const { id } = useParams();
+  console.log(id);
+  // const { singleData, singleDataFetcher } = useSingleDataFetcher();
+  const [formData, setFormData] = useState({
+    firstParty: {
+      description: "",
+      name: [{ name: "" }],
+      processesFiled: [{ name: "" }],
+    },
+    secondParty: {
+      description: "",
+      name: [{ name: "" }],
+      processesFiled: [{ name: "" }],
+    },
+    otherParty: [
+      {
+        description: "",
+        name: [{ name: "" }],
+        processesFiled: [{ name: "" }],
+      },
+    ],
+    suitNo: "",
+    caseOfficeFileNo: "",
+    courtName: "",
+    courtNo: "",
+    location: "",
+    otherCourt: "",
+    judge: [{ name: "" }],
+    caseSummary: "",
+    caseStatus: "",
+    natureOfCase: "",
+    category: "",
+    isFiledByTheOffice: false,
+    filingDate: "",
+    modeOfCommencement: "",
+    otherModeOfCommencement: "",
+    caseStrengths: [],
+    caseWeaknesses: [],
+    casePriority: "",
+    stepToBeTaken: [],
+    caseUpdates: [{ date: "", update: "" }],
+
+    accountOfficer: [],
+    client: [{ name: "" }],
+    generalComment: "",
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    singleDataFetcher(`cases/${params.id}`);
-  }, [params.id]);
+    async function fetchData() {
+      try {
+        const response = await axios.get(`${baseURL}/cases/${id}`);
+        // console.log("RES", response.data.data);
 
-  useEffect(() => {
-    // singleDataFetcher(`cases/${params.id}`);
-    if (singleData?.data) {
-      setFormData((prevData) => ({
-        ...prevData,
-        ...singleData?.data,
-      }));
+        setFormData((prevData) => {
+          return {
+            ...prevData,
+            ...response?.data?.data,
+          };
+        });
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
     }
-  }, []);
-  console.log(formData?.firstParty?.description);
+    fetchData();
+  }, [id]);
 
-  // get single case data
-  //  const getSingleCase = async () => {
-  //     const res
-  // }
-  // useEffect(()=> {
+  function handleFinish(values) {
+    console.log("VALUES", values);
+    alert("Check console for values");
+  }
 
-  // }, [])
-
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  // const fieldVal = form.getFieldValue();
+  // console.log("FVAL", fieldVal);
   //  get users/account officer's data
   const userData = Array.isArray(users?.data)
     ? users?.data.map((user) => {
@@ -79,84 +175,248 @@ const UpdateCase = () => {
       })
     : [];
 
-  // form submit functionalities
-  // const handleSubmission = useCallback(
-  //   (result) => {
-  //     if (result?.error) {
-  //       // Handle Error here
-  //     } else {
-  //       // Handle Success here
-  //       // form.resetFields();
-  //     }
-  //   },
-  //   []
-  //   // [form]
-  // );
-
-  // submit data
-  // const onSubmit = useCallback(async () => {
-  //   let values;
-  //   try {
-  //     values = await form.validateFields(); // Validate the form fields
-  //   } catch (errorInfo) {
-  //     return;
-  //   }
-  //   const result = await dataFetcher(`cases/${params.id}`, "patch", values); // Submit the form data to the backend
-  //   console.log(values);
-
-  //   handleSubmission(result); // Handle the submission after the API Call
-  // }, [form, handleSubmission, dataFetcher, params.id]);
-
-  // filter function for Select
-  const filterOption = (input, option) =>
-    (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
-
+  // const filterOption = (input, option) =>
+  //   (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
+  // console.log(formData);
+  const fieldVal = form.getFieldValue("otherParty");
+  console.log(fieldVal);
+  // const values = form.getFieldValue(formData);
+  // console.log(values);
   return (
     <>
       <Form
+        className="h-[100%]"
         layout="vertical"
-        // form={form}
-        name="dynamic_form_complex"
+        form={form}
+        name="Case Update Form"
+        onFinish={handleFinish}
         // autoComplete="off"
-        // initialValues={formData}
-      >
+        initialValues={formData}>
         {/* FIRST PARTY FIELD */}
-        <Divider orientation="left" orientationMargin="0">
-          <Typography.Title level={4}>First Party</Typography.Title>
-        </Divider>
+        {/* <TextDivider text="First Party" /> */}
+        <div className="flex flex-wrap justify-between ">
+          <div>
+            {/* firstParty title field */}
 
-        <PartyDynamicInputs
-          parentKey="firstParty"
-          firstKeyVal="description"
-          label="Description"
-          placeholderVal="e.g. Plaintiff"
-          secondKeyVal="name"
-          firstInitialValue={formData?.firstParty?.description}
-          secondInitialValue={formData?.firstParty?.name}
-          thirdKeyVal="processesFiled"
-          thirdInitialValue={formData?.firstParty?.processesFiled}
-        />
+            <Form.Item
+              name={["firstParty", "description"]}
+              label="description"
+              // initialValue={formData?.firstParty?.description}
+              // rules={[
+              //   {
+              //     required: true,
+              //     message: "Please provide the party's title",
+              //   },
+              // ]}
+            >
+              <Input placeholder="e.g. Plaintiff" />
+            </Form.Item>
+          </div>
+
+          <div>
+            {/* firstParty description field */}
+            <Form.List
+              name={["firstParty", "name"]}
+              // initialValue={formData?.firstParty?.title}
+            >
+              {(fields, { add, remove }) => (
+                <div>
+                  {fields.map((field) => (
+                    <div key={field.key}>
+                      <Form.Item
+                        className="m-0 p-0"
+                        // {...restField}
+                        name={[field.name, "name"]}
+                        // initialValue={
+                        //   formData?.firstParty?.description[name]?.name
+                        // }
+                        // rules={[
+                        //   {
+                        //     required: true,
+                        //     message: "Parties name(es) is required",
+                        //   },
+                        // ]}
+                        label={`${field.key + 1}- Party's Name`}>
+                        <Space.Compact className="flex  justify-center item-center">
+                          <Input
+                            placeholder="enter party's name(s)"
+                            className="h-8"
+                          />{" "}
+                          <Form.Item onClick={() => remove(field.name)}>
+                            <Button>
+                              <DeleteOutlined className="text-red-700" />
+                            </Button>
+                          </Form.Item>
+                        </Space.Compact>
+                      </Form.Item>
+                      <div></div>
+                    </div>
+                  ))}
+                  <Form.Item onClick={() => add()}>
+                    <Button className="">+ Add Name</Button>
+                  </Form.Item>
+                </div>
+              )}
+            </Form.List>
+          </div>
+
+          <div>
+            {/* firstParty processFiled field */}
+
+            <Form.List
+              name={["firstParty", "processesFiled"]}
+              // initialValue={[{ name: "" }]}
+            >
+              {(fields, { add, remove }) => (
+                <div>
+                  {fields.map((field) => {
+                    return (
+                      <div key={field.key}>
+                        <Form.Item
+                          className="m-0 p-0"
+                          name={[field.name, "name"]}
+                          // initialValue={
+                          //   formData?.firstParty?.processesFiled[name]?.name
+                          // }
+                          label={`${field.key + 1}- Process Filed`}>
+                          <Space.Compact>
+                            <Input
+                              placeholder="Enter process field"
+                              className="h-8"
+                            />
+                            <Form.Item onClick={() => remove(field.name)}>
+                              <Button>
+                                <DeleteOutlined className="text-red-700" />
+                              </Button>
+                            </Form.Item>
+                          </Space.Compact>
+                        </Form.Item>
+                      </div>
+                    );
+                  })}
+                  <Form.Item>
+                    <Button onClick={() => add()}>+ Add Process</Button>
+                  </Form.Item>
+                </div>
+              )}
+            </Form.List>
+          </div>
+        </div>
 
         {/* SECOND PARTY FIELD */}
-        <Divider orientation="left" orientationMargin="0">
-          <Typography.Title level={4}>Second Party</Typography.Title>
-        </Divider>
-        <PartyDynamicInputs
-          parentKey="secondParty"
-          firstKeyVal="description"
-          label="Description"
-          placeholderVal="e.g. Defendant"
-          secondKeyVal="name"
-          firstInitialValue={formData?.secondParty?.description}
-          secondInitialValue={formData?.secondParty?.name}
-          thirdKeyVal="processesFiled"
-          thirdInitialValue={formData?.secondParty?.processesFiled}
-        />
+        {/* <TextDivider text="Second Party" /> */}
+
+        <div className="flex flex-wrap justify-between  ">
+          <div>
+            {/* secondParty title field */}
+
+            <Form.Item
+              name={["secondParty", "description"]}
+              // initialValue={formData?.secondParty?.title}
+              label="Title"
+              // rules={[
+              //   {
+              //     required: true,
+              //     message: "Please provide the party's title",
+              //   },
+              // ]}
+            >
+              <Input placeholder="e.g. Defendant" />
+            </Form.Item>
+          </div>
+
+          <div>
+            {/* secondParty description field */}
+
+            <Form.List name={["secondParty", "name"]}>
+              {(nameFields, { add: addName, remove: removeName }) => (
+                <div>
+                  {nameFields.map(({ key, name, ...restField }) => (
+                    <div key={key}>
+                      <Form.Item
+                        className="m-0 p-0"
+                        {...restField}
+                        name={[name, "name"]}
+                        // initialValue={
+                        //   formData?.secondParty?.description[name]?.name
+                        // }
+                        rules={[
+                          {
+                            required: true,
+                            message: "Parties name(es) is required",
+                          },
+                        ]}
+                        label={`${key + 1}- Party's Name`}>
+                        <Space.Compact className="flex  justify-center item-center">
+                          <Input
+                            placeholder="enter party's name(s)"
+                            className="h-8"
+                          />{" "}
+                          <Form.Item onClick={() => removeName(name)}>
+                            <Button>
+                              <DeleteOutlined className="text-red-700" />
+                            </Button>
+                          </Form.Item>
+                        </Space.Compact>
+                      </Form.Item>
+                      <div></div>
+                    </div>
+                  ))}
+                  <Form.Item onClick={() => addName()}>
+                    <Button className="">+ Add Name</Button>
+                  </Form.Item>
+                </div>
+              )}
+            </Form.List>
+          </div>
+
+          <div>
+            {/* secondParty processesFiled field */}
+
+            <Form.List name={["secondParty", "processesFiled"]}>
+              {(
+                processesFiledFields,
+                { add: addProcess, remove: removeProcess }
+              ) => (
+                <div>
+                  {processesFiledFields.map(({ key, name, ...restField }) => {
+                    return (
+                      <div key={key}>
+                        <Form.Item
+                          className="m-0 p-0"
+                          {...restField}
+                          name={[name, "name"]}
+                          // initialValue={
+                          //   formData?.secondParty?.processesFiled[name]?.name
+                          // }
+                          label={`${key + 1}- Process Filed`}>
+                          <Space.Compact>
+                            <Input
+                              placeholder="Enter process field"
+                              className="h-8"
+                            />
+                            <Form.Item onClick={() => removeProcess(name)}>
+                              <Button>
+                                <DeleteOutlined className="text-red-700" />
+                              </Button>
+                            </Form.Item>
+                          </Space.Compact>
+                        </Form.Item>
+                      </div>
+                    );
+                  })}
+                  <Form.Item>
+                    <Button onClick={() => addProcess()}>+ Add Process</Button>
+                  </Form.Item>
+                </div>
+              )}
+            </Form.List>
+          </div>
+        </div>
 
         {/* OTHER PARTIES FIELD */}
-        <Divider orientation="left" orientationMargin="0">
-          <Typography.Title level={4}>Other Party</Typography.Title>
-        </Divider>
+        {/* <TextDivider text="Other Party" /> */}
+
         <div className="">
           <Form.List name="otherParty">
             {(fields, { add, remove }) => (
@@ -179,7 +439,8 @@ const UpdateCase = () => {
                     <Form.Item
                       label="Description"
                       name={[field.name, "description"]}
-                      initialValue={formData.otherParty.description}>
+                      // initialValue={formData.otherParty.title}
+                    >
                       <Input />
                     </Form.Item>
 
@@ -197,12 +458,12 @@ const UpdateCase = () => {
                                   <Form.Item
                                     noStyle
                                     name={[subField.name, "name"]}
-                                    initialValue={
-                                      formData.otherParty[field.name]?.name[
-                                        subField?.name
-                                      ]?.name
-                                    }>
-                                    <Input placeholder="Enter Party's description" />
+                                    // initialValue={
+                                    //   formData.otherParty[field.name]
+                                    //     ?.description[subField?.name]?.name
+                                    // }
+                                  >
+                                    <Input placeholder="Enter Party's name" />
                                   </Form.Item>
                                   <Button>
                                     <DeleteOutlined
@@ -233,10 +494,11 @@ const UpdateCase = () => {
                                   <Form.Item
                                     noStyle
                                     name={[subField.name, "name"]}
-                                    initialValue={
-                                      formData.otherParty[field.name]
-                                        ?.processesFiled[subField.name]?.name
-                                    }>
+                                    // initialValue={
+                                    //   formData.otherParty[field.name]
+                                    //     ?.processesFiled[subField.name]?.name
+                                    // }
+                                  >
                                     <Input placeholder="Enter Processes filed by the party" />
                                   </Form.Item>
                                   <Button>
@@ -267,83 +529,16 @@ const UpdateCase = () => {
             )}
           </Form.List>
         </div>
-        <Divider />
 
-        {/* SUIT NO FIELD */}
-        <div className="flex justify-between items-center gap-9 flex-wrap">
-          {/* MODE OF COMMENCEMENT */}
-
-          <div>
-            <Form.Item
-              name="modeOfCommencement"
-              label="Mode of Commencement"
-              initialValue={formData?.modeOfCommencement}
-              className="w-[200px]">
-              <Select
-                noStyle
-                placeholder="Select mode"
-                showSearch
-                filterOption={filterOption}
-                options={modesOptions}
-                allowClear
-                // value={otherMode?.modeOfCommencement}
-                // onChange={(e) => setOtherMode(e.target.value)}
-                // onSelect={(e) => setOtherMode(e.target.value)}
-              />
-            </Form.Item>
-          </div>
-
-          {/* OTHER MODE OF COMMENCEMENT */}
-
-          <div>
-            <Form.Item
-              label="Specify Mode"
-              name="otherModeOfCommencement"
-              initialValue={formData?.otherModeOfCommencement}>
-              <Input />
-            </Form.Item>
-          </div>
-
-          {/* WHETHER FILED BY THE OFFICE */}
-          <Form.Item
-            label="Switch if case is filed by the Office"
-            valuePropName="checked"
-            name="isFiledByTheOffice"
-            initialValue={formData?.isFiledByTheOffice}>
-            <Switch className="bg-gray-400 w-20" />
-          </Form.Item>
-
-          {/* NATURE OF CASE*/}
-          <div>
-            <Form.Item
-              name="natureOfCase"
-              label="Nature of Case"
-              initialValue={formData?.natureOfCase}
-              className="w-[200px]">
-              <Select
-                noStyle
-                placeholder="Select nature of case"
-                showSearch
-                filterOption={filterOption}
-                options={natureOfCaseOptions}
-                allowClear
-              />
-            </Form.Item>
-          </div>
-
-          {/* DATE FILED */}
-          <div>
-            <Form.Item name="filingDate" label="Filing Date">
-              <DatePicker />
-            </Form.Item>
-          </div>
-          <Divider />
+        <div className="flex flex-wrap  justify-around gap-14 items-center mt-7">
+          {/* SUIT NO FIELD */}
+          {/* <TextDivider text="Suit No" /> */}
           <div>
             <Form.Item
               name="suitNo"
               label="Suit No."
               tooltip="This is a required field"
-              initialValue={formData?.suitNo}
+              // initialValue={formData?.suitNo}
               // rules={[
               //   {
               //     required: true,
@@ -354,174 +549,432 @@ const UpdateCase = () => {
               <Input />
             </Form.Item>
           </div>
-
-          {/* COURTS */}
-
+          {/* MODE OF COMMENCEMENT */}
+          {/* <TextDivider text="Mode of Commencement" /> */}
           <div>
             <Form.Item
-              name="courtName"
-              label="Court"
-              initialValue={formData?.courtName}
-              className="w-[200px]">
+              name="modeOfCommencement"
+              label="Mode of Commencement"
+              // initialValue={formData?.modeOfCommencement}
+            >
               <Select
-                noStyle
-                placeholder="Select court"
-                showSearch
-                filterOption={filterOption}
-                options={courtOptions}
-                allowClear
+                style={{
+                  width: 200,
+                }}
+                placeholder="Search to Select"
+                options={modesOptions}
               />
             </Form.Item>
           </div>
-
-          {/* COURT'S NO */}
+          {/* OTHER MODE OF COMMENCEMENT*/}
           <div>
             <Form.Item
-              label="Court No"
-              name="courtNo"
-              initialValue={formData?.courtNo}>
-              <Input />
-            </Form.Item>
-          </div>
-          {/* COURT'S LOCATION */}
-          <div>
-            <Form.Item
-              label="Court's Location"
-              name="location"
-              placeholder="e.g. Ikoyi, Lagos"
-              initialValue={formData?.location}>
-              <Input />
-            </Form.Item>
-          </div>
-          {/*  STATE */}
-          <div>
-            <Form.Item
-              label="State where Court is located"
-              name="state"
-              placeholder="e.g. Lagos"
-              initialValue={formData?.state}>
+              label="Specify other Mode"
+              name="otherModeOfCommencement"
+              // initialValue={formData?.otherModeOfCommencement}
+            >
               <Input />
             </Form.Item>
           </div>
 
-          {/* OTHER COURT */}
+          {/* COURTS */}
+          {/* <TextDivider text="Court" /> */}
+          <div>
+            <Form.Item
+              name="courtName"
+              label="Assigned Court"
+              // initialValue={formData?.courtName}
+            >
+              <Select
+                showSearch
+                style={{
+                  width: 200,
+                }}
+                placeholder="Search to Select"
+                optionFilterProp="children"
+                filterOption={(input, option) =>
+                  (option?.label ?? "").includes(input)
+                }
+                filterSort={(optionA, optionB) =>
+                  (optionA?.label ?? "")
+                    .toLowerCase()
+                    .localeCompare((optionB?.label ?? "").toLowerCase())
+                }
+                options={courtOptions}
+              />
+            </Form.Item>
+          </div>
+          {/* OTHER COURT*/}
           <div>
             <Form.Item
               label="Specify Court"
               name="otherCourt"
-              initialValue={formData?.courtName}>
+              // initialValue={formData?.otherCourt}
+            >
+              <Input />
+            </Form.Item>
+          </div>
+          {/* JUDGE FIELD */}
+          {/* <TextDivider text="Judges/Justices" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="judge" noStyle>
+                  {(processesFiledFields, { add: add, remove: remove }) => (
+                    <div>
+                      {processesFiledFields.map(
+                        ({ key, name, ...restField }) => {
+                          return (
+                            <div key={key}>
+                              <Form.Item
+                                className="m-0 p-0"
+                                {...restField}
+                                name={[name, "name"]}
+                                // initialValue={formData?.judge[name]?.name}
+                                label={`${key + 1}- Judge`}>
+                                <Space.Compact>
+                                  <Input
+                                    placeholder="Enter the name of the judge"
+                                    className="h-8"
+                                  />
+                                  <Form.Item onClick={() => remove(name)}>
+                                    <Button>
+                                      <DeleteOutlined className="text-red-700" />
+                                    </Button>
+                                  </Form.Item>
+                                </Space.Compact>
+                              </Form.Item>
+                            </div>
+                          );
+                        }
+                      )}
+                      <Form.Item>
+                        <Button onClick={() => add()}>+ Add Judge</Button>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div>
+          {/* NATURE OF CASE*/}
+          {/* <TextDivider text="Nature of Case" /> */}
+          <div>
+            <Form.Item
+              label="Nature of Case"
+              name="natureOfCase"
+              // initialValue={formData?.natureOfCase}
+            >
               <Input />
             </Form.Item>
           </div>
 
           {/* CASE FILE NO FIELD */}
+          {/* <TextDivider text="Case file Number" /> */}
           <div>
             <Form.Item
               label="Case file Number"
               name="caseOfficeFileNo"
-              initialValue={formData?.caseOfficeFileNo}>
+              // initialValue={formData?.caseOfficeFileNo}
+            >
               <Input />
             </Form.Item>
           </div>
-          <Divider />
+
+          {/* DATE FILED */}
+          {/* <TextDivider text="Filing Date" /> */}
+          <div>
+            <Form.Item name="filingDate" label="Filing Date">
+              {/* <DatePicker /> */}
+            </Form.Item>
+          </div>
 
           {/* CASE STATUS */}
-          {/* <SelectInputs
-      name="caseStatus"
-      label="Case Status"
-      initialValue={formData?.caseStatus}
-      options={statusOptions}
-    /> */}
+          {/* <TextDivider text="Case Status" /> */}
           <div>
             <Form.Item
               name="caseStatus"
               label="Case Status"
-              initialValue={formData?.caseStatus}
-              className="w-[200px]">
+              // initialValue={formData?.caseStatus}
+            >
               <Select
-                noStyle
-                placeholder="Select case status"
-                showSearch
-                filterOption={filterOption}
+                style={{
+                  width: 200,
+                }}
                 options={statusOptions}
-                allowClear
-              />
-            </Form.Item>
-          </div>
-
-          {/* CASE CATEGORY */}
-          <div>
-            <Form.Item
-              name="category"
-              label="Case Category"
-              initialValue={formData?.category}
-              className="w-[200px]">
-              <Select
-                noStyle
-                placeholder="Select case category"
-                showSearch
-                filterOption={filterOption}
-                options={caseCategoryOptions}
-                allowClear
               />
             </Form.Item>
           </div>
 
           {/* CASE PRIORITY */}
-          {/* <SelectInputs
-      name="casePriority"
-      label="Case Priority"
-      initialValue={formData?.casePriority}
-      options={casePriorityOptions}
-    /> */}
-
+          {/* <TextDivider text="Case Priority/ Rating" /> */}
           <div>
             <Form.Item
+              label="Case Priority/ Rating"
               name="casePriority"
-              label="Case Priority/Rating"
-              initialValue={formData?.casePriority}
-              className="w-[200px]">
+              // initialValue={formData?.casePriority}
+            >
               <Select
-                noStyle
-                placeholder="Select case priority"
                 showSearch
-                filterOption={filterOption}
+                style={{
+                  width: 200,
+                }}
+                placeholder="Search to Select"
                 options={casePriorityOptions}
-                allowClear
               />
             </Form.Item>
           </div>
 
-          {/* JUDGE FIELD */}
-          <DynamicInputArrays
-            parentKey="judge"
-            initialValue={formData?.judge}
-            label="Judge/Justices"
-            placeholder="Enter judges  name"
-          />
-
           {/* CASE STRENGTH */}
-          <DynamicInputArrays
-            parentKey="caseStrengths"
-            initialValue={formData?.caseStrengths}
-            label="Case Strength"
-            placeholder="Enter case's Strength"
-          />
-          <Divider />
+          {/* <TextDivider text="Case Strengths" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="caseStrengths" noStyle>
+                  {(fields, { add: add, remove: remove }) => (
+                    <div>
+                      {fields.map(({ key, name, ...restField }) => {
+                        return (
+                          <div key={key}>
+                            <Form.Item
+                              className="m-0 p-0"
+                              {...restField}
+                              name={[name, "name"]}
+                              // initialValue={formData?.caseStrengths[name]?.name}
+                              label={`${key + 1}- Strength`}>
+                              <Space.Compact>
+                                <Input placeholder="" className="h-8" />
+                                <Form.Item onClick={() => remove(name)}>
+                                  <Button>
+                                    <DeleteOutlined className="text-red-700" />
+                                  </Button>
+                                </Form.Item>
+                              </Space.Compact>
+                            </Form.Item>
+                          </div>
+                        );
+                      })}
+                      <Form.Item>
+                        <Button onClick={() => add()}>
+                          + Add Case&apos;s Strengths
+                        </Button>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div>
           {/* CASE WEAKNESS */}
-          <DynamicInputArrays
-            parentKey="caseWeaknesses"
-            initialValue={formData?.caseWeaknesses}
-            label="Case Weaknesses"
-            placeholder="Enter case's Weaknesses"
-          />
+          {/* <TextDivider text="Case Weaknesses" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="caseWeaknesses" noStyle>
+                  {(fields, { add: add, remove: remove }) => (
+                    <div>
+                      {fields.map(({ key, name, ...restField }) => {
+                        return (
+                          <div key={key}>
+                            <Form.Item
+                              className="m-0 p-0"
+                              {...restField}
+                              name={[name, "name"]}
+                              // initialValue={
+                              //   formData?.caseWeaknesses[name]?.name
+                              // }
+                              label={`${key + 1}- Weakness`}>
+                              <Space.Compact>
+                                <Input placeholder="" className="h-8" />
+                                <Form.Item onClick={() => remove(name)}>
+                                  <Button>
+                                    <DeleteOutlined className="text-red-700" />
+                                  </Button>
+                                </Form.Item>
+                              </Space.Compact>
+                            </Form.Item>
+                          </div>
+                        );
+                      })}
+                      <Form.Item>
+                        <Button onClick={() => add()}>
+                          + Add Case&apos;s Weaknesses
+                        </Button>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div>
 
           {/* STEPS TO BE TAKEN FIELD */}
-          <DynamicInputArrays
-            parentKey="stepToBeTaken"
-            initialValue={formData?.stepToBeTaken}
-            label="Steps/Strategies"
-          />
+          {/* <TextDivider text="Steps/Case Strategies" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="stepToBeTaken" noStyle>
+                  {(fields, { add: add, remove: remove }) => (
+                    <div>
+                      {fields.map(({ key, name, ...restField }) => {
+                        return (
+                          <div key={key}>
+                            <Form.Item
+                              className="m-0 p-0"
+                              {...restField}
+                              name={[name, "name"]}
+                              // initialValue={formData?.stepToBeTaken[name]?.name}
+                              label={`${key + 1}- Step`}>
+                              <Space.Compact>
+                                <Input placeholder="" className="h-8" />
+                                <Form.Item onClick={() => remove(name)}>
+                                  <Button>
+                                    <DeleteOutlined className="text-red-700" />
+                                  </Button>
+                                </Form.Item>
+                              </Space.Compact>
+                            </Form.Item>
+                          </div>
+                        );
+                      })}
+                      <Form.Item>
+                        <Button onClick={() => add()}>+ Add Steps</Button>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div>
+
+          {/* CLIENT */}
+          {/* <TextDivider text="Client" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="client" noStyle>
+                  {(fields, { add: add, remove: remove }) => (
+                    <div>
+                      {fields.map(({ key, name, ...restField }) => {
+                        return (
+                          <div key={key}>
+                            <Form.Item
+                              className="m-0 p-0"
+                              {...restField}
+                              name={[name, "name"]}
+                              // initialValue={formData?.client[name]?.name}
+                              label={`${key + 1}- Client`}>
+                              <Space.Compact>
+                                <Input placeholder="" className="h-8" />
+                                <Form.Item onClick={() => remove(name)}>
+                                  <Button>
+                                    <DeleteOutlined className="text-red-700" />
+                                  </Button>
+                                </Form.Item>
+                              </Space.Compact>
+                            </Form.Item>
+                          </div>
+                        );
+                      })}
+                      <Form.Item>
+                        <Button onClick={() => add()}>+ Add Clients</Button>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div>
+
+          {/* CASE UPDATE/REPORT */}
+          {/* <TextDivider text="Case Update/Report" /> */}
+          <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="caseUpdates">
+                  {(fields, { add, remove }) => (
+                    <div>
+                      {fields.map((field) => (
+                        <Space.Compact key={field.key} className="flex my-2">
+                          {/* <Form.Item
+                            noStyle
+                            label="Case Update/Report"
+                            name={[field.name, "date"]}
+                            // initialValue={
+                            //   formData?.caseUpdates[field.name]?.date
+                            // }
+                          >
+                            <DatePicker placeholder="Select Date" />
+                          </Form.Item> */}
+                          <Form.Item
+                            noStyle
+                            name={[field.name, "update"]}
+                            // initialValue={
+                            //   formData?.caseUpdates[field.name]?.update
+                            // }
+                          >
+                            <TextArea placeholder="Enter Update" />
+                          </Form.Item>
+                          <Button>
+                            <DeleteOutlined
+                              className="text-red-700"
+                              onClick={() => {
+                                remove(field.name);
+                              }}
+                            />
+                          </Button>
+                        </Space.Compact>
+                      ))}
+                      <Button type="dashed" onClick={() => add()}>
+                        + Add Update
+                      </Button>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div>
+
+          {/* JUDICIAL AUTHORITIES IN SUPPORT */}
+          {/* <TextDivider text="Judicial Authorities" /> */}
+          {/* <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="listOfJudicialAuthorities" noStyle>
+                  {(fields, { add, remove }) => (
+                    <div>
+                      {fields.map(({ key, name, ...restField }) => {
+                        return (
+                          <div key={key}>
+                            <Form.Item
+                              className="m-0 p-0"
+                              {...restField}
+                              name={[name, "name"]}
+                              // initialValue={
+                              //   formData?.listOfJudicialAuthorities[name]?.name
+                              // }
+                              label={`${key + 1}- Case`}>
+                              <Space.Compact>
+                                <Input placeholder="" className="h-8" />
+                                <Form.Item onClick={() => remove(name)}>
+                                  <Button>
+                                    <DeleteOutlined className="text-red-700" />
+                                  </Button>
+                                </Form.Item>
+                              </Space.Compact>
+                            </Form.Item>
+                          </div>
+                        );
+                      })}
+                      <Form.Item>
+                        <Button onClick={() => add()}>+ Add Case</Button>
+                      </Form.Item>
+                    </div>
+                  )}
+                </Form.List>
+              </div>
+            </div>
+          </div> */}
 
           {/* ACCOUNT OFFICER */}
           {/* <TextDivider text="Account Officer(s)" /> */}
@@ -529,104 +982,99 @@ const UpdateCase = () => {
             <Form.Item
               name="accountOfficer"
               label="Account Officer"
-              className="w-[200px]"
-              initialValue={formData?.accountOfficer?.name}>
+              // initialValue={formData?.accountOfficer}
+            >
               <Select
-                // noStyle
+                noStyle
                 mode="multiple"
-                placeholder="Select account officer"
-                options={userData}
+                placeholder="Select users"
+                options={users}
                 allowClear
-                // style={{
-                //   width: "100%",
-                // }}
+                style={{
+                  width: "100%",
+                }}
               />
             </Form.Item>
           </div>
 
-          {/* CLIENT */}
-          <DynamicInputArrays
-            parentKey="client"
-            initialValue={formData?.client}
-            label="Client"
-          />
-
-          {/* CASE UPDATE/REPORT */}
-          {/* <Divider orientation="left" orientationMargin="0">
-      <Typography.Title level={4}>Case Update/ Report</Typography.Title>
-    </Divider> */}
-
-          {/* <div className="">
-      <div>
-        <Form.List name="caseUpdates">
-          {(fields, { add, remove }) => (
-            <div>
-              {fields.map((field) => (
-                <Space.Compact
-                  key={field.key}
-                  className="flex justify-center items-center my-2">
-                  <div className="flex flex-col  items-center gap-5">
+          {/* STATUTORY AUTHORITIES IN SUPPORT */}
+          {/* <TextDivider text="Statutory Authorities" /> */}
+          {/* <div>
+            <div className="flex flex-wrap justify-between ">
+              <div>
+                <Form.List name="listOfStatutoryAuthorities" noStyle>
+                  {(fields, { add, remove }) => (
                     <div>
-                      <Form.Item
-                        noStyle
-                        className=" w-4/5"
-                        name={[field.name, "date"]}
-                        initialValue={
-                          formData?.caseUpdates[field.name]?.date
-                        }>
-                        <DatePicker placeholder="Select Date" />
+                      {fields.map(({ key, name, ...restField }) => {
+                        return (
+                          <div key={key}>
+                            <Form.Item
+                              className="m-0 p-0"
+                              {...restField}
+                              name={[name, "name"]}
+                              // initialValue={
+                              //   formData?.listOfStatutoryAuthorities[name]?.name
+                              // }
+                              label={`${key + 1}- Case`}>
+                              <Space.Compact>
+                                <Input placeholder="" className="h-8" />
+                                <Form.Item onClick={() => remove(name)}>
+                                  <Button>
+                                    <DeleteOutlined className="text-red-700" />
+                                  </Button>
+                                </Form.Item>
+                              </Space.Compact>
+                            </Form.Item>
+                          </div>
+                        );
+                      })}
+                      <Form.Item>
+                        <Button onClick={() => add()}>+ Add Statute</Button>
                       </Form.Item>
                     </div>
-                    <div>
-                      <Form.Item
-                        noStyle
-                        name={[field.name, "update"]}
-                        initialValue={
-                          formData?.caseUpdates[field.name]?.update
-                        }>
-                        <TextArea
-                          placeholder="Enter Update"
-                          className="w-96 "
-                        />
-                      </Form.Item>
-                    </div>
-                  </div>
-                  <Button>
-                    <DeleteOutlined
-                      className="text-red-700"
-                      onClick={() => {
-                        remove(field.name);
-                      }}
-                    />
-                  </Button>
-                </Space.Compact>
-              ))}
-              <Button type="dashed" onClick={() => add()}>
-                + Add Update
-              </Button>
+                  )}
+                </Form.List>
+              </div>
             </div>
-          )}
-        </Form.List>
-      </div>
-    </div> */}
+          </div> */}
+          {/* CASE SUMMARY */}
         </div>
-
-        <Divider />
-
-        {/* CASE SUMMARY */}
-        <TextAreaInput
-          fieldName="caseSummary"
-          initialValue={formData?.caseSummary}
-          label="Case Summary"
-        />
-        {/* GENERAL COMMENT */}
-        <TextAreaInput
-          fieldName="generalComment"
-          initialValue={formData?.generalComment}
-          label="General Comment"
-        />
-        <Divider />
-
+        <div>
+          <div>
+            <Form.Item
+              label="Case Summary"
+              name="caseSummary"
+              // initialValue={formData?.caseSummary}
+            >
+              <TextArea
+                // autoSize={{
+                //   minRows: 2,
+                //   maxRows: 6,
+                // }}
+                rows={5}
+                placeholder="Your case summary here..."
+                maxLength={300}
+                className="w-96"
+              />
+            </Form.Item>
+          </div>
+          {/* GENERAL COMMENT */}
+          {/* <TextDivider text="General Comments" /> */}
+          <div>
+            <Form.Item
+              label="General Comment"
+              name="generalComment"
+              // initialValue={formData?.generalComment}
+            >
+              <TextArea
+                rows={5}
+                placeholder="Your comment here..."
+                maxLength={300}
+                className="w-96"
+              />
+            </Form.Item>
+          </div>
+        </div>
         <Form.Item>
           {/* <Button onClick={onSubmit} type="default" htmlType="submit"> */}
           <Button type="default" htmlType="submit">

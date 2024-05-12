@@ -7,13 +7,22 @@ const CaseDetails = () => {
   const { id } = useParams();
   const { dataFetcher, data, loading, error } = useDataFetch();
 
-  console.log(data?.data);
+  // console.log(data?.data);
   useEffect(() => {
     dataFetcher(`cases/${id}`, "GET");
   }, [id]);
 
+  // case case data in local storage
+
+  useEffect(() => {
+    if (data?.data) {
+      localStorage.setItem("caseData", JSON.stringify(data?.data));
+    }
+  }, [data?.data]);
+
   return (
     <section>
+      {/* <Link ></Link> */}
       <div className="flex justify-evenly">
         <div>
           <b>{data?.data?.firstParty.description} </b>
