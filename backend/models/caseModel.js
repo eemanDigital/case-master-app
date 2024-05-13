@@ -181,7 +181,7 @@ const caseSchema = new mongoose.Schema(
 
     documents: [
       {
-        name: {
+        docName: {
           type: String,
           maxLength: [20, "file name can not be more than 20 characters"],
         },

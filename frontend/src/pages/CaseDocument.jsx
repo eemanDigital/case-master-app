@@ -1,157 +1,119 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState } from "react";
 import { useParams } from "react-router-dom";
-import {
-  MinusCircleOutlined,
-  PlusOutlined,
-  UploadOutlined,
-} from "@ant-design/icons";
 import { useDataFetch } from "../hooks/useDataFetch";
-import axios from "axios";
-
-import { Button, Input, Form, Space, Upload } from "antd";
-// import { useDataGetterHook } from "../hooks/useDataGetterHook";
-const baseURL = import.meta.env.VITE_BASE_URL;
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import Input from "../components/Inputs";
+import Button from "../components/Button";
 
 const CaseDocument = () => {
-  const [form] = Form.useForm();
-
   const { id } = useParams();
   const { dataFetcher } = useDataFetch();
-  const [formData, setFormData] = useState({});
-  const [loading, setLoading] = useState(true);
+  const { files, loadingFiles, errorFiles } = useDataGetterHook();
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await axios.get(`${baseURL}/cases/${id}`);
-        // console.log("RES", response.data.data);
+  const [docData, setDocData] = useState({
+    docName: "",
+    file: null,
+  });
 
-        setFormData((prevData) => {
-          return {
-            ...prevData,
-            ...response?.data?.data,
-          };
-        });
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, [id]);
+  // const [click, setClick] = useState(false);
 
-  // form submit functionalities
-  const handleSubmission = useCallback(
-    (result) => {
-      if (result?.error) {
-        // Handle Error here
-      } else {
-        // Handle Success here
-        // form.resetFields();
-      }
-    },
-    []
-    // [form]
-  );
-
-  const onSubmit = useCallback(async () => {
-    // submit data
-    const fileHeaders = {
-      "Content-Type": "multipart/form-data",
-    };
-
-    let values;
-    try {
-      values = await form.validateFields(); // Validate the form fields
-    } catch (errorInfo) {
-      return;
-    }
-    const result = await dataFetcher(
-      `cases/${id}`,
-      "patch",
-      values,
-      fileHeaders
-    ); // Submit the form data to the backend
-
-    console.log("VALUES", values);
-    handleSubmission(result); // Handle the submission after the API Call
-  }, [form, handleSubmission, dataFetcher, id]);
-
-  // loading state handler
-  if (loading) {
-    return <div>Loading...</div>;
+  function handleFileChange(e) {
+    const { name, value, files } = e.target;
+    setDocData((prevData) => ({
+      ...prevData,
+      [name]: name === "file" ? files[0] : value,
+    }));
   }
-  return (
-    <>
-      <Form
-        layout="vertical"
-        form={form}
-        name="document upload"
-        // autoComplete="off"
-        className="flex  justify-center">
-        {/* <h1 className="text-4xl">Case Report</h1> */}
-        <Form.List name="document">
-          {(fields, { add, remove }) => (
-            <>
-              {fields.map(({ key, name, ...restField }) => (
-                <Space
-                  className="flex flex-col"
-                  key={key}
-                  //   style={{
-                  //     display: "flex",
-                  //     marginBottom: 8,
-                  //   }}
-                  align="baseline">
-                  <Form.Item
-                    {...restField}
-                    name={[name, "fileName"]}
-                    // initialValue={formData?.name}
-                    rules={[
-                      {
-                        required: true,
-                        message: "Missing document's name",
-                      },
-                    ]}>
-                    <Input placeholder="Document's Name" />
-                  </Form.Item>
-                  <Form.Item
-                    {...restField}
-                    name={[name, "file"]}
-                    // initialValue={formData?.name}
-                    rules={[
-                      {
-                        required: true,
-                        message: "Missing document",
-                      },
-                    ]}>
-                    <Upload name="case documents">
-                      <Button icon={<UploadOutlined />}>Click to upload</Button>
-                    </Upload>
-                  </Form.Item>
-                  <MinusCircleOutlined onClick={() => remove(name)} />
-                </Space>
-              ))}
-              <Form.Item>
-                <Button
-                  type="dashed"
-                  onClick={() => add()}
-                  block
-                  icon={<PlusOutlined />}>
-                  Add Documents
-                </Button>
-              </Form.Item>
 
-              <Form.Item>
-                <Button onClick={onSubmit} type="default" htmlType="submit">
-                  Submit
-                </Button>
-              </Form.Item>
-            </>
-          )}
-        </Form.List>
-      </Form>
-    </>
+  const fileHeaders = {
+    "Content-Type": "multipart/form-data",
+  };
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    try {
+      await dataFetcher(`cases/${id}`, "patch", docData, fileHeaders);
+      // Optimistic UI Update
+      setDocData({ docName: "", file: null });
+      // Add new doc to UI
+      // Clear form data or reset state for new uploads
+    } catch (err) {
+      console.error("Error creating document:", err);
+      // Display error message to user (optional)
+    }
+  }
+
+  // function handleClick() {
+  //   setClick((prev) => !prev);
+  // }
+
+  const handleDelete = async (id) => {
+    try {
+      await dataFetcher(`cases/${id}`, "delete", fileHeaders);
+      // Optimistic UI Update
+      files.data.filter((doc) => doc._id !== id);
+      // Set state directly to update UI
+    } catch (err) {
+      console.error("Error deleting document:", err);
+      // Revert UI changes and display error message (optional)
+    }
+  };
+
+  console.log(docData);
+
+  return (
+    <section>
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col justify-center items-center ">
+        <div>
+          <Input
+            type="text"
+            name="docName"
+            onChange={handleFileChange}
+            label="Document's Name"
+            value={docData.docName}
+          />
+          <Input
+            type="file"
+            name={docData.file}
+            // Use 'file' to match Multer configuration
+            id=""
+            accept=".pdf,.docx,.jpg,.jpeg, .png"
+            onChange={handleFileChange}
+            label="upload file"
+            htmlFor="file"
+          />
+        </div>
+        <div>
+          <Button type="submit">upload file</Button>
+        </div>
+        {/* <div>
+          <span>Delete Current Image</span>
+          <button
+            className="bg-red-700 font-bold text-white p-4"
+            // onClick={handleDelete}
+            type="submit"
+          >
+            X
+          </button>
+        </div> */}
+      </form>
+      <div>
+        <h1>Documents</h1>
+        {files?.data?.map((doc) => {
+          console.log(doc._id);
+          return (
+            <div key={doc._id}>
+              <button onClick={() => handleDelete(doc?._id)}>
+                <h1>{doc?.fileName}</h1>
+                <p>{doc?.file}</p>
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </section>
   );
 };
 
