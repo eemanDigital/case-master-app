@@ -1,32 +1,45 @@
-import { useState, useCallback } from "react";
-import { useDataFetch } from "../hooks/useDataFetch";
+import { useState, useCallback, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import {
   MinusCircleOutlined,
   PlusOutlined,
   UploadOutlined,
 } from "@ant-design/icons";
+import { useDataFetch } from "../hooks/useDataFetch";
+import axios from "axios";
 
 import { Button, Input, Form, Space, Upload } from "antd";
 // import { useDataGetterHook } from "../hooks/useDataGetterHook";
+const baseURL = import.meta.env.VITE_BASE_URL;
 
 const CaseDocument = () => {
   const [form] = Form.useForm();
-  const [formData, setFormData] = useState({
-    document: [
-      {
-        fileName: "",
-        file: null,
-      },
-    ],
-  });
-  // handle reports post and get report data
-  const { dataFetcher, data } = useDataFetch();
 
-  // fetched cases and user data
-  //   const { files } = useDataGetterHook();
+  const { id } = useParams();
+  const { dataFetcher } = useDataFetch();
+  const [formData, setFormData] = useState({});
+  const [loading, setLoading] = useState(true);
 
-  //   console.log("CASES", files);
-  //   //  map over cases value
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const response = await axios.get(`${baseURL}/cases/${id}`);
+        // console.log("RES", response.data.data);
+
+        setFormData((prevData) => {
+          return {
+            ...prevData,
+            ...response?.data?.data,
+          };
+        });
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchData();
+  }, [id]);
 
   // form submit functionalities
   const handleSubmission = useCallback(
@@ -54,13 +67,21 @@ const CaseDocument = () => {
     } catch (errorInfo) {
       return;
     }
-    const result = await dataFetcher("cases", "post", values, fileHeaders); // Submit the form data to the backend
+    const result = await dataFetcher(
+      `cases/${id}`,
+      "patch",
+      values,
+      fileHeaders
+    ); // Submit the form data to the backend
 
     console.log("VALUES", values);
     handleSubmission(result); // Handle the submission after the API Call
-  }, [form, handleSubmission, dataFetcher]);
+  }, [form, handleSubmission, dataFetcher, id]);
 
-  // console.log("FORMDATA", formData);
+  // loading state handler
+  if (loading) {
+    return <div>Loading...</div>;
+  }
   return (
     <>
       <Form
@@ -85,7 +106,7 @@ const CaseDocument = () => {
                   <Form.Item
                     {...restField}
                     name={[name, "fileName"]}
-                    initialValue={formData?.name}
+                    // initialValue={formData?.name}
                     rules={[
                       {
                         required: true,
@@ -97,7 +118,7 @@ const CaseDocument = () => {
                   <Form.Item
                     {...restField}
                     name={[name, "file"]}
-                    initialValue={formData?.name}
+                    // initialValue={formData?.name}
                     rules={[
                       {
                         required: true,

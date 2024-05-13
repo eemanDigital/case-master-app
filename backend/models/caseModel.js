@@ -24,20 +24,20 @@ const caseSchema = new mongoose.Schema(
   {
     firstParty: {
       description: String,
-      processesFiled: [partyProcessSchema],
       name: [nameSchema],
+      processesFiled: [partyProcessSchema],
     },
     secondParty: {
       description: String,
-      processesFiled: [partyProcessSchema],
       name: [nameSchema],
+      processesFiled: [partyProcessSchema],
     },
 
     otherParty: [
       {
         description: String,
-        processesFiled: [partyProcessSchema],
         name: [nameSchema],
+        processesFiled: [partyProcessSchema],
       },
     ],
 
@@ -96,7 +96,7 @@ const caseSchema = new mongoose.Schema(
     caseSummary: {
       type: String,
       trim: true,
-      maxlength: [500, "Case summary should not be more than 500 characters"],
+      maxlength: [1000, "Case summary should not be more than 500 characters"],
     },
 
     caseStatus: {
@@ -134,7 +134,6 @@ const caseSchema = new mongoose.Schema(
           "Tax Law",
           "Other",
         ],
-        message: "Invalid court name",
       },
     },
 
@@ -212,6 +211,15 @@ const caseSchema = new mongoose.Schema(
 //   const secondName = secondParty?.description[0]?.name;
 
 //   return `${firstName || ""} vs ${secondName || ""}`;
+// });
+
+// caseSchema.pre(/^find/, function (next) {
+//   const newDate = new Date(this.fillingDate);
+
+//   const options = { year: "numeric", month: "long", day: "numeric" };
+//   new Intl.DateTimeFormat("en-US", options).format(newDate);
+
+//   next();
 // });
 
 // virtual populate

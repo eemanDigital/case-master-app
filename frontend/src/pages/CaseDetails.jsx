@@ -22,7 +22,9 @@ const CaseDetails = () => {
 
   return (
     <section>
-      {/* <Link ></Link> */}
+      <Link to="../.." relative="path">
+        Go Back to case lists
+      </Link>
       <div className="flex justify-evenly">
         <div>
           <b>{data?.data?.firstParty.description} </b>

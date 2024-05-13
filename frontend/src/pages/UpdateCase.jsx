@@ -1,13 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { DeleteOutlined } from "@ant-design/icons";
 import {
-  PartyDynamicInputs,
-  DynamicInputArrays,
-  TextAreaInput,
-} from "../components/DynamicInputs";
-// import { useDataGetterHook } from "../hooks/useDataGetterHook";
+  DeleteOutlined,
+  MinusCircleOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import axios from "axios";
 
@@ -21,7 +19,7 @@ import {
   Typography,
   Switch,
   Space,
-  // DatePicker,
+  DatePicker,
 } from "antd";
 
 import {
@@ -32,53 +30,7 @@ import {
   casePriorityOptions,
   modesOptions,
 } from "../data/options";
-// import { useSingleDataFetcher } from "../hooks/useSingleDataFetcher";
 
-// const inits = {
-//   firstParty: {
-//     description: "Plaintiff",
-//     name: [{ name: "John Doe" }],
-//     processesFiled: [{ name: "Lawsuit" }, { name: "Lawsuit 2" }],
-//   },
-//   secondParty: {
-//     description: "Defendant",
-//     name: [{ name: "Jane Smith" }],
-//     processesFiled: [{ name: "Response" }],
-//   },
-//   otherParty: [
-//     {
-//       description: "Third Party",
-//       name: [{ name: "David Johnson" }],
-//       processesFiled: [{ name: "Counterclaim" }],
-//     },
-//   ],
-//   suitNo: "AB1234",
-//   caseOfficeFileNo: "XYZ5678",
-//   courtName: "Supreme Court",
-//   courtNo: "123",
-//   location: "New York",
-//   otherCourt: "District Court",
-//   judge: [{ name: "Judge Judy" }],
-//   caseSummary: "This is a summary of the case.",
-//   caseStatus: "Pending",
-//   natureOfCase: "Civil",
-//   category: "Lawsuit",
-//   isFiledByTheOffice: false,
-//   // filingDate: "2024-05-25",
-//   filingDate: "",
-//   // filingDate: " ",
-//   modeOfCommencement: "Litigation",
-//   otherModeOfCommencement: "Other mode",
-//   caseStrengths: ["Strong evidence", "Experienced legal team"],
-//   caseWeaknesses: ["Limited resources", "Complex legal issues"],
-//   casePriority: "High",
-//   stepToBeTaken: ["Discovery process", "Negotiation"],
-//   // caseUpdates: [{ date: "2024-05-30", update: "Meeting with clients" }],
-//   // caseUpdates: [{ date: " ", update: "Meeting with clients" }],
-//   accountOfficer: ["Alice Johnson"],
-//   client: [{ name: "Company ABC" }],
-//   generalComment: "Additional comments about the case.",
-// };
 const baseURL = import.meta.env.VITE_BASE_URL;
 const UpdateCase = () => {
   // destructure textarea from input
@@ -87,51 +39,9 @@ const UpdateCase = () => {
   const { users } = useDataGetterHook();
 
   const { id } = useParams();
-  console.log(id);
+  // console.log(id);
   // const { singleData, singleDataFetcher } = useSingleDataFetcher();
-  const [formData, setFormData] = useState({
-    firstParty: {
-      description: "",
-      name: [{ name: "" }],
-      processesFiled: [{ name: "" }],
-    },
-    secondParty: {
-      description: "",
-      name: [{ name: "" }],
-      processesFiled: [{ name: "" }],
-    },
-    otherParty: [
-      {
-        description: "",
-        name: [{ name: "" }],
-        processesFiled: [{ name: "" }],
-      },
-    ],
-    suitNo: "",
-    caseOfficeFileNo: "",
-    courtName: "",
-    courtNo: "",
-    location: "",
-    otherCourt: "",
-    judge: [{ name: "" }],
-    caseSummary: "",
-    caseStatus: "",
-    natureOfCase: "",
-    category: "",
-    isFiledByTheOffice: false,
-    filingDate: "",
-    modeOfCommencement: "",
-    otherModeOfCommencement: "",
-    caseStrengths: [],
-    caseWeaknesses: [],
-    casePriority: "",
-    stepToBeTaken: [],
-    caseUpdates: [{ date: "", update: "" }],
-
-    accountOfficer: [],
-    client: [{ name: "" }],
-    generalComment: "",
-  });
+  const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -155,16 +65,6 @@ const UpdateCase = () => {
     fetchData();
   }, [id]);
 
-  function handleFinish(values) {
-    console.log("VALUES", values);
-    alert("Check console for values");
-  }
-
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  // const fieldVal = form.getFieldValue();
-  // console.log("FVAL", fieldVal);
   //  get users/account officer's data
   const userData = Array.isArray(users?.data)
     ? users?.data.map((user) => {
@@ -175,33 +75,70 @@ const UpdateCase = () => {
       })
     : [];
 
-  // const filterOption = (input, option) =>
-  //   (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
-  // console.log(formData);
-  const fieldVal = form.getFieldValue("otherParty");
-  console.log(fieldVal);
-  // const values = form.getFieldValue(formData);
-  // console.log(values);
+  const { dataFetcher, data } = useDataFetch(); //general data fetcher
+
+  // FORM SUBMISSION
+  // form submit functionalities
+  const handleSubmission = useCallback(
+    (result) => {
+      if (result?.error) {
+        // Handle Error here
+      } else {
+        // Handle Success here
+        // form.resetFields();
+      }
+    },
+    []
+    // [form]
+  );
+
+  // submit data
+  const onSubmit = useCallback(async () => {
+    let values;
+    try {
+      values = await form.validateFields(); // Validate the form fields
+    } catch (errorInfo) {
+      return;
+    }
+    const result = await dataFetcher(`cases/${id}`, "patch", values); // Submit the form data to the backend
+    // console.log(values);
+
+    handleSubmission(result); // Handle the submission after the API Call
+  }, [form, handleSubmission, dataFetcher, id]);
+
+  // filter options for the select field
+  const filterOption = (input, option) =>
+    (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
+
+  // loading state handler
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
   return (
     <>
+      <Link to="../.." relative="path">
+        Go Back
+      </Link>
+
       <Form
-        className="h-[100%]"
+        className="h-[100%] pt-3"
         layout="vertical"
         form={form}
         name="Case Update Form"
-        onFinish={handleFinish}
+        // onFinish={onSubmit}
         // autoComplete="off"
         initialValues={formData}>
         {/* FIRST PARTY FIELD */}
-        {/* <TextDivider text="First Party" /> */}
+        <Divider orientation="left" orientationMargin="0">
+          <Typography.Title level={4}>First Party</Typography.Title>
+        </Divider>
         <div className="flex flex-wrap justify-between ">
-          <div>
-            {/* firstParty title field */}
-
+          <div className="flex flex-wrap justify-between ">
             <Form.Item
               name={["firstParty", "description"]}
-              label="description"
-              // initialValue={formData?.firstParty?.description}
+              label="Description"
+
               // rules={[
               //   {
               //     required: true,
@@ -212,108 +149,84 @@ const UpdateCase = () => {
               <Input placeholder="e.g. Plaintiff" />
             </Form.Item>
           </div>
+          <Form.List name={["firstParty", "name"]}>
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Space
+                    key={key}
+                    style={{
+                      display: "flex",
 
-          <div>
-            {/* firstParty description field */}
-            <Form.List
-              name={["firstParty", "name"]}
-              // initialValue={formData?.firstParty?.title}
-            >
-              {(fields, { add, remove }) => (
-                <div>
-                  {fields.map((field) => (
-                    <div key={field.key}>
-                      <Form.Item
-                        className="m-0 p-0"
-                        // {...restField}
-                        name={[field.name, "name"]}
-                        // initialValue={
-                        //   formData?.firstParty?.description[name]?.name
-                        // }
-                        // rules={[
-                        //   {
-                        //     required: true,
-                        //     message: "Parties name(es) is required",
-                        //   },
-                        // ]}
-                        label={`${field.key + 1}- Party's Name`}>
-                        <Space.Compact className="flex  justify-center item-center">
-                          <Input
-                            placeholder="enter party's name(s)"
-                            className="h-8"
-                          />{" "}
-                          <Form.Item onClick={() => remove(field.name)}>
-                            <Button>
-                              <DeleteOutlined className="text-red-700" />
-                            </Button>
-                          </Form.Item>
-                        </Space.Compact>
-                      </Form.Item>
-                      <div></div>
-                    </div>
-                  ))}
-                  <Form.Item onClick={() => add()}>
-                    <Button className="">+ Add Name</Button>
-                  </Form.Item>
-                </div>
-              )}
-            </Form.List>
-          </div>
+                      marginBottom: 8,
+                    }}
+                    align="baseline">
+                    <Form.Item
+                      {...restField}
+                      name={[name, "name"]}
+                      label={`Name ${key + 1}`}>
+                      <Input placeholder="Parties Name" />
+                    </Form.Item>
+                    <MinusCircleOutlined onClick={() => remove(name)} />
+                  </Space>
+                ))}
+                <Form.Item>
+                  <Button
+                    type="dashed"
+                    onClick={() => add()}
+                    block
+                    icon={<PlusOutlined />}>
+                    Add Name
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
 
-          <div>
-            {/* firstParty processFiled field */}
-
-            <Form.List
-              name={["firstParty", "processesFiled"]}
-              // initialValue={[{ name: "" }]}
-            >
-              {(fields, { add, remove }) => (
-                <div>
-                  {fields.map((field) => {
-                    return (
-                      <div key={field.key}>
-                        <Form.Item
-                          className="m-0 p-0"
-                          name={[field.name, "name"]}
-                          // initialValue={
-                          //   formData?.firstParty?.processesFiled[name]?.name
-                          // }
-                          label={`${field.key + 1}- Process Filed`}>
-                          <Space.Compact>
-                            <Input
-                              placeholder="Enter process field"
-                              className="h-8"
-                            />
-                            <Form.Item onClick={() => remove(field.name)}>
-                              <Button>
-                                <DeleteOutlined className="text-red-700" />
-                              </Button>
-                            </Form.Item>
-                          </Space.Compact>
-                        </Form.Item>
-                      </div>
-                    );
-                  })}
-                  <Form.Item>
-                    <Button onClick={() => add()}>+ Add Process</Button>
-                  </Form.Item>
-                </div>
-              )}
-            </Form.List>
-          </div>
+          <Form.List name={["firstParty", "processesFiled"]}>
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Space
+                    key={key}
+                    style={{
+                      display: "flex",
+                      marginBottom: 8,
+                    }}
+                    align="baseline">
+                    <Form.Item
+                      {...restField}
+                      name={[name, "name"]}
+                      label={`Process ${key + 1}`}>
+                      <Input placeholder="list processed filed..." />
+                    </Form.Item>
+                    <MinusCircleOutlined onClick={() => remove(name)} />
+                  </Space>
+                ))}
+                <Form.Item>
+                  <Button
+                    type="dashed"
+                    onClick={() => add()}
+                    block
+                    icon={<PlusOutlined />}>
+                    Add Processes
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
         </div>
 
         {/* SECOND PARTY FIELD */}
-        {/* <TextDivider text="Second Party" /> */}
-
-        <div className="flex flex-wrap justify-between  ">
-          <div>
-            {/* secondParty title field */}
-
+        <Divider orientation="left" orientationMargin="0">
+          <Typography.Title level={4}>Second Party</Typography.Title>
+        </Divider>
+        <div className="flex flex-wrap justify-between ">
+          <div className="flex flex-wrap justify-between ">
             <Form.Item
               name={["secondParty", "description"]}
-              // initialValue={formData?.secondParty?.title}
-              label="Title"
+              label="Description"
+
               // rules={[
               //   {
               //     required: true,
@@ -324,99 +237,79 @@ const UpdateCase = () => {
               <Input placeholder="e.g. Defendant" />
             </Form.Item>
           </div>
+          <Form.List name={["secondParty", "name"]}>
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Space
+                    key={key}
+                    style={{
+                      display: "flex",
 
-          <div>
-            {/* secondParty description field */}
+                      marginBottom: 8,
+                    }}
+                    align="baseline">
+                    <Form.Item
+                      {...restField}
+                      name={[name, "name"]}
+                      label={`Name ${key + 1}`}>
+                      <Input placeholder="Parties Name" />
+                    </Form.Item>
+                    <MinusCircleOutlined onClick={() => remove(name)} />
+                  </Space>
+                ))}
+                <Form.Item>
+                  <Button
+                    type="dashed"
+                    onClick={() => add()}
+                    block
+                    icon={<PlusOutlined />}>
+                    Add Name
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
 
-            <Form.List name={["secondParty", "name"]}>
-              {(nameFields, { add: addName, remove: removeName }) => (
-                <div>
-                  {nameFields.map(({ key, name, ...restField }) => (
-                    <div key={key}>
-                      <Form.Item
-                        className="m-0 p-0"
-                        {...restField}
-                        name={[name, "name"]}
-                        // initialValue={
-                        //   formData?.secondParty?.description[name]?.name
-                        // }
-                        rules={[
-                          {
-                            required: true,
-                            message: "Parties name(es) is required",
-                          },
-                        ]}
-                        label={`${key + 1}- Party's Name`}>
-                        <Space.Compact className="flex  justify-center item-center">
-                          <Input
-                            placeholder="enter party's name(s)"
-                            className="h-8"
-                          />{" "}
-                          <Form.Item onClick={() => removeName(name)}>
-                            <Button>
-                              <DeleteOutlined className="text-red-700" />
-                            </Button>
-                          </Form.Item>
-                        </Space.Compact>
-                      </Form.Item>
-                      <div></div>
-                    </div>
-                  ))}
-                  <Form.Item onClick={() => addName()}>
-                    <Button className="">+ Add Name</Button>
-                  </Form.Item>
-                </div>
-              )}
-            </Form.List>
-          </div>
-
-          <div>
-            {/* secondParty processesFiled field */}
-
-            <Form.List name={["secondParty", "processesFiled"]}>
-              {(
-                processesFiledFields,
-                { add: addProcess, remove: removeProcess }
-              ) => (
-                <div>
-                  {processesFiledFields.map(({ key, name, ...restField }) => {
-                    return (
-                      <div key={key}>
-                        <Form.Item
-                          className="m-0 p-0"
-                          {...restField}
-                          name={[name, "name"]}
-                          // initialValue={
-                          //   formData?.secondParty?.processesFiled[name]?.name
-                          // }
-                          label={`${key + 1}- Process Filed`}>
-                          <Space.Compact>
-                            <Input
-                              placeholder="Enter process field"
-                              className="h-8"
-                            />
-                            <Form.Item onClick={() => removeProcess(name)}>
-                              <Button>
-                                <DeleteOutlined className="text-red-700" />
-                              </Button>
-                            </Form.Item>
-                          </Space.Compact>
-                        </Form.Item>
-                      </div>
-                    );
-                  })}
-                  <Form.Item>
-                    <Button onClick={() => addProcess()}>+ Add Process</Button>
-                  </Form.Item>
-                </div>
-              )}
-            </Form.List>
-          </div>
+          <Form.List name={["secondParty", "processesFiled"]}>
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map(({ key, name, ...restField }) => (
+                  <Space
+                    key={key}
+                    style={{
+                      display: "flex",
+                      marginBottom: 8,
+                    }}
+                    align="baseline">
+                    <Form.Item
+                      {...restField}
+                      name={[name, "name"]}
+                      label={`Process ${key + 1}`}>
+                      <Input placeholder="list processed filed..." />
+                    </Form.Item>
+                    <MinusCircleOutlined onClick={() => remove(name)} />
+                  </Space>
+                ))}
+                <Form.Item>
+                  <Button
+                    type="dashed"
+                    onClick={() => add()}
+                    block
+                    icon={<PlusOutlined />}>
+                    Add Processes
+                  </Button>
+                </Form.Item>
+              </>
+            )}
+          </Form.List>
         </div>
 
         {/* OTHER PARTIES FIELD */}
-        {/* <TextDivider text="Other Party" /> */}
 
+        <Divider orientation="left" orientationMargin="0">
+          <Typography.Title level={4}>Other Party</Typography.Title>
+        </Divider>
         <div className="">
           <Form.List name="otherParty">
             {(fields, { add, remove }) => (
@@ -425,7 +318,7 @@ const UpdateCase = () => {
                   <Card
                     className=""
                     size="small"
-                    title={`Other Parties ${field.name + 1}`}
+                    title={`Party ${field.name + 1}`}
                     key={field.key}
                     extra={
                       <DeleteOutlined //delete the whole otherParty forms
@@ -438,9 +331,7 @@ const UpdateCase = () => {
                     {/* otherParty title field */}
                     <Form.Item
                       label="Description"
-                      name={[field.name, "description"]}
-                      // initialValue={formData.otherParty.title}
-                    >
+                      name={[field.name, "description"]}>
                       <Input />
                     </Form.Item>
 
@@ -457,12 +348,7 @@ const UpdateCase = () => {
                                   className="flex my-2">
                                   <Form.Item
                                     noStyle
-                                    name={[subField.name, "name"]}
-                                    // initialValue={
-                                    //   formData.otherParty[field.name]
-                                    //     ?.description[subField?.name]?.name
-                                    // }
-                                  >
+                                    name={[subField.name, "name"]}>
                                     <Input placeholder="Enter Party's name" />
                                   </Form.Item>
                                   <Button>
@@ -493,12 +379,7 @@ const UpdateCase = () => {
                                   className="flex my-2">
                                   <Form.Item
                                     noStyle
-                                    name={[subField.name, "name"]}
-                                    // initialValue={
-                                    //   formData.otherParty[field.name]
-                                    //     ?.processesFiled[subField.name]?.name
-                                    // }
-                                  >
+                                    name={[subField.name, "name"]}>
                                     <Input placeholder="Enter Processes filed by the party" />
                                   </Form.Item>
                                   <Button>
@@ -538,7 +419,7 @@ const UpdateCase = () => {
               name="suitNo"
               label="Suit No."
               tooltip="This is a required field"
-              // initialValue={formData?.suitNo}
+
               // rules={[
               //   {
               //     required: true,
@@ -552,11 +433,7 @@ const UpdateCase = () => {
           {/* MODE OF COMMENCEMENT */}
           {/* <TextDivider text="Mode of Commencement" /> */}
           <div>
-            <Form.Item
-              name="modeOfCommencement"
-              label="Mode of Commencement"
-              // initialValue={formData?.modeOfCommencement}
-            >
+            <Form.Item name="modeOfCommencement" label="Mode of Commencement">
               <Select
                 style={{
                   width: 200,
@@ -570,9 +447,7 @@ const UpdateCase = () => {
           <div>
             <Form.Item
               label="Specify other Mode"
-              name="otherModeOfCommencement"
-              // initialValue={formData?.otherModeOfCommencement}
-            >
+              name="otherModeOfCommencement">
               <Input />
             </Form.Item>
           </div>
@@ -580,11 +455,7 @@ const UpdateCase = () => {
           {/* COURTS */}
           {/* <TextDivider text="Court" /> */}
           <div>
-            <Form.Item
-              name="courtName"
-              label="Assigned Court"
-              // initialValue={formData?.courtName}
-            >
+            <Form.Item name="courtName" label="Assigned Court">
               <Select
                 showSearch
                 style={{
@@ -606,77 +477,100 @@ const UpdateCase = () => {
           </div>
           {/* OTHER COURT*/}
           <div>
+            <Form.Item label="Specify Court" name="otherCourt">
+              <Input />
+            </Form.Item>
+          </div>
+
+          {/* COURT'S NO */}
+          <div>
+            <Form.Item label="Court No" name="courtNo">
+              <Input />
+            </Form.Item>
+          </div>
+          {/* COURT'S LOCATION */}
+          <div>
             <Form.Item
-              label="Specify Court"
-              name="otherCourt"
-              // initialValue={formData?.otherCourt}
-            >
+              label="Court's Location"
+              name="location"
+              placeholder="e.g. Ikoyi, Lagos">
+              <Input />
+            </Form.Item>
+          </div>
+          {/*  STATE */}
+          <div>
+            <Form.Item
+              label="State where Court is located"
+              name="state"
+              placeholder="e.g. Lagos">
               <Input />
             </Form.Item>
           </div>
           {/* JUDGE FIELD */}
-          {/* <TextDivider text="Judges/Justices" /> */}
+
           <div>
             <div className="flex flex-wrap justify-between ">
               <div>
-                <Form.List name="judge" noStyle>
-                  {(processesFiledFields, { add: add, remove: remove }) => (
-                    <div>
-                      {processesFiledFields.map(
-                        ({ key, name, ...restField }) => {
-                          return (
-                            <div key={key}>
-                              <Form.Item
-                                className="m-0 p-0"
-                                {...restField}
-                                name={[name, "name"]}
-                                // initialValue={formData?.judge[name]?.name}
-                                label={`${key + 1}- Judge`}>
-                                <Space.Compact>
-                                  <Input
-                                    placeholder="Enter the name of the judge"
-                                    className="h-8"
-                                  />
-                                  <Form.Item onClick={() => remove(name)}>
-                                    <Button>
-                                      <DeleteOutlined className="text-red-700" />
-                                    </Button>
-                                  </Form.Item>
-                                </Space.Compact>
-                              </Form.Item>
-                            </div>
-                          );
-                        }
-                      )}
+                <Form.List name="judge">
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.map(({ key, name, ...restField }) => (
+                        <Space
+                          key={key}
+                          style={{
+                            display: "flex",
+                            marginBottom: 8,
+                          }}
+                          align="baseline">
+                          <Form.Item {...restField} name={[name, "name"]}>
+                            <Input placeholder="Last Name" />
+                          </Form.Item>
+                          <MinusCircleOutlined onClick={() => remove(name)} />
+                        </Space>
+                      ))}
                       <Form.Item>
-                        <Button onClick={() => add()}>+ Add Judge</Button>
+                        <Button
+                          type="dashed"
+                          onClick={() => add()}
+                          block
+                          icon={<PlusOutlined />}>
+                          Add Judge
+                        </Button>
                       </Form.Item>
-                    </div>
+                    </>
                   )}
                 </Form.List>
               </div>
             </div>
           </div>
           {/* NATURE OF CASE*/}
-          {/* <TextDivider text="Nature of Case" /> */}
           <div>
             <Form.Item
-              label="Nature of Case"
               name="natureOfCase"
-              // initialValue={formData?.natureOfCase}
-            >
-              <Input />
+              label="Nature of Case"
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select nature of case"
+                showSearch
+                filterOption={filterOption}
+                options={natureOfCaseOptions}
+                allowClear
+              />
             </Form.Item>
           </div>
+          {/* WHETHER FILED BY THE OFFICE */}
+          <Form.Item
+            label="Switch if case is filed by the Office"
+            valuePropName="checked"
+            name="isFiledByTheOffice">
+            <Switch className="bg-gray-400 w-20" />
+          </Form.Item>
 
           {/* CASE FILE NO FIELD */}
           {/* <TextDivider text="Case file Number" /> */}
           <div>
-            <Form.Item
-              label="Case file Number"
-              name="caseOfficeFileNo"
-              // initialValue={formData?.caseOfficeFileNo}
-            >
+            <Form.Item label="Case file Number" name="caseOfficeFileNo">
               <Input />
             </Form.Item>
           </div>
@@ -684,19 +578,15 @@ const UpdateCase = () => {
           {/* DATE FILED */}
           {/* <TextDivider text="Filing Date" /> */}
           <div>
-            <Form.Item name="filingDate" label="Filing Date">
-              {/* <DatePicker /> */}
-            </Form.Item>
+            {/* <Form.Item name="filingDate" label="Filing Date">
+              <DatePicker />
+            </Form.Item> */}
           </div>
 
           {/* CASE STATUS */}
           {/* <TextDivider text="Case Status" /> */}
           <div>
-            <Form.Item
-              name="caseStatus"
-              label="Case Status"
-              // initialValue={formData?.caseStatus}
-            >
+            <Form.Item name="caseStatus" label="Case Status">
               <Select
                 style={{
                   width: 200,
@@ -706,14 +596,27 @@ const UpdateCase = () => {
             </Form.Item>
           </div>
 
+          {/* CASE CATEGORY */}
+          <div>
+            <Form.Item
+              name="category"
+              label="Case Category"
+              className="w-[200px]">
+              <Select
+                noStyle
+                placeholder="Select case category"
+                showSearch
+                filterOption={filterOption}
+                options={caseCategoryOptions}
+                allowClear
+              />
+            </Form.Item>
+          </div>
+
           {/* CASE PRIORITY */}
           {/* <TextDivider text="Case Priority/ Rating" /> */}
           <div>
-            <Form.Item
-              label="Case Priority/ Rating"
-              name="casePriority"
-              // initialValue={formData?.casePriority}
-            >
+            <Form.Item label="Case Priority/ Rating" name="casePriority">
               <Select
                 showSearch
                 style={{
@@ -730,36 +633,42 @@ const UpdateCase = () => {
           <div>
             <div className="flex flex-wrap justify-between ">
               <div>
-                <Form.List name="caseStrengths" noStyle>
-                  {(fields, { add: add, remove: remove }) => (
-                    <div>
-                      {fields.map(({ key, name, ...restField }) => {
-                        return (
-                          <div key={key}>
-                            <Form.Item
-                              className="m-0 p-0"
-                              {...restField}
-                              name={[name, "name"]}
-                              // initialValue={formData?.caseStrengths[name]?.name}
-                              label={`${key + 1}- Strength`}>
-                              <Space.Compact>
-                                <Input placeholder="" className="h-8" />
-                                <Form.Item onClick={() => remove(name)}>
-                                  <Button>
-                                    <DeleteOutlined className="text-red-700" />
-                                  </Button>
-                                </Form.Item>
-                              </Space.Compact>
-                            </Form.Item>
-                          </div>
-                        );
-                      })}
+                <Form.List name="caseStrengths">
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.map(({ key, name, ...restField }) => (
+                        <Space
+                          key={key}
+                          style={{
+                            display: "flex",
+                            marginBottom: 8,
+                          }}
+                          align="baseline">
+                          <Form.Item
+                            {...restField}
+                            name={[name, "name"]}
+                            // rules={[
+                            //   {
+                            //     required: true,
+                            //     message: "Missing last name",
+                            //   },
+                            // ]}
+                          >
+                            <Input placeholder="Last Name" />
+                          </Form.Item>
+                          <MinusCircleOutlined onClick={() => remove(name)} />
+                        </Space>
+                      ))}
                       <Form.Item>
-                        <Button onClick={() => add()}>
-                          + Add Case&apos;s Strengths
+                        <Button
+                          type="dashed"
+                          onClick={() => add()}
+                          block
+                          icon={<PlusOutlined />}>
+                          Add Case Strength
                         </Button>
                       </Form.Item>
-                    </div>
+                    </>
                   )}
                 </Form.List>
               </div>
@@ -770,38 +679,42 @@ const UpdateCase = () => {
           <div>
             <div className="flex flex-wrap justify-between ">
               <div>
-                <Form.List name="caseWeaknesses" noStyle>
-                  {(fields, { add: add, remove: remove }) => (
-                    <div>
-                      {fields.map(({ key, name, ...restField }) => {
-                        return (
-                          <div key={key}>
-                            <Form.Item
-                              className="m-0 p-0"
-                              {...restField}
-                              name={[name, "name"]}
-                              // initialValue={
-                              //   formData?.caseWeaknesses[name]?.name
-                              // }
-                              label={`${key + 1}- Weakness`}>
-                              <Space.Compact>
-                                <Input placeholder="" className="h-8" />
-                                <Form.Item onClick={() => remove(name)}>
-                                  <Button>
-                                    <DeleteOutlined className="text-red-700" />
-                                  </Button>
-                                </Form.Item>
-                              </Space.Compact>
-                            </Form.Item>
-                          </div>
-                        );
-                      })}
+                <Form.List name="caseWeaknesses">
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.map(({ key, name, ...restField }) => (
+                        <Space
+                          key={key}
+                          style={{
+                            display: "flex",
+                            marginBottom: 8,
+                          }}
+                          align="baseline">
+                          <Form.Item
+                            {...restField}
+                            name={[name, "name"]}
+                            // rules={[
+                            //   {
+                            //     required: true,
+                            //     message: "Missing last name",
+                            //   },
+                            // ]}
+                          >
+                            <Input placeholder="Last Name" />
+                          </Form.Item>
+                          <MinusCircleOutlined onClick={() => remove(name)} />
+                        </Space>
+                      ))}
                       <Form.Item>
-                        <Button onClick={() => add()}>
-                          + Add Case&apos;s Weaknesses
+                        <Button
+                          type="dashed"
+                          onClick={() => add()}
+                          block
+                          icon={<PlusOutlined />}>
+                          Add Case Weaknesses
                         </Button>
                       </Form.Item>
-                    </div>
+                    </>
                   )}
                 </Form.List>
               </div>
@@ -813,34 +726,42 @@ const UpdateCase = () => {
           <div>
             <div className="flex flex-wrap justify-between ">
               <div>
-                <Form.List name="stepToBeTaken" noStyle>
-                  {(fields, { add: add, remove: remove }) => (
-                    <div>
-                      {fields.map(({ key, name, ...restField }) => {
-                        return (
-                          <div key={key}>
-                            <Form.Item
-                              className="m-0 p-0"
-                              {...restField}
-                              name={[name, "name"]}
-                              // initialValue={formData?.stepToBeTaken[name]?.name}
-                              label={`${key + 1}- Step`}>
-                              <Space.Compact>
-                                <Input placeholder="" className="h-8" />
-                                <Form.Item onClick={() => remove(name)}>
-                                  <Button>
-                                    <DeleteOutlined className="text-red-700" />
-                                  </Button>
-                                </Form.Item>
-                              </Space.Compact>
-                            </Form.Item>
-                          </div>
-                        );
-                      })}
+                <Form.List name="stepToBeTaken">
+                  {(fields, { add, remove }) => (
+                    <>
+                      {fields.map(({ key, name, ...restField }) => (
+                        <Space
+                          key={key}
+                          style={{
+                            display: "flex",
+                            marginBottom: 8,
+                          }}
+                          align="baseline">
+                          <Form.Item
+                            {...restField}
+                            name={[name, "name"]}
+                            // rules={[
+                            //   {
+                            //     required: true,
+                            //     message: "Missing last name",
+                            //   },
+                            // ]}
+                          >
+                            <Input placeholder="Last Name" />
+                          </Form.Item>
+                          <MinusCircleOutlined onClick={() => remove(name)} />
+                        </Space>
+                      ))}
                       <Form.Item>
-                        <Button onClick={() => add()}>+ Add Steps</Button>
+                        <Button
+                          type="dashed"
+                          onClick={() => add()}
+                          block
+                          icon={<PlusOutlined />}>
+                          Add Steps
+                        </Button>
                       </Form.Item>
-                    </div>
+                    </>
                   )}
                 </Form.List>
               </div>
@@ -852,129 +773,47 @@ const UpdateCase = () => {
           <div>
             <div className="flex flex-wrap justify-between ">
               <div>
-                <Form.List name="client" noStyle>
-                  {(fields, { add: add, remove: remove }) => (
-                    <div>
-                      {fields.map(({ key, name, ...restField }) => {
-                        return (
-                          <div key={key}>
-                            <Form.Item
-                              className="m-0 p-0"
-                              {...restField}
-                              name={[name, "name"]}
-                              // initialValue={formData?.client[name]?.name}
-                              label={`${key + 1}- Client`}>
-                              <Space.Compact>
-                                <Input placeholder="" className="h-8" />
-                                <Form.Item onClick={() => remove(name)}>
-                                  <Button>
-                                    <DeleteOutlined className="text-red-700" />
-                                  </Button>
-                                </Form.Item>
-                              </Space.Compact>
-                            </Form.Item>
-                          </div>
-                        );
-                      })}
-                      <Form.Item>
-                        <Button onClick={() => add()}>+ Add Clients</Button>
-                      </Form.Item>
-                    </div>
-                  )}
-                </Form.List>
-              </div>
-            </div>
-          </div>
-
-          {/* CASE UPDATE/REPORT */}
-          {/* <TextDivider text="Case Update/Report" /> */}
-          <div>
-            <div className="flex flex-wrap justify-between ">
-              <div>
-                <Form.List name="caseUpdates">
+                <Form.List name="client">
                   {(fields, { add, remove }) => (
-                    <div>
-                      {fields.map((field) => (
-                        <Space.Compact key={field.key} className="flex my-2">
-                          {/* <Form.Item
-                            noStyle
-                            label="Case Update/Report"
-                            name={[field.name, "date"]}
-                            // initialValue={
-                            //   formData?.caseUpdates[field.name]?.date
-                            // }
-                          >
-                            <DatePicker placeholder="Select Date" />
-                          </Form.Item> */}
+                    <>
+                      {fields.map(({ key, name, ...restField }) => (
+                        <Space
+                          key={key}
+                          style={{
+                            display: "flex",
+                            marginBottom: 8,
+                          }}
+                          align="baseline">
                           <Form.Item
-                            noStyle
-                            name={[field.name, "update"]}
-                            // initialValue={
-                            //   formData?.caseUpdates[field.name]?.update
-                            // }
+                            {...restField}
+                            name={[name, "name"]}
+                            // rules={[
+                            //   {
+                            //     required: true,
+                            //     message: "Missing last name",
+                            //   },
+                            // ]}
                           >
-                            <TextArea placeholder="Enter Update" />
+                            <Input placeholder="Last Name" />
                           </Form.Item>
-                          <Button>
-                            <DeleteOutlined
-                              className="text-red-700"
-                              onClick={() => {
-                                remove(field.name);
-                              }}
-                            />
-                          </Button>
-                        </Space.Compact>
+                          <MinusCircleOutlined onClick={() => remove(name)} />
+                        </Space>
                       ))}
-                      <Button type="dashed" onClick={() => add()}>
-                        + Add Update
-                      </Button>
-                    </div>
+                      <Form.Item>
+                        <Button
+                          type="dashed"
+                          onClick={() => add()}
+                          block
+                          icon={<PlusOutlined />}>
+                          Add Client
+                        </Button>
+                      </Form.Item>
+                    </>
                   )}
                 </Form.List>
               </div>
             </div>
           </div>
-
-          {/* JUDICIAL AUTHORITIES IN SUPPORT */}
-          {/* <TextDivider text="Judicial Authorities" /> */}
-          {/* <div>
-            <div className="flex flex-wrap justify-between ">
-              <div>
-                <Form.List name="listOfJudicialAuthorities" noStyle>
-                  {(fields, { add, remove }) => (
-                    <div>
-                      {fields.map(({ key, name, ...restField }) => {
-                        return (
-                          <div key={key}>
-                            <Form.Item
-                              className="m-0 p-0"
-                              {...restField}
-                              name={[name, "name"]}
-                              // initialValue={
-                              //   formData?.listOfJudicialAuthorities[name]?.name
-                              // }
-                              label={`${key + 1}- Case`}>
-                              <Space.Compact>
-                                <Input placeholder="" className="h-8" />
-                                <Form.Item onClick={() => remove(name)}>
-                                  <Button>
-                                    <DeleteOutlined className="text-red-700" />
-                                  </Button>
-                                </Form.Item>
-                              </Space.Compact>
-                            </Form.Item>
-                          </div>
-                        );
-                      })}
-                      <Form.Item>
-                        <Button onClick={() => add()}>+ Add Case</Button>
-                      </Form.Item>
-                    </div>
-                  )}
-                </Form.List>
-              </div>
-            </div>
-          </div> */}
 
           {/* ACCOUNT OFFICER */}
           {/* <TextDivider text="Account Officer(s)" /> */}
@@ -982,70 +821,21 @@ const UpdateCase = () => {
             <Form.Item
               name="accountOfficer"
               label="Account Officer"
-              // initialValue={formData?.accountOfficer}
-            >
+              className="w-[200px]">
               <Select
-                noStyle
                 mode="multiple"
-                placeholder="Select users"
-                options={users}
+                placeholder="Select account officer"
+                options={userData}
                 allowClear
-                style={{
-                  width: "100%",
-                }}
               />
             </Form.Item>
           </div>
 
-          {/* STATUTORY AUTHORITIES IN SUPPORT */}
-          {/* <TextDivider text="Statutory Authorities" /> */}
-          {/* <div>
-            <div className="flex flex-wrap justify-between ">
-              <div>
-                <Form.List name="listOfStatutoryAuthorities" noStyle>
-                  {(fields, { add, remove }) => (
-                    <div>
-                      {fields.map(({ key, name, ...restField }) => {
-                        return (
-                          <div key={key}>
-                            <Form.Item
-                              className="m-0 p-0"
-                              {...restField}
-                              name={[name, "name"]}
-                              // initialValue={
-                              //   formData?.listOfStatutoryAuthorities[name]?.name
-                              // }
-                              label={`${key + 1}- Case`}>
-                              <Space.Compact>
-                                <Input placeholder="" className="h-8" />
-                                <Form.Item onClick={() => remove(name)}>
-                                  <Button>
-                                    <DeleteOutlined className="text-red-700" />
-                                  </Button>
-                                </Form.Item>
-                              </Space.Compact>
-                            </Form.Item>
-                          </div>
-                        );
-                      })}
-                      <Form.Item>
-                        <Button onClick={() => add()}>+ Add Statute</Button>
-                      </Form.Item>
-                    </div>
-                  )}
-                </Form.List>
-              </div>
-            </div>
-          </div> */}
           {/* CASE SUMMARY */}
         </div>
         <div>
           <div>
-            <Form.Item
-              label="Case Summary"
-              name="caseSummary"
-              // initialValue={formData?.caseSummary}
-            >
+            <Form.Item label="Case Summary" name="caseSummary">
               <TextArea
                 // autoSize={{
                 //   minRows: 2,
@@ -1053,7 +843,7 @@ const UpdateCase = () => {
                 // }}
                 rows={5}
                 placeholder="Your case summary here..."
-                maxLength={300}
+                maxLength={1000}
                 className="w-96"
               />
             </Form.Item>
@@ -1061,23 +851,18 @@ const UpdateCase = () => {
           {/* GENERAL COMMENT */}
           {/* <TextDivider text="General Comments" /> */}
           <div>
-            <Form.Item
-              label="General Comment"
-              name="generalComment"
-              // initialValue={formData?.generalComment}
-            >
+            <Form.Item label="General Comment" name="generalComment">
               <TextArea
                 rows={5}
                 placeholder="Your comment here..."
-                maxLength={300}
+                maxLength={1000}
                 className="w-96"
               />
             </Form.Item>
           </div>
         </div>
         <Form.Item>
-          {/* <Button onClick={onSubmit} type="default" htmlType="submit"> */}
-          <Button type="default" htmlType="submit">
+          <Button onClick={onSubmit} type="default" htmlType="submit">
             Submit
           </Button>
         </Form.Item>

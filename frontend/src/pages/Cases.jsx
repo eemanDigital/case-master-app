@@ -44,8 +44,14 @@ const Cases = () => {
                 {singleCase.caseStatus}
               </p>
             </div>
-            {/* link to case update */}
-            <Link to={singleCase._id}>Update Case Information</Link>
+            <div className="flex text-[10px] justify-between gap-4 ">
+              <Link to={`${singleCase._id}/update`}>
+                <Button>Update Case</Button>
+              </Link>
+              <Link to={`${singleCase._id}/document`}>
+                <Button>Upload Documents</Button>
+              </Link>
+            </div>
           </div>
         );
       })

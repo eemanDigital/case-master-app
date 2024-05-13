@@ -577,65 +577,6 @@ const CreateCaseForm = () => {
             initialValue={formData?.client}
             label="Client"
           />
-
-          {/* CASE UPDATE/REPORT */}
-          {/* <Divider orientation="left" orientationMargin="0">
-            <Typography.Title level={4}>Case Update/ Report</Typography.Title>
-          </Divider> */}
-
-          {/* <div className="">
-            <div>
-              <Form.List name="caseUpdates">
-                {(fields, { add, remove }) => (
-                  <div>
-                    {fields.map((field) => (
-                      <Space.Compact
-                        key={field.key}
-                        className="flex justify-center items-center my-2">
-                        <div className="flex flex-col  items-center gap-5">
-                          <div>
-                            <Form.Item
-                              noStyle
-                              className=" w-4/5"
-                              name={[field.name, "date"]}
-                              initialValue={
-                                formData?.caseUpdates[field.name]?.date
-                              }>
-                              <DatePicker placeholder="Select Date" />
-                            </Form.Item>
-                          </div>
-                          <div>
-                            <Form.Item
-                              noStyle
-                              name={[field.name, "update"]}
-                              initialValue={
-                                formData?.caseUpdates[field.name]?.update
-                              }>
-                              <TextArea
-                                placeholder="Enter Update"
-                                className="w-96 "
-                              />
-                            </Form.Item>
-                          </div>
-                        </div>
-                        <Button>
-                          <DeleteOutlined
-                            className="text-red-700"
-                            onClick={() => {
-                              remove(field.name);
-                            }}
-                          />
-                        </Button>
-                      </Space.Compact>
-                    ))}
-                    <Button type="dashed" onClick={() => add()}>
-                      + Add Update
-                    </Button>
-                  </div>
-                )}
-              </Form.List>
-            </div>
-          </div> */}
         </div>
 
         <Divider />
@@ -660,8 +601,6 @@ const CreateCaseForm = () => {
           </Button>
         </Form.Item>
       </Form>
-
-      <CaseDocument />
     </>
   );
 };

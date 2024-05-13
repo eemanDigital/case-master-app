@@ -33,6 +33,8 @@ import Error from "./components/Error.jsx";
 import { Result, Button } from "antd";
 import { Link } from "react-router-dom";
 import Document from "./pages/Documents.jsx";
+import CaseDocument from "./pages/CaseDocument.jsx";
+
 // import UpdateProfilePicture from "./components/UpdateProfilePicture.jsx";
 // import CreateCase from "./pages/CreateCase.jsx";
 // import CaseForm from "./pages/CaseForm.jsx";
@@ -59,11 +61,11 @@ function App() {
           element={<DashboardLayout isOpen={isOpen} handleOpen={handleOpen} />}>
           <Route index element={<Dashboard />} />
           <Route path="cases" element={<Cases open={isOpen} />} />
-          <Route path="cases/:id" element={<UpdateCase />} />
+          <Route path="cases/:id/update" element={<UpdateCase />} />
+          <Route path="cases/:id/document" element={<CaseDocument />} />
           {/* <Route path="create-case" element={<CreateCase />} /> */}
           <Route path="cases/add-case" element={<CreateCaseForm />} />
           <Route path="cases/:id/casedetails" element={<CaseDetails />} />
-
           <Route path="case-reports" element={<CaseReports />} />
           <Route
             path="case-reports/add-report"
