@@ -11,18 +11,19 @@ const CaseDocument = () => {
   const { files, loadingFiles, errorFiles } = useDataGetterHook();
 
   const [docData, setDocData] = useState({
-    docName: "",
-    file: null,
+    documents: {
+      docName: " ", // Initial empty space for document name
+      file: null,
+    },
   });
-
-  // const [click, setClick] = useState(false);
 
   function handleFileChange(e) {
     const { name, value, files } = e.target;
-    setDocData((prevData) => ({
-      ...prevData,
+    const updatedDocuments = {
+      ...docData.documents,
       [name]: name === "file" ? files[0] : value,
-    }));
+    };
+    setDocData((prevData) => ({ ...prevData, documents: updatedDocuments }));
   }
 
   const fileHeaders = {
@@ -32,27 +33,33 @@ const CaseDocument = () => {
   async function handleSubmit(e) {
     e.preventDefault();
     try {
-      await dataFetcher(`cases/${id}`, "patch", docData, fileHeaders);
+      const formData = new FormData();
+      formData.append("documents.docName", docData.documents.docName);
+      formData.append("documents.file", docData.documents.file);
+
+      await dataFetcher(`cases/${id}`, "patch", formData, fileHeaders);
+
       // Optimistic UI Update
-      setDocData({ docName: "", file: null });
-      // Add new doc to UI
-      // Clear form data or reset state for new uploads
+      setDocData({ documents: { docName: "", file: null } });
+
+      // Optional: Add new doc to UI (implement depending on your UI framework)
     } catch (err) {
       console.error("Error creating document:", err);
       // Display error message to user (optional)
     }
   }
 
-  // function handleClick() {
-  //   setClick((prev) => !prev);
-  // }
-
   const handleDelete = async (id) => {
     try {
       await dataFetcher(`cases/${id}`, "delete", fileHeaders);
-      // Optimistic UI Update
-      files.data.filter((doc) => doc._id !== id);
-      // Set state directly to update UI
+
+      // Optimistic UI Update (assuming files state is up-to-date)
+      const updatedFiles = files.data.filter((doc) => doc._id !== id);
+
+      // Update the state directly to reflect the change in UI
+      // This might depend on your state management solution
+      // (consider using a reducer or context for complex updates)
+      // setFiles(updatedFiles); // Assuming you have a setFiles function
     } catch (err) {
       console.error("Error deleting document:", err);
       // Revert UI changes and display error message (optional)
@@ -72,17 +79,15 @@ const CaseDocument = () => {
             name="docName"
             onChange={handleFileChange}
             label="Document's Name"
-            value={docData.docName}
+            value={docData.documents.docName}
           />
           <Input
             type="file"
-            name={docData.file}
-            // Use 'file' to match Multer configuration
-            id=""
+            name="file"
+            id="" // Consider adding an id for better accessibility
             accept=".pdf,.docx,.jpg,.jpeg, .png"
             onChange={handleFileChange}
             label="upload file"
-            htmlFor="file"
           />
         </div>
         <div>
@@ -101,17 +106,14 @@ const CaseDocument = () => {
       </form>
       <div>
         <h1>Documents</h1>
-        {files?.data?.map((doc) => {
-          console.log(doc._id);
-          return (
-            <div key={doc._id}>
-              <button onClick={() => handleDelete(doc?._id)}>
-                <h1>{doc?.fileName}</h1>
-                <p>{doc?.file}</p>
-              </button>
-            </div>
-          );
-        })}
+        {files?.data?.map((doc) => (
+          <div key={doc._id}>
+            <button onClick={() => handleDelete(doc._id)}>
+              <h1>{doc?.fileName}</h1>
+              <p>{doc?.file}</p>
+            </button>
+          </div>
+        ))}
       </div>
     </section>
   );

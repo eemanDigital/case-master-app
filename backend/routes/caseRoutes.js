@@ -16,7 +16,7 @@ caseRouter.route("/").get(getCases).post(createCase);
 caseRouter
   .route("/:caseId")
   .get(getCase)
-  .patch(upload.single("file"), updateCase)
+  .patch(updateCase)
   .delete(restrictTo("admin"), deleteCase);
 
 module.exports = caseRouter;

@@ -178,16 +178,6 @@ const caseSchema = new mongoose.Schema(
     accountOfficer: [String],
     client: [nameSchema],
     generalComment: String,
-
-    documents: [
-      {
-        docName: {
-          type: String,
-          maxLength: [20, "file name can not be more than 20 characters"],
-        },
-        file: String, //this is file upload
-      },
-    ],
   },
 
   {
@@ -232,6 +222,11 @@ caseSchema.virtual("reports", {
 caseSchema.virtual("reporter", {
   ref: "Report",
   foreignField: "reportedBy",
+  localField: "_id",
+});
+caseSchema.virtual("documents", {
+  ref: "File",
+  foreignField: "case",
   localField: "_id",
 });
 

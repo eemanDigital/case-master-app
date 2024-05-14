@@ -1,66 +1,97 @@
-// import { useContext } from "react";
+import { useState } from "react";
+// import Select from "../components/Select";
+import { useDataFetch } from "../hooks/useDataFetch";
 import Input from "../components/Inputs";
 import Button from "../components/Button";
-import { useDataFetch } from "../hooks/useDataFetch";
+import { Select } from "antd";
+
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { useState } from "react";
 
-import "react-toastify/dist/ReactToastify.css";
-
-const Document = () => {
-  // const { fileData, loadingFile, fileError, fetchFile } = useFile();
-  const { data, loading, error, dataFetcher } = useDataFetch();
+const Documents = () => {
+  const [formData, setFormData] = useState({
+    fileName: "",
+    file: "",
+    case: [],
+  });
   const [click, setClick] = useState(false);
-  const [docData, setDocData] = useState({ fileName: "", file: null });
+  // handle reports post and get report data
+  const { dataFetcher, data } = useDataFetch();
 
-  const { files, loadingFiles, errorFiles } = useDataGetterHook();
+  // fetched cases and user data
+  const { cases } = useDataGetterHook();
 
+  // console.log("CASES", cases);
+  //  map over cases value
+  const casesSelectField = Array.isArray(cases?.data) ? (
+    <select
+      label="case"
+      value={formData.case}
+      name="case"
+      onChange={handleFileChange}>
+      {cases?.data.map((singleCase) => {
+        const { firstParty, secondParty } = singleCase;
+        const firstName = firstParty?.name[0]?.name;
+        const secondName = secondParty?.name[0]?.name;
+        return (
+          <option value={singleCase._id} key={singleCase._id}>
+            {firstName} vs {secondName}
+          </option>
+        );
+      })}
+    </select>
+  ) : (
+    []
+  );
 
-  // console.log("FILESS", files);
-  // const fileId = files?.data?._id;
+  // const caseSelectOptions = casesData.map((myCases) => {
+  //   return (
+  //     <div className="w-[300px]" key={myCases._id}>
+  //       <select
+  //         label="case"
+  //         value={formData.case}
+  //         name="case"
+  //         onChange={handleFileChange}>
+  //         <option value={myCases.value}>{myCases.label}</option>
+  //       </select>
+  //     </div>
+  //   );
+  // });
 
   function handleFileChange(e) {
     const { name, value, files } = e.target;
-    setDocData((prevData) => ({
+
+    setFormData((prevData) => ({
       ...prevData,
-      [name]: name === "file" ? files[0] : value,
+      [name]: name === "file" ? files[0] : value, // Handle file or text input
     }));
   }
-  console.log(docData);
+  console.log(formData);
 
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
   };
 
-  // async function handleSubmit(e) {
-  //   e.preventDefault();
-
-  //   // set custom headers for file upload
-  //   // if (file === null) {
-  //   //   return;
-  //   // }
-
-  //   try {
-  //     // Call fetchData with endpoint, method, payload, and any additional arguments
-  //     await dataFetcher("documents", "post", docData, fileHeaders);
-
-  //     // await fetchFile("documents", "get");
-  //   } catch (err) {
-  //     console.log(err);
-  //   }
-  // }
   async function handleSubmit(e) {
     e.preventDefault();
+
+    // set custom headers for file upload
+    // if (file === null) {
+    //   return;
+    // }
+
     try {
-      await dataFetcher("documents", "post", docData, fileHeaders);
+      // Call fetchData with endpoint, method, payload, and any additional arguments
 
-      // Optimistic UI Update
-      setDocData({ ...files, data: [...files.data, docData] }); // Add new doc to UI
+      await dataFetcher("documents", "post", formData, fileHeaders);
 
-      // Clear form data or reset state for new uploads
+      // await fetchFile(
+      //   `uploads/update/${fileId}`,
+      //   "PATCH",
+      //   fileValue,
+      //   fileHeaders
+      // );
     } catch (err) {
-      console.error("Error creating document:", err);
-      // Display error message to user (optional)
+      console.log(err);
     }
   }
 
@@ -68,79 +99,44 @@ const Document = () => {
     setClick(() => !click);
   }
 
-  const handleDelete = async (id) => {
-    try {
-      await dataFetcher(`documents/${id}`, "delete", fileHeaders);
-
-      // Optimistic UI Update
-      const updatedFiles = files.data.filter((doc) => doc._id !== id);
-      setDocData({ ...files, data: updatedFiles });
-    } catch (err) {
-      console.error("Error deleting document:", err);
-      // Revert UI changes and display error message (optional)
-    }
-  };
-
-  // const handleDelete = async (id) => {
-  //   await dataFetcher(`documents/${id}`, "delete", fileHeaders);
-
-  //   // await fetchFile("documents", "get");
-  // };
   return (
-    <section>
+    <>
       <form
         onSubmit={handleSubmit}
         className="flex flex-col justify-center items-center ">
         <div>
           <Input
+            required
             type="text"
+            label="File Name"
+            placeholder="file name"
+            htmlFor="fileName"
+            value={formData.fileName}
             name="fileName"
             onChange={handleFileChange}
-            label="Document's Name"
           />
-
+        </div>
+        <div>
           <Input
+            required
             type="file"
             name="file" // Use 'file' to match Multer configuration
             id=""
             accept=".pdf,.docx,.jpg,.jpeg, .png"
             onChange={handleFileChange}
-            label="upload file"
+            label="upload photo"
             htmlFor="file"
           />
         </div>
+        {casesSelectField}
         <div>
           <Button onClick={handleClick} type="submit">
-            upload file
+            upload new photo
           </Button>
         </div>
-        {/* <div>
-          <span>Delete Current Image</span>
-          <button
-            className="bg-red-700 font-bold text-white p-4"
-            // onClick={handleDelete}
-            type="submit">
-            X
-          </button>
-        </div> */}
       </form>
-
-      <div>
-        <h1>Documents</h1>
-        {files?.data?.map((doc) => {
-          console.log(doc._id);
-          return (
-            <div key={doc._id}>
-              <button onClick={() => handleDelete(doc?._id)}>
-                <h1>{doc?.fileName}</h1>
-                <p>{doc?.file}</p>
-              </button>
-            </div>
-          );
-        })}
-      </div>
-    </section>
+    </>
   );
 };
 
-export default Document;
+export default Documents;

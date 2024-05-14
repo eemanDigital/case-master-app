@@ -72,7 +72,7 @@ if (process.env.NODE_ENV === "development") {
 
 // console.log(process.env);
 //routes mounting
-// app.use("/api/v1/documents", fileRouter);
+app.use("/api/v1/documents", fileRouter);
 // app.use("/api/v1/photos", photoRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/cases", caseRouter);
