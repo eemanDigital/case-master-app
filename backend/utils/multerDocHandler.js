@@ -79,7 +79,7 @@ const AppError = require("../utils/appError");
 
 const multerStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "public/images");
+    cb(null, "public/caseDoc");
   },
   filename: (req, file, cb) => {
     // const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
@@ -117,6 +117,7 @@ const fileFilter = (req, file, cb) => {
 
 const upload = multer({
   storage: multerStorage,
+
   limits: {
     fileSize: 1024 * 1024 * 5,
   },

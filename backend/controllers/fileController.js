@@ -2,6 +2,7 @@ const File = require("../models/fileModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const multer = require("multer");
+const path = require("path");
 
 // const multerStorage = multer.diskStorage({
 //   destination: (req, file, cb) => {
@@ -94,14 +95,39 @@ exports.getFiles = catchAsync(async (req, res, next) => {
     data: files,
   });
 });
+// exports.downloadFile = catchAsync(async (req, res, next) => {
+//   const doc = await File.findById(req.params.id);
+//   if (!doc) {
+//     return next(new AppError("No Document found", 404));
+//   }
+
+//   res.download(doc.file); // This will initiate a file download with the provided file path
+// });
+
+// exports.downloadFile = catchAsync(async (req, res, next) => {
+//   const { id } = req.params;
+//   const doc = await File.findById(id);
+//   if (!doc) {
+//     return next(new AppError("No Document found", 404));
+//   }
+//   const file = doc.file;
+//   // const filePath = path.join(__dirname, `../${file}`);
+
+//   console.log(file);
+//   res.download(file);
+// });
 exports.downloadFile = catchAsync(async (req, res, next) => {
-  const doc = await File.findById(req.params.id);
+  const { id } = req.params;
+  console.log(id);
+  const doc = await File.findById(id);
   if (!doc) {
     return next(new AppError("No Document found", 404));
   }
-
-  res.download(doc.file); // This will initiate a file download with the provided file path
+  const file = doc.file;
+  const filePath = path.join(__dirname, `../public/caseDoc/${file}`); // Assuming the files are in the uploads folder
+  res.download(filePath);
 });
+
 exports.getFile = catchAsync(async (req, res, next) => {
   const fileDoc = await File.findById(req.params.id);
   if (!fileDoc) {
