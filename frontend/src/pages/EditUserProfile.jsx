@@ -28,12 +28,14 @@ const EditUserProfile = () => {
 
   const [click, setClick] = useState(false);
   const { user } = useAuthContext();
+  // const { file } = useFileContext();
+  // const fileId = file?.data?.file.id;
 
+  // console.log(fileId);
   const [inputValue, setInputValue] = useState({
     firstName: "",
     lastName: "",
     middleName: "",
-    photo: "",
     address: "",
     bio: "",
     position: "",
@@ -47,11 +49,13 @@ const EditUserProfile = () => {
   const getOtherFieldSelected = inputValue.position === "Other";
 
   // handleChange function
+  // handleChange function
   function handleChange(e) {
-    const { name, value, files } = e.target;
+    const { name, value } = e.target;
+
     setInputValue((prevData) => ({
       ...prevData,
-      [name]: name === "photo" ? files[0] : value, // Handle file or text input
+      [name]: value, // Handle file or text input
     }));
   }
 
@@ -66,24 +70,22 @@ const EditUserProfile = () => {
   }, [user?.data.user]);
 
   // function to handle form submission
+
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // set custom headers
-    const customHeaders = {
-      "Content-Type": "multipart/form-data", // Example of custom header
-    };
-
     try {
-      // Call fetchData with your endpoint, method, payload, and any additional arguments
-      await authenticate(
-        "users/updateUser",
-        "patch",
-        inputValue,
-        customHeaders
-      );
+      // Call fetchData with endpoint, method, payload, and any additional arguments
+      await authenticate("users/updateUser", "PATCH", inputValue);
+
+      // await fetchFile(
+      //   `uploads/update/${fileId}`,
+      //   "PATCH",
+      //   fileValue,
+      //   fileHeaders
+      // );
     } catch (err) {
-      // Handle error
+      console.log(err);
     }
   }
 
@@ -197,17 +199,6 @@ const EditUserProfile = () => {
           </div>
         </div>
         <div className="flex flex-col sm:flex-row -mx-3 mb-6 flex-wrap gap-2 justify-between  sm:items-center">
-          <div>
-            <Input
-              type="file"
-              name="photo" // Use 'file' to match Multer configuration
-              id=""
-              accept=".pdf,.docx,.jpg,.jpeg, .png"
-              onChange={handleChange}
-              label="upload photo"
-              htmlFor="photo"
-            />
-          </div>
           <div className="w-[300px]">
             <Select
               label="Position"

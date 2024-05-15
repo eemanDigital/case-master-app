@@ -8,6 +8,8 @@ import { useAuth } from "../hooks/useAuth";
 import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+// import { useAuthContext } from "../hooks/useAuthContext";
+
 // import useFetch from "../hooks/useFetch";
 
 // const URL = "http://localhost:3000/api/v1/users/signup";
@@ -31,6 +33,8 @@ const SignUp = () => {
   const { data, loading, error, authenticate } = useAuth();
   const [click, setClick] = useState(false);
 
+  // console.log(fileData.data?.file);
+  // console.log(data);
   const [inputValue, setInputValue] = useState({
     firstName: "",
     lastName: "",
@@ -38,7 +42,6 @@ const SignUp = () => {
     email: "",
     password: "",
     passwordConfirm: "",
-    photo: "",
     address: "",
     bio: "",
     position: "",
@@ -50,31 +53,28 @@ const SignUp = () => {
     lawSchoolAttended: "",
   });
 
+  // const { dispatch } = useAuthContext();
   // derived state to check if user select "Other"
   const getOtherFieldSelected = inputValue.position === "Other";
 
   // handleChange function
   function handleChange(e) {
-    const { name, value, files } = e.target;
+    const { name, value } = e.target;
 
     setInputValue((prevData) => ({
       ...prevData,
-      [name]: name === "photo" ? files[0] : value, // Handle file or text input
+      [name]: value, // Handle file or text input
     }));
   }
 
-  // function to handle for submission
+  // console.log(fileValue);
+  // dispatch({ type: "LOGIN", filPayload: fileValue });
   async function handleSubmit(e) {
     e.preventDefault();
 
-    // set custom headers
-    const customHeaders = {
-      "Content-Type": "multipart/form-data",
-    };
-
     try {
-      // Call fetchData with your endpoint, method, payload, and any additional arguments
-      await authenticate("users/signup", "post", inputValue, customHeaders);
+      // Call fetchData with endpoint, method, payload, and any additional arguments
+      await authenticate("users/signup", "post", inputValue);
     } catch (err) {
       console.log(err);
     }
@@ -217,17 +217,17 @@ const SignUp = () => {
             </div>
           </div>
           <div className="flex flex-col sm:flex-row -mx-3 mb-6 flex-wrap gap-2 justify-between  sm:items-center">
-            <div>
+            {/* <div>
               <Input
                 type="file"
                 name="photo" // Use 'file' to match Multer configuration
                 id=""
-                accept=".pdf,.docx,.jpg,.jpeg, .png"
-                onChange={handleChange}
+                accept=".jpg,.jpeg, .png"
+                onChange={handlePhotoChange}
                 label="upload photo"
                 htmlFor="photo"
               />
-            </div>
+            </div> */}
             <div className="w-[300px]">
               <Select
                 label="Position"

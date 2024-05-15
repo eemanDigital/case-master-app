@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 const express = require("express");
 const mongoose = require("mongoose");
+const path = require("path");
 const cors = require("cors");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
@@ -9,6 +10,8 @@ const caseRouter = require("./routes/caseRoutes");
 const taskRouter = require("./routes/taskRoutes");
 const clientRouter = require("./routes/clientRoutes");
 const reportRouter = require("./routes/caseReportRoute");
+const fileRouter = require("./routes/fileRoutes");
+const photoRouter = require("./routes/photoRoutes");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 
@@ -27,8 +30,9 @@ process.on("uncaughtException", (err) => {
 dotenv.config({ path: "./config.env" });
 // MIDDLEWARES
 const app = express();
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
 // app.use(cors());
 app.use(
   cors({
@@ -37,7 +41,8 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.static("public"));
+// app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 
 app.use(cookieParser());
 // connection to mongoose - MONGODB ATLAS
@@ -67,6 +72,8 @@ if (process.env.NODE_ENV === "development") {
 
 // console.log(process.env);
 //routes mounting
+app.use("/api/v1/documents", fileRouter);
+// app.use("/api/v1/photos", photoRouter);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);

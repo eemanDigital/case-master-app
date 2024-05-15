@@ -1,6 +1,27 @@
 const Case = require("../models/caseModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+// const multer = require("multer");
+
+// exports.createCase = catchAsync(async (req, res, next) => {
+//   const { file, body } = req;
+//   if (!file || !body) {
+//     return next(new AppError("Please provide a file and request body", 400));
+//   }
+//   const { filename } = file;
+//   const { fileName, ...rest } = body;
+//   if (!fileName) {
+//     return next(
+//       new AppError("Please provide a fileName in the request body", 400)
+//     );
+//   }
+//   const document = {
+//     name: fileName,
+//     file: filename,
+//   };
+//   const singleCase = await Case.create({ documents: [document], ...rest });
+//   res.status(201).json({ data: singleCase });
+// });
 
 exports.createCase = catchAsync(async (req, res, next) => {
   const singleCase = await Case.create(req.body);
@@ -25,10 +46,12 @@ exports.getCases = catchAsync(async (req, res, next) => {
 exports.getCase = catchAsync(async (req, res, next) => {
   //if id/caseId provided does not exist
   const _id = req.params.caseId;
-  const data = await Case.findById({ _id }).populate({
-    path: "reports",
-    select: "-caseReported",
-  });
+  const data = await Case.findById({ _id })
+    .populate({
+      path: "reports",
+      select: "-caseReported",
+    })
+    .populate({ path: "documents" });
 
   // res.status(200).json({
   //   data,
@@ -50,15 +73,84 @@ exports.getCase = catchAsync(async (req, res, next) => {
   });
 });
 
+// exports.updateCase = catchAsync(async (req, res, next) => {
+//   const { file, body } = req;
+//   if (!file || !body) {
+//     return next(new AppError("Please provide a file and request body", 400));
+//   }
+//   const { filename } = file;
+//   const { docName, ...rest } = body;
+//   if (!docName) {
+//     return next(
+//       new AppError("Please provide a fileName in the request body", 400)
+//     );
+//   }
+//   const document = {
+//     name: docName,
+//     file: filename,
+//   };
+
+//   const doc = await Case.findByIdAndUpdate(req.params.caseId, req.body, {
+//     new: true,
+//     runValidators: true,
+//   });
+
+//   if (!doc) {
+//     return next(new AppError(`No Case Found with that ID`, 404));
+//   }
+//   // console.log(updatedCase);
+//   res.status(200).json({
+//     message: "case successfully updated",
+//     doc,
+//   });
+// });
 exports.updateCase = catchAsync(async (req, res, next) => {
-  const doc = await Case.findByIdAndUpdate(req.params.caseId, req.body, {
-    new: true,
-    runValidators: true,
-  });
-  // console.log(updatedCase);
+  const { body, file } = req;
+  const { documents, rest } = body;
+
+  if (!documents || !Array.isArray(documents)) {
+    return next(
+      new AppError("Please provide documents array in the request body", 400)
+    );
+  }
+
+  const updatedDocuments = [];
+
+  // Iterate through the documents array and update each document
+  for (const document of documents) {
+    const { docName } = document;
+
+    // Check if docName is provided
+    if (!docName) {
+      return next(new AppError("docName is required for each document", 400));
+    }
+
+    // If file is provided, update the document with file name
+    if (file) {
+      const { filename } = file;
+      updatedDocuments.push({ docName, file: filename });
+    } else {
+      // If file is not provided, keep the existing file name
+      updatedDocuments.push({ docName, file: document.file });
+    }
+  }
+
+  const updatedCase = await Case.findByIdAndUpdate(
+    req.params.caseId,
+    { documents: updatedDocuments },
+    {
+      new: true,
+      runValidators: true,
+    }
+  );
+
+  if (!updatedCase) {
+    return next(new AppError(`No Case Found with that ID`, 404));
+  }
+
   res.status(200).json({
-    message: "case successfully updated",
-    doc,
+    message: "Case successfully updated",
+    updatedCase,
   });
 });
 

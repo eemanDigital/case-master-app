@@ -5,16 +5,18 @@ const {
   getCase,
   updateCase,
   deleteCase,
+  upload,
 } = require("../controllers/caseController");
 const { protect, restrictTo } = require("../controllers/authController");
 
 const caseRouter = express.Router();
 
 caseRouter.route("/").get(getCases).post(createCase);
+// .post(createCase);
 caseRouter
   .route("/:caseId")
   .get(getCase)
-  .put(updateCase)
+  .patch(updateCase)
   .delete(restrictTo("admin"), deleteCase);
 
 module.exports = caseRouter;

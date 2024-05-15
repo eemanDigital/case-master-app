@@ -16,21 +16,24 @@ exports.signup = catchAsync(async (req, res, next) => {
   // console.log(req.baseUrl);
 
   if (!email || !password || !firstName || !lastName) {
-    next(new AppError("Required fields must be fielded", 400));
+    return next(new AppError("Required fields must be fielded", 400));
   }
 
   if (password !== passwordConfirm) {
-    next(new AppError("Password and passwordConfirm must be the same", 400));
+    return next(
+      new AppError("Password and passwordConfirm must be the same", 400)
+    );
   }
 
   let existingEmail = await User.findOne({ email });
 
   if (existingEmail) {
-    next(new AppError("email already exist", 400));
+    return next(new AppError("email already exist", 400));
   }
 
   // extract file
   const filename = req.file ? req.file.filename : null;
+  // console.log("FILENAME", filename);
 
   const user = await User.create({
     firstName: req.body.firstName,
@@ -42,7 +45,6 @@ exports.signup = catchAsync(async (req, res, next) => {
     photo: filename,
     address: req.body.address,
     role: req.body.role,
-    // task: req.body.task,
     bio: req.body.bio,
     position: req.body.position,
     phone: req.body.phone,
@@ -52,7 +54,8 @@ exports.signup = catchAsync(async (req, res, next) => {
     universityAttended: req.body.universityAttended,
     lawSchoolAttended: req.body.lawSchoolAttended,
   });
-
+  // const user = await User.create(req.body);
+  console.log(user);
   createSendToken(user, 201, res);
 });
 

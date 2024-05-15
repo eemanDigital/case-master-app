@@ -35,7 +35,7 @@ export const useAuth = () => {
         ...customHeaders,
       };
 
-      // console.log("TOEKN", token);
+      // console.log("TOKEN", token);
 
       if (
         (method === "POST" || method === "PUT" || method === "PATCH") &&

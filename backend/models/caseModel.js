@@ -19,10 +19,12 @@ const judgeSchema = new mongoose.Schema({
 // sub-document for processes
 const partyProcessSchema = new mongoose.Schema({ name: String });
 
+// case Schema
 const caseSchema = new mongoose.Schema(
   {
     firstParty: {
       description: String,
+<<<<<<< HEAD
       processesFiled: [partyProcessSchema],
       name: [nameSchema],
     },
@@ -30,13 +32,27 @@ const caseSchema = new mongoose.Schema(
       description: String,
       processesFiled: [partyProcessSchema],
       name: [nameSchema],
+=======
+      name: [nameSchema],
+      processesFiled: [partyProcessSchema],
+    },
+    secondParty: {
+      description: String,
+      name: [nameSchema],
+      processesFiled: [partyProcessSchema],
+>>>>>>> backup-my-case-app
     },
 
     otherParty: [
       {
         description: String,
+<<<<<<< HEAD
         processesFiled: [partyProcessSchema],
         name: [nameSchema],
+=======
+        name: [nameSchema],
+        processesFiled: [partyProcessSchema],
+>>>>>>> backup-my-case-app
       },
     ],
 
@@ -74,7 +90,7 @@ const caseSchema = new mongoose.Schema(
     },
 
     courtNo: {
-      type: Number,
+      type: String,
       trim: true,
     },
 
@@ -97,12 +113,15 @@ const caseSchema = new mongoose.Schema(
     },
 
     otherCourt: String,
+
     judge: [judgeSchema],
+
     caseSummary: {
       type: String,
       trim: true,
-      maxlength: [500, "Case summary should not be more than 500 characters"],
+      maxlength: [1000, "Case summary should not be more than 500 characters"],
     },
+
     caseStatus: {
       type: String,
       trim: true,
@@ -110,7 +129,48 @@ const caseSchema = new mongoose.Schema(
         values: ["Pending", "Closed", "Decided"],
       },
     },
-    natureOfCase: String,
+
+    // natureOfCase: String,
+
+    natureOfCase: {
+      type: String,
+      trim: true,
+      // required: [true, "Court's name is required"],
+      enum: {
+        values: [
+          "Contract Dispute",
+          "Personal Injury",
+          "Real Estate",
+          "Land Law",
+          "Pre-election",
+          "Election Petition",
+          "Criminal Law",
+          "Family Law",
+          "Intellectual Property",
+          "Employment Law",
+          "Bankruptcy",
+          "Estate Law",
+          "Tortous Liability ",
+          "Immigration",
+          "Maritime",
+          "Aviation",
+          "Tax Law",
+          "Other",
+        ],
+      },
+    },
+
+    category: {
+      type: String,
+      trim: true,
+      enum: {
+        values: ["Civil", "Criminal"],
+        message: "A case must have a category",
+      },
+    },
+
+    isFiledByTheOffice: Boolean,
+
     filingDate: {
       type: Date,
       default: Date.now,
@@ -138,19 +198,6 @@ const caseSchema = new mongoose.Schema(
     },
     stepToBeTaken: [nameSchema],
 
-    // report: [
-    //   {
-    //     type: mongoose.Schema.ObjectId,
-    //     ref: "Report",
-    //   },
-    // ],
-
-    // task: [
-    //   {
-    //     type: mongoose.Schema.ObjectId,
-    //     ref: "Task",
-    //   },
-    // ],
     accountOfficer: [String],
     client: [nameSchema],
     generalComment: String,
@@ -179,6 +226,15 @@ const caseSchema = new mongoose.Schema(
 //   return `${firstName || ""} vs ${secondName || ""}`;
 // });
 
+// caseSchema.pre(/^find/, function (next) {
+//   const newDate = new Date(this.fillingDate);
+
+//   const options = { year: "numeric", month: "long", day: "numeric" };
+//   new Intl.DateTimeFormat("en-US", options).format(newDate);
+
+//   next();
+// });
+
 // virtual populate
 caseSchema.virtual("reports", {
   ref: "Report",
@@ -191,6 +247,11 @@ caseSchema.virtual("reporter", {
   foreignField: "reportedBy",
   localField: "_id",
 >>>>>>> refactor_field
+});
+caseSchema.virtual("documents", {
+  ref: "File",
+  foreignField: "case",
+  localField: "_id",
 });
 
 const Case = mongoose.model("Case", caseSchema);

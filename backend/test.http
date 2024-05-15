@@ -168,6 +168,13 @@ content-type: application/json
 GET http://localhost:3000/api/v1/clients  HTTP/1.1 
 content-type: application/json
 
+###
+GET http://localhost:3000/api/v1/uploads/6639edcf4b99c7ad3af85dca  HTTP/1.1 
+content-type: application/json
+
+###
+GET http://localhost:3000/api/v1/uploads/photos/6639edcf4b99c7ad3af85dca  HTTP/1.1 
+content-type: application/json
 
 
 
