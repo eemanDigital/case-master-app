@@ -28,74 +28,66 @@ const DataFetcherContext = ({ children }) => {
     // Fetch cases function
 
     async function fetchCases() {
-      // Fetch cases function
-
-      async function fetchCases() {
-        try {
-          setLoadingCases(true);
-          const response = await axios.get(
-            "http://localhost:3000/api/v1/cases"
-          );
-          setCases(response.data);
-        } catch (err) {
-          setErrorCases(err.message || "Failed to fetch cases");
-        } finally {
-          setLoadingCases(false);
-        }
+      try {
+        setLoadingCases(true);
+        const response = await axios.get("http://localhost:3000/api/v1/cases");
+        setCases(response.data);
+      } catch (err) {
+        setErrorCases(err.message || "Failed to fetch cases");
+      } finally {
+        setLoadingCases(false);
       }
-
-      // Fetch users function
-
-      async function fetchUsers() {
-        try {
-          setLoadingUsers(true);
-          const response = await axios.get(
-            "http://localhost:3000/api/v1/users"
-          );
-          setUsers(response.data);
-        } catch (err) {
-          setErrorUsers(err.message || "Failed to fetch users");
-        } finally {
-          setLoadingUsers(false);
-        }
-      }
-
-      // Fetch Reports function
-      async function fetchReports() {
-        try {
-          setLoadingUsers(true);
-          const response = await axios.get(
-            "http://localhost:3000/api/v1/reports"
-          );
-
-          setReports(response.data);
-        } catch (err) {
-          setErrorReports(err.message || "Failed to fetch users");
-        } finally {
-          setLoadingReports(false);
-        }
-      }
-      // Fetch Reports function
-      // async function fetchFiles() {
-      //   try {
-      //     setLoadingFiles(true);
-      //     const response = await axios.get(
-      //       `http://localhost:3000/api/v1/documents`
-      //     );
-      //     setFiles(response.data);
-      //   } catch (err) {
-      //     setErrorFiles(err.message || "Failed to fetch users");
-      //   } finally {
-      //     setLoadingFiles(false);
-      //   }
-      // }
-
-      // Call the functions to fetch cases and users separately
-      fetchCases();
-      fetchUsers();
-      fetchReports();
-      // fetchFiles()
     }
+
+    // Fetch users function
+
+    async function fetchUsers() {
+      try {
+        setLoadingUsers(true);
+        const response = await axios.get("http://localhost:3000/api/v1/users");
+        setUsers(response.data);
+      } catch (err) {
+        setErrorUsers(err.message || "Failed to fetch users");
+      } finally {
+        setLoadingUsers(false);
+      }
+    }
+
+    // Fetch Reports function
+    async function fetchReports() {
+      try {
+        setLoadingUsers(true);
+        const response = await axios.get(
+          "http://localhost:3000/api/v1/reports"
+        );
+
+        setReports(response.data);
+      } catch (err) {
+        setErrorReports(err.message || "Failed to fetch users");
+      } finally {
+        setLoadingReports(false);
+      }
+    }
+    // Fetch Reports function
+    // async function fetchFiles() {
+    //   try {
+    //     setLoadingFiles(true);
+    //     const response = await axios.get(
+    //       `http://localhost:3000/api/v1/documents`
+    //     );
+    //     setFiles(response.data);
+    //   } catch (err) {
+    //     setErrorFiles(err.message || "Failed to fetch users");
+    //   } finally {
+    //     setLoadingFiles(false);
+    //   }
+    // }
+
+    // Call the functions to fetch cases and users separately
+    fetchCases();
+    fetchUsers();
+    fetchReports();
+    // fetchFiles();
   }, []);
 
   return (

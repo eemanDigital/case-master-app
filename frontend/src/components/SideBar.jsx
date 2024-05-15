@@ -11,7 +11,7 @@ import {
   IoMenuOutline,
 } from "react-icons/io5";
 // import { MdEditNote } from "react-icons/md";
-// import { usePhotoContext } from "../hooks/usePhotoContext";
+import { usePhotoContext } from "../hooks/usePhotoContext";
 
 import { TbReport } from "react-icons/tb";
 import { FaMoneyBill, FaTasks } from "react-icons/fa";
