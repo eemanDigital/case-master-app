@@ -2,10 +2,15 @@ import { useParams, Link } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useEffect } from "react";
 import { formatDate } from "../utils/formatDate";
+import { download } from "../utils/download";
+import Button from "../components/Button";
+import { FaDownload, FaFile } from "react-icons/fa6";
+import { FaFileAlt } from "react-icons/fa";
 
 const CaseDetails = () => {
   const { id } = useParams();
   const { dataFetcher, data, loading, error } = useDataFetch();
+  console.log("DOC", data?.data);
 
   // console.log(data?.data);
   useEffect(() => {
@@ -228,6 +233,37 @@ const CaseDetails = () => {
           <strong>General Comment: </strong> {data?.data?.generalComment}
         </p>
       </div>
+
+      {/* attached documents */}
+      {data?.data?.documents.length > 0 ? (
+        <div>
+          <h1 className="text-2xl mt-3">Attached Documents</h1>
+          {data?.data?.documents.map((doc) => {
+            console.log("DOC", data?.data);
+            return (
+              <div key={doc._id} className="pt-4">
+                <h3 className=" font-bold">{doc.fileName}</h3>
+                <></>
+                <FaFileAlt className="text-4xl text-gray-600" />
+                <small className="block">
+                  Uploaded on: {formatDate(doc.date)}
+                </small>
+                <Button onClick={() => download(doc._id, doc.fileName)}>
+                  download file
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div>
+          <h1 className="text-red-600 mt-4 font-bold">No attached document</h1>
+          <p>Wish to upload attach document? </p>
+          <Button>
+            <Link to="/dashboard/documents">Click</Link>
+          </Button>
+        </div>
+      )}
     </section>
   );
 };

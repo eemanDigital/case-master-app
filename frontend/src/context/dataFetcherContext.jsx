@@ -22,8 +22,6 @@ const DataFetcherContext = ({ children }) => {
   const [errorReports, setErrorReports] = useState("");
   const [errorFiles, setErrorFiles] = useState("");
 
-  const params = useParams();
-
   useEffect(() => {
     // Fetch cases function
 
@@ -68,26 +66,26 @@ const DataFetcherContext = ({ children }) => {
         setLoadingReports(false);
       }
     }
-    // Fetch Reports function
-    // async function fetchFiles() {
-    //   try {
-    //     setLoadingFiles(true);
-    //     const response = await axios.get(
-    //       `http://localhost:3000/api/v1/documents`
-    //     );
-    //     setFiles(response.data);
-    //   } catch (err) {
-    //     setErrorFiles(err.message || "Failed to fetch users");
-    //   } finally {
-    //     setLoadingFiles(false);
-    //   }
-    // }
+    // Fetch file function
+    async function fetchFiles() {
+      try {
+        setLoadingFiles(true);
+        const response = await axios.get(
+          `http://localhost:3000/api/v1/documents`
+        );
+        setFiles(response.data);
+      } catch (err) {
+        setErrorFiles(err.message || "Failed to fetch users");
+      } finally {
+        setLoadingFiles(false);
+      }
+    }
 
     // Call the functions to fetch cases and users separately
     fetchCases();
     fetchUsers();
     fetchReports();
-    // fetchFiles();
+    fetchFiles();
   }, []);
 
   return (
