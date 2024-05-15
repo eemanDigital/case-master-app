@@ -156,15 +156,11 @@ userSchema.virtual("task", {
   foreignField: "assignedTo",
   localField: "_id",
 });
-<<<<<<< HEAD
-
-=======
 userSchema.virtual("case", {
   ref: "Task",
   foreignField: "caseToWorkOn",
   localField: "_id",
 });
->>>>>>> backup-my-case-app
 // virtuals for user full Name
 userSchema.virtual("fullName").get(function () {
   return this.firstName + " " + this.lastName + " " + this.middleName;

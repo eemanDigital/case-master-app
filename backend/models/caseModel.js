@@ -24,15 +24,6 @@ const caseSchema = new mongoose.Schema(
   {
     firstParty: {
       description: String,
-<<<<<<< HEAD
-      processesFiled: [partyProcessSchema],
-      name: [nameSchema],
-    },
-    secondParty: {
-      description: String,
-      processesFiled: [partyProcessSchema],
-      name: [nameSchema],
-=======
       name: [nameSchema],
       processesFiled: [partyProcessSchema],
     },
@@ -40,19 +31,13 @@ const caseSchema = new mongoose.Schema(
       description: String,
       name: [nameSchema],
       processesFiled: [partyProcessSchema],
->>>>>>> backup-my-case-app
     },
 
     otherParty: [
       {
         description: String,
-<<<<<<< HEAD
-        processesFiled: [partyProcessSchema],
-        name: [nameSchema],
-=======
         name: [nameSchema],
         processesFiled: [partyProcessSchema],
->>>>>>> backup-my-case-app
       },
     ],
 
@@ -98,14 +83,6 @@ const caseSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-<<<<<<< HEAD
-  ],
-  accountOfficer: [String],
-  client: [nameSchema],
-  listOfJudicialAuthorities: [nameSchema],
-  listOfStatutoryAuthorities: [nameSchema],
-  generalComment: String,
-=======
 
     state: {
       type: String,
@@ -246,7 +223,6 @@ caseSchema.virtual("reporter", {
   ref: "Report",
   foreignField: "reportedBy",
   localField: "_id",
->>>>>>> refactor_field
 });
 caseSchema.virtual("documents", {
   ref: "File",
