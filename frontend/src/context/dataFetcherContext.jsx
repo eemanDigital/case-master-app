@@ -9,18 +9,21 @@ const DataFetcherContext = ({ children }) => {
   const [users, setUsers] = useState([]);
   const [reports, setReports] = useState([]);
   const [files, setFiles] = useState([]);
+  const [tasks, setTasks] = useState([]);
   // const [user, setUser] = useState([]);
 
   const [loadingCases, setLoadingCases] = useState(false);
   const [loadingReports, setLoadingReports] = useState(false);
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [loadingFiles, setLoadingFiles] = useState(false);
+  const [loadingTasks, setLoadingTasks] = useState(false);
   // const [loadingUser, setLoadingUser] = useState(false);
   const [errorCases, setErrorCases] = useState("");
   const [errorUsers, setErrorUsers] = useState("");
   // const [errorUser, setErrorUser] = useState("");
   const [errorReports, setErrorReports] = useState("");
   const [errorFiles, setErrorFiles] = useState("");
+  const [errorTasks, setErrorTasks] = useState("");
 
   useEffect(() => {
     // Fetch cases function
@@ -81,11 +84,25 @@ const DataFetcherContext = ({ children }) => {
       }
     }
 
+    // fetch tasks
+    async function fetchTasks() {
+      try {
+        setLoadingTasks(true);
+        const response = await axios.get(`http://localhost:3000/api/v1/tasks`);
+        setTasks(response.data);
+      } catch (err) {
+        setErrorTasks(err.message || "Failed to fetch users");
+      } finally {
+        setLoadingTasks(false);
+      }
+    }
+
     // Call the functions to fetch cases and users separately
     fetchCases();
     fetchUsers();
     fetchReports();
     fetchFiles();
+    fetchTasks();
   }, []);
 
   return (
@@ -95,6 +112,7 @@ const DataFetcherContext = ({ children }) => {
         users,
         reports,
         files,
+        tasks,
         loadingCases,
         loadingUsers,
         errorCases,
@@ -103,6 +121,8 @@ const DataFetcherContext = ({ children }) => {
         errorReports,
         loadingFiles,
         errorFiles,
+        loadingTasks,
+        errorTasks,
       }}>
       {children}
     </DataContext.Provider>

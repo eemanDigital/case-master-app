@@ -163,7 +163,11 @@ userSchema.virtual("case", {
 });
 // virtuals for user full Name
 userSchema.virtual("fullName").get(function () {
-  return this.firstName + " " + this.lastName + " " + this.middleName;
+  if (this.middleName) {
+    return this.firstName + " " + this.lastName + " " + this.middleName;
+  } else {
+    return this.firstName + " " + this.lastName;
+  }
 });
 
 userSchema.methods.correctPassword = async function (

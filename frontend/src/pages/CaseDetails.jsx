@@ -1,15 +1,17 @@
 import { useParams, Link } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { formatDate } from "../utils/formatDate";
 import { download } from "../utils/download";
 import Button from "../components/Button";
-import { FaDownload, FaFile } from "react-icons/fa6";
+import { FaDeleteLeft, FaDownload, FaFile } from "react-icons/fa6";
 import { FaFileAlt } from "react-icons/fa";
 
 const CaseDetails = () => {
   const { id } = useParams();
   const { dataFetcher, data, loading, error } = useDataFetch();
+  const [documentList, setDocumentList] = useState();
+
   console.log("DOC", data?.data);
 
   // console.log(data?.data);
@@ -25,6 +27,27 @@ const CaseDetails = () => {
     }
   }, [data?.data]);
 
+  // delete document
+  const fileHeaders = {
+    "Content-Type": "multipart/form-data",
+  };
+
+  // async function deleteFile(id) {
+  //   // Optimistically update the UI by filtering out the deleted file // not functioning yet
+
+  //   setDocumentList(data.data?.filter((item) => item._id !== id));
+  //   try {
+  //     // Make the API call to delete the file
+  //     await dataFetcher(`documents/${id}`, "delete", fileHeaders);
+  //   } catch (err) {
+  //     console.error("Error deleting document:", err);
+  //     // If an error occurs during deletion, revert the UI changes
+  //     // You can choose to handle this differently, such as displaying an error message
+  //     setTimeout(() => {
+  //       setDocumentList(data?.data); // Revert to the original data
+  //     }, 0);
+  //   }
+  // }
   return (
     <section>
       <Link to="../.." relative="path">
@@ -243,14 +266,19 @@ const CaseDetails = () => {
             return (
               <div key={doc._id} className="pt-4">
                 <h3 className=" font-bold">{doc.fileName}</h3>
-                <></>
-                <FaFileAlt className="text-4xl text-gray-600" />
+                {/* <FaDeleteLeft onClick={() => deleteFile(doc._id)} /> */}
+
+                <div className="inline-flex gap-1 items-center bg-gray-300 px-5 py-2 rounded-md  cursor-pointer hover:bg-gray-200">
+                  <FaFileAlt className="text-4xl text-gray-600" />
+
+                  <FaDownload
+                    onClick={() => download(doc._id, doc.fileName)}
+                    className="text-red-800 text-1xl"
+                  />
+                </div>
                 <small className="block">
                   Uploaded on: {formatDate(doc.date)}
                 </small>
-                <Button onClick={() => download(doc._id, doc.fileName)}>
-                  download file
-                </Button>
               </div>
             );
           })}

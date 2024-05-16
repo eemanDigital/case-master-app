@@ -15,8 +15,9 @@ import {
 } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { SelectInputs } from "../components/DynamicInputs";
+import TaskList from "../components/TaskList";
 
-const TasksForm = () => {
+const CreateTaskForm = () => {
   // destructure textarea from input
   const { TextArea } = Input;
 
@@ -25,7 +26,7 @@ const TasksForm = () => {
     title: "",
     instruction: "",
     caseToWorkOn: "",
-    assignedTo: "",
+    assignedTo: [],
     dateAssigned: "",
     dueDate: "",
     taskPriority: "",
@@ -89,14 +90,17 @@ const TasksForm = () => {
   }, [form, handleSubmission, dataFetcher]);
 
   return (
-    <>
+    <section className="flex justify-between gap-8 ">
       <Form
         layout="vertical"
         form={form}
         name="dynamic_form_complex"
         // autoComplete="off"
         className="flex  justify-center">
-        <Card title="Add Task" bordered={false} style={{ width: 700 }}>
+        <Card
+          title="Add Task"
+          bordered={false}
+          style={{ width: 400, height: 850 }}>
           <div>
             {/* task title */}
             <Form.Item
@@ -119,7 +123,7 @@ const TasksForm = () => {
                 message: "Please, provide your instruction!",
               },
             ]}>
-            <TextArea rows={8} placeholder="Your text here..." />
+            <TextArea rows={5} placeholder="Your text here..." />
           </Form.Item>
 
           {/* case to work on */}
@@ -152,7 +156,7 @@ const TasksForm = () => {
               },
             ]}>
             <Select
-              // mode="multiple"
+              mode="multiple"
               noStyle
               notFoundContent={data ? <Spin size="small" /> : null}
               placeholder="Select a staff"
@@ -199,8 +203,10 @@ const TasksForm = () => {
           </Form.Item>
         </Card>
       </Form>
-    </>
+
+      <TaskList />
+    </section>
   );
 };
 
-export default TasksForm;
+export default CreateTaskForm;

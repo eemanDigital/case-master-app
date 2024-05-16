@@ -17,14 +17,14 @@ import SignUp from "./pages/SignUp.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import Profile from "./pages/Profile.jsx";
-import TasksForm from "./pages/CreateTaskForm.jsx";
+import CreateTaskForm from "./pages/CreateTaskForm.jsx";
 import CaseReports from "./pages/CaseReports.jsx";
 import CreateCaseForm from "./pages/CreateCaseForm.jsx";
 import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
 import PhotoContextProvider from "./context/photoContext.jsx";
-
+import CaseDocument from "./pages/CaseDocument.jsx";
 import EditUserProfile from "./pages/EditUserProfile.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
 import UserTask from "./components/UserTask.jsx";
@@ -62,7 +62,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="cases" element={<Cases open={isOpen} />} />
           <Route path="cases/:id/update" element={<UpdateCase />} />
-          {/* <Route path="cases/:id/document" element={<CaseDocument />} /> */}
+          <Route path="cases/:id/document" element={<CaseDocument />} />
           {/* <Route path="create-case" element={<CreateCase />} /> */}
           <Route path="cases/add-case" element={<CreateCaseForm />} />
           <Route path="cases/:id/casedetails" element={<CaseDetails />} />
@@ -73,13 +73,13 @@ function App() {
             path="case-reports/add-report"
             element={<CreateCaseReportForm />}
           />
-          {/* <Route path="tasks" element={<Task />} /> */}
-          <Route path="tasks/add-task" element={<TasksForm />} />
           <Route path="billing" element={<Billing />} />
           <Route path="documents" element={<Document />} />
           <Route path="profile" element={<Profile />} />
           <Route path="profile/edit" element={<EditUserProfile />} />
           {/* <Route path="profile/edit-image" element={<UpdateProfilePicture />} /> */}
+          <Route path="tasks" element={<CreateTaskForm />} />
+
           <Route path="tasks/:id" element={<UserTask />} />
 
           {/* errorElement= {<ErrorPage />} */}

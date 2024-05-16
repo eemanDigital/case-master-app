@@ -1,19 +1,14 @@
 import { useState } from "react";
-// import Select from "../components/Select";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { download } from "../utils/download";
-// import Axios from "axios";
-// import fileDownload from "js-file-download";
-
 import Input from "../components/Inputs";
 import Button from "../components/Button";
-// import { Select } from "antd";
+import DocumentsList from "../components/DocumentsList";
 
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { formatDate } from "../utils/formatDate";
+
 // import { useDataFetch } from "../hooks/useDataFetch";
 
-const baseURL = import.meta.env.VITE_BASE_URL;
+// const baseURL = import.meta.env.VITE_BASE_URL;
 const Documents = () => {
   const [formData, setFormData] = useState({
     fileName: "",
@@ -26,7 +21,6 @@ const Documents = () => {
 
   // fetched cases and user data
   const { cases } = useDataGetterHook();
-  const { files } = useDataGetterHook();
 
   // console.log("FILES", files.data);
   //  map over cases value
@@ -70,15 +64,7 @@ const Documents = () => {
 
     try {
       // Call fetchData with endpoint, method, payload, and any additional arguments
-
       await dataFetcher("documents", "post", formData, fileHeaders);
-
-      // await fetchFile(
-      //   `uploads/update/${fileId}`,
-      //   "PATCH",
-      //   fileValue,
-      //   fileHeaders
-      // );
     } catch (err) {
       console.log(err);
     }
@@ -88,63 +74,6 @@ const Documents = () => {
     setClick(() => !click);
   }
 
-  // document download
-  // const downloadDoc = async (id) => {
-  //   try {
-  //     const response = await axios.get(`${baseURL}/documents/${id}`, {
-  //       responseType: "blob",
-  //     });
-  //     console.log(response);
-  //     // configure blob
-  //     const blob = new Blob([response.data.data], { type: response.data.type });
-  //     const link = document.getElementById("a");
-  //     link.href = window.URL.createObjectURL(blob);
-  //     link.download = "file.pdf";
-  //     link.click();
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
-
-  // const downloadDoc = async (id) => {
-  //   try {
-  //     const response = await axios.get(`${baseURL}/documents/download/${id}`, {
-  //       responseType: "blob",
-  //     });
-  //     FileDownload(response.data, "name.pdf");
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // };
-
-  // function download(id, filename) {
-  //   try {
-  //     Axios.get(`${baseURL}/documents/download/${id}`, {
-  //       responseType: "blob",
-  //     }).then((res) => {
-  //       console.log("RES", res.data);
-  //       fileDownload(res.data, filename);
-  //     });
-  //   } catch (err) {
-  //     console.log(err);
-  //   }
-  // }
-
-  // map over documents data
-  const fileDoc =
-    files.data &&
-    files.data.map((doc) => {
-      return (
-        <div key={doc._id} className="pt-4">
-          <h3>{doc.fileName}</h3>
-          <p>{doc.file}</p>
-          <p>Uploaded on: {formatDate(doc.date)}</p>
-          <button onClick={() => download(doc._id, doc.fileName)}>
-            download file
-          </button>
-        </div>
-      );
-    });
   return (
     <>
       <form
@@ -182,7 +111,9 @@ const Documents = () => {
         </div>
       </form>
 
-      {fileDoc}
+      <div className="flex">
+        <DocumentsList />
+      </div>
     </>
   );
 };
