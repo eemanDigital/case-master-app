@@ -3,26 +3,6 @@ const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 // const multer = require("multer");
 
-// exports.createCase = catchAsync(async (req, res, next) => {
-//   const { file, body } = req;
-//   if (!file || !body) {
-//     return next(new AppError("Please provide a file and request body", 400));
-//   }
-//   const { filename } = file;
-//   const { fileName, ...rest } = body;
-//   if (!fileName) {
-//     return next(
-//       new AppError("Please provide a fileName in the request body", 400)
-//     );
-//   }
-//   const document = {
-//     name: fileName,
-//     file: filename,
-//   };
-//   const singleCase = await Case.create({ documents: [document], ...rest });
-//   res.status(201).json({ data: singleCase });
-// });
-
 exports.createCase = catchAsync(async (req, res, next) => {
   const singleCase = await Case.create(req.body);
   res.status(201).json({
@@ -53,18 +33,6 @@ exports.getCase = catchAsync(async (req, res, next) => {
     })
     .populate({ path: "documents" });
 
-  // res.status(200).json({
-  //   data,
-  // });
-  //   .populate({
-  //     path: "task",
-  //     select: "description status dateAssigned dueDate taskPriority",
-  //   })
-  //   .populate("updates");
-  // res.status(200).json({
-  //   data,
-  // });
-  // console.log(id);
   if (!data) {
     return next(new AppError("No case found with that Id", 404));
   }
@@ -73,37 +41,6 @@ exports.getCase = catchAsync(async (req, res, next) => {
   });
 });
 
-// exports.updateCase = catchAsync(async (req, res, next) => {
-//   const { file, body } = req;
-//   if (!file || !body) {
-//     return next(new AppError("Please provide a file and request body", 400));
-//   }
-//   const { filename } = file;
-//   const { docName, ...rest } = body;
-//   if (!docName) {
-//     return next(
-//       new AppError("Please provide a fileName in the request body", 400)
-//     );
-//   }
-//   const document = {
-//     name: docName,
-//     file: filename,
-//   };
-
-//   const doc = await Case.findByIdAndUpdate(req.params.caseId, req.body, {
-//     new: true,
-//     runValidators: true,
-//   });
-
-//   if (!doc) {
-//     return next(new AppError(`No Case Found with that ID`, 404));
-//   }
-//   // console.log(updatedCase);
-//   res.status(200).json({
-//     message: "case successfully updated",
-//     doc,
-//   });
-// });
 exports.updateCase = catchAsync(async (req, res, next) => {
   const { body, file } = req;
   const { documents, rest } = body;

@@ -1,4 +1,18 @@
 const mongoose = require("mongoose");
+const User = require("./userModel");
+
+const reminderSchema = new mongoose.Schema({
+  message: {
+    type: String,
+    maxLength: [50, "Message should not be more than 50 characters"],
+    require: [true, "Write message, please"],
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now,
+  },
+  sender: String,
+});
 
 const taskSchema = new mongoose.Schema(
   {
@@ -41,6 +55,8 @@ const taskSchema = new mongoose.Schema(
     },
 
     document: [String],
+    reminder: reminderSchema,
+    // embedding sender
 
     // reminder: {
     //   date: {
@@ -68,6 +84,21 @@ taskSchema.pre(/^find/, function (next) {
   });
   next();
 });
+
+// implement embedding sender
+taskSchema.pre("save", async function (next) {
+  const userSender = await User.findById(id);
+  this.sender = userSender;
+  next;
+});
+
+// virtual populate notification or reminder
+// taskSchema.virtual("notice", {
+//   ref: "Notice",
+//   foreignField: "relatedTask",
+//   localField: "_id",
+// });
+
 const Task = mongoose.model("Task", taskSchema);
 
 module.exports = Task;

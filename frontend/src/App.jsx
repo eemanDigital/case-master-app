@@ -28,6 +28,7 @@ import CaseDocument from "./pages/CaseDocument.jsx";
 import EditUserProfile from "./pages/EditUserProfile.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
 import UserTask from "./components/UserTask.jsx";
+import TaskReminder from "./components/TaskReminder.jsx";
 import CaseDetails from "./pages/CaseDetails.jsx";
 import Error from "./components/Error.jsx";
 import { Result, Button } from "antd";
@@ -79,6 +80,7 @@ function App() {
           <Route path="profile/edit" element={<EditUserProfile />} />
           {/* <Route path="profile/edit-image" element={<UpdateProfilePicture />} /> */}
           <Route path="tasks" element={<CreateTaskForm />} />
+          <Route path="tasks/reminder/:id" element={<TaskReminder />} />
 
           <Route path="tasks/:id" element={<UserTask />} />
 

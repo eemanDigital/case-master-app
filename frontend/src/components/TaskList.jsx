@@ -1,5 +1,8 @@
+import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
+import Button from "./Button";
+import TaskReminder from "./TaskReminder";
 
 const TaskList = () => {
   const { tasks, loadingError, errorTasks } = useDataGetterHook();
@@ -32,7 +35,7 @@ const TaskList = () => {
               const { firstParty, secondParty } = taskCase;
               const firstName = firstParty?.name[0]?.name;
               const secondName = secondParty?.name[0]?.name;
-              console.log(firstName);
+              // console.log(firstName);
               return (
                 <div key={t._id}>
                   <h3 className="text-1xl  text-red-600">
@@ -53,7 +56,14 @@ const TaskList = () => {
             {t.taskPriority}
           </p>
           <p className="text-green-600 ">Due Date: {formatDate(t.dueDate)}</p>
+          {/* <div className="bg-red-700  text-white inline p-2">
+            <p>
+              {t.reminder?.message ? t.reminder?.message : <h2>No Reminder</h2>}
+            </p>
+          </div> */}
         </div>
+        {/* <Link to={`reminder/${t._id}`}>Set Reminder</Link> */}
+        <TaskReminder id={t._id} />
       </div>
     );
   });
