@@ -31,7 +31,7 @@ import {
   casePriorityOptions,
   modesOptions,
 } from "../data/options";
-import CaseDocument from "./CaseDocument";
+// import CaseDocument from "./CaseDocument";
 
 const CreateCaseForm = () => {
   // destructure textarea from input

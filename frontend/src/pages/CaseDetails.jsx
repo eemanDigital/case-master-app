@@ -256,42 +256,6 @@ const CaseDetails = () => {
           <strong>General Comment: </strong> {data?.data?.generalComment}
         </p>
       </div>
-
-      {/* attached documents */}
-      {data?.data?.documents.length > 0 ? (
-        <div>
-          <h1 className="text-2xl mt-3">Attached Documents</h1>
-          {data?.data?.documents.map((doc) => {
-            console.log("DOC", data?.data);
-            return (
-              <div key={doc._id} className="pt-4">
-                <h3 className=" font-bold">{doc.fileName}</h3>
-                {/* <FaDeleteLeft onClick={() => deleteFile(doc._id)} /> */}
-
-                <div className="inline-flex gap-1 items-center bg-gray-300 px-5 py-2 rounded-md  cursor-pointer hover:bg-gray-200">
-                  <FaFileAlt className="text-4xl text-gray-600" />
-
-                  <FaDownload
-                    onClick={() => download(doc._id, doc.fileName)}
-                    className="text-red-800 text-1xl"
-                  />
-                </div>
-                <small className="block">
-                  Uploaded on: {formatDate(doc.date)}
-                </small>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div>
-          <h1 className="text-red-600 mt-4 font-bold">No attached document</h1>
-          <p>Wish to upload attach document? </p>
-          <Button>
-            <Link to="/dashboard/documents">Click</Link>
-          </Button>
-        </div>
-      )}
     </section>
   );
 };

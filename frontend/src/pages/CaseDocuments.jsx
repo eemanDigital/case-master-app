@@ -9,7 +9,7 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 // import { useDataFetch } from "../hooks/useDataFetch";
 
 // const baseURL = import.meta.env.VITE_BASE_URL;
-const Documents = () => {
+const CaseDocuments = () => {
   const [formData, setFormData] = useState({
     fileName: "",
     file: "",
@@ -118,4 +118,4 @@ const Documents = () => {
   );
 };
 
-export default Documents;
+export default CaseDocuments;

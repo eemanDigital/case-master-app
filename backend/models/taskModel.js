@@ -54,7 +54,7 @@ const taskSchema = new mongoose.Schema(
       default: "urgent", // Example default value
     },
 
-    document: [String],
+    // file: String,
     reminder: reminderSchema,
     // embedding sender
 
@@ -86,15 +86,15 @@ taskSchema.pre(/^find/, function (next) {
 });
 
 // implement embedding sender
-taskSchema.pre("save", async function (next) {
-  const userSender = await User.findById(id);
-  this.sender = userSender;
-  next;
-});
+// taskSchema.pre("save", async function (next) {
+//   const userSender = await User.findById(id);
+//   this.sender = userSender;
+//   next;
+// });
 
 // virtual populate for file attachment
 taskSchema.virtual("documents", {
-  ref: "FILE",
+  ref: "File",
   foreignField: "task",
   localField: "_id",
 });

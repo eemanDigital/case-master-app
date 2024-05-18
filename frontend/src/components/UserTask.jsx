@@ -1,8 +1,12 @@
 import { useAuthContext } from "../hooks/useAuthContext";
 import { Link, useParams } from "react-router-dom";
+import TaskDocView from "./TaskDocView";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import { useEffect } from "react";
+// import { FaDownload, FaFileAlt } from "react-icons/fa";
+// import { download } from "../utils/download";
+// import Button from "./Button";
 
 const UserTask = () => {
   const { user } = useAuthContext();
@@ -10,7 +14,7 @@ const UserTask = () => {
   //   const { id } = useParams();
   const { data, loading, error, dataFetcher } = useDataFetch();
 
-  console.log(data?.data);
+  // console.log("TASKDATA", data?.data.task.length);
 
   const userTask = data?.data?.task?.map((t) => {
     return (
@@ -46,11 +50,8 @@ const UserTask = () => {
           <p className="text-green-600 font-bold">
             Due Date: {formatDate(t.dueDate)}
           </p>
-
-          {/* 
-          <Link>Get Detail</Link> */}
-          <p></p>
         </div>
+        <TaskDocView taskId={t._id} />
       </div>
     );
   });

@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
-import Button from "./Button";
+// import Button from "./Button";
 import TaskReminder from "./TaskReminder";
+import Button from "./Button";
 
 const TaskList = () => {
   const { tasks, loadingError, errorTasks } = useDataGetterHook();
@@ -69,6 +70,9 @@ const TaskList = () => {
   });
   return (
     <div>
+      <Link to="upload" className="text-right">
+        <Button>Attach Document to Task</Button>{" "}
+      </Link>
       <h1 className="text-3xl font-bold text-gray-700 mb-7">Assigned Tasks</h1>
       {taskList}
     </div>

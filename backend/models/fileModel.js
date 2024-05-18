@@ -43,4 +43,12 @@ fileSchema.pre("/^find", function (next) {
   next();
 });
 
+// fileSchema.pre("/^find", function (next) {
+//   this.populate({
+//     path: "task",
+//     select: "title",
+//   });
+//   next();
+// });
+
 module.exports = File;

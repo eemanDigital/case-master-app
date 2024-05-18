@@ -24,7 +24,7 @@ import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
 import PhotoContextProvider from "./context/photoContext.jsx";
-import CaseDocument from "./pages/CaseDocument.jsx";
+// import CaseDocument from "./pages/CaseDocument.jsx";
 import EditUserProfile from "./pages/EditUserProfile.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
 import UserTask from "./components/UserTask.jsx";
@@ -33,7 +33,8 @@ import CaseDetails from "./pages/CaseDetails.jsx";
 import Error from "./components/Error.jsx";
 import { Result, Button } from "antd";
 import { Link } from "react-router-dom";
-import Document from "./pages/Documents.jsx";
+import CaseDocument from "./pages/CaseDocuments.jsx";
+import TaskAttachment from "./pages/TaskAttachment.jsx";
 // import CaseDocument from "./pages/CaseDocument.jsx";
 
 // import UpdateProfilePicture from "./components/UpdateProfilePicture.jsx";
@@ -75,12 +76,13 @@ function App() {
             element={<CreateCaseReportForm />}
           />
           <Route path="billing" element={<Billing />} />
-          <Route path="documents" element={<Document />} />
+          <Route path="documents" element={<CaseDocument />} />
           <Route path="profile" element={<Profile />} />
           <Route path="profile/edit" element={<EditUserProfile />} />
           {/* <Route path="profile/edit-image" element={<UpdateProfilePicture />} /> */}
           <Route path="tasks" element={<CreateTaskForm />} />
           <Route path="tasks/reminder/:id" element={<TaskReminder />} />
+          <Route path="tasks/upload" element={<TaskAttachment />} />
 
           <Route path="tasks/:id" element={<UserTask />} />
 

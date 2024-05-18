@@ -64,9 +64,7 @@ const Dashboard = () => {
       ))
     ) : (
       // Display message if no tasks
-      <h2 className="text text-blue-200">
-        You currently do not have any tasks
-      </h2>
+      <h2 className="">You currently do not have any tasks</h2>
     )
   ) : (
     <div className="mt-5 ">
@@ -80,7 +78,7 @@ const Dashboard = () => {
     <div className="flex justify-between">
       <h1 className="text-4xl">Welcome, {user?.data?.user?.firstName}</h1>
 
-      <div className=" shadow-md p-3 rounded-md bg-gray-200">
+      <div className=" shadow-md p-3 rounded-md bg-gray-200 w-[400px]">
         <h3 className="text-2xl  font-semibold">Your Tasks</h3>
         {userTask}
       </div>
