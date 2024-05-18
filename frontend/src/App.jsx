@@ -63,7 +63,7 @@ function App() {
           <Route index element={<Dashboard />} />
           <Route path="cases" element={<Cases open={isOpen} />} />
           <Route path="cases/:id/update" element={<UpdateCase />} />
-          <Route path="cases/:id/document" element={<CaseDocument />} />
+          {/* <Route path="cases/:id/document" element={<CaseDocument />} /> */}
           {/* <Route path="create-case" element={<CreateCase />} /> */}
           <Route path="cases/add-case" element={<CreateCaseForm />} />
           <Route path="cases/:id/casedetails" element={<CaseDetails />} />

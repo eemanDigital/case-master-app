@@ -101,7 +101,7 @@ exports.getTasks = catchAsync(async (req, res, next) => {
 });
 
 exports.getTask = catchAsync(async (req, res, next) => {
-  const task = await Task.findById(req.params.taskId);
+  const task = await Task.findById(req.params.taskId).populate("documents");
   // .populate({
   //   path: "notice",
   //   select: "-recipient -relatedTask",

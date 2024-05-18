@@ -36,12 +36,12 @@ const Dashboard = () => {
                 <>
                   <div className="flex justify-between gap-3 w-[320px]">
                     <span>
-                      <MdNotificationsActive className="text-3xl text-white" />{" "}
+                      <MdNotificationsActive className="text-2xl text-white" />{" "}
                       Reminder:{" "}
                     </span>
                     <span>
                       {" "}
-                      <IoMdTime className="text-3xl text-white" />{" "}
+                      <IoMdTime className="text-2xl text-white" />{" "}
                       {moment(t.reminder?.timestamp).startOf().fromNow()}
                     </span>
                   </div>
@@ -52,8 +52,10 @@ const Dashboard = () => {
               )}
             </small>
           </div>
-          <div>
-            <small className="block">{t.title}</small>
+          <div className="mt-1">
+            {/* TASK */}
+            <h4 className="font-bold ">Task Title</h4>
+            <small className="block m-1">{t.title}</small>
             <Link to={`tasks/${t._id}`}>
               <Button buttonStyle={btnStyle}>Get Detail</Button>
             </Link>

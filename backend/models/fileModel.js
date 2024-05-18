@@ -24,6 +24,13 @@ const fileSchema = mongoose.Schema({
       ref: "Case",
     },
   ],
+
+  task: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: "Task",
+    },
+  ],
 });
 
 const File = mongoose.model("File", fileSchema);

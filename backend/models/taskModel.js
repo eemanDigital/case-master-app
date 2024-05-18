@@ -92,6 +92,12 @@ taskSchema.pre("save", async function (next) {
   next;
 });
 
+// virtual populate for file attachment
+taskSchema.virtual("documents", {
+  ref: "FILE",
+  foreignField: "task",
+  localField: "_id",
+});
 // virtual populate notification or reminder
 // taskSchema.virtual("notice", {
 //   ref: "Notice",
