@@ -5,6 +5,8 @@ const {
   getTask,
   updateTask,
   downloadFile,
+  createTaskResponse,
+  deleteTaskResponse,
 } = require("../controllers/taskController");
 const { fileUpload } = require("../utils/taskDocHandler");
 
@@ -16,5 +18,8 @@ taskRouter.get("/:taskId", getTask);
 taskRouter.put("/:id", fileUpload, updateTask);
 taskRouter.put("/:id", updateTask);
 taskRouter.post("/", createTask);
+// sub-doc route for task response
+taskRouter.post("/:taskId/response", createTaskResponse);
+taskRouter.delete("/:taskId/:responseId/response", deleteTaskResponse);
 
 module.exports = taskRouter;

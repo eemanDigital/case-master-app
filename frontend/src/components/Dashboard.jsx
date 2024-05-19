@@ -24,6 +24,7 @@ const Dashboard = () => {
 
   const btnStyle = "bg-gray-700 p-2 text-gray-200 text-[10px] rounded-md";
 
+  // MAPPING TASK DATA
   const userTask = data?.data?.task ? (
     data?.data?.task.length > 0 ? ( // Check if task array exists and has elements
       data?.data?.task.map((t) => (
@@ -42,6 +43,7 @@ const Dashboard = () => {
                     <span>
                       {" "}
                       <IoMdTime className="text-2xl text-white" />{" "}
+                      {/* formatted time */}
                       {moment(t.reminder?.timestamp).startOf().fromNow()}
                     </span>
                   </div>
@@ -53,7 +55,7 @@ const Dashboard = () => {
             </small>
           </div>
           <div className="mt-1">
-            {/* TASK */}
+            {/* TASK RENDERING */}
             <h4 className="font-bold ">Task Title</h4>
             <small className="block m-1">{t.title}</small>
             <Link to={`tasks/${t._id}`}>

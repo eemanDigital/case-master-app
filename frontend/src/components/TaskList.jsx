@@ -46,7 +46,7 @@ const TaskList = () => {
               );
             })}
           <p>
-            <strong>Assigned Date: </strong> {formatDate(t.dateAssigned)}
+            {/* <strong>Assigned Date: </strong> {formatDate(t?.dateAssigned)} */}
           </p>
           <p>
             {" "}
@@ -56,7 +56,9 @@ const TaskList = () => {
             <strong>Task Priority: </strong>
             {t.taskPriority}
           </p>
-          <p className="text-green-600 ">Due Date: {formatDate(t.dueDate)}</p>
+          <p className="text-green-600 ">
+            Due Date: {t.dueDate && formatDate(t.dueDate)}
+          </p>
           {/* <div className="bg-red-700  text-white inline p-2">
             <p>
               {t.reminder?.message ? t.reminder?.message : <h2>No Reminder</h2>}

@@ -8,7 +8,7 @@ export function download(id, filename) {
     Axios.get(`${baseURL}/documents/download/${id}`, {
       responseType: "blob",
     }).then((res) => {
-      console.log("RES", res.data);
+      // console.log("RES", res.data);
       fileDownload(res.data, filename);
     });
   } catch (err) {

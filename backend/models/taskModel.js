@@ -14,6 +14,16 @@ const reminderSchema = new mongoose.Schema({
   sender: String,
 });
 
+// taskResponse sub-doc
+const taskResponseSchema = new mongoose.Schema({
+  completed: Boolean,
+  comment: String,
+  timestamp: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 const taskSchema = new mongoose.Schema(
   {
     title: {
@@ -34,10 +44,10 @@ const taskSchema = new mongoose.Schema(
         required: [true, "A task must be assigned to a staff"],
       },
     ],
-    dateAssigned: {
-      type: Date,
-      default: Date.now,
-    },
+    // dateAssigned: {
+    //   type: Date,
+    //   default: Date.now,
+    // },
     dueDate: {
       type: Date,
       required: [true, "A task must have a due date"],
@@ -46,17 +56,19 @@ const taskSchema = new mongoose.Schema(
     instruction: {
       type: String,
       trim: true,
+      required: [true, "A task must have an instruction"],
     },
     taskPriority: {
       type: String,
       trim: true,
       enum: ["urgent", "high", "medium", "low"],
-      default: "urgent", // Example default value
+      default: "high", // Example default value
     },
 
     // file: String,
     reminder: reminderSchema,
-    // embedding sender
+
+    taskResponse: [taskResponseSchema],
 
     // reminder: {
     //   date: {

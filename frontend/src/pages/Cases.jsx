@@ -65,7 +65,7 @@ const Cases = () => {
           <h1>No Data Available</h1>
         )}
       </h1>
-      <div className="flex flex-wrap  justify-between gap-3">
+      <div className="flex flex-wrap  justify-between gap-2">
         {!errorCases && casesData}
       </div>
       <div className="flex">{errorCases}</div>

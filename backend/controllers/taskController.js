@@ -53,6 +53,7 @@
 // });
 
 const Task = require("../models/taskModel");
+
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 
@@ -124,9 +125,9 @@ exports.createTask = catchAsync(async (req, res, next) => {
 });
 
 exports.getTasks = catchAsync(async (req, res, next) => {
-  const tasks = await Task.find()
-    .populate("assignedTo")
-    .populate("caseToWorkOn");
+  const tasks = await Task.find();
+  // .populate("assignedTo")
+  // .populate("caseToWorkOn");
 
   res.status(200).json({
     results: tasks.length,
@@ -174,4 +175,58 @@ exports.updateTask = catchAsync(async (req, res, next) => {
     status: "success",
     data: updatedTask,
   });
+});
+
+// TASK RESPONSE
+// exports.createTaskResponse = catchAsync(async (req, res, next) => {
+//   // get parent id
+//   const id = req.params.taskId;
+//   const newResponse = req.body;
+
+//   // Find the parent task
+//   const parentTask = await Task.findById(id);
+
+//   if (!parentTask) {
+//     return next(new AppError("No parent task for this response", 404));
+//   } else {
+//     // Push taskResponse to parent data (if parent is found)
+//     parentTask.taskResponse.push(newResponse);
+//     await parentTask.save(); // Save the parent task document
+//     res.status(201).json(parentTask);
+//   }
+// });
+exports.createTaskResponse = catchAsync(async (req, res, next) => {
+  // get parent id
+  const id = req.params.taskId;
+  const response = req.body;
+  console.log("RES =>", response);
+
+  // Find the parent task
+  const parentTask = await Task.findById(id);
+
+  if (!parentTask) {
+    return next(new AppError("No parent task for this response", 404));
+  } else {
+    // Push taskResponse to parent data (if parent is found)
+    parentTask.taskResponse.push(response);
+    await parentTask.save(); // Save the parent task document
+    // console.log("PARENT", parentTask);
+    res.status(201).json(parentTask);
+  }
+});
+
+exports.deleteTaskResponse = catchAsync(async (req, res, next) => {
+  const { taskId, responseId } = req.params; //parentTask id
+
+  const parentTask = await Task.findById(taskId);
+  // const taskResponse = await Task.task.findById(responseId);
+
+  if (!parentTask) {
+    next(new AppError("task/response does not response"));
+  }
+
+  parentTask.taskResponse.id(responseId).remove();
+  await parentTask.save();
+
+  res.status(204).json({ message: "success" });
 });

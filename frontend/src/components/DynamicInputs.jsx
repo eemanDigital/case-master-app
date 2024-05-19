@@ -131,6 +131,7 @@ export const SelectInputs = ({
   fieldName,
   label,
   initialValue,
+  defaultValue,
   options,
   mode,
 }) => {
@@ -141,6 +142,7 @@ export const SelectInputs = ({
       <Form.Item
         name={fieldName}
         label={label}
+        defaultValue={defaultValue}
         // initialValue={formData?.modeOfCommencement}>
         initialValue={initialValue}>
         <Select

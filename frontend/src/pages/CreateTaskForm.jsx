@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { taskPriorityOptions } from "./../data/options";
 import {
@@ -22,16 +22,7 @@ const CreateTaskForm = () => {
   const { TextArea } = Input;
 
   const [form] = Form.useForm();
-  const [formData, setFormData] = useState({
-    title: "",
-    instruction: "",
-    caseToWorkOn: "",
-    assignedTo: [],
-    dateAssigned: "",
-    dueDate: "",
-    taskPriority: "",
-    document: null,
-  });
+  const [formData, setFormData] = useState({});
   // destructor authenticate from useAuth
   const { dataFetcher, data } = useDataFetch();
   const { cases, users } = useDataGetterHook();
@@ -60,7 +51,7 @@ const CreateTaskForm = () => {
       })
     : [];
 
-  console.log(users);
+  // console.log(users);
 
   // form submit functionalities
   const handleSubmission = useCallback(
@@ -169,9 +160,9 @@ const CreateTaskForm = () => {
           </Form.Item>
 
           {/* date assigned */}
-          <Form.Item name="dateAssigned" label="Assigned Date">
+          {/* <Form.Item name="dateAssigned" label="Assigned Date">
             <DatePicker />
-          </Form.Item>
+          </Form.Item> */}
 
           {/* due date */}
           <Form.Item
@@ -190,6 +181,7 @@ const CreateTaskForm = () => {
           {/* task priority */}
 
           <SelectInputs
+            defaultValue="high"
             fieldName="taskPriority"
             label="Task Priority"
             initialValue={formData?.taskPriority}
