@@ -4,9 +4,15 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import { useEffect } from "react";
 import Button from "./Button";
 import { Spin } from "antd";
-import { MdNotificationsActive, MdNotificationsOff } from "react-icons/md";
+import {
+  MdDone,
+  MdNotificationsActive,
+  MdNotificationsOff,
+} from "react-icons/md";
 import { IoMdTime } from "react-icons/io";
 import moment from "moment"; //time formatter
+import TaskResponse from "./TaskResponse";
+import TaskResponseForm from "./TaskResponseForm";
 
 const Dashboard = () => {
   const { user } = useAuthContext();
@@ -61,6 +67,9 @@ const Dashboard = () => {
             <Link to={`tasks/${t._id}`}>
               <Button buttonStyle={btnStyle}>Get Detail</Button>
             </Link>
+
+            {/* TASK RESPONSE */}
+            <TaskResponse task={t} />
           </div>
         </div>
       ))
@@ -81,9 +90,14 @@ const Dashboard = () => {
       <h1 className="text-4xl">Welcome, {user?.data?.user?.firstName}</h1>
 
       <div className=" shadow-md p-3 rounded-md bg-gray-200 w-[400px]">
-        <h3 className="text-2xl  font-semibold">Your Tasks</h3>
+        <div className="flex justify-between items-center">
+          <h3 className="text-2xl  font-semibold">Your Tasks</h3>
+          <TaskResponseForm />
+        </div>
         {userTask}
       </div>
+
+      {/* <TaskResponse /> */}
     </div>
   );
 };

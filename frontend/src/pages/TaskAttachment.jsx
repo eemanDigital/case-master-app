@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import Input from "../components/Inputs";
 import Button from "../components/Button";
-import DocumentsList from "../components/DocumentsList";
 
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 

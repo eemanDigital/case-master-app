@@ -17,7 +17,9 @@ const reminderSchema = new mongoose.Schema({
 // taskResponse sub-doc
 const taskResponseSchema = new mongoose.Schema({
   completed: Boolean,
+  file: String,
   comment: String,
+
   timestamp: {
     type: Date,
     default: Date.now,
@@ -69,18 +71,6 @@ const taskSchema = new mongoose.Schema(
     reminder: reminderSchema,
 
     taskResponse: [taskResponseSchema],
-
-    // reminder: {
-    //   date: {
-    //     type: Date,
-    //     default: Date.now,
-    //   },
-    //   text: {
-    //     type: String,
-    //     trim: true,
-    //     required: [true, "Provide a reminder message "],
-    //   },
-    // },
   },
 
   {
