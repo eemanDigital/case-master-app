@@ -14,7 +14,7 @@ const {
   createTaskResponse,
   deleteTaskResponse,
   getTaskResponse,
-  uploadTaskResponseFile,
+  taskResponseFileUpload,
 } = require("../controllers/taskResponseController");
 
 const taskRouter = express.Router();
@@ -29,7 +29,7 @@ taskRouter.post("/", createTask);
 // sub-doc route for task response
 taskRouter.post(
   "/:taskId/response",
-  uploadTaskResponseFile.single("file"),
+  taskResponseFileUpload,
   createTaskResponse
 );
 taskRouter.delete("/:taskId/response/:responseId", deleteTaskResponse);

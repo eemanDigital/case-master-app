@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const User = require("./userModel");
+// const User = require("./userModel");
 
 const reminderSchema = new mongoose.Schema({
   message: {
@@ -17,9 +17,8 @@ const reminderSchema = new mongoose.Schema({
 // taskResponse sub-doc
 const taskResponseSchema = new mongoose.Schema({
   completed: Boolean,
-  file: String,
+  doc: String,
   comment: String,
-
   timestamp: {
     type: Date,
     default: Date.now,

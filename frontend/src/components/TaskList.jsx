@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 // import Button from "./Button";
-import TaskReminder from "./TaskReminder";
+import TaskReminderForm from "./TaskReminderForm";
 import Button from "./Button";
 
 const TaskList = () => {
@@ -66,7 +66,7 @@ const TaskList = () => {
           </div> */}
         </div>
         {/* <Link to={`reminder/${t._id}`}>Set Reminder</Link> */}
-        <TaskReminder id={t._id} />
+        <TaskReminderForm id={t._id} />
       </div>
     );
   });

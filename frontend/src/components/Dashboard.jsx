@@ -19,6 +19,9 @@ const Dashboard = () => {
   const userId = user?.data?.user?._id;
   const { data, loading, error, dataFetcher } = useDataFetch();
 
+  const reminderAvailable = data?.data?.task.reminder.length > 1;
+  console.log("REM", reminderAvailable);
+
   console.log(data);
 
   useEffect(() => {
@@ -35,7 +38,8 @@ const Dashboard = () => {
     data?.data?.task.length > 0 ? ( // Check if task array exists and has elements
       data?.data?.task.map((t) => (
         <div key={t._id} className=" bg-gray-400 p-3 rounded-md mt-3">
-          {/* <h1 className="text-3xl">Your Tasks</h1> */}
+          <TaskResponseForm taskId={t._id} />
+
           <div className=" inline-flex  items-end bg-red-800  text-white rounded-md p-2 ">
             <small>
               {/* REMINDER */}
@@ -92,7 +96,6 @@ const Dashboard = () => {
       <div className=" shadow-md p-3 rounded-md bg-gray-200 w-[400px]">
         <div className="flex justify-between items-center">
           <h3 className="text-2xl  font-semibold">Your Tasks</h3>
-          <TaskResponseForm />
         </div>
         {userTask}
       </div>

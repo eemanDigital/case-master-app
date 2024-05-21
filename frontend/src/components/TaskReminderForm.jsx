@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useParams } from "react-router-dom";
-import { taskPriorityOptions } from "./../data/options";
+import { taskPriorityOptions } from "../data/options";
 import {
   Button,
   Input,
@@ -16,10 +16,10 @@ import {
   DatePicker,
 } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { SelectInputs } from "../components/DynamicInputs";
-import TaskList from "../components/TaskList";
+import { SelectInputs } from "./DynamicInputs";
+import TaskList from "./TaskList";
 
-const TaskReminder = ({ id }) => {
+const TaskReminderForm = ({ id }) => {
   //   const { id } = useParams();
   const [open, setOpen] = useState(false);
   //   const [confirmLoading, setConfirmLoading] = useState(false);
@@ -126,7 +126,7 @@ const TaskReminder = ({ id }) => {
     </>
   );
 };
-export default TaskReminder;
+export default TaskReminderForm;
 
 // const TaskReminder = () => {
 //   // destructure textarea from input
