@@ -72,7 +72,7 @@ const Navbar = () => {
 
           {!user ? (
             <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
-              <NavLink to="signup">Sign in</NavLink>
+              <NavLink to="/login">log in</NavLink>
             </li>
           ) : (
             <li className="btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block ">

@@ -13,16 +13,28 @@ import { IoMdTime } from "react-icons/io";
 import moment from "moment"; //time formatter
 import TaskResponse from "./TaskResponse";
 import TaskResponseForm from "./TaskResponseForm";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { GoLaw } from "react-icons/go";
+import { FaBriefcase, FaUser } from "react-icons/fa6";
+import { FaTasks } from "react-icons/fa";
 
 const Dashboard = () => {
   const { user } = useAuthContext();
   const userId = user?.data?.user?._id;
   const { data, loading, error, dataFetcher } = useDataFetch();
+  const { cases, users, tasks, reports } = useDataGetterHook();
 
-  const reminderAvailable = data?.data?.task.reminder.length > 1;
-  console.log("REM", reminderAvailable);
+  // // number of cases
+  // const numberOfCases = cases.results;
+  // const numberOfUsers = users.results;
+  // const numberOfTasks = tasks.results;
+  // const numberOfReports = reports.results;
+  // const reminderAvailable = data?.data?.task.map((t) => {
+  //   console.log(t);
+  // });
+  // console.log("REM", reminderAvailable);
 
-  console.log(data);
+  console.log(cases);
 
   useEffect(() => {
     if (userId) {
@@ -89,19 +101,43 @@ const Dashboard = () => {
     </div> // Display loading message while data is fetched
   );
 
+  const numberStyle = "text-5xl font-bold text-red-600";
   return (
-    <div className="flex justify-between">
-      <h1 className="text-4xl">Welcome, {user?.data?.user?.firstName}</h1>
+    <>
+      <Link to="add-user">
+        <Button>Add User</Button>
+      </Link>
+      <div className="flex justify-between">
+        <h1 className="text-4xl">Welcome, {user?.data?.user?.firstName}</h1>
 
-      <div className=" shadow-md p-3 rounded-md bg-gray-200 w-[400px]">
-        <div className="flex justify-between items-center">
-          <h3 className="text-2xl  font-semibold">Your Tasks</h3>
+        <div className=" shadow-md p-3 rounded-md bg-gray-200 w-[400px]">
+          <div className="flex justify-between items-center">
+            <h3 className="text-2xl  font-semibold">Your Tasks</h3>
+          </div>
+          {userTask}
         </div>
-        {userTask}
       </div>
-
-      {/* <TaskResponse /> */}
-    </div>
+      <div className="flex justify-between  gap-4 mt-5">
+        <div className="text-3xl ">
+          <FaBriefcase className="text-3xl text-blue-600" />
+          Number of Cases: <p className={numberStyle}> {cases.results}</p>
+        </div>
+        <div className="text-3xl ">
+          <FaUser className="text-3xl text-blue-600" />
+          Number of Staff: <p className={numberStyle}> {users.results}</p>
+        </div>
+        <div className="text-3xl ">
+          <GoLaw className="text-3xl text-blue-600" />
+          Number of lawyers:
+          <p className={numberStyle}> 6 </p>
+        </div>
+        <div className="text-3xl ">
+          <FaTasks className="text-3xl text-blue-600" />
+          Number of Assigned Tasks:{" "}
+          <p className={numberStyle}>{tasks.results}</p>
+        </div>
+      </div>
+    </>
   );
 };
 

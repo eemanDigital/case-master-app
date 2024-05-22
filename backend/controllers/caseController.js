@@ -11,7 +11,7 @@ exports.createCase = catchAsync(async (req, res, next) => {
 });
 
 exports.getCases = catchAsync(async (req, res, next) => {
-  const cases = await Case.find();
+  const cases = await Case.find().sort({ dateFiled: -1 });
   // .populate({
   //   path: "task",
   //   select: "description status dateAssigned dueDate taskPriority",

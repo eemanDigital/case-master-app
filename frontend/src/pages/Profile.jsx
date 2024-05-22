@@ -2,6 +2,7 @@ import Input from "../components/Inputs";
 import Button from "../components/Button";
 import { Link } from "react-router-dom";
 import avatar from "../assets/avatar.png";
+import femaleAvatar from "../assets/female-avatar.png";
 import { formatYear } from "../utils/formatDate";
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -33,6 +34,7 @@ const Profile = () => {
   // getting data from out custom hook
   const { loading, error, authenticate } = useAuth();
 
+  // console.log(user?.data?.user?.gender);
   function handleChange(e) {
     const inputText = e.target.value;
     const inputName = e.target.name;
@@ -141,15 +143,15 @@ const Profile = () => {
 
         <div className=" w-max-[300px]">
           <img
-            // use avatar as default image if user does not upload image
             src={
-              // user
               user?.data?.user?.photo
                 ? `http://localhost:3000/images/users/${user?.data?.user?.photo}`
-                : avatar
+                : user?.data?.user?.gender === "male"
+                ? avatar
+                : femaleAvatar
             }
             alt={`${user?.data?.firstName}'s profile image`}
-            className="object-cover object-right-top h-36 w-36  sm:h-48 sm:w-48   rounded-full border-4 border-slate-500"
+            className="object-cover object-right-top h-36 w-36 sm:h-48 sm:w-48 rounded-full border-4 border-slate-500"
           />
         </div>
       </div>

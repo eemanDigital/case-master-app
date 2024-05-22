@@ -24,6 +24,9 @@ const EditUserProfile = () => {
     "Client",
     "Other",
   ];
+  const roles = ["user", "admin", "secretary", "hr"];
+  const gender = ["male", "female"];
+
   const { data, loading, error, authenticate } = useAuth();
 
   const [click, setClick] = useState(false);
@@ -70,6 +73,9 @@ const EditUserProfile = () => {
   }, [user?.data.user]);
 
   // function to handle form submission
+
+  const isAdmin = user?.data.user.role === "admin";
+  // console.log(isAdmin);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -209,6 +215,25 @@ const EditUserProfile = () => {
             />
           </div>
 
+          <div className="w-[300px]">
+            <Select
+              label="gender"
+              options={gender}
+              value={inputValue.gender}
+              name="gender"
+              onChange={handleChange}
+            />
+          </div>
+          <div className="w-[300px]">
+            <Select
+              // disable={!isAdmin && disabled}
+              label="role"
+              options={roles}
+              value={inputValue.role}
+              name="role"
+              onChange={handleChange}
+            />
+          </div>
           {/* conditionally render select position field */}
           {getOtherFieldSelected ? (
             <div>

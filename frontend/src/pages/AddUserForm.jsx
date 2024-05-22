@@ -30,6 +30,10 @@ const SignUp = () => {
     "Client",
     "Other",
   ];
+
+  const roles = ["user", "admin", "secretary", "hr"];
+  const gender = ["male", "female"];
+
   const { data, loading, error, authenticate } = useAuth();
   const [click, setClick] = useState(false);
 
@@ -42,8 +46,10 @@ const SignUp = () => {
     email: "",
     password: "",
     passwordConfirm: "",
+    gender: "",
     address: "",
     bio: "",
+    role: "",
     position: "",
     phone: "",
     yearOfCall: "",
@@ -84,9 +90,11 @@ const SignUp = () => {
     setClick(() => !click);
   }
 
+  console.log(inputValue);
+
   return (
     <section className=" bg-gray-200 ">
-      <h1 className="text-5xl bold text-center p-5">Register</h1>
+      <h1 className="text-5xl bold text-center p-5">Add Staff</h1>
 
       <div className="flex flex-col md:flex-row  justify-center  ">
         <div className="flex flex-col  flex-none basis-2/5 text-center  items-center  rounded-md p-4 ">
@@ -237,6 +245,24 @@ const SignUp = () => {
                 onChange={handleChange}
               />
             </div>
+            <div className="w-[300px]">
+              <Select
+                label="gender"
+                options={gender}
+                value={inputValue.gender}
+                name="gender"
+                onChange={handleChange}
+              />
+            </div>
+            <div className="w-[300px]">
+              <Select
+                label="role"
+                options={roles}
+                value={inputValue.role}
+                name="role"
+                onChange={handleChange}
+              />
+            </div>
             {/* conditionally render select position field */}
             {getOtherFieldSelected && (
               <div>
@@ -312,7 +338,7 @@ const SignUp = () => {
               </span>
             </p>
 
-            <Button onClick={handleClick}>Sign Up</Button>
+            <Button onClick={handleClick}>Add User</Button>
           </div>
         </form>
       </div>

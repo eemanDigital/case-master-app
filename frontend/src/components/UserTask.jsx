@@ -36,9 +36,9 @@ const UserTask = () => {
                 </div>
               );
             })}
-          <p>
+          {/* <p>
             <strong>Assigned Date: </strong> {formatDate(t.dateAssigned)}
-          </p>
+          </p> */}
           <p>
             {" "}
             <strong>Instruction:</strong> {t.instruction}

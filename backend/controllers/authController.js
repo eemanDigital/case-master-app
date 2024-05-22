@@ -45,6 +45,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     photo: filename,
     address: req.body.address,
     role: req.body.role,
+    gender: req.body.gender,
     bio: req.body.bio,
     position: req.body.position,
     phone: req.body.phone,

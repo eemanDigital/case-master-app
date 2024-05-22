@@ -5,7 +5,6 @@ import { useDataFetch } from "../hooks/useDataFetch";
 
 const TaskResponse = ({ task }) => {
   const { dataFetcher } = useDataFetch();
-  console.log("TASK", task);
 
   const fileHeaders = {
     "Content-Type": "multipart/form-data",

@@ -52,7 +52,11 @@ const userSchema = new mongoose.Schema(
     },
 
     photo: String,
-
+    gender: {
+      type: String,
+      enum: ["male", "female"],
+      required: [true, "Please select your gender"],
+    },
     address: {
       type: String,
       trim: true,
@@ -62,7 +66,10 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       trim: true,
-      enum: ["user", "admin", "secretary"],
+      enum: {
+        values: ["user", "admin", "secretary", "hr"],
+        message: "Select a valid role.",
+      },
       default: "user",
     },
 
@@ -124,6 +131,7 @@ const userSchema = new mongoose.Schema(
           this.position
         );
       },
+      max: Date.now,
     },
 
     passwordChangedAt: {

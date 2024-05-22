@@ -59,6 +59,7 @@ exports.getUsers = catchAsync(async (req, res, next) => {
   // console.log(users);
 
   res.status(200).json({
+    results: users.length,
     data: users,
   });
 });
