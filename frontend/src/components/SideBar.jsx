@@ -3,6 +3,7 @@ import { RiCustomerService2Line } from "react-icons/ri";
 import avatar from "../assets/avatar.png";
 import { useLogout } from "../hooks/useLogout";
 import { useRemovePhoto } from "../hooks/useRemovePhoto";
+import femaleAvatar from "../assets/female-avatar.png";
 
 import { RxDashboard } from "react-icons/rx";
 import {
@@ -153,7 +154,9 @@ const SideBar = ({ isOpen, handleOpen }) => {
                 src={
                   user?.data?.user?.photo
                     ? `http://localhost:3000/images/users/${user?.data?.user?.photo}`
-                    : avatar
+                    : user?.data?.user?.gender === "male"
+                    ? avatar
+                    : femaleAvatar
                 }
                 alt={`${user?.data?.user.firstName}'s profile image`}
                 className="w-12 h-12  mt-6  object-cover object-right-top rounded-full"

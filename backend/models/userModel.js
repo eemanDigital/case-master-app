@@ -127,7 +127,7 @@ const userSchema = new mongoose.Schema(
       type: Date,
       // required: null,
       required: function () {
-        return !["Secretary", "Para-legal", "Other", "Client"].includes(
+        return ["Secretary", "Para-legal", "Other", "Client"].includes(
           this.position
         );
       },
