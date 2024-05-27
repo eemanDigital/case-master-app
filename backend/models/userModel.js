@@ -117,6 +117,7 @@ const userSchema = new mongoose.Schema(
     practiceArea: String,
     universityAttended: String,
     lawSchoolAttended: String,
+    annualLeaveEntitled: Number,
 
     // task: {
     //   type: mongoose.Schema.Types.ObjectId,

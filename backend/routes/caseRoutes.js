@@ -10,7 +10,9 @@ const {
 const { protect, restrictTo } = require("../controllers/authController");
 
 const caseRouter = express.Router();
+const app = express();
 
+app.use(protect);
 caseRouter.route("/").get(getCases).post(createCase);
 // .post(createCase);
 caseRouter

@@ -127,6 +127,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "bio",
     "phone",
     "position",
+    "annualLeaveEntitled",
     "yearOfCall",
     "otherPosition",
     "practiceArea",

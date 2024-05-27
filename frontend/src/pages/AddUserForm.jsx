@@ -51,6 +51,7 @@ const SignUp = () => {
     bio: "",
     role: "",
     position: "",
+    annualLeaveEntitled: "",
     phone: "",
     yearOfCall: "",
     otherPosition: "",
@@ -287,6 +288,17 @@ const SignUp = () => {
                 htmlFor="practice area"
                 value={inputValue.practiceArea}
                 name="practiceArea"
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <Input
+                type="number"
+                label="Leave Entitled"
+                placeholder="Enter leave entitled to"
+                htmlFor="annualLeaveEntitled"
+                value={inputValue.annualLeaveEntitled}
+                name="annualLeaveEntitled"
                 onChange={handleChange}
               />
             </div>

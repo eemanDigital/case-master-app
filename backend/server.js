@@ -12,6 +12,7 @@ const clientRouter = require("./routes/clientRoutes");
 const reportRouter = require("./routes/caseReportRoute");
 const fileRouter = require("./routes/fileRoutes");
 const leaveRouter = require("./routes/leaveRoutes");
+const leaveAppRouter = require("./routes/leaveAppRoutes");
 // const photoRouter = require("./routes/photoRoutes");
 const notificationRouter = require("./routes/notificationRoutes");
 const AppError = require("./utils/appError");
@@ -81,7 +82,8 @@ app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/clients", clientRouter);
 app.use("/api/v1/reports", reportRouter);
-app.use("/api/v1/leaves", leaveRouter);
+app.use("/api/v1/leave-res", leaveRouter);
+app.use("/api/v1/leave-apps", leaveAppRouter);
 app.use("/api/v1/notifications", notificationRouter);
 
 //handles non-existing route

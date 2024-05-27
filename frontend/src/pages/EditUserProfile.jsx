@@ -44,6 +44,8 @@ const EditUserProfile = () => {
     position: "",
     phone: "",
     yearOfCall: "",
+    annualLeaveEntitled: "",
+
     otherPosition: "",
     practiceArea: "",
     universityAttended: "",
@@ -231,6 +233,18 @@ const EditUserProfile = () => {
               options={roles}
               value={inputValue.role}
               name="role"
+              onChange={handleChange}
+            />
+          </div>
+
+          <div>
+            <Input
+              type="number"
+              label="Leave Entitled"
+              placeholder="Enter leave entitled to"
+              htmlFor="annualLeaveEntitled"
+              value={inputValue.annualLeaveEntitled}
+              name="annualLeaveEntitled"
               onChange={handleChange}
             />
           </div>

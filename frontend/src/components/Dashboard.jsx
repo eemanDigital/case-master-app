@@ -34,7 +34,7 @@ const Dashboard = () => {
   // });
   // console.log("REM", reminderAvailable);
 
-  console.log(cases);
+  console.log(user.annualLeaveEntitled);
 
   useEffect(() => {
     if (userId) {

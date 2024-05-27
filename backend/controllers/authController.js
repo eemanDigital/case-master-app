@@ -48,6 +48,7 @@ exports.signup = catchAsync(async (req, res, next) => {
     gender: req.body.gender,
     bio: req.body.bio,
     position: req.body.position,
+    annualLeaveEntitled: req.body.annualLeaveEntitled,
     phone: req.body.phone,
     yearOfCall: req.body.yearOfCall,
     otherPosition: req.body.otherPosition,
