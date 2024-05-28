@@ -1,9 +1,20 @@
 const LeaveApplication = require("../models/leaveApplicationModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const User = require("../models/userModel");
 
 exports.createLeaveApplication = catchAsync(async (req, res, next) => {
-  const leaveApplication = await LeaveApplication.create(req.body);
+  // const { employee } = req.body;
+  const currentUser = await User.findById(req.user.id);
+
+  // console.log("EMP", employee);
+
+  const leaveApplication = await LeaveApplication.create({
+    employee: currentUser._id,
+    ...req.body,
+  });
+
+  // get current user
 
   res.status(201).json({
     status: "success",

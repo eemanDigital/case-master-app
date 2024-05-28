@@ -1,7 +1,6 @@
 const mongoose = require("mongoose");
-const User = require("../models/userModel");
+const User = require("./userModel");
 
-// Leave application sub-document schema
 const leaveApplicationSchema = new mongoose.Schema(
   {
     employee: {
@@ -33,6 +32,11 @@ const leaveApplicationSchema = new mongoose.Schema(
       type: Date,
       default: Date.now,
     },
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
     response: [
       {
         type: mongoose.Schema.ObjectId,
@@ -46,11 +50,20 @@ const leaveApplicationSchema = new mongoose.Schema(
   }
 );
 
+leaveApplicationSchema.pre("save", function (next) {
+  if (this.startDate && this.endDate) {
+    const difference = this.endDate - this.startDate;
+    this.daysAppliedFor = Math.round(difference / (1000 * 60 * 60 * 24)) + 1;
+  }
+
+  next();
+});
+
 leaveApplicationSchema.pre(/^find/, function (next) {
   this.populate({
     path: "employee",
     select: "firstName lastName",
-  }).populate("response");
+  });
   next();
 });
 
@@ -58,4 +71,5 @@ const LeaveApplication = mongoose.model(
   "LeaveApplication",
   leaveApplicationSchema
 );
+
 module.exports = LeaveApplication;

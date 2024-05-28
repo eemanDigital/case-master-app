@@ -34,7 +34,7 @@ const Dashboard = () => {
   // });
   // console.log("REM", reminderAvailable);
 
-  console.log(user.annualLeaveEntitled);
+  // console.log(typeof user?.data?.user?.annualLeaveEntitled);
 
   useEffect(() => {
     if (userId) {
@@ -107,9 +107,23 @@ const Dashboard = () => {
       <Link to="add-user">
         <Button>Add User</Button>
       </Link>
-      <div className="flex justify-between">
+      <div className="flex justify-between gap-2">
         <h1 className="text-4xl">Welcome, {user?.data?.user?.firstName}</h1>
 
+        {/* ANNUAL LEAVE */}
+        <div>
+          <h1 className="text-3xl">Leave</h1>
+          {user?.data?.user?.annualLeaveEntitled ? (
+            <div>
+              Annual Leave Days Entitled:
+              <h1 className="text-3xl text-green-600 font-semibold">
+                {user?.data?.user?.annualLeaveEntitled} days
+              </h1>
+            </div>
+          ) : (
+            <h1>You are not entitled to leave yet</h1>
+          )}
+        </div>
         <div className=" shadow-md p-3 rounded-md bg-gray-200 w-[400px]">
           <div className="flex justify-between items-center">
             <h3 className="text-2xl  font-semibold">Your Tasks</h3>

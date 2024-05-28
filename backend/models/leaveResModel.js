@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 const LeaveApplication = require("./leaveApplicationModel");
 const AppError = require("../utils/appError");
+const User = require("./userModel");
 
 // Leave schema
 const leaveResSchema = new mongoose.Schema(
@@ -28,11 +29,17 @@ const leaveResSchema = new mongoose.Schema(
       type: Number,
       required: [true, "State the remaining leave balance"],
     },
-
     application: [
       {
         type: mongoose.Schema.ObjectId,
         ref: "LeaveApplication",
+      },
+    ],
+
+    leaveHistory: [
+      {
+        year: Number,
+        daysTaken: Number,
       },
     ],
   },
@@ -51,74 +58,61 @@ leaveResSchema.pre(/^find/, function (next) {
   next();
 });
 
+// handles application history
+leaveResSchema.statics.updateLeaveBalance = async function (leaveApp) {
+  // get employee's id
+  const employeeId = leaveApp.employee;
+  // get leave category
+  const leaveCategory = leaveApp.leaveCategory;
+
+  if (leaveCategory === "annual" || leaveCategory === "casual") {
+    const currentYear = new Date().getFullYear();
+    console.log("CURRENT YEAR", currentYear);
+  }
+};
+
 leaveResSchema.pre("save", async function (next) {
+  // console.log("Inside pre-save hook for LeaveResponse");
+
+  // Fetch the associated application
   const application = await mongoose
     .model("LeaveApplication")
     .findById(this.application);
+
+  // console.log("APP", application);
+
+  // check is there is a leave application
   if (!application) {
-    next(new AppError("No Application found", 404));
+    return next(new AppError("No Application found", 404));
   }
+
+  console.log("Application found: ", application);
+  console.log("LEAVE CAT: ", application.leaveCategory);
+
+  if (
+    application.leaveCategory === "annual" &&
+    this.status === "approved" &&
+    this.modifiedStartDate &&
+    this.modifiedEndDate
+  ) {
+    const difference = this.modifiedEndDate - this.modifiedStartDate;
+    this.daysApproved = Math.round(difference / (1000 * 60 * 60 * 24)) + 1;
+
+    if (this.daysApproved <= this.annualLeaveEntitled) {
+      this.annualLeaveEntitled = this.annualLeaveEntitled - this.daysApproved;
+      this.leaveBalance = this.annualLeaveEntitled;
+    } else {
+      return next(new AppError("You do not have up to what was approved"));
+    }
+
+    console.log(
+      "Leave approved. Annual leave entitlement updated to:",
+      this.annualLeaveEntitled
+    );
+  }
+
+  next();
 });
 
-// Pre-save hook to calculate daysAppliedFor in leave application
-// leaveApplicationSchema.pre("save", function (next) {
-//   if (this.startDate && this.endDate) {
-//     const difference = this.endDate - this.startDate;
-//     this.daysAppliedFor = Math.round(difference / (1000 * 60 * 60 * 24)) + 1;
-//   }
-//   next();
-// });
-
-// // Static method to update leave balance
-// leaveSchema.statics.updateLeaveBalance = async function (leave) {
-//   const currentYear = new Date().getFullYear();
-//   const leaveCategory = leave.application.leaveCategory;
-
-//   if (leaveCategory === "annual" || leaveCategory === "casual") {
-//     const existingHistory = leave.leaveHistory.find(
-//       (record) => record.year === currentYear
-//     );
-
-//     if (existingHistory) {
-//       existingHistory.daysTaken += leave.daysApproved;
-//     } else {
-//       leave.leaveHistory.push({
-//         year: currentYear,
-//         daysTaken: leave.daysApproved,
-//       });
-//     }
-
-//     const totalDaysTaken = leave.leaveHistory.reduce(
-//       (sum, record) => sum + record.daysTaken,
-//       0
-//     );
-
-//     if (totalDaysTaken > leave.annualLeaveEntitled) {
-//       throw new Error("Annual leave entitlement exceeded for the year");
-//     }
-
-//     leave.leaveBalance = leave.annualLeaveEntitled - totalDaysTaken;
-//   }
-
-//   await leave.save();
-// };
-
-// // Pre-save hook for leave to calculate daysApproved and manage leave balance
-// leaveSchema.pre("save", async function (next) {
-//   if (this.isApproved && this.modifiedStartDate && this.modifiedEndDate) {
-//     const difference = this.modifiedEndDate - this.modifiedStartDate;
-//     this.daysApproved = Math.round(difference / (1000 * 60 * 60 * 24)) + 1;
-//     try {
-//       await this.constructor.updateLeaveBalance(this);
-//     } catch (error) {
-//       return next(error);
-//     }
-//   } else {
-//     this.daysApproved = undefined;
-//   }
-//   next();
-// });
-
 const LeaveResponse = mongoose.model("LeaveResponse", leaveResSchema);
-
 module.exports = LeaveResponse;

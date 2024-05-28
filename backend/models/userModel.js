@@ -118,6 +118,7 @@ const userSchema = new mongoose.Schema(
     universityAttended: String,
     lawSchoolAttended: String,
     annualLeaveEntitled: Number,
+    // leaveBalance: Number,
 
     // task: {
     //   type: mongoose.Schema.Types.ObjectId,

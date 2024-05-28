@@ -45,7 +45,6 @@ const EditUserProfile = () => {
     phone: "",
     yearOfCall: "",
     annualLeaveEntitled: "",
-
     otherPosition: "",
     practiceArea: "",
     universityAttended: "",
@@ -76,8 +75,8 @@ const EditUserProfile = () => {
 
   // function to handle form submission
 
-  const isAdmin = user?.data.user.role === "admin";
-  // console.log(isAdmin);
+  // const isAdmin = user?.data.user.role === "admin";
+  console.log(inputValue);
 
   async function handleSubmit(e) {
     e.preventDefault();

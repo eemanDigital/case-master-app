@@ -74,7 +74,6 @@ const SignUp = () => {
     }));
   }
 
-  // console.log(fileValue);
   // dispatch({ type: "LOGIN", filPayload: fileValue });
   async function handleSubmit(e) {
     e.preventDefault();

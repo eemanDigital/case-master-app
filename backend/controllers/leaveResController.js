@@ -32,7 +32,7 @@ exports.updateLeave = catchAsync(async (req, res, next) => {
 
 exports.getLeave = catchAsync(async (req, res, next) => {
   const leave = await LeaveResponse.findById(req.params.id);
-  console.log(req.user.id);
+  // console.log(req.user.id);
 
   if (!leave) {
     return next(new AppError("The leave does not exist", 404));

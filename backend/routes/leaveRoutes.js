@@ -1,7 +1,6 @@
 const express = require("express");
 const {
   createLeave,
-
   updateLeave,
   getLeave,
 } = require("../controllers/leaveResController");
