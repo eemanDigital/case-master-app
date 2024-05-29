@@ -121,7 +121,8 @@ exports.protect = catchAsync(async (req, res, next) => {
 //Middleware to implement restriction by role
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    if (!roles.includes(req.user?.role)) {
+      // console.log("ROLE", req.user.role);
       return next(
         new AppError("You are not eligible to perform this operation", 400)
       );
