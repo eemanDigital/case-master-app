@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const User = require("./userModel");
 
 const leaveApplicationSchema = new mongoose.Schema(
   {
@@ -63,7 +62,7 @@ leaveApplicationSchema.pre(/^find/, function (next) {
   this.populate({
     path: "employee",
     select: "firstName lastName",
-  });
+  }).populate("response");
   next();
 });
 
