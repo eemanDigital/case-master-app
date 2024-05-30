@@ -23,11 +23,11 @@ const errorController = require("./controllers/errorController");
  *  occur in a synchronous code and not handled
  * anywhere in the app
  */
-process.on("uncaughtException", (err) => {
-  console.log("UNCAUGHT ERROR 🔥. Shutting down...");
-  console.log(err.name, err.message);
-  process.exit(1);
-});
+// process.on("uncaughtException", (err) => {
+//   console.log("UNCAUGHT ERROR 🔥. Shutting down...");
+//   console.log(err.name, err.message);
+//   process.exit(1);
+// });
 
 //configure our node env
 dotenv.config({ path: "./config.env" });
@@ -112,7 +112,7 @@ process.on("unhandledRejection", (err) => {
   //to shut down out application due to the DB error
   console.log("UNHANDLED REJECTION! Shutting down...");
 
-  server.close(() => {
-    process.exit(1);
-  });
+  // server.close(() => {
+  //   process.exit(1);
+  // });
 });

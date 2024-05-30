@@ -8,17 +8,20 @@ const leaveApplicationSchema = new mongoose.Schema({
   },
   startDate: {
     type: Date,
-    required: true,
+    required: [true, "Provide start date"],
     min: Date.now(),
   },
   endDate: {
     type: Date,
-    required: true,
+    required: [true, "Provide end date"],
   },
   typeOfLeave: {
     type: String,
-    required: true,
+    required: [true, "Specify the type of leave"],
   },
+  daysAppliedFor: Number,
+  daysApproved: Number,
+
   reason: String,
   status: {
     type: String,

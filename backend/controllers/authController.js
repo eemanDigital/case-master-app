@@ -57,7 +57,6 @@ exports.signup = catchAsync(async (req, res, next) => {
     lawSchoolAttended: req.body.lawSchoolAttended,
   });
   // const user = await User.create(req.body);
-  console.log(user);
   createSendToken(user, 201, res);
 });
 
@@ -65,6 +64,7 @@ exports.signup = catchAsync(async (req, res, next) => {
 exports.login = catchAsync(async (req, res, next) => {
   // console.log(req.cookies);
   let { email, password } = req.body;
+  // console.log("REQ USER", req.user);
 
   // 1) Check if email and password exist
   if (!email || !password) {
@@ -76,6 +76,8 @@ exports.login = catchAsync(async (req, res, next) => {
   if (!user || !(await bcrypt.compare(password, user.password))) {
     return next(new AppError("Incorrect email or password", 401));
   }
+  // console.log("USER", user);
+
   createSendToken(user, 200, res);
 });
 
@@ -114,19 +116,22 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   //5) give user access
   req.user = currentUser;
-  // console.log(req.user.position);
+  // console.log("USER", req.user);
+
   next();
 });
 
 //Middleware to implement restriction by role
 exports.restrictTo = (...roles) => {
+  // console.log("ROLES", ...roles);
   return (req, res, next) => {
     if (!roles.includes(req.user?.role)) {
-      // console.log("ROLE", req.user.role);
+      // console.log("ROLE", req.user);
       return next(
-        new AppError("You are not eligible to perform this operation", 400)
+        new AppError("You do not have permission to perform this action", 403)
       );
     }
+
     next();
   };
 };

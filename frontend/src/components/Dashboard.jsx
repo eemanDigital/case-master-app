@@ -1,22 +1,21 @@
-import { Link, useParams } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useEffect } from "react";
 import Button from "./Button";
 import { Spin } from "antd";
-import {
-  MdDone,
-  MdNotificationsActive,
-  MdNotificationsOff,
-} from "react-icons/md";
+import { MdNotificationsActive, MdNotificationsOff } from "react-icons/md";
 import { IoMdTime } from "react-icons/io";
 import moment from "moment"; //time formatter
 import TaskResponse from "./TaskResponse";
+import LeaveBalanceDisplay from "./LeaveBalanceDisplay";
+import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
 import TaskResponseForm from "./TaskResponseForm";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { GoLaw } from "react-icons/go";
 import { FaBriefcase, FaUser } from "react-icons/fa6";
 import { FaTasks } from "react-icons/fa";
+import LeaveResponseForm from "./LeaveResponseForm";
 
 const Dashboard = () => {
   const { user } = useAuthContext();
@@ -24,17 +23,8 @@ const Dashboard = () => {
   const { data, loading, error, dataFetcher } = useDataFetch();
   const { cases, users, tasks, reports } = useDataGetterHook();
 
-  // // number of cases
-  // const numberOfCases = cases.results;
-  // const numberOfUsers = users.results;
-  // const numberOfTasks = tasks.results;
-  // const numberOfReports = reports.results;
-  // const reminderAvailable = data?.data?.task.map((t) => {
-  //   console.log(t);
-  // });
-  // console.log("REM", reminderAvailable);
-
-  // console.log(typeof user?.data?.user?.annualLeaveEntitled);
+  // get admin
+  const isAdmin = user?.data?.user?.role === "admin";
 
   useEffect(() => {
     if (userId) {
@@ -104,26 +94,32 @@ const Dashboard = () => {
   const numberStyle = "text-5xl font-bold text-red-600";
   return (
     <>
-      <Link to="add-user">
-        <Button>Add User</Button>
+      <h1 className="text-4xl">Dashboard</h1>
+      {/* ADD USER BUTTON */}
+      {isAdmin && (
+        <Link to="add-user">
+          <Button>Add User</Button>
+        </Link>
+      )}
+      {/* LEAVE APPLICATION BUTTON */}
+      <Link to="leave-application">
+        <Button>Apply for leave</Button>
       </Link>
+      <Link to="leave-application-list">
+        <Button>Manage Leave Applications</Button>
+      </Link>
+
+      {/* ADD LEAVE BALANCE */}
+      {isAdmin && <CreateLeaveBalanceForm />}
       <div className="flex justify-between gap-2">
         <h1 className="text-4xl">Welcome, {user?.data?.user?.firstName}</h1>
 
-        {/* ANNUAL LEAVE */}
-        <div>
-          <h1 className="text-3xl">Leave</h1>
-          {user?.data?.user?.annualLeaveEntitled ? (
-            <div>
-              Annual Leave Days Entitled:
-              <h1 className="text-3xl text-green-600 font-semibold">
-                {user?.data?.user?.annualLeaveEntitled} days
-              </h1>
-            </div>
-          ) : (
-            <h1>You are not entitled to leave yet</h1>
-          )}
-        </div>
+        {/* ANNUAL LEAVE BALANCE */}
+        <LeaveBalanceDisplay userId={userId} />
+
+        {/* LEAVE RESPONSE FORM */}
+        <LeaveResponseForm />
+
         <div className=" shadow-md p-3 rounded-md bg-gray-200 w-[400px]">
           <div className="flex justify-between items-center">
             <h3 className="text-2xl  font-semibold">Your Tasks</h3>

@@ -5,7 +5,7 @@ import { formatDate } from "../utils/formatDate";
 
 const CaseReports = () => {
   const { reports, errorReports, loadingReports } = useDataGetterHook();
-  console.log(reports?.data);
+  // console.log(reports?.data);
   return (
     <section>
       <h1 className="text-center text-5xl font-bold">Case Reports</h1>

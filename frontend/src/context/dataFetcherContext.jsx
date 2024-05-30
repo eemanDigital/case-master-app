@@ -1,6 +1,5 @@
 import { createContext, useState, useEffect } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom";
 
 // Create a context
 const DataContext = createContext();
@@ -10,6 +9,7 @@ const DataFetcherContext = ({ children }) => {
   const [reports, setReports] = useState([]);
   const [files, setFiles] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [leaveApps, setLeaveApp] = useState([]);
   // const [user, setUser] = useState([]);
 
   const [loadingCases, setLoadingCases] = useState(false);
@@ -17,6 +17,7 @@ const DataFetcherContext = ({ children }) => {
   const [loadingUsers, setLoadingUsers] = useState(false);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loadingTasks, setLoadingTasks] = useState(false);
+  const [loadingLeaveApp, setLoadingLeaveApp] = useState(false);
   // const [loadingUser, setLoadingUser] = useState(false);
   const [errorCases, setErrorCases] = useState("");
   const [errorUsers, setErrorUsers] = useState("");
@@ -24,6 +25,7 @@ const DataFetcherContext = ({ children }) => {
   const [errorReports, setErrorReports] = useState("");
   const [errorFiles, setErrorFiles] = useState("");
   const [errorTasks, setErrorTasks] = useState("");
+  const [errorLeaveApp, setErrorLeaveApp] = useState("");
 
   useEffect(() => {
     // Fetch cases function
@@ -96,6 +98,23 @@ const DataFetcherContext = ({ children }) => {
         setLoadingTasks(false);
       }
     }
+    // fetch tasks
+    async function fetchLeaveApp() {
+      try {
+        setLoadingLeaveApp(true);
+        const response = await axios.get(
+          `http://localhost:3000/api/v1/leaves/applications`
+        );
+
+        console.log("LS", response);
+
+        setLeaveApp(response.data);
+      } catch (err) {
+        setErrorLeaveApp(err.message || "Failed to fetch users");
+      } finally {
+        setLoadingLeaveApp(false);
+      }
+    }
 
     // Call the functions to fetch cases and users separately
     fetchCases();
@@ -103,6 +122,7 @@ const DataFetcherContext = ({ children }) => {
     fetchReports();
     fetchFiles();
     fetchTasks();
+    fetchLeaveApp();
   }, []);
 
   return (
@@ -113,6 +133,7 @@ const DataFetcherContext = ({ children }) => {
         reports,
         files,
         tasks,
+        leaveApps,
         loadingCases,
         loadingUsers,
         errorCases,
@@ -120,9 +141,11 @@ const DataFetcherContext = ({ children }) => {
         loadingReports,
         errorReports,
         loadingFiles,
+        loadingLeaveApp,
         errorFiles,
         loadingTasks,
         errorTasks,
+        errorLeaveApp,
       }}>
       {children}
     </DataContext.Provider>
@@ -130,3 +153,57 @@ const DataFetcherContext = ({ children }) => {
 };
 
 export { DataContext, DataFetcherContext };
+
+// import { createContext, useState, useEffect } from "react";
+// import axios from "axios";
+
+// // Create a context
+// const DataContext = createContext();
+
+// // Custom hook for fetching data
+// const useFetchData = (url, initialData) => {
+//   const [data, setData] = useState(initialData);
+//   const [loading, setLoading] = useState(false);
+//   const [error, setError] = useState("");
+
+//   useEffect(() => {
+//     const fetchData = async () => {
+//       try {
+//         setLoading(true);
+//         const response = await axios.get(url);
+//         setData(response.data);
+//       } catch (err) {
+//         setError(err.message || "Failed to fetch data");
+//       } finally {
+//         setLoading(false);
+//       }
+//     };
+
+//     fetchData();
+//   }, [url]);
+
+//   return { data, loading, error };
+// };
+
+// const DataFetcherContext = ({ children }) => {
+//   const cases = useFetchData("http://localhost:3000/api/v1/cases", []);
+//   const users = useFetchData("http://localhost:3000/api/v1/users", []);
+//   const reports = useFetchData("http://localhost:3000/api/v1/reports", []);
+//   const files = useFetchData("http://localhost:3000/api/v1/documents", []);
+//   const tasks = useFetchData("http://localhost:3000/api/v1/tasks", []);
+
+//   return (
+//     <DataContext.Provider
+//       value={{
+//         cases,
+//         users,
+//         reports,
+//         files,
+//         tasks,
+//       }}>
+//       {children}
+//     </DataContext.Provider>
+//   );
+// };
+
+// export { DataContext, DataFetcherContext };

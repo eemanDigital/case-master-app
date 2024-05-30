@@ -1,7 +1,11 @@
 const LeaveBalance = require("../models/leaveBalanceModel");
+const AppError = require("../utils/appError");
 
 exports.createLeaveBalance = async (req, res, next) => {
   const leaveBalance = await LeaveBalance.create(req.body);
+
+  // console.log("USER", req.user);
+
   res.status(201).json({
     status: "success",
     data: leaveBalance,

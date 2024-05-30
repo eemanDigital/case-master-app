@@ -35,6 +35,8 @@ import { Result, Button } from "antd";
 import { Link } from "react-router-dom";
 import CaseDocument from "./pages/CaseDocuments.jsx";
 import TaskAttachment from "./pages/TaskAttachment.jsx";
+import LeaveAppForm from "./pages/LeaveAppForm.jsx";
+import LeaveApplicationDisplay from "./pages/LeaveApplicationDisplay.jsx";
 // import CaseDocument from "./pages/CaseDocument.jsx";
 
 // import UpdateProfilePicture from "./components/UpdateProfilePicture.jsx";
@@ -64,12 +66,17 @@ function App() {
           <Route path="add-user" element={<AddUserForm />} />
           <Route path="cases" element={<Cases open={isOpen} />} />
           <Route path="cases/:id/update" element={<UpdateCase />} />
+
           {/* <Route path="cases/:id/document" element={<CaseDocument />} /> */}
           {/* <Route path="create-case" element={<CreateCase />} /> */}
           <Route path="cases/add-case" element={<CreateCaseForm />} />
           <Route path="cases/:id/casedetails" element={<CaseDetails />} />
           <Route path="case-reports" element={<CaseReports />} />
-          {/* <Route path="download/:id" element={<Download />} /> */}
+          <Route path="leave-application" element={<LeaveAppForm />} />
+          <Route
+            path="leave-application-list"
+            element={<LeaveApplicationDisplay />}
+          />
 
           <Route
             path="case-reports/add-report"
