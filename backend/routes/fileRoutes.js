@@ -7,17 +7,19 @@ const {
   updateFile,
   deleteFile,
 } = require("../controllers/fileController");
-// const { fileUpload } = require("../utils/multerDocHandler");
-// const upload = require("../utils/multerDocHandler");
+const { protect } = require("../controllers/authController");
+
 const { fileUpload } = require("../utils/multerDocHandler");
 
-const fileRouter = express.Router();
+const router = express.Router();
+// protect route
+router.use(protect);
 
-fileRouter.post("/", fileUpload, createFile);
-fileRouter.get("/", fileUpload, getFiles);
-fileRouter.get("/download/:id", fileUpload, downloadFile);
-fileRouter.get("/file/:id", fileUpload, getFile);
-// fileRouter.patch("//:id", fileUpload, updateFile);
-fileRouter.delete("/:id", fileUpload, deleteFile);
+router.post("/", fileUpload, createFile);
+router.get("/", fileUpload, getFiles);
+router.get("/download/:id", fileUpload, downloadFile);
+router.get("/file/:id", fileUpload, getFile);
+// router.patch("//:id", fileUpload, updateFile);
+router.delete("/:id", fileUpload, deleteFile);
 
-module.exports = fileRouter;
+module.exports = router;

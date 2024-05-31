@@ -9,16 +9,17 @@ const {
 } = require("../controllers/caseController");
 const { protect, restrictTo } = require("../controllers/authController");
 
-const caseRouter = express.Router();
+const router = express.Router();
 const app = express();
 
-app.use(protect);
-caseRouter.route("/").get(getCases).post(createCase);
+router.use(protect);
+
+router.route("/").get(getCases).post(createCase);
 // .post(createCase);
-caseRouter
+router
   .route("/:caseId")
   .get(getCase)
   .patch(updateCase)
   .delete(restrictTo("admin"), deleteCase);
 
-module.exports = caseRouter;
+module.exports = router;

@@ -27,13 +27,27 @@ const DataFetcherContext = ({ children }) => {
   const [errorTasks, setErrorTasks] = useState("");
   const [errorLeaveApp, setErrorLeaveApp] = useState("");
 
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("jwt="))
+    ?.split("=")[1];
+
+  // Merge custom headers with default headers
+  const headers = {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  };
+
   useEffect(() => {
     // Fetch cases function
 
     async function fetchCases() {
       try {
         setLoadingCases(true);
-        const response = await axios.get("http://localhost:3000/api/v1/cases");
+        const response = await axios.get("http://localhost:3000/api/v1/cases", {
+          headers,
+          withCredentials: true,
+        });
         setCases(response.data);
       } catch (err) {
         setErrorCases(err.message || "Failed to fetch cases");
@@ -47,7 +61,10 @@ const DataFetcherContext = ({ children }) => {
     async function fetchUsers() {
       try {
         setLoadingUsers(true);
-        const response = await axios.get("http://localhost:3000/api/v1/users");
+        const response = await axios.get("http://localhost:3000/api/v1/users", {
+          headers,
+          withCredentials: true,
+        });
         setUsers(response.data);
       } catch (err) {
         setErrorUsers(err.message || "Failed to fetch users");
@@ -61,7 +78,11 @@ const DataFetcherContext = ({ children }) => {
       try {
         setLoadingUsers(true);
         const response = await axios.get(
-          "http://localhost:3000/api/v1/reports"
+          "http://localhost:3000/api/v1/reports",
+          {
+            headers,
+            withCredentials: true,
+          }
         );
 
         setReports(response.data);
@@ -76,7 +97,11 @@ const DataFetcherContext = ({ children }) => {
       try {
         setLoadingFiles(true);
         const response = await axios.get(
-          `http://localhost:3000/api/v1/documents`
+          `http://localhost:3000/api/v1/documents`,
+          {
+            headers,
+            withCredentials: true,
+          }
         );
         setFiles(response.data);
       } catch (err) {
@@ -90,7 +115,10 @@ const DataFetcherContext = ({ children }) => {
     async function fetchTasks() {
       try {
         setLoadingTasks(true);
-        const response = await axios.get(`http://localhost:3000/api/v1/tasks`);
+        const response = await axios.get(`http://localhost:3000/api/v1/tasks`, {
+          headers,
+          withCredentials: true,
+        });
         setTasks(response.data);
       } catch (err) {
         setErrorTasks(err.message || "Failed to fetch users");
@@ -103,7 +131,11 @@ const DataFetcherContext = ({ children }) => {
       try {
         setLoadingLeaveApp(true);
         const response = await axios.get(
-          `http://localhost:3000/api/v1/leaves/applications`
+          `http://localhost:3000/api/v1/leaves/applications`,
+          {
+            headers,
+            withCredentials: true,
+          }
         );
 
         console.log("LS", response);

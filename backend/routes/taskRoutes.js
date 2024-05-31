@@ -4,8 +4,6 @@ const {
   createTask,
   getTask,
   updateTask,
-  downloadFile,
-
   // updateTaskResponse,
 } = require("../controllers/taskController");
 const { fileUpload } = require("../utils/taskDocHandler");
@@ -16,24 +14,23 @@ const {
   getTaskResponse,
   taskResponseFileUpload,
 } = require("../controllers/taskResponseController");
+const { protect } = require("../controllers/authController");
 
-const taskRouter = express.Router();
+const router = express.Router();
 
-taskRouter.get("/", getTasks);
-taskRouter.get("/:taskId", getTask);
-// taskRouter.get("/download/:taskId", downloadFile);
-taskRouter.patch("/:id", fileUpload, updateTask);
-taskRouter.patch("/:id", updateTask);
-taskRouter.post("/", createTask);
+router.use(protect); //protect route from access unless user log in
+
+router.get("/", getTasks);
+router.get("/:taskId", getTask);
+// router.get("/download/:taskId", downloadFile);
+router.patch("/:id", fileUpload, updateTask);
+router.patch("/:id", updateTask);
+router.post("/", createTask);
 
 // sub-doc route for task response
-taskRouter.post(
-  "/:taskId/response",
-  taskResponseFileUpload,
-  createTaskResponse
-);
-taskRouter.delete("/:taskId/response/:responseId", deleteTaskResponse);
-taskRouter.get("/:taskId/response/:responseId", getTaskResponse);
-// taskRouter.patch("/:taskId/response/:responseId", updateTaskResponse);
+router.post("/:taskId/response", taskResponseFileUpload, createTaskResponse);
+router.delete("/:taskId/response/:responseId", deleteTaskResponse);
+router.get("/:taskId/response/:responseId", getTaskResponse);
+// router.patch("/:taskId/response/:responseId", updateTaskResponse);
 
-module.exports = taskRouter;
+module.exports = router;

@@ -1,7 +1,8 @@
 const LeaveBalance = require("../models/leaveBalanceModel");
 const AppError = require("../utils/appError");
+const catchAsync = require("../utils/catchAsync");
 
-exports.createLeaveBalance = async (req, res, next) => {
+exports.createLeaveBalance = catchAsync(async (req, res, next) => {
   const leaveBalance = await LeaveBalance.create(req.body);
 
   // console.log("USER", req.user);
@@ -10,9 +11,9 @@ exports.createLeaveBalance = async (req, res, next) => {
     status: "success",
     data: leaveBalance,
   });
-};
+});
 
-exports.getLeaveBalance = async (req, res, next) => {
+exports.getLeaveBalance = catchAsync(async (req, res, next) => {
   const leaveBalance = await LeaveBalance.findOne({
     employee: req.params.employeeId,
   });
@@ -23,9 +24,9 @@ exports.getLeaveBalance = async (req, res, next) => {
     status: "success",
     data: leaveBalance,
   });
-};
+});
 
-exports.updateLeaveBalance = async (req, res, next) => {
+exports.updateLeaveBalance = catchAsync(async (req, res, next) => {
   const leaveBalance = await LeaveBalance.findOneAndUpdate(
     { employee: req.params.employeeId },
     req.body,
@@ -41,4 +42,4 @@ exports.updateLeaveBalance = async (req, res, next) => {
     status: "success",
     data: leaveBalance,
   });
-};
+});

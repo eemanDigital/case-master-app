@@ -37,6 +37,7 @@ import CaseDocument from "./pages/CaseDocuments.jsx";
 import TaskAttachment from "./pages/TaskAttachment.jsx";
 import LeaveAppForm from "./pages/LeaveAppForm.jsx";
 import LeaveApplicationDisplay from "./pages/LeaveApplicationDisplay.jsx";
+import LeaveApplicationDetails from "./pages/LeaveApplicationDetails.jsx";
 // import CaseDocument from "./pages/CaseDocument.jsx";
 
 // import UpdateProfilePicture from "./components/UpdateProfilePicture.jsx";
@@ -73,6 +74,10 @@ function App() {
           <Route path="cases/:id/casedetails" element={<CaseDetails />} />
           <Route path="case-reports" element={<CaseReports />} />
           <Route path="leave-application" element={<LeaveAppForm />} />
+          <Route
+            path="leave-application/:id/details"
+            element={<LeaveApplicationDetails />}
+          />
           <Route
             path="leave-application-list"
             element={<LeaveApplicationDisplay />}

@@ -4,11 +4,14 @@ const {
   getReport,
   getReports,
 } = require("../controllers/reportController");
+const { protect } = require("../controllers/authController");
 
-const reportRouter = express.Router();
+const router = express.Router();
 
-reportRouter.post("/", createReport);
-reportRouter.get("/", getReports);
-reportRouter.get("/:reportId", getReport);
+router.use(protect);
 
-module.exports = reportRouter;
+router.post("/", createReport);
+router.get("/", getReports);
+router.get("/:reportId", getReport);
+
+module.exports = router;

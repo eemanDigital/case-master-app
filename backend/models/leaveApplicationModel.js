@@ -1,35 +1,41 @@
 const mongoose = require("mongoose");
 
-const leaveApplicationSchema = new mongoose.Schema({
-  employee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-  },
-  startDate: {
-    type: Date,
-    required: [true, "Provide start date"],
-    min: Date.now(),
-  },
-  endDate: {
-    type: Date,
-    required: [true, "Provide end date"],
-  },
-  typeOfLeave: {
-    type: String,
-    required: [true, "Specify the type of leave"],
-  },
-  daysAppliedFor: Number,
-  daysApproved: Number,
+const leaveApplicationSchema = new mongoose.Schema(
+  {
+    employee: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    startDate: {
+      type: Date,
+      required: [true, "Provide start date"],
+      min: Date.now(),
+    },
+    endDate: {
+      type: Date,
+      required: [true, "Provide end date"],
+    },
+    typeOfLeave: {
+      type: String,
+      required: [true, "Specify the type of leave"],
+    },
+    daysAppliedFor: Number,
+    daysApproved: Number,
 
-  reason: String,
-  status: {
-    type: String,
-    enum: ["pending", "approved", "rejected"],
-    default: "pending",
+    reason: String,
+    status: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    responseMessage: String,
   },
-  responseMessage: String,
-});
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
+);
 
 // leaveApplicationSchema.pre("save", function (next) {
 //   if (this.startDate && this.endDate) {
@@ -40,13 +46,13 @@ const leaveApplicationSchema = new mongoose.Schema({
 //   next();
 // });
 
-// leaveApplicationSchema.pre(/^find/, function (next) {
-//   this.populate({
-//     path: "employee",
-//     select: "firstName lastName",
-//   }).populate("response");
-//   next();
-// });
+leaveApplicationSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: "employee",
+    select: "firstName lastName",
+  });
+  next();
+});
 
 const LeaveApplication = mongoose.model(
   "LeaveApplication",

@@ -17,24 +17,25 @@ const {
   resetPassword,
 } = require("../controllers/authController");
 
-const userRouter = express.Router();
+const router = express.Router();
 
-userRouter.get("/", getUsers);
-userRouter.post("/signup", uploadUserPhoto, resizeUserPhoto, signup);
-userRouter.post("/login", login);
-userRouter.post("/forgotpassword", forgotPassword);
-userRouter.patch("/resetpassword/:token", resetPassword);
+router.post("/signup", uploadUserPhoto, resizeUserPhoto, signup);
+router.post("/login", login);
+router.post("/forgotpassword", forgotPassword);
+router.patch("/resetpassword/:token", resetPassword);
+router.get("/logout", logout);
+router.get("/loggedIn", isLoggedIn);
 
-userRouter.get("/logout", logout);
-userRouter.get("/loggedIn", isLoggedIn);
-userRouter.get("/:userId", getUser);
-userRouter.patch(
+router.use(protect); //login to access the routes
+router.get("/", getUsers);
+router.get("/:userId", getUser);
+router.patch(
   "/updateUser",
   uploadUserPhoto,
   resizeUserPhoto,
   protect,
   updateUser
 );
-userRouter.patch("/changepassword", protect, updatePassword);
+router.patch("/changepassword", protect, updatePassword);
 
-module.exports = userRouter;
+module.exports = router;

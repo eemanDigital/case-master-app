@@ -23,6 +23,7 @@ const Dashboard = () => {
   const { data, loading, error, dataFetcher } = useDataFetch();
   const { cases, users, tasks, reports } = useDataGetterHook();
 
+  console.log(userId);
   // get admin
   const isAdmin = user?.data?.user?.role === "admin";
 
