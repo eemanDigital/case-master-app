@@ -87,7 +87,7 @@ exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
   }
 
   // Calculate the number of leave days for the application
-  const leaveDays =
+  let leaveDays =
     Math.ceil(
       (new Date(leaveApplication.endDate) -
         new Date(leaveApplication.startDate)) /
@@ -120,10 +120,25 @@ exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
     }
     // add other types of leaves if needed
     await leaveBalance.save();
+
+    // Recalculate the number of leave days if the start or end date is modified
+    if (req.body.startDate || req.body.endDate) {
+      leaveDays =
+        Math.ceil(
+          (new Date(req.body.endDate || leaveApplication.endDate) -
+            new Date(req.body.startDate || leaveApplication.startDate)) /
+            (1000 * 60 * 60 * 24)
+        ) + 1;
+    }
   }
 
   // Update the leave application
-  leaveApplication.set({ daysApproved: leaveDays, ...req.body });
+  leaveApplication.set({
+    daysApproved: leaveDays,
+    startDate: req.body.startDate || leaveApplication.startDate,
+    endDate: req.body.endDate || leaveApplication.endDate,
+    ...req.body,
+  });
   req.leaveApp = leaveApplication;
 
   await leaveApplication.save();
