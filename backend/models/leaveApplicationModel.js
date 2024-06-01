@@ -22,7 +22,10 @@ const leaveApplicationSchema = new mongoose.Schema(
     },
     daysAppliedFor: Number,
     daysApproved: Number,
-
+    createdAt: {
+      type: Date,
+      default: Date.now(),
+    },
     reason: String,
     status: {
       type: String,
@@ -49,7 +52,7 @@ const leaveApplicationSchema = new mongoose.Schema(
 leaveApplicationSchema.pre(/^find/, function (next) {
   this.populate({
     path: "employee",
-    select: "firstName lastName",
+    select: "firstName lastName photo",
   });
   next();
 });

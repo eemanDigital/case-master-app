@@ -1,15 +1,60 @@
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { Link } from "react-router-dom";
-import { Space, Table, Button } from "antd";
+import { Space, Table, Button, Spin, Alert, Modal } from "antd";
 import { formatDate } from "../utils/formatDate";
+import { useDataFetch } from "../hooks/useDataFetch";
+
+import avatar from "../assets/avatar.png";
 
 const LeaveApplicationDisplay = () => {
   const { leaveApps, loadingLeaveApp, errorLeaveApp } = useDataGetterHook();
   const { Column, ColumnGroup } = Table;
 
+  const { data, loading, error, dataFetcher } = useDataFetch();
+
+  if (loadingLeaveApp) {
+    return (
+      <Spin size="large" className="flex justify-center items-center h-full" />
+    );
+  }
+
+  if (errorLeaveApp) {
+    return (
+      <Alert
+        message="Error"
+        description={errorLeaveApp}
+        type="error"
+        showIcon
+      />
+    );
+  }
+  const fileHeaders = {
+    "Content-Type": "multipart/form-data",
+  };
+  // delete leave app
+  const handleDeleteApp = async (id) => {
+    await dataFetcher(`leaves/applications/${id}`, "delete", fileHeaders);
+  };
+
   return (
     <Table dataSource={leaveApps?.data}>
       <ColumnGroup title="Employee's Name">
+        <Column
+          title="Photo"
+          dataIndex={["employee", "photo"]}
+          key="photo"
+          render={(photo, record) => (
+            <div className="flex items-center justify-center">
+              <img
+                className="w-12 h-12 object-cover rounded-full"
+                src={
+                  photo ? `http://localhost:3000/images/users/${photo}` : avatar
+                }
+              />
+            </div>
+          )}
+        />
+
         <Column
           title="First Name"
           dataIndex={["employee", "firstName"]}
@@ -59,12 +104,19 @@ const LeaveApplicationDisplay = () => {
         render={(text, record) => (
           <Space size="middle">
             <Button type="link">
-              <Link
-                to={`/dashboard/leave-application/${record.employee.id}/details`}>
+              <Link to={`/dashboard/leave-application/${record.id}/details`}>
                 Get Details
               </Link>
             </Button>
-            <Button type="primary" danger>
+            <Button
+              onClick={() => {
+                Modal.confirm({
+                  title: "Are you sure you want to delete this application?",
+                  onOk: () => handleDeleteApp(record.id),
+                });
+              }}
+              type="primary"
+              danger>
               Delete
             </Button>
           </Space>

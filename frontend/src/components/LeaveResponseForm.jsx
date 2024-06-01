@@ -5,12 +5,10 @@ import { Modal } from "antd";
 import Input from "./Inputs";
 import Select from "./Select";
 import Button from "./Button";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
-const LeaveResponseForm = () => {
+const LeaveResponseForm = ({ appId }) => {
   //   const { id } = useParams();
   const [open, setOpen] = useState(false);
-  const { users } = useDataGetterHook();
 
   //   const [confirmLoading, setConfirmLoading] = useState(false);
   //   const [modalText, setModalText] = useState("Content of the modal");
@@ -37,11 +35,10 @@ const LeaveResponseForm = () => {
   const [click, setClick] = useState(false);
 
   const [inputValue, setInputValue] = useState({
-    employee: "",
     startDate: null,
     endDate: null,
-    status: "",
-    responseMessage: "",
+    status: null,
+    responseMessage: null,
   });
 
   // handleChange function
@@ -60,7 +57,7 @@ const LeaveResponseForm = () => {
 
     try {
       // Call fetchData with endpoint, method, payload, and any additional arguments
-      await dataFetcher("leaves/applications", "put", inputValue);
+      await dataFetcher(`leaves/applications/${appId}`, "put", inputValue);
     } catch (err) {
       console.log(err);
     }
@@ -82,23 +79,23 @@ const LeaveResponseForm = () => {
   //       })
   //     : [];
 
-  const employeeSelectField = Array.isArray(users?.data) ? (
-    <select
-      label="employee"
-      value={inputValue.employee}
-      name="employee"
-      onChange={handleChange}>
-      {users?.data.map((user) => {
-        return (
-          <option value={user._id} key={user._id}>
-            {user.fullName}
-          </option>
-        );
-      })}
-    </select>
-  ) : (
-    []
-  );
+  // const employeeSelectField = Array.isArray(users?.data) ? (
+  //   <select
+  //     label="employee"
+  //     value={inputValue.employee}
+  //     name="employee"
+  //     onChange={handleChange}>
+  //     {users?.data.map((user) => {
+  //       return (
+  //         <option value={user._id} key={user._id}>
+  //           {user.fullName}
+  //         </option>
+  //       );
+  //     })}
+  //   </select>
+  // ) : (
+  //   []
+  // );
 
   return (
     <>
@@ -120,10 +117,9 @@ const LeaveResponseForm = () => {
             </h1>
 
             <div className="flex flex-col  mb-6 gap-2 justify-between ">
-              {employeeSelectField}
+              {/* {employeeSelectField} */}
               <div>
                 <Input
-                  required
                   type="Date"
                   label="Start Date"
                   placeholder="Start Date"
@@ -135,7 +131,6 @@ const LeaveResponseForm = () => {
               </div>
               <div>
                 <Input
-                  required
                   type="Date"
                   label="End Date"
                   placeholder="End Date"

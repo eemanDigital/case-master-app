@@ -19,18 +19,13 @@ const LeaveAppForm = () => {
   const { data, loading, error, dataFetcher } = useDataFetch();
   const [click, setClick] = useState(false);
 
-  // console.log(fileData.data?.file);
-  // console.log(data);
   const [inputValue, setInputValue] = useState({
     startDate: null,
     endDate: null,
     typeOfLeave: "",
     reason: "",
   });
-
-  // const { dispatch } = useAuthContext();
-  // derived state to check if user select "Other"
-  //   const getOtherFieldSelected = inputValue.position === "Other";
+  // console.log(inputValue);
 
   // handleChange function
   function handleChange(e) {
@@ -45,10 +40,10 @@ const LeaveAppForm = () => {
   // dispatch({ type: "LOGIN", filPayload: fileValue });
   async function handleSubmit(e) {
     e.preventDefault();
-
+    console.log("Submitting Leave Application:", inputValue);
     try {
       // Call fetchData with endpoint, method, payload, and any additional arguments
-      await dataFetcher("leaves/applications", "post", inputValue);
+      await dataFetcher("leaves/applications", "POST", inputValue);
     } catch (err) {
       console.log(err);
     }
@@ -57,8 +52,6 @@ const LeaveAppForm = () => {
   function handleClick() {
     setClick(() => !click);
   }
-
-  console.log(inputValue);
 
   return (
     <section className="flex flex-col items-center justify-center">

@@ -1,26 +1,63 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
+import { Modal, Spin, Alert, Descriptions, Button } from "antd";
 
-const LeaveBalanceDisplay = ({ userId }) => {
+const LeaveBalanceDisplay = ({ userId, visible, onClose }) => {
   const { data, loading, error, dataFetcher } = useDataFetch();
 
-  // console.log("BALANCE", data?.data?.annualLeaveBalance);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
+  const handleOk = () => {
+    setIsModalOpen(false);
+  };
+  const handleCancel = () => {
+    setIsModalOpen(false);
+  };
 
   useEffect(() => {
-    dataFetcher(`leaves/balances/${userId}`, "get");
+    if (userId) {
+      dataFetcher(`leaves/balances/${userId}`, "get");
+    }
   }, [userId]);
 
+  if (loading) {
+    return (
+      <Modal open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
+        <div className="flex justify-center items-center h-full">
+          <Spin size="large" />
+        </div>
+      </Modal>
+    );
+  }
+
+  // if (error) {
+  //   return (
+  //     <Modal open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
+  //       <Alert message="Error" description={error} type="error" showIcon />
+  //     </Modal>
+  //   );
+  // }
+
+  console.log("ERRO", data);
+
   return (
-    <div>
-      <p className="font-semibold ">
-        Annual Leave Balance{" "}
-        <span className="text-red-600">{data?.data?.annualLeaveBalance} </span>
-      </p>
-      <p className=" font-semibold ">
-        Sick Leave Balance{" "}
-        <span className="text-red-600">{data?.data?.sickLeaveBalance} </span>
-      </p>
-    </div>
+    <>
+      <Button className="bg-blue-400 text-white" onClick={showModal}>
+        See Leave Balance
+      </Button>
+      <Modal open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
+        <Descriptions title="Leave Balance" bordered>
+          <Descriptions.Item label="Annual Leave Balance">
+            {data?.data?.annualLeaveBalance}
+          </Descriptions.Item>
+          <Descriptions.Item label="Sick Leave Balance">
+            {data?.data?.sickLeaveBalance}
+          </Descriptions.Item>
+        </Descriptions>
+      </Modal>
+    </>
   );
 };
 

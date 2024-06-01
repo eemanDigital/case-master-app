@@ -138,8 +138,6 @@ const DataFetcherContext = ({ children }) => {
           }
         );
 
-        console.log("LS", response);
-
         setLeaveApp(response.data);
       } catch (err) {
         setErrorLeaveApp(err.message || "Failed to fetch users");

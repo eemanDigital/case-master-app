@@ -2,8 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useEffect } from "react";
-import Button from "./Button";
-import { Spin } from "antd";
+import { Button, Spin, Row, Col, Typography, Card, Badge, Divider } from "antd";
 import { MdNotificationsActive, MdNotificationsOff } from "react-icons/md";
 import { IoMdTime } from "react-icons/io";
 import moment from "moment"; //time formatter
@@ -15,15 +14,17 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { GoLaw } from "react-icons/go";
 import { FaBriefcase, FaUser } from "react-icons/fa6";
 import { FaTasks } from "react-icons/fa";
-import LeaveResponseForm from "./LeaveResponseForm";
+// import LeaveResponseForm from "./LeaveResponseForm";
+import LeaveApplicationDetails from "../pages/LeaveApplicationDetails";
 
+const { Title, Text } = Typography;
 const Dashboard = () => {
   const { user } = useAuthContext();
   const userId = user?.data?.user?._id;
   const { data, loading, error, dataFetcher } = useDataFetch();
   const { cases, users, tasks, reports } = useDataGetterHook();
 
-  console.log(userId);
+  // console.log(userId);
   // get admin
   const isAdmin = user?.data?.user?.role === "admin";
 
@@ -34,7 +35,7 @@ const Dashboard = () => {
     }
   }, [userId]);
 
-  const btnStyle = "bg-gray-700 p-2 text-gray-200 text-[10px] rounded-md";
+  const btnStyle = "bg-blue-500 text-white  rounded-md";
 
   // MAPPING TASK DATA
   const userTask = data?.data?.task ? (
@@ -72,7 +73,7 @@ const Dashboard = () => {
             <h4 className="font-bold ">Task Title</h4>
             <small className="block m-1">{t.title}</small>
             <Link to={`tasks/${t._id}`}>
-              <Button buttonStyle={btnStyle}>Get Detail</Button>
+              <Button className={btnStyle}>Get Detail</Button>
             </Link>
 
             {/* TASK RESPONSE */}
@@ -92,62 +93,81 @@ const Dashboard = () => {
     </div> // Display loading message while data is fetched
   );
 
-  const numberStyle = "text-5xl font-bold text-red-600";
+  // const numberStyle = "text-5xl font-bold text-red-600";
   return (
     <>
-      <h1 className="text-4xl">Dashboard</h1>
-      {/* ADD USER BUTTON */}
-      {isAdmin && (
-        <Link to="add-user">
-          <Button>Add User</Button>
-        </Link>
-      )}
-      {/* LEAVE APPLICATION BUTTON */}
-      <Link to="leave-application">
-        <Button>Apply for leave</Button>
-      </Link>
-      <Link to="leave-application-list">
-        <Button>Manage Leave Applications</Button>
-      </Link>
+      <Title level={1}>Dashboard</Title>
 
-      {/* ADD LEAVE BALANCE */}
+      <Row>
+        <Col>
+          <Title level={4}>Welcome, {user?.data?.user?.firstName}</Title>
+        </Col>
+      </Row>
+      <Divider />
+      <Row gutter={16}>
+        <Col>
+          <Badge count={cases.results}>
+            <FaBriefcase className="text-3xl text-blue-600" />
+          </Badge>
+          <Text>Number of Cases</Text>
+        </Col>
+        <Col>
+          <Badge count={users.results}>
+            <FaUser className="text-3xl text-blue-600" />
+          </Badge>
+          <Text>Number of Staff</Text>
+        </Col>
+        <Col>
+          <Badge count={6}>
+            <GoLaw className="text-3xl text-blue-600" />
+          </Badge>
+          <Text>Number of lawyers</Text>
+        </Col>
+        <Col>
+          <Badge count={tasks.results}>
+            <FaTasks className="text-3xl text-blue-600" />
+          </Badge>
+          <Text>Number of Assigned Tasks</Text>
+        </Col>
+      </Row>
+      <Divider />
+      <Row gutter={16}>
+        {isAdmin && (
+          <Col>
+            <Link to="add-user">
+              <Button className={btnStyle}>Add User</Button>
+            </Link>
+          </Col>
+        )}
+        <Col>
+          <Link to="leave-application">
+            <Button className={btnStyle}>Apply for leave</Button>
+          </Link>
+        </Col>
+        {<LeaveBalanceDisplay userId={userId} /> ? (
+          <Col>
+            <LeaveBalanceDisplay userId={userId} />
+          </Col>
+        ) : (
+          <Col>You are not entitled to leave yet</Col>
+        )}
+        {isAdmin && (
+          <Col>
+            <Link to="leave-application-list">
+              <Button className={btnStyle}>Manage Leave Applications</Button>
+            </Link>
+          </Col>
+        )}
+      </Row>
       {isAdmin && <CreateLeaveBalanceForm />}
-      <div className="flex justify-between gap-2">
-        <h1 className="text-4xl">Welcome, {user?.data?.user?.firstName}</h1>
-
-        {/* ANNUAL LEAVE BALANCE */}
-        <LeaveBalanceDisplay userId={userId} />
-
-        {/* LEAVE RESPONSE FORM */}
-        <LeaveResponseForm />
-
-        <div className=" shadow-md p-3 rounded-md bg-gray-200 w-[400px]">
-          <div className="flex justify-between items-center">
-            <h3 className="text-2xl  font-semibold">Your Tasks</h3>
-          </div>
-          {userTask}
-        </div>
-      </div>
-      <div className="flex justify-between  gap-4 mt-5">
-        <div className="text-3xl ">
-          <FaBriefcase className="text-3xl text-blue-600" />
-          Number of Cases: <p className={numberStyle}> {cases.results}</p>
-        </div>
-        <div className="text-3xl ">
-          <FaUser className="text-3xl text-blue-600" />
-          Number of Staff: <p className={numberStyle}> {users.results}</p>
-        </div>
-        <div className="text-3xl ">
-          <GoLaw className="text-3xl text-blue-600" />
-          Number of lawyers:
-          <p className={numberStyle}> 6 </p>
-        </div>
-        <div className="text-3xl ">
-          <FaTasks className="text-3xl text-blue-600" />
-          Number of Assigned Tasks:{" "}
-          <p className={numberStyle}>{tasks.results}</p>
-        </div>
-      </div>
+      <Row gutter={16}>
+        {/* <LeaveApplicationDetails /> */}
+        <Col>
+          <Card title="Your Tasks" bordered={false}>
+            {userTask}
+          </Card>
+        </Col>
+      </Row>
     </>
   );
 };

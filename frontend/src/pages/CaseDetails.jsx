@@ -12,7 +12,7 @@ const CaseDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const [documentList, setDocumentList] = useState();
 
-  console.log("DOC", data?.data);
+  // console.log("DOC", data?.data);
 
   // console.log(data?.data);
   useEffect(() => {

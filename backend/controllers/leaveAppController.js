@@ -72,6 +72,83 @@ exports.getAllLeaveApplications = catchAsync(async (req, res, next) => {
   });
 });
 
+// exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
+//   const leaveApplication = await LeaveApplication.findById(req.params.id);
+//   if (!leaveApplication) {
+//     return next(new AppError("No leave application found with that ID", 404));
+//   }
+
+//   // get the leave balance for the employee
+//   const leaveBalance = await LeaveBalance.findOne({
+//     employee: leaveApplication.employee,
+//   });
+//   if (!leaveBalance) {
+//     return next(new AppError("No leave balance found for that employee", 404));
+//   }
+
+//   // Calculate the number of leave days for the application
+//   let leaveDays =
+//     Math.ceil(
+//       (new Date(leaveApplication.endDate) -
+//         new Date(leaveApplication.startDate)) /
+//         (1000 * 60 * 60 * 24)
+//     ) + 1;
+
+//   // Check if the employee has enough leave balance
+//   if (
+//     (leaveApplication.typeOfLeave === "annual" ||
+//       leaveApplication.typeOfLeave === "casual") &&
+//     leaveDays > leaveBalance.annualLeaveBalance
+//   ) {
+//     return next(new AppError("Not enough annual leave balance", 400));
+//   } else if (
+//     leaveApplication.typeOfLeave === "sick" &&
+//     leaveDays > leaveBalance.sickLeaveBalance
+//   ) {
+//     return next(new AppError("Not enough sick leave balance", 400));
+//   }
+
+//   // If the leave application is approved, deduct the leave days from the leave balance
+//   if (req.body.status === "approved") {
+//     if (
+//       leaveApplication.typeOfLeave === "annual" ||
+//       leaveApplication.typeOfLeave === "casual"
+//     ) {
+//       leaveBalance.annualLeaveBalance -= leaveDays;
+//     } else if (leaveApplication.typeOfLeave === "sick") {
+//       leaveBalance.sickLeaveBalance -= leaveDays;
+//     }
+//     // add other types of leaves if needed
+//     await leaveBalance.save();
+
+//     // Recalculate the number of leave days if the start or end date is modified
+//     if (req.body.startDate || req.body.endDate) {
+//       leaveDays =
+//         Math.ceil(
+//           (new Date(req.body.endDate || leaveApplication.endDate) -
+//             new Date(req.body.startDate || leaveApplication.startDate)) /
+//             (1000 * 60 * 60 * 24)
+//         ) + 1;
+//     }
+//   }
+
+//   // Update the leave application
+//   leaveApplication.set({
+//     daysApproved: leaveDays,
+//     startDate: req.body.startDate || leaveApplication.startDate,
+//     endDate: req.body.endDate || leaveApplication.endDate,
+//     ...req.body,
+//   });
+//   req.leaveApp = leaveApplication;
+
+//   await leaveApplication.save();
+
+//   res.status(200).json({
+//     status: "success",
+//     data: leaveApplication,
+//   });
+// });
+
 exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
   const leaveApplication = await LeaveApplication.findById(req.params.id);
   if (!leaveApplication) {
@@ -133,19 +210,29 @@ exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
   }
 
   // Update the leave application
-  leaveApplication.set({
-    daysApproved: leaveDays,
-    startDate: req.body.startDate || leaveApplication.startDate,
-    endDate: req.body.endDate || leaveApplication.endDate,
-    ...req.body,
-  });
-  req.leaveApp = leaveApplication;
+  const updatedLeaveApplication = await LeaveApplication.findOneAndUpdate(
+    { _id: req.params.id },
+    {
+      daysApproved: leaveDays,
+      startDate: req.body.startDate || leaveApplication.startDate,
+      endDate: req.body.endDate || leaveApplication.endDate,
+      ...req.body,
+    },
+    {
+      runValidators: false,
+      new: true,
+    }
+  );
 
-  await leaveApplication.save();
+  if (!updatedLeaveApplication) {
+    return next(new AppError("No leave application found with that ID", 404));
+  }
+
+  req.leaveApp = updatedLeaveApplication;
 
   res.status(200).json({
     status: "success",
-    data: leaveApplication,
+    data: updatedLeaveApplication,
   });
 });
 

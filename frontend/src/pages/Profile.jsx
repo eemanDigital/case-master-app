@@ -9,7 +9,6 @@ import { useAuth } from "../hooks/useAuth";
 import { FaAddressBook, FaPhone } from "react-icons/fa";
 import { MdMail } from "react-icons/md";
 import { useAuthContext } from "../hooks/useAuthContext";
-import { usePhotoContext } from "../hooks/usePhotoContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import UpdateProfilePicture from "../components/UpdateProfilePicture";
@@ -19,11 +18,6 @@ const Profile = () => {
   const [click, setClick] = useState(false);
 
   const { user } = useAuthContext();
-  // const { photo } = usePhotoContext();
-
-  // console.log("PHOTO", photo?.data?.photo);
-
-  // console.log(user?.data.user.otherPosition, user?.data.user.position);
 
   const [inputValue, setInputValue] = useState({
     passwordCurrent: "",
