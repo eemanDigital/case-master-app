@@ -6,6 +6,7 @@ const LeaveBalance = require("../models/leaveBalanceModel");
 exports.createLeaveApplication = catchAsync(async (req, res, next) => {
   // get current user
   const userId = req.user._id;
+  console.log(req.body);
 
   // get the leave balance for the employee
   const leaveBalance = await LeaveBalance.findOne({
@@ -24,9 +25,8 @@ exports.createLeaveApplication = catchAsync(async (req, res, next) => {
 
   // Check if the employee has enough leave balance
   if (
-    req.body.typeOfLeave === "annual" ||
-    (req.body.typeOfLeave === "casual" &&
-      leaveDays > leaveBalance.annualLeaveBalance)
+    (req.body.typeOfLeave === "annual" || req.body.typeOfLeave === "casual") &&
+    leaveDays > leaveBalance.annualLeaveBalance
   ) {
     return next(new AppError("Not enough annual leave balance", 400));
   } else if (
@@ -64,7 +64,7 @@ exports.getLeaveApplication = catchAsync(async (req, res, next) => {
 
 // get all leave applications
 exports.getAllLeaveApplications = catchAsync(async (req, res, next) => {
-  const leaveApps = await LeaveApplication.find();
+  const leaveApps = await LeaveApplication.find().sort({ createdAt: -1 });
 
   res.status(200).json({
     status: "success",
@@ -93,12 +93,12 @@ exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
         new Date(leaveApplication.startDate)) /
         (1000 * 60 * 60 * 24)
     ) + 1;
-  // console.log("DAYS", leaveDays);
+
   // Check if the employee has enough leave balance
   if (
-    leaveApplication.typeOfLeave === "annual" ||
-    (leaveApplication.typeOfLeave === "casual" &&
-      leaveDays > leaveBalance.annualLeaveBalance)
+    (leaveApplication.typeOfLeave === "annual" ||
+      leaveApplication.typeOfLeave === "casual") &&
+    leaveDays > leaveBalance.annualLeaveBalance
   ) {
     return next(new AppError("Not enough annual leave balance", 400));
   } else if (
@@ -107,7 +107,6 @@ exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
   ) {
     return next(new AppError("Not enough sick leave balance", 400));
   }
-  // add other types of leaves if needed
 
   // If the leave application is approved, deduct the leave days from the leave balance
   if (req.body.status === "approved") {
@@ -127,7 +126,6 @@ exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
   leaveApplication.set({ daysApproved: leaveDays, ...req.body });
   req.leaveApp = leaveApplication;
 
-  // console.log("LEAVEAPP", req.leaveApp);
   await leaveApplication.save();
 
   res.status(200).json({
