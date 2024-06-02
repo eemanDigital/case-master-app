@@ -38,6 +38,8 @@ import TaskAttachment from "./pages/TaskAttachment.jsx";
 import LeaveAppForm from "./pages/LeaveAppForm.jsx";
 import LeaveApplicationDisplay from "./pages/LeaveApplicationDisplay.jsx";
 import LeaveApplicationDetails from "./pages/LeaveApplicationDetails.jsx";
+import TaskList from "./components/TaskList.jsx";
+import TaskDetails from "./pages/TaskDetails.jsx";
 // import CaseDocument from "./pages/CaseDocument.jsx";
 
 // import UpdateProfilePicture from "./components/UpdateProfilePicture.jsx";
@@ -92,11 +94,11 @@ function App() {
           <Route path="profile" element={<Profile />} />
           <Route path="profile/edit" element={<EditUserProfile />} />
           {/* <Route path="profile/edit-image" element={<UpdateProfilePicture />} /> */}
-          <Route path="tasks" element={<CreateTaskForm />} />
+          <Route path="tasks" element={<TaskList />} />
           <Route path="tasks/reminder/:id" element={<TaskReminderForm />} />
           <Route path="tasks/upload" element={<TaskAttachment />} />
-
           <Route path="tasks/:id" element={<UserTask />} />
+          <Route path="tasks/:id/details" element={<TaskDetails />} />
 
           {/* errorElement= {<ErrorPage />} */}
         </Route>

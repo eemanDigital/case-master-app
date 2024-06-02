@@ -177,4 +177,24 @@ exports.updateTask = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.deleteTask = catchAsync(async (req, res, next) => {
+  let task = await Task.findById(req.params.id);
 
+  if (!task) {
+    return next(new AppError("No leave application found with that ID", 404));
+  }
+
+  // check user's role to allow delete
+  if (req.user.role === "admin") {
+    await Task.findByIdAndDelete(req.params.id);
+  } else {
+    return next(
+      new AppError("You are not authorised to perform this operation", 400)
+    );
+  }
+
+  res.status(204).json({
+    status: "success",
+    data: null,
+  });
+});

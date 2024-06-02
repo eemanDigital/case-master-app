@@ -5,7 +5,7 @@ import {
   Button,
   Input,
   Form,
-  Space,
+  Modal,
   Card,
   Divider,
   Typography,
@@ -15,11 +15,29 @@ import {
 } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { SelectInputs } from "../components/DynamicInputs";
-import TaskList from "../components/TaskList";
 
 const CreateTaskForm = () => {
   // destructure textarea from input
   const { TextArea } = Input;
+
+  const [open, setOpen] = useState(false);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [modalText, setModalText] = useState("Content of the modal");
+  const showModal = () => {
+    setOpen(true);
+  };
+  const handleOk = () => {
+    setModalText("The modal will be closed after two seconds");
+    setConfirmLoading(true);
+    setTimeout(() => {
+      setOpen(false);
+      setConfirmLoading(false);
+    }, 2000);
+  };
+  const handleCancel = () => {
+    console.log("Clicked cancel button");
+    setOpen(false);
+  };
 
   const [form] = Form.useForm();
   const [formData, setFormData] = useState({});
@@ -81,123 +99,133 @@ const CreateTaskForm = () => {
   }, [form, handleSubmission, dataFetcher]);
 
   return (
-    <section className="flex justify-between gap-8 ">
-      <Form
-        layout="vertical"
-        form={form}
-        name="dynamic_form_complex"
-        // autoComplete="off"
-        className="flex  justify-center">
-        <Card
-          title="Add Task"
-          bordered={false}
-          style={{ width: 400, height: 850 }}>
-          <div>
-            {/* task title */}
-            <Form.Item
-              label="Task Title"
-              name="title"
-              initialValue={formData?.title}>
-              <Input />
-            </Form.Item>
-          </div>
+    <>
+      <Button onClick={showModal} className="bg-green-700 text-white">
+       Create Task
+      </Button>
+      <Modal
+        title="Send Reminder on Task"
+        open={open}
+        onOk={handleOk}
+        // confirmLoading={}
+        onCancel={handleCancel}>
+        <section className="flex justify-between gap-8 ">
+          <Form
+            layout="vertical"
+            form={form}
+            name="dynamic_form_complex"
+            // autoComplete="off"
+            className="flex  justify-center">
+            <Card
+              title="Add Task"
+              bordered={false}
+              style={{ width: 400, height: 850 }}>
+              <div>
+                {/* task title */}
+                <Form.Item
+                  label="Task Title"
+                  name="title"
+                  initialValue={formData?.title}>
+                  <Input />
+                </Form.Item>
+              </div>
 
-          {/* instruction */}
-          <Form.Item
-            name="instruction"
-            label="Write Instruction here..."
-            //   tooltip="This is a required field"
-            initialValue={formData?.instruction}
-            rules={[
-              {
-                required: true,
-                message: "Please, provide your instruction!",
-              },
-            ]}>
-            <TextArea rows={5} placeholder="Your text here..." />
-          </Form.Item>
+              {/* instruction */}
+              <Form.Item
+                name="instruction"
+                label="Write Instruction here..."
+                //   tooltip="This is a required field"
+                initialValue={formData?.instruction}
+                rules={[
+                  {
+                    required: true,
+                    message: "Please, provide your instruction!",
+                  },
+                ]}>
+                <TextArea rows={5} placeholder="Your text here..." />
+              </Form.Item>
 
-          {/* case to work on */}
-          <Form.Item
-            name="caseToWorkOn"
-            label="Case To Work On"
-            initialValue={formData?.caseToWorkOn}>
-            <Select
-              noStyle
-              notFoundContent={data ? <Spin size="small" /> : null}
-              placeholder="Select a case here"
-              options={casesData}
-              allowClear
-              style={{
-                width: "100%",
-              }}
-            />
-          </Form.Item>
+              {/* case to work on */}
+              <Form.Item
+                name="caseToWorkOn"
+                label="Case To Work On"
+                initialValue={formData?.caseToWorkOn}>
+                <Select
+                  noStyle
+                  notFoundContent={data ? <Spin size="small" /> : null}
+                  placeholder="Select a case here"
+                  options={casesData}
+                  allowClear
+                  style={{
+                    width: "100%",
+                  }}
+                />
+              </Form.Item>
 
-          {/* assigned to */}
+              {/* assigned to */}
 
-          <Form.Item
-            name="assignedTo"
-            label="Assigned To"
-            initialValue={formData?.assignedTo}
-            rules={[
-              {
-                required: true,
-                message: "Please, select reporter!",
-              },
-            ]}>
-            <Select
-              mode="multiple"
-              noStyle
-              notFoundContent={data ? <Spin size="small" /> : null}
-              placeholder="Select a staff"
-              options={usersData}
-              allowClear
-              style={{
-                width: "100%",
-              }}
-            />
-          </Form.Item>
+              <Form.Item
+                name="assignedTo"
+                label="Assigned To"
+                initialValue={formData?.assignedTo}
+                rules={[
+                  {
+                    required: true,
+                    message: "Please, select reporter!",
+                  },
+                ]}>
+                <Select
+                  mode="multiple"
+                  noStyle
+                  notFoundContent={data ? <Spin size="small" /> : null}
+                  placeholder="Select a staff"
+                  options={usersData}
+                  allowClear
+                  style={{
+                    width: "100%",
+                  }}
+                />
+              </Form.Item>
 
-          {/* date assigned */}
-          {/* <Form.Item name="dateAssigned" label="Assigned Date">
+              {/* date assigned */}
+              {/* <Form.Item name="dateAssigned" label="Assigned Date">
             <DatePicker />
           </Form.Item> */}
 
-          {/* due date */}
-          <Form.Item
-            name="dueDate"
-            label="Due Date"
-            rules={[
-              {
-                required: true,
-                message: "Specify date for staff to complete the task",
-              },
-            ]}>
-            <DatePicker />
-          </Form.Item>
-          {/* UPDATE */}
+              {/* due date */}
+              <Form.Item
+                name="dueDate"
+                label="Due Date"
+                rules={[
+                  {
+                    required: true,
+                    message: "Specify date for staff to complete the task",
+                  },
+                ]}>
+                <DatePicker />
+              </Form.Item>
+              {/* UPDATE */}
 
-          {/* task priority */}
+              {/* task priority */}
 
-          <SelectInputs
-            defaultValue="high"
-            fieldName="taskPriority"
-            label="Task Priority"
-            initialValue={formData?.taskPriority}
-            options={taskPriorityOptions}
-          />
+              <SelectInputs
+                defaultValue="high"
+                fieldName="taskPriority"
+                label="Task Priority"
+                initialValue={formData?.taskPriority}
+                options={taskPriorityOptions}
+              />
 
-          <Form.Item>
-            <Button onClick={onSubmit} type="default" htmlType="submit">
-              Submit
-            </Button>
-          </Form.Item>
-        </Card>
-      </Form>
-
-      <TaskList />
-    </section>
+              <Form.Item>
+                <Button onClick={onSubmit} type="default" htmlType="submit">
+                  Submit
+                </Button>
+              </Form.Item>
+            </Card>
+          </Form>
+        </section>
+      </Modal>
+    </>
   );
 };
 

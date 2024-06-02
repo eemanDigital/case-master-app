@@ -14,6 +14,7 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { GoLaw } from "react-icons/go";
 import { FaBriefcase, FaUser } from "react-icons/fa6";
 import { FaTasks } from "react-icons/fa";
+import CreateTaskForm from "../pages/CreateTaskForm";
 // import LeaveResponseForm from "./LeaveResponseForm";
 // import LeaveApplicationDetails from "../pages/LeaveApplicationDetails";
 
@@ -108,13 +109,13 @@ const Dashboard = () => {
       <Divider />
       <Row gutter={16}>
         <Col>
-          <Badge count={cases.results}>
+          <Badge count={cases?.results}>
             <FaBriefcase className="text-3xl text-blue-600" />
           </Badge>
           <Text>Number of Cases</Text>
         </Col>
         <Col>
-          <Badge count={users.results}>
+          <Badge count={users?.results}>
             <FaUser className="text-3xl text-blue-600" />
           </Badge>
           <Text>Number of Staff</Text>
@@ -126,7 +127,7 @@ const Dashboard = () => {
           <Text>Number of lawyers</Text>
         </Col>
         <Col>
-          <Badge count={tasks.results}>
+          <Badge count={tasks?.results}>
             <FaTasks className="text-3xl text-blue-600" />
           </Badge>
           <Text>Number of Assigned Tasks</Text>
@@ -162,6 +163,10 @@ const Dashboard = () => {
               <Button className={btnStyle}>Your Leave Applications</Button>
             )}
           </Link>
+        </Col>
+
+        <Col>
+        <CreateTaskForm/>
         </Col>
       </Row>
       {isAdmin && <CreateLeaveBalanceForm />}

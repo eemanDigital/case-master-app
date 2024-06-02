@@ -58,7 +58,7 @@ const Login = () => {
       // Call fetchData with your endpoint, method, payload, and any additional arguments
       await authenticate("users/login", "post", inputValue);
       // Handle successful response
-      if (data.status === "success") {
+      if (data?.status === "success") {
         navigate("/dashboard");
       }
     } catch (err) {
