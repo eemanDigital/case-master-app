@@ -56,17 +56,17 @@ export const useAuth = () => {
       });
 
       setData(response.data);
-      toast.success(response.data.status, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        toastId: 12,
-        progress: undefined,
-        theme: "light",
-      });
+      // toast.success(response.data.status, {
+      //   position: "top-right",
+      //   autoClose: 5000,
+      //   hideProgressBar: false,
+      //   closeOnClick: true,
+      //   pauseOnHover: true,
+      //   draggable: true,
+      //   toastId: 12,
+      //   progress: undefined,
+      //   theme: "light",
+      // });
 
       localStorage.setItem("user", JSON.stringify(response.data));
       dispatch({ type: "LOGIN", payload: response.data });

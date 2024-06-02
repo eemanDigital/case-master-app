@@ -59,7 +59,7 @@ const CaseReports = () => {
   const { reports, errorReports, loadingReports } = useDataGetterHook();
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5); // Change this to your desired items per page
+  const [itemsPerPage] = useState(5); //number of items per page
 
   const indexOfLastReport = currentPage * itemsPerPage;
   const indexOfFirstReport = indexOfLastReport - itemsPerPage;

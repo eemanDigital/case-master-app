@@ -2,7 +2,7 @@ import Input from "../components/Inputs";
 import lawyer1 from "../assets/lawyer1.svg";
 import Button from "../components/Button";
 import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useNavigate } from "react-router-dom";
@@ -41,7 +41,6 @@ const Login = () => {
       toast.error("Enter both your email and password", {});
       return;
     }
-    navigate("/dashboard");
     if (user) {
       toast.info("You are already logged in", {
         position: "top-right",
@@ -55,13 +54,13 @@ const Login = () => {
       });
       return;
     }
-
     try {
       // Call fetchData with your endpoint, method, payload, and any additional arguments
       await authenticate("users/login", "post", inputValue);
       // Handle successful response
-
-      //
+      if (data.status === "success") {
+        navigate("/dashboard");
+      }
     } catch (err) {
       console.log(err);
     }
@@ -71,7 +70,14 @@ const Login = () => {
     setClick(() => !click);
   }
 
-  // console.log("error", error);
+  // console.log("data", data.status);
+
+  // redirect user upon successful login
+  useEffect(() => {
+    if (data?.status === "success") {
+      navigate("/dashboard");
+    }
+  }, [data, navigate]);
 
   let inputStyle = ` appearance-none block  sm:w-[344px] bg-gray-200 text-red border ${
     error && "border-red-500"

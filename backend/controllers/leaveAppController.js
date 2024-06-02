@@ -63,7 +63,7 @@ exports.getLeaveApplication = catchAsync(async (req, res, next) => {
 });
 
 // get all leave applications
-exports.getAllLeaveApplications = catchAsync(async (req, res, next) => {
+exports.getLeaveApplications = catchAsync(async (req, res, next) => {
   const leaveApps = await LeaveApplication.find().sort({ createdAt: -1 });
 
   res.status(200).json({
@@ -236,13 +236,27 @@ exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
   });
 });
 
+// delete application handler
 exports.deleteLeaveApplication = catchAsync(async (req, res, next) => {
-  const leaveApplication = await LeaveApplication.findByIdAndDelete(
-    req.params.id
-  );
+  let leaveApplication = await LeaveApplication.findById(req.params.id);
+
   if (!leaveApplication) {
     return next(new AppError("No leave application found with that ID", 404));
   }
+
+  // check user's role to allow delete
+  if (
+    req.user.role === "admin" ||
+    req.user.role === "hr" ||
+    (req.user.role === "user" && leaveApplication.status === "pending")
+  ) {
+    await LeaveApplication.findByIdAndDelete(req.params.id);
+  } else {
+    return next(
+      new AppError("You are not authorised to perform this operation", 400)
+    );
+  }
+
   res.status(204).json({
     status: "success",
     data: null,

@@ -15,7 +15,7 @@ import { GoLaw } from "react-icons/go";
 import { FaBriefcase, FaUser } from "react-icons/fa6";
 import { FaTasks } from "react-icons/fa";
 // import LeaveResponseForm from "./LeaveResponseForm";
-import LeaveApplicationDetails from "../pages/LeaveApplicationDetails";
+// import LeaveApplicationDetails from "../pages/LeaveApplicationDetails";
 
 const { Title, Text } = Typography;
 const Dashboard = () => {
@@ -27,6 +27,8 @@ const Dashboard = () => {
   // console.log(userId);
   // get admin
   const isAdmin = user?.data?.user?.role === "admin";
+  const isAdminOrHr =
+    user?.data?.user?.role === "admin" || user?.data?.user?.role === "hr";
 
   useEffect(() => {
     if (userId) {
@@ -151,17 +153,19 @@ const Dashboard = () => {
         ) : (
           <Col>You are not entitled to leave yet</Col>
         )}
-        {isAdmin && (
-          <Col>
-            <Link to="leave-application-list">
+
+        <Col>
+          <Link to="leave-application-list">
+            {isAdminOrHr ? (
               <Button className={btnStyle}>Manage Leave Applications</Button>
-            </Link>
-          </Col>
-        )}
+            ) : (
+              <Button className={btnStyle}>Your Leave Applications</Button>
+            )}
+          </Link>
+        </Col>
       </Row>
       {isAdmin && <CreateLeaveBalanceForm />}
       <Row gutter={16}>
-        {/* <LeaveApplicationDetails /> */}
         <Col>
           <Card title="Your Tasks" bordered={false}>
             {userTask}

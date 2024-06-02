@@ -6,7 +6,7 @@ import { formatDate } from "../utils/formatDate";
 import { useDataFetch } from "../hooks/useDataFetch";
 import avatar from "../assets/avatar.png";
 
-const LeaveApplicationDisplay = () => {
+const LeaveBalanceList = () => {
   const { leaveApps, loadingLeaveApp, errorLeaveApp } = useDataGetterHook();
   const { Column, ColumnGroup } = Table;
   const { user } = useAuthContext();
@@ -139,4 +139,4 @@ const LeaveApplicationDisplay = () => {
   );
 };
 
-export default LeaveApplicationDisplay;
+export default LeaveBalanceList;

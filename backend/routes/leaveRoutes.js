@@ -10,7 +10,7 @@ router.use(protect);
 
 // Leave Application routes
 router.post("/applications", leaveAppController.createLeaveApplication);
-router.get("/applications", leaveAppController.getAllLeaveApplications);
+router.get("/applications", leaveAppController.getLeaveApplications);
 router.get("/applications/:id", leaveAppController.getLeaveApplication);
 router.put(
   "/applications/:id",

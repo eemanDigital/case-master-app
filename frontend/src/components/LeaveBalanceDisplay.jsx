@@ -40,11 +40,11 @@ const LeaveBalanceDisplay = ({ userId, visible, onClose }) => {
   //   );
   // }
 
-  console.log("ERRO", data);
+  // console.log("ERRO", data);
 
   return (
     <>
-      <Button className="bg-blue-400 text-white" onClick={showModal}>
+      <Button className="bg-blue-500 text-white" onClick={showModal}>
         See Leave Balance
       </Button>
       <Modal open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>

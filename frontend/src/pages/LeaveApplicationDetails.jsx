@@ -23,6 +23,9 @@ const LeaveApplicationDetails = () => {
   return (
     <>
       <Descriptions title="Leave Details" bordered>
+        <Descriptions.Item label="Created On">
+          {formatDate(data?.data?.createdAt ? data?.data?.createdAt : null)}
+        </Descriptions.Item>
         <Descriptions.Item label="Days Applied For">
           {data?.data?.daysAppliedFor}
         </Descriptions.Item>

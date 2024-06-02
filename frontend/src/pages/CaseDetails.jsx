@@ -10,7 +10,7 @@ import { FaFileAlt } from "react-icons/fa";
 const CaseDetails = () => {
   const { id } = useParams();
   const { dataFetcher, data, loading, error } = useDataFetch();
-  const [documentList, setDocumentList] = useState();
+  
 
   // console.log("DOC", data?.data);
 
