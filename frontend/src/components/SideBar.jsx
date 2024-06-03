@@ -62,7 +62,7 @@ const navItems = [
   },
   {
     name: "Clients",
-    path: "client",
+    path: "clients",
     icon: <RiCustomerService2Line />,
   },
   {
@@ -158,7 +158,7 @@ const SideBar = ({ isOpen, handleOpen }) => {
                     ? avatar
                     : femaleAvatar
                 }
-                alt={`${user?.data?.user.firstName}'s profile image`}
+                alt={`${user?.data?.user?.firstName}'s profile image`}
                 className="w-12 h-12  mt-6  object-cover object-right-top rounded-full"
               />
               <span className="tooltiptext">Profile</span>

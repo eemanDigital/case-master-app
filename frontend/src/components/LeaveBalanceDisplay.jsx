@@ -45,9 +45,13 @@ const LeaveBalanceDisplay = ({ userId, visible, onClose }) => {
   return (
     <>
       <Button className="bg-blue-500 text-white" onClick={showModal}>
-        See Leave Balance
+        Your Leave Balance
       </Button>
-      <Modal open={isModalOpen} onOk={handleOk} onCancel={handleCancel}>
+      <Modal
+        width={700}
+        open={isModalOpen}
+        onOk={handleOk}
+        onCancel={handleCancel}>
         <Descriptions title="Leave Balance" bordered>
           <Descriptions.Item label="Annual Leave Balance">
             {data?.data?.annualLeaveBalance}

@@ -19,6 +19,7 @@ router.put(
 );
 router.delete("/applications/:id", leaveAppController.deleteLeaveApplication);
 
+// LEAVE BALANCE ROUTES
 // Apply the restrictTo middleware only to leave balance routes
 router.post(
   "/balances",
@@ -26,10 +27,12 @@ router.post(
   leaveBalanceController.createLeaveBalance
 );
 router.get("/balances/:employeeId", leaveBalanceController.getLeaveBalance);
+router.get("/balances", leaveBalanceController.getLeaveBalances);
 router.put(
   "/balances/:employeeId",
   restrictTo("admin", "hr"),
   leaveBalanceController.updateLeaveBalance
 );
+router.delete("/balances/:id", leaveBalanceController.deleteLeaveBalance);
 
 module.exports = router;

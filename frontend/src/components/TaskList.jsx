@@ -64,10 +64,10 @@ const TaskList = () => {
       key: "taskPriority",
     },
     {
-      title: "Due Date",
-      dataIndex: "dueDate",
-      key: "dueDate",
-      render: (dueDate) => formatDate(dueDate),
+      title: "Date Assigned",
+      dataIndex: "dateAssigned",
+      key: "dateAssigned",
+      render: (dateAssigned) => formatDate(dateAssigned),
     },
     {
       title: "Action",

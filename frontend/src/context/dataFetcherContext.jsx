@@ -10,7 +10,8 @@ const DataFetcherContext = ({ children }) => {
   const [files, setFiles] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [leaveApps, setLeaveApp] = useState([]);
-  // const [user, setUser] = useState([]);
+  const [clients, setClients] = useState([]);
+  const [leaveBalance, setLeaveBalance] = useState([]);
 
   const [loadingCases, setLoadingCases] = useState(false);
   const [loadingReports, setLoadingReports] = useState(false);
@@ -18,7 +19,9 @@ const DataFetcherContext = ({ children }) => {
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loadingTasks, setLoadingTasks] = useState(false);
   const [loadingLeaveApp, setLoadingLeaveApp] = useState(false);
-  // const [loadingUser, setLoadingUser] = useState(false);
+  const [loadingLeaveBalance, setLoadingLeaveBalance] = useState(false);
+  const [loadingClients, setLoadingClients] = useState(false);
+
   const [errorCases, setErrorCases] = useState("");
   const [errorUsers, setErrorUsers] = useState("");
   // const [errorUser, setErrorUser] = useState("");
@@ -26,6 +29,8 @@ const DataFetcherContext = ({ children }) => {
   const [errorFiles, setErrorFiles] = useState("");
   const [errorTasks, setErrorTasks] = useState("");
   const [errorLeaveApp, setErrorLeaveApp] = useState("");
+  const [errorLeaveBalance, setErrorLeaveBalance] = useState("");
+  const [errorClients, setErrorClients] = useState("");
 
   const token = document.cookie
     .split("; ")
@@ -145,6 +150,43 @@ const DataFetcherContext = ({ children }) => {
         setLoadingLeaveApp(false);
       }
     }
+    // fetch clients
+    async function fetchLeaveBalance() {
+      try {
+        setLoadingLeaveBalance(true);
+        const response = await axios.get(
+          `http://localhost:3000/api/v1/leaves/balances`,
+          {
+            headers,
+            withCredentials: true,
+          }
+        );
+
+        setLeaveBalance(response.data);
+      } catch (err) {
+        setErrorLeaveBalance(err.message || "Failed to fetch users");
+      } finally {
+        setLoadingLeaveBalance(false);
+      }
+    }
+    async function fetchClients() {
+      try {
+        setLoadingClients(true);
+        const response = await axios.get(
+          `http://localhost:3000/api/v1/clients`,
+          {
+            headers,
+            withCredentials: true,
+          }
+        );
+
+        setClients(response.data);
+      } catch (err) {
+        setErrorClients(err.message || "Failed to fetch users");
+      } finally {
+        setLoadingClients(false);
+      }
+    }
 
     // Call the functions to fetch cases and users separately
     fetchCases();
@@ -153,6 +195,8 @@ const DataFetcherContext = ({ children }) => {
     fetchFiles();
     fetchTasks();
     fetchLeaveApp();
+    fetchLeaveBalance();
+    fetchClients();
   }, []);
 
   return (
@@ -164,18 +208,24 @@ const DataFetcherContext = ({ children }) => {
         files,
         tasks,
         leaveApps,
+        leaveBalance,
+        clients,
         loadingCases,
         loadingUsers,
+        loadingClients,
         errorCases,
         errorUsers,
         loadingReports,
         errorReports,
         loadingFiles,
         loadingLeaveApp,
+        loadingLeaveBalance,
         errorFiles,
         loadingTasks,
         errorTasks,
         errorLeaveApp,
+        errorLeaveBalance,
+        errorClients,
       }}>
       {children}
     </DataContext.Provider>

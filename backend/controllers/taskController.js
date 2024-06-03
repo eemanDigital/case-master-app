@@ -125,7 +125,7 @@ exports.createTask = catchAsync(async (req, res, next) => {
 });
 
 exports.getTasks = catchAsync(async (req, res, next) => {
-  const tasks = await Task.find();
+  const tasks = await Task.find().sort({ dateAssigned: 1 });
   // .populate("assignedTo")
   // .populate("caseToWorkOn");
 

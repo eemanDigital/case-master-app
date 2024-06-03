@@ -45,10 +45,10 @@ const taskSchema = new mongoose.Schema(
         required: [true, "A task must be assigned to a staff"],
       },
     ],
-    // dateAssigned: {
-    //   type: Date,
-    //   default: Date.now,
-    // },
+    dateAssigned: {
+      type: Date,
+      default: Date.now,
+    },
     dueDate: {
       type: Date,
       required: [true, "A task must have a due date"],

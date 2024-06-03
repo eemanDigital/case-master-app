@@ -31,10 +31,7 @@ const EditUserProfile = () => {
 
   const [click, setClick] = useState(false);
   const { user } = useAuthContext();
-  // const { file } = useFileContext();
-  // const fileId = file?.data?.file.id;
 
-  // console.log(fileId);
   const [inputValue, setInputValue] = useState({
     firstName: "",
     lastName: "",
@@ -52,8 +49,6 @@ const EditUserProfile = () => {
   });
   const getOtherFieldSelected = inputValue.position === "Other";
 
-  // handleChange function
-  // handleChange function
   function handleChange(e) {
     const { name, value } = e.target;
 
@@ -76,7 +71,6 @@ const EditUserProfile = () => {
   // function to handle form submission
 
   // const isAdmin = user?.data.user.role === "admin";
-  console.log(inputValue);
 
   async function handleSubmit(e) {
     e.preventDefault();

@@ -40,6 +40,8 @@ import LeaveApplicationDisplay from "./pages/LeaveApplicationDisplay.jsx";
 import LeaveApplicationDetails from "./pages/LeaveApplicationDetails.jsx";
 import TaskList from "./components/TaskList.jsx";
 import TaskDetails from "./pages/TaskDetails.jsx";
+import ClientLists from "./pages/ClientLists.jsx";
+import ClientDetails from "./pages/ClientDetails.jsx";
 // import CaseDocument from "./pages/CaseDocument.jsx";
 
 // import UpdateProfilePicture from "./components/UpdateProfilePicture.jsx";
@@ -99,6 +101,8 @@ function App() {
           <Route path="tasks/upload" element={<TaskAttachment />} />
           <Route path="tasks/:id" element={<UserTask />} />
           <Route path="tasks/:id/details" element={<TaskDetails />} />
+          <Route path="clients" element={<ClientLists />} />
+          <Route path="clients/:id/details" element={<ClientDetails />} />
 
           {/* errorElement= {<ErrorPage />} */}
         </Route>

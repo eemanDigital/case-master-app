@@ -10,13 +10,13 @@ import TaskResponse from "./TaskResponse";
 import LeaveBalanceDisplay from "./LeaveBalanceDisplay";
 import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
 import TaskResponseForm from "./TaskResponseForm";
+import AddClientForm from "./AddClientForm";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { GoLaw } from "react-icons/go";
 import { FaBriefcase, FaUser } from "react-icons/fa6";
 import { FaTasks } from "react-icons/fa";
 import CreateTaskForm from "../pages/CreateTaskForm";
-// import LeaveResponseForm from "./LeaveResponseForm";
-// import LeaveApplicationDetails from "../pages/LeaveApplicationDetails";
+import LeaveBalanceList from "../pages/leaveBalanceList";
 
 const { Title, Text } = Typography;
 const Dashboard = () => {
@@ -142,6 +142,16 @@ const Dashboard = () => {
             </Link>
           </Col>
         )}
+        {/* <Col>
+          <Link to="clients">
+            <Button className={btnStyle}>Clients</Button>
+          </Link>
+        </Col> */}
+        <Col>
+          <AddClientForm />
+        </Col>
+
+        <Col>{isAdminOrHr && <LeaveBalanceList />}</Col>
         <Col>
           <Link to="leave-application">
             <Button className={btnStyle}>Apply for leave</Button>
@@ -166,7 +176,7 @@ const Dashboard = () => {
         </Col>
 
         <Col>
-        <CreateTaskForm/>
+          <CreateTaskForm />
         </Col>
       </Row>
       {isAdmin && <CreateLeaveBalanceForm />}
