@@ -1,6 +1,8 @@
 import {
   createBrowserRouter,
   createRoutesFromElements,
+  Navigate,
+  useLocation,
   Route,
   RouterProvider,
 } from "react-router-dom";
@@ -17,14 +19,12 @@ import AddUserForm from "./pages/AddUserForm.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import Profile from "./pages/Profile.jsx";
-import CreateTaskForm from "./pages/CreateTaskForm.jsx";
 import CaseReports from "./pages/CaseReports.jsx";
 import CreateCaseForm from "./pages/CreateCaseForm.jsx";
 import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
 import PhotoContextProvider from "./context/photoContext.jsx";
-// import CaseDocument from "./pages/CaseDocument.jsx";
 import EditUserProfile from "./pages/EditUserProfile.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
 import UserTask from "./components/UserTask.jsx";
@@ -42,11 +42,7 @@ import TaskList from "./components/TaskList.jsx";
 import TaskDetails from "./pages/TaskDetails.jsx";
 import ClientLists from "./pages/ClientLists.jsx";
 import ClientDetails from "./pages/ClientDetails.jsx";
-// import CaseDocument from "./pages/CaseDocument.jsx";
-
-// import UpdateProfilePicture from "./components/UpdateProfilePicture.jsx";
-// import CreateCase from "./pages/CreateCase.jsx";
-// import CaseForm from "./pages/CaseForm.jsx";
+import ProtectedRoute from "./components/ProtectRoutes.jsx";
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -63,10 +59,25 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/resetpassword" element={<ResetPassword />} />
-
+        {/* 
         <Route
           path="dashboard"
-          element={<DashboardLayout isOpen={isOpen} handleOpen={handleOpen} />}>
+          element={
+            user ? (
+              <DashboardLayout isOpen={isOpen} handleOpen={handleOpen} />
+            ) : (
+              <Navigate to="/login" />
+            )
+          }> */}
+        <Route
+          path="dashboard"
+          element={
+            <ProtectedRoute
+              element={
+                <DashboardLayout isOpen={isOpen} handleOpen={handleOpen} />
+              }
+            />
+          }>
           <Route index element={<Dashboard />} />
           <Route path="add-user" element={<AddUserForm />} />
           <Route path="cases" element={<Cases open={isOpen} />} />
