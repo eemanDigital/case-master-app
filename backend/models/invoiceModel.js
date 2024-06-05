@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 const Schema = mongoose.Schema;
 
 const accountDetailSchema = new Schema({
@@ -33,6 +34,12 @@ const invoiceSchema = new Schema(
       required: true,
     },
 
+    workTitle: {
+      type: String,
+      maxlength: [50, "title should not be more that 50 character"],
+    },
+
+    invoiceReference: String,
     services: [
       {
         serviceDescriptions: {
@@ -90,41 +97,38 @@ const invoiceSchema = new Schema(
     //     ref: 'Payment'
     //   }]
   },
-  { timestamps: true }
+  { timestamps: true },
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
 
-// middleware to calculate hourly fee for a single item
-invoiceSchema.pre("save", function (next) {
-  let totalAmount = 0;
-
-  if (this.services.hours && this.services.feeRatePerHour) {
-    this.services.amount =
-      this.services[0].hours * this.services[0].feeRatePerHour;
-    totalAmount += this.services[0].amount;
-  }
-
-  this.services[0].amount = totalAmount;
-
+// populate middleware
+invoiceSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: "client",
+    select: "-active -dob",
+  }).populate({
+    path: "case",
+    select: "firstParty.name.name secondParty.name.name ",
+  });
   next();
 });
 
-// middleware to calculate all hourly fees
-// invoiceSchema.pre("save", function (next) {
-//   let totalAmount = 0;
+// reference generator for invoiceReference
+invoiceSchema.pre("save", function (next) {
+  if (!this.isNew) {
+    //isNew: check if doc is being saved for the first time
+    next();
+    return;
+  }
 
-//   this.services.forEach((service) => {
-//     if (service.hours && service.feeRatePerHour) {
-//       service.amount = service.hours * service.feeRatePerHour;
-//       totalAmount += service.amount;
-//     }
-//   });
-//   this.totalProfessionalFees = totalAmount;
-//   this.totalInvoiceAmount = totalAmount + this.previousBalance;
-//   this.totalAmountDue = totalAmount + this.previousBalance - this.amountPaid;
+  this.invoiceReference = "INV-" + new Date().getTime();
+  next();
+});
 
-//   next();
-// });
-// middleware to calculate hourly fee and total invoice amount
+// Middleware to calculate fees and total invoice amounts
 invoiceSchema.pre("save", function (next) {
   let totalAmount = 0;
 
@@ -137,22 +141,28 @@ invoiceSchema.pre("save", function (next) {
     }
   });
 
-  // If there's a previous balance, add it to the total amount
+  // Middleware to Calculate total professional fees
+  this.totalProfessionalFees = totalAmount;
+
+  // If there's a previous balance owed, add it to the total amount
   if (this.previousBalance) {
     totalAmount += this.previousBalance;
   }
 
-  // If there's an amount unpaid, subtract it from the total amount
-  if (this.amountUnpaid) {
-    totalAmount -= this.amountUnpaid;
+  // If there's an amount paid/initial payment, subtract it from the total amount
+  if (this.amountPaid) {
+    totalAmount -= this.amountPaid;
   }
 
   this.totalInvoiceAmount = totalAmount;
 
+  // Calculate the amount overdue
+  this.totalAmountDue = totalAmount;
+
   next();
 });
 
-// calculate total hours
+// Middleware to calculate total hours
 invoiceSchema.pre("save", function (next) {
   let jobHours = 0;
 

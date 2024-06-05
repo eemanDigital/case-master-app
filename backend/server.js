@@ -13,7 +13,7 @@ const reportRouter = require("./routes/caseReportRoute");
 const fileRouter = require("./routes/fileRoutes");
 const leaveRouter = require("./routes/leaveRoutes");
 const invoiceRouter = require("./routes/invoiceRoutes");
-
+const paymentRouter = require("./routes/paymentRoutes");
 const notificationRouter = require("./routes/notificationRoutes");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
@@ -84,6 +84,7 @@ app.use("/api/v1/clients", clientRouter);
 app.use("/api/v1/reports", reportRouter);
 app.use("/api/v1/leaves", leaveRouter);
 app.use("/api/v1/invoices", invoiceRouter);
+app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/notifications", notificationRouter);
 
 //handles non-existing route
