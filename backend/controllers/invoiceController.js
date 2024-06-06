@@ -102,21 +102,85 @@ exports.deleteInvoice = catchAsync(async (req, res, next) => {
   });
 });
 
+// exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
+//   const invoice = await Invoice.findById(req.params.id);
+//   if (!invoice) {
+//     return next(new AppError("No invoice found with that ID", 404));
+//   }
+
+//   ejs.renderFile(
+//     path.join(__dirname, "../views/template.ejs"),
+//     { invoice },
+//     function (err, html) {
+//       if (err) {
+//         console.error(err);
+//         res.sendStatus(500);
+//       } else {
+//         const options = pdfoptions; // assuming pdfoptions is an object with the required options
+
+//         const document = {
+//           html: html,
+//           data: {
+//             invoice: invoice,
+//           },
+//           path: `./output/${Math.random()}_invoice.pdf`,
+//         };
+
+//         pdf
+//           .create(document, options)
+//           .then((result) => {
+//             console.log(result);
+//             res.status(200).json({
+//               status: "success",
+//               data: result,
+//             });
+//           })
+//           .catch((error) => {
+//             console.error(error);
+//             res.sendStatus(500);
+//           });
+//       }
+//     }
+//   );
+// });
+
 exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
   const invoice = await Invoice.findById(req.params.id);
   if (!invoice) {
     return next(new AppError("No invoice found with that ID", 404));
   }
 
+  const absolutePath = path.join(__dirname, "../public");
+
   ejs.renderFile(
     path.join(__dirname, "../views/template.ejs"),
-    { invoice },
+    { invoice, absolutePath },
     function (err, html) {
       if (err) {
         console.error(err);
         res.sendStatus(500);
       } else {
-        const options = pdfoptions; // assuming pdfoptions is an object with the required options
+        const options = {
+          format: "A4",
+          orientation: "portrait",
+          border: "8mm",
+          header: {
+            height: "40mm",
+            contents: `<div style="text-align: center;"> A.T Lukman & Co.
+                <p>Address:  In a server-side rendering context, the relative paths to CSS files can sometimes be problematic, especially when generating </p>
+            </div>`,
+          },
+          footer: {
+            height: "25mm",
+            contents: {
+              first: "Invoice",
+              2: "Second page",
+              default:
+                '<span style="color: #444;">{{page}}</span>/<span>{{pages}}</span>', // fallback value
+              last: "Last Page",
+            },
+          },
+        };
 
         const document = {
           html: html,

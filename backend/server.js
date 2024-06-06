@@ -39,7 +39,7 @@ app.use(express.json());
 
 // template
 app.set("view engine", "ejs");
-app.use(expressLayouts);
+// app.use(expressLayouts);
 
 app.use(express.static(path.join(__dirname, "public")));
 
