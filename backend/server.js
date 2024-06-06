@@ -1,6 +1,7 @@
 const dotenv = require("dotenv");
 const express = require("express");
 const mongoose = require("mongoose");
+const expressLayouts = require("express-ejs-layouts");
 const path = require("path");
 const cors = require("cors");
 const morgan = require("morgan");
@@ -35,6 +36,12 @@ dotenv.config({ path: "./config.env" });
 const app = express();
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+
+// template
+app.set("view engine", "ejs");
+app.use(expressLayouts);
+
+app.use(express.static(path.join(__dirname, "public")));
 
 // app.use(cors());
 app.use(

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Invoice</title>
+  </head>
+  <body>
+    <h1>Invoice: <%= invoice.invoiceReference %></h1>
+    <h2>Client: <%= invoice.client.name %></h2>
+    <h2>Work Title: <%= invoice.workTitle %></h2>
+    <h2>Status: <%= invoice.status %></h2>
+
+    <h3>Services</h3>
+    <ul>
+      <% invoice.services.forEach(function(service) { %>
+      <li>
+        <p>Description: <%= service.serviceDescriptions %></p>
+        <p>Hours: <%= service.hours %></p>
+        <p>Date: <%= service.date %></p>
+        <p>Fee Rate Per Hour: <%= service.feeRatePerHour %></p>
+        <p>Amount: <%= service.amount %></p>
+      </li>
+      <% }); %>
+    </ul>
+
+    <h3>Account Details</h3>
+    <p>Account Name: <%= invoice.accountDetails.accountName %></p>
+    <p>Account Number: <%= invoice.accountDetails.accountNumber %></p>
+    <p>Bank: <%= invoice.accountDetails.bank %></p>
+    <p>Reference: <%= invoice.accountDetails.reference %></p>
+
+    <h3>Payment Details</h3>
+    <p>Total Hours: <%= invoice.totalHours %></p>
+    <p>Total Professional Fees: <%= invoice.totalProfessionalFees %></p>
+    <p>Previous Balance: <%= invoice.previousBalance %></p>
+    <p>Total Amount Due: <%= invoice.totalAmountDue %></p>
+    <p>Total Invoice Amount: <%= invoice.totalInvoiceAmount %></p>
+    <p>Amount Paid: <%= invoice.amountPaid %></p>
+
+    <h3>Payment Instructions</h3>
+    <p><%= invoice.paymentInstructionTAndC %></p>
+  </body>
+</html>

@@ -2,13 +2,13 @@ const mongoose = require("mongoose");
 
 const Schema = mongoose.Schema;
 
-const accountDetailSchema = new Schema({
-  AccountName: {
+const accountDetailSchema = new mongoose.Schema({
+  accountName: {
     type: String,
     required: [true, "provide account name"],
     trim: true,
   },
-  AccountNumber: {
+  accountNumber: {
     type: String,
     required: [true, "provide account number"],
     trim: true,
@@ -68,7 +68,8 @@ const invoiceSchema = new Schema(
       required: true,
     },
 
-    accountDetails: { accountDetailSchema },
+    accountDetails: accountDetailSchema,
+
     status: {
       type: String,
       enum: ["paid", "unpaid", "overdue"],

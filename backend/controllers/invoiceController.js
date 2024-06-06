@@ -2,6 +2,11 @@ const Invoice = require("../models/invoiceModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const multer = require("multer");
+const fs = require("fs");
+const pdf = require("pdf-creator-node");
+const path = require("path");
+const pdfoptions = require("../utils/pdfoptions");
+const ejs = require("ejs");
 
 // handle signature upload for the invoice
 const multerStorage = multer.memoryStorage();
@@ -95,4 +100,46 @@ exports.deleteInvoice = catchAsync(async (req, res, next) => {
     status: "success",
     data: null,
   });
+});
+
+exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
+  const invoice = await Invoice.findById(req.params.id);
+  if (!invoice) {
+    return next(new AppError("No invoice found with that ID", 404));
+  }
+
+  ejs.renderFile(
+    path.join(__dirname, "../views/template.ejs"),
+    { invoice },
+    function (err, html) {
+      if (err) {
+        console.error(err);
+        res.sendStatus(500);
+      } else {
+        const options = pdfoptions; // assuming pdfoptions is an object with the required options
+
+        const document = {
+          html: html,
+          data: {
+            invoice: invoice,
+          },
+          path: `./output/${Math.random()}_invoice.pdf`,
+        };
+
+        pdf
+          .create(document, options)
+          .then((result) => {
+            console.log(result);
+            res.status(200).json({
+              status: "success",
+              data: result,
+            });
+          })
+          .catch((error) => {
+            console.error(error);
+            res.sendStatus(500);
+          });
+      }
+    }
+  );
 });

@@ -6,6 +6,7 @@ const {
   updateInvoice,
   deleteInvoice,
   uploadUserSignature,
+  generateInvoicePdf,
 } = require("../controllers/invoiceController");
 const { protect } = require("../controllers/authController");
 
@@ -16,5 +17,7 @@ router.use(protect);
 router.route("/").get(getAllInvoices).post(uploadUserSignature, createInvoice);
 
 router.route("/:id").get(getInvoice).patch(updateInvoice).delete(deleteInvoice);
+
+router.get("/pdf/:id", generateInvoicePdf);
 
 module.exports = router;
