@@ -1,7 +1,6 @@
 const dotenv = require("dotenv");
 const express = require("express");
 const mongoose = require("mongoose");
-const expressLayouts = require("express-ejs-layouts");
 const path = require("path");
 const cors = require("cors");
 const morgan = require("morgan");
@@ -38,10 +37,16 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // template
-app.set("view engine", "ejs");
-// app.use(expressLayouts);
-
+// app.set("view engine", "pug");
+// app.set("views", path.join(__dirname, "views"));
+// // app.use(expressLayouts);
 app.use(express.static(path.join(__dirname, "public")));
+// Set up Pug as the view engine
+app.set("view engine", "pug");
+app.set("views", path.join(__dirname, "views"));
+
+// Serve static files from the 'views' directory
+app.use("/css", express.static(path.join(__dirname, "views/css")));
 
 // app.use(cors());
 app.use(
@@ -52,7 +57,6 @@ app.use(
   })
 );
 // app.use(express.static("public"));
-app.use(express.static(path.join(__dirname, "public")));
 
 app.use(cookieParser());
 // connection to mongoose - MONGODB ATLAS

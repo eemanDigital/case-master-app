@@ -1,0 +1,168 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport", content="width=device-width, initial-scale=1.0")
+    title Invoice
+    style.
+      body {
+        font-family: "Roboto Condensed", sans-serif;
+        font-size: 18px;
+        font-style: normal;
+        line-height: 1.5;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      h1, h2, h3, p, span {
+        margin: 0;
+        padding: 0;
+      }
+      h1 {
+        color: #4b5563;
+        margin-bottom: 0.5rem;
+      }
+      h2, h3 {
+        color: #4b5563;
+        margin-bottom: 0.25rem;
+      }
+      .container {
+        width: 80%;
+        margin: 0 auto;
+        padding: 2rem 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 2rem;
+      }
+      .header td, .header-invoice td, .addresses td {
+        border: none;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 0.5rem;
+        text-align: left;
+      }
+      th {
+        background-color: #d4d4d8;
+      }
+      .header, .addresses, .invoice-details {
+        width: 100%;
+        margin-bottom: 2rem;
+      }
+      .header img {
+        width: 50px;
+      }
+      .header-invoice, .logo, .from, .to, .status, .work-title, .case-reference, .payment-instructions {
+        width: 50%;
+      }
+      .additional-info {
+        margin: 20px 0;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .additional-info h2 {
+        margin: 0 0 10px 0;
+        color: #333;
+      }
+      .additional-info p {
+        margin: 0 0 20px 0;
+        color: #555;
+      }
+      .additional-info .case-reference p {
+        margin-bottom: 0;
+      }
+  body
+    .container
+      table.header
+        tr
+          td.header-invoice
+            h1 Invoice
+            p Invoice No: #{invoice.invoiceReference}
+          td.logo
+            img(src="./logo.png", alt="Company Logo")
+      table.addresses
+        tr
+          td.from
+            h1 Invoice To:
+            h3 #{invoice.client.firstName} #{invoice.client.secondName}
+            p Address: #{invoice.client.address}
+            p Phone: #{invoice.client.phone}
+            p Email: #{invoice.client.email}
+          td.to
+            h1 Invoice From:
+            h3 A.T Lukman & Co.
+            p No 32, Allen Street Maitama, Abuja
+      table.invoice-details
+        tr
+          td
+            h1 Payment Info
+            p Account No: #{invoice.accountDetails.accountNumber}
+            p Account Name: #{invoice.accountDetails.accountName}
+            p Bank: #{invoice.accountDetails.bank}
+            p Reference: #{invoice.accountDetails.reference}
+          td
+            h1 Date
+            p Invoice Date: #{invoice.createdAt.toISOString().split('T')[0]}
+            p Due Date: #{invoice.dueDate.toISOString().split('T')[0]}
+      .additional-info
+        table
+          tr
+            td.status
+              h2 Status:
+              span #{invoice.status}
+            td.work-title
+              h2 Work Title:
+              span #{invoice.workTitle}
+          tr
+            td.case-reference
+              h2 Case:
+              p #{invoice.case.firstParty.name[0].name} vs #{invoice.case.secondParty.name[0].name}
+      table
+        thead
+          tr
+            th Service Description
+            th Hours
+            th Date
+            th Fee Rate per Hour
+            th Amount
+        tbody
+          each service in invoice.services
+            tr
+              td #{service.serviceDescriptions}
+              td #{service.hours}
+              td #{service.date.toISOString().split('T')[0]}
+              td $#{service.feeRatePerHour.toFixed(2)}
+              td $#{service.amount.toFixed(2)}
+          tr
+            td(colspan="5")
+              table.card-container
+                tbody
+                  tr
+                    td Financial Summary
+                      .card
+                        .field
+                          span.label Total Hours:
+                          span.value #{invoice.totalHours}
+                        .field
+                          span.label Total Professional Fees:
+                          span.value $#{invoice.totalProfessionalFees.toFixed(2)}
+                        .field
+                          span.label Previous Balance:
+                          span.value $#{invoice.previousBalance.toFixed(2)}
+                        .field
+                          span.label Total Amount Due:
+                          span.value.important $#{invoice.totalAmountDue.toFixed(2)}
+                        .field
+                          span.label Total Invoice Amount:
+                          span.value $#{invoice.totalInvoiceAmount.toFixed(2)}
+                        .field
+                          span.label Amount Paid:
+                          span.value $#{invoice.amountPaid.toFixed(2)}
+      .additional-info
+        .payment-instructions
+          h2 Payment Instructions/Terms and Conditions:
+          p #{invoice.paymentInstructionTAndC}
