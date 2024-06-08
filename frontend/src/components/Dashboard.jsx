@@ -186,6 +186,11 @@ const Dashboard = () => {
             {userTask}
           </Card>
         </Col>
+        <Col>
+          <Link to="invoices">
+            <Button className={btnStyle}>Create Invoice</Button>
+          </Link>
+        </Col>
       </Row>
     </>
   );

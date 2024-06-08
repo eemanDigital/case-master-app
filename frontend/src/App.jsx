@@ -43,6 +43,8 @@ import TaskDetails from "./pages/TaskDetails.jsx";
 import ClientLists from "./pages/ClientLists.jsx";
 import ClientDetails from "./pages/ClientDetails.jsx";
 import ProtectedRoute from "./components/ProtectRoutes.jsx";
+import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
+import CreateInvoiceForm from "./components/CreateInvoiceForm.jsx";
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -58,6 +60,7 @@ function App() {
         <Route path="/" element={<Hero />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgotpassword" element={<ForgotPassword />} />
+        <Route path="/restPassword/:token" element={<ForgotPasswordReset />} />
         <Route path="/resetpassword" element={<ResetPassword />} />
         {/* 
         <Route
@@ -114,6 +117,7 @@ function App() {
           <Route path="tasks/:id/details" element={<TaskDetails />} />
           <Route path="clients" element={<ClientLists />} />
           <Route path="clients/:id/details" element={<ClientDetails />} />
+          <Route path="invoices" element={<CreateInvoiceForm />} />
 
           {/* errorElement= {<ErrorPage />} */}
         </Route>

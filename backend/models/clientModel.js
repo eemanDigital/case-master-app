@@ -53,6 +53,11 @@ const clientSchema = new mongoose.Schema(
   }
 );
 
+// virtual for client's full Name
+clientSchema.virtual("fullName").get(function () {
+  return this.firstName + " " + this.secondName;
+});
+
 clientSchema.pre(/^find/, function (next) {
   this.populate({
     path: "case",

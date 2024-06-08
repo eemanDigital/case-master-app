@@ -7,7 +7,7 @@ const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
 // const Token = require("../models/tokenModel");
 const createSendToken = require("../utils/handleSendToken");
-const sendEmail = require("../utils/email");
+const Email = require("../utils/email");
 
 // ///// function to implement user signup
 exports.signup = catchAsync(async (req, res, next) => {
@@ -56,6 +56,13 @@ exports.signup = catchAsync(async (req, res, next) => {
     universityAttended: req.body.universityAttended,
     lawSchoolAttended: req.body.lawSchoolAttended,
   });
+
+  // url for to navigate
+  // const url = `${req.protocol}://${req.get('host')/login}`
+  const url = "http://localhost:5173/login";
+  // send welcome message to user
+  await new Email(user, url).sendWelcome();
+
   // const user = await User.create(req.body);
   createSendToken(user, 201, res);
 });
@@ -278,18 +285,16 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   await user.save({ validateBeforeSave: false });
 
   // 3) Send it to user's email
-  const resetURL = `${req.protocol}://${req.get(
-    "host"
-  )}/api/v1/users/resetPassword/${resetToken}`;
-
-  const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.\nIf you didn't forget your password, please ignore this email!`;
 
   try {
-    await sendEmail({
-      email: user.email,
-      subject: "Your password reset token (valid for 10 min)",
-      message,
-    });
+    // const resetURL = `${req.protocol}://${req.get(
+    //   "host"
+    // )}/api/v1/users/resetPassword/${resetToken}`;
+
+    const resetURL = `http://localhost:5173/restPassword/${resetToken}`;
+
+    // call the reset password function to send mail
+    await new Email(user, resetURL).sendPasswordReset();
 
     res.status(200).json({
       status: "success",
@@ -327,7 +332,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   user.passwordConfirm = req.body.passwordConfirm;
   user.passwordResetToken = undefined;
   user.passwordResetExpires = undefined;
-  await user.save();
+  await user.save({ validateBeforeSave: false });
 
   // 3) Update changedPasswordAt property for the user
   // 4) Log the user in, send JWT
