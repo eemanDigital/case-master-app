@@ -6,6 +6,11 @@ export function formatYear(date) {
 export function formatDate(date) {
   const newDate = new Date(date);
 
+  // Check if date is valid
+  if (isNaN(newDate)) {
+    return "N/A";
+  }
+
   const options = { year: "numeric", month: "long", day: "numeric" };
   const formattedDate = new Intl.DateTimeFormat("en-US", options).format(
     newDate

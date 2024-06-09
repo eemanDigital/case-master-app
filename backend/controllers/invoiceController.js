@@ -6,7 +6,7 @@ const fs = require("fs");
 const pdf = require("pdf-creator-node");
 const path = require("path");
 const pug = require("pug");
-const pdfoptions = require("../utils/pdfoptions")
+const pdfoptions = require("../utils/pdfoptions");
 
 // handle signature upload for the invoice
 const multerStorage = multer.memoryStorage();
@@ -41,7 +41,9 @@ exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllInvoices = catchAsync(async (req, res, next) => {
-  const invoices = await Invoice.find();
+  const invoices = await Invoice.find().sort({
+    createdAt: -1,
+  });
 
   res.status(200).json({
     status: "success",
@@ -108,9 +110,29 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
     return next(new AppError("No invoice found with that ID", 404));
   }
 
+  // Handle undefined data
+  const safeInvoice = {
+    invoiceReference: invoice.invoiceReference || "",
+    client: invoice.client || {},
+    accountDetails: invoice.accountDetails || {},
+    createdAt: invoice.createdAt || "",
+    dueDate: invoice.dueDate || "",
+    status: invoice.status || "",
+    workTitle: invoice.workTitle || "",
+    case: invoice.case || {},
+    services: invoice.services || [],
+    totalHours: invoice.totalHours || 0,
+    totalProfessionalFees: invoice.totalProfessionalFees || 0,
+    previousBalance: invoice.previousBalance || 0,
+    totalAmountDue: invoice.totalAmountDue || 0,
+    totalInvoiceAmount: invoice.totalInvoiceAmount || 0,
+    amountPaid: invoice.amountPaid || 0,
+    paymentInstructionTAndC: invoice.paymentInstructionTAndC || "",
+  };
+
   pug.renderFile(
     path.join(__dirname, "../views/invoice.pug"),
-    { invoice },
+    { invoice: safeInvoice },
     function (err, html) {
       if (err) {
         console.error(err);
@@ -121,19 +143,17 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
         const document = {
           html: html,
           data: {
-            invoice: invoice,
+            invoice: safeInvoice,
           },
-          path: `./output/${Math.random()}_invoice.pdf`,
+          path: path.join(__dirname, `../output/${Math.random()}_invoice.pdf`),
         };
 
         pdf
           .create(document, options)
           .then((result) => {
             console.log(result);
-            res.status(200).json({
-              status: "success",
-              data: result,
-            });
+            // Send the file to the client
+            res.sendFile(path.resolve(document.path));
           })
           .catch((error) => {
             console.error(error);
@@ -143,6 +163,48 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
     }
   );
 });
+
+// exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
+//   const invoice = await Invoice.findById(req.params.id);
+//   if (!invoice) {
+//     return next(new AppError("No invoice found with that ID", 404));
+//   }
+
+//   pug.renderFile(
+//     path.join(__dirname, "../views/invoice.pug"),
+//     { invoice },
+//     function (err, html) {
+//       if (err) {
+//         console.error(err);
+//         res.sendStatus(500);
+//       } else {
+//         const options = pdfoptions; // assuming pdfoptions is an object with the required options
+
+//         const document = {
+//           html: html,
+//           data: {
+//             invoice: invoice,
+//           },
+//           path: `./output/${Math.random()}_invoice.pdf`,
+//         };
+
+//         pdf
+//           .create(document, options)
+//           .then((result) => {
+//             console.log(result);
+//             res.status(200).json({
+//               status: "success",
+//               data: result,
+//             });
+//           })
+//           .catch((error) => {
+//             console.error(error);
+//             res.sendStatus(500);
+//           });
+//       }
+//     }
+//   );
+// });
 
 // exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
 //   const invoice = await Invoice.findById(req.params.id);

@@ -12,6 +12,7 @@ const DataFetcherContext = ({ children }) => {
   const [leaveApps, setLeaveApp] = useState([]);
   const [clients, setClients] = useState([]);
   const [leaveBalance, setLeaveBalance] = useState([]);
+  const [invoices, setInvoices] = useState([]);
 
   const [loadingCases, setLoadingCases] = useState(false);
   const [loadingReports, setLoadingReports] = useState(false);
@@ -21,6 +22,7 @@ const DataFetcherContext = ({ children }) => {
   const [loadingLeaveApp, setLoadingLeaveApp] = useState(false);
   const [loadingLeaveBalance, setLoadingLeaveBalance] = useState(false);
   const [loadingClients, setLoadingClients] = useState(false);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
 
   const [errorCases, setErrorCases] = useState("");
   const [errorUsers, setErrorUsers] = useState("");
@@ -31,6 +33,7 @@ const DataFetcherContext = ({ children }) => {
   const [errorLeaveApp, setErrorLeaveApp] = useState("");
   const [errorLeaveBalance, setErrorLeaveBalance] = useState("");
   const [errorClients, setErrorClients] = useState("");
+  const [errorInvoices, setErrorInvoices] = useState("");
 
   const token = document.cookie
     .split("; ")
@@ -169,6 +172,8 @@ const DataFetcherContext = ({ children }) => {
         setLoadingLeaveBalance(false);
       }
     }
+
+    // client
     async function fetchClients() {
       try {
         setLoadingClients(true);
@@ -187,6 +192,25 @@ const DataFetcherContext = ({ children }) => {
         setLoadingClients(false);
       }
     }
+    // invoices
+    async function fetchInvoices() {
+      try {
+        setLoadingInvoices(true);
+        const response = await axios.get(
+          `http://localhost:3000/api/v1/invoices`,
+          {
+            headers,
+            withCredentials: true,
+          }
+        );
+
+        setInvoices(response.data);
+      } catch (err) {
+        setErrorInvoices(err.message || "Failed to fetch users");
+      } finally {
+        setLoadingInvoices(false);
+      }
+    }
 
     // Call the functions to fetch cases and users separately
     fetchCases();
@@ -197,6 +221,7 @@ const DataFetcherContext = ({ children }) => {
     fetchLeaveApp();
     fetchLeaveBalance();
     fetchClients();
+    fetchInvoices();
   }, []);
 
   return (
@@ -210,6 +235,7 @@ const DataFetcherContext = ({ children }) => {
         leaveApps,
         leaveBalance,
         clients,
+        invoices,
         loadingCases,
         loadingUsers,
         loadingClients,
@@ -220,11 +246,13 @@ const DataFetcherContext = ({ children }) => {
         loadingFiles,
         loadingLeaveApp,
         loadingLeaveBalance,
+        loadingInvoices,
         errorFiles,
         loadingTasks,
         errorTasks,
         errorLeaveApp,
         errorLeaveBalance,
+        errorInvoices,
         errorClients,
       }}>
       {children}

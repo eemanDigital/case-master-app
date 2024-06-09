@@ -8,7 +8,7 @@ import { useState } from "react";
 
 const { Title, Text } = Typography;
 
-const Cases = () => {
+const CaseList = () => {
   const { cases, loadingCases, errorCases } = useDataGetterHook();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10); // Change this to your desired items per page
@@ -77,4 +77,4 @@ const Cases = () => {
   );
 };
 
-export default Cases;
+export default CaseList;

@@ -37,6 +37,7 @@ const invoiceSchema = new Schema(
     workTitle: {
       type: String,
       maxlength: [50, "title should not be more that 50 character"],
+      required: [true, "Provide nature of work done"],
     },
 
     invoiceReference: String,
@@ -65,7 +66,19 @@ const invoiceSchema = new Schema(
 
     dueDate: {
       type: Date,
-      required: true,
+      validate: {
+        validator: function (v) {
+          // If status is 'paid', dueDate is not required
+          if (this.status === "paid") {
+            return true;
+          }
+          // If status is not 'paid', dueDate is required
+          else {
+            return v != null;
+          }
+        },
+        message: (props) => "Due date is required when status is not paid",
+      },
     },
 
     accountDetails: accountDetailSchema,

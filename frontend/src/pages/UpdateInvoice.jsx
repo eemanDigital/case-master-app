@@ -31,11 +31,11 @@ import {
 } from "../data/options";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
-const UpdateCase = () => {
+const UpdateInvoice = () => {
   // destructure textarea from input
   const [form] = Form.useForm();
   const { TextArea } = Input;
-  const { users } = useDataGetterHook();
+  const { clients } = useDataGetterHook();
 
   const { id } = useParams();
   // console.log(id);
@@ -55,7 +55,7 @@ const UpdateCase = () => {
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await axios.get(`${baseURL}/cases/${id}`, {
+        const response = await axios.get(`${baseURL}/invoices/${id}`, {
           headers: {
             ...fileHeaders,
             Authorization: `Bearer ${token}`,
@@ -79,8 +79,8 @@ const UpdateCase = () => {
   }, [id]);
 
   //  get users/account officer's data
-  const userData = Array.isArray(users?.data)
-    ? users?.data.map((user) => {
+  const clientData = Array.isArray(clients?.data)
+    ? clients?.data.map((user) => {
         return {
           value: user?.fullName,
           label: user?.fullName,
@@ -113,7 +113,7 @@ const UpdateCase = () => {
     } catch (errorInfo) {
       return;
     }
-    const result = await dataFetcher(`cases/${id}`, "patch", values); // Submit the form data to the backend
+    const result = await dataFetcher(`invoices/${id}`, "patch", values); // Submit the form data to the backend
     // console.log(values);
 
     handleSubmission(result); // Handle the submission after the API Call
@@ -130,7 +130,7 @@ const UpdateCase = () => {
 
   return (
     <>
-      <Link to="../.." relative="path">
+      <Link to=".." relative="path">
         Go Back
       </Link>
 
@@ -884,4 +884,4 @@ const UpdateCase = () => {
   );
 };
 
-export default UpdateCase;
+export default UpdateInvoice;

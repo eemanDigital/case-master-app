@@ -187,7 +187,7 @@ const Dashboard = () => {
           </Card>
         </Col>
         <Col>
-          <Link to="invoices">
+          <Link to="add-invoices">
             <Button className={btnStyle}>Create Invoice</Button>
           </Link>
         </Col>

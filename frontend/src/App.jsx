@@ -11,7 +11,7 @@ import Hero from "./components/Hero";
 import HomeLayout from "./components/HomeLayout";
 import Dashboard from "./components/Dashboard.jsx";
 import DashboardLayout from "./components/DashboardLayout.jsx";
-import Cases from "./pages/Cases.jsx";
+import CaseList from "./pages/CaseList.jsx";
 // import Task from "./pages/Task.jsx";
 import Billing from "./pages/Billing.jsx";
 import Login from "./pages/Login.jsx";
@@ -45,6 +45,9 @@ import ClientDetails from "./pages/ClientDetails.jsx";
 import ProtectedRoute from "./components/ProtectRoutes.jsx";
 import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
 import CreateInvoiceForm from "./components/CreateInvoiceForm.jsx";
+import InvoiceList from "./pages/InoivceList.jsx";
+import InvoiceDetails from "./pages/InvoiceDetails.jsx";
+import UpdateInvoice from "./pages/UpdateInvoice.jsx";
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -83,9 +86,8 @@ function App() {
           }>
           <Route index element={<Dashboard />} />
           <Route path="add-user" element={<AddUserForm />} />
-          <Route path="cases" element={<Cases open={isOpen} />} />
+          <Route path="cases" element={<CaseList open={isOpen} />} />
           <Route path="cases/:id/update" element={<UpdateCase />} />
-
           {/* <Route path="cases/:id/document" element={<CaseDocument />} /> */}
           {/* <Route path="create-case" element={<CreateCase />} /> */}
           <Route path="cases/add-case" element={<CreateCaseForm />} />
@@ -117,7 +119,10 @@ function App() {
           <Route path="tasks/:id/details" element={<TaskDetails />} />
           <Route path="clients" element={<ClientLists />} />
           <Route path="clients/:id/details" element={<ClientDetails />} />
-          <Route path="invoices" element={<CreateInvoiceForm />} />
+          <Route path="invoices" element={<InvoiceList />} />
+          <Route path="add-invoices" element={<CreateInvoiceForm />} />
+          <Route path="invoices/:id/details" element={<InvoiceDetails />} />
+          <Route path="invoices/:id/update" element={<UpdateInvoice />} />
 
           {/* errorElement= {<ErrorPage />} */}
         </Route>

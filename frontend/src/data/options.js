@@ -69,3 +69,9 @@ export const natureOfCaseOptions = [
   { label: "Tax Law", value: "Tax Law" },
   { label: "Other", value: "Other" },
 ];
+
+export const invoiceOptions = [
+  { label: "Paid", value: "paid" },
+  { label: "Unpaid", value: "unpaid" },
+  { label: "Overdue", value: "overdue" },
+];

@@ -106,8 +106,10 @@ html(lang="en")
             p Reference: #{invoice.accountDetails.reference}
           td
             h1 Date
-            p Invoice Date: #{invoice.createdAt.toISOString().split('T')[0]}
-            p Due Date: #{invoice.dueDate.toISOString().split('T')[0]}
+            //- p Invoice Date: #{invoice.createdAt.toISOString().split('T')[0]}
+            //- p Due Date: #{invoice.dueDate.toISOString().split('T')[0]}
+            p Invoice Date: #{invoice.createdAt}
+            p Due Date: #{invoice.dueDate}
       .additional-info
         table
           tr
@@ -120,7 +122,7 @@ html(lang="en")
           tr
             td.case-reference
               h2 Case:
-              p #{invoice.case.firstParty.name[0].name} vs #{invoice.case.secondParty.name[0].name}
+              p #{(invoice.case && invoice.case.firstParty && invoice.case.firstParty.name && invoice.case.firstParty.name[0] && invoice.case.firstParty.name[0].name) || 'Unknown'} vs #{(invoice.case && invoice.case.secondParty && invoice.case.secondParty.name && invoice.case.secondParty.name[0] && invoice.case.secondParty.name[0].name) || 'Unknown'}
       table
         thead
           tr
@@ -135,8 +137,8 @@ html(lang="en")
               td #{service.serviceDescriptions}
               td #{service.hours}
               td #{service.date.toISOString().split('T')[0]}
-              td $#{service.feeRatePerHour.toFixed(2)}
-              td $#{service.amount.toFixed(2)}
+              td ₦#{service.feeRatePerHour.toFixed(2)}
+              td ₦#{service.amount.toFixed(2)}
           tr
             td(colspan="5")
               table.card-container
@@ -149,19 +151,19 @@ html(lang="en")
                           span.value #{invoice.totalHours}
                         .field
                           span.label Total Professional Fees:
-                          span.value $#{invoice.totalProfessionalFees.toFixed(2)}
+                          span.value ₦#{invoice.totalProfessionalFees.toFixed(2)}
                         .field
                           span.label Previous Balance:
-                          span.value $#{invoice.previousBalance.toFixed(2)}
+                          span.value ₦#{invoice.previousBalance.toFixed(2)}
                         .field
                           span.label Total Amount Due:
-                          span.value.important $#{invoice.totalAmountDue.toFixed(2)}
+                          span.value.important ₦#{invoice.totalAmountDue.toFixed(2)}
                         .field
                           span.label Total Invoice Amount:
-                          span.value $#{invoice.totalInvoiceAmount.toFixed(2)}
+                          span.value ₦#{invoice.totalInvoiceAmount.toFixed(2)}
                         .field
                           span.label Amount Paid:
-                          span.value $#{invoice.amountPaid.toFixed(2)}
+                          span.value ₦#{invoice.amountPaid.toFixed(2)}
       .additional-info
         .payment-instructions
           h2 Payment Instructions/Terms and Conditions:
