@@ -1,24 +1,70 @@
 import { useState } from "react";
-import MonthCauseList from "../pages/MonthCauseList";
-import NextWeekCauseList from "../pages/NextWeekCauseList";
-import YearCauseList from "../pages/YearCauseList";
-import CurrentCauseList from "../pages/CurrentCauseList";
+// import MonthCauseList from "../pages/MonthCauseList";
+// import NextWeekCauseList from "../pages/NextWeekCauseList";
+// import YearCauseList from "../pages/YearCauseList";
+// import CurrentCauseList from "../pages/CurrentCauseList";
+import SingleCauseList from "./SingleCauseList";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
 export const CauseList = () => {
   const [selectedReport, setSelectedReport] = useState("currentWeek");
+  const { causeList, loadingCauseList, errorCauseList } = useDataGetterHook();
+
+  //   causeList?.data.reportsNextMonth
+  //   causeList.data?.reportsThisWeek
+  //   causeList.data?.reportsNextWeek
+  //   causeList.data?.reportsYear
+
+  //   "weekResults": 1,
+  //         "nextWeekResults": 2,
+  //         "monthResults": 4,
+  //         "yearResults": 5
 
   const renderReport = () => {
     switch (selectedReport) {
       case "currentWeek":
-        return <CurrentCauseList />;
+        return (
+          <SingleCauseList
+            causeListData={causeList.data?.reportsThisWeek}
+            loadingCauseList={loadingCauseList}
+            result={causeList.data?.weekResults}
+          />
+        );
       case "nextWeek":
-        return <NextWeekCauseList />;
+        return (
+          <SingleCauseList
+            causeListData={causeList.data?.reportsNextWeek}
+            loadingCauseList={loadingCauseList}
+            errorCauseList={errorCauseList}
+            result={causeList.data?.nextWeekResults}
+          />
+        );
       case "month":
-        return <MonthCauseList />;
+        return (
+          <SingleCauseList
+            causeListData={causeList?.data.reportsNextMonth}
+            errorCauseList={errorCauseList}
+            loadingCauseList={loadingCauseList}
+            result={causeList.data?.monthResults}
+          />
+        );
       case "year":
-        return <YearCauseList />;
+        return (
+          <SingleCauseList
+            causeListData={causeList.data?.reportsYear}
+            errorCauseList={errorCauseList}
+            loadingCauseList={loadingCauseList}
+            result={causeList.data?.yearResults}
+          />
+        );
       default:
-        return <CurrentCauseList />;
+        return (
+          <SingleCauseList
+            causeListData={causeList.data?.reportsThisWeek}
+            errorCauseList={errorCauseList}
+            loadingCauseList={loadingCauseList}
+          />
+        );
     }
   };
 
@@ -63,6 +109,7 @@ export const CauseList = () => {
           Year
         </button>
       </div>
+
       {renderReport()}
     </>
   );

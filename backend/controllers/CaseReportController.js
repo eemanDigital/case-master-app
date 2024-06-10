@@ -68,7 +68,9 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
       $gte: startOfWeek.toDate(),
       $lt: endOfWeek.toDate(),
     },
-  }).select("caseReported adjournedFor adjournedDate");
+  })
+    .sort("adjournedDate")
+    .select("caseReported adjournedFor adjournedDate");
 
   // Get reports for the next week
   const reportsNextWeek = await Report.find({
@@ -76,7 +78,9 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
       $gte: startOfNextWeek.toDate(),
       $lt: endOfNextWeek.toDate(),
     },
-  }).select("caseReported adjournedFor adjournedDate");
+  })
+    .sort("adjournedDate")
+    .select("caseReported adjournedFor adjournedDate");
 
   // Get reports for the next month
   const reportsNextMonth = await Report.find({
@@ -84,7 +88,9 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
       $gte: currentDate.toDate(),
       $lt: nextMonth.toDate(),
     },
-  }).select("caseReported adjournedFor adjournedDate -reportedBy ");
+  })
+    .sort("adjournedDate")
+    .select("caseReported adjournedFor adjournedDate  ");
 
   // Get reports for the rest of the year
   const reportsYear = await Report.find({
@@ -92,7 +98,9 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
       $gte: currentDate.toDate(),
       $lt: endOfYear.toDate(),
     },
-  });
+  })
+    .sort("adjournedDate")
+    .select("caseReported adjournedFor adjournedDate");
 
   res.status(200).json({
     message: "success",
