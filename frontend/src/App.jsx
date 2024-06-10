@@ -19,7 +19,7 @@ import AddUserForm from "./pages/AddUserForm.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import Profile from "./pages/Profile.jsx";
-import CaseReports from "./pages/CaseReports.jsx";
+import CaseReportList from "./pages/CaseReportList.jsx";
 import CreateCaseForm from "./pages/CreateCaseForm.jsx";
 import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
@@ -48,6 +48,7 @@ import CreateInvoiceForm from "./components/CreateInvoiceForm.jsx";
 import InvoiceList from "./pages/InoivceList.jsx";
 import InvoiceDetails from "./pages/InvoiceDetails.jsx";
 import UpdateInvoice from "./pages/UpdateInvoice.jsx";
+import { CauseList } from "./components/CauseList.jsx";
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -92,7 +93,7 @@ function App() {
           {/* <Route path="create-case" element={<CreateCase />} /> */}
           <Route path="cases/add-case" element={<CreateCaseForm />} />
           <Route path="cases/:id/casedetails" element={<CaseDetails />} />
-          <Route path="case-reports" element={<CaseReports />} />
+          <Route path="case-reports" element={<CaseReportList />} />
           <Route path="leave-application" element={<LeaveAppForm />} />
           <Route
             path="leave-application/:id/details"
@@ -123,6 +124,7 @@ function App() {
           <Route path="add-invoices" element={<CreateInvoiceForm />} />
           <Route path="invoices/:id/details" element={<InvoiceDetails />} />
           <Route path="invoices/:id/update" element={<UpdateInvoice />} />
+          <Route path="cause-list" element={<CauseList />} />
 
           {/* errorElement= {<ErrorPage />} */}
         </Route>

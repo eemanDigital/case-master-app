@@ -13,6 +13,7 @@ const DataFetcherContext = ({ children }) => {
   const [clients, setClients] = useState([]);
   const [leaveBalance, setLeaveBalance] = useState([]);
   const [invoices, setInvoices] = useState([]);
+  const [causeList, setCauseList] = useState([]);
 
   const [loadingCases, setLoadingCases] = useState(false);
   const [loadingReports, setLoadingReports] = useState(false);
@@ -23,6 +24,7 @@ const DataFetcherContext = ({ children }) => {
   const [loadingLeaveBalance, setLoadingLeaveBalance] = useState(false);
   const [loadingClients, setLoadingClients] = useState(false);
   const [loadingInvoices, setLoadingInvoices] = useState(false);
+  const [loadingCauseList, setLoadingCauseList] = useState(false);
 
   const [errorCases, setErrorCases] = useState("");
   const [errorUsers, setErrorUsers] = useState("");
@@ -34,6 +36,7 @@ const DataFetcherContext = ({ children }) => {
   const [errorLeaveBalance, setErrorLeaveBalance] = useState("");
   const [errorClients, setErrorClients] = useState("");
   const [errorInvoices, setErrorInvoices] = useState("");
+  const [errorCauseList, setErrorCauseList] = useState("");
 
   const token = document.cookie
     .split("; ")
@@ -211,6 +214,24 @@ const DataFetcherContext = ({ children }) => {
         setLoadingInvoices(false);
       }
     }
+    async function fetchCauseList() {
+      try {
+        setLoadingCauseList(true);
+        const response = await axios.get(
+          `http://localhost:3000/api/v1/reports/upcoming`,
+          {
+            headers,
+            withCredentials: true,
+          }
+        );
+
+        setCauseList(response.data);
+      } catch (err) {
+        setErrorCauseList(err.message || "Failed to fetch users");
+      } finally {
+        setLoadingCauseList(false);
+      }
+    }
 
     // Call the functions to fetch cases and users separately
     fetchCases();
@@ -222,6 +243,7 @@ const DataFetcherContext = ({ children }) => {
     fetchLeaveBalance();
     fetchClients();
     fetchInvoices();
+    fetchCauseList();
   }, []);
 
   return (
@@ -236,6 +258,7 @@ const DataFetcherContext = ({ children }) => {
         leaveBalance,
         clients,
         invoices,
+        causeList,
         loadingCases,
         loadingUsers,
         loadingClients,
@@ -247,6 +270,7 @@ const DataFetcherContext = ({ children }) => {
         loadingLeaveApp,
         loadingLeaveBalance,
         loadingInvoices,
+        loadingCauseList,
         errorFiles,
         loadingTasks,
         errorTasks,
@@ -254,6 +278,7 @@ const DataFetcherContext = ({ children }) => {
         errorLeaveBalance,
         errorInvoices,
         errorClients,
+        errorCauseList,
       }}>
       {children}
     </DataContext.Provider>

@@ -25,6 +25,7 @@ const CreateCaseReportForm = () => {
     update: "",
     adjournedDate: "",
     reportedBy: "",
+    adjournedFor: "",
     caseReported: [],
   });
   // handle reports post and get report data
@@ -115,12 +116,26 @@ const CreateCaseReportForm = () => {
             ]}>
             <TextArea rows={8} placeholder="Your text here..." />
           </Form.Item>
+          {/* MATTER ADJOURNED FOR */}
+          <Form.Item
+            name="adjournedFor"
+            label="Matter adjourned for"
+            //   tooltip="This is a required field"
+            initialValue={formData?.adjournedFor}
+            rules={[
+              {
+                required: true,
+                message: "write what the matter was adjourned for!",
+              },
+            ]}>
+            <Input placeholder="Your text here..." />
+          </Form.Item>
 
           {/* CASE REPORTED */}
 
           <Form.Item
             name="caseReported"
-            label="Case To Work On"
+            label="Case Reported"
             initialValue={formData?.caseReported}
             rules={[
               {

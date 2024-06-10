@@ -1,7 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { DeleteOutlined } from "@ant-design/icons";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import {
   Button,
   Input,
@@ -17,49 +16,19 @@ import {
 } from "antd";
 
 import { invoiceOptions } from "../data/options";
-
+import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
+import useClientSelectOptions from "../hooks/useClientSelectOptions";
+import { invoiceInitialValue } from "../utils/intialValues";
 const { TextArea } = Input;
 
 const CreateInvoiceForm = () => {
   const [form] = Form.useForm();
 
-  const [formData, setFormData] = useState({
-    case: null,
-    client: "",
-    workTitle: "",
-    services: [
-      {
-        serviceDescriptions: "",
-        hours: 0,
-        date: null,
-        feeRatePerHour: 0,
-        amount: 0,
-      },
-    ],
-    dueDate: null,
-    accountDetails: {
-      accountName: "",
-      accountNumber: "",
-      bank: "",
-      reference: "",
-    },
-    status: "unpaid",
-    paymentInstructionTAndC: "",
-    previousBalance: 0,
-    amountPaid: 0,
-  });
+  const [formData, setFormData] = useState(invoiceInitialValue);
 
   const { dataFetcher, data } = useDataFetch();
-  const { clients, cases } = useDataGetterHook();
-
-  const clientOptions = Array.isArray(clients?.data)
-    ? clients?.data.map((client) => {
-        return {
-          value: client?._id,
-          label: client?.fullName,
-        };
-      })
-    : [];
+  const { casesOptions } = useCaseSelectOptions();
+  const { clientOptions } = useClientSelectOptions();
 
   const handleSubmission = useCallback((result) => {
     if (result?.error) {
@@ -69,19 +38,6 @@ const CreateInvoiceForm = () => {
       // form.resetFields();
     }
   }, []);
-
-  const casesOptions = Array.isArray(cases?.data)
-    ? cases?.data.map((singleCase) => {
-        const { firstParty, secondParty } = singleCase;
-        const firstName = firstParty?.name[0]?.name;
-        const secondName = secondParty?.name[0]?.name;
-
-        return {
-          value: singleCase?._id,
-          label: `${firstName || ""} vs ${secondName || ""}`,
-        };
-      })
-    : [];
 
   const onSubmit = useCallback(async () => {
     let values;

@@ -55,7 +55,7 @@ import { useState } from "react";
 
 const { Title, Text } = Typography;
 
-const CaseReports = () => {
+const CaseReportList = () => {
   const { reports, errorReports, loadingReports } = useDataGetterHook();
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -90,6 +90,9 @@ const CaseReports = () => {
               <Text>{report?.update}</Text>
               <Space direction="horizontal" size="large">
                 <Text type="success">
+                  Adjourned For: {report?.adjournedFor}
+                </Text>
+                <Text type="success">
                   Adjourned Date: {formatDate(report?.adjournedDate)}
                 </Text>
                 <Text>Reported By: {report?.reportedBy?.fullName}</Text>
@@ -112,4 +115,4 @@ const CaseReports = () => {
   );
 };
 
-export default CaseReports;
+export default CaseReportList;

@@ -6,7 +6,7 @@ import {
   MinusCircleOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import axios from "axios";
 
 import {
@@ -35,8 +35,8 @@ const UpdateCase = () => {
   // destructure textarea from input
   const [form] = Form.useForm();
   const { TextArea } = Input;
-  const { users } = useDataGetterHook();
 
+  const { userData } = useUserSelectOptions();
   const { id } = useParams();
   // console.log(id);
   // const { singleData, singleDataFetcher } = useSingleDataFetcher();
@@ -77,16 +77,6 @@ const UpdateCase = () => {
     }
     fetchData();
   }, [id]);
-
-  //  get users/account officer's data
-  const userData = Array.isArray(users?.data)
-    ? users?.data.map((user) => {
-        return {
-          value: user?.fullName,
-          label: user?.fullName,
-        };
-      })
-    : [];
 
   const { dataFetcher, data } = useDataFetch(); //general data fetcher
 

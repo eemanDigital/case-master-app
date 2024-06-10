@@ -17,6 +17,12 @@ const reportSchema = new mongoose.Schema({
     trim: true,
     // required: [true, "A case must have a name"],
   },
+
+  adjournedFor: {
+    type: String,
+    trim: true,
+    required: [true, "A case must have a name"],
+  },
   adjournedDate: {
     type: Date,
     default: Date.now,
@@ -27,6 +33,13 @@ const reportSchema = new mongoose.Schema({
     type: mongoose.Schema.ObjectId,
     ref: "User",
   },
+
+  lawyersInCourt: [
+    {
+      type: mongoose.Schema.ObjectId,
+      ref: "User",
+    },
+  ],
 });
 
 // populate case and reporter
