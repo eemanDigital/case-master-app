@@ -1,63 +1,18 @@
-// import { Link } from "react-router-dom";
-// import Button from "../components/Button";
-// import { useDataGetterHook } from "../hooks/useDataGetterHook";
-// import { formatDate } from "../utils/formatDate";
-
-// const CaseReports = () => {
-//   const { reports, errorReports, loadingReports } = useDataGetterHook();
-//   // console.log(reports?.data);
-//   return (
-//     <section>
-//       <h1 className="text-center text-5xl font-bold">Case Reports</h1>
-
-//       <div className="flex flex-col gap-8">
-//         {reports?.data?.map((report) => (
-//           <div key={report._id}>
-//             <h1 className="text-2xl font-bold">
-//               {report?.caseReported?.firstParty?.name[0]?.name} vs{" "}
-//               {report?.caseReported?.secondParty?.name[0]?.name}
-//             </h1>
-
-//             <div className="flex flex-col gap-2 ">
-//               <small className="text-red-600">
-//                 Reported on: {formatDate(report?.date)}
-//               </small>
-//               <p> {report?.update}</p>
-//             </div>
-//             <div className="flex justify-between">
-//               <small className="text-green-700 font-bold">
-//                 {" "}
-//                 Adjourned Date: {formatDate(report?.adjournedDate)}{" "}
-//               </small>
-//               <small className=" font-bold">
-//                 {" "}
-//                 Reported By: {report?.reportedBy?.fullName}{" "}
-//               </small>
-//             </div>
-//           </div>
-//         ))}
-//       </div>
-
-//       <Link to="add-report">
-//         <Button>+ Add Report</Button>
-//       </Link>
-//     </section>
-//   );
-// };
-
-// export default CaseReports;
 import { Link } from "react-router-dom";
-import { Card, Typography, Space, Pagination } from "antd";
-import Button from "../components/Button";
+import { Card, Typography, Space, Pagination, Button, Modal } from "antd";
+// import Button from "../components/Button";
+import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import { useState } from "react";
+import UpdateCaseReportForm from "./UpdateCaseReportForm";
 
 const { Title, Text } = Typography;
+const downloadURL = import.meta.env.VITE_BASE_URL;
 
 const CaseReportList = () => {
   const { reports, errorReports, loadingReports } = useDataGetterHook();
-
+  const { dataFetcher } = useDataFetch();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5); //number of items per page
 
@@ -68,6 +23,48 @@ const CaseReportList = () => {
     indexOfLastReport
   );
 
+  //   handle delete
+  const fileHeaders = {
+    "Content-Type": "multipart/form-data",
+  };
+
+  const handleDeleteReport = async (id) => {
+    await dataFetcher(`reports/${id}`, "delete", fileHeaders);
+  };
+
+  // handle report download
+  //   download invoice handler
+
+  // Retrieve token from browser cookies
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("jwt="))
+    ?.split("=")[1];
+
+  const handleDownloadReport = async (event, reportId) => {
+    event.preventDefault();
+    const response = await fetch(`${downloadURL}/reports/pdf/${reportId}`, {
+      method: "GET",
+      headers: {
+        ...fileHeaders,
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error("Network response was not ok");
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "report.pdf"; // or any other filename you want
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
   return (
     <section>
@@ -75,6 +72,11 @@ const CaseReportList = () => {
         Case Reports
       </Title>
 
+      <Card>
+        <Link to="add-report">
+          <Button>+ Add Report New Report</Button>
+        </Link>
+      </Card>
       <Space direction="vertical" size="large">
         {currentReports?.map((report) => (
           <Card
@@ -86,18 +88,34 @@ const CaseReportList = () => {
               </Title>
             }>
             <Space direction="vertical" size="small">
-              <Text type="danger">Reported on: {formatDate(report?.date)}</Text>
-              <Text>{report?.update}</Text>
+              <p>Reported on: {formatDate(report?.date)}</p>
+              <p>{report?.update}</p>
               <Space direction="horizontal" size="large">
-                <Text type="success">
-                  Adjourned For: {report?.adjournedFor}
-                </Text>
-                <Text type="success">
-                  Adjourned Date: {formatDate(report?.adjournedDate)}
-                </Text>
-                <Text>Reported By: {report?.reportedBy?.fullName}</Text>
+                <p type="success">Adjourned For: {report?.adjournedFor}</p>
+                <p>Adjourned Date: {formatDate(report?.adjournedDate)}</p>
+                <p>Reported By: {report?.reportedBy?.fullName}</p>
               </Space>
             </Space>
+            <div className="flex justify-between">
+              <UpdateCaseReportForm reportId={report._id} />
+              <button
+                className="bg-red-500 hover:bg-red-700 text-white  py-2 px-4 my-2 tracking-wider "
+                onClick={() => {
+                  Modal.confirm({
+                    title: "Are you sure you want to delete this report?",
+                    onOk: () => handleDeleteReport(report?._id),
+                  });
+                }}
+                type="primary">
+                Delete
+              </button>
+
+              <button
+                className="bg-green-500 hover:bg-green-700 text-white  py-2 px-4 my-2 tracking-wider "
+                onClick={(event) => handleDownloadReport(event, report?._id)}>
+                Download Invoice
+              </button>
+            </div>
           </Card>
         ))}
       </Space>
@@ -108,9 +126,6 @@ const CaseReportList = () => {
         pageSize={itemsPerPage}
         onChange={paginate}
       />
-      <Link to="add-report">
-        <Button>+ Add Report</Button>
-      </Link>
     </section>
   );
 };

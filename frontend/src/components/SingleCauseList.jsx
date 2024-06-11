@@ -1,12 +1,23 @@
+import { useState } from "react";
 import { Table, Card } from "antd";
 import { formatDate } from "../utils/formatDate";
+import LawyersInCourtForm from "../pages/LawyersInCourtForm";
 const SingleCauseList = ({
   causeListData,
   loadingCauseList,
   errorCauseList,
   result,
 }) => {
-  //   console.log(causeListData);
+  const [selectedReportId, setSelectedReportId] = useState(null);
+
+  const onRowClick = (record, rowIndex) => {
+    return {
+      onClick: () => {
+        setSelectedReportId(causeListData[rowIndex]._id);
+      },
+    };
+  };
+
   const columns = [
     {
       title: "Case",
@@ -23,12 +34,23 @@ const SingleCauseList = ({
       dataIndex: "adjournedDate",
       key: "adjournedDate",
     },
+
     {
-      title: "Assigned To",
-      dataIndex: "reportedBy",
-      key: "reportedBy",
+      title: "Lawyers In Court",
+      dataIndex: "lawyersInCourt",
+      key: "lawyersInCourt",
+      render: (lawyersInCourt) => (
+        <ul>
+          {lawyersInCourt &&
+            lawyersInCourt.map((lawyer, index) => (
+              <li className="text-blue-600 font-semibold" key={index}>
+                {lawyer.fullName}
+                <span>,Esq</span>.
+              </li>
+            ))}
+        </ul>
+      ),
     },
-    // Add more columns as needed
   ];
 
   const data =
@@ -38,8 +60,7 @@ const SingleCauseList = ({
       case: `${report.caseReported.firstParty.name[0].name} vs ${report.caseReported.secondParty.name[0].name}`,
       adjournedFor: report.adjournedFor,
       adjournedDate: formatDate(report.adjournedDate),
-      //   reportedBy: report.reportedBy.fullName, to be use for lawyer in court
-      // Add more fields as needed
+      lawyersInCourt: report.lawyersInCourt,
     }));
 
   return (
@@ -49,7 +70,15 @@ const SingleCauseList = ({
           Number of Cases: {result}
         </h1>
       </Card>
-      <Table columns={columns} dataSource={data} loading={loadingCauseList} />
+      <div>
+        {selectedReportId && <LawyersInCourtForm reportId={selectedReportId} />}
+        <Table
+          onRow={onRowClick}
+          columns={columns}
+          dataSource={data}
+          loading={loadingCauseList}
+        />
+      </div>
     </>
   );
 };

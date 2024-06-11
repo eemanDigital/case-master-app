@@ -45,7 +45,7 @@ import ClientDetails from "./pages/ClientDetails.jsx";
 import ProtectedRoute from "./components/ProtectRoutes.jsx";
 import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
 import CreateInvoiceForm from "./components/CreateInvoiceForm.jsx";
-import InvoiceList from "./pages/InoivceList.jsx";
+import InvoiceList from "./pages/InvoiceList.jsx";
 import InvoiceDetails from "./pages/InvoiceDetails.jsx";
 import UpdateInvoice from "./pages/UpdateInvoice.jsx";
 import { CauseList } from "./components/CauseList.jsx";

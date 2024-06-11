@@ -7,69 +7,29 @@ import {
   Form,
   Modal,
   Card,
-  Divider,
-  Typography,
   Spin,
   Select,
   DatePicker,
 } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
+import useUserSelectOptions from "../hooks/useUserSelectOptions";
+import useModal from "../hooks/useModal";
 import { SelectInputs } from "../components/DynamicInputs";
 
 const CreateTaskForm = () => {
   // destructure textarea from input
   const { TextArea } = Input;
 
-  const [open, setOpen] = useState(false);
-  const [confirmLoading, setConfirmLoading] = useState(false);
-  const [modalText, setModalText] = useState("Content of the modal");
-  const showModal = () => {
-    setOpen(true);
-  };
-  const handleOk = () => {
-    setModalText("The modal will be closed after two seconds");
-    setConfirmLoading(true);
-    setTimeout(() => {
-      setOpen(false);
-      setConfirmLoading(false);
-    }, 2000);
-  };
-  const handleCancel = () => {
-    console.log("Clicked cancel button");
-    setOpen(false);
-  };
+  const { casesOptions } = useCaseSelectOptions();
+  const { userData } = useUserSelectOptions();
+  const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
+    useModal(); //modal hook
 
   const [form] = Form.useForm();
   const [formData, setFormData] = useState({});
   // destructor authenticate from useAuth
   const { dataFetcher, data } = useDataFetch();
-  const { cases, users } = useDataGetterHook();
-
-  //  map over cases value
-  const casesData = Array.isArray(cases?.data)
-    ? cases?.data.map((singleCase) => {
-        const { firstParty, secondParty } = singleCase;
-        const firstName = firstParty?.name[0]?.name;
-        const secondName = secondParty?.name[0]?.name;
-
-        return {
-          value: singleCase?._id,
-          label: `${firstName || ""} vs ${secondName || ""}`,
-        };
-      })
-    : [];
-
-  //  get users/reporter data
-  const usersData = Array.isArray(users?.data)
-    ? users?.data.map((user) => {
-        return {
-          value: user?._id,
-          label: user?.fullName,
-        };
-      })
-    : [];
-
-  // console.log(users);
 
   // form submit functionalities
   const handleSubmission = useCallback(
@@ -101,7 +61,7 @@ const CreateTaskForm = () => {
   return (
     <>
       <Button onClick={showModal} className="bg-green-700 text-white">
-       Create Task
+        Create Task
       </Button>
       <Modal
         title="Send Reminder on Task"
@@ -154,7 +114,7 @@ const CreateTaskForm = () => {
                   noStyle
                   notFoundContent={data ? <Spin size="small" /> : null}
                   placeholder="Select a case here"
-                  options={casesData}
+                  options={casesOptions}
                   allowClear
                   style={{
                     width: "100%",
@@ -179,7 +139,7 @@ const CreateTaskForm = () => {
                   noStyle
                   notFoundContent={data ? <Spin size="small" /> : null}
                   placeholder="Select a staff"
-                  options={usersData}
+                  options={userData}
                   allowClear
                   style={{
                     width: "100%",

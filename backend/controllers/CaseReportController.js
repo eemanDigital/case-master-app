@@ -1,5 +1,9 @@
 const Report = require("../models/caseReportModel");
+// const User = require("../models/userModel");
+const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const { generatePdf } = require("../utils/generatePdf");
+
 const moment = require("moment");
 
 exports.createReport = catchAsync(async (req, res, next) => {
@@ -39,8 +43,43 @@ exports.getReport = catchAsync(async (req, res, next) => {
   //   next();
 });
 
-// get Reports for week and month
+exports.updateCaseReport = catchAsync(async (req, res, next) => {
+  const id = req.params.reportId;
 
+  if (!id) {
+    return next(new AppError("No report ID provided", 400));
+  }
+
+  const updatedReport = await Report.findByIdAndUpdate(id, req.body, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!updatedReport) {
+    return next(new AppError("No report found with this ID", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: updatedReport,
+  });
+});
+
+// delete report
+exports.deleteReport = catchAsync(async (req, res, next) => {
+  const report = await Report.findByIdAndDelete(req.params.id);
+
+  if (!report) {
+    return next(new AppError("No report found with that ID", 404));
+  }
+
+  res.status(204).json({
+    status: "success",
+    data: null,
+  });
+});
+
+// get Reports for week and month
 exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
   // Get the current date
   const currentDate = moment();
@@ -115,4 +154,31 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
       reportsYear,
     },
   });
+});
+
+// generate reports in pdf format
+exports.generateReportPdf = catchAsync(async (req, res, next) => {
+  const report = await Report.findById(req.params.id);
+  if (!report) {
+    return next(new AppError("No report found with that ID", 404));
+  }
+
+  // Handle undefined data
+  const safeReport = {
+    caseReported: report.caseReported || null,
+    date: report.date || Date.now(),
+    update: report.update || "",
+    adjournedFor: report.adjournedFor || "",
+    adjournedDate: report.adjournedDate || Date.now(),
+    reportedBy: report.reportedBy || null,
+    lawyersInCourt: report.lawyersInCourt || [],
+  };
+
+  // generate pdf handler function
+  generatePdf(
+    { report: safeReport },
+    res,
+    "../views/report.pug",
+    `../output/${Math.random()}_report.pdf`
+  );
 });

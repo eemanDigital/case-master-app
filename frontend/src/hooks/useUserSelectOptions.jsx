@@ -6,7 +6,7 @@ const useUserSelectOptions = () => {
   const userData = Array.isArray(users?.data)
     ? users?.data.map((user) => {
         return {
-          value: user?.fullName,
+          value: user?._id,
           label: user?.fullName,
         };
       })

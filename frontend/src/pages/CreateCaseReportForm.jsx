@@ -1,19 +1,8 @@
 import { useState, useCallback } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-
-import {
-  Button,
-  Input,
-  Form,
-  Space,
-  Card,
-  Divider,
-  Typography,
-  Spin,
-  Select,
-  DatePicker,
-} from "antd";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
+import useUserSelectOptions from "../hooks/useUserSelectOptions";
+import { Button, Input, Form, Card, Spin, Select, DatePicker } from "antd";
 
 const CreateCaseReportForm = () => {
   // destructure textarea from input
@@ -30,36 +19,8 @@ const CreateCaseReportForm = () => {
   });
   // handle reports post and get report data
   const { dataFetcher, data } = useDataFetch();
-
-  // fetched cases and user data
-  const { cases, users } = useDataGetterHook();
-
-  // console.log("CASES", cases);
-  //  map over cases value
-  const casesData = Array.isArray(cases?.data)
-    ? cases?.data.map((singleCase) => {
-        const { firstParty, secondParty } = singleCase;
-        const firstName = firstParty?.name[0]?.name;
-        const secondName = secondParty?.name[0]?.name;
-
-        return {
-          value: singleCase?._id,
-          label: `${firstName || ""} vs ${secondName || ""}`,
-        };
-      })
-    : [];
-
-  //  get users/reporter data
-  const usersData = Array.isArray(users?.data)
-    ? users?.data.map((user) => {
-        return {
-          value: user?._id,
-          label: user?.fullName,
-        };
-      })
-    : [];
-
-  // console.log(users);
+  const { casesOptions } = useCaseSelectOptions();
+  const { userData } = useUserSelectOptions();
 
   // form submit functionalities
   const handleSubmission = useCallback(
@@ -102,7 +63,6 @@ const CreateCaseReportForm = () => {
             <DatePicker />
           </Form.Item>
           {/* UPDATE */}
-
           <Form.Item
             name="update"
             label="Write update here..."
@@ -147,7 +107,7 @@ const CreateCaseReportForm = () => {
               noStyle
               notFoundContent={data ? <Spin size="small" /> : null}
               placeholder="Select a case here"
-              options={casesData}
+              options={casesOptions}
               allowClear
               style={{
                 width: "100%",
@@ -170,7 +130,7 @@ const CreateCaseReportForm = () => {
               noStyle
               notFoundContent={data ? <Spin size="small" /> : null}
               placeholder="Select a reporter"
-              options={usersData}
+              options={userData}
               allowClear
               style={{
                 width: "100%",

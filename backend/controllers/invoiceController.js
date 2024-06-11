@@ -2,11 +2,11 @@ const Invoice = require("../models/invoiceModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const multer = require("multer");
-const fs = require("fs");
 const pdf = require("pdf-creator-node");
 const path = require("path");
 const pug = require("pug");
 const pdfoptions = require("../utils/pdfoptions");
+const { generatePdf } = require("../utils/generatePdf");
 
 // handle signature upload for the invoice
 const multerStorage = multer.memoryStorage();
@@ -130,38 +130,45 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
     paymentInstructionTAndC: invoice.paymentInstructionTAndC || "",
   };
 
-  pug.renderFile(
-    path.join(__dirname, "../views/invoice.pug"),
+  generatePdf(
     { invoice: safeInvoice },
-    function (err, html) {
-      if (err) {
-        console.error(err);
-        res.sendStatus(500);
-      } else {
-        const options = pdfoptions; // assuming pdfoptions is an object with the required options
-
-        const document = {
-          html: html,
-          data: {
-            invoice: safeInvoice,
-          },
-          path: path.join(__dirname, `../output/${Math.random()}_invoice.pdf`),
-        };
-
-        pdf
-          .create(document, options)
-          .then((result) => {
-            console.log(result);
-            // Send the file to the client
-            res.sendFile(path.resolve(document.path));
-          })
-          .catch((error) => {
-            console.error(error);
-            res.sendStatus(500);
-          });
-      }
-    }
+    res,
+    "../views/invoice.pug",
+    `../output/${Math.random()}_invoice.pdf`
   );
+
+  // pug.renderFile(
+  //   path.join(__dirname, "../views/invoice.pug"),
+  //   { invoice: safeInvoice },
+  //   function (err, html) {
+  //     if (err) {
+  //       console.error(err);
+  //       res.sendStatus(500);
+  //     } else {
+  //       const options = pdfoptions; // assuming pdfoptions is an object with the required options
+
+  //       const document = {
+  //         html: html,
+  //         data: {
+  //           invoice: safeInvoice,
+  //         },
+  //         path: path.join(__dirname, `../output/${Math.random()}_invoice.pdf`),
+  //       };
+
+  //       pdf
+  //         .create(document, options)
+  //         .then((result) => {
+  //           console.log(result);
+  //           // Send the file to the client
+  //           res.sendFile(path.resolve(document.path));
+  //         })
+  //         .catch((error) => {
+  //           console.error(error);
+  //           res.sendStatus(500);
+  //         });
+  //     }
+  //   }
+  // );
 });
 
 // exports.generateInvoicePdf = catchAsync(async (req, res, next) => {

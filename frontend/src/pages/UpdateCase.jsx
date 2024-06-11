@@ -35,6 +35,7 @@ const UpdateCase = () => {
   // destructure textarea from input
   const [form] = Form.useForm();
   const { TextArea } = Input;
+  const { dataFetcher, data } = useDataFetch(); //general data fetcher
 
   const { userData } = useUserSelectOptions();
   const { id } = useParams();
@@ -77,8 +78,6 @@ const UpdateCase = () => {
     }
     fetchData();
   }, [id]);
-
-  const { dataFetcher, data } = useDataFetch(); //general data fetcher
 
   // FORM SUBMISSION
   // form submit functionalities
