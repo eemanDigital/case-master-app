@@ -3,22 +3,13 @@ const Schema = mongoose.Schema;
 
 const paymentSchema = new Schema(
   {
-    case: {
-      type: Schema.Types.ObjectId,
-      ref: "Case",
-      required: true,
-    },
-    invoice: {
+    invoiceId: {
       type: Schema.Types.ObjectId,
       ref: "Invoice",
       required: true,
     },
-    client: {
-      type: Schema.Types.ObjectId,
-      ref: "Client",
-      required: true,
-    },
-    amount: {
+
+    amountPaid: {
       type: Number,
       required: true,
     },
@@ -30,10 +21,6 @@ const paymentSchema = new Schema(
       type: String,
       enum: ["credit_card", "bank_transfer", "cash", "cheque"],
       required: true,
-    },
-    reference: {
-      type: String,
-      trim: true,
     },
   },
 
