@@ -18,11 +18,20 @@ const paymentSchema = new Schema(
       ref: "Client",
       required: true,
     },
-    amount: {
+
+    amountPaid: {
       type: Number,
       required: true,
     },
-    date: {
+    totalInvoiceAmount: {
+      type: Number,
+      required: true,
+    },
+    balance: {
+      type: Number,
+      required: true,
+    },
+    dateOfPayment: {
       type: Date,
       default: Date.now,
     },

@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
 // const { Column, ColumnGroup } = Table;
@@ -13,13 +14,14 @@ const AddClientForm = () => {
   const { data, loading, error, authenticate } = useAuth();
   const [click, setClick] = useState(false);
   const { cases } = useDataGetterHook();
+  const { dataFetcher } = useDataFetch();
 
   const [inputValue, setInputValue] = useState({
     firstName: "",
     secondName: "",
     email: "",
     address: "",
-    dob: "",
+    dob: null,
     phone: "",
     yearOfCall: "",
     active: null,
@@ -61,7 +63,7 @@ const AddClientForm = () => {
 
     try {
       // Call fetchData with endpoint, method, payload, and any additional arguments
-      await authenticate("clients", "post", inputValue);
+      await dataFetcher("clients", "post", inputValue);
     } catch (err) {
       console.log(err);
     }

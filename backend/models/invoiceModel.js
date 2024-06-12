@@ -36,7 +36,7 @@ const invoiceSchema = new Schema(
 
     workTitle: {
       type: String,
-      maxlength: [50, "title should not be more that 50 character"],
+      maxlength: [100, "title should not be more that 50 character"],
       required: [true, "Provide nature of work done"],
     },
 

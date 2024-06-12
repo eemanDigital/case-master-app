@@ -32,7 +32,7 @@ import {
   modesOptions,
 } from "../data/options";
 // import CaseDocument from "./CaseDocument";
-
+import useUserSelectOptions from "../hooks/useUserSelectOptions";
 const CreateCaseForm = () => {
   // destructure textarea from input
   // const { TextArea } = Input;
@@ -84,17 +84,7 @@ const CreateCaseForm = () => {
   // destructor authenticate from useDataFetch
   const { dataFetcher, data } = useDataFetch(); //general data fetcher
   // destructure user data for accountOfficers
-  const { users } = useDataGetterHook();
-
-  //  get users/account officer's data
-  const userData = Array.isArray(users?.data)
-    ? users?.data.map((user) => {
-        return {
-          value: user?.fullName,
-          label: user?.fullName,
-        };
-      })
-    : [];
+  const { userData } = useUserSelectOptions();
 
   // form submit functionalities
   const handleSubmission = useCallback(
