@@ -5,6 +5,7 @@ import { useState } from "react";
 // import CurrentCauseList from "../pages/CurrentCauseList";
 import SingleCauseList from "./SingleCauseList";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import SwitchButton from "./SwitchButton";
 
 export const CauseList = () => {
   const [selectedReport, setSelectedReport] = useState("currentWeek");
@@ -72,42 +73,30 @@ export const CauseList = () => {
     <>
       <h1 className="text-2xl font-bold">Cause List</h1>
       <div className="my-4">
-        <button
-          className={`px-4 py-2 m-2 ${
-            selectedReport === "currentWeek"
-              ? "bg-blue-500 text-white"
-              : "bg-white text-black"
-          }`}
-          onClick={() => setSelectedReport("currentWeek")}>
-          Current Week
-        </button>
-        <button
-          className={`px-4 py-2 m-2 ${
-            selectedReport === "nextWeek"
-              ? "bg-blue-500 text-white"
-              : "bg-white text-black"
-          }`}
-          onClick={() => setSelectedReport("nextWeek")}>
-          Next Week
-        </button>
-        <button
-          className={`px-4 py-2 m-2 ${
-            selectedReport === "month"
-              ? "bg-blue-500 text-white"
-              : "bg-white text-black"
-          }`}
-          onClick={() => setSelectedReport("month")}>
-          Month
-        </button>
-        <button
-          className={`px-4 py-2 m-2 ${
-            selectedReport === "year"
-              ? "bg-blue-500 text-white"
-              : "bg-white text-black"
-          }`}
-          onClick={() => setSelectedReport("year")}>
-          Year
-        </button>
+        <SwitchButton
+          currentState={selectedReport}
+          updatedState={setSelectedReport}
+          stateText="currentWeek"
+          text="   Current Week"
+        />
+        <SwitchButton
+          currentState={selectedReport}
+          updatedState={setSelectedReport}
+          stateText="nextWeek"
+          text="    Next Week"
+        />
+        <SwitchButton
+          currentState={selectedReport}
+          updatedState={setSelectedReport}
+          stateText="month"
+          text="Month"
+        />
+        <SwitchButton
+          currentState={selectedReport}
+          updatedState={setSelectedReport}
+          stateText="year"
+          text="Year"
+        />
       </div>
 
       {renderReport()}

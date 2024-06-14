@@ -14,6 +14,7 @@ router.get(
 // Get a specific payment by ID
 router.get("/:paymentId", paymentController.getPayment);
 
+router.get("/", paymentController.getAllPayments);
 // Update a payment by ID
 router.put("/:paymentId", paymentController.updatePayment);
 

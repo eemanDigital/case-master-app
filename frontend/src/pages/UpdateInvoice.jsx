@@ -261,7 +261,91 @@ const UpdateInvoice = () => {
             )}
           </Form.List>
         </div>
-
+        <Divider orientation="left" orientationMargin="0">
+          <Typography.Title level={4}>Expenses</Typography.Title>
+        </Divider>
+        <div>
+          <Form.List name="expenses">
+            {(fields, { add, remove }) => (
+              <div>
+                {fields.map((field) => (
+                  <Card
+                    size="small"
+                    title={`Item ${field.name + 1}`}
+                    key={field.key}
+                    extra={
+                      <DeleteOutlined
+                        className="text-red-700"
+                        onClick={() => {
+                          remove(field.name);
+                        }}
+                      />
+                    }>
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24} md={12}>
+                        <Form.Item
+                          label="Expenses Descriptions"
+                          name={[field.name, "description"]}
+                          initialValue={formData.expenses.description}>
+                          <Input />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <Form.Item
+                          label="Amount"
+                          name={[field.name, "amount"]}
+                          initialValue={formData.expenses.amount}>
+                          <InputNumber
+                            formatter={(value) =>
+                              `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                            }
+                            parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24} md={12}>
+                        <Form.Item
+                          label="Date "
+                          name={[field.name, "date"]}
+                          initialValue={formData.expenses.date}>
+                          <DatePicker />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </Card>
+                ))}
+                <Button className="m-3" onClick={() => add()}>
+                  + Add Expenses
+                </Button>
+              </div>
+            )}
+          </Form.List>
+        </div>
+        <Divider orientation="left" orientationMargin="0">
+          <Typography.Title level={4}>Tax Charges on Invoice</Typography.Title>
+        </Divider>
+        <Card>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="Tax Type"
+                name="taxType"
+                initialValue={formData.taxType}>
+                <Input />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="Tax Rate"
+                name="taxRate"
+                initialValue={formData?.taxRate}>
+                <InputNumber />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
         <Divider orientation="left" orientationMargin="0">
           <Typography.Title level={4}>Account Details</Typography.Title>
         </Divider>

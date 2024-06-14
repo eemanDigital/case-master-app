@@ -5,6 +5,7 @@ import { ToastContainer } from "react-toastify";
 import Spinner from "../components/Spinner";
 import Button from "../components/Button";
 import { useState } from "react";
+import CaseDocumentUpload from "../components/CaseDocumentUpload";
 
 const { Title, Text } = Typography;
 

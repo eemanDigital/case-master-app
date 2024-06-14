@@ -46,7 +46,7 @@ const navItems = [
 
   {
     name: "Billings",
-    path: "invoices",
+    path: "billings",
     icon: <FaMoneyBill />,
   },
   {

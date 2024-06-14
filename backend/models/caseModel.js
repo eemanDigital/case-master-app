@@ -19,6 +19,19 @@ const judgeSchema = new mongoose.Schema({
 // sub-document for processes
 const partyProcessSchema = new mongoose.Schema({ name: String });
 
+// sub-document for documents
+const documentSchema = new mongoose.Schema({
+  fileName: {
+    type: String,
+    required: [true, "Provide file name"],
+    trim: true,
+  },
+  file: {
+    type: String,
+    required: [true, "Provide document to upload"],
+  },
+});
+
 // case Schema
 const caseSchema = new mongoose.Schema(
   {
@@ -178,6 +191,8 @@ const caseSchema = new mongoose.Schema(
     accountOfficer: [String],
     client: [nameSchema],
     generalComment: String,
+
+    documents: [documentSchema],
   },
 
   {
@@ -224,11 +239,11 @@ caseSchema.virtual("reporter", {
   foreignField: "reportedBy",
   localField: "_id",
 });
-caseSchema.virtual("documents", {
-  ref: "File",
-  foreignField: "case",
-  localField: "_id",
-});
+// caseSchema.virtual("documents", {
+//   ref: "File",
+//   foreignField: "case",
+//   localField: "_id",
+// });
 
 const Case = mongoose.model("Case", caseSchema);
 

@@ -9,9 +9,25 @@ const paymentSchema = new Schema(
       required: true,
     },
 
+    clientId: {
+      type: Schema.Types.ObjectId,
+      ref: "Client",
+      required: true,
+    },
+    caseId: {
+      type: Schema.Types.ObjectId,
+      ref: "Client",
+      required: true,
+    },
+
     amountPaid: {
       type: Number,
       required: true,
+    },
+
+    totalAmountDue: {
+      type: Number,
+      default: 0.0,
     },
     date: {
       type: Date,
@@ -21,6 +37,10 @@ const paymentSchema = new Schema(
       type: String,
       enum: ["credit_card", "bank_transfer", "cash", "cheque"],
       required: true,
+    },
+    balance: {
+      type: Number,
+      default: 0.0,
     },
   },
 
@@ -33,20 +53,7 @@ const paymentSchema = new Schema(
 );
 
 paymentSchema.pre(/^find/, function (next) {
-  this.populate({
-    path: "client",
-    select: "firstName secondName",
-  })
-    .populate({
-      path: "case",
-      select: "firstParty.name.name secondParty.name.name ",
-    })
-    .populate({
-      path: "invoice",
-      select:
-        "invoiceReference workTitle totalInvoiceAmount totalAmountDue -case -client",
-    });
+  this.populate("invoiceId");
   next();
 });
-
 module.exports = mongoose.model("Payment", paymentSchema);

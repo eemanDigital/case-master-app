@@ -42,6 +42,7 @@ import TaskList from "./components/TaskList.jsx";
 import TaskDetails from "./pages/TaskDetails.jsx";
 import ClientLists from "./pages/ClientLists.jsx";
 import ClientDetails from "./pages/ClientDetails.jsx";
+import InvoicePaymentHandler from "./components/InvoicePaymentHandler.jsx";
 import ProtectedRoute from "./components/ProtectRoutes.jsx";
 import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
 import CreateInvoiceForm from "./components/CreateInvoiceForm.jsx";
@@ -120,10 +121,18 @@ function App() {
           <Route path="tasks/:id/details" element={<TaskDetails />} />
           <Route path="clients" element={<ClientLists />} />
           <Route path="clients/:id/details" element={<ClientDetails />} />
-          <Route path="invoices" element={<InvoiceList />} />
+          <Route path="billings" element={<InvoicePaymentHandler />} />
+          {/* <Route path="billings/invoice" element={<Invoi />} /> */}
+
           <Route path="add-invoices" element={<CreateInvoiceForm />} />
-          <Route path="invoices/:id/details" element={<InvoiceDetails />} />
-          <Route path="invoices/:id/update" element={<UpdateInvoice />} />
+          <Route
+            path="billings/invoices/:id/details"
+            element={<InvoiceDetails />}
+          />
+          <Route
+            path="billings/invoices/:id/update"
+            element={<UpdateInvoice />}
+          />
           <Route path="cause-list" element={<CauseList />} />
 
           {/* errorElement= {<ErrorPage />} */}

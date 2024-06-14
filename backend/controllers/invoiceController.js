@@ -118,6 +118,7 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
     createdAt: invoice.createdAt || "",
     dueDate: invoice.dueDate || "",
     status: invoice.status || "",
+    taxType: invoice.taxType || "",
     workTitle: invoice.workTitle || "",
     case: invoice.case || {},
     services: invoice.services || [],
@@ -128,8 +129,19 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
     totalInvoiceAmount: invoice.totalInvoiceAmount || 0,
     amountPaid: invoice.amountPaid || 0,
     paymentInstructionTAndC: invoice.paymentInstructionTAndC || "",
+    expenses: invoice.expenses || [],
+    totalExpenses: invoice.totalExpenses || 0,
+    taxAmount: invoice.taxAmount || 0,
+    totalAmountWithTax: invoice.totalAmountWithTax || 0,
+    serviceDescriptions: invoice.serviceDescriptions || "",
+    hours: invoice.hours || 0,
+    date: invoice.date || "",
+    feeRatePerHour: invoice.feeRatePerHour || 0,
+    amount: invoice.amount || 0,
+    financialSummary: invoice.financialSummary || "",
   };
 
+  // generate pdf handler function
   generatePdf(
     { invoice: safeInvoice },
     res,
@@ -171,7 +183,6 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
   // );
 });
 
-// exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
 //   const invoice = await Invoice.findById(req.params.id);
 //   if (!invoice) {
 //     return next(new AppError("No invoice found with that ID", 404));

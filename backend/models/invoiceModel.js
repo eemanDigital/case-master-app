@@ -82,7 +82,7 @@ const invoiceSchema = new Schema(
       ],
       trim: true,
     },
-    natureOfTax: String,
+    taxType: String,
     taxRate: { type: Number, default: 0.0 },
     taxAmount: { type: Number, default: 0.0 },
     totalAmountWithTax: { type: Number, default: 0.0 },
@@ -91,7 +91,7 @@ const invoiceSchema = new Schema(
     totalProfessionalFees: { type: Number, default: 0 },
     previousBalance: { type: Number, default: 0 },
     totalAmountDue: { type: Number, default: 0 },
-    totalInvoiceAmount: { type: Number, default: 0 }, // field represents the sum total of all charges related to the invoice before any deductions
+    totalInvoiceAmount: { type: Number, default: 0 }, // represents the sum total of all charges related to the invoice before any deductions
     amountPaid: { type: Number, default: 0 },
     signature: String, // image
   },

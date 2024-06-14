@@ -49,8 +49,16 @@ const catchAsync = require("../utils/catchAsync");
 //     data: newPayment,
 //   });
 // };
-exports.createPayment = async (req, res, next) => {
-  const { invoiceId, amountPaid, method, date } = req.body;
+exports.createPayment = catchAsync(async (req, res, next) => {
+  const {
+    caseId,
+    clientId,
+    invoiceId,
+    amountPaid,
+    method,
+    date,
+    totalAmountDue,
+  } = req.body;
 
   // Find the corresponding invoice
   const invoice = await Invoice.findById(invoiceId);
@@ -59,14 +67,15 @@ exports.createPayment = async (req, res, next) => {
   }
 
   // Calculate the new balance
-  const totalAmountWithTax = invoice.totalAmountWithTax;
   const newPayment = new Payment({
     invoiceId: invoiceId,
+    caseId,
+    clientId,
     amountPaid,
     method,
     date,
-    totalInvoiceAmount: totalAmountWithTax,
-    balance: totalAmountWithTax - amountPaid,
+    totalAmountDue,
+    balance: totalAmountDue - amountPaid,
   });
 
   // Save the payment
@@ -83,13 +92,13 @@ exports.createPayment = async (req, res, next) => {
     status: "success",
     data: newPayment,
   });
-};
+});
 // Get all payments for a specific client and case
 exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
   const { clientId, caseId } = req.params;
   const payments = await Payment.find({
-    client: clientId,
-    case: caseId,
+    clientId: clientId,
+    caseId: caseId,
   }).sort({ createAt: -1 });
 
   if (!payments) {
@@ -105,19 +114,28 @@ exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
   });
 });
 
+// Get all payments
+exports.getAllPayments = catchAsync(async (req, res, next) => {
+  const payments = await Payment.find();
+
+  res.status(200).json({
+    status: 'success',
+    results: payments.length,
+    data: {
+      payments
+    }
+  });
+});
+
 // Get a specific payment
 exports.getPayment = catchAsync(async (req, res, next) => {
-  const payment = await Payment.findById(req.params.paymentId).populate(
-    "client case"
-  );
-
+  const payment = await Payment.findById(req.params.paymentId);
   if (!payment) {
     return next(new AppError("Payment not found", 404));
   }
 
   res.status(201).json({
     message: "success",
-
     data: payment,
   });
 });

@@ -2,6 +2,7 @@ export const invoiceInitialValue = {
   case: null,
   client: "",
   workTitle: "",
+  invoiceReference: "", // Added invoice reference
   services: [
     {
       serviceDescriptions: "",
@@ -9,6 +10,14 @@ export const invoiceInitialValue = {
       date: null,
       feeRatePerHour: 0,
       amount: 0,
+    },
+  ],
+  expenses: [
+    // Added expenses array
+    {
+      description: "",
+      amount: 0,
+      date: null,
     },
   ],
   dueDate: null,
@@ -20,6 +29,15 @@ export const invoiceInitialValue = {
   },
   status: "unpaid",
   paymentInstructionTAndC: "",
+  taxType: "",
+  taxRate: 0.0,
+  taxAmount: 0.0,
+  totalAmountWithTax: 0.0,
+  totalExpenses: 0,
+  totalHours: 0,
+  totalProfessionalFees: 0,
   previousBalance: 0,
+  totalAmountDue: 0,
+  totalInvoiceAmount: 0,
   amountPaid: 0,
 };
