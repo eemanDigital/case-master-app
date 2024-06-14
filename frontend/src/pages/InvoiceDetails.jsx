@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { Descriptions, Button, Card, Spin, Alert, Row, Col } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
+import { handleDownload } from "../utils/downloadHandler";
 
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
@@ -29,46 +30,14 @@ const InvoiceDetails = () => {
 
   const invoice = data?.data;
 
-  //   download invoice handler
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
-
-  // Retrieve token from browser cookies
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("jwt="))
-    ?.split("=")[1];
-
-  const handleDownloadInvoice = async (event, invoiceId) => {
-    event.preventDefault();
-    const response = await fetch(`${downloadURL}/invoices/pdf/${invoiceId}`, {
-      method: "GET",
-      headers: {
-        ...fileHeaders,
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error("Network response was not ok");
-    }
-
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "invoice.pdf"; // or any other filename you want
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
   return (
     <>
       <Button onClick={() => navigate(-1)}>Go Back</Button>
 
-      <Card title="Invoice Details" bordered={false} style={{ width: "100%" }}>
+      <Card
+        className="text-black w-[100%] mt-4"
+        title="Invoice Details"
+        bordered={false}>
         <Descriptions
           bordered
           column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}
@@ -114,8 +83,49 @@ const InvoiceDetails = () => {
                   </Col>
                   <Col xs={24} sm={24} md={12} lg={8} xl={8}>
                     <Descriptions column={1} size="small" bordered={false}>
+                      <Descriptions.Item label="Fee Rate per Hour">
+                        ₦{service?.feeRatePerHour?.toFixed(2)}
+                      </Descriptions.Item>
+                    </Descriptions>
+                  </Col>
+                  <Col xs={24} sm={24} md={12} lg={8} xl={8}>
+                    <Descriptions column={1} size="small" bordered={false}>
                       <Descriptions.Item label="Amount">
-                        {service?.amount}
+                        ₦{service?.amount.toFixed(2)}
+                      </Descriptions.Item>
+                    </Descriptions>
+                  </Col>
+                </Row>
+              </Card>
+            ))}
+          </Descriptions.Item>
+          <Descriptions.Item label="Expenses" span={3}>
+            {invoice?.expenses.map((expense, index) => (
+              <Card
+                key={index}
+                type="inner"
+                title={`Expense ${index + 1}`}
+                bordered={false}
+                style={{ marginBottom: 16 }}>
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={24} md={12} lg={8} xl={8}>
+                    <Descriptions column={1} size="small" bordered={false}>
+                      <Descriptions.Item label="Description">
+                        {expense?.description}
+                      </Descriptions.Item>
+                    </Descriptions>
+                  </Col>
+                  <Col xs={24} sm={24} md={12} lg={8} xl={8}>
+                    <Descriptions column={1} size="small" bordered={false}>
+                      <Descriptions.Item label="Amount">
+                        ₦{expense?.amount.toFixed(2)}
+                      </Descriptions.Item>
+                    </Descriptions>
+                  </Col>
+                  <Col xs={24} sm={24} md={12} lg={8} xl={8}>
+                    <Descriptions column={1} size="small" bordered={false}>
+                      <Descriptions.Item label="Date">
+                        {formatDate(expense?.date)}
                       </Descriptions.Item>
                     </Descriptions>
                   </Col>
@@ -133,19 +143,28 @@ const InvoiceDetails = () => {
             {invoice?.totalHours}
           </Descriptions.Item>
           <Descriptions.Item label="Total Professional Fees">
-            {invoice?.totalProfessionalFees}
+            ₦{invoice?.totalProfessionalFees.toFixed(2).toLocaleString()}
+          </Descriptions.Item>
+          <Descriptions.Item label="Total Expenses">
+            ₦{invoice?.totalExpenses.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Previous Balance">
-            {invoice?.previousBalance}
+            ₦{invoice?.previousBalance.toFixed(2).toLocaleString()}
           </Descriptions.Item>
-          <Descriptions.Item label="Total Amount Due">
-            {invoice?.totalAmountDue}
+          <Descriptions.Item label="Tax Amount">
+            ₦{invoice?.taxAmount.toFixed(2).toLocaleString()} {invoice?.taxType}
+          </Descriptions.Item>
+          <Descriptions.Item label="Total Amount With Tax">
+            ₦{invoice?.totalAmountWithTax.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Total Invoice Amount">
-            {invoice?.totalInvoiceAmount}
+            ₦{invoice?.totalInvoiceAmount.toFixed(2).toLocaleString()}
+          </Descriptions.Item>
+          <Descriptions.Item label="Total Amount Due">
+            ₦{invoice?.totalAmountDue.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Amount Paid">
-            {invoice?.amountPaid}
+            ₦{invoice?.amountPaid.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Account Name">
             {invoice?.accountDetails?.accountName}
@@ -159,13 +178,25 @@ const InvoiceDetails = () => {
           <Descriptions.Item label="Reference">
             {invoice?.accountDetails?.reference}
           </Descriptions.Item>
+          <Descriptions.Item
+            label="Payment Instructions/Terms and Conditions"
+            span={3}>
+            {invoice?.paymentInstructionTAndC}
+          </Descriptions.Item>
         </Descriptions>
 
-        <Button onClick={(event) => handleDownloadInvoice(event, invoice._id)}>
+        <Button
+          onClick={(event) =>
+            handleDownload(
+              event,
+              `${downloadURL}/invoices/pdf/${invoice?._id}`,
+              "invoice.pdf"
+            )
+          }>
           Download Invoice
         </Button>
 
-        <Link to={`../invoices/${invoice._id}/update`}>
+        <Link to={`../billings/invoices/${invoice._id}/update`}>
           <Button>Update Invoice</Button>
         </Link>
       </Card>

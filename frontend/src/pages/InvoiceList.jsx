@@ -53,7 +53,7 @@ const InvoiceList = () => {
       render: (text, record) => (
         <Space size="middle">
           <Button type="link">
-            <Link to={`${record?._id}/details`}>Get Details</Link>
+            <Link to={`invoices/${record?._id}/details`}>Get Details</Link>
           </Button>
           <Button
             onClick={() => {

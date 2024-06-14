@@ -7,7 +7,7 @@ const {
   deleteTask,
   // updateTaskResponse,
 } = require("../controllers/taskController");
-const { fileUpload } = require("../utils/taskDocHandler");
+// const { fileUpload } = require("../utils/taskDocHandler");
 
 const {
   createTaskResponse,
@@ -24,7 +24,7 @@ router.use(protect); //protect route from access unless user log in
 router.get("/", getTasks);
 router.get("/:taskId", getTask);
 // router.get("/download/:taskId", downloadFile);
-router.patch("/:id", fileUpload, updateTask);
+// router.patch("/:id", fileUpload, updateTask);
 router.patch("/:id", updateTask);
 router.delete("/:id", deleteTask);
 router.post("/", createTask);

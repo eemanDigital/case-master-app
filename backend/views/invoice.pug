@@ -9,33 +9,30 @@ html(lang="en")
         font-family: "Roboto Condensed", sans-serif;
         font-size: 18px;
         font-style: normal;
-        line-height: 1.5;
+        line-height: 1.2;
         width: 100%;
         margin: 0;
         padding: 0;
         box-sizing: border-box;
       }
-      h1, h2, h3, p, span {
+      h3, p, span {
         margin: 0;
         padding: 0;
       }
-      h1 {
-        color: #4b5563;
-        margin-bottom: 0.5rem;
-      }
-      h2, h3 {
+    
+      h3 {
         color: #4b5563;
         margin-bottom: 0.25rem;
       }
       .container {
         width: 80%;
-        margin: 0 auto;
-        padding: 2rem 0;
+        margin: 3rem auto;
+        padding: 1rem 0;
       }
       table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 2rem;
+       
       }
       .header td, .header-invoice td, .addresses td {
         border: none;
@@ -50,13 +47,16 @@ html(lang="en")
       }
       .header, .addresses, .invoice-details {
         width: 100%;
-        margin-bottom: 2rem;
+       
       }
       .header img {
         width: 50px;
       }
       .header-invoice, .logo, .from, .to, .status, .work-title, .case-reference, .payment-instructions {
         width: 50%;
+      }
+      .tax-type{
+        margin-left:1rem;
       }
       .additional-info {
         margin: 20px 0;
@@ -75,6 +75,12 @@ html(lang="en")
       .additional-info .case-reference p {
         margin-bottom: 0;
       }
+      .important {
+        font-weight: bold;
+      }
+      span:{
+        margin:.5rem;
+      }
   body
     .container
       table.header
@@ -83,46 +89,46 @@ html(lang="en")
             h1 Invoice
             p Invoice No: #{invoice.invoiceReference}
           td.logo
-            img(src="./logo.png", alt="Company Logo")
+            img(src="/path/to/logo.png", alt="Company Logo")
       table.addresses
         tr
           td.from
-            h1 Invoice To:
-            h3 #{invoice.client.firstName} #{invoice.client.secondName}
+            h3 Invoice To:
+            h3 #{invoice.client.firstName} #{invoice.client.lastName}
             p Address: #{invoice.client.address}
             p Phone: #{invoice.client.phone}
             p Email: #{invoice.client.email}
           td.to
-            h1 Invoice From:
+            h3 Invoice From:
             h3 A.T Lukman & Co.
             p No 32, Allen Street Maitama, Abuja
+            p Phone: +234 123 456 7890
+            p Email: info@atlukman.com
       table.invoice-details
         tr
           td
-            h1 Payment Info
+            h3 Payment Info
             p Account No: #{invoice.accountDetails.accountNumber}
             p Account Name: #{invoice.accountDetails.accountName}
             p Bank: #{invoice.accountDetails.bank}
             p Reference: #{invoice.accountDetails.reference}
           td
-            h1 Date
-            //- p Invoice Date: #{invoice.createdAt.toISOString().split('T')[0]}
-            //- p Due Date: #{invoice.dueDate.toISOString().split('T')[0]}
-            p Invoice Date: #{invoice.createdAt}
-            p Due Date: #{invoice.dueDate}
+            h3 Date
+            p Invoice Date: #{new Date(invoice.createdAt).toLocaleDateString()}
+            p Due Date: #{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}
       .additional-info
         table
           tr
             td.status
-              h2 Status:
+              h3 Status:
               span #{invoice.status}
             td.work-title
-              h2 Work Title:
+              h3 Work Title:
               span #{invoice.workTitle}
           tr
             td.case-reference
-              h2 Case:
-              p #{(invoice.case && invoice.case.firstParty && invoice.case.firstParty.name && invoice.case.firstParty.name[0] && invoice.case.firstParty.name[0].name) || 'Unknown'} vs #{(invoice.case && invoice.case.secondParty && invoice.case.secondParty.name && invoice.case.secondParty.name[0] && invoice.case.secondParty.name[0].name) || 'Unknown'}
+              h3 Case:
+              p #{invoice.case.firstParty.name[0].name || 'Unknown'} vs #{invoice.case.secondParty.name[0].name || 'Unknown'}
       table
         thead
           tr
@@ -136,35 +142,53 @@ html(lang="en")
             tr
               td #{service.serviceDescriptions}
               td #{service.hours}
-              td #{service.date.toISOString().split('T')[0]}
-              td ₦#{service.feeRatePerHour.toFixed(2)}
+              td #{new Date(service.date).toLocaleDateString()}
+              td ₦#{service.feeRatePerHour ? service.feeRatePerHour.toFixed(2) : '0.00'}
               td ₦#{service.amount.toFixed(2)}
+      table
+        thead
           tr
-            td(colspan="5")
-              table.card-container
-                tbody
-                  tr
-                    td Financial Summary
-                      .card
-                        .field
-                          span.label Total Hours:
-                          span.value #{invoice.totalHours}
-                        .field
-                          span.label Total Professional Fees:
-                          span.value ₦#{invoice.totalProfessionalFees.toFixed(2)}
-                        .field
-                          span.label Previous Balance:
-                          span.value ₦#{invoice.previousBalance.toFixed(2)}
-                        .field
-                          span.label Total Amount Due:
-                          span.value.important ₦#{invoice.totalAmountDue.toFixed(2)}
-                        .field
-                          span.label Total Invoice Amount:
-                          span.value ₦#{invoice.totalInvoiceAmount.toFixed(2)}
-                        .field
-                          span.label Amount Paid:
-                          span.value ₦#{invoice.amountPaid.toFixed(2)}
+            th Expense Description
+            th Amount
+            th Date
+        tbody
+          each expense in invoice.expenses
+            tr
+              td #{expense.description}
+              td ₦#{expense.amount.toFixed(2)}
+              td #{new Date(expense.date).toLocaleDateString()}
+      .additional-info
+        h3 Financial Summary
+        .field
+          span.label Amount Already Paid:
+          span.value ₦#{invoice.amountPaid.toFixed(2)}
+        .field
+          span.label Total Hours:
+          span.value #{invoice.totalHours}
+        .field
+          span.label Total Professional Fees:
+          span.value ₦#{invoice.totalProfessionalFees.toFixed(2)}
+        .field
+          span.label Total Expenses:
+          span.value ₦#{invoice.totalExpenses.toFixed(2)}
+        .field
+          span.label Tax Amount:
+          span.value ₦#{invoice.taxAmount.toFixed(2)}
+          span.tax-type #{invoice.taxType}
+        .field
+          span.label Total Amount With Tax:
+          span.value ₦#{invoice.totalAmountWithTax.toFixed(2)}
+        .field
+          span.label Previous Balance:
+          span.value ₦#{invoice.previousBalance.toFixed(2)}
+        
+        .field
+          span.label Total Invoice Amount:
+          span.value ₦#{invoice.totalInvoiceAmount.toFixed(2)}
+        .field
+          span.label Total Amount Due:
+          span.value.important ₦#{invoice.totalAmountDue.toFixed(2)}
       .additional-info
         .payment-instructions
-          h2 Payment Instructions/Terms and Conditions:
+          h3 Payment Instructions/Terms and Conditions:
           p #{invoice.paymentInstructionTAndC}
