@@ -5,7 +5,7 @@ const {
   getCase,
   updateCase,
   deleteCase,
-  uploadCaseDocument,
+  createDocuments,
   downloadCaseDocument,
   uploadCaseFile,
 } = require("../controllers/caseController");
@@ -22,7 +22,7 @@ router.get("/:caseId/documents/:documentId/download", downloadCaseDocument);
 router.route("/").get(getCases).post(createCase);
 // .post(createCase);
 
-router.post("/:caseId/documents", uploadCaseDocument);
+router.post("/:caseId/documents", uploadCaseFile, createDocuments);
 
 router
   .route("/:caseId")

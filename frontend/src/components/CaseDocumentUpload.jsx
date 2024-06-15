@@ -102,9 +102,9 @@ const CaseDocumentUpload = ({ caseId }) => {
       </div>
 
       <div>
-        <button onClick={handleClick} type="submit">
+        <Button onClick={handleClick} type="submit">
           Upload Document
-        </button>
+        </Button>
       </div>
     </form>
   );

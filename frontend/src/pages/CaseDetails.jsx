@@ -5,6 +5,7 @@ import { formatDate } from "../utils/formatDate";
 import Button from "../components/Button";
 import CaseDocumentUpload from "../components/CaseDocumentUpload";
 
+const baseURL = import.meta.env.VITE_BASE_URL;
 const CaseDetails = () => {
   const { id } = useParams();
   const { dataFetcher, data, loading, error } = useDataFetch();
@@ -29,16 +30,19 @@ const CaseDetails = () => {
     .find((row) => row.startsWith("jwt="))
     ?.split("=")[1];
 
-  async function handleDownload(event, docId, fileName) {
+  async function handleDownload(event, caseId, docId, fileName) {
     event.preventDefault();
     try {
-      const response = await fetch(`/${id}/documents/${docId}/download`, {
-        method: "GET",
-        headers: {
-          ...fileHeaders,
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await fetch(
+        `${baseURL}/cases/${caseId}/documents/${docId}/download`,
+        {
+          method: "GET",
+          headers: {
+            ...fileHeaders,
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
       if (!response.ok) {
         throw new Error("Failed to download file");
       }
@@ -48,7 +52,7 @@ const CaseDetails = () => {
       const a = document.createElement("a");
       a.style.display = "none";
       a.href = url;
-      a.download = fileName;
+      a.download = fileName || "download";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -227,20 +231,30 @@ const CaseDetails = () => {
           <strong>General Comment: </strong> {data?.data?.generalComment}
         </p>
       </div>
-      <div>
-        <h1>Documents Uploads</h1>
-        {data?.data?.documents.map((document) => (
+
+      <h1>Documents Uploads</h1>
+      {data?.data?.documents.map((document) => {
+        console.log(
+          "caseId=>",
+          id,
+          "docId=>",
+          document._id,
+          "fileName=>",
+          document.fileName
+        );
+        return (
           <div key={document._id}>
             <h1>Document&apos;s Name: {document?.fileName}</h1>
-            <Button
+            <button
               onClick={(event) =>
-                handleDownload(event, document._id, document.fileName)
+                handleDownload(event, id, document._id, document.fileName)
               }>
               Download File
-            </Button>
+            </button>
           </div>
-        ))}
-      </div>
+        );
+      })}
+
       <CaseDocumentUpload caseId={id} />
     </section>
   );
