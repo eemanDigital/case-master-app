@@ -7,11 +7,9 @@ const {
   deleteCase,
   createDocuments,
   downloadCaseDocument,
-  uploadCaseFile,
 } = require("../controllers/caseController");
 const { protect, restrictTo } = require("../controllers/authController");
-// const multer = require("multer");
-// const upload = multer({ dest: "public/uploads/" });
+const { multerFileUploader } = require("../utils/multerFileUploader.js");
 
 const router = express.Router();
 // const app = express();
@@ -22,7 +20,11 @@ router.get("/:caseId/documents/:documentId/download", downloadCaseDocument);
 router.route("/").get(getCases).post(createCase);
 // .post(createCase);
 
-router.post("/:caseId/documents", uploadCaseFile, createDocuments);
+router.post(
+  "/:caseId/documents",
+  multerFileUploader("public/caseDoc", "file"),
+  createDocuments
+);
 
 router
   .route("/:caseId")

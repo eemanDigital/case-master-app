@@ -7,40 +7,40 @@ const path = require("path");
 
 // Multer configuration
 
-const multerStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/uploads"); // replace with your destination path
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `case-${req.user.id}-${Date.now()}${ext}`);
-  },
-});
+// const multerStorage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, "public/uploads"); // replace with your destination path
+//   },
+//   filename: (req, file, cb) => {
+//     const ext = path.extname(file.originalname);
+//     cb(null, `case-${req.user.id}-${Date.now()}${ext}`);
+//   },
+// });
 
-const multerFilter = (req, file, cb) => {
-  const filetypes = /jpeg|jpg|png|doc|docx|pdf|txt/;
-  const mimetype = filetypes.test(file.mimetype.toLowerCase());
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+// const multerFilter = (req, file, cb) => {
+//   const filetypes = /jpeg|jpg|png|doc|docx|pdf|txt/;
+//   const mimetype = filetypes.test(file.mimetype.toLowerCase());
+//   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
 
-  if (mimetype && extname) {
-    return cb(null, true);
-  } else {
-    cb(
-      new AppError(
-        "Invalid file type. Only JPEG, PNG, DOC, DOCX, PDF, TXT files are allowed.",
-        400
-      ),
-      false
-    );
-  }
-};
+//   if (mimetype && extname) {
+//     return cb(null, true);
+//   } else {
+//     cb(
+//       new AppError(
+//         "Invalid file type. Only JPEG, PNG, DOC, DOCX, PDF, TXT files are allowed.",
+//         400
+//       ),
+//       false
+//     );
+//   }
+// };
 
-const upload = multer({
-  storage: multerStorage,
-  fileFilter: multerFilter,
-});
+// const upload = multer({
+//   storage: multerStorage,
+//   fileFilter: multerFilter,
+// });
 
-exports.uploadCaseFile = upload.single("file");
+// exports.uploadCaseFile = upload.single("file");
 
 exports.createCase = catchAsync(async (req, res, next) => {
   const singleCase = await Case.create(req.body);
@@ -112,37 +112,6 @@ exports.deleteCase = catchAsync(async (req, res, next) => {
 });
 
 // download case file handler
-// exports.downloadCaseDocument = catchAsync(async (req, res, next) => {
-//   const { caseId, documentId } = req.params;
-
-//   const caseData = await Case.findById(caseId);
-
-//   if (!caseData) {
-//     return next(new AppError(`No case found with ID: ${caseId}`, 404));
-//   }
-
-//   const document = caseData.documents.id(documentId);
-
-//   if (!document) {
-//     return next(new AppError(`No document found with ID: ${documentId}`, 404));
-//   }
-
-//   const filePath = path.join(__dirname, "..", document.file);
-
-//   fs.access(filePath, fs.constants.F_OK, (err) => {
-//     if (err) {
-//       console.error("File does not exist");
-//       return next(new AppError("File not found", 404));
-//     } else {
-//       res.download(filePath, document.fileName, (err) => {
-//         if (err) {
-//           console.error("File download failed");
-//           return next(new AppError("File download failed", 500));
-//         }
-//       });
-//     }
-//   });
-// });
 exports.downloadCaseDocument = catchAsync(async (req, res, next) => {
   const { caseId, documentId } = req.params;
 
@@ -159,15 +128,7 @@ exports.downloadCaseDocument = catchAsync(async (req, res, next) => {
   }
 
   const filePath = path.join(__dirname, "..", document.file);
-  // const filePath = path.join(
-  //   __dirname,
-  //   "..",
-  //   "public",
-  //   "upload",
-  //   document.file
-  // );
 
-  console.log("PAth", filePath);
   // Check if the file exists synchronously
   if (!fs.existsSync(filePath)) {
     console.error("File does not exist", filePath);
@@ -184,7 +145,6 @@ exports.downloadCaseDocument = catchAsync(async (req, res, next) => {
 });
 
 // upload case file handler
-
 exports.createDocuments = catchAsync(async (req, res, next) => {
   const { caseId } = req.params;
   const { fileName } = req.body;
@@ -198,7 +158,7 @@ exports.createDocuments = catchAsync(async (req, res, next) => {
     return next(new AppError("A file name is required for each document", 400));
   }
 
-  const filePath = path.join("public/uploads", file.filename);
+  const filePath = path.join("public/caseDoc", file.filename);
 
   const document = {
     fileName,
