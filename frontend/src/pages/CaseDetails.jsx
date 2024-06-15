@@ -2,10 +2,14 @@ import { useParams, Link } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useEffect } from "react";
 import { formatDate } from "../utils/formatDate";
-import Button from "../components/Button";
+import { Button, Divider, Typography, Row, Col, Card, List } from "antd";
+import { FaDownload } from "react-icons/fa6";
 import CaseDocumentUpload from "../components/CaseDocumentUpload";
+import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
 
+const { Title, Text } = Typography;
 const baseURL = import.meta.env.VITE_BASE_URL;
+
 const CaseDetails = () => {
   const { id } = useParams();
   const { dataFetcher, data, loading, error } = useDataFetch();
@@ -20,147 +24,118 @@ const CaseDetails = () => {
     }
   }, [data?.data]);
 
-  const fileHeaders = {
-    "Content-Type": "application/json",
-  };
-
-  // Retrieve token from browser cookies
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("jwt="))
-    ?.split("=")[1];
-
-  async function handleDownload(event, caseId, docId, fileName) {
-    event.preventDefault();
-    try {
-      const response = await fetch(
-        `${baseURL}/cases/${caseId}/documents/${docId}/download`,
-        {
-          method: "GET",
-          headers: {
-            ...fileHeaders,
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-      if (!response.ok) {
-        throw new Error("Failed to download file");
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.style.display = "none";
-      a.href = url;
-      a.download = fileName || "download";
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.log(err);
-    }
-  }
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>Error loading data</p>;
 
   return (
-    <section>
-      <Link to="../.." relative="path">
-        Go Back to case lists
-      </Link>
+    <section className="p-6">
+      <div className="flex justify-between">
+        <Link to="../..">
+          <Button type="link">Go Back to case lists</Button>
+        </Link>
 
-      <div className="flex justify-evenly">
-        <div>
-          <b>{data?.data?.firstParty.description} </b>
-          {data?.data?.firstParty?.name?.map((singleName, index) => (
-            <div key={singleName._id}>
-              <h1>
-                <strong>{index + 1}. </strong>
-                {singleName.name}
-              </h1>
-            </div>
-          ))}
-        </div>
-        vs
-        <div>
-          <b>{data?.data?.secondParty.description} </b>
-          {data?.data?.secondParty?.name?.map((singleName, index) => (
-            <div key={singleName._id}>
-              <h1>
-                <strong>{index + 1}.</strong> {singleName.name}
-              </h1>
-            </div>
-          ))}
-        </div>
-        <div>
-          {data?.data?.otherParty.map((singleParty) => (
-            <>
-              <b>{singleParty.description}</b>
-              {singleParty?.name?.map((n, index) => (
-                <div key={n._id}>
-                  <h1>
-                    <strong>{index + 1}. </strong>
-                    {n.name}
-                  </h1>
-                </div>
-              ))}
-            </>
-          ))}
-        </div>
+        {/* case file upload */}
+        <CaseDocumentUpload caseId={id} />
       </div>
 
-      <div className="mt-3 flex flex-col">
-        <p className="font-bold">
-          <strong>SUIT NO:</strong> {data?.data?.suitNo}
-        </p>
-        <p className="font-bold">
-          <strong>Filing Date:</strong>{" "}
-          {data?.data?.filingDate && formatDate(data?.data?.filingDate)}
-        </p>
-        <p>
-          <strong>Case Summary: </strong> {data?.data?.caseSummary}
-        </p>
-        <p>
-          <strong>Mode Of Commencement</strong> {data?.data?.modeOfCommencement}
-        </p>
-        <p>
-          <strong>Filed By the Office</strong>{" "}
-          {data?.data?.isFiledByTheOffice ? <h1>Yes</h1> : <h1>No</h1>}
-        </p>
-        <p>
-          <strong>Office Case File No: </strong> {data?.data?.caseOfficeFileNo}
-        </p>
-        <p>
-          <strong>Nature of Case</strong> {data?.data?.natureOfCase}
-        </p>
-        <p className="flex flex-col">
-          <strong>Court: </strong> {data?.data?.courtName}
-          <strong>Court No: </strong> {data?.data?.courtNo}
-          <strong>Court Location: </strong> {data?.data?.location}
-          <strong>State: </strong> {data?.data?.state}
-        </p>
-        <p>
-          <strong>Case Status: </strong> {data?.data?.caseStatus}
-        </p>
-        <p>
-          <strong>Case Category: </strong> {data?.data?.category}
-        </p>
-        <p>
-          <strong>Case Priority/Ratings: </strong> {data?.data?.casePriority}
-        </p>
+      <div className="my-4">
+        <Row justify="space-between">
+          <Col>
+            <Card title={data?.data?.firstParty.description}>
+              {data?.data?.firstParty?.name?.map((singleName, index) => (
+                <div key={singleName._id}>
+                  <Text strong>{index + 1}. </Text>
+                  <Text>{singleName.name}</Text>
+                </div>
+              ))}
+            </Card>
+          </Col>
+          <Col>
+            <Card title={data?.data?.secondParty.description}>
+              {data?.data?.secondParty?.name?.map((singleName, index) => (
+                <div key={singleName._id}>
+                  <Text strong>{index + 1}. </Text>
+                  <Text>{singleName.name}</Text>
+                </div>
+              ))}
+            </Card>
+          </Col>
+          <Col>
+            {data?.data?.otherParty.map((singleParty) => (
+              <Card
+                key={singleParty.description}
+                title={singleParty.description}>
+                {singleParty?.name?.map((n, index) => (
+                  <div key={n._id}>
+                    <Text strong>{index + 1}. </Text>
+                    <Text>{n.name}</Text>
+                  </div>
+                ))}
+              </Card>
+            ))}
+          </Col>
+        </Row>
+      </div>
+
+      <Divider />
+
+      <div className="mt-3">
+        <List
+          itemLayout="vertical"
+          dataSource={[
+            { label: "SUIT NO:", value: data?.data?.suitNo },
+            {
+              label: "Filing Date:",
+              value:
+                data?.data?.filingDate && formatDate(data?.data?.filingDate),
+            },
+            { label: "Case Summary:", value: data?.data?.caseSummary },
+            {
+              label: "Mode Of Commencement:",
+              value: data?.data?.modeOfCommencement,
+            },
+            {
+              label: "Filed By the Office:",
+              value: data?.data?.isFiledByTheOffice ? "Yes" : "No",
+            },
+            {
+              label: "Office Case File No:",
+              value: data?.data?.caseOfficeFileNo,
+            },
+            { label: "Nature of Case:", value: data?.data?.natureOfCase },
+            { label: "Court:", value: data?.data?.courtName },
+            { label: "Court No:", value: data?.data?.courtNo },
+            { label: "Court Location:", value: data?.data?.location },
+            { label: "State:", value: data?.data?.state },
+            { label: "Case Status:", value: data?.data?.caseStatus },
+            { label: "Case Category:", value: data?.data?.category },
+            {
+              label: "Case Priority/Ratings:",
+              value: data?.data?.casePriority,
+            },
+          ]}
+          renderItem={(item) => (
+            <List.Item>
+              <Text strong>{item.label}</Text> {item.value}
+            </List.Item>
+          )}
+        />
+        <Divider />
         {data?.data?.judge.map((j) => (
-          <p key={j._id}>
-            <strong>Judge: </strong>
+          <Text key={j._id} strong>
+            Judge:{" "}
             {j.name || (
               <span className="text-red-500 font-semibold">Not provided</span>
             )}
-          </p>
+          </Text>
         ))}
-        <hr />
-        <h1 className="font-bold">Case Reports</h1>
+        <Divider />
+        <Title level={4}>Case Reports</Title>
         {Array.isArray(data?.data?.reports)
           ? data?.data?.reports.map((u) => (
-              <div key={u._id}>
+              <Card key={u._id}>
                 <p>
-                  <strong>Date: </strong>
+                  <Text strong>Date: </Text>
                   {formatDate(u?.date) || (
                     <span className="text-red-500 font-semibold">
                       Not provided
@@ -168,7 +143,7 @@ const CaseDetails = () => {
                   )}
                 </p>
                 <p>
-                  <strong>Update: </strong>
+                  <Text strong>Update: </Text>
                   {u.update || (
                     <span className="text-red-500 font-semibold">
                       Not provided
@@ -176,86 +151,100 @@ const CaseDetails = () => {
                   )}
                 </p>
                 <p>
-                  <strong>Next Adjourned Date: </strong>
+                  <Text strong>Next Adjourned Date: </Text>
                   {(u?.adjournedDate && formatDate(u?.adjournedDate)) || (
                     <span className="text-red-500 font-semibold">
                       Not provided
                     </span>
                   )}
                 </p>
-              </div>
+              </Card>
             ))
-          : []}
-        <hr />
-        <div>
-          <h3 className="font-bold">Case Strength: </h3>
-          {data?.data?.caseStrengths.map((caseStrength) => (
-            <p key={caseStrength._id}>
-              {caseStrength?.name || (
-                <span className="text-red-500 font-semibold">Not provided</span>
-              )}
-            </p>
-          ))}
-        </div>
-        <div>
-          <h3 className="font-bold">Case Weaknesses: </h3>
-          {data?.data?.caseWeaknesses.map((caseWeakness) => (
-            <p key={caseWeakness._id}>
-              {caseWeakness?.name || (
-                <span className="text-red-500 font-semibold">Not provided</span>
-              )}
-            </p>
-          ))}
-        </div>
+          : null}
+        <Divider />
+        <Title level={4}>Case Strength</Title>
+        <List
+          dataSource={data?.data?.caseStrengths || []}
+          renderItem={(item) => (
+            <List.Item>
+              <Text>
+                {item?.name || (
+                  <span className="text-red-500 font-semibold">
+                    Not provided
+                  </span>
+                )}
+              </Text>
+            </List.Item>
+          )}
+        />
+        <Title level={4}>Case Weaknesses</Title>
+        <List
+          dataSource={data?.data?.caseWeaknesses || []}
+          renderItem={(item) => (
+            <List.Item>
+              <Text>
+                {item?.name || (
+                  <span className="text-red-500 font-semibold">
+                    Not provided
+                  </span>
+                )}
+              </Text>
+            </List.Item>
+          )}
+        />
+        <Divider />
         {data?.data?.stepToBeTaken.map((step) => (
-          <p key={step._id}>
-            <strong>Steps to be taken: </strong>
+          <Text key={step._id} strong>
+            Steps to be taken:{" "}
             {step.name || (
               <span className="text-red-500 font-semibold">Not provided</span>
             )}
-          </p>
+          </Text>
         ))}
-        <hr />
-        <div>
-          <strong>Client: </strong>
-          {data?.data?.client.map((c) => (
-            <p key={c._id}>
-              {c.name || (
-                <span className="text-red-500 font-semibold">Not provided</span>
-              )}
-            </p>
-          ))}
-        </div>
-        <hr />
-        <p>
-          <strong>General Comment: </strong> {data?.data?.generalComment}
-        </p>
+        <Divider />
+        <Title level={4}>Client</Title>
+        <List
+          dataSource={data?.data?.client || []}
+          renderItem={(item) => (
+            <List.Item>
+              <Text>
+                {item.name || (
+                  <span className="text-red-500 font-semibold">
+                    Not provided
+                  </span>
+                )}
+              </Text>
+            </List.Item>
+          )}
+        />
+        <Divider />
+        <Text strong>General Comment: </Text> {data?.data?.generalComment}
       </div>
 
-      <h1>Documents Uploads</h1>
-      {data?.data?.documents.map((document) => {
-        console.log(
-          "caseId=>",
-          id,
-          "docId=>",
-          document._id,
-          "fileName=>",
-          document.fileName
-        );
-        return (
-          <div key={document._id}>
-            <h1>Document&apos;s Name: {document?.fileName}</h1>
-            <button
-              onClick={(event) =>
-                handleDownload(event, id, document._id, document.fileName)
-              }>
-              Download File
-            </button>
-          </div>
-        );
-      })}
+      <Title level={2} className="text-gray-700 mt-4">
+        Attached Documents
+      </Title>
 
-      <CaseDocumentUpload caseId={id} />
+      <List
+        dataSource={data?.data?.documents || []}
+        renderItem={(document) => (
+          <List.Item>
+            <div className="flex gap-2 items-center">
+              <Text>{document?.fileName}</Text>
+              <FaDownload
+                className="text-green-500 hover:text-green-700 cursor-pointer"
+                onClick={(event) =>
+                  handleGeneralDownload(
+                    event,
+                    `${baseURL}/cases/${id}/documents/${document._id}/download`,
+                    document.fileName
+                  )
+                }
+              />
+            </div>
+          </List.Item>
+        )}
+      />
     </section>
   );
 };

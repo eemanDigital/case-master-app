@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-import Input from "../components/Inputs";
-import Button from "../components/Button";
-// import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { Button, Modal, message } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
+
+import useModal from "../hooks/useModal";
 
 const CaseDocumentUpload = ({ caseId }) => {
   const [formData, setFormData] = useState({
@@ -11,50 +12,29 @@ const CaseDocumentUpload = ({ caseId }) => {
   });
   const [click, setClick] = useState(false);
 
+  const { open, confirmLoading, showModal, handleOk, handleCancel } =
+    useModal(); // modal hook
   const { dataFetcher } = useDataFetch();
-  // const { cases } = useDataGetterHook();
 
-  // const casesSelectField = Array.isArray(cases?.data) ? (
-  //   <select
-  //     label="case"
-  //     value={formData.case}
-  //     name="case"
-  //     onChange={handleFileChange}>
-  //     {cases?.data.map((singleCase) => {
-  //       const { firstParty, secondParty } = singleCase;
-  //       const firstName = firstParty?.name[0]?.name;
-  //       const secondName = secondParty?.name[0]?.name;
-  //       return (
-  //         <option value={singleCase._id} key={singleCase._id}>
-  //           {firstName} vs {secondName}
-  //         </option>
-  //       );
-  //     })}
-  //   </select>
-  // ) : (
-  //   []
-  // );
-
-  function handleFileChange(e) {
+  const handleFileChange = (e) => {
     const { name, value, files } = e.target;
 
     setFormData((prevData) => ({
       ...prevData,
       [name]: name === "file" ? files[0] : value, // Handle file or text input
     }));
-  }
+  };
 
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
   };
 
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     const payload = new FormData();
     payload.append("fileName", formData.fileName);
     payload.append("file", formData.file);
-    // payload.append("case", formData.case);
 
     try {
       await dataFetcher(
@@ -63,50 +43,85 @@ const CaseDocumentUpload = ({ caseId }) => {
         payload,
         fileHeaders
       );
+      message.success("Document uploaded successfully!");
+      handleCancel(); // Close the modal on successful upload
     } catch (err) {
       console.log(err);
+      message.error("Failed to upload document. Please try again.");
     }
-  }
+  };
 
-  function handleClick() {
+  const handleClick = () => {
     setClick(() => !click);
-  }
+  };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="flex flex-col justify-center items-center">
-      <div>
-        <Input
-          required
-          type="text"
-          label="File Name"
-          placeholder="file name"
-          htmlFor="fileName"
-          value={formData.fileName}
-          name="fileName"
-          onChange={handleFileChange}
-        />
-      </div>
-      <div>
-        <Input
-          required
-          type="file"
-          name="file"
-          id=""
-          accept=".pdf,.docx,.jpg,.jpeg,.png"
-          onChange={handleFileChange}
-          label="upload document"
-          htmlFor="file"
-        />
-      </div>
-
-      <div>
-        <Button onClick={handleClick} type="submit">
-          Upload Document
-        </Button>
-      </div>
-    </form>
+    <>
+      <Button onClick={showModal} className="bg-blue-500 text-white">
+        Upload File
+      </Button>
+      <Modal
+        title="Upload File"
+        open={open}
+        onOk={handleOk}
+        confirmLoading={confirmLoading}
+        onCancel={handleCancel}
+        footer={null} // Remove default footer buttons
+      >
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div>
+            <label
+              htmlFor="fileName"
+              className="block text-sm font-medium text-gray-700">
+              File Name
+            </label>
+            <input
+              required
+              type="text"
+              placeholder="Enter file name"
+              value={formData.fileName}
+              name="fileName"
+              onChange={handleFileChange}
+              className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="file"
+              className="block text-sm font-medium text-gray-700">
+              Upload Document
+            </label>
+            <div className="flex items-center mt-1">
+              <label className="cursor-pointer inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                <UploadOutlined className="mr-2" />
+                <span>Select File</span>
+                <input
+                  required
+                  type="file"
+                  name="file"
+                  accept=".pdf,.docx,.jpg,.jpeg,.png"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </label>
+              {formData.file && (
+                <p className="ml-4 text-sm text-gray-500">
+                  {formData.file.name}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end">
+            <Button
+              onClick={handleClick}
+              type="submit"
+              className="bg-blue-500 text-white">
+              Upload Document
+            </Button>
+          </div>
+        </form>
+      </Modal>
+    </>
   );
 };
 
