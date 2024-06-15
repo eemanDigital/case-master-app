@@ -1,46 +1,6 @@
 const Case = require("../models/caseModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
-const fs = require("fs");
-const multer = require("multer");
-const path = require("path");
-
-// Multer configuration
-
-// const multerStorage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, "public/uploads"); // replace with your destination path
-//   },
-//   filename: (req, file, cb) => {
-//     const ext = path.extname(file.originalname);
-//     cb(null, `case-${req.user.id}-${Date.now()}${ext}`);
-//   },
-// });
-
-// const multerFilter = (req, file, cb) => {
-//   const filetypes = /jpeg|jpg|png|doc|docx|pdf|txt/;
-//   const mimetype = filetypes.test(file.mimetype.toLowerCase());
-//   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-
-//   if (mimetype && extname) {
-//     return cb(null, true);
-//   } else {
-//     cb(
-//       new AppError(
-//         "Invalid file type. Only JPEG, PNG, DOC, DOCX, PDF, TXT files are allowed.",
-//         400
-//       ),
-//       false
-//     );
-//   }
-// };
-
-// const upload = multer({
-//   storage: multerStorage,
-//   fileFilter: multerFilter,
-// });
-
-// exports.uploadCaseFile = upload.single("file");
 
 exports.createCase = catchAsync(async (req, res, next) => {
   const singleCase = await Case.create(req.body);
@@ -112,71 +72,70 @@ exports.deleteCase = catchAsync(async (req, res, next) => {
 });
 
 // download case file handler
-exports.downloadCaseDocument = catchAsync(async (req, res, next) => {
-  const { caseId, documentId } = req.params;
+// exports.downloadCaseDocument = catchAsync(async (req, res, next) => {
+//   const { caseId, documentId } = req.params;
 
-  // Fetch the case by ID
-  const caseData = await Case.findById(caseId);
-  if (!caseData) {
-    return next(new AppError(`No case found with ID: ${caseId}`, 404));
-  }
+//   // Fetch the case by ID
+//   const caseData = await Case.findById(caseId);
+//   if (!caseData) {
+//     return next(new AppError(`No case found with ID: ${caseId}`, 404));
+//   }
+//   // Fetch the document by ID
+//   const document = caseData.documents.id(documentId);
+//   if (!document) {
+//     return next(new AppError(`No document found with ID: ${documentId}`, 404));
+//   }
 
-  // Fetch the document by ID
-  const document = caseData.documents.id(documentId);
-  if (!document) {
-    return next(new AppError(`No document found with ID: ${documentId}`, 404));
-  }
+//   const filePath = path.join(__dirname, "..", document.file);
 
-  const filePath = path.join(__dirname, "..", document.file);
+//   // Check if the file exists synchronously
+//   if (!fs.existsSync(filePath)) {
+//     console.error("File does not exist", filePath);
+//     return next(new AppError("File not found", 404));
+//   }
 
-  // Check if the file exists synchronously
-  if (!fs.existsSync(filePath)) {
-    console.error("File does not exist", filePath);
-    return next(new AppError("File not found", 404));
-  }
-
-  // If the file exists, download it
-  res.download(filePath, document.fileName, (err) => {
-    if (err) {
-      console.error("File download failed", err);
-      return next(new AppError("File download failed", 500));
-    }
-  });
-});
+//   // If the file exists, download it
+//   res.download(filePath, document.fileName, (err) => {
+//     if (err) {
+//       console.error("File download failed", err);
+//       return next(new AppError("File download failed", 500));
+//     }
+//   });
+// });
 
 // upload case file handler
-exports.createDocuments = catchAsync(async (req, res, next) => {
-  const { caseId } = req.params;
-  const { fileName } = req.body;
-  const { file } = req;
+// exports.createDocuments = catchAsync(async (req, res, next) => {
+//   const { caseId } = req.params;
+//   const { fileName } = req.body;
+//   const { file } = req;
 
-  if (!file) {
-    return next(new AppError("Please provide a document file", 400));
-  }
+//   if (!file) {
+//     return next(new AppError("Please provide a document file", 400));
+//   }
 
-  if (!fileName || fileName.trim() === "") {
-    return next(new AppError("A file name is required for each document", 400));
-  }
+//   if (!fileName || fileName.trim() === "") {
+//     return next(new AppError("A file name is required for each document", 400));
+//   }
 
-  const filePath = path.join("public/caseDoc", file.filename);
+//   const filePath = path.join("public/caseDoc", file.filename);
 
-  const document = {
-    fileName,
-    file: filePath,
-  };
+//   const document = {
+//     fileName,
+//     file: filePath,
+//   };
 
-  const updatedCase = await Case.findByIdAndUpdate(
-    caseId,
-    { $push: { documents: document } }, // Push new document to the documents array
-    { new: true, runValidators: true }
-  );
+//   const updatedCase = await Case.findByIdAndUpdate(
+//     caseId,
+//     { $push: { documents: document } }, // Push new document to the documents array
+//     { new: true, runValidators: true }
+//   );
 
-  if (!updatedCase) {
-    return next(new AppError(`No case found with ID: ${caseId}`, 404));
-  }
+//   if (!updatedCase) {
+//     return next(new AppError(`No case found with ID: ${caseId}`, 404));
+//   }
 
-  res.status(200).json({
-    message: "Document successfully uploaded",
-    updatedCase,
-  });
-});
+//   res.status(200).json({
+//     message: "Document successfully uploaded",
+//     updatedCase,
+//   });
+// });

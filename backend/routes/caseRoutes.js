@@ -5,25 +5,32 @@ const {
   getCase,
   updateCase,
   deleteCase,
-  createDocuments,
   downloadCaseDocument,
 } = require("../controllers/caseController");
 const { protect, restrictTo } = require("../controllers/authController");
 const { multerFileUploader } = require("../utils/multerFileUploader.js");
+const {
+  createDocument,
+  downloadDocument,
+  deleteDocument,
+} = require("../controllers/factory.js");
+// const Case = require("../models/caseModel");
+const Case = require("../models/caseModel.js");
 
 const router = express.Router();
 // const app = express();
 
 router.use(protect);
-router.get("/:caseId/documents/:documentId/download", downloadCaseDocument);
+router.get("/:parentId/documents/:documentId/download", downloadDocument(Case));
+router.delete("/:parentId/documents/:documentId", deleteDocument(Case));
 
 router.route("/").get(getCases).post(createCase);
 // .post(createCase);
 
 router.post(
-  "/:caseId/documents",
+  "/:id/documents",
   multerFileUploader("public/caseDoc", "file"),
-  createDocuments
+  createDocument(Case, "public/caseDoc")
 );
 
 router
