@@ -11,7 +11,6 @@ import {
   Select,
   DatePicker,
 } from "antd";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import useModal from "../hooks/useModal";

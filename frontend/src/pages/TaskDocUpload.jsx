@@ -5,7 +5,7 @@ import { UploadOutlined } from "@ant-design/icons";
 
 import useModal from "../hooks/useModal";
 
-const CaseDocumentUpload = ({ caseId }) => {
+const TaskDocUpload = ({ taskId }) => {
   const [formData, setFormData] = useState({
     fileName: "",
     file: null,
@@ -38,7 +38,7 @@ const CaseDocumentUpload = ({ caseId }) => {
 
     try {
       await dataFetcher(
-        `cases/${caseId}/documents`,
+        `tasks/${taskId}/documents`,
         "post",
         payload,
         fileHeaders
@@ -125,4 +125,4 @@ const CaseDocumentUpload = ({ caseId }) => {
   );
 };
 
-export default CaseDocumentUpload;
+export default TaskDocUpload;

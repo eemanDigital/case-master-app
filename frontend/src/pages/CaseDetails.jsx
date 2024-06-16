@@ -2,10 +2,12 @@ import { useParams, Link } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useEffect } from "react";
 import { formatDate } from "../utils/formatDate";
-import { Button, Divider, Typography, Row, Col, Card, List } from "antd";
+import { Button, Divider, Typography, Row, Col, Card, List, Modal } from "antd";
 import { FaDownload } from "react-icons/fa6";
+import { RiDeleteBin2Line } from "react-icons/ri";
 import CaseDocumentUpload from "../components/CaseDocumentUpload";
 import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
+import useDeleteDocument from "../hooks/useDeleteDocument";
 
 const { Title, Text } = Typography;
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -13,19 +15,49 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 const CaseDetails = () => {
   const { id } = useParams();
   const { dataFetcher, data, loading, error } = useDataFetch();
+  const { handleDeleteDocument, documents } = useDeleteDocument(
+    data?.data,
+    "caseData"
+  );
 
   useEffect(() => {
     dataFetcher(`cases/${id}`, "GET");
   }, [id]);
 
-  useEffect(() => {
-    if (data?.data) {
-      localStorage.setItem("caseData", JSON.stringify(data?.data));
-    }
-  }, [data?.data]);
-
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error loading data</p>;
+
+  // deleteDoc
+  // Retrieve token from browser cookies
+  // const token = document.cookie
+  //   .split("; ")
+  //   .find((row) => row.startsWith("jwt="))
+  //   ?.split("=")[1];
+
+  // const fileHeaders = {
+  //   headers: {
+  //     "Content-Type": "multipart/form-data",
+  //     Authorization: `Bearer ${token}`,
+  //   },
+  // };
+
+  // const handleDeleteDocument = async (event, url, documentId) => {
+  //   event.preventDefault();
+  //   // Optimistically update the state
+  //   const updatedDocuments = documents.filter((doc) => doc._id !== documentId);
+  //   setDocuments(updatedDocuments);
+
+  //   try {
+  //     await axios.delete(`${baseURL}/${url}`, fileHeaders);
+  //   } catch (err) {
+  //     // Revert the state if the API call fails
+  //     setDocuments((prevDocs) => [
+  //       ...prevDocs,
+  //       documents.find((doc) => doc._id === documentId),
+  //     ]);
+  //     console.log(err);
+  //   }
+  // };
 
   return (
     <section className="p-6">
@@ -224,27 +256,43 @@ const CaseDetails = () => {
       <Title level={2} className="text-gray-700 mt-4">
         Attached Documents
       </Title>
+      <div>
+        <List
+          dataSource={documents}
+          renderItem={(document) => (
+            <List.Item>
+              <div className="flex gap-2 items-center">
+                <Text>{document?.fileName}</Text>
+                <FaDownload
+                  className="text-green-500 hover:text-green-700 cursor-pointer"
+                  onClick={(event) =>
+                    handleGeneralDownload(
+                      event,
+                      `${baseURL}/cases/${id}/documents/${document._id}/download`,
+                      document.fileName
+                    )
+                  }
+                />
 
-      <List
-        dataSource={data?.data?.documents || []}
-        renderItem={(document) => (
-          <List.Item>
-            <div className="flex gap-2 items-center">
-              <Text>{document?.fileName}</Text>
-              <FaDownload
-                className="text-green-500 hover:text-green-700 cursor-pointer"
-                onClick={(event) =>
-                  handleGeneralDownload(
-                    event,
-                    `${baseURL}/cases/${id}/documents/${document._id}/download`,
-                    document.fileName
-                  )
-                }
-              />
-            </div>
-          </List.Item>
-        )}
-      />
+                <RiDeleteBin2Line
+                  className="text-red-500"
+                  onClick={(event) =>
+                    Modal.confirm({
+                      title: "Are you sure you want to delete this document",
+                      onOk: () =>
+                        handleDeleteDocument(
+                          event,
+                          `cases/${id}/documents/${document._id}`,
+                          document._id
+                        ),
+                    })
+                  }
+                />
+              </div>
+            </List.Item>
+          )}
+        />
+      </div>
     </section>
   );
 };

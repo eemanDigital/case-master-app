@@ -25,6 +25,19 @@ const taskResponseSchema = new mongoose.Schema({
   },
 });
 
+// sub-document for documents
+const documentSchema = new mongoose.Schema({
+  fileName: {
+    type: String,
+    required: [true, "Provide file name"],
+    trim: true,
+  },
+  file: {
+    type: String,
+    required: [true, "Provide document to upload"],
+  },
+});
+
 const taskSchema = new mongoose.Schema(
   {
     title: {
@@ -68,6 +81,7 @@ const taskSchema = new mongoose.Schema(
 
     // file: String,
     reminder: reminderSchema,
+    documents: [documentSchema],
 
     taskResponse: [taskResponseSchema],
   },
@@ -94,11 +108,11 @@ taskSchema.pre(/^find/, function (next) {
 // });
 
 // virtual populate for file attachment
-taskSchema.virtual("documents", {
-  ref: "File",
-  foreignField: "task",
-  localField: "_id",
-});
+// taskSchema.virtual("documents", {
+//   ref: "File",
+//   foreignField: "task",
+//   localField: "_id",
+// });
 // virtual populate notification or reminder
 // taskSchema.virtual("notice", {
 //   ref: "Notice",
