@@ -48,12 +48,8 @@ router.delete("/:id", deleteTask);
 router.post("/", createTask);
 
 // sub-doc route for task response
-// router.post(
-//   "/:id/documents",
-//   multerFileUploader("public/taskDoc", "file"),
-//   createDocument(Task, "public/taskResDoc")
-// );
-router.post("/:taskId/response", createTaskResponse);
+
+router.post("/:taskId/response", taskResponseFileUpload, createTaskResponse);
 router.delete("/:taskId/response/:responseId", deleteTaskResponse);
 router.get("/:taskId/response/:responseId", getTaskResponse);
 // router.patch("/:taskId/response/:responseId", updateTaskResponse);

@@ -4,6 +4,8 @@ const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const multer = require("multer");
 
+const path = require("path");
+
 // multer config
 
 const multerStorage = multer.diskStorage({
@@ -88,12 +90,12 @@ exports.createTaskResponse = catchAsync(async (req, res, next) => {
   // get parent id
   const id = req.params.taskId;
   const response = req.body;
-  console.log("BODY =>", req.body);
+
   console.log("FILE =>", req.file);
 
-  const filename = req.file ? req.file.filename : null;
+  const filePath = req.file ? req.file.path : null;
 
-  response.doc = filename;
+  response.doc = filePath;
   console.log("FILE =>", response);
 
   // Find the parent task
