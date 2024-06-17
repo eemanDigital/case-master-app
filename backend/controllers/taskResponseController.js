@@ -148,17 +148,25 @@ exports.getTaskResponse = catchAsync(async (req, res, next) => {
 });
 
 // download file
-// exports.downloadFile = catchAsync(async (req, res, next) => {
-//     const { id } = req.params;
-//     console.log(id);
-//     const doc = await File.findById(id);
-//     if (!doc) {
-//       return next(new AppError("No Document found", 404));
-//     }
-//     const file = doc.file;
-//     const filePath = path.join(__dirname, `../public/caseDoc/${file}`); // Assuming the files are in the uploads folder
-//     res.download(filePath);
-//   });
+exports.downloadFile = catchAsync(async (req, res, next) => {
+  const { taskId, responseId } = req.params;
+  const task = await Task.findById(taskId);
+
+  if (!task) {
+    next(new AppError("task/response does not exist"));
+  }
+
+  const responseIndex = task.taskResponse.findIndex(
+    (r) => r._id.toString() === responseId
+  );
+  if (responseIndex === -1) {
+    next(new AppError("response not found"));
+  }
+
+  const file = task.taskResponse[responseIndex].doc;
+  const filePath = path.join(__dirname, `../${file}`);
+  res.download(filePath);
+});
 
 // update response
 //   exports.updateTaskResponse = catchAsync(async (req, res, next) => {

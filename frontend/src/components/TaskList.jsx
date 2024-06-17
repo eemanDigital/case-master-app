@@ -2,20 +2,22 @@ import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import TaskReminderForm from "./TaskReminderForm";
-// import Button from "./Button";
+import { useAuthContext } from "../hooks/useAuthContext";
 import { Table, Modal, Space, Button } from "antd";
 import CreateTaskForm from "../pages/CreateTaskForm";
 import { useDataFetch } from "../hooks/useDataFetch";
 
 const TaskList = () => {
   const { tasks, loadingError, errorTasks } = useDataGetterHook();
-
+  const { user } = useAuthContext();
   const { data, loading, error, dataFetcher } = useDataFetch();
+
+  const isAdmin = user?.data?.user?.role === "admin";
 
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
   };
-  // delete leave app
+
   const handleDeleteApp = async (id) => {
     await dataFetcher(`tasks/${id}`, "delete", fileHeaders);
   };
@@ -35,29 +37,6 @@ const TaskList = () => {
           ? assignedTo.map((staff) => <p key={staff._id}>{staff.fullName}</p>)
           : "N/A",
     },
-    // {
-    //   title: "Case to Work On",
-    //   dataIndex: "caseToWorkOn",
-    //   key: "caseToWorkOn",
-    //   render: (caseToWorkOn) =>
-    //     caseToWorkOn
-    //       ? caseToWorkOn.map((taskCase) => {
-    //           const { firstParty, secondParty } = taskCase;
-    //           const firstName = firstParty?.name[0]?.name;
-    //           const secondName = secondParty?.name[0]?.name;
-    //           return (
-    //             <p key={taskCase._id}>
-    //               {firstName} vs {secondName}
-    //             </p>
-    //           );
-    //         })
-    //       : "N/A",
-    // },
-    // {
-    //   title: "Instruction",
-    //   dataIndex: "instruction",
-    //   key: "instruction",
-    // },
     {
       title: "Task Priority",
       dataIndex: "taskPriority",
@@ -95,13 +74,28 @@ const TaskList = () => {
     },
   ];
 
+  // filter task by user
+  const filterTaskByUser = (userId) => {
+    if (!tasks?.data) return [];
+    return tasks?.data.filter(
+      (task) =>
+        task?.assignedTo && task?.assignedTo.some((user) => user._id === userId)
+    );
+  };
+
   return (
     <div>
       <Link to="upload" className="text-right">
-        <Button>Attach Document to Task</Button>{" "}
+        <Button>Attach Document to Task</Button>
       </Link>
       <h1 className="text-3xl font-bold text-gray-700 mb-7">Assigned Tasks</h1>
-      <Table columns={columns} dataSource={tasks?.data} rowKey="_id" />
+      <Table
+        columns={columns}
+        dataSource={
+          isAdmin ? tasks?.data : filterTaskByUser(user?.data?.user?.id)
+        }
+        rowKey="_id"
+      />
 
       <CreateTaskForm />
     </div>

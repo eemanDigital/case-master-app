@@ -27,13 +27,13 @@ import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
 import PhotoContextProvider from "./context/photoContext.jsx";
 import EditUserProfile from "./pages/EditUserProfile.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
-import UserTask from "./components/UserTask.jsx";
+// import UserTask from "./components/UserTask.jsx";
 import TaskReminderForm from "./components/TaskReminderForm.jsx";
 import CaseDetails from "./pages/CaseDetails.jsx";
 import Error from "./components/Error.jsx";
 import { Result, Button } from "antd";
 import { Link } from "react-router-dom";
-import CaseDocument from "./pages/CaseDocuments.jsx";
+// import CaseDocument from "./pages/CaseDocuments.jsx";
 import TaskAttachment from "./pages/TaskAttachment.jsx";
 import LeaveAppForm from "./pages/LeaveAppForm.jsx";
 import LeaveApplicationDisplay from "./pages/LeaveApplicationDisplay.jsx";
@@ -46,7 +46,7 @@ import InvoicePaymentHandler from "./components/InvoicePaymentHandler.jsx";
 import ProtectedRoute from "./components/ProtectRoutes.jsx";
 import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
 import CreateInvoiceForm from "./components/CreateInvoiceForm.jsx";
-import InvoiceList from "./pages/InvoiceList.jsx";
+// import InvoiceList from "./pages/InvoiceList.jsx";
 import InvoiceDetails from "./pages/InvoiceDetails.jsx";
 import UpdateInvoice from "./pages/UpdateInvoice.jsx";
 import { CauseList } from "./components/CauseList.jsx";
@@ -110,14 +110,14 @@ function App() {
             element={<CreateCaseReportForm />}
           />
           <Route path="billing" element={<Billing />} />
-          <Route path="documents" element={<CaseDocument />} />
+          {/* <Route path="documents" element={<CaseDocument />} /> */}
           <Route path="profile" element={<Profile />} />
           <Route path="profile/edit" element={<EditUserProfile />} />
           {/* <Route path="profile/edit-image" element={<UpdateProfilePicture />} /> */}
           <Route path="tasks" element={<TaskList />} />
           <Route path="tasks/reminder/:id" element={<TaskReminderForm />} />
           <Route path="tasks/upload" element={<TaskAttachment />} />
-          <Route path="tasks/:id" element={<UserTask />} />
+          {/* <Route path="tasks/:id" element={<UserTask />} /> */}
           <Route path="tasks/:id/details" element={<TaskDetails />} />
           <Route path="clients" element={<ClientLists />} />
           <Route path="clients/:id/details" element={<ClientDetails />} />

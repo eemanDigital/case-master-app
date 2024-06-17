@@ -55,11 +55,11 @@ const navItems = [
     icon: <FaListUl />,
   },
 
-  {
-    name: "Documents",
-    path: "documents",
-    icon: <GrDocument />,
-  },
+  // {
+  //   name: "Documents",
+  //   path: "documents",
+  //   icon: <GrDocument />,
+  // },
   {
     name: "Clients",
     path: "clients",

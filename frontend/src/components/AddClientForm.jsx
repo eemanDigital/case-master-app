@@ -104,7 +104,7 @@ const AddClientForm = () => {
 
   return (
     <section className=" bg-gray-200 ">
-      <Button onClick={showModal} className="bg-green-700 text-white">
+      <Button onClick={showModal} className="bg-blue-500 text-white">
         Add Client
       </Button>
       <Modal

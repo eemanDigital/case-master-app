@@ -1,13 +1,14 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Descriptions, Divider, Modal } from "antd";
+import { Descriptions, Divider, Modal, Card, Button } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import TaskDocUpload from "./TaskDocUpload";
-import { FaDownload } from "react-icons/fa6";
+import { FaDownload, FaFile } from "react-icons/fa6";
 import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
 import { RiDeleteBin2Line } from "react-icons/ri";
 import useDeleteDocument from "../hooks/useDeleteDocument";
+import TaskResponseForm from "../components/TaskResponseForm";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -17,7 +18,7 @@ const TaskDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { handleDeleteDocument, documents } = useDeleteDocument(
     data?.data,
-    "caseData"
+    "taskData"
   );
 
   useEffect(() => {
@@ -28,7 +29,20 @@ const TaskDetails = () => {
   if (error) return <p>Error: {error.message}</p>;
 
   const task = data?.data;
-  // console.log("TASK", task);
+
+  // deleteResponse
+  const fileHeaders = {
+    "Content-Type": "multipart/form-data",
+  };
+  //not working as expected yet
+  const handleDeleteApp = async (taskId, responseId) => {
+    await dataFetcher(
+      `tasks/${taskId}/response/${responseId}`,
+      "delete",
+      fileHeaders
+    );
+  };
+
   return (
     <>
       <TaskDocUpload taskId={task?._id} />
@@ -112,10 +126,20 @@ const TaskDetails = () => {
 
       <Divider />
 
+      <TaskResponseForm taskId={task?._id && task?._id} />
+
       <Descriptions title="Task Response" bordered>
         {task?.taskResponse.length > 0 ? (
           task.taskResponse.map((res) => (
             <>
+              <Descriptions.Item>
+                <Button
+                  onClick={() => handleDeleteApp(task?._id, res?._id)}
+                  type="default"
+                  danger>
+                  Delete Response
+                </Button>
+              </Descriptions.Item>
               <Descriptions.Item key={res._id} label="Task Completed">
                 {res.completed && <h1>Yes</h1>}
               </Descriptions.Item>
@@ -126,7 +150,19 @@ const TaskDetails = () => {
                 {formatDate(res?.timestamp)}
               </Descriptions.Item>
               <Descriptions.Item label="Attached Document">
-                {res?.doc || <h1>None Attached</h1>}
+                <p
+                  onClick={(event) =>
+                    handleGeneralDownload(
+                      event,
+                      `${baseURL}/tasks/${task._id}/response/${res._id}/download`,
+                      "response"
+                    )
+                  }>
+                  Document:
+                  {(res?.doc && (
+                    <FaFile className="text-blue-500 hover:text-blue-600 text-2xl cursor-pointer " />
+                  )) || <p>None Attached</p>}
+                </p>
               </Descriptions.Item>
             </>
           ))

@@ -2,26 +2,22 @@ import { useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import Input from "../components/Inputs";
 import { Button, Modal, message } from "antd";
+import useModal from "../hooks/useModal";
+// import "antd/dist/antd.css"; // Ensure Ant Design styles are imported
 
-const TaskReminder = ({ taskId }) => {
+const TaskResponseForm = ({ taskId }) => {
   const [formData, setFormData] = useState({
     comment: "",
     doc: null,
     completed: false,
   });
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const showModal = () => {
-    setIsModalOpen(true);
-  };
-  const handleOk = () => {
-    setIsModalOpen(false);
-  };
-  const handleCancel = () => {
-    setIsModalOpen(false);
-  };
+  const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
+    useModal();
 
-  const { dataFetcher } = useDataFetch();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const { dataFetcher, loading, data, error } = useDataFetch();
 
   function handleChange(e) {
     const { name, value, files, checked } = e.target;
@@ -61,43 +57,57 @@ const TaskReminder = ({ taskId }) => {
 
   return (
     <>
-      <Button onClick={showModal} className="bg-green-500 hover:bg-green-600">
-        Send Task Response/Report
+      <Button
+        onClick={showModal}
+        className="bg-blue-500 hover:bg-blue-600 text-white">
+        Send Task Response
       </Button>
       <Modal
         title="Task Report Form"
-        open={isModalOpen}
-        onOk={handleOk}
-        onCancel={handleCancel}>
+        open={open}
+        onCancel={handleCancel}
+        footer={[
+          <Button key="cancel" onClick={handleCancel}>
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            className="bg-blue-500 hover:bg-blue-600"
+            onClick={handleSubmit}>
+            Submit
+          </Button>,
+        ]}>
         <form
           onSubmit={handleSubmit}
-          className="flex flex-col justify-center items-center">
-          <div>
+          className="flex flex-col justify-center items-center space-y-4">
+          <div className="flex flex-col items-start w-full">
+            <label htmlFor="doc" className="mb-1 font-semibold">
+              Upload Document
+            </label>
             <input
               type="file"
-              id=""
               name="doc"
-              accept=".pdf,.docx,.jpg,.jpeg, .png"
+              accept=".pdf,.docx,.jpg,.jpeg,.png"
               onChange={handleChange}
-              label="Upload Document"
-              htmlFor="doc"
+              className="border p-2 rounded w-full"
             />
           </div>
-          <div>
-            <label htmlFor="completed">
+          <div className="flex items-center w-full">
+            <label htmlFor="completed" className="mr-2 font-semibold">
               Task Completed
-              <input
-                onChange={handleChange}
-                type="checkbox"
-                checked={formData.completed}
-                name="completed"
-                id=""
-              />
             </label>
+            <input
+              type="checkbox"
+              onChange={handleChange}
+              checked={formData.completed}
+              name="completed"
+              className="w-5 h-5"
+            />
           </div>
-          <div>
+          <div className="w-full">
             <Input
-              className="w-[400px]"
+              className="w-full p-2 border rounded"
               textarea
               placeholder="Your comment here..."
               value={formData.comment}
@@ -105,8 +115,12 @@ const TaskReminder = ({ taskId }) => {
               onChange={handleChange}
             />
           </div>
-          <div>
-            <button type="submit">Submit</button>
+          <div className="w-full">
+            {/* <button
+              type="submit"
+              className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+              Submit
+            </button> */}
           </div>
         </form>
       </Modal>
@@ -114,4 +128,4 @@ const TaskReminder = ({ taskId }) => {
   );
 };
 
-export default TaskReminder;
+export default TaskResponseForm;

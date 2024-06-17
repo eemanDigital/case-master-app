@@ -14,6 +14,7 @@ const {
   deleteTaskResponse,
   getTaskResponse,
   taskResponseFileUpload,
+  downloadFile,
 } = require("../controllers/taskResponseController");
 const { protect } = require("../controllers/authController");
 const {
@@ -48,7 +49,7 @@ router.delete("/:id", deleteTask);
 router.post("/", createTask);
 
 // sub-doc route for task response
-
+router.get("/:taskId/response/:responseId/download", downloadFile);
 router.post("/:taskId/response", taskResponseFileUpload, createTaskResponse);
 router.delete("/:taskId/response/:responseId", deleteTaskResponse);
 router.get("/:taskId/response/:responseId", getTaskResponse);
