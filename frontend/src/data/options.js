@@ -75,3 +75,10 @@ export const invoiceOptions = [
   { label: "Unpaid", value: "unpaid" },
   { label: "Overdue", value: "overdue" },
 ];
+
+export const methodOptions = [
+  { label: "Credit Card", value: "credit_card" },
+  { label: "Bank Transfer", value: "bank_transfer" },
+  { label: "Cash", value: "cash" },
+  { label: "Cheque", value: "cheque" },
+];

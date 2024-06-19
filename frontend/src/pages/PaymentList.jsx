@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { Table, Modal, Space, Button } from "antd";
+import { Table, Modal, Space, Button, Card } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
+import CreatePaymentForm from "./CreatePaymentForm";
 
 const PaymentList = () => {
   const { payments, loadingPayments, errorPayments } = useDataGetterHook();
@@ -83,9 +84,11 @@ const PaymentList = () => {
   return (
     <div>
       <h1 className="text-3xl font-bold text-gray-700 mb-7">Payments</h1>
+      <CreatePaymentForm />
+
       <Table
         columns={columns}
-        dataSource={payments?.data?.payments}
+        dataSource={payments.data?.payments}
         rowKey="_id"
         loading={loadingPayments}
         pagination={{ pageSize: 10 }}

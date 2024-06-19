@@ -41,3 +41,13 @@ export const invoiceInitialValue = {
   totalInvoiceAmount: 0,
   amountPaid: 0,
 };
+
+export const paymentInitialValue = {
+  invoiceId: null,
+  clientId: null,
+  caseId: null,
+  totalAmountDue: 0,
+  amountPaid: 0,
+  date: null,
+  method: "",
+};

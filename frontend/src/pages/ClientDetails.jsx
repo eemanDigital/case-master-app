@@ -4,11 +4,14 @@ import { Col, Descriptions, Divider } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import UpdateClientInfo from "./UpdateClientInfo";
+import ClientPaymentHistory from "./ClientPaymentHistory";
 
 const ClientDetails = () => {
   const { id } = useParams();
 
   const { dataFetcher, data, loading, error } = useDataFetch();
+
+  console.log("CLIENT", data);
 
   useEffect(() => {
     dataFetcher(`clients/${id}`, "GET");
@@ -43,6 +46,11 @@ const ClientDetails = () => {
           {data?.data?.active ? "Yes" : "No"}
         </Descriptions.Item>
       </Descriptions>
+      <Divider />
+      <ClientPaymentHistory
+        clientId={data?.data?._id}
+        caseId={data?.data?.case?._id}
+      />
     </>
   );
 };

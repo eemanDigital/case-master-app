@@ -50,6 +50,7 @@ import CreateInvoiceForm from "./components/CreateInvoiceForm.jsx";
 import InvoiceDetails from "./pages/InvoiceDetails.jsx";
 import UpdateInvoice from "./pages/UpdateInvoice.jsx";
 import { CauseList } from "./components/CauseList.jsx";
+import PaymentDetails from "./pages/PaymentDetails.jsx";
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -132,6 +133,10 @@ function App() {
           <Route
             path="billings/invoices/:id/update"
             element={<UpdateInvoice />}
+          />
+          <Route
+            path="billings/payments/:id/details"
+            element={<PaymentDetails />}
           />
           <Route path="cause-list" element={<CauseList />} />
 

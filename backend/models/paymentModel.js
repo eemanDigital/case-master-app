@@ -6,7 +6,7 @@ const paymentSchema = new Schema(
     invoiceId: {
       type: Schema.Types.ObjectId,
       ref: "Invoice",
-      required: true,
+      // required: true,
     },
 
     clientId: {
@@ -17,16 +17,21 @@ const paymentSchema = new Schema(
     caseId: {
       type: Schema.Types.ObjectId,
       ref: "Client",
-      required: true,
+      // required: true,
     },
 
     amountPaid: {
       type: Number,
       required: true,
     },
+    totalAmountDue: {
+      type: Number,
+      required: true,
+    },
     date: {
       type: Date,
       default: Date.now,
+      required: [true, "Specify the date payment was received"],
     },
     method: {
       type: String,

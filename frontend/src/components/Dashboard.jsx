@@ -128,9 +128,9 @@ const Dashboard = () => {
             </Link>
           </Col>
         )}
-        <Col>
+        {/* <Col>
           <AddClientForm />
-        </Col>
+        </Col> */}
         {isAdminOrHr && (
           <Col>
             <LeaveBalanceList />
