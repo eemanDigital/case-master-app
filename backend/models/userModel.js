@@ -87,6 +87,7 @@ const userSchema = new mongoose.Schema(
         "Counsel",
         "Intern",
         "Secretary",
+
         "Para-legal",
         "Client",
         "Other",

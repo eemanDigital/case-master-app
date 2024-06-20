@@ -270,7 +270,7 @@ exports.paymentEachClient = catchAsync(async (req, res, next) => {
 });
 
 // get payments by month year and week
-exports.totalPayment = catchAsync(async (req, res, next) => {
+exports.totalPaymentByWeekToYear = catchAsync(async (req, res, next) => {
   const now = new Date();
   const oneWeekAgo = new Date(
     now.getFullYear(),
@@ -353,3 +353,53 @@ exports.totalPayment = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+// exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
+//   const { clientId, caseId } = req.params;
+
+//   const payments = await Payment.aggregate([
+//     {
+//       $match: {
+//         clientId: new mongoose.Types.ObjectId(clientId),
+//         caseId: new mongoose.Types.ObjectId(caseId),
+//       },
+//     },
+//     {
+//       $lookup: {
+//         from: "cases", // replace with your actual Case collection name
+//         localField: "caseId",
+//         foreignField: "_id",
+//         as: "case",
+//       },
+//     },
+//     {
+//       $unwind: "$case",
+//     },
+//     {
+//       $lookup: {
+//         from: "clients", // replace with your actual Client collection name
+//         localField: "clientId",
+//         foreignField: "_id",
+//         as: "client",
+//       },
+//     },
+//     {
+//       $unwind: "$client",
+//     },
+//     {
+//       $sort: { createAt: -1 },
+//     },
+//   ]);
+
+//   if (!payments || payments.length === 0) {
+//     return next(
+//       new AppError("No payments found for this client and case", 404)
+//     );
+//   }
+
+//   res.status(200).json({
+//     message: "success",
+//     result: payments.length,
+//     data: payments,
+//   });
+// });

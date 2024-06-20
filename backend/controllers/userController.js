@@ -99,25 +99,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 
   // 2) Filtered out unwanted fields names that are not allowed to be updated
   const filteredBody = filterObj(
-    // {
-    //   firstName: req.body.firstName,
-    //   lastName: req.body.lastName,
-    //   middleName: req.body.middleName,
-    //   email: req.body.email,
-    //   photo: filename,
-    //   address: req.body.address,
-    //   role: req.body.role,
-    //   bio: req.body.bio,
-    //   position: req.body.position,
-    //   phone: req.body.phone,
-    //   yearOfCall: req.body.yearOfCall,
-    //   otherPosition: req.body.otherPosition,
-    //   practiceArea: req.body.practiceArea,
-    //   universityAttended: req.body.universityAttended,
-    //   lawSchoolAttended: req.body.lawSchoolAttended,
-    // },
     req.body,
-
     "email",
     "firstName",
     "lastName",
@@ -126,7 +108,6 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "address",
     "bio",
     "phone",
-    "position",
     "annualLeaveEntitled",
     "yearOfCall",
     "otherPosition",
@@ -146,5 +127,36 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     data: {
       user: updatedUser,
     },
+  });
+});
+
+// update for admin
+exports.updateUserByAdmin = catchAsync(async (req, res, next) => {
+  const filteredBody = filterObj(req.body, "role", "position");
+  const user = await User.findByIdAndUpdate(req.params.id, filteredBody, {
+    new: true,
+    runValidators: true,
+  });
+
+  if (!user) {
+    return next(new AppError("No user found with that ID", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: user,
+  });
+});
+
+exports.deleteUsers = catchAsync(async (req, res, next) => {
+  const user = await User.findByIdAndDelete(req.params.id);
+
+  if (!user) {
+    return next(new AppError("No user found with that ID", 404));
+  }
+
+  res.status(204).json({
+    status: "success",
+    data: null,
   });
 });

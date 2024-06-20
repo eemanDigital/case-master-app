@@ -22,7 +22,7 @@ router.get(
   paymentController.totalPaymentClient
 );
 
-router.get("/totalPaymentSum", paymentController.totalPayment);
+router.get("/totalWeekToYear", paymentController.totalPaymentByWeekToYear);
 // Get a specific payment by ID
 router.get("/:paymentId", paymentController.getPayment);
 
