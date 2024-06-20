@@ -1,10 +1,14 @@
-import { DataContext } from "../context/dataFetcherContext";
 import { useContext } from "react";
+import { DataContext } from "../context/dataFetcherContext";
 
 export const useDataGetterHook = () => {
   const context = useContext(DataContext);
   if (!context) {
-    throw Error("useDataFetcher error Hook Error");
+    throw new Error(
+      "useDataGetterHook must be used within a DataFetcherContext provider"
+    );
   }
   return context;
 };
+
+// export default useDataGetterHook;

@@ -1,11 +1,10 @@
 import { Link } from "react-router-dom";
-import { Card, Typography, Space, Pagination } from "antd";
+import { Button, Card, Typography, Space, Pagination, Row, Col } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { ToastContainer } from "react-toastify";
 import Spinner from "../components/Spinner";
-import Button from "../components/Button";
+// import Button from "../components/Button";
 import { useState } from "react";
-import CaseDocumentUpload from "../components/CaseDocumentUpload";
 
 const { Title, Text } = Typography;
 
@@ -20,32 +19,35 @@ const CaseList = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  const casesData = Array.isArray(currentCases) //check if is array before mapping
+  const casesData = Array.isArray(currentCases) // Check if it is array before mapping
     ? currentCases.map((singleCase) => {
         const { firstParty, secondParty } = singleCase;
         const firstName = firstParty?.name[0]?.name;
         const secondName = secondParty?.name[0]?.name;
 
         return (
-          <Card
-            key={singleCase._id}
-            title={
-              <Link to={`${singleCase._id}/casedetails`}>
-                <Title level={2}>{`${firstName || ""} vs ${
-                  secondName || ""
-                }`}</Title>
-              </Link>
-            }>
-            <Space direction="vertical" size="small">
-              <Text type="danger">Mode: {singleCase.modeOfCommencement}</Text>
-              <Text>Suit No.: {singleCase.suitNo}</Text>
-              <Text>Nature of Case: {singleCase.natureOfCase}</Text>
-              <Text>Status: {singleCase.caseStatus}</Text>
-              <Link to={`${singleCase._id}/update`}>
-                <Button>Update Case</Button>
-              </Link>
-            </Space>
-          </Card>
+          <Col key={singleCase._id} xs={24} sm={24} md={12} lg={8} xl={8}>
+            <Card
+              title={
+                <Link to={`${singleCase._id}/casedetails`}>
+                  <Title level={3}>{`${firstName || ""} vs ${
+                    secondName || ""
+                  }`}</Title>
+                </Link>
+              }
+              bordered={false}
+              style={{ marginBottom: 16 }}>
+              <Space direction="vertical" size="small">
+                <Text type="info">Mode: {singleCase.modeOfCommencement}</Text>
+                <Text>Suit No.: {singleCase.suitNo}</Text>
+                <Text>Nature of Case: {singleCase.natureOfCase}</Text>
+                <Text>Status: {singleCase.caseStatus}</Text>
+                <Link to={`${singleCase._id}/update`}>
+                  <Button>Update Case</Button>
+                </Link>
+              </Space>
+            </Card>
+          </Col>
         );
       })
     : [];
@@ -54,24 +56,26 @@ const CaseList = () => {
     <section>
       {loadingCases && <Spinner />}
 
-      <Title level={1} className="text-center">
+      <Title level={1} className="text-center" style={{ marginBottom: 24 }}>
         Cases
       </Title>
 
-      <Space direction="vertical" size="large">
-        {!errorCases && casesData}
-      </Space>
+      <Row gutter={[16, 16]}>{!errorCases && casesData}</Row>
 
-      <Pagination
-        current={currentPage}
-        total={cases?.data?.length}
-        pageSize={itemsPerPage}
-        onChange={paginate}
-      />
+      <Row justify="center" style={{ marginTop: 24 }}>
+        <Pagination
+          current={currentPage}
+          total={cases?.data?.length}
+          pageSize={itemsPerPage}
+          onChange={paginate}
+        />
+      </Row>
 
-      <Link to="add-case">
-        <Button>+ Add Case</Button>
-      </Link>
+      <Row justify="center" style={{ marginTop: 16 }}>
+        <Link to="add-case">
+          <Button className="bg-blue-500 ">+ Add Case</Button>
+        </Link>
+      </Row>
 
       <ToastContainer />
     </section>

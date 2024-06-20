@@ -3,6 +3,7 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import { Table, Modal, Space, Button } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
+import moment from "moment";
 
 const InvoiceList = () => {
   const { data, loading, error, dataFetcher } = useDataFetch();
@@ -40,12 +41,29 @@ const InvoiceList = () => {
       title: "Due Date",
       dataIndex: "dueDate",
       key: "dueDate",
-      render: (dueDate) => formatDate(dueDate),
+      render: (dueDate) => {
+        const isPastDue = moment(dueDate).isBefore(moment());
+        return (
+          <div style={{ color: isPastDue ? "red" : "black" }}>
+            {formatDate(dueDate)}
+          </div>
+        );
+      },
     },
     {
       title: "Status",
       dataIndex: "status",
       key: "status",
+      render: (status) => (
+        <div
+          className={`${
+            status === "paid"
+              ? "bg-green-400 text-white text-center px-3 py-1 rounded-md"
+              : "bg-yellow-500 p-1 text-center text-white rounded-md"
+          }`}>
+          {status}
+        </div>
+      ),
     },
     {
       title: "Action",

@@ -12,6 +12,7 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import UpdateProfilePicture from "../components/UpdateProfilePicture";
+import EditUserProfile from "./EditUserProfile";
 
 const Profile = () => {
   // const { inputValue, handleChange } = useContext(FormContext);
@@ -19,6 +20,7 @@ const Profile = () => {
 
   const { user } = useAuthContext();
 
+  console.log("PHOTO", user?.data?.user);
   const [inputValue, setInputValue] = useState({
     passwordCurrent: "",
     password: "",
@@ -78,6 +80,7 @@ const Profile = () => {
   return (
     <section className="flex flex-col justify-center items-center ">
       {/* PROFILE CARD */}
+
       <div className="flex justify-center md:flex-row flex-col  flex-wrap items-center shadow-md bg-white gap-10 p-8 rounded-md">
         <div className="flex flex-col items-center md:items-start  justify-start">
           <h1 className="text-2xl font-bold text-center text-rose-700">
@@ -127,12 +130,11 @@ const Profile = () => {
             </p>
           </small>
 
-          <Link to="edit" className="mt-5 block">
-            <Button>Edit Profile</Button>
-          </Link>
-          {/* <Link to="edit-image" className="mt-5 block">
-            <Button>Edit Profile Picture</Button>
-          </Link> */}
+          {/* edit user component */}
+          <div className="flex justify-center items-center gap-3 mt-4">
+            <EditUserProfile />
+            <UpdateProfilePicture />
+          </div>
         </div>
 
         <div className=" w-max-[300px]">
@@ -140,16 +142,13 @@ const Profile = () => {
             src={
               user?.data?.user?.photo
                 ? `http://localhost:3000/images/users/${user?.data?.user?.photo}`
-                : user?.data?.user?.gender === "male"
-                ? avatar
-                : femaleAvatar
+                : avatar
             }
             alt={`${user?.data?.firstName}'s profile image`}
-            className="object-cover object-right-top h-36 w-36 sm:h-48 sm:w-48 rounded-full border-4 border-slate-500"
+            className="object-cover object-right-top h-36 w-36 sm:h-48 sm:w-48 rounded-full border-4 border-blue-500"
           />
         </div>
       </div>
-      <UpdateProfilePicture />
 
       {/* RESET PASSWORD FORM */}
       <div>

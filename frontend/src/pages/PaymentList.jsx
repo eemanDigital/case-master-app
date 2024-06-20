@@ -11,6 +11,8 @@ const PaymentList = () => {
   //   console.log("PAY", payments.data?.payments);
   // Handle delete function
 
+  const isPaid = 0; //check paid fee
+
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
   };
@@ -45,17 +47,23 @@ const PaymentList = () => {
       render: (amount) => `₦${amount}`,
     },
     {
-      title: "Date",
+      title: "Payment Date",
       dataIndex: "date",
       key: "date",
-      render: (date) => formatDate(date),
+      render: (date) => (
+        <div className="text-green-600">{formatDate(date)}</div>
+      ),
     },
 
     {
       title: "Balance",
       dataIndex: "balance",
       key: "balance",
-      render: (balance) => `₦${balance}`,
+      render: (balance) => (
+        <div className={`${balance === 0 ? "text-green-600" : "text-red-500"}`}>
+          ₦{balance}
+        </div>
+      ),
     },
     {
       title: "Action",

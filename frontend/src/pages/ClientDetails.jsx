@@ -4,7 +4,7 @@ import { Col, Descriptions, Divider } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import UpdateClientInfo from "./UpdateClientInfo";
-import ClientPaymentHistory from "./ClientPaymentHistory";
+import PaymentMadeOnCase from "./PaymentMadeOnCase";
 
 const ClientDetails = () => {
   const { id } = useParams();
@@ -47,7 +47,8 @@ const ClientDetails = () => {
         </Descriptions.Item>
       </Descriptions>
       <Divider />
-      <ClientPaymentHistory
+
+      <PaymentMadeOnCase
         clientId={data?.data?._id}
         caseId={data?.data?.case?._id}
       />

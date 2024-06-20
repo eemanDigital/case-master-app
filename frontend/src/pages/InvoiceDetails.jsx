@@ -9,7 +9,6 @@ const downloadURL = import.meta.env.VITE_BASE_URL;
 
 const InvoiceDetails = () => {
   const { id } = useParams();
-
   const { dataFetcher, data, loading, error } = useDataFetch();
   const navigate = useNavigate();
 
@@ -17,7 +16,19 @@ const InvoiceDetails = () => {
     dataFetcher(`invoices/${id}`, "GET");
   }, [id]);
 
-  if (loading) return <Spin tip="Loading..." />;
+  if (loading)
+    return (
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}>
+        <Spin tip="Loading..." />
+      </div>
+    );
+
   if (error)
     return (
       <Alert
@@ -38,10 +49,7 @@ const InvoiceDetails = () => {
         className="text-black w-[100%] mt-4"
         title="Invoice Details"
         bordered={false}>
-        <Descriptions
-          bordered
-          column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}
-          size="middle">
+        <Descriptions bordered column={1} size="middle">
           <Descriptions.Item label="Invoice Reference">
             {invoice?.invoiceReference}
           </Descriptions.Item>
@@ -51,7 +59,11 @@ const InvoiceDetails = () => {
           <Descriptions.Item label="Work Title">
             {invoice?.workTitle}
           </Descriptions.Item>
-          <Descriptions.Item label="Services" span={3}>
+          <Descriptions.Item label="Case">
+            {invoice?.case?.firstParty?.name[0].name} Vs{" "}
+            {invoice?.case?.secondParty?.name[0].name}
+          </Descriptions.Item>
+          <Descriptions.Item label="Services" span={1}>
             {invoice?.services.map((service, index) => (
               <Card
                 key={index}
@@ -99,7 +111,7 @@ const InvoiceDetails = () => {
               </Card>
             ))}
           </Descriptions.Item>
-          <Descriptions.Item label="Expenses" span={3}>
+          <Descriptions.Item label="Expenses" span={1}>
             {invoice?.expenses.map((expense, index) => (
               <Card
                 key={index}

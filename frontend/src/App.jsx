@@ -25,7 +25,7 @@ import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
 import AuthContextProvider from "./context/authContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
 import PhotoContextProvider from "./context/photoContext.jsx";
-import EditUserProfile from "./pages/EditUserProfile.jsx";
+// import EditUserProfile from "./pages/EditUserProfile.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
 // import UserTask from "./components/UserTask.jsx";
 import TaskReminderForm from "./components/TaskReminderForm.jsx";
@@ -51,6 +51,8 @@ import InvoiceDetails from "./pages/InvoiceDetails.jsx";
 import UpdateInvoice from "./pages/UpdateInvoice.jsx";
 import { CauseList } from "./components/CauseList.jsx";
 import PaymentDetails from "./pages/PaymentDetails.jsx";
+import StaffList from "./pages/StaffList.jsx";
+import StaffDetails from "./pages/StaffDetails.jsx";
 
 function App() {
   const [isOpen, setIsOpen] = useState(false);
@@ -89,6 +91,8 @@ function App() {
           }>
           <Route index element={<Dashboard />} />
           <Route path="add-user" element={<AddUserForm />} />
+          <Route path="staff" element={<StaffList />} />
+          <Route path="staff/:id/details" element={<StaffDetails />} />
           <Route path="cases" element={<CaseList open={isOpen} />} />
           <Route path="cases/:id/update" element={<UpdateCase />} />
           {/* <Route path="cases/:id/document" element={<CaseDocument />} /> */}
@@ -113,7 +117,7 @@ function App() {
           <Route path="billing" element={<Billing />} />
           {/* <Route path="documents" element={<CaseDocument />} /> */}
           <Route path="profile" element={<Profile />} />
-          <Route path="profile/edit" element={<EditUserProfile />} />
+          {/* <Route path="profile/edit" element={<EditUserProfile />} /> */}
           {/* <Route path="profile/edit-image" element={<UpdateProfilePicture />} /> */}
           <Route path="tasks" element={<TaskList />} />
           <Route path="tasks/reminder/:id" element={<TaskReminderForm />} />

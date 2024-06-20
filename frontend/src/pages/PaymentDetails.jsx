@@ -34,7 +34,6 @@ const PaymentDetails = () => {
   return (
     <>
       <Button onClick={() => navigate(-1)}>Go Back</Button>
-      <CreatePaymentForm />
       <Card
         className="text-black w-[100%] mt-4"
         title="Payment Details"

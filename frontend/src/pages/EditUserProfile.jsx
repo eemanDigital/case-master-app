@@ -1,11 +1,11 @@
-// import { useContext } from "react";
 import Input from "../components/Inputs";
 import Select from "../components/Select";
-import Button from "../components/Button";
 import { useAuth } from "../hooks/useAuth";
 import { useState, useEffect } from "react";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { ToastContainer, toast } from "react-toastify";
+import { Button, Modal } from "antd";
+import useModal from "../hooks/useModal";
 import "react-toastify/dist/ReactToastify.css";
 
 const EditUserProfile = () => {
@@ -26,10 +26,9 @@ const EditUserProfile = () => {
   ];
   const roles = ["user", "admin", "secretary", "hr"];
   const gender = ["male", "female"];
-
+  const { open, confirmLoading, showModal, handleOk, handleCancel } =
+    useModal();
   const { data, loading, error, authenticate } = useAuth();
-
-  const [click, setClick] = useState(false);
   const { user } = useAuthContext();
 
   const [inputValue, setInputValue] = useState({
@@ -47,18 +46,17 @@ const EditUserProfile = () => {
     universityAttended: "",
     lawSchoolAttended: "",
   });
+
   const getOtherFieldSelected = inputValue.position === "Other";
 
   function handleChange(e) {
     const { name, value } = e.target;
-
     setInputValue((prevData) => ({
       ...prevData,
-      [name]: value, // Handle file or text input
+      [name]: value,
     }));
   }
 
-  //Populate the local state with data from the database
   useEffect(() => {
     if (user?.data.user) {
       setInputValue((prevData) => ({
@@ -68,238 +66,175 @@ const EditUserProfile = () => {
     }
   }, [user?.data.user]);
 
-  // function to handle form submission
-
-  // const isAdmin = user?.data.user.role === "admin";
-
   async function handleSubmit(e) {
     e.preventDefault();
-
     try {
-      // Call fetchData with endpoint, method, payload, and any additional arguments
-      await authenticate("users/updateUser", "PATCH", inputValue);
-
-      // await fetchFile(
-      //   `uploads/update/${fileId}`,
-      //   "PATCH",
-      //   fileValue,
-      //   fileHeaders
-      // );
+      await authenticate("users/updateUser", "patch", inputValue);
     } catch (err) {
       console.log(err);
     }
   }
 
-  function handleClick() {
-    setClick(() => !click);
-  }
-
   return (
-    <section className=" bg-gray-200 ">
-      <h1 className="text-5xl bold text-center p-5">Edit Profile</h1>
-
-      <form
-        onSubmit={handleSubmit}
-        className="  bg-white   basis-3/5 shadow-md  rounded-md px-8 pt-6 pb-8 m-4">
-        <div className="flex flex-col sm:flex-row -mx-3 mb-6 gap-2">
-          <div>
+    <section>
+      <Button onClick={showModal} className="bg-blue-500 text-white">
+        Edit Your Profile
+      </Button>
+      <Modal
+        title="Edit Profile"
+        open={open}
+        onOk={handleOk}
+        confirmLoading={confirmLoading}
+        onCancel={handleCancel}
+        footer={null}>
+        <h1 className="text-3xl font-bold text-center mb-6">Edit Profile</h1>
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white shadow-md rounded-md px-8 pt-6 pb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <Input
               type="text"
               label="First Name"
               placeholder="First Name"
-              htmlFor="First Name"
-              text="Please enter your first name"
               value={inputValue.firstName}
               name="firstName"
               onChange={handleChange}
             />
-          </div>
-          <div>
             <Input
               type="text"
               label="Last Name"
               placeholder="Last Name"
-              htmlFor="Last Name"
               value={inputValue.lastName}
               name="lastName"
               onChange={handleChange}
             />
-          </div>
-          <div>
             <Input
               type="text"
               label="Middle Name"
               placeholder="Middle Name"
-              htmlFor="Middle Name"
               value={inputValue.middleName}
               name="middleName"
               onChange={handleChange}
             />
-          </div>
-
-          <div>
             <Input
               type="email"
               label="Email"
               placeholder="Email"
-              htmlFor="Email"
               value={inputValue.email}
               name="email"
               onChange={handleChange}
             />
           </div>
-        </div>
 
-        {/* <div className="flex flex-col sm:flex-row -mx-3 mb-6 gap-2"></div> */}
-
-        <div className="flex flex-col sm:flex-row -mx-3 mb-6 gap-2 justify-between  md:items-center">
-          <div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <Input
-              type="Date"
-              label="Year of call"
-              placeholder="Year of call"
-              htmlFor="Year of call"
+              type="date"
+              label="Year of Call"
               value={inputValue.yearOfCall}
               name="yearOfCall"
               onChange={handleChange}
             />
-          </div>
-          <div>
             <Input
               type="text"
               label="Phone Contact"
               placeholder="Phone Contact"
-              htmlFor="Phone Contact"
               value={inputValue.phone}
               name="phone"
               onChange={handleChange}
             />
-          </div>
-          <div>
             <Input
               type="text"
-              label="address"
-              placeholder="No.2, Maitama Close, Abuja"
-              htmlFor="address"
+              label="Address"
+              placeholder="Address"
               value={inputValue.address}
               name="address"
               onChange={handleChange}
             />
-          </div>
-
-          <div>
             <Input
               type="text"
-              label="practice area"
-              placeholder="e.g. Intellectual Property law"
-              htmlFor="practice area"
+              label="Practice Area"
+              placeholder="Practice Area"
               value={inputValue.practiceArea}
               name="practiceArea"
               onChange={handleChange}
             />
           </div>
-        </div>
-        <div className="flex flex-col sm:flex-row -mx-3 mb-6 flex-wrap gap-2 justify-between  sm:items-center">
-          <div className="w-[300px]">
-            <Select
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            {/* <Select
               label="Position"
               options={positions}
               value={inputValue.position}
               name="position"
               onChange={handleChange}
-            />
-          </div>
-
-          <div className="w-[300px]">
+            /> */}
             <Select
-              label="gender"
+              label="Gender"
               options={gender}
               value={inputValue.gender}
               name="gender"
               onChange={handleChange}
             />
-          </div>
-          <div className="w-[300px]">
-            <Select
-              // disable={!isAdmin && disabled}
-              label="role"
+            {/* <Select
+              label="Role"
               options={roles}
               value={inputValue.role}
               name="role"
               onChange={handleChange}
-            />
-          </div>
-
-          <div>
-            <Input
+            /> */}
+            {/* <Input
               type="number"
               label="Leave Entitled"
               placeholder="Enter leave entitled to"
-              htmlFor="annualLeaveEntitled"
               value={inputValue.annualLeaveEntitled}
               name="annualLeaveEntitled"
               onChange={handleChange}
-            />
-          </div>
-          {/* conditionally render select position field */}
-          {getOtherFieldSelected ? (
-            <div>
+            /> */}
+            {getOtherFieldSelected && (
               <Input
-                required
                 type="text"
-                label="other"
-                placeholder="specify position"
-                htmlFor="otherPosition"
+                label="Other Position"
+                placeholder="Specify position"
                 value={inputValue.otherPosition}
                 name="otherPosition"
                 onChange={handleChange}
               />
-            </div>
-          ) : null}
-
-          <div>
+            )}
             <Input
               type="text"
-              label="university attended"
-              placeholder="e.g. University of Ilorin"
-              htmlFor="university attended"
+              label="University Attended"
+              placeholder="University Attended"
               value={inputValue.universityAttended}
               name="universityAttended"
               onChange={handleChange}
             />
-          </div>
-          <div>
             <Input
               type="text"
-              label="law school attended"
-              placeholder="e.g. Kano Law school"
-              htmlFor="law school attended"
+              label="Law School Attended"
+              placeholder="Law School Attended"
               value={inputValue.lawSchoolAttended}
               name="lawSchoolAttended"
               onChange={handleChange}
             />
-          </div>
-
-          <div>
             <Input
               type="text"
               textarea
-              label="bio"
-              placeholder="bio"
-              htmlFor="bio"
+              label="Bio"
+              placeholder="Bio"
               value={inputValue.bio}
               name="bio"
               onChange={handleChange}
             />
           </div>
-        </div>
 
-        <div className="flex flex-col sm:flex-row justify-between items-center">
-          <Button onClick={handleClick}>Submit</Button>
-        </div>
-      </form>
-
-      <ToastContainer />
+          <div className="flex justify-center">
+            <button className="bg-blue-500 text-white px-6 py-2 ">
+              Submit
+            </button>
+          </div>
+        </form>
+        <ToastContainer />
+      </Modal>
     </section>
   );
 };
