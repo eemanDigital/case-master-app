@@ -90,7 +90,7 @@ const LawyersInCourtForm = ({ reportId }) => {
         Assign Lawyer To Court
       </button>
       <Modal
-        title="Send Reminder on Task"
+        title="Assign Lawyer"
         open={open}
         onOk={handleOk}
         // confirmLoading={}
@@ -98,21 +98,21 @@ const LawyersInCourtForm = ({ reportId }) => {
         <Form
           layout="vertical"
           form={form}
-          name="dynamic_form_complex"
+          name="form to assign lawyer to court"
           // autoComplete="off"
           className="flex  justify-center">
           {/* <h1 className="text-4xl">Case Report</h1> */}
-          <Card title="Case Report" bordered={false} style={{ width: 700 }}>
+          <Card bordered={false} style={{ width: 700 }}>
             <div>
               <Form.Item
                 name="lawyersInCourt"
-                label="Account Officer"
+                label="Lawyer in Court"
                 className="w-[200px]"
                 initialValue={formData?.lawyersInCourt}>
                 <Select
                   // noStyle
                   mode="multiple"
-                  placeholder="Select account officer"
+                  placeholder="Select lawyers..."
                   options={userData}
                   allowClear
                   // style={{

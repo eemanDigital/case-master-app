@@ -10,12 +10,10 @@ import TaskResponse from "./TaskResponse";
 import LeaveBalanceDisplay from "./LeaveBalanceDisplay";
 import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
 import TaskResponseForm from "./TaskResponseForm";
-import AddClientForm from "./AddClientForm";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { GoLaw } from "react-icons/go";
 import { FaBriefcase, FaUser, FaTasks } from "react-icons/fa";
 import CreateTaskForm from "../pages/CreateTaskForm";
-import LeaveBalanceList from "../pages/leaveBalanceList";
 
 const { Title, Text } = Typography;
 
@@ -128,14 +126,7 @@ const Dashboard = () => {
             </Link>
           </Col>
         )}
-        {/* <Col>
-          <AddClientForm />
-        </Col> */}
-        {isAdminOrHr && (
-          <Col>
-            <LeaveBalanceList />
-          </Col>
-        )}
+
         <Col>
           <Link to="leave-application">
             <Button className={btnStyle}>Apply for leave</Button>
@@ -144,26 +135,13 @@ const Dashboard = () => {
         <Col>
           <LeaveBalanceDisplay userId={userId} />
         </Col>
-        <Col>
-          <Link to="leave-application-list">
-            <Button className={btnStyle}>
-              {isAdminOrHr
-                ? "Manage Leave Applications"
-                : "Your Leave Applications"}
-            </Button>
-          </Link>
-        </Col>
+
         <Col>
           <CreateTaskForm />
         </Col>
       </Row>
-      {isAdmin && <CreateLeaveBalanceForm />}
+
       <Row gutter={16}>
-        <Col>
-          <Link to="add-invoices">
-            <Button className={btnStyle}>Create Invoice</Button>
-          </Link>
-        </Col>
         <Col span={24}>{userTask}</Col>
       </Row>
     </>

@@ -71,7 +71,7 @@ const CreateLeaveBalanceForm = ({ userId }) => {
   }, [form, handleSubmission, dataFetcher]);
   return (
     <>
-      <Button onClick={showModal} className="bg-green-700 text-white">
+      <Button onClick={showModal} className="bg-blue-500 text-white">
         Create Leave Balance
       </Button>
       <Modal
@@ -87,7 +87,7 @@ const CreateLeaveBalanceForm = ({ userId }) => {
             name="leave application form"
             // autoComplete="off"
             className="flex  justify-center">
-            <Card title="" bordered={false} style={{ width: 400, height: 850 }}>
+            <Card title="" bordered={false} style={{ width: 400, height: 350 }}>
               <div>
                 <Form.Item
                   name="employee"

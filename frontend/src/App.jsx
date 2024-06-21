@@ -106,7 +106,7 @@ function App() {
             element={<LeaveApplicationDetails />}
           />
           <Route
-            path="leave-application-list"
+            path="staff/leave-application-list"
             element={<LeaveApplicationDisplay />}
           />
 
@@ -129,7 +129,10 @@ function App() {
           <Route path="billings" element={<InvoicePaymentHandler />} />
           {/* <Route path="billings/invoice" element={<Invoi />} /> */}
 
-          <Route path="add-invoices" element={<CreateInvoiceForm />} />
+          <Route
+            path="billings/invoices/add-invoices"
+            element={<CreateInvoiceForm />}
+          />
           <Route
             path="billings/invoices/:id/details"
             element={<InvoiceDetails />}

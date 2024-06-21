@@ -40,9 +40,12 @@ const StaffDetails = () => {
             />
           </Col>
           <Divider />
-          <Button onClick={() => navigate(-1)} className="m-2">
-            Go Back
-          </Button>
+          <div className="flex justify-between items-center">
+            <Button onClick={() => navigate(-1)} className="m-2">
+              Go Back
+            </Button>
+            <UpdateUserPositionAndRole userId={data?.data._id} />
+          </div>
           <Descriptions title="Staff Details" bordered>
             <Descriptions.Item label="First Name">
               {data?.data?.firstName}
@@ -80,8 +83,6 @@ const StaffDetails = () => {
             </Descriptions.Item>
           </Descriptions>
           <Divider />
-
-          <UpdateUserPositionAndRole userId={data?.data._id} />
         </div>
       )}
     </>

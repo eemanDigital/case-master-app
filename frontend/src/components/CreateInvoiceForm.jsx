@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { DeleteOutlined } from "@ant-design/icons";
+import { useNavigate } from "react-router-dom";
 import {
   Button,
   Input,
@@ -29,6 +30,7 @@ const CreateInvoiceForm = () => {
   const { dataFetcher, data } = useDataFetch();
   const { casesOptions } = useCaseSelectOptions();
   const { clientOptions } = useClientSelectOptions();
+  const navigate = useNavigate();
 
   const handleSubmission = useCallback((result) => {
     if (result?.error) {
@@ -57,6 +59,7 @@ const CreateInvoiceForm = () => {
 
   return (
     <>
+      <Button onClick={() => navigate(-1)}>Go Back</Button>
       <Form layout="vertical" form={form} name="invoice form">
         <Divider orientation="left" orientationMargin="0">
           <Typography.Title level={4}>Invoice Form</Typography.Title>

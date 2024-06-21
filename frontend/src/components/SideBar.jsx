@@ -13,7 +13,7 @@ import {
 } from "react-icons/io5";
 
 import { TbReport } from "react-icons/tb";
-import { FaMoneyBill, FaTasks} from "react-icons/fa";
+import { FaMoneyBill, FaTasks } from "react-icons/fa";
 import { FaUsers, FaListUl } from "react-icons/fa6";
 import { ToastContainer, toast, Bounce } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";

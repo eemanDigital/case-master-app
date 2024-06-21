@@ -31,7 +31,7 @@ const SignUp = () => {
     "Other",
   ];
 
-  const roles = ["user", "admin", "secretary", "hr"];
+  const roles = ["user", "super-admin", "admin", "secretary", "hr"];
   const gender = ["male", "female"];
 
   const { data, loading, error, authenticate } = useAuth();

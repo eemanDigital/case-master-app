@@ -91,6 +91,9 @@ const InvoiceList = () => {
 
   return (
     <div>
+      <Link to="invoices/add-invoices">
+        <Button className="bg-blue-500  text-white">Create Invoice</Button>
+      </Link>
       <h1 className="text-3xl font-bold text-gray-700 mb-7">Invoices</h1>
       <Table columns={columns} dataSource={invoices?.data} rowKey="_id" />
     </div>
