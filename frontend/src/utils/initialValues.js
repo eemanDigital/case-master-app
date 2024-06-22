@@ -51,3 +51,47 @@ export const paymentInitialValue = {
   date: null,
   method: "",
 };
+
+export const caseInitialValue = {
+  firstParty: {
+    description: "",
+    name: [{ name: "" }],
+    processesFiled: [{ name: "" }],
+  },
+  secondParty: {
+    description: "",
+    name: [{ name: "" }],
+    processesFiled: [{ name: "" }],
+  },
+  otherParty: [
+    {
+      description: "",
+      name: [{ name: "" }],
+      processesFiled: [{ name: "" }],
+    },
+  ],
+  suitNo: "",
+  caseOfficeFileNo: "",
+  courtName: "",
+  courtNo: "",
+  location: "",
+  otherCourt: "",
+  judge: [{ name: "" }],
+  caseSummary: "",
+  caseStatus: "",
+  natureOfCase: "",
+  category: "",
+  isFiledByTheOffice: false,
+  filingDate: "",
+  modeOfCommencement: "",
+  otherModeOfCommencement: "",
+  caseStrengths: [],
+  caseWeaknesses: [],
+  casePriority: "",
+  stepToBeTaken: [],
+  caseUpdates: [{ date: "", update: "" }],
+
+  accountOfficer: [],
+  client: [{ name: "" }],
+  generalComment: "",
+};

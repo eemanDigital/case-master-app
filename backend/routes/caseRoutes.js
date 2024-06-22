@@ -6,6 +6,15 @@ const {
   updateCase,
   deleteCase,
   downloadCaseDocument,
+  getCasesByStatus,
+  getMonthlyNewCases,
+  getYearlyNewCases,
+  getCasesByCourt,
+  getCasesByNature,
+  getCasesByRating,
+  getCasesByModeOfCommencement,
+  getCasesByCategory,
+  getCasesByAccountOfficer,
 } = require("../controllers/caseController");
 const { protect, restrictTo } = require("../controllers/authController");
 const { multerFileUploader } = require("../utils/multerFileUploader.js");
@@ -22,6 +31,15 @@ const router = express.Router();
 
 router.use(protect);
 router.get("/:parentId/documents/:documentId/download", downloadDocument(Case));
+router.get("/case-status", getCasesByStatus);
+router.get("/cases-by-court", getCasesByCourt);
+router.get("/cases-by-natureOfCase", getCasesByNature);
+router.get("/cases-by-rating", getCasesByRating);
+router.get("/cases-by-mode", getCasesByModeOfCommencement);
+router.get("/cases-by-category", getCasesByCategory);
+router.get("/cases-by-accountOfficer", getCasesByAccountOfficer);
+router.get("/monthly-new-cases", getMonthlyNewCases);
+router.get("/yearly-new-cases", getYearlyNewCases);
 router.delete("/:parentId/documents/:documentId", deleteDocument(Case));
 
 router.route("/").get(getCases).post(createCase);

@@ -1,42 +1,45 @@
-// case status options
+// Case status options
 export const statusOptions = [
-  { label: "Pending", value: "Pending" },
-  { label: "Closed", value: "Closed" },
-  { label: "Decided", value: "Decided" },
+  { label: "Pending", value: "pending" },
+  { label: "Closed", value: "closed" },
+  { label: "Decided", value: "decided" },
+  { label: "Settled", value: "settled" },
+  { label: "Won", value: "won" },
+  { label: "Lost", value: "lost" },
 ];
 
-// court names options
+// Court names options
 export const courtOptions = [
-  { label: "Supreme Court", value: "Supreme Court" },
-  { label: "Court of Appeal", value: "Court of Appeal" },
-  { label: "Federal High Court", value: "Federal High Court" },
-  { label: "High Court", value: "High Court" },
-  { label: "National Industrial Court", value: "National Industrial Court" },
-  { label: "Sharia Courts of Appeal", value: "Sharia Courts of Appeal" },
-  { label: "Customary Court of Appeal", value: "Customary Court of Appeal" },
-  { label: "Magistrate Court", value: "Magistrate Court" },
-  { label: "Customary Court", value: "Customary Court" },
-  { label: "Sharia Court", value: "Sharia Court" },
-  { label: "Area Court", value: "Area Court" },
-  { label: "Coroner", value: "Coroner" },
-  { label: "Tribunal", value: "Tribunal" },
-  { label: "Others", value: "Others" },
+  { label: "Supreme Court", value: "supreme court" },
+  { label: "Court of Appeal", value: "court of appeal" },
+  { label: "Federal High Court", value: "federal high court" },
+  { label: "High Court", value: "high court" },
+  { label: "National Industrial Court", value: "national industrial court" },
+  { label: "Sharia Courts of Appeal", value: "sharia courts of appeal" },
+  { label: "Customary Court of Appeal", value: "customary court of appeal" },
+  { label: "Magistrate Court", value: "magistrate court" },
+  { label: "Customary Court", value: "customary court" },
+  { label: "Sharia Court", value: "sharia court" },
+  { label: "Area Court", value: "area court" },
+  { label: "Coroner", value: "coroner" },
+  { label: "Tribunal", value: "tribunal" },
+  { label: "Others", value: "others" },
 ];
 
-// modes of commencement of case options
+// Modes of commencement of case options
 export const modesOptions = [
-  { label: "Writ of Summons", value: "Writ of Summons" },
-  { label: "Originating Summons", value: "Originating Summons" },
-  { label: "Originating Motion", value: "Originating Motion" },
-  { label: "Petition", value: "Petition" },
-  { label: "Other", value: "Other" },
+  { label: "Writ of Summons", value: "writ of summons" },
+  { label: "Originating Summons", value: "originating summons" },
+  { label: "Originating Motion", value: "originating motion" },
+  { label: "Petition", value: "petition" },
+  { label: "Other", value: "other" },
 ];
 
-// case priority options
+// Case priority options
 export const casePriorityOptions = [
-  { label: "Low", value: "Low" },
-  { label: "Medium", value: "Medium" },
-  { label: "High", value: "High" },
+  { label: "Low", value: "low" },
+  { label: "Medium", value: "medium" },
+  { label: "High", value: "high" },
 ];
 
 export const taskPriorityOptions = [
@@ -45,29 +48,30 @@ export const taskPriorityOptions = [
   { value: "medium", label: "Medium" },
   { value: "low", label: "Low" },
 ];
+
 export const caseCategoryOptions = [
-  { value: "Civil", label: "Civil" },
-  { value: "Criminal", label: "Criminal" },
+  { value: "civil", label: "Civil" },
+  { value: "criminal", label: "Criminal" },
 ];
 
 export const natureOfCaseOptions = [
-  { label: "Contract Dispute", value: "Contract Dispute" },
-  { label: "Personal Injury", value: "Personal Injury" },
-  { label: "Real Estate", value: "Real Estate" },
-  { label: "Land Law", value: "Land Law" },
-  { label: "Pre-election", value: "Pre-election" },
-  { label: "Election Petition", value: "Election Petition" },
-  { label: "Criminal Law", value: "Criminal Law" },
-  { label: "Family Law", value: "Family Law" },
-  { label: "Intellectual Property", value: "Intellectual Property" },
-  { label: "Employment Law", value: "Employment Law" },
-  { label: "Bankruptcy", value: "Bankruptcy" },
-  { label: "Estate Law", value: "Estate Law" },
-  { label: "Tortous Liability", value: "Tortous Liability" },
-  { label: "Immigration", value: "Immigration" },
-  { label: "Maritime", value: "Aviation" },
-  { label: "Tax Law", value: "Tax Law" },
-  { label: "Other", value: "Other" },
+  { label: "Contract Dispute", value: "contract dispute" },
+  { label: "Personal Injury", value: "personal injury" },
+  { label: "Real Estate", value: "real estate" },
+  { label: "Land Law", value: "land law" },
+  { label: "Pre-election", value: "pre-election" },
+  { label: "Election Petition", value: "election petition" },
+  { label: "Criminal Law", value: "criminal law" },
+  { label: "Family Law", value: "family law" },
+  { label: "Intellectual Property", value: "intellectual property" },
+  { label: "Employment Law", value: "employment law" },
+  { label: "Bankruptcy", value: "bankruptcy" },
+  { label: "Estate Law", value: "estate law" },
+  { label: "Tortous Liability", value: "tortous liability" },
+  { label: "Immigration", value: "immigration" },
+  { label: "Maritime", value: "maritime" },
+  { label: "Tax Law", value: "tax law" },
+  { label: "Other", value: "other" },
 ];
 
 export const invoiceOptions = [

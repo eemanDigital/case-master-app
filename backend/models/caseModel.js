@@ -1,25 +1,24 @@
 const mongoose = require("mongoose");
 
-// sub-document for party name
+// Sub-document for party name
 const nameSchema = new mongoose.Schema({
   name: {
-    type: "string",
+    type: String,
     trim: true,
-    // required: [true, "A case must have a name"],
   },
 });
+
 const judgeSchema = new mongoose.Schema({
   name: {
-    type: "string",
+    type: String,
     trim: true,
-    // required: [true, "A case must have a name"],
   },
 });
 
-// sub-document for processes
+// Sub-document for processes
 const partyProcessSchema = new mongoose.Schema({ name: String });
 
-// sub-document for documents
+// Sub-document for documents
 const documentSchema = new mongoose.Schema({
   fileName: {
     type: String,
@@ -32,7 +31,7 @@ const documentSchema = new mongoose.Schema({
   },
 });
 
-// case Schema
+// Case Schema
 const caseSchema = new mongoose.Schema(
   {
     firstParty: {
@@ -45,7 +44,6 @@ const caseSchema = new mongoose.Schema(
       name: [nameSchema],
       processesFiled: [partyProcessSchema],
     },
-
     otherParty: [
       {
         description: String,
@@ -53,114 +51,102 @@ const caseSchema = new mongoose.Schema(
         processesFiled: [partyProcessSchema],
       },
     ],
-
     suitNo: {
       type: String,
       trim: true,
-      // required: [true, "A case must have a suit no"],
-      // unique: [true, "This suit no. has been used"],
-      trim: true,
     },
-
     caseOfficeFileNo: String,
     courtName: {
       type: String,
       trim: true,
-      // required: [true, "Court's name is required"],
       enum: {
         values: [
-          "Supreme Court",
-          "Court of Appeal",
-          "Federal High Court",
-          "High Court",
-          "National Industrial Court",
-          "Sharia Courts of Appeal",
-          "Customary Court of Appeal",
-          "Magistrate Court",
-          "Customary Court",
-          "Sharia Court",
-          "Area Court",
-          "Coroner",
-          "Tribunal",
+          "supreme court",
+          "court of appeal",
+          "federal high court",
+          "high court",
+          "national industrial court",
+          "sharia courts of appeal",
+          "customary court of appeal",
+          "magistrate court",
+          "customary court",
+          "sharia court",
+          "area court",
+          "coroner",
+          "tribunal",
+          "others",
         ],
         message: "Invalid court name",
       },
     },
-
     courtNo: {
       type: String,
       trim: true,
     },
-
     location: {
       type: String,
       trim: true,
     },
-
     state: {
       type: String,
       trim: true,
     },
-
     otherCourt: String,
-
     judge: [judgeSchema],
-
     caseSummary: {
       type: String,
       trim: true,
-      maxlength: [1000, "Case summary should not be more than 500 characters"],
+      maxlength: [1000, "Case summary should not be more than 1000 characters"],
     },
-
     caseStatus: {
       type: String,
       trim: true,
       enum: {
-        values: ["Pending", "Closed", "Decided"],
+        values: ["pending", "closed", "decided", "settled", "lost", "won"],
       },
     },
-
-    // natureOfCase: String,
-
+    caseStatus: {
+      type: String,
+      trim: true,
+      enum: {
+        values: ["pending", "closed", "decided", "settled"],
+      },
+    },
     natureOfCase: {
       type: String,
       trim: true,
-      // required: [true, "Court's name is required"],
       enum: {
         values: [
-          "Contract Dispute",
-          "Personal Injury",
-          "Real Estate",
-          "Land Law",
-          "Pre-election",
-          "Election Petition",
-          "Criminal Law",
-          "Family Law",
-          "Intellectual Property",
-          "Employment Law",
-          "Bankruptcy",
-          "Estate Law",
-          "Tortous Liability ",
-          "Immigration",
-          "Maritime",
-          "Aviation",
-          "Tax Law",
-          "Other",
+          "contract dispute",
+          "personal injury",
+          "real estate",
+          "land law",
+          "pre-election",
+          "election petition",
+          "criminal law",
+          "family law",
+          "intellectual property",
+          "employment law",
+          "bankruptcy",
+          "estate law",
+          "tortous liability",
+          "immigration",
+          "maritime",
+          "tax law",
+          "other",
         ],
+        message: "Invalid nature of case",
       },
     },
-
     category: {
       type: String,
       trim: true,
       enum: {
-        values: ["Civil", "Criminal"],
+        values: ["civil", "criminal"],
         message: "A case must have a category",
       },
     },
-
     isFiledByTheOffice: Boolean,
-
     filingDate: {
       type: Date,
       default: Date.now,
@@ -168,15 +154,15 @@ const caseSchema = new mongoose.Schema(
     modeOfCommencement: {
       type: String,
       trim: true,
-      // required: [true, "State the mode of commencement of the case"],
       enum: {
         values: [
-          "Writ of Summons",
-          "Originating Summons",
-          "Originating Motion",
-          "Petition",
-          "Other",
+          "writ of summons",
+          "originating summons",
+          "originating motion",
+          "petition",
+          "other",
         ],
+        message: "Invalid mode of commencement",
       },
     },
     otherModeOfCommencement: String,
@@ -184,50 +170,30 @@ const caseSchema = new mongoose.Schema(
     caseWeaknesses: [nameSchema],
     casePriority: {
       type: String,
-      enum: ["Low", "Medium", "High"],
+      enum: ["low", "medium", "high"],
     },
     stepToBeTaken: [nameSchema],
-
-    accountOfficer: [String],
+    accountOfficer: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     client: [nameSchema],
     generalComment: String,
-
     documents: [documentSchema],
   },
-
   {
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
 );
-// caseSchema.virtual("caseFullTitle").get(function () {
-//   return (
-//     this?.firstParty?.description[0]?.name +
-//     " " +
-//     "vs" +
-//     " " +
-//     this?.secondParty?.description[0]?.name
-//   );
-// });
-// virtual for full title name
-// caseSchema.virtual("caseFullTitle").get(function () {
-//   const { firstParty, secondParty } = this;
-//   const firstName = firstParty?.description[0]?.name;
-//   const secondName = secondParty?.description[0]?.name;
 
-//   return `${firstName || ""} vs ${secondName || ""}`;
-// });
-
-// caseSchema.pre(/^find/, function (next) {
-//   const newDate = new Date(this.fillingDate);
-
-//   const options = { year: "numeric", month: "long", day: "numeric" };
-//   new Intl.DateTimeFormat("en-US", options).format(newDate);
-
-//   next();
-// });
-
-// virtual populate
+caseSchema.pre(/^find/, function (next) {
+  this.populate({ path: "accountOfficer", select: "firstName lastName" });
+  next();
+});
+// Virtual populate
 caseSchema.virtual("reports", {
   ref: "Report",
   foreignField: "caseReported",
@@ -239,11 +205,6 @@ caseSchema.virtual("reporter", {
   foreignField: "reportedBy",
   localField: "_id",
 });
-// caseSchema.virtual("documents", {
-//   ref: "File",
-//   foreignField: "case",
-//   localField: "_id",
-// });
 
 const Case = mongoose.model("Case", caseSchema);
 

@@ -100,3 +100,5 @@ exports.deleteDocument = (model) => {
     });
   });
 };
+
+//aggregation handler

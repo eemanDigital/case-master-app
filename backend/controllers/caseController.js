@@ -54,7 +54,7 @@ exports.updateCase = catchAsync(async (req, res, next) => {
   }
 
   res.status(200).json({
-    message: "Case successfully updated",
+    message: "success",
     updatedCase,
   });
 });
@@ -68,5 +68,321 @@ exports.deleteCase = catchAsync(async (req, res, next) => {
   }
   res.status(204).json({
     message: "Case deleted",
+  });
+});
+
+// get cases by status
+exports.getCasesByStatus = catchAsync(async (req, res, next) => {
+  const status = await Case.aggregate([
+    {
+      $group: {
+        _id: "$caseStatus",
+        count: { $sum: 1 },
+        parties: {
+          $push: {
+            $concat: [
+              { $arrayElemAt: ["$firstParty.name.name", 0] },
+              " vs ",
+              { $arrayElemAt: ["$secondParty.name.name", 0] },
+            ],
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        caseStatus: "$_id",
+        parties: 1,
+        count: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    message: "success",
+    data: status,
+  });
+});
+exports.getCasesByCourt = catchAsync(async (req, res, next) => {
+  const results = await Case.aggregate([
+    {
+      $group: {
+        _id: "$courtName",
+        count: { $sum: 1 },
+        parties: {
+          $push: {
+            $concat: [
+              { $arrayElemAt: ["$firstParty.name.name", 0] },
+              " vs ",
+              { $arrayElemAt: ["$secondParty.name.name", 0] },
+            ],
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        caseByCourt: "$_id",
+        parties: 1,
+        count: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    message: "success",
+    data: results,
+  });
+});
+exports.getCasesByNature = catchAsync(async (req, res, next) => {
+  const results = await Case.aggregate([
+    {
+      $group: {
+        _id: "$natureOfCase",
+        count: { $sum: 1 },
+        parties: {
+          $push: {
+            $concat: [
+              { $arrayElemAt: ["$firstParty.name.name", 0] },
+              " vs ",
+              { $arrayElemAt: ["$secondParty.name.name", 0] },
+            ],
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        caseNature: "$_id",
+        parties: 1,
+        count: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    message: "success",
+    data: results,
+  });
+});
+exports.getCasesByRating = catchAsync(async (req, res, next) => {
+  const results = await Case.aggregate([
+    {
+      $group: {
+        _id: "$casePriority",
+        count: { $sum: 1 },
+        parties: {
+          $push: {
+            $concat: [
+              { $arrayElemAt: ["$firstParty.name.name", 0] },
+              " vs ",
+              { $arrayElemAt: ["$secondParty.name.name", 0] },
+            ],
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        caseRating: "$_id",
+        parties: 1,
+        count: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    message: "success",
+    data: results,
+  });
+});
+exports.getCasesByModeOfCommencement = catchAsync(async (req, res, next) => {
+  const results = await Case.aggregate([
+    {
+      $group: {
+        _id: "$modeOfCommencement",
+        count: { $sum: 1 },
+        parties: {
+          $push: {
+            $concat: [
+              { $arrayElemAt: ["$firstParty.name.name", 0] },
+              " vs ",
+              { $arrayElemAt: ["$secondParty.name.name", 0] },
+            ],
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        mode: "$_id",
+        parties: 1,
+        count: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    message: "success",
+    data: results,
+  });
+});
+exports.getCasesByCategory = catchAsync(async (req, res, next) => {
+  const results = await Case.aggregate([
+    {
+      $group: {
+        _id: "$category",
+        count: { $sum: 1 },
+        parties: {
+          $push: {
+            $concat: [
+              { $arrayElemAt: ["$firstParty.name.name", 0] },
+              " vs ",
+              { $arrayElemAt: ["$secondParty.name.name", 0] },
+            ],
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        cat: "$_id",
+        parties: 1,
+        count: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    message: "success",
+    data: results,
+  });
+});
+exports.getCasesByAccountOfficer = catchAsync(async (req, res, next) => {
+  const results = await Case.aggregate([
+    {
+      $unwind: "$accountOfficer", // Adjust for accountOfficer being an array
+    },
+    {
+      $lookup: {
+        from: "users", // Ensure this matches the actual users collection name
+        localField: "accountOfficer",
+        foreignField: "_id",
+        as: "accountOfficerDetails",
+      },
+    },
+    {
+      $unwind: "$accountOfficerDetails", // Handle the case where multiple users might be returned
+    },
+    {
+      $group: {
+        _id: "$accountOfficerDetails.firstName", // Adjust according to your user schema
+        count: { $sum: 1 },
+        parties: {
+          $push: {
+            $concat: [
+              // Ensure these fields exist and contain data
+              { $arrayElemAt: ["$firstParty.name.name", 0] },
+              " vs ",
+              { $arrayElemAt: ["$secondParty.name.name", 0] },
+            ],
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        accountOfficer: "$_id",
+        parties: 1,
+        count: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    message: "success",
+    data: results,
+  });
+});
+
+// get newly file or new brief
+exports.getMonthlyNewCases = catchAsync(async (req, res, next) => {
+  const result = await Case.aggregate([
+    {
+      $group: {
+        _id: { $month: "$filingDate" },
+        parties: {
+          $push: {
+            $concat: [
+              { $arrayElemAt: ["$firstParty.name.name", 0] },
+              " vs ",
+              { $arrayElemAt: ["$secondParty.name.name", 0] },
+            ],
+          },
+        },
+        count: { $sum: 1 },
+      },
+    },
+
+    {
+      $project: {
+        _id: 0,
+        month: "$_id",
+        parties: 1,
+        count: 1,
+      },
+    },
+    {
+      $sort: { month: 1 },
+    },
+  ]);
+
+  res.status(200).json({
+    message: "success",
+    data: result,
+  });
+});
+
+exports.getYearlyNewCases = catchAsync(async (req, res, next) => {
+  const result = await Case.aggregate([
+    {
+      $group: {
+        _id: { $year: "$filingDate" },
+        parties: {
+          $push: {
+            $concat: [
+              { $arrayElemAt: ["$firstParty.name.name", 0] },
+              " vs ",
+              { $arrayElemAt: ["$secondParty.name.name", 0] },
+            ],
+          },
+        },
+        count: { $sum: 1 },
+      },
+    },
+
+    {
+      $project: {
+        _id: 0,
+        year: "$_id",
+        parties: 1,
+        count: 1,
+      },
+    },
+    {
+      $sort: { year: 1 },
+    },
+  ]);
+
+  res.status(200).json({
+    message: "success",
+    data: result,
   });
 });

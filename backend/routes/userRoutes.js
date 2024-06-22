@@ -33,7 +33,7 @@ router.use(protect); //login to access the routes
 router.patch("/changepassword", protect, updatePassword);
 router.patch(
   "/update-user-by-admin/:id",
-  restrictTo("admin"),
+  restrictTo("super-admin"),
   updateUserByAdmin
 );
 router.get("/", getUsers);

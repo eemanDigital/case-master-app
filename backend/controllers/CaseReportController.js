@@ -80,19 +80,8 @@ exports.deleteReport = catchAsync(async (req, res, next) => {
 });
 
 // get Reports for week and month
+
 exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
-  // Get the current date
-  const currentDate = moment();
-
-  // Get the date one week from now
-  const nextWeek = moment().add(1, "weeks");
-
-  // Get the date one month from now
-  const nextMonth = moment().add(1, "months");
-
-  // Get the date at the end of the current year
-  const endOfYear = moment().endOf("year");
-
   // Get the start and end of the current week
   const startOfWeek = moment().startOf("isoWeek"); // Start of the current ISO week
   const endOfWeek = moment().endOf("isoWeek"); // End of the current ISO week
@@ -100,6 +89,14 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
   // Get the start and end of the next week
   const startOfNextWeek = moment().add(1, "weeks").startOf("isoWeek"); // Start of next ISO week
   const endOfNextWeek = moment().add(1, "weeks").endOf("isoWeek"); // End of next ISO week
+
+  // Get the start and end of the current month
+  const startOfMonth = moment().startOf("month");
+  const endOfMonth = moment().endOf("month");
+
+  // Get the start and end of the current year
+  const startOfYear = moment().startOf("year");
+  const endOfYear = moment().endOf("year");
 
   // Get reports for the current week
   const reportsThisWeek = await Report.find({
@@ -121,20 +118,20 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
     .sort("adjournedDate")
     .select("caseReported adjournedFor adjournedDate");
 
-  // Get reports for the next month
-  const reportsNextMonth = await Report.find({
+  // Get reports for the current month
+  const reportsThisMonth = await Report.find({
     adjournedDate: {
-      $gte: currentDate.toDate(),
-      $lt: nextMonth.toDate(),
+      $gte: startOfMonth.toDate(),
+      $lt: endOfMonth.toDate(),
     },
   })
     .sort("adjournedDate")
-    .select("caseReported adjournedFor adjournedDate  ");
+    .select("caseReported adjournedFor adjournedDate");
 
-  // Get reports for the rest of the year
-  const reportsYear = await Report.find({
+  // Get reports for the current year
+  const reportsThisYear = await Report.find({
     adjournedDate: {
-      $gte: currentDate.toDate(),
+      $gte: startOfYear.toDate(),
       $lt: endOfYear.toDate(),
     },
   })
@@ -146,12 +143,12 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
     data: {
       weekResults: reportsThisWeek.length,
       nextWeekResults: reportsNextWeek.length,
-      monthResults: reportsNextMonth.length,
-      yearResults: reportsYear.length,
+      monthResults: reportsThisMonth.length,
+      yearResults: reportsThisYear.length,
       reportsThisWeek,
       reportsNextWeek,
-      reportsNextMonth,
-      reportsYear,
+      reportsThisMonth,
+      reportsThisYear,
     },
   });
 });

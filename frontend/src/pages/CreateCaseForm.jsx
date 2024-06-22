@@ -33,54 +33,13 @@ import {
 } from "../data/options";
 // import CaseDocument from "./CaseDocument";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
+import { caseInitialValue } from "../utils/initialValues";
 const CreateCaseForm = () => {
   // destructure textarea from input
   // const { TextArea } = Input;
 
   const [form] = Form.useForm();
-  const [formData, setFormData] = useState({
-    firstParty: {
-      description: "",
-      name: [{ name: "" }],
-      processesFiled: [{ name: "" }],
-    },
-    secondParty: {
-      description: "",
-      name: [{ name: "" }],
-      processesFiled: [{ name: "" }],
-    },
-    otherParty: [
-      {
-        description: "",
-        name: [{ name: "" }],
-        processesFiled: [{ name: "" }],
-      },
-    ],
-    suitNo: "",
-    caseOfficeFileNo: "",
-    courtName: "",
-    courtNo: "",
-    location: "",
-    otherCourt: "",
-    judge: [{ name: "" }],
-    caseSummary: "",
-    caseStatus: "",
-    natureOfCase: "",
-    category: "",
-    isFiledByTheOffice: false,
-    filingDate: "",
-    modeOfCommencement: "",
-    otherModeOfCommencement: "",
-    caseStrengths: [],
-    caseWeaknesses: [],
-    casePriority: "",
-    stepToBeTaken: [],
-    caseUpdates: [{ date: "", update: "" }],
-
-    accountOfficer: [],
-    client: [{ name: "" }],
-    generalComment: "",
-  });
+  const [formData, setFormData] = useState(caseInitialValue);
   // destructor authenticate from useDataFetch
   const { dataFetcher, data } = useDataFetch(); //general data fetcher
   // destructure user data for accountOfficers
