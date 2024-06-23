@@ -51,6 +51,11 @@ const taskSchema = new mongoose.Schema(
         ref: "Case",
       },
     ],
+    assignedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+
     assignedTo: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -93,10 +98,12 @@ const taskSchema = new mongoose.Schema(
 );
 
 taskSchema.pre(/^find/, function (next) {
-  this.populate({ path: "assignedTo", select: "firstName lastName" }).populate({
-    path: "caseToWorkOn",
-    select: "firstParty.name.name secondParty.name.name ",
-  });
+  this.populate({ path: "assignedTo", select: "firstName lastName" })
+    .populate({
+      path: "caseToWorkOn",
+      select: "firstParty.name.name secondParty.name.name ",
+    })
+    .populate({ path: "assignedBy", select: "firstName lastName" });
   next();
 });
 

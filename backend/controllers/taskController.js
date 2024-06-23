@@ -4,40 +4,16 @@ const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 
 exports.createTask = catchAsync(async (req, res, next) => {
-  // const {
-  //   title,
-  //   instruction,
-  //   caseToWorkOn,
-  //   assignedTo,
-  //   dateAssigned,
-  //   dueDate,
-  //   taskPriority,
-  //   document,
-  //   message,
-  // } = req.body;
+  const { assignedBy, ...rest } = req.body;
 
-  // const task = await Task.create({
-  //   title,
-  //   instruction,
-  //   caseToWorkOn,
-  //   assignedTo,
-  //   dateAssigned,
-  //   dueDate,
-  //   taskPriority,
-  //   document,
-  //   message,
-  // });
-
-  // const { reminder } = req.body;
-
-  const task = await Task.create(req.body);
+  const task = await Task.create({ assignedBy: req.user.id, ...rest });
   res.status(201).json({
     data: task,
   });
 });
 
 exports.getTasks = catchAsync(async (req, res, next) => {
-  const tasks = await Task.find().sort({ dateAssigned: 1 });
+  const tasks = await Task.find().sort({ dateAssigned: -1 });
   // .populate("assignedTo")
   // .populate("caseToWorkOn");
 

@@ -148,142 +148,21 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
     "../views/invoice.pug",
     `../output/${Math.random()}_invoice.pdf`
   );
-
-  // pug.renderFile(
-  //   path.join(__dirname, "../views/invoice.pug"),
-  //   { invoice: safeInvoice },
-  //   function (err, html) {
-  //     if (err) {
-  //       console.error(err);
-  //       res.sendStatus(500);
-  //     } else {
-  //       const options = pdfoptions; // assuming pdfoptions is an object with the required options
-
-  //       const document = {
-  //         html: html,
-  //         data: {
-  //           invoice: safeInvoice,
-  //         },
-  //         path: path.join(__dirname, `../output/${Math.random()}_invoice.pdf`),
-  //       };
-
-  //       pdf
-  //         .create(document, options)
-  //         .then((result) => {
-  //           console.log(result);
-  //           // Send the file to the client
-  //           res.sendFile(path.resolve(document.path));
-  //         })
-  //         .catch((error) => {
-  //           console.error(error);
-  //           res.sendStatus(500);
-  //         });
-  //     }
-  //   }
-  // );
 });
 
-//   const invoice = await Invoice.findById(req.params.id);
-//   if (!invoice) {
-//     return next(new AppError("No invoice found with that ID", 404));
-//   }
+// get total amount due
+exports.getTotalAmountDueOnInvoice = catchAsync(async (req, res, next) => {
+  const result = await Invoice.aggregate([
+    {
+      $group: {
+        _id: null,
+        totalAmountDueOnInvoice: { $sum: "$totalAmountDue" },
+      },
+    },
+  ]);
 
-//   pug.renderFile(
-//     path.join(__dirname, "../views/invoice.pug"),
-//     { invoice },
-//     function (err, html) {
-//       if (err) {
-//         console.error(err);
-//         res.sendStatus(500);
-//       } else {
-//         const options = pdfoptions; // assuming pdfoptions is an object with the required options
-
-//         const document = {
-//           html: html,
-//           data: {
-//             invoice: invoice,
-//           },
-//           path: `./output/${Math.random()}_invoice.pdf`,
-//         };
-
-//         pdf
-//           .create(document, options)
-//           .then((result) => {
-//             console.log(result);
-//             res.status(200).json({
-//               status: "success",
-//               data: result,
-//             });
-//           })
-//           .catch((error) => {
-//             console.error(error);
-//             res.sendStatus(500);
-//           });
-//       }
-//     }
-//   );
-// });
-
-// exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
-//   const invoice = await Invoice.findById(req.params.id);
-//   if (!invoice) {
-//     return next(new AppError("No invoice found with that ID", 404));
-//   }
-
-//   const absolutePath = path.join(__dirname, "../public");
-
-//   pug.renderFile(
-//     path.join(__dirname, "../views/invoice.pug"),
-//     { invoice, absolutePath },
-//     function (err, html) {
-//       if (err) {
-//         console.error(err);
-//         res.sendStatus(500);
-//       } else {
-//         const options = {
-//           format: "A4",
-//           orientation: "portrait",
-//           border: "8mm",
-//           header: {
-//             height: "40mm",
-//             contents: `<div style="text-align: center;"> A.T Lukman & Co.
-//                 <p>Address:  In a server-side rendering context, the relative paths to CSS files can sometimes be problematic, especially when generating </p>
-//             </div>`,
-//           },
-//           footer: {
-//             height: "25mm",
-//             contents: {
-//               first: "Invoice",
-//               2: "Second page",
-//               default:
-//                 '<span style="color: #444;">{{page}}</span>/<span>{{pages}}</span>', // fallback value
-//               last: "Last Page",
-//             },
-//           },
-//         };
-
-//         const document = {
-//           html: html,
-//           data: {
-//             invoice: invoice,
-//           },
-//           path: `./output/${Math.random()}_invoice.pdf`,
-//         };
-
-//         pdf
-//           .create(document, options)
-//           .then((result) => {
-//             console.log(result);
-//             res.status(200).json({
-//               status: "success",
-//               data: result,
-//             });
-//           })
-//           .catch((error) => {
-//             console.error(error);
-//             res.sendStatus(500);
-//           });
-//       }
-//     }
-//   );
-// });
+  res.status(200).json({
+    message: "success",
+    data: result,
+  });
+});

@@ -85,6 +85,8 @@ const TaskList = () => {
 
   return (
     <div>
+      <CreateTaskForm />
+
       <Link to="upload" className="text-right">
         <Button>Attach Document to Task</Button>
       </Link>
@@ -96,8 +98,6 @@ const TaskList = () => {
         }
         rowKey="_id"
       />
-
-      <CreateTaskForm />
     </div>
   );
 };

@@ -7,8 +7,7 @@ import {
   DynamicInputArrays,
   TextAreaInput,
 } from "../components/DynamicInputs";
-// import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import useClientSelectOptions from "../hooks/useClientSelectOptions";
 
 import {
   Button,
@@ -44,6 +43,7 @@ const CreateCaseForm = () => {
   const { dataFetcher, data } = useDataFetch(); //general data fetcher
   // destructure user data for accountOfficers
   const { userData } = useUserSelectOptions();
+  const { clientOptions } = useClientSelectOptions();
 
   // form submit functionalities
   const handleSubmission = useCallback(
@@ -246,286 +246,298 @@ const CreateCaseForm = () => {
         <Divider />
 
         {/* SUIT NO FIELD */}
-        <div className="flex justify-between items-center gap-9 flex-wrap">
-          {/* MODE OF COMMENCEMENT */}
+        {/* <div className="flex justify-between items-center gap-9 flex-wrap"> */}
+        {/* MODE OF COMMENCEMENT */}
 
-          <div>
-            <Form.Item
-              name="modeOfCommencement"
-              label="Mode of Commencement"
-              initialValue={formData?.modeOfCommencement}
-              className="w-[200px]">
-              <Select
-                noStyle
-                placeholder="Select mode"
-                showSearch
-                filterOption={filterOption}
-                options={modesOptions}
-                allowClear
-                // value={otherMode?.modeOfCommencement}
-                // onChange={(e) => setOtherMode(e.target.value)}
-                // onSelect={(e) => setOtherMode(e.target.value)}
-              />
-            </Form.Item>
-          </div>
-
-          {/* OTHER MODE OF COMMENCEMENT */}
-
-          <div>
-            <Form.Item
-              label="Specify Mode"
-              name="otherModeOfCommencement"
-              initialValue={formData?.otherModeOfCommencement}>
-              <Input />
-            </Form.Item>
-          </div>
-
-          {/* WHETHER FILED BY THE OFFICE */}
+        <div>
           <Form.Item
-            label="Switch if case is filed by the Office"
-            valuePropName="checked"
-            name="isFiledByTheOffice"
-            initialValue={formData?.isFiledByTheOffice}>
-            <Switch className="bg-gray-400 w-20" />
+            name="modeOfCommencement"
+            label="Mode of Commencement"
+            initialValue={formData?.modeOfCommencement}
+            className="w-[200px]">
+            <Select
+              noStyle
+              placeholder="Select mode"
+              showSearch
+              filterOption={filterOption}
+              options={modesOptions}
+              allowClear
+              // value={otherMode?.modeOfCommencement}
+              // onChange={(e) => setOtherMode(e.target.value)}
+              // onSelect={(e) => setOtherMode(e.target.value)}
+            />
           </Form.Item>
+        </div>
 
-          {/* NATURE OF CASE*/}
-          <div>
-            <Form.Item
-              name="natureOfCase"
-              label="Nature of Case"
-              initialValue={formData?.natureOfCase}
-              className="w-[200px]">
-              <Select
-                noStyle
-                placeholder="Select nature of case"
-                showSearch
-                filterOption={filterOption}
-                options={natureOfCaseOptions}
-                allowClear
-              />
-            </Form.Item>
-          </div>
+        {/* OTHER MODE OF COMMENCEMENT */}
 
-          {/* DATE FILED */}
-          <div>
-            <Form.Item name="filingDate" label="Filing Date">
-              <DatePicker />
-            </Form.Item>
-          </div>
-          <Divider />
-          <div>
-            <Form.Item
-              name="suitNo"
-              label="Suit No."
-              tooltip="This is a required field"
-              initialValue={formData?.suitNo}
-              // rules={[
-              //   {
-              //     required: true,
-              //     message: "Please enter suit no!",
-              //   },
-              // ]}
-            >
-              <Input />
-            </Form.Item>
-          </div>
+        <div>
+          <Form.Item
+            label="Specify Mode"
+            name="otherModeOfCommencement"
+            initialValue={formData?.otherModeOfCommencement}>
+            <Input />
+          </Form.Item>
+        </div>
 
-          {/* COURTS */}
+        {/* WHETHER FILED BY THE OFFICE */}
+        <Form.Item
+          label="Switch if case is filed by the Office"
+          valuePropName="checked"
+          name="isFiledByTheOffice"
+          initialValue={formData?.isFiledByTheOffice}>
+          <Switch className="bg-gray-400 w-20" />
+        </Form.Item>
 
-          <div>
-            <Form.Item
-              name="courtName"
-              label="Court"
-              initialValue={formData?.courtName}
-              className="w-[200px]">
-              <Select
-                noStyle
-                placeholder="Select court"
-                showSearch
-                filterOption={filterOption}
-                options={courtOptions}
-                allowClear
-              />
-            </Form.Item>
-          </div>
+        {/* NATURE OF CASE*/}
+        <div>
+          <Form.Item
+            name="natureOfCase"
+            label="Nature of Case"
+            initialValue={formData?.natureOfCase}
+            className="w-[200px]">
+            <Select
+              noStyle
+              placeholder="Select nature of case"
+              showSearch
+              filterOption={filterOption}
+              options={natureOfCaseOptions}
+              allowClear
+            />
+          </Form.Item>
+        </div>
 
-          {/* COURT'S NO */}
-          <div>
-            <Form.Item
-              label="Court No"
-              name="courtNo"
-              initialValue={formData?.courtNo}>
-              <Input />
-            </Form.Item>
-          </div>
-          {/* COURT'S LOCATION */}
-          <div>
-            <Form.Item
-              label="Court's Location"
-              name="location"
-              placeholder="e.g. Ikoyi, Lagos"
-              initialValue={formData?.location}>
-              <Input />
-            </Form.Item>
-          </div>
-          {/*  STATE */}
-          <div>
-            <Form.Item
-              label="State where Court is located"
-              name="state"
-              placeholder="e.g. Lagos"
-              initialValue={formData?.state}>
-              <Input />
-            </Form.Item>
-          </div>
+        {/* DATE FILED */}
+        <div>
+          <Form.Item name="filingDate" label="Filing Date">
+            <DatePicker />
+          </Form.Item>
+        </div>
+        <Divider />
+        <div>
+          <Form.Item
+            name="suitNo"
+            label="Suit No."
+            tooltip="This is a required field"
+            initialValue={formData?.suitNo}
+            // rules={[
+            //   {
+            //     required: true,
+            //     message: "Please enter suit no!",
+            //   },
+            // ]}
+          >
+            <Input />
+          </Form.Item>
+        </div>
 
-          {/* OTHER COURT */}
-          <div>
-            <Form.Item
-              label="Specify Court"
-              name="otherCourt"
-              initialValue={formData?.courtName}>
-              <Input />
-            </Form.Item>
-          </div>
+        {/* COURTS */}
 
-          {/* CASE FILE NO FIELD */}
-          <div>
-            <Form.Item
-              label="Case file Number"
-              name="caseOfficeFileNo"
-              initialValue={formData?.caseOfficeFileNo}>
-              <Input />
-            </Form.Item>
-          </div>
-          <Divider />
+        <div>
+          <Form.Item
+            name="courtName"
+            label="Court"
+            initialValue={formData?.courtName}
+            className="w-[200px]">
+            <Select
+              noStyle
+              placeholder="Select court"
+              showSearch
+              filterOption={filterOption}
+              options={courtOptions}
+              allowClear
+            />
+          </Form.Item>
+        </div>
 
-          {/* CASE STATUS */}
-          {/* <SelectInputs
+        {/* COURT'S NO */}
+        <div>
+          <Form.Item
+            label="Court No"
+            name="courtNo"
+            initialValue={formData?.courtNo}>
+            <Input />
+          </Form.Item>
+        </div>
+        {/* COURT'S LOCATION */}
+        <div>
+          <Form.Item
+            label="Court's Location"
+            name="location"
+            placeholder="e.g. Ikoyi, Lagos"
+            initialValue={formData?.location}>
+            <Input />
+          </Form.Item>
+        </div>
+        {/*  STATE */}
+        <div>
+          <Form.Item
+            label="State where Court is located"
+            name="state"
+            placeholder="e.g. Lagos"
+            initialValue={formData?.state}>
+            <Input />
+          </Form.Item>
+        </div>
+
+        {/* OTHER COURT */}
+        <div>
+          <Form.Item
+            label="Specify Court"
+            name="otherCourt"
+            initialValue={formData?.courtName}>
+            <Input />
+          </Form.Item>
+        </div>
+
+        {/* CASE FILE NO FIELD */}
+        <div>
+          <Form.Item
+            label="Case file Number"
+            name="caseOfficeFileNo"
+            initialValue={formData?.caseOfficeFileNo}>
+            <Input />
+          </Form.Item>
+        </div>
+        <Divider />
+
+        {/* CASE STATUS */}
+        {/* <SelectInputs
             name="caseStatus"
             label="Case Status"
             initialValue={formData?.caseStatus}
             options={statusOptions}
           /> */}
-          <div>
-            <Form.Item
-              name="caseStatus"
-              label="Case Status"
-              initialValue={formData?.caseStatus}
-              className="w-[200px]">
-              <Select
-                noStyle
-                placeholder="Select case status"
-                showSearch
-                filterOption={filterOption}
-                options={statusOptions}
-                allowClear
-              />
-            </Form.Item>
-          </div>
+        <div>
+          <Form.Item
+            name="caseStatus"
+            label="Case Status"
+            initialValue={formData?.caseStatus}
+            className="w-[200px]">
+            <Select
+              noStyle
+              placeholder="Select case status"
+              showSearch
+              filterOption={filterOption}
+              options={statusOptions}
+              allowClear
+            />
+          </Form.Item>
+        </div>
 
-          {/* CASE CATEGORY */}
-          <div>
-            <Form.Item
-              name="category"
-              label="Case Category"
-              initialValue={formData?.category}
-              className="w-[200px]">
-              <Select
-                noStyle
-                placeholder="Select case category"
-                showSearch
-                filterOption={filterOption}
-                options={caseCategoryOptions}
-                allowClear
-              />
-            </Form.Item>
-          </div>
+        {/* CASE CATEGORY */}
+        <div>
+          <Form.Item
+            name="category"
+            label="Case Category"
+            initialValue={formData?.category}
+            className="w-[200px]">
+            <Select
+              noStyle
+              placeholder="Select case category"
+              showSearch
+              filterOption={filterOption}
+              options={caseCategoryOptions}
+              allowClear
+            />
+          </Form.Item>
+        </div>
 
-          {/* CASE PRIORITY */}
-          {/* <SelectInputs
+        {/* CASE PRIORITY */}
+        {/* <SelectInputs
             name="casePriority"
             label="Case Priority"
             initialValue={formData?.casePriority}
             options={casePriorityOptions}
           /> */}
 
-          <div>
-            <Form.Item
-              name="casePriority"
-              label="Case Priority/Rating"
-              initialValue={formData?.casePriority}
-              className="w-[200px]">
-              <Select
-                noStyle
-                placeholder="Select case priority"
-                showSearch
-                filterOption={filterOption}
-                options={casePriorityOptions}
-                allowClear
-              />
-            </Form.Item>
-          </div>
+        <div>
+          <Form.Item
+            name="casePriority"
+            label="Case Priority/Rating"
+            initialValue={formData?.casePriority}
+            className="w-[200px]">
+            <Select
+              noStyle
+              placeholder="Select case priority"
+              showSearch
+              filterOption={filterOption}
+              options={casePriorityOptions}
+              allowClear
+            />
+          </Form.Item>
+        </div>
 
-          {/* JUDGE FIELD */}
-          <DynamicInputArrays
-            parentKey="judge"
-            initialValue={formData?.judge}
-            label="Judge/Justices"
-            placeholder="Enter judges  name"
-          />
+        {/* JUDGE FIELD */}
+        <DynamicInputArrays
+          parentKey="judge"
+          initialValue={formData?.judge}
+          label="Judge/Justices"
+          placeholder="Enter judges  name"
+        />
 
-          {/* CASE STRENGTH */}
-          <DynamicInputArrays
-            parentKey="caseStrengths"
-            initialValue={formData?.caseStrengths}
-            label="Case Strength"
-            placeholder="Enter case's Strength"
-          />
-          <Divider />
-          {/* CASE WEAKNESS */}
-          <DynamicInputArrays
-            parentKey="caseWeaknesses"
-            initialValue={formData?.caseWeaknesses}
-            label="Case Weaknesses"
-            placeholder="Enter case's Weaknesses"
-          />
+        {/* CASE STRENGTH */}
+        <DynamicInputArrays
+          parentKey="caseStrengths"
+          initialValue={formData?.caseStrengths}
+          label="Case Strength"
+          placeholder="Enter case's Strength"
+        />
+        <Divider />
+        {/* CASE WEAKNESS */}
+        <DynamicInputArrays
+          parentKey="caseWeaknesses"
+          initialValue={formData?.caseWeaknesses}
+          label="Case Weaknesses"
+          placeholder="Enter case's Weaknesses"
+        />
 
-          {/* STEPS TO BE TAKEN FIELD */}
-          <DynamicInputArrays
-            parentKey="stepToBeTaken"
-            initialValue={formData?.stepToBeTaken}
-            label="Steps/Strategies"
-          />
+        {/* STEPS TO BE TAKEN FIELD */}
+        <DynamicInputArrays
+          parentKey="stepToBeTaken"
+          initialValue={formData?.stepToBeTaken}
+          label="Steps/Strategies"
+        />
 
-          {/* ACCOUNT OFFICER */}
-          {/* <TextDivider text="Account Officer(s)" /> */}
-          <div>
-            <Form.Item
-              name="accountOfficer"
-              label="Account Officer"
-              className="w-[200px]"
-              initialValue={formData?.accountOfficer.name}>
-              <Select
-                // noStyle
-                mode="multiple"
-                placeholder="Select account officer"
-                options={userData}
-                allowClear
-                // style={{
-                //   width: "100%",
-                // }}
-              />
-            </Form.Item>
-          </div>
+        {/* ACCOUNT OFFICER */}
+        {/* <TextDivider text="Account Officer(s)" /> */}
+        <div>
+          <Form.Item
+            name="accountOfficer"
+            label="Account Officer"
+            className="w-[200px]"
+            initialValue={formData?.accountOfficer.name}>
+            <Select
+              // noStyle
+              mode="multiple"
+              placeholder="Select account officer"
+              options={userData}
+              allowClear
+              // style={{
+              //   width: "100%",
+              // }}
+            />
+          </Form.Item>
+        </div>
 
-          {/* CLIENT */}
-          <DynamicInputArrays
-            parentKey="client"
-            initialValue={formData?.client}
+        {/* CLIENT */}
+        <div>
+          <Form.Item
+            name="client"
             label="Client"
-          />
+            className="w-[200px]"
+            initialValue={formData?.client}>
+            <Select
+              // noStyle
+              mode="multiple"
+              placeholder="Select client..."
+              options={clientOptions}
+              allowClear
+              // style={{
+              //   width: "100%",
+              // }}
+            />
+          </Form.Item>
         </div>
 
         <Divider />

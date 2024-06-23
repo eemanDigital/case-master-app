@@ -179,7 +179,13 @@ const caseSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
-    client: [nameSchema],
+    client: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Client",
+      },
+    ],
+
     generalComment: String,
     documents: [documentSchema],
   },
@@ -190,9 +196,24 @@ const caseSchema = new mongoose.Schema(
 );
 
 caseSchema.pre(/^find/, function (next) {
-  this.populate({ path: "accountOfficer", select: "firstName lastName" });
+  // Populate the accountOfficer field with the firstName and lastName of the user
+  this.populate({
+    path: "accountOfficer",
+    select: "firstName lastName",
+  });
+
   next();
 });
+// caseSchema.pre(/^find/, function (next) {
+//   // Populate the accountOfficer field with the firstName and lastName of the user
+//   this.populate({
+//     path: "client",
+//     select: "firstName secondName",
+//   });
+
+//   next();
+// });
+
 // Virtual populate
 caseSchema.virtual("reports", {
   ref: "Report",

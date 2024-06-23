@@ -49,6 +49,7 @@ const CreateTaskForm = () => {
     let values;
     try {
       values = await form.validateFields(); // Validate the form fields
+      console.log("TA", values);
     } catch (errorInfo) {
       return;
     }
@@ -57,13 +58,14 @@ const CreateTaskForm = () => {
     handleSubmission(result); // Handle the submission after the API Call
   }, [form, handleSubmission, dataFetcher]);
 
+  console.log("TAF", formData);
   return (
     <>
       <Button onClick={showModal} className="bg-green-700 text-white">
         Create Task
       </Button>
       <Modal
-        title="Send Reminder on Task"
+        title="Assign Task"
         open={open}
         onOk={handleOk}
         // confirmLoading={}
@@ -78,7 +80,7 @@ const CreateTaskForm = () => {
             <Card
               title="Add Task"
               bordered={false}
-              style={{ width: 400, height: 850 }}>
+              style={{ width: 400, height: 750 }}>
               <div>
                 {/* task title */}
                 <Form.Item

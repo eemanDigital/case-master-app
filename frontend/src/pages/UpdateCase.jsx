@@ -29,6 +29,7 @@ import {
   casePriorityOptions,
   modesOptions,
 } from "../data/options";
+import useClientSelectOptions from "../hooks/useClientSelectOptions";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 const UpdateCase = () => {
@@ -38,6 +39,8 @@ const UpdateCase = () => {
   const { dataFetcher, data } = useDataFetch(); //general data fetcher
 
   const { userData } = useUserSelectOptions();
+  const { clientOptions } = useClientSelectOptions();
+
   const { id } = useParams();
   // console.log(id);
   // const { singleData, singleDataFetcher } = useSingleDataFetcher();
@@ -770,65 +773,42 @@ const UpdateCase = () => {
             </div>
           </div>
 
-          {/* CLIENT */}
-          {/* <TextDivider text="Client" /> */}
-          <div>
-            <div className="flex flex-wrap justify-between ">
-              <div>
-                <Form.List name="client">
-                  {(fields, { add, remove }) => (
-                    <>
-                      {fields.map(({ key, name, ...restField }) => (
-                        <Space
-                          key={key}
-                          style={{
-                            display: "flex",
-                            marginBottom: 8,
-                          }}
-                          align="baseline">
-                          <Form.Item
-                            {...restField}
-                            name={[name, "name"]}
-                            // rules={[
-                            //   {
-                            //     required: true,
-                            //     message: "Missing last name",
-                            //   },
-                            // ]}
-                          >
-                            <Input placeholder="Last Name" />
-                          </Form.Item>
-                          <MinusCircleOutlined onClick={() => remove(name)} />
-                        </Space>
-                      ))}
-                      <Form.Item>
-                        <Button
-                          type="dashed"
-                          onClick={() => add()}
-                          block
-                          icon={<PlusOutlined />}>
-                          Add Client
-                        </Button>
-                      </Form.Item>
-                    </>
-                  )}
-                </Form.List>
-              </div>
-            </div>
-          </div>
-
           {/* ACCOUNT OFFICER */}
-          {/* <TextDivider text="Account Officer(s)" /> */}
           <div>
             <Form.Item
               name="accountOfficer"
               label="Account Officer"
-              className="w-[200px]">
+              className="w-[200px]"
+              initialValue={formData?.accountOfficer.name}>
               <Select
+                // noStyle
                 mode="multiple"
                 placeholder="Select account officer"
                 options={userData}
                 allowClear
+                // style={{
+                //   width: "100%",
+                // }}
+              />
+            </Form.Item>
+          </div>
+
+          {/* CLIENT */}
+          <div>
+            <Form.Item
+              name="client"
+              label="Client"
+              className="w-[200px]"
+              initialValue={formData?.client}>
+              <Select
+                // noStyle
+                mode="multiple"
+                placeholder="Select client..."
+                options={clientOptions}
+                allowClear
+                // style={{
+                //   width: "100%",
+                // }}
               />
             </Form.Item>
           </div>

@@ -101,4 +101,76 @@ exports.deleteDocument = (model) => {
   });
 };
 
-//aggregation handler
+//aggregation handler for group
+exports.getCasesByGroup = (field, model) =>
+  catchAsync(async (req, res, next) => {
+    const results = await model.aggregate([
+      {
+        $group: {
+          _id: field,
+          count: { $sum: 1 },
+          parties: {
+            $push: {
+              $concat: [
+                { $arrayElemAt: ["$firstParty.name.name", 0] },
+                " vs ",
+                { $arrayElemAt: ["$secondParty.name.name", 0] },
+              ],
+            },
+          },
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          groupName: "$_id",
+          parties: 1,
+          count: 1,
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      message: "success",
+      data: results,
+    });
+  });
+
+// aggregation handler for getting cases by period
+// exports.getByPeriod = (field, model, period,) =>
+//   catchAsync(async (req, res, next) => {
+//     const results = await Model.aggregate([
+//       {
+//         $group: {
+//           _id: { $period: field },
+//           parties: {
+//             $push: {
+//               $concat: [
+//                 { $arrayElemAt: ["$firstParty.name.name", 0] },
+//                 " vs ",
+//                 { $arrayElemAt: ["$secondParty.name.name", 0] },
+//               ],
+//             },
+//           },
+//           count: { $sum: 1 },
+//         },
+//       },
+
+//       {
+//         $project: {
+//           _id: 0,
+//           groupName: "$_id",
+//           parties: 1,
+//           count: 1,
+//         },
+//       },
+//       {
+//         $sort: { period: 1 },
+//       },
+//     ]);
+
+//     res.status(200).json({
+//       message: "success",
+//       data: results,
+//     });
+//   });

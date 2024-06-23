@@ -1,20 +1,16 @@
 const express = require("express");
+const Case = require("../models/caseModel.js");
 const {
   getCases,
   createCase,
   getCase,
   updateCase,
   deleteCase,
-  downloadCaseDocument,
-  getCasesByStatus,
   getMonthlyNewCases,
   getYearlyNewCases,
-  getCasesByCourt,
-  getCasesByNature,
-  getCasesByRating,
-  getCasesByModeOfCommencement,
-  getCasesByCategory,
+
   getCasesByAccountOfficer,
+  getCasesByClient,
 } = require("../controllers/caseController");
 const { protect, restrictTo } = require("../controllers/authController");
 const { multerFileUploader } = require("../utils/multerFileUploader.js");
@@ -22,21 +18,21 @@ const {
   createDocument,
   downloadDocument,
   deleteDocument,
+  getCasesByGroup,
 } = require("../controllers/factory.js");
-// const Case = require("../models/caseModel");
-const Case = require("../models/caseModel.js");
 
 const router = express.Router();
 // const app = express();
 
 router.use(protect);
 router.get("/:parentId/documents/:documentId/download", downloadDocument(Case));
-router.get("/case-status", getCasesByStatus);
-router.get("/cases-by-court", getCasesByCourt);
-router.get("/cases-by-natureOfCase", getCasesByNature);
-router.get("/cases-by-rating", getCasesByRating);
-router.get("/cases-by-mode", getCasesByModeOfCommencement);
-router.get("/cases-by-category", getCasesByCategory);
+router.get("/case-status", getCasesByGroup("$caseStatus", Case));
+router.get("/cases-by-court", getCasesByGroup("$courtName", Case));
+router.get("/cases-by-natureOfCase", getCasesByGroup("$natureOfCase", Case));
+router.get("/cases-by-rating", getCasesByGroup("$casePriority", Case));
+router.get("/cases-by-mode", getCasesByGroup("$modeOfCommencement", Case));
+router.get("/cases-by-category", getCasesByGroup("$category", Case));
+router.get("/cases-by-client", getCasesByClient);
 router.get("/cases-by-accountOfficer", getCasesByAccountOfficer);
 router.get("/monthly-new-cases", getMonthlyNewCases);
 router.get("/yearly-new-cases", getYearlyNewCases);

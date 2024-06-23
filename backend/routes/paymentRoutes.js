@@ -6,6 +6,7 @@ const paymentController = require("../controllers/paymentController");
 router.post("/", paymentController.createPayment);
 
 router.get("/paymentEachClient", paymentController.paymentEachClient);
+router.get("/total-balance", paymentController.getTotalBalance);
 
 // Get all payments for a specific client and case
 router.get(

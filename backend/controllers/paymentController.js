@@ -354,6 +354,20 @@ exports.totalPaymentByWeekToYear = catchAsync(async (req, res, next) => {
   });
 });
 
+// get total outstanding balance
+exports.getTotalBalance = catchAsync(async (req, res, next) => {
+  const result = await Payment.aggregate([
+    {
+      $group: { _id: null, totalBalance: { $sum: "$balance" } },
+    },
+  ]);
+
+  res.status(200).json({
+    message: "success",
+    data: result,
+  });
+});
+
 // exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
 //   const { clientId, caseId } = req.params;
 

@@ -33,7 +33,7 @@ const LeaveApplicationDetails = () => {
           {data?.data?.daysApproved}
         </Descriptions.Item>
         <Descriptions.Item label="Employee Name">
-          {data?.data?.employee.fullName}
+          {data?.data?.employee?.fullName}
         </Descriptions.Item>
         <Descriptions.Item label="Start Date">
           {formatDate(data?.data?.startDate ? data?.data?.startDate : null)}
