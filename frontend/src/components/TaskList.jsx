@@ -6,6 +6,7 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import { Table, Modal, Space, Button } from "antd";
 import CreateTaskForm from "../pages/CreateTaskForm";
 import { useDataFetch } from "../hooks/useDataFetch";
+import { RiDeleteBin6Line } from "react-icons/ri";
 
 const TaskList = () => {
   const { tasks, loadingError, errorTasks } = useDataGetterHook();
@@ -13,6 +14,7 @@ const TaskList = () => {
   const { data, loading, error, dataFetcher } = useDataFetch();
 
   const isAdmin = user?.data?.user?.role === "admin";
+  // const { id } = useParams();
 
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
@@ -56,19 +58,22 @@ const TaskList = () => {
           <Button type="link">
             <Link to={`${record?.id}/details`}>Get Details</Link>
           </Button>
-          <Button
-            onClick={() => {
-              Modal.confirm({
-                title: "Are you sure you want to delete this application?",
-                onOk: () => handleDeleteApp(record?.id),
-              });
-            }}
-            type="primary"
-            danger>
-            Delete
-          </Button>
 
-          <TaskReminderForm id={record._id} />
+          {user?.data?.user?._id === record?.assignedBy?._id && (
+            <RiDeleteBin6Line
+              className="text-red-500 text-2xl cursor-pointer hover:text-red-700"
+              onClick={() => {
+                Modal.confirm({
+                  title: "Are you sure you want to delete this application?",
+                  onOk: () => handleDeleteApp(record?.id),
+                });
+              }}
+            />
+          )}
+          {/* Check if the current user is the one who assigned the task for each record */}
+          {user?.data?.user?._id === record?.assignedBy?._id && (
+            <TaskReminderForm id={record._id} />
+          )}
         </Space>
       ),
     },

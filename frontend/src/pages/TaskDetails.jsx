@@ -22,14 +22,16 @@ const TaskDetails = () => {
   );
   const { id } = useParams();
   const { user } = useAuthContext();
-  const task = data?.data._id;
+  const task = data?.data;
 
-  const currentUser = user?.data?.user?._id; //current user id
-  const assignedById = task?.assignedBy && task?.assignedBy?._id; // task assignor id
+  const currentUser = user?.data?.user?._id;
+  const assignedById = task?.assignedBy?._id;
+  const isAssignedBy = currentUser === assignedById;
 
-  const isAssignedBy = currentUser === assignedById; //check if both are the same
+  const isAssignedToCurrentUser = task?.assignedTo?.some(
+    (staff) => staff._id === currentUser
+  );
 
-  console.log("isAs", currentUser, assignedById);
   useEffect(() => {
     dataFetcher(`tasks/${id}`, "GET");
   }, [id]);
@@ -37,17 +39,8 @@ const TaskDetails = () => {
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error.message}</p>;
 
-  // deleteResponse
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
-  // not working as expected yet
   const handleDeleteApp = async (taskId, responseId) => {
-    await dataFetcher(
-      `tasks/${taskId}/response/${responseId}`,
-      "delete",
-      fileHeaders
-    );
+    await dataFetcher(`tasks/${taskId}/response/${responseId}`, "DELETE");
   };
 
   return (
@@ -93,45 +86,42 @@ const TaskDetails = () => {
           {formatDate(task?.dueDate)}
         </Descriptions.Item>
       </Descriptions>
+
       <div className="mt-4">
         <h1 className="text-3xl text-gray-700">Task Attachment</h1>
-        {documents.map((document) => {
-          return (
-            <div
-              key={document._id}
-              className="relative bg-blue-500 m-1 p-4 w-[140px] text-white rounded-md inline-flex items-center">
-              <div className="absolute top-1 right-1">
-                <RiDeleteBin2Line
-                  className="text-red-700 hover:text-red-500 cursor-pointer text-[13px]"
-                  onClick={(event) =>
-                    Modal.confirm({
-                      title: "Are you sure you want to delete this document?",
-                      onOk: () =>
-                        handleDeleteDocument(
-                          event,
-                          `tasks/${task._id}/documents/${document._id}`,
-                          document._id
-                        ),
-                    })
-                  }
-                />
-              </div>
-              <div className="flex-grow">
-                <p className="text-[12px]">{document?.fileName}</p>
-              </div>
-              <FaDownload
-                className="text-white text-[12px] hover:text-gray-300 cursor-pointer ml-2"
-                onClick={(event) =>
-                  handleGeneralDownload(
-                    event,
-                    `${baseURL}/tasks/${task._id}/documents/${document._id}/download`,
-                    document.fileName
-                  )
+        {documents.map((document) => (
+          <div
+            key={document._id}
+            className="relative bg-blue-500 m-1 p-4 w-[140px] text-white rounded-md inline-flex items-center">
+            <div className="absolute top-1 right-1">
+              <RiDeleteBin2Line
+                className="text-red-700 hover:text-red-500 cursor-pointer text-[13px]"
+                onClick={() =>
+                  Modal.confirm({
+                    title: "Are you sure you want to delete this document?",
+                    onOk: () =>
+                      handleDeleteDocument(
+                        `tasks/${task._id}/documents/${document._id}`,
+                        document._id
+                      ),
+                  })
                 }
               />
             </div>
-          );
-        })}
+            <div className="flex-grow">
+              <p className="text-[12px]">{document?.fileName}</p>
+            </div>
+            <FaDownload
+              className="text-white text-[12px] hover:text-gray-300 cursor-pointer ml-2"
+              onClick={() =>
+                handleGeneralDownload(
+                  `${baseURL}/tasks/${task._id}/documents/${document._id}/download`,
+                  document.fileName
+                )
+              }
+            />
+          </div>
+        ))}
       </div>
 
       <Divider />
@@ -150,8 +140,10 @@ const TaskDetails = () => {
 
       <Divider />
 
-      {/* the person sending task should not see this form */}
-      {!isAssignedBy && <TaskResponseForm taskId={task?._id && task?._id} />}
+      {/* ensure only the person to whom task is assigned sees the button */}
+      {!isAssignedBy && isAssignedToCurrentUser && (
+        <TaskResponseForm taskId={task?._id} />
+      )}
 
       <Descriptions title="Task Response" bordered>
         {task?.taskResponse?.length > 0 ? (
@@ -176,17 +168,18 @@ const TaskDetails = () => {
               </Descriptions.Item>
               <Descriptions.Item label="Attached Document">
                 <p
-                  onClick={(event) =>
+                  onClick={() =>
                     handleGeneralDownload(
-                      event,
                       `${baseURL}/tasks/${task._id}/response/${res._id}/download`,
                       "response"
                     )
                   }>
                   Document:
-                  {(res?.doc && (
-                    <FaFile className="text-blue-500 hover:text-blue-600 text-2xl cursor-pointer " />
-                  )) || <p>None Attached</p>}
+                  {res?.doc ? (
+                    <FaFile className="text-blue-500 hover:text-blue-600 text-2xl cursor-pointer" />
+                  ) : (
+                    <p>None Attached</p>
+                  )}
                 </p>
               </Descriptions.Item>
             </div>
