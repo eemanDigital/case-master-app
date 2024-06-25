@@ -3,16 +3,12 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useEffect } from "react";
 import { Button, Spin, Row, Col, Typography, Card, Divider } from "antd";
-import { MdNotificationsActive, MdNotificationsOff } from "react-icons/md";
-import { IoMdTime } from "react-icons/io";
-import moment from "moment"; // time formatter
-import TaskResponse from "./TaskResponse";
 import LeaveBalanceDisplay from "./LeaveBalanceDisplay";
-import TaskResponseForm from "./TaskResponseForm";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { GoLaw } from "react-icons/go";
 import { FaBriefcase, FaUser, FaTasks } from "react-icons/fa";
 import CreateTaskForm from "../pages/CreateTaskForm";
+import Todo from "./Todo";
 
 const { Title, Text } = Typography;
 
@@ -34,50 +30,10 @@ const Dashboard = () => {
 
   const btnStyle = "bg-blue-500 text-white rounded-md";
 
-  // const userTask = data?.data?.task ? (
-  //   data?.data?.task.length > 0 ? (
-  //     data?.data?.task.map((t) => (
-  //       <Card key={t._id} className="mb-4">
-  //         <TaskResponseForm taskId={t._id} />
-  //         <div className="flex items-center justify-between bg-red-800 text-white rounded-md p-2 mb-2">
-  //           {t.reminder?.message ? (
-  //             <div className="flex justify-between gap-3 w-full">
-  //               <span>
-  //                 <MdNotificationsActive className="text-2xl text-white" />{" "}
-  //                 Reminder:{" "}
-  //               </span>
-  //               <span>
-  //                 <IoMdTime className="text-2xl text-white" />{" "}
-  //                 {moment(t.reminder?.timestamp).startOf().fromNow()}
-  //               </span>
-  //               {t.reminder?.message}
-  //             </div>
-  //           ) : (
-  //             <MdNotificationsOff />
-  //           )}
-  //         </div>
-  //         <div className="mt-1">
-  //           <Title level={5}>Task Title</Title>
-  //           <Text className="block mb-2">{t.title}</Text>
-  //           <Link to={`tasks/${t._id}`}>
-  //             <Button className={btnStyle}>Get Detail</Button>
-  //           </Link>
-  //           <TaskResponse task={t} />
-  //         </div>
-  //       </Card>
-  //     ))
-  //   ) : (
-  //     <Text>You currently do not have any tasks</Text>
-  //   )
-  // ) : (
-  //   <Spin tip="Loading task" size="small" className="mt-5">
-  //     <div className="content" />
-  //   </Spin>
-  // );
-
   return (
     <>
       {/* <Title level={1}>Dashboard</Title> */}
+      <Todo />
       <Row>
         <Col>
           <Title level={8}>

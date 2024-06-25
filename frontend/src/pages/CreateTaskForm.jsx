@@ -49,7 +49,7 @@ const CreateTaskForm = () => {
     let values;
     try {
       values = await form.validateFields(); // Validate the form fields
-      console.log("TA", values);
+      // console.log("TA", values);
     } catch (errorInfo) {
       return;
     }
@@ -58,7 +58,7 @@ const CreateTaskForm = () => {
     handleSubmission(result); // Handle the submission after the API Call
   }, [form, handleSubmission, dataFetcher]);
 
-  console.log("TAF", formData);
+  // console.log("TAF", formData);
   return (
     <>
       <Button onClick={showModal} className="bg-green-700 text-white">

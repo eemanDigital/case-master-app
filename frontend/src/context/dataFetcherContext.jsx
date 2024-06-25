@@ -17,6 +17,7 @@ const DataFetcherContext = ({ children }) => {
     invoices: [],
     causeList: [],
     payments: [],
+    todos: [],
     loading: {
       cases: false,
       users: false,
@@ -30,6 +31,7 @@ const DataFetcherContext = ({ children }) => {
       causeList: false,
       payments: false,
       clientsPayments: false,
+      todos: false,
     },
     error: {
       cases: "",
@@ -44,6 +46,7 @@ const DataFetcherContext = ({ children }) => {
       causeList: "",
       payments: "",
       clientPayments: "",
+      todos: "",
     },
   });
 
@@ -104,6 +107,7 @@ const DataFetcherContext = ({ children }) => {
       { endpoint: "reports/upcoming", key: "causeList" },
       { endpoint: "payments", key: "payments" },
       { endpoint: "payments/paymentEachClient", key: "clientPayments" },
+      { endpoint: "todos", key: "todos" },
     ];
 
     endpoints.forEach(({ endpoint, key }) => {

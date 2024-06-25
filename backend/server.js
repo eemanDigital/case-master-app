@@ -14,6 +14,7 @@ const fileRouter = require("./routes/fileRoutes");
 const leaveRouter = require("./routes/leaveRoutes");
 const invoiceRouter = require("./routes/invoiceRoutes");
 const paymentRouter = require("./routes/paymentRoutes");
+const todoRoutes = require("./routes/todoRoutes");
 const notificationRouter = require("./routes/notificationRoutes");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
@@ -97,7 +98,7 @@ app.use("/api/v1/leaves", leaveRouter);
 app.use("/api/v1/invoices", invoiceRouter);
 app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/notifications", notificationRouter);
-
+app.use("/api/v1/todos", todoRoutes);
 //handles non-existing route
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));

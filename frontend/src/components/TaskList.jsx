@@ -92,10 +92,10 @@ const TaskList = () => {
     <div>
       <CreateTaskForm />
 
-      <Link to="upload" className="text-right">
+      {/* <Link to="upload" className="text-right">
         <Button>Attach Document to Task</Button>
       </Link>
-      <h1 className="text-3xl font-bold text-gray-700 mb-7">Assigned Tasks</h1>
+      <h1 className="text-3xl font-bold text-gray-700 mb-7">Assigned Tasks</h1> */}
       <Table
         columns={columns}
         dataSource={
