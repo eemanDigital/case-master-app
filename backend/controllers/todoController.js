@@ -15,7 +15,7 @@ exports.createTodo = catchAsync(async (req, res, next) => {
 });
 
 exports.getTodos = catchAsync(async (req, res, next) => {
-  const todos = await Todo.find();
+  const todos = await Todo.find().sort("dueDate");
   res.status(200).json({
     status: "success",
     results: todos.length,

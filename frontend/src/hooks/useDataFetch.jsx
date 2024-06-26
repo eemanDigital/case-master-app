@@ -1,6 +1,5 @@
 import { useState } from "react";
 import axios from "axios";
-// import { useAuthContext } from "./useAuthContext";
 import { toast } from "react-toastify";
 
 const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
@@ -33,16 +32,6 @@ export const useDataFetch = () => {
         ...customHeaders,
       };
 
-      if (
-        (method === "POST" || method === "PUT" || method === "PATCH") &&
-        customHeaders["Content-Type"] === "multipart/form-data"
-      ) {
-        // If so, create a FormData object and append JSON data to it
-        const formData = new FormData();
-        Object.keys(data).forEach((key) => {
-          formData.append(key, data[key]);
-        });
-      }
       const response = await axios({
         method,
         url,
@@ -64,8 +53,7 @@ export const useDataFetch = () => {
         theme: "light",
       });
 
-      //   localStorage.setItem("user", JSON.stringify(response.data));
-      //   dispatch({ type: "LOGIN", payload: response.data });
+      return response.data;
     } catch (err) {
       setError(err);
 
@@ -82,6 +70,8 @@ export const useDataFetch = () => {
         progress: undefined,
         theme: "light",
       });
+
+      return { error: err };
     } finally {
       setLoading(false);
     }

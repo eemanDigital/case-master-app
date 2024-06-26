@@ -7,21 +7,22 @@ const Todo = () => {
     useModal();
 
   return (
-    <>
+    <div>
       <Button onClick={showModal} className="bg-blue-500 text-white">
         Manage To Dos
       </Button>
       <Modal
-        title="Leave Application Response"
         open={open}
         onOk={handleOk}
+        footer={null}
         // confirmLoading={loading}
-        onCancel={handleCancel}>
+        onCancel={handleCancel}
+        width={800}>
         <div>
           <TodoHeader title="To Do List" />
         </div>
       </Modal>
-    </>
+    </div>
   );
 };
 
