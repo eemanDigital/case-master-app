@@ -11,7 +11,7 @@ exports.createCase = catchAsync(async (req, res, next) => {
 
 exports.getCases = catchAsync(async (req, res, next) => {
   const cases = await Case.find()
-    .populate({ path: "client", select: "firstName secondName -_id -case" })
+    .populate({ path: "client", select: "firstName secondName " })
     .sort({ filingDate: -1 });
   // .populate({
   //   path: "task",

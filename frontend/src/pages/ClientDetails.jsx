@@ -11,7 +11,7 @@ const ClientDetails = () => {
 
   const { dataFetcher, data, loading, error } = useDataFetch();
 
-  console.log("CLIENT", data);
+  // console.log("CLIENT", data);
 
   useEffect(() => {
     dataFetcher(`clients/${id}`, "GET");

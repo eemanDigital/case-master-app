@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Descriptions, Button, Card, Spin, Alert, Modal } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import useModal from "../hooks/useModal";
+
 const PaymentMadeOnCase = ({ clientId, caseId }) => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =

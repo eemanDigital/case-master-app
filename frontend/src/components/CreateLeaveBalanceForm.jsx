@@ -79,7 +79,8 @@ const CreateLeaveBalanceForm = ({ userId }) => {
         open={open}
         // onOk={handleOk}
         confirmLoading={loading}
-        onCancel={handleCancel}>
+        onCancel={handleCancel}
+        footer={null}>
         <section className="flex justify-between gap-8 ">
           <Form
             layout="vertical"
@@ -128,7 +129,7 @@ const CreateLeaveBalanceForm = ({ userId }) => {
 
               <Form.Item>
                 <Button onClick={onSubmit} type="default" htmlType="submit">
-                  Submit
+                  Save
                 </Button>
               </Form.Item>
             </Card>

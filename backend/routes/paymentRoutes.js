@@ -7,6 +7,10 @@ router.post("/", paymentController.createPayment);
 
 router.get("/paymentEachClient", paymentController.paymentEachClient);
 router.get("/total-balance", paymentController.getTotalBalance);
+router.get(
+  "/totalWeekPaymentsToYear",
+  paymentController.totalPaymentByWeekToYear
+);
 
 // Get all payments for a specific client and case
 router.get(
@@ -23,14 +27,11 @@ router.get(
   paymentController.totalPaymentClient
 );
 
-router.get("/totalWeekToYear", paymentController.totalPaymentByWeekToYear);
 // Get a specific payment by ID
 router.get("/:paymentId", paymentController.getPayment);
-
 router.get("/", paymentController.getAllPayments);
 // Update a payment by ID
 router.put("/:paymentId", paymentController.updatePayment);
-
 // Delete a payment by ID
 router.delete("/:paymentId", paymentController.deletePayment);
 

@@ -25,7 +25,6 @@ const router = express.Router();
 // const app = express();
 
 router.use(protect);
-router.get("/:parentId/documents/:documentId/download", downloadDocument(Case));
 router.get("/case-status", getCasesByGroup("$caseStatus", Case));
 router.get("/cases-by-court", getCasesByGroup("$courtName", Case));
 router.get("/cases-by-natureOfCase", getCasesByGroup("$natureOfCase", Case));
@@ -36,8 +35,8 @@ router.get("/cases-by-client", getCasesByClient);
 router.get("/cases-by-accountOfficer", getCasesByAccountOfficer);
 router.get("/monthly-new-cases", getMonthlyNewCases);
 router.get("/yearly-new-cases", getYearlyNewCases);
+router.get("/:parentId/documents/:documentId/download", downloadDocument(Case));
 router.delete("/:parentId/documents/:documentId", deleteDocument(Case));
-
 router.route("/").get(getCases).post(createCase);
 // .post(createCase);
 

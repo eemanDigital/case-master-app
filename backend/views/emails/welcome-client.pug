@@ -1,0 +1,63 @@
+doctype html
+html
+  head
+    style.
+      body {
+        font-family: sans-serif;
+        margin: 0;
+        padding: 20px;
+        background-color: #f4f4f4;
+        color: #333;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      }
+      .header {
+        background: #0055a5;
+        color: white;
+        padding: 10px;
+        text-align: center;
+        border-radius: 8px 8px 0 0;
+      }
+      .content {
+        line-height: 1.6;
+        margin-top: 20px;
+      }
+      .footer {
+        margin-top: 20px;
+        text-align: center;
+        font-size: 0.9em;
+        color: #666;
+      }
+      .button {
+        display: inline-block;
+        background: #0055a5;
+        color: white;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 5px;
+        margin-top: 20px;
+      }
+  body
+    .container
+      table
+        tr.header
+          td
+            h1 Welcome to Our Law Firm Case Management App
+        tr.content
+          td
+            p Dear #{firstName},
+            p We are thrilled to have you on board. Your account has been successfully created and you are now part of a community that values efficient and effective legal case management.
+            p To get started, please log in to your account where you can manage your cases, communicate with your legal team, and access important documents anytime, anywhere.
+            a.button(href="#{url}") Log in to Your Account
+            p If you have any questions or need further assistance, feel free to contact our support team.
+            p Welcome aboard,
+            p The Team at Our Law Firm
+        tr.footer
+          td
+            p This is an automated message, please do not reply directly to this email.

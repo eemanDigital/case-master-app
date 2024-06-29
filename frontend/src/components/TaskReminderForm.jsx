@@ -1,7 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { useParams } from "react-router-dom";
-import { taskPriorityOptions } from "../data/options";
+
 import {
   Button,
   Input,
@@ -9,15 +8,7 @@ import {
   Modal,
   //   Space,
   Card,
-  Divider,
-  Typography,
-  Spin,
-  Select,
-  DatePicker,
 } from "antd";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { SelectInputs } from "./DynamicInputs";
-import TaskList from "./TaskList";
 
 const TaskReminderForm = ({ id }) => {
   //   const { id } = useParams();
@@ -82,7 +73,7 @@ const TaskReminderForm = ({ id }) => {
   // console.log("FORM", formData);
   return (
     <>
-      <Button onClick={showModal} className="bg-green-700 text-white">
+      <Button onClick={showModal} className="bg-blue-500 text-white">
         Send a reminder
       </Button>
       <Modal

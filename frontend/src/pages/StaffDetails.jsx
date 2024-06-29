@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
 import avatar from "../assets/avatar.png";
 import { formatDate } from "../utils/formatDate";
-import EditUserProfile from "./EditUserProfile";
+// import EditUserProfile from "./EditUserProfile";
 import UpdateUserPositionAndRole from "./UpdateUserPositionAndRole";
 
 const StaffDetails = () => {

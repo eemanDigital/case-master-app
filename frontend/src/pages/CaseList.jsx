@@ -3,13 +3,14 @@ import { Button, Card, Typography, Space, Pagination, Row, Col } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { ToastContainer } from "react-toastify";
 import Spinner from "../components/Spinner";
+
 // import Button from "../components/Button";
 import { useState } from "react";
 
 const { Title, Text } = Typography;
 
 const CaseList = () => {
-  const { cases, loadingCases, errorCases } = useDataGetterHook();
+  const { cases, loading, error } = useDataGetterHook();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10); // Change this to your desired items per page
 
@@ -54,13 +55,13 @@ const CaseList = () => {
 
   return (
     <section>
-      {loadingCases && <Spinner />}
+      {loading.cases && <Spinner />}
 
       <Title level={1} className="text-center" style={{ marginBottom: 24 }}>
         Cases
       </Title>
 
-      <Row gutter={[16, 16]}>{!errorCases && casesData}</Row>
+      <Row gutter={[16, 16]}>{!error.cases && casesData}</Row>
 
       <Row justify="center" style={{ marginTop: 24 }}>
         <Pagination

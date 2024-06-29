@@ -1,10 +1,43 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import { Table, Pagination } from "antd";
-import { FaClock, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
+import { Table, Pagination, Modal, notification } from "antd";
+import { FaCheckCircle, FaTimesCircle, FaTrash } from "react-icons/fa";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
+import useDelete from "../hooks/useDelete";
+import useUpdate from "../hooks/useUpdate";
+
 const TodoTask = ({ tasks }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+
+  // Using tasks as the initial docData
+  const { handleDeleteDocument, documents, setDocuments } = useDelete(
+    tasks,
+    "tasks"
+  );
+  const { handleUpdate } = useUpdate();
+
+  useEffect(() => {
+    // Ensure documents are set initially from tasks
+    if (tasks) {
+      setDocuments(tasks);
+    }
+  }, [tasks, setDocuments]);
+
+  const handleDoubleClick = (record) => {
+    const updatedTask = { ...record, isCompleted: !record.isCompleted };
+
+    // Optimistically update the UI
+    const updatedDocuments = documents.map((doc) =>
+      doc._id === record._id ? updatedTask : doc
+    );
+    setDocuments(updatedDocuments);
+
+    // Update the backend
+    handleUpdate(`todos/${record._id}`, {
+      isCompleted: updatedTask.isCompleted,
+    });
+  };
 
   const columns = [
     {
@@ -40,27 +73,51 @@ const TodoTask = ({ tasks }) => {
           <FaTimesCircle className="text-red-500" />
         ),
     },
-    // Newly added columns
     {
       title: "Created At",
       dataIndex: "createdAt",
       key: "createdAt",
-      render: (createdAt) => new Date(createdAt).toLocaleDateString(),
+      render: (createdAt) => (
+        <small className=" font-bold">
+          {new Date(createdAt).toLocaleString()}
+        </small>
+      ),
     },
     {
       title: "Due Date",
       dataIndex: "dueDate",
       key: "dueDate",
       render: (dueDate) =>
-        dueDate ? new Date(dueDate).toLocaleDateString() : "No due date",
+        dueDate ? (
+          <small className=" font-bold">
+            {new Date(dueDate).toLocaleString()}
+          </small>
+        ) : (
+          "No due date"
+        ),
     },
     {
       title: "Actions",
       key: "actions",
       render: (_, record) => (
         <div className="flex space-x-2">
-          {/* <button className="text-blue-500 hover:text-blue-700">Edit</button> */}
-          <button className="text-red-500 hover:text-red-700">Delete</button>
+          <button
+            className="text-red-500 hover:text-red-700"
+            onClick={() =>
+              Modal.confirm({
+                title: "Are you sure you want to delete this task?",
+                icon: <ExclamationCircleOutlined />,
+                content: "This action cannot be undone",
+                okText: "Yes",
+                okType: "danger",
+                cancelText: "No",
+                onOk() {
+                  handleDeleteDocument(`todos/${record._id}`, record._id);
+                },
+              })
+            }>
+            <FaTrash />
+          </button>
         </div>
       ),
     },
@@ -73,18 +130,22 @@ const TodoTask = ({ tasks }) => {
   return (
     <div>
       <Table
-        dataSource={tasks.slice(
+        dataSource={documents.slice(
           (currentPage - 1) * pageSize,
           currentPage * pageSize
         )}
         columns={columns}
         pagination={false}
-        rowKey="id" // Assuming each task has a unique 'id' field
+        rowKey="_id" // Assuming each task has a unique '_id' field
+        onRow={(record) => ({
+          onDoubleClick: () => handleDoubleClick(record),
+          className: "hover:bg-blue-100",
+        })}
       />
       <Pagination
         current={currentPage}
         onChange={handlePageChange}
-        total={tasks.length}
+        total={documents.length}
         pageSize={pageSize}
         showSizeChanger={false}
       />

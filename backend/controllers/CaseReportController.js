@@ -82,6 +82,10 @@ exports.deleteReport = catchAsync(async (req, res, next) => {
 // get Reports for week and month
 
 exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
+  // get causeList fot the current date
+  const startOfToday = moment().startOf("day");
+  const endOfToday = moment().endOf("day");
+
   // Get the start and end of the current week
   const startOfWeek = moment().startOf("isoWeek"); // Start of the current ISO week
   const endOfWeek = moment().endOf("isoWeek"); // End of the current ISO week
@@ -97,6 +101,16 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
   // Get the start and end of the current year
   const startOfYear = moment().startOf("year");
   const endOfYear = moment().endOf("year");
+
+  // Query for reports coming up today
+  const reportsToday = await Report.find({
+    adjournedDate: {
+      $gte: startOfToday.toDate(),
+      $lte: endOfToday.toDate(),
+    },
+  })
+    .sort("adjournedDate")
+    .select("caseReported adjournedFor adjournedDate");
 
   // Get reports for the current week
   const reportsThisWeek = await Report.find({
@@ -141,6 +155,8 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
   res.status(200).json({
     message: "success",
     data: {
+      reportsToday,
+      todayResult: reportsToday.length,
       weekResults: reportsThisWeek.length,
       nextWeekResults: reportsNextWeek.length,
       monthResults: reportsThisMonth.length,
@@ -177,5 +193,116 @@ exports.generateReportPdf = catchAsync(async (req, res, next) => {
     res,
     "../views/report.pug",
     `../output/${Math.random()}_report.pdf`
+  );
+});
+
+exports.generateCauseListWeek = catchAsync(async (req, res, next) => {
+  // Get the start and end of the current week
+  const startOfWeek = moment().startOf("isoWeek"); // Start of the current ISO week
+  const endOfWeek = moment().endOf("isoWeek"); // End of the current ISO week
+
+  const reports = await Report.find({
+    adjournedDate: {
+      $gte: startOfWeek.toDate(),
+      $lt: endOfWeek.toDate(),
+    },
+  })
+    .sort("adjournedDate")
+    .select("caseReported adjournedFor adjournedDate");
+
+  if (!reports || reports.length === 0) {
+    return next(new AppError("No reports found", 404));
+  }
+
+  // Map through reports to ensure all fields are properly set
+  const safeReports = reports.map((report) => ({
+    caseReported: report.caseReported || null,
+    date: report.date || Date.now(),
+    adjournedFor: report.adjournedFor || "",
+    adjournedDate: report.adjournedDate || Date.now(),
+    lawyersInCourt: report.lawyersInCourt || [],
+  }));
+
+  // Generate PDF handler function
+  generatePdf(
+    { reports: safeReports },
+    res,
+    "../views/causeListWeek.pug",
+    `../output/${Math.random()}_causeList.pdf`
+  );
+});
+exports.generateCauseListNextWeek = catchAsync(async (req, res, next) => {
+  // Get the start and end of the next week
+  const startOfNextWeek = moment().add(1, "weeks").startOf("isoWeek"); // Start of next ISO week
+  const endOfNextWeek = moment().add(1, "weeks").endOf("isoWeek"); // End of next ISO week
+
+  // Get reports for the next week
+  const reports = await Report.find({
+    adjournedDate: {
+      $gte: startOfNextWeek.toDate(),
+      $lt: endOfNextWeek.toDate(),
+    },
+  })
+    .sort("adjournedDate")
+    .select("caseReported adjournedFor adjournedDate");
+
+  if (!reports || reports.length === 0) {
+    return next(new AppError("No reports found", 404));
+  }
+
+  // Map through reports to ensure all fields are properly set
+  const safeReports = reports.map((report) => ({
+    caseReported: report.caseReported || null,
+    date: report.date || Date.now(),
+    adjournedFor: report.adjournedFor || "",
+    adjournedDate: report.adjournedDate || Date.now(),
+    lawyersInCourt: report.lawyersInCourt || [],
+  }));
+
+  // Generate PDF handler function
+  generatePdf(
+    { reports: safeReports },
+    res,
+    "../views/causeListNextWeek.pug",
+    `../output/${Math.random()}_causeList.pdf`
+  );
+});
+
+// download cause list for the month
+exports.generateCauseListMonth = catchAsync(async (req, res, next) => {
+  // Get the start and end of the current week
+  // Get the start and end of the current month
+  const startOfMonth = moment().startOf("month");
+  const endOfMonth = moment().endOf("month");
+
+  // Get reports for the current month
+  const reports = await Report.find({
+    adjournedDate: {
+      $gte: startOfMonth.toDate(),
+      $lt: endOfMonth.toDate(),
+    },
+  })
+    .sort("adjournedDate")
+    .select("caseReported adjournedFor adjournedDate");
+
+  if (!reports || reports.length === 0) {
+    return next(new AppError("No reports found", 404));
+  }
+
+  // Map through reports to ensure all fields are properly set
+  const safeReports = reports.map((report) => ({
+    caseReported: report.caseReported || null,
+    date: report.date || Date.now(),
+    adjournedFor: report.adjournedFor || "",
+    adjournedDate: report.adjournedDate || Date.now(),
+    lawyersInCourt: report.lawyersInCourt || [],
+  }));
+
+  // Generate PDF handler function
+  generatePdf(
+    { reports: safeReports },
+    res,
+    "../views/causeListMonth.pug",
+    `../output/${Math.random()}_causeList.pdf`
   );
 });

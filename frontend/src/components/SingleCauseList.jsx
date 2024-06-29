@@ -1,14 +1,20 @@
 import { useState } from "react";
-import { Table, Card } from "antd";
+import { Table, Card, Button } from "antd";
 import { formatDate } from "../utils/formatDate";
 import LawyersInCourtForm from "../pages/LawyersInCourtForm";
+import { useAdminHook } from "../hooks/useAdminHook";
 const SingleCauseList = ({
   causeListData,
   loadingCauseList,
   errorCauseList,
   result,
+  onDownloadCauseList,
+  title,
+  showDownloadBtn,
+  h1Style,
 }) => {
   const [selectedReportId, setSelectedReportId] = useState(null);
+  const { isSuperOrAdmin } = useAdminHook();
 
   const onRowClick = (record, rowIndex) => {
     return {
@@ -53,6 +59,7 @@ const SingleCauseList = ({
     },
   ];
 
+  // causelist data from case report
   const data =
     causeListData &&
     causeListData.map((report, index) => ({
@@ -66,18 +73,29 @@ const SingleCauseList = ({
   return (
     <>
       <Card>
-        <h1 className="text-3xl font-bold text-center text-blue-500 leading-tight  tracking-wide">
-          Number of Cases: {result}
-        </h1>
+        {title || (
+          <h1
+            className={
+              h1Style ||
+              `text-3xl font-bold text-center text-gray-500 leading-tight  tracking-wide`
+            }>
+            Number of Cases: {result}
+          </h1>
+        )}
       </Card>
       <div>
-        {selectedReportId && <LawyersInCourtForm reportId={selectedReportId} />}
+        {selectedReportId && isSuperOrAdmin && (
+          <LawyersInCourtForm reportId={selectedReportId} />
+        )}
         <Table
           onRow={onRowClick}
           columns={columns}
           dataSource={data}
           loading={loadingCauseList}
         />
+        {showDownloadBtn && (
+          <Button onClick={onDownloadCauseList}>Download</Button>
+        )}
       </div>
     </>
   );

@@ -779,7 +779,7 @@ const UpdateCase = () => {
               name="accountOfficer"
               label="Account Officer"
               className="w-[200px]"
-              initialValue={formData?.accountOfficer.name}>
+              initialValue={formData?.accountOfficer?.name}>
               <Select
                 // noStyle
                 mode="multiple"

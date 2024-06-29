@@ -22,7 +22,7 @@ import { methodOptions } from "../data/options";
 
 import useModal from "../hooks/useModal";
 
-const { TextArea } = Input;
+// const { TextArea } = Input;
 
 // const methodOptions = [
 //   { label: "Credit Card", value: "credit_card" },
@@ -76,11 +76,12 @@ const CreatePaymentForm = () => {
         Add Payment
       </Button>
       <Modal
-        title="Create Payment Form"
+        // title="Create Payment Form"
         open={open}
         onOk={handleOk}
         // confirmLoading={loading}
-        onCancel={handleCancel}>
+        onCancel={handleCancel}
+        footer={null}>
         <Form layout="vertical" form={form} name="payment form">
           <Divider orientation="left" orientationMargin="0">
             <Typography.Title level={4}>Payment Form</Typography.Title>
@@ -203,7 +204,7 @@ const CreatePaymentForm = () => {
           <Divider />
           <Form.Item>
             <Button onClick={onSubmit} type="default" htmlType="submit">
-              Submit
+              Save
             </Button>
           </Form.Item>
         </Form>

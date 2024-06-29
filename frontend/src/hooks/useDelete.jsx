@@ -10,11 +10,10 @@ const useDelete = (docData, storageName) => {
   useEffect(() => {
     if (docData) {
       localStorage.setItem(storageName, JSON.stringify(docData));
-      setDocuments(docData?.documents || []);
+      setDocuments(docData);
     }
   }, [docData, storageName]);
 
-  // Retrieve token from browser cookies
   const token = document.cookie
     .split("; ")
     .find((row) => row.startsWith("jwt="))
@@ -29,7 +28,6 @@ const useDelete = (docData, storageName) => {
 
   const handleDeleteDocument = async (event, url, documentId) => {
     event.preventDefault();
-    // Optimistically update the state
     const updatedDocuments = documents.filter((doc) => doc._id !== documentId);
     setDocuments(updatedDocuments);
 
@@ -40,7 +38,6 @@ const useDelete = (docData, storageName) => {
         description: "The document was deleted successfully.",
       });
     } catch (err) {
-      // Revert the state if the API call fails
       setDocuments((prevDocs) => [
         ...prevDocs,
         documents.find((doc) => doc._id === documentId),

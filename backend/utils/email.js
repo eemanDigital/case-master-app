@@ -63,6 +63,10 @@ module.exports = class Email {
     await this.send("welcome", "Welcome to CaseMaster");
   }
 
+  async sendWelcomeClient() {
+    await this.send("welcome-client", "Thank for engaging our services");
+  }
+
   // method to allow user reset password after forgetting one
   async sendPasswordReset() {
     await this.send(

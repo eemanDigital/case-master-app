@@ -94,7 +94,9 @@ const LawyersInCourtForm = ({ reportId }) => {
         open={open}
         onOk={handleOk}
         // confirmLoading={}
-        onCancel={handleCancel}>
+        onCancel={handleCancel}
+        width={400}
+        footer={null}>
         <Form
           layout="vertical"
           form={form}
@@ -102,7 +104,7 @@ const LawyersInCourtForm = ({ reportId }) => {
           // autoComplete="off"
           className="flex  justify-center">
           {/* <h1 className="text-4xl">Case Report</h1> */}
-          <Card bordered={false} style={{ width: 700 }}>
+          <Card bordered={false}>
             <div>
               <Form.Item
                 name="lawyersInCourt"
@@ -123,7 +125,7 @@ const LawyersInCourtForm = ({ reportId }) => {
             </div>
             <Form.Item>
               <Button onClick={onSubmit} type="default" htmlType="submit">
-                Submit
+                Save
               </Button>
             </Form.Item>
           </Card>

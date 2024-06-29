@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Table, Modal, Space, Button, Card } from "antd";
+import { Table, Modal, Space, Button } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";

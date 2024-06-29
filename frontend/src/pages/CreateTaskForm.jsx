@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { taskPriorityOptions } from "./../data/options";
 import {
@@ -68,6 +68,7 @@ const CreateTaskForm = () => {
         title="Assign Task"
         open={open}
         onOk={handleOk}
+        footer={null}
         // confirmLoading={}
         onCancel={handleCancel}>
         <section className="flex justify-between gap-8 ">
@@ -179,7 +180,7 @@ const CreateTaskForm = () => {
 
               <Form.Item>
                 <Button onClick={onSubmit} type="default" htmlType="submit">
-                  Submit
+                  Save
                 </Button>
               </Form.Item>
             </Card>

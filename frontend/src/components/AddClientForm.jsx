@@ -19,6 +19,8 @@ const AddClientForm = () => {
   const [inputValue, setInputValue] = useState({
     firstName: "",
     secondName: "",
+    password: "",
+    passwordConfirm: "",
     email: "",
     address: "",
     dob: null,
@@ -63,7 +65,7 @@ const AddClientForm = () => {
 
     try {
       // Call fetchData with endpoint, method, payload, and any additional arguments
-      await dataFetcher("clients", "post", inputValue);
+      await dataFetcher("clients/signup", "post", inputValue);
     } catch (err) {
       console.log(err);
     }
@@ -140,7 +142,6 @@ const AddClientForm = () => {
               onChange={handleChange}
             />
           </div>
-
           <div>
             <Input
               type="email"
@@ -151,8 +152,29 @@ const AddClientForm = () => {
               name="email"
               onChange={handleChange}
             />
+          </div>{" "}
+          <div>
+            <Input
+              type="password"
+              label="Password"
+              placeholder="*******"
+              htmlFor="Password"
+              value={inputValue.password}
+              name="password"
+              onChange={handleChange}
+            />
           </div>
-
+          <div>
+            <Input
+              type="password"
+              label="Confirm Password"
+              placeholder="*******"
+              htmlFor="confirm password"
+              value={inputValue.passwordConfirm}
+              name="passwordConfirm"
+              onChange={handleChange}
+            />
+          </div>
           <div>
             <Input
               type="Date"
@@ -164,7 +186,6 @@ const AddClientForm = () => {
               onChange={handleChange}
             />
           </div>
-
           <Input
             type="text"
             label="Phone Contact"
@@ -174,7 +195,6 @@ const AddClientForm = () => {
             name="phone"
             onChange={handleChange}
           />
-
           <div>
             <Input
               type="text"
@@ -186,9 +206,7 @@ const AddClientForm = () => {
               onChange={handleChange}
             />
           </div>
-
           {casesSelectField}
-
           <div className="flex items-center space-x-2 m-4">
             <label
               htmlFor="active"
@@ -204,7 +222,6 @@ const AddClientForm = () => {
               id="active"
             />
           </div>
-
           <div className="flex flex-col sm:flex-row justify-between items-center">
             <button onClick={handleClick}>Add Client</button>
           </div>

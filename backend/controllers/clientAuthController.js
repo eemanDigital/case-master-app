@@ -4,18 +4,16 @@ const { promisify } = require("util");
 const catchAsync = require("../utils/catchAsync");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const User = require("../models/userModel");
+const Client = require("../models/clientModel");
 // const Token = require("../models/tokenModel");
 const createSendToken = require("../utils/handleSendToken");
 const Email = require("../utils/email");
 
 // ///// function to implement user signup
 exports.signup = catchAsync(async (req, res, next) => {
-  const { email, password, passwordConfirm, firstName, lastName } = req.body;
-  // console.log(req.originalUrl);
-  // console.log(req.baseUrl);
+  const { email, password, passwordConfirm, firstName, secondName } = req.body;
 
-  if (!email || !password || !firstName || !lastName) {
+  if (!email || !password || !firstName) {
     return next(new AppError("Required fields must be fielded", 400));
   }
 
@@ -25,46 +23,32 @@ exports.signup = catchAsync(async (req, res, next) => {
     );
   }
 
-  let existingEmail = await User.findOne({ email });
+  let existingEmail = await Client.findOne({ email });
 
   if (existingEmail) {
-    return next(new AppError("email already exist", 400));
+    return next(new AppError("Email already exists", 400));
   }
 
-  // extract file
-  const filename = req.file ? req.file.filename : null;
-  // console.log("FILENAME", filename);
-
-  const user = await User.create({
-    firstName: req.body.firstName,
-    lastName: req.body.lastName,
-    middleName: req.body.middleName,
-    email: req.body.email,
-    password: req.body.password,
-    passwordConfirm: req.body.passwordConfirm,
-    photo: filename,
+  const clientUser = await Client.create({
+    firstName,
+    secondName,
+    email,
+    password,
+    passwordConfirm,
     address: req.body.address,
-    role: req.body.role,
-    gender: req.body.gender,
-    bio: req.body.bio,
-    position: req.body.position,
-    annualLeaveEntitled: req.body.annualLeaveEntitled,
     phone: req.body.phone,
-    yearOfCall: req.body.yearOfCall,
-    otherPosition: req.body.otherPosition,
-    practiceArea: req.body.practiceArea,
-    universityAttended: req.body.universityAttended,
-    lawSchoolAttended: req.body.lawSchoolAttended,
+    case: req.body.case,
+    active: req.body.active,
   });
 
-  // url for to navigate
-  // const url = `${req.protocol}://${req.get('host')/login}`
+  // URL for navigation
   const url = "http://localhost:5173/login";
-  // send welcome message to user
-  await new Email(user, url).sendWelcome();
 
-  // const user = await User.create(req.body);
-  createSendToken(user, 201, res);
+  // Send welcome message to user
+  await new Email(clientUser, url).sendWelcomeClient();
+  console.log(clientUser);
+
+  createSendToken(clientUser, 201, res);
 });
 
 ///// function to handle login
@@ -78,14 +62,14 @@ exports.login = catchAsync(async (req, res, next) => {
     next(new AppError("Provide email and password", 400));
   }
   //2) compare email and password with data in db
-  let user = await User.findOne({ email }).select("+password");
+  let user = await Client.findOne({ email }).select("+password");
 
   if (!user || !(await bcrypt.compare(password, user.password))) {
     return next(new AppError("Incorrect email or password", 401));
   }
   // console.log("USER", user);
 
-  createSendToken(user, 200, res);
+  createSendToken(clientUser, 200, res);
 });
 
 ///PROTECT HANDLER FUNCTION
@@ -108,7 +92,7 @@ exports.protect = catchAsync(async (req, res, next) => {
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
   //3) check if user still exist
-  const currentUser = await User.findById(decoded.id);
+  const currentUser = await Client.findById(decoded.id);
   if (!currentUser) {
     return next(new AppError("User no longer exist for this token", 401));
   }
@@ -122,26 +106,11 @@ exports.protect = catchAsync(async (req, res, next) => {
   }
 
   //5) give user access
-  req.user = currentUser;
+  req.ClientUser = currentUser;
   // console.log("USER", req.user);
 
   next();
 });
-
-//Middleware to implement restriction by role
-exports.restrictTo = (...roles) => {
-  // console.log("ROLES", ...roles);
-  return (req, res, next) => {
-    if (!roles.includes(req.user?.role)) {
-      // console.log("ROLE", req.user);
-      return next(
-        new AppError("You do not have permission to perform this action", 403)
-      );
-    }
-
-    next();
-  };
-};
 
 // CHECK LOGIN STATUS
 exports.isLoggedIn = async (req, res, next) => {
@@ -157,7 +126,7 @@ exports.isLoggedIn = async (req, res, next) => {
       process.env.JWT_SECRET
     );
     // 2) Check if user still exists
-    const currentUser = await User.findById(decoded.id);
+    const currentUser = await Client.findById(decoded.id);
     if (!currentUser) {
       return next();
     }
@@ -190,7 +159,7 @@ exports.logout = (req, res, next) => {
 // CHANGE PASSWORD HANDLER
 exports.updatePassword = catchAsync(async (req, res, next) => {
   // 1) Get user from collection
-  const user = await User.findById(req.user.id).select("+password");
+  const user = await Client.findById(req.user.id).select("+password");
 
   // 2) Check if POSTed current password is correct
   if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
@@ -204,18 +173,18 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
   // User.findByIdAndUpdate will NOT work as intended!
 
   // 4) Log user in, send JWT
-  createSendToken(user, 200, res);
+  createSendToken(clientUser, 200, res);
 });
 
 exports.forgotPassword = catchAsync(async (req, res, next) => {
   // 1) Get user based on POSTed email
-  const user = await User.findOne({ email: req.body.email });
+  const user = await Client.findOne({ email: req.body.email });
   if (!user) {
     return next(new AppError("There is no user with email address.", 404));
   }
 
   // 2) Generate the random reset token
-  const resetToken = user.createPasswordResetToken();
+  const resetToken = clientUser.createPasswordResetToken();
   await user.save({ validateBeforeSave: false });
 
   // 3) Send it to user's email
@@ -228,7 +197,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     const resetURL = `http://localhost:5173/restPassword/${resetToken}`;
 
     // call the reset password function to send mail
-    await new Email(user, resetURL).sendPasswordReset();
+    await new Email(clientUser, resetURL).sendPasswordReset();
 
     res.status(200).json({
       status: "success",
@@ -253,7 +222,7 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
     .update(req.params.token)
     .digest("hex");
 
-  const user = await User.findOne({
+  const user = await Client.findOne({
     passwordResetToken: hashedToken,
     passwordResetExpires: { $gt: Date.now() },
   });
@@ -270,5 +239,5 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
 
   // 3) Update changedPasswordAt property for the user
   // 4) Log the user in, send JWT
-  createSendToken(user, 200, res);
+  createSendToken(clientUser, 200, res);
 });

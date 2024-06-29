@@ -6,22 +6,39 @@ const {
   updateClient,
   deleteClient,
 } = require("../controllers/clientController");
+const {
+  signup,
+  forgotPassword,
+  resetPassword,
+  logout,
+  isLoggedIn,
+  updatePassword,
+  login,
+} = require("../controllers/clientAuthController");
 
-const clientRouter = express.Router();
+const router = express.Router();
+
+router.post("/signup", signup);
+router.post("/login", login);
+router.post("/forgotpassword", forgotPassword);
+router.patch("/resetpassword/:token", resetPassword);
+router.get("/logout", logout);
+router.get("/loggedIn", isLoggedIn);
+router.patch("/changepassword", updatePassword);
 
 // Route to get all clients
-clientRouter.get("/", getClients);
+router.get("/", getClients);
 
 // Route to create a new client
-clientRouter.post("/", createClient);
+router.post("/", createClient);
 
 // Route to get a specific client by ID
-clientRouter.get("/:id", getClient);
+router.get("/:id", getClient);
 
 // Route to update a specific client by ID
-clientRouter.patch("/:id", updateClient);
+router.patch("/:id", updateClient);
 
 // Route to delete a specific client by ID
-clientRouter.delete("/:id", deleteClient);
+router.delete("/:id", deleteClient);
 
-module.exports = clientRouter;
+module.exports = router;

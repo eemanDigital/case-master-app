@@ -1,25 +1,14 @@
 import { useState } from "react";
-// import MonthCauseList from "../pages/MonthCauseList";
-// import NextWeekCauseList from "../pages/NextWeekCauseList";
-// import YearCauseList from "../pages/YearCauseList";
-// import CurrentCauseList from "../pages/CurrentCauseList";
 import SingleCauseList from "./SingleCauseList";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import SwitchButton from "./SwitchButton";
+import { handleDownload } from "../utils/downloadHandler";
 
 export const CauseList = () => {
   const [selectedReport, setSelectedReport] = useState("currentWeek");
-  const { causeList, loadingCauseList, errorCauseList } = useDataGetterHook();
+  const { causeList, loading, error } = useDataGetterHook();
 
-  //   causeList?.data.reportsNextMonth
-  //   causeList.data?.reportsThisWeek
-  //   causeList.data?.reportsNextWeek
-  //   causeList.data?.reportsYear
-
-  //   "weekResults": 1,
-  //         "nextWeekResults": 2,
-  //         "monthResults": 4,
-  //         "yearResults": 5
+  const downloadURL = import.meta.env.VITE_BASE_URL;
 
   const renderReport = () => {
     switch (selectedReport) {
@@ -27,34 +16,59 @@ export const CauseList = () => {
         return (
           <SingleCauseList
             causeListData={causeList.data?.reportsThisWeek}
-            loadingCauseList={loadingCauseList}
+            loadingCauseList={loading.causeList}
+            errorCauseList={error.causeList}
             result={causeList.data?.weekResults}
+            showDownloadBtn={true}
+            onDownloadCauseList={(event) =>
+              handleDownload(
+                event,
+                `${downloadURL}/reports/pdf/causeList/week`,
+                "causeList.pdf"
+              )
+            }
           />
         );
       case "nextWeek":
         return (
           <SingleCauseList
             causeListData={causeList.data?.reportsNextWeek}
-            loadingCauseList={loadingCauseList}
-            errorCauseList={errorCauseList}
+            loadingCauseList={loading.causeList}
+            errorCauseList={error.causeList}
             result={causeList.data?.nextWeekResults}
+            showDownloadBtn={true}
+            onDownloadCauseList={(event) =>
+              handleDownload(
+                event,
+                `${downloadURL}/reports/pdf/causeList/next-week`,
+                "causeList.pdf"
+              )
+            }
           />
         );
       case "month":
         return (
           <SingleCauseList
             causeListData={causeList?.data.reportsThisMonth}
-            errorCauseList={errorCauseList}
-            loadingCauseList={loadingCauseList}
+            loadingCauseList={loading.causeList}
+            errorCauseList={error.causeList}
             result={causeList.data?.monthResults}
+            showDownloadBtn={true}
+            onDownloadCauseList={(event) =>
+              handleDownload(
+                event,
+                `${downloadURL}/reports/pdf/causeList/month`,
+                "causeList.pdf"
+              )
+            }
           />
         );
       case "year":
         return (
           <SingleCauseList
             causeListData={causeList.data?.reportsThisYear}
-            errorCauseList={errorCauseList}
-            loadingCauseList={loadingCauseList}
+            loadingCauseList={loading.causeList}
+            errorCauseList={error.causeList}
             result={causeList.data?.yearResults}
           />
         );
@@ -62,8 +76,8 @@ export const CauseList = () => {
         return (
           <SingleCauseList
             causeListData={causeList.data?.reportsThisWeek}
-            errorCauseList={errorCauseList}
-            loadingCauseList={loadingCauseList}
+            loadingCauseList={loading.causeList}
+            errorCauseList={error.causeList}
           />
         );
     }

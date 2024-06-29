@@ -3,7 +3,7 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { Descriptions, Button, Card, Spin, Alert, Row, Col } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
-import CreatePaymentForm from "./CreatePaymentForm";
+// import CreatePaymentForm from "./CreatePaymentForm";
 
 const PaymentDetails = () => {
   const { id } = useParams();
