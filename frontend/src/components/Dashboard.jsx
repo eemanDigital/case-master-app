@@ -1,8 +1,8 @@
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { useEffect } from "react";
-import { Button, Spin, Row, Col, Typography, Card, Divider } from "antd";
+import { Button, Empty, Row, Col, Typography, Card, Divider } from "antd";
 import LeaveBalanceDisplay from "./LeaveBalanceDisplay";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -14,18 +14,36 @@ import SingleCauseList from "./SingleCauseList";
 import CasesCharts from "./Charts";
 import AccountOfficerCharts from "./AccountOfficerCharts";
 import CaseCountsByPeriodChart from "./CaseCountsByPeriodChart";
+import TotalPaymentCharts from "./TotalPaymentCharts";
+import MonthlyPaymentsChart from "./MonthlyPaymentsChart";
 
 const { Title, Text } = Typography;
 
 const Dashboard = () => {
   const { user } = useAuthContext();
   const userId = user?.data?.user?._id;
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(new Date().getMonth() + 1);
+
   const {
-    data: fetchedData,
-    loading: fetchLoading,
-    error: fetchError,
-    dataFetcher,
+    data: getUserData,
+    loading: loadUserData,
+    error: getError,
+    dataFetcher: dataFetcherUser,
   } = useDataFetch();
+  const {
+    data: fetchedYearData,
+    loading: fetchLoadingYear,
+    error: fetchErrorYear,
+    dataFetcher: dataFetcherYear,
+  } = useDataFetch();
+  const {
+    data: fetchedMonthData,
+    loading: fetchLoadingMonth,
+    error: fetchErrorMonth,
+    dataFetcher: dataFetcherMonth,
+  } = useDataFetch();
+
   const {
     cases,
     users,
@@ -46,40 +64,33 @@ const Dashboard = () => {
     error: getterError,
     causeList,
   } = useDataGetterHook();
-  const { isAdmin } = useAdminHook();
 
-  // console.log(
-  //   "total",
-  //   totalPaymentWeekToYear,
-  //   totalBalanceOnPayments,
-  //   casesByStatus,
-  //   casesByCourt,
-  //   casesByNature,
-  //   casesByRating,
-  //   casesByMode,
-  //   casesByCategory,
-  //   casesByClient,
-  //   casesByAccountOfficer,
-  //   monthlyNewCases,
-  //   yearlyNewCases
-  // );
-  // const h1Style =
-  //   " font-bold text-center text-blue-500 leading-tight  tracking-wide";
+  const { isAdmin } = useAdminHook();
 
   useEffect(() => {
     if (userId) {
-      dataFetcher(`users/${userId}`, "GET");
+      dataFetcherUser(`users/${userId}`, "GET");
     }
   }, [userId]);
 
+  useEffect(() => {
+    if (year) {
+      dataFetcherYear(`payments/totalPayments/${year}`, "GET");
+    }
+  }, [year]);
+
+  useEffect(() => {
+    if (month && year) {
+      dataFetcherMonth(`payments/totalPayments/${year}/${month}`, "GET");
+    }
+  }, [year, month]);
+
   const btnStyle = "bg-blue-500 text-white rounded-md";
 
-  // causeList title
   const causeListTitle = (
     <div className="flex justify-between items-center">
-      <h1 className="text-gray-700   text-[20px] font-bold">
-        {" "}
-        {`Your Cases for today: ${causeList.data?.todayResult}`}{" "}
+      <h1 className="text-gray-700 text-[20px] font-bold">
+        {`Your Cases for today: ${causeList.data?.todayResult}`}
       </h1>
       <Link to="cause-list">
         <Button className="bg-blue-500 text-white">See all List</Button>
@@ -89,7 +100,12 @@ const Dashboard = () => {
 
   return (
     <>
-      <Row gutter={16}>
+      <div className="mt-0">
+        <h1 className="text-2xl font-bold text-gray-600 tracking-wider">
+          {user?.data?.user?.firstName}'s Dashboard,
+        </h1>
+      </div>
+      <Row gutter={16} className="m-4 flex justify-between items-center">
         {isAdmin && (
           <Col>
             <Link to="add-user">
@@ -97,7 +113,6 @@ const Dashboard = () => {
             </Link>
           </Col>
         )}
-
         <Col>
           <Link to="leave-application">
             <Button className={btnStyle}>Apply for leave</Button>
@@ -106,19 +121,11 @@ const Dashboard = () => {
         <Col>
           <LeaveBalanceDisplay userId={userId} />
         </Col>
-
         <Col>
           <CreateTaskForm />
         </Col>
         <Col>
           <Todo />
-        </Col>
-      </Row>
-      <Row>
-        <Col>
-          <Title level={8}>
-            Welcome to your Dashboard, {user?.data?.user?.firstName}
-          </Title>
         </Col>
       </Row>
       <Row gutter={16}>
@@ -153,38 +160,53 @@ const Dashboard = () => {
       </Row>
       <Divider />
 
-      {/* todays cause list */}
-      <div className="flex justify-between items-center w-full">
-        <div className=" h-[240px] inner-shadow overflow-y-auto hide-scrollbar bg-white text-gray-600 ">
-          {causeList.data?.todayResult === 0 ? (
-            <h1 className="text-left text-2xl  m-2 font-bold ">
-              You have no matter today
-            </h1>
-          ) : (
-            <SingleCauseList
-              causeListData={causeList.data?.reportsToday}
-              loadingCauseList={getterLoading.causeList}
-              errorCauseList={getterError.causeList}
-              // result={causeList.data?.todayResult}
-              title={causeListTitle}
-              h1Style="text-center text-2xl text-gray-600 font-bold"
-            />
-          )}
-        </div>
+      <div
+        className={`inner-shadow overflow-y-auto hide-scrollbar bg-white text-gray-600 ${
+          causeList.data?.todayResult === 0
+            ? "h-[180] w-[440px] display-shadow-none"
+            : "h-[240px]"
+        }`}>
+        {causeList.data?.todayResult === 0 ? (
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <h3 className="text-blue-500 font-bold">
+                You have no matter today in Court
+              </h3>
+            }
+          />
+        ) : (
+          <SingleCauseList
+            causeListData={causeList.data?.reportsToday}
+            loadingCauseList={getterLoading.causeList}
+            errorCauseList={getterError.causeList}
+            title={causeListTitle}
+            h1Style="text-center text-2xl text-gray-600 font-bold"
+          />
+        )}
       </div>
-      <div className="flex flex-between flex-wrap w-full p-5 my-8 shadow-md rounded-md gap-2 bg-white">
+
+      <div className="flex justify-between shadow-md rounded-md my-6 gap-2 bg-white">
         <div className="flex w-full">
           <AccountOfficerCharts
             title="Cases By Account Officer"
             data={casesByAccountOfficer?.data || []}
           />
         </div>
-        <div>
-          <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
-        </div>
       </div>
 
-      <div className="flex  justify-between flex-wrap w-full py-12 px-6 my-8 shadow-md rounded-md gap-2 bg-white">
+      <div className="flex justify-between gap-2 w-full">
+        <MonthlyPaymentsChart
+          data={fetchedMonthData?.data}
+          setYear={setYear}
+          setMonth={setMonth}
+        />
+        <TotalPaymentCharts data={fetchedYearData?.data} />
+      </div>
+
+      <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
+
+      <div className="flex justify-between flex-wrap w-full py-12 px-6 my-8 shadow-md rounded-md gap-2 bg-white">
         <CasesCharts title="Case By Status" data={casesByStatus?.data || []} />
         <CasesCharts title="Nature of Case" data={casesByNature?.data || []} />
         <CasesCharts title="Cases By Court" data={casesByCourt?.data || []} />

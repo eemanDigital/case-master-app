@@ -1,18 +1,23 @@
 const express = require("express");
-const router = express.Router();
 const paymentController = require("../controllers/paymentController");
+
+const router = express.Router();
 
 // Create a new payment
 router.post("/", paymentController.createPayment);
-
+router.get("/", paymentController.getAllPayments);
 router.get("/paymentEachClient", paymentController.paymentEachClient);
-router.get("/total-balance", paymentController.getTotalBalance);
-router.get(
-  "/totalWeekPaymentsToYear",
-  paymentController.totalPaymentByWeekToYear
-);
+router.get("/totalBalance", paymentController.getTotalBalance);
 
 // Get all payments for a specific client and case
+// Route to get total payments for a specific month and year
+router.get(
+  "/totalPayments/:year/:month",
+  paymentController.totalPaymentsByMonthAndYear
+);
+
+// Route to get total payments for an entire year
+router.get("/totalPayments/:year", paymentController.totalPaymentsByYear);
 router.get(
   "/client/:clientId/case/:caseId",
   paymentController.getPaymentsByClientAndCase
@@ -27,9 +32,12 @@ router.get(
   paymentController.totalPaymentClient
 );
 
+router.get(
+  "/totalPaymentsByMonthInYear/:year",
+  paymentController.totalPaymentsByMonthInYear
+);
 // Get a specific payment by ID
 router.get("/:paymentId", paymentController.getPayment);
-router.get("/", paymentController.getAllPayments);
 // Update a payment by ID
 router.put("/:paymentId", paymentController.updatePayment);
 // Delete a payment by ID

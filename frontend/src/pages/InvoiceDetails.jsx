@@ -155,28 +155,29 @@ const InvoiceDetails = () => {
             {invoice?.totalHours}
           </Descriptions.Item>
           <Descriptions.Item label="Total Professional Fees">
-            ₦{invoice?.totalProfessionalFees.toFixed(2).toLocaleString()}
+            ₦{invoice?.totalProfessionalFees?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Total Expenses">
-            ₦{invoice?.totalExpenses.toFixed(2).toLocaleString()}
+            ₦{invoice?.totalExpenses?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Previous Balance">
-            ₦{invoice?.previousBalance.toFixed(2).toLocaleString()}
+            ₦{invoice?.previousBalance?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Tax Amount">
-            ₦{invoice?.taxAmount.toFixed(2).toLocaleString()} {invoice?.taxType}
+            ₦{invoice?.taxAmount?.toFixed(2).toLocaleString()}{" "}
+            {invoice?.taxType}
           </Descriptions.Item>
           <Descriptions.Item label="Total Amount With Tax">
-            ₦{invoice?.totalAmountWithTax.toFixed(2).toLocaleString()}
+            ₦{invoice?.totalAmountWithTax?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Total Invoice Amount">
-            ₦{invoice?.totalInvoiceAmount.toFixed(2).toLocaleString()}
+            ₦{invoice?.totalInvoiceAmount?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Total Amount Due">
-            ₦{invoice?.totalAmountDue.toFixed(2).toLocaleString()}
+            ₦{invoice?.totalAmountDue?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Amount Paid">
-            ₦{invoice?.amountPaid.toFixed(2).toLocaleString()}
+            ₦{invoice?.amountPaid?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Account Name">
             {invoice?.accountDetails?.accountName}

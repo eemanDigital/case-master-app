@@ -270,36 +270,23 @@ exports.paymentEachClient = catchAsync(async (req, res, next) => {
 });
 
 // get payments by month year and week
-exports.totalPaymentByWeekToYear = catchAsync(async (req, res, next) => {
-  const now = new Date();
-  const oneWeekAgo = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() - 7
-  );
-  const oneMonthAgo = new Date(
-    now.getFullYear(),
-    now.getMonth() - 1,
-    now.getDate()
-  );
-  const oneYearAgo = new Date(
-    now.getFullYear() - 1,
-    now.getMonth(),
-    now.getDate()
-  );
+exports.totalPaymentsByMonthAndYear = catchAsync(async (req, res, next) => {
+  const { year, month } = req.params;
 
-  // const totalPaymentSum = await Payment.aggregate([
-  //   {
-  //     $group: {
-  //       _id: null,
-  //       totalAmount: { $sum: "$amountPaid" },
-  //     },
-  //   },
-  // ]);
-  const totalPaymentSumWeek = await Payment.aggregate([
+  // Ensure month is in the correct format (two digits)
+  const formattedMonth = month.padStart(2, "0");
+
+  const startDate = new Date(`${year}-${formattedMonth}-01`);
+  const endDate = new Date(startDate);
+  endDate.setMonth(endDate.getMonth() + 1);
+
+  const totalPayments = await Payment.aggregate([
     {
       $match: {
-        date: { $gte: oneWeekAgo },
+        date: {
+          $gte: startDate,
+          $lt: endDate,
+        },
       },
     },
     {
@@ -308,49 +295,96 @@ exports.totalPaymentByWeekToYear = catchAsync(async (req, res, next) => {
         totalAmount: { $sum: "$amountPaid" },
       },
     },
-  ]);
-
-  const totalPaymentSumMonth = await Payment.aggregate([
     {
-      $match: {
-        date: { $gte: oneMonthAgo },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        totalAmount: { $sum: "$amountPaid" },
-      },
-    },
-  ]);
-
-  const totalPaymentSumYear = await Payment.aggregate([
-    {
-      $match: {
-        date: { $gte: oneYearAgo },
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        totalAmount: { $sum: "$amountPaid" },
+      $addFields: {
+        month: parseInt(month, 10),
+        year: parseInt(year, 10),
       },
     },
   ]);
 
   res.status(200).json({
     message: "success",
-    data: {
-      week:
-        totalPaymentSumWeek.length > 0 ? totalPaymentSumWeek[0].totalAmount : 0,
-      month:
-        totalPaymentSumMonth.length > 0
-          ? totalPaymentSumMonth[0].totalAmount
-          : 0,
-      year:
-        totalPaymentSumYear.length > 0 ? totalPaymentSumYear[0].totalAmount : 0,
-      // all: totalPaymentSum.length > 0 ? totalPaymentSum[0].totalAmount : 0,
+    data:
+      totalPayments.length > 0
+        ? totalPayments[0]
+        : {
+            totalAmount: 0,
+            month: parseInt(month, 10),
+            year: parseInt(year, 10),
+          },
+  });
+});
+
+// total payment each month
+exports.totalPaymentsByMonthInYear = catchAsync(async (req, res, next) => {
+  const { year } = req.params;
+
+  const totalPayments = await Payment.aggregate([
+    {
+      $match: {
+        date: {
+          $gte: new Date(`${year}-01-01`),
+          $lt: new Date(`${parseInt(year) + 1}-01-01`),
+        },
+      },
     },
+    {
+      $group: {
+        _id: { month: { $month: "$date" } },
+        totalAmount: { $sum: "$amountPaid" },
+      },
+    },
+    {
+      $sort: { "_id.month": 1 },
+    },
+    {
+      $project: {
+        _id: 0,
+        month: "$_id.month",
+        totalAmount: 1,
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    message: "success",
+    data: totalPayments,
+  });
+});
+
+// payment made within a month
+exports.totalPaymentsByYear = catchAsync(async (req, res, next) => {
+  const { year } = req.params;
+
+  const totalPayments = await Payment.aggregate([
+    {
+      $match: {
+        date: {
+          $gte: new Date(`${year}-01-01`),
+          $lt: new Date(`${parseInt(year) + 1}-01-01`),
+        },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalAmount: { $sum: "$amountPaid" },
+      },
+    },
+    {
+      $addFields: {
+        year: parseInt(year, 10),
+      },
+    },
+  ]);
+
+  res.status(200).json({
+    message: "success",
+    data:
+      totalPayments.length > 0
+        ? totalPayments[0]
+        : { totalAmount: 0, year: parseInt(year, 10) },
   });
 });
 

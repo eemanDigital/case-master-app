@@ -1,4 +1,3 @@
-import React from "react";
 import {
   PieChart,
   Pie,
@@ -41,7 +40,7 @@ const AccountOfficerCharts = ({ data, title }) => {
   };
 
   return (
-    <Card title={title} style={{ width: "45%", marginBottom: 20 }}>
+    <Card title={title} style={{ width: "100%", marginBottom: 20 }}>
       <ResponsiveContainer width="100%" height={400}>
         <PieChart>
           <Pie
