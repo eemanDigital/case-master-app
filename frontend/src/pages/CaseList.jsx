@@ -21,16 +21,16 @@ const CaseList = () => {
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
   const casesData = Array.isArray(currentCases) // Check if it is array before mapping
-    ? currentCases.map((singleCase) => {
+    ? currentCases?.map((singleCase) => {
         const { firstParty, secondParty } = singleCase;
         const firstName = firstParty?.name[0]?.name;
         const secondName = secondParty?.name[0]?.name;
 
         return (
-          <Col key={singleCase._id} xs={24} sm={24} md={12} lg={8} xl={8}>
+          <Col key={singleCase?._id} xs={24} sm={24} md={12} lg={8} xl={8}>
             <Card
               title={
-                <Link to={`${singleCase._id}/casedetails`}>
+                <Link to={`${singleCase?._id}/casedetails`}>
                   <Title level={3}>{`${firstName || ""} vs ${
                     secondName || ""
                   }`}</Title>
@@ -39,11 +39,11 @@ const CaseList = () => {
               bordered={false}
               style={{ marginBottom: 16 }}>
               <Space direction="vertical" size="small">
-                <Text type="info">Mode: {singleCase.modeOfCommencement}</Text>
-                <Text>Suit No.: {singleCase.suitNo}</Text>
-                <Text>Nature of Case: {singleCase.natureOfCase}</Text>
-                <Text>Status: {singleCase.caseStatus}</Text>
-                <Link to={`${singleCase._id}/update`}>
+                <Text type="info">Mode: {singleCase?.modeOfCommencement}</Text>
+                <Text>Suit No.: {singleCase?.suitNo}</Text>
+                <Text>Nature of Case: {singleCase?.natureOfCase}</Text>
+                <Text>Status: {singleCase?.caseStatus}</Text>
+                <Link to={`${singleCase?._id}/update`}>
                   <Button>Update Case</Button>
                 </Link>
               </Space>
@@ -56,7 +56,11 @@ const CaseList = () => {
   return (
     <section>
       {loading.cases && <Spinner />}
-
+      <Row style={{ marginTop: 16 }}>
+        <Link to="add-case">
+          <Button className="bg-blue-500 text-white">+ Add Case</Button>
+        </Link>
+      </Row>
       <Title level={1} className="text-center" style={{ marginBottom: 24 }}>
         Cases
       </Title>
@@ -70,12 +74,6 @@ const CaseList = () => {
           pageSize={itemsPerPage}
           onChange={paginate}
         />
-      </Row>
-
-      <Row justify="center" style={{ marginTop: 16 }}>
-        <Link to="add-case">
-          <Button className="bg-blue-500 ">+ Add Case</Button>
-        </Link>
       </Row>
 
       <ToastContainer />

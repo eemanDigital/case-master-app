@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
+import moment from "moment-timezone";
 import {
   Button,
   Input,
@@ -62,14 +63,22 @@ const CreatePaymentForm = () => {
     } catch (errorInfo) {
       return;
     }
+
+    // Convert the date to UTC without changing the actual date
+    // if (values.date) {
+    //   const localDate = moment(values.date);
+    //   values.date = localDate.utc().format();
+    // }
+
     const result = await dataFetcher("payments", "POST", values);
     handleSubmission(result);
   }, [form, handleSubmission, dataFetcher]);
 
+  // filter option for select
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
 
-  console.log("DATA", formData);
+  // console.log("DATA", formData);
   return (
     <>
       <Button onClick={showModal} className="bg-blue-500 text-white m-1">
@@ -160,7 +169,9 @@ const CreatePaymentForm = () => {
                 <Form.Item
                   name="date"
                   label="Date"
-                  initialValue={formData?.date}>
+                  initialValue={
+                    formData?.date ? moment(formData.date).local() : null
+                  }>
                   <DatePicker />
                 </Form.Item>
               </Col>

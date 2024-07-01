@@ -32,6 +32,7 @@ router.get(
   paymentController.totalPaymentClient
 );
 
+// get payment received in each month of a year
 router.get(
   "/totalPaymentsByMonthInYear/:year",
   paymentController.totalPaymentsByMonthInYear

@@ -1,32 +1,48 @@
-import { Input, Form, Button } from "antd";
-import { useState } from "react";
+import { Input, Form, Button, DatePicker } from "antd";
+import moment from "moment"; // Assuming you're using moment.js for date parsing
 
-const PaymentFilterForm = ({ setYear, setMonth }) => {
-  //   const [year, setYear] = useState(new Date().getFullYear());
-  //   const [month, setMonth] = useState(new Date().getMonth() + 1);
-
+const PaymentFilterForm = ({ setYear, setMonth, removeMonthInput }) => {
   const handleFilterSubmit = (values) => {
-    setYear(values.year);
-    setMonth(values.month);
+    // If the backend sends a date string, parse it and set the year
+    // Example backend date string: "30 Jun 2023 23:00:00 GMT"
+    // Assuming `values.year` is the date string from the backend
+    let backendDateString = decodeURIComponent(values.year); // Decode if URL encoded
+    let yearFromBackendDate = moment(
+      backendDateString,
+      "DD MMM YYYY HH:mm:ss Z"
+    ).year();
+    setYear(yearFromBackendDate);
+
+    if (!removeMonthInput) {
+      setMonth(values.month); // Assuming month is handled differently and not URL encoded
+    }
   };
 
   return (
     <div>
-      {" "}
       {/* Filter Form */}
       <Form layout="inline" onFinish={handleFilterSubmit}>
         <Form.Item
           name="year"
           rules={[{ required: true, message: "Please input a year!" }]}>
-          <Input placeholder="Year" />
+          <DatePicker
+            picker="year"
+            placeholder="Year"
+            style={{ width: "100%" }}
+          />
         </Form.Item>
-        <Form.Item
-          name="month"
-          rules={[{ required: true, message: "Please input a month!" }]}>
-          <Input placeholder="Month" />
-        </Form.Item>
+
+        {!removeMonthInput && (
+          <>
+            <Form.Item
+              name="month"
+              rules={[{ required: true, message: "Please input a month!" }]}>
+              <Input placeholder="Month" />
+            </Form.Item>
+          </>
+        )}
         <Form.Item>
-          <Button type="primary" htmlType="submit">
+          <Button className="bg-blue-500 text-white" htmlType="submit">
             Filter
           </Button>
         </Form.Item>

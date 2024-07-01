@@ -1,4 +1,4 @@
-import React from "react";
+import { useContext } from "react";
 import {
   BarChart,
   Bar,
@@ -11,21 +11,20 @@ import {
 } from "recharts";
 import { Typography } from "antd";
 import PaymentFilterForm from "./PaymentFilterForm";
-
+import { PaymentFiltersContext } from "./Dashboard";
 const { Title } = Typography;
 
-const MonthlyPaymentsChart = ({ data, title, setYear, setMonth }) => {
+const MonthlyPaymentsChart = ({ data }) => {
+  const { setYearMonth, setMonth } = useContext(PaymentFiltersContext);
   const transformedData = [
     { month: data?.month, totalAmount: data?.totalAmount, year: data?.year },
   ];
 
   return (
-    <div>
-      <PaymentFilterForm setYear={setYear} setMonth={setMonth} />
+    <div className="bg-white p-4 shadow-md">
+      <PaymentFilterForm setYear={setYearMonth} setMonth={setMonth} />
 
-      <div
-        title={title}
-        className=" flex justify-between  items-center  mb-5  bg-white p-4 shadow-md ">
+      <div className=" flex justify-between  items-center  mb-5   ">
         <ResponsiveContainer width="60%" height={400}>
           <BarChart
             data={transformedData}

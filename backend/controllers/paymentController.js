@@ -5,51 +5,7 @@ const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
 
 // Create a new payment
-// exports.createPayment = catchAsync(async (req, res, next) => {
-//   const payment = new Payment(req.body);
-//   const savedPayment = await payment.save();
 
-//   res.status(201).json({
-//     message: "success",
-//     data: savedPayment,
-//   });
-// });
-
-// exports.createPayment = async (req, res, next) => {
-//   const { invoiceId, amountPaid } = req.body;
-
-//   // Find the corresponding invoice
-//   const invoice = await Invoice.findById(invoiceId);
-//   if (!invoice) {
-//     return next(new AppError("No invoice found", 404));
-//   }
-
-//   // Calculate the new balance
-//   const totalAmountWithTax = invoice.totalAmountWithTax;
-//   const newPayment = new Payment({
-//     invoiceId: invoiceId,
-//     amountPaid,
-//     method,
-//     date,
-//     totalInvoiceAmount: totalAmountWithTax,
-//     balance: totalAmountWithTax - amountPaid,
-//   });
-
-//   // Save the payment
-//   await newPayment.save();
-
-//   // Update the invoice status if fully paid
-//   if (newPayment.balance <= 0) {
-//     invoice.status = "paid";
-//   }
-
-//   await invoice.save();
-
-//   res.status(201).json({
-//     status: "success",
-//     data: newPayment,
-//   });
-// };
 exports.createPayment = catchAsync(async (req, res, next) => {
   const {
     caseId,
@@ -94,6 +50,7 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     data: newPayment,
   });
 });
+
 // Get all payments for a specific client and case
 exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
   const { clientId, caseId } = req.params;

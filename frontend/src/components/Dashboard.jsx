@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, createContext } from "react";
 import { Link } from "react-router-dom";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useDataFetch } from "../hooks/useDataFetch";
@@ -16,13 +16,19 @@ import AccountOfficerCharts from "./AccountOfficerCharts";
 import CaseCountsByPeriodChart from "./CaseCountsByPeriodChart";
 import TotalPaymentCharts from "./TotalPaymentCharts";
 import MonthlyPaymentsChart from "./MonthlyPaymentsChart";
+import PaymentsEachMonthChart from "./PaymentsEachMonthChart";
 
 const { Title, Text } = Typography;
+
+// context for year for search filter
+export const PaymentFiltersContext = createContext();
 
 const Dashboard = () => {
   const { user } = useAuthContext();
   const userId = user?.data?.user?._id;
   const [year, setYear] = useState(new Date().getFullYear());
+  const [yearMonth, setYearMonth] = useState(new Date().getFullYear());
+  const [yearEachMonth, setYearEachMonth] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
 
   const {
@@ -37,11 +43,18 @@ const Dashboard = () => {
     error: fetchErrorYear,
     dataFetcher: dataFetcherYear,
   } = useDataFetch();
+
   const {
     data: fetchedMonthData,
     loading: fetchLoadingMonth,
     error: fetchErrorMonth,
     dataFetcher: dataFetcherMonth,
+  } = useDataFetch();
+  const {
+    data: fetchedEachMonthDataInYear,
+    loading: fetchLoadingEachMonth,
+    error: fetchErrorEachMonth,
+    dataFetcher: dataFetcherEachMonth,
   } = useDataFetch();
 
   const {
@@ -81,9 +94,19 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (month && year) {
-      dataFetcherMonth(`payments/totalPayments/${year}/${month}`, "GET");
+      dataFetcherMonth(`payments/totalPayments/${yearMonth}/${month}`, "GET");
     }
   }, [year, month]);
+
+  // get data each month in a year
+  useEffect(() => {
+    if (yearEachMonth) {
+      dataFetcherEachMonth(
+        `payments/totalPaymentsByMonthInYear/${yearEachMonth}`,
+        "GET"
+      );
+    }
+  }, [yearEachMonth]);
 
   const btnStyle = "bg-blue-500 text-white rounded-md";
 
@@ -99,7 +122,8 @@ const Dashboard = () => {
   );
 
   return (
-    <>
+    <PaymentFiltersContext.Provider
+      value={{ setYearEachMonth, setYearMonth, setMonth }}>
       <div className="mt-0">
         <h1 className="text-2xl font-bold text-gray-600 tracking-wider">
           {user?.data?.user?.firstName}'s Dashboard,
@@ -196,13 +220,10 @@ const Dashboard = () => {
       </div>
 
       <div className="flex justify-between gap-2 w-full">
-        <MonthlyPaymentsChart
-          data={fetchedMonthData?.data}
-          setYear={setYear}
-          setMonth={setMonth}
-        />
+        <MonthlyPaymentsChart data={fetchedMonthData?.data} />
         <TotalPaymentCharts data={fetchedYearData?.data} />
       </div>
+      <PaymentsEachMonthChart data={fetchedEachMonthDataInYear?.data} />
 
       <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
 
@@ -217,7 +238,7 @@ const Dashboard = () => {
           data={casesByCategory?.data || []}
         />
       </div>
-    </>
+    </PaymentFiltersContext.Provider>
   );
 };
 

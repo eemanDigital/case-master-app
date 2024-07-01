@@ -221,7 +221,7 @@ export const TextAreaInput = ({ fieldName, label, initialValue }) => {
           }}
           rows={4}
           placeholder="Your text here..."
-          maxLength={300}
+          // maxLength={300}
         />
       </Form.Item>
     </div>

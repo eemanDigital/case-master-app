@@ -10,17 +10,33 @@ import {
 } from "recharts";
 import { Card } from "antd";
 
+// Mapping from month numbers to month names
+const monthNames = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 const CaseCountsByPeriodChart = ({ data }) => {
   // Transform the data to fit the expected structure for recharts
   const transformedData = data.map((item) => ({
-    month: `Month ${item.month}`,
+    month: monthNames[item.month - 1], // Adjust for 0-indexed array
     count: item.count,
     parties: item.parties,
   }));
 
   return (
     <Card
-      title="Case Counts by Month"
+      title="New Briefs by Month"
       style={{ width: "100%", marginBottom: 20 }}>
       <ResponsiveContainer width="100%" height={400}>
         <BarChart
@@ -44,7 +60,7 @@ const CaseCountsByPeriodChart = ({ data }) => {
       <div className="case-list">
         {transformedData.map((item, index) => (
           <div key={index}>
-            <h3>{`Cases in Month ${item.month}`}</h3>
+            <h3 className="font-bold">{`New Briefs in: ${item.month}`}</h3>
             <ul>
               {item.parties.map((party, idx) => (
                 <li key={idx}>{party}</li>

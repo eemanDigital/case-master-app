@@ -27,38 +27,6 @@ const CaseDetails = () => {
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error loading data</p>;
 
-  // deleteDoc
-  // Retrieve token from browser cookies
-  // const token = document.cookie
-  //   .split("; ")
-  //   .find((row) => row.startsWith("jwt="))
-  //   ?.split("=")[1];
-
-  // const fileHeaders = {
-  //   headers: {
-  //     "Content-Type": "multipart/form-data",
-  //     Authorization: `Bearer ${token}`,
-  //   },
-  // };
-
-  // const handleDeleteDocument = async (event, url, documentId) => {
-  //   event.preventDefault();
-  //   // Optimistically update the state
-  //   const updatedDocuments = documents.filter((doc) => doc._id !== documentId);
-  //   setDocuments(updatedDocuments);
-
-  //   try {
-  //     await axios.delete(`${baseURL}/${url}`, fileHeaders);
-  //   } catch (err) {
-  //     // Revert the state if the API call fails
-  //     setDocuments((prevDocs) => [
-  //       ...prevDocs,
-  //       documents.find((doc) => doc._id === documentId),
-  //     ]);
-  //     console.log(err);
-  //   }
-  // };
-
   return (
     <section className="p-6">
       <div className="flex justify-between">
@@ -75,7 +43,7 @@ const CaseDetails = () => {
           <Col>
             <Card title={data?.data?.firstParty.description}>
               {data?.data?.firstParty?.name?.map((singleName, index) => (
-                <div key={singleName._id}>
+                <div key={singleName?._id || index}>
                   <Text strong>{index + 1}. </Text>
                   <Text>{singleName.name}</Text>
                 </div>
@@ -85,7 +53,7 @@ const CaseDetails = () => {
           <Col>
             <Card title={data?.data?.secondParty.description}>
               {data?.data?.secondParty?.name?.map((singleName, index) => (
-                <div key={singleName._id}>
+                <div key={singleName?._id || index}>
                   <Text strong>{index + 1}. </Text>
                   <Text>{singleName.name}</Text>
                 </div>
@@ -93,13 +61,13 @@ const CaseDetails = () => {
             </Card>
           </Col>
           <Col>
-            {data?.data?.otherParty.map((singleParty) => (
+            {data?.data?.otherParty.map((singleParty, index) => (
               <Card
-                key={singleParty.description}
+                key={singleParty.description || index}
                 title={singleParty.description}>
-                {singleParty?.name?.map((n, index) => (
-                  <div key={n._id}>
-                    <Text strong>{index + 1}. </Text>
+                {singleParty?.name?.map((n, idx) => (
+                  <div key={n?._id || idx}>
+                    <Text strong>{idx + 1}. </Text>
                     <Text>{n.name}</Text>
                   </div>
                 ))}
@@ -146,15 +114,15 @@ const CaseDetails = () => {
               value: data?.data?.casePriority,
             },
           ]}
-          renderItem={(item) => (
-            <List.Item>
+          renderItem={(item, index) => (
+            <List.Item key={index}>
               <Text strong>{item.label}</Text> {item.value}
             </List.Item>
           )}
         />
         <Divider />
-        {data?.data?.judge.map((j) => (
-          <Text key={j._id} strong>
+        {data?.data?.judge.map((j, index) => (
+          <Text key={j?._id || index} strong>
             Judge:{" "}
             {j.name || (
               <span className="text-red-500 font-semibold">Not provided</span>
@@ -164,8 +132,8 @@ const CaseDetails = () => {
         <Divider />
         <Title level={4}>Case Reports</Title>
         {Array.isArray(data?.data?.reports)
-          ? data?.data?.reports.map((u) => (
-              <Card key={u._id}>
+          ? data?.data?.reports.map((u, index) => (
+              <Card key={u?._id || index}>
                 <p>
                   <Text strong>Date: </Text>
                   {formatDate(u?.date) || (
@@ -197,8 +165,8 @@ const CaseDetails = () => {
         <Title level={4}>Case Strength</Title>
         <List
           dataSource={data?.data?.caseStrengths || []}
-          renderItem={(item) => (
-            <List.Item>
+          renderItem={(item, index) => (
+            <List.Item key={item?._id || index}>
               <Text>
                 {item?.name || (
                   <span className="text-red-500 font-semibold">
@@ -212,8 +180,8 @@ const CaseDetails = () => {
         <Title level={4}>Case Weaknesses</Title>
         <List
           dataSource={data?.data?.caseWeaknesses || []}
-          renderItem={(item) => (
-            <List.Item>
+          renderItem={(item, index) => (
+            <List.Item key={item?._id || index}>
               <Text>
                 {item?.name || (
                   <span className="text-red-500 font-semibold">
@@ -225,8 +193,8 @@ const CaseDetails = () => {
           )}
         />
         <Divider />
-        {data?.data?.stepToBeTaken.map((step) => (
-          <Text key={step._id} strong>
+        {data?.data?.stepToBeTaken.map((step, index) => (
+          <Text key={step?._id || index} strong>
             Steps to be taken:{" "}
             {step.name || (
               <span className="text-red-500 font-semibold">Not provided</span>
@@ -237,8 +205,8 @@ const CaseDetails = () => {
         <Title level={4}>Client</Title>
         <List
           dataSource={data?.data?.client || []}
-          renderItem={(item) => (
-            <List.Item>
+          renderItem={(item, index) => (
+            <List.Item key={item?._id || index}>
               <Text>
                 {item.name || (
                   <span className="text-red-500 font-semibold">
@@ -259,8 +227,8 @@ const CaseDetails = () => {
       <div>
         <List
           dataSource={documents}
-          renderItem={(document) => (
-            <List.Item>
+          renderItem={(document, index) => (
+            <List.Item key={document?._id || index}>
               <div className="flex gap-2 items-center">
                 <Text>{document?.fileName}</Text>
                 <FaDownload
