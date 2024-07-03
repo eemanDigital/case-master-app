@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -10,10 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import PaymentFilterForm from "./PaymentFilterForm";
-
 import { PaymentFiltersContext } from "./Dashboard";
-
-// const { Title, Text } = Typography;
 
 const months = [
   "January",
@@ -39,16 +36,15 @@ const PaymentsEachMonthChart = ({ data }) => {
   }));
 
   return (
-    <div className="bg-white m-3 p-5 shadow-md rounded-md">
+    <div className="bg-white m-3 p-5 ">
       <div className="flex justify-between items-center p-2">
-        <h1 className=" text-gray-600">Monthly Payments</h1>
-
+        <h1 className="text-gray-600">Monthly Payments</h1>
         <PaymentFilterForm setYear={setYearEachMonth} removeMonthInput={true} />
       </div>
 
-      <div className=" flex flex-col md:flex-row justify-evenly items-start">
+      <div className="flex flex-col md:flex-row justify-evenly items-start">
         <ResponsiveContainer width="70%" height={250}>
-          <BarChart
+          <LineChart
             data={transformedData}
             margin={{
               top: 20,
@@ -61,14 +57,19 @@ const PaymentsEachMonthChart = ({ data }) => {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="totalAmount" fill="#8884d8" barSize={30} />
-          </BarChart>
+            <Line
+              type="monotone"
+              dataKey="totalAmount"
+              stroke="#8884d8"
+              strokeWidth={2}
+            />
+          </LineChart>
         </ResponsiveContainer>
 
-        <div className="p-5  w-[400px ]">
+        <div className="p-5 w-[400px]">
           {transformedData?.map((item, index) => (
             <div key={index}>
-              <h4 className=" font-bold text-gray-600 ">
+              <h4 className="font-bold text-gray-600">
                 {months[item?.month - 1]}:
               </h4>
               <p className="text-[14px] text-green-600">

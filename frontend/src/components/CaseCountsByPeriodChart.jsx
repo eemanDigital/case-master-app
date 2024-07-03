@@ -9,6 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card } from "antd";
+import CustomTooltip from "./CustomToolTip";
 
 // Mapping from month numbers to month names
 const monthNames = [
@@ -52,12 +53,12 @@ const CaseCountsByPeriodChart = ({ data }) => {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="month" />
           <YAxis />
-          <Tooltip />
+          <Tooltip content={CustomTooltip} />
           <Legend />
           <Bar dataKey="count" fill="#8884d8" />
         </BarChart>
       </ResponsiveContainer>
-      <div className="case-list">
+      {/* <div className="case-list">
         {transformedData.map((item, index) => (
           <div key={index}>
             <h3 className="font-bold">{`New Briefs in: ${item.month}`}</h3>
@@ -68,7 +69,7 @@ const CaseCountsByPeriodChart = ({ data }) => {
             </ul>
           </div>
         ))}
-      </div>
+      </div> */}
     </Card>
   );
 };

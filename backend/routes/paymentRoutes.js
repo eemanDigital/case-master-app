@@ -1,7 +1,10 @@
 const express = require("express");
 const paymentController = require("../controllers/paymentController");
+const { protect } = require("../controllers/authController");
 
 const router = express.Router();
+
+router.use(protect);
 
 // Create a new payment
 router.post("/", paymentController.createPayment);

@@ -64,6 +64,7 @@ const CreateCaseForm = () => {
     let values;
     try {
       values = await form.validateFields(); // Validate the form fields
+      console.log("case data", values);
     } catch (errorInfo) {
       return;
     }

@@ -204,15 +204,6 @@ caseSchema.pre(/^find/, function (next) {
 
   next();
 });
-// caseSchema.pre(/^find/, function (next) {
-//   // Populate the accountOfficer field with the firstName and lastName of the user
-//   this.populate({
-//     path: "client",
-//     select: "firstName secondName",
-//   });
-
-//   next();
-// });
 
 // Virtual populate
 caseSchema.virtual("reports", {

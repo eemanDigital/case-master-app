@@ -193,14 +193,38 @@ const CaseDetails = () => {
           )}
         />
         <Divider />
-        {data?.data?.stepToBeTaken.map((step, index) => (
-          <Text key={step?._id || index} strong>
-            Steps to be taken:{" "}
-            {step.name || (
-              <span className="text-red-500 font-semibold">Not provided</span>
-            )}
+        {Array.isArray(data?.data?.stepToBeTaken) &&
+        data?.data?.stepToBeTaken.length > 0 ? (
+          data?.data?.stepToBeTaken.map((step, index) => (
+            <Text key={step?._id || index} strong>
+              Steps to be taken:{" "}
+              {step.name || (
+                <span className="text-red-500 font-semibold">Not provided</span>
+              )}
+            </Text>
+          ))
+        ) : (
+          <Text strong>
+            <span className="text-red-500 font-semibold">
+              No steps to be taken are provided.
+            </span>
           </Text>
-        ))}
+        )}
+        <Title level={4}>Account Officer </Title>
+        <List
+          dataSource={data?.data?.accountOfficer || []}
+          renderItem={(item, index) => (
+            <List.Item key={item?._id || index}>
+              <Text>
+                {item.fullName || (
+                  <span className="text-red-500 font-semibold">
+                    No Account Officer
+                  </span>
+                )}
+              </Text>
+            </List.Item>
+          )}
+        />
         <Divider />
         <Title level={4}>Client</Title>
         <List
@@ -208,7 +232,7 @@ const CaseDetails = () => {
           renderItem={(item, index) => (
             <List.Item key={item?._id || index}>
               <Text>
-                {item.name || (
+                {item.fullName || (
                   <span className="text-red-500 font-semibold">
                     Not provided
                   </span>

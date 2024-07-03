@@ -11,12 +11,14 @@ import { FaBriefcase, FaUser, FaTasks } from "react-icons/fa";
 import CreateTaskForm from "../pages/CreateTaskForm";
 import Todo from "./Todo";
 import SingleCauseList from "./SingleCauseList";
-import CasesCharts from "./Charts";
+import CasesByCategoriesChart from "./CasesByCategoriesChart";
 import AccountOfficerCharts from "./AccountOfficerCharts";
 import CaseCountsByPeriodChart from "./CaseCountsByPeriodChart";
 import TotalPaymentCharts from "./TotalPaymentCharts";
 import MonthlyPaymentsChart from "./MonthlyPaymentsChart";
 import PaymentsEachMonthChart from "./PaymentsEachMonthChart";
+import CaseCountsByClientChart from "./CaseCountsByClientChart";
+import CaseCountsByYearChart from "./CaseCountsByYearChart ";
 
 const { Title, Text } = Typography;
 
@@ -61,7 +63,7 @@ const Dashboard = () => {
     cases,
     users,
     tasks,
-    totalPaymentWeekToYear,
+    // totalPaymentWeekToYear,
     totalBalanceOnPayments,
     casesByStatus,
     casesByCourt,
@@ -77,6 +79,8 @@ const Dashboard = () => {
     error: getterError,
     causeList,
   } = useDataGetterHook();
+
+  // console.log("WTY", totalBalanceOnPayments.data);
 
   const { isAdmin } = useAdminHook();
 
@@ -219,21 +223,45 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="flex justify-between gap-2 w-full">
+      <div className="flex  md:flex-col  justify-between gap-2 w-full">
         <MonthlyPaymentsChart data={fetchedMonthData?.data} />
-        <TotalPaymentCharts data={fetchedYearData?.data} />
+        <TotalPaymentCharts
+          paymentData={fetchedYearData?.data}
+          balanceData={totalBalanceOnPayments}
+        />
+        <PaymentsEachMonthChart data={fetchedEachMonthDataInYear?.data} />
       </div>
-      <PaymentsEachMonthChart data={fetchedEachMonthDataInYear?.data} />
+      <CaseCountsByClientChart data={casesByClient?.data} />
 
-      <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
+      <div className=" bg-white flex  md:flex-row   justify-between  items-center p-4">
+        <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
+
+        <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
+      </div>
 
       <div className="flex justify-between flex-wrap w-full py-12 px-6 my-8 shadow-md rounded-md gap-2 bg-white">
-        <CasesCharts title="Case By Status" data={casesByStatus?.data || []} />
-        <CasesCharts title="Nature of Case" data={casesByNature?.data || []} />
-        <CasesCharts title="Cases By Court" data={casesByCourt?.data || []} />
-        <CasesCharts title="Cases By Rating" data={casesByRating?.data || []} />
-        <CasesCharts title="Cases By Mode" data={casesByMode?.data || []} />
-        <CasesCharts
+        <CasesByCategoriesChart
+          title="Case By Status"
+          data={casesByStatus?.data || []}
+        />
+        <CasesByCategoriesChart
+          title="Nature of Case"
+          data={casesByNature?.data || []}
+        />
+        <CasesByCategoriesChart
+          title="Cases By Court"
+          data={casesByCourt?.data || []}
+        />
+        <CasesByCategoriesChart
+          title="Cases By Rating"
+          data={casesByRating?.data || []}
+        />
+        <CasesByCategoriesChart
+          title="Cases By Mode"
+          data={casesByMode?.data || []}
+        />
+        {/* <CasesByCategoriesChart title="Cases By Client" data={casesByClient?.data || []} /> */}
+        <CasesByCategoriesChart
           title="Cases By Category"
           data={casesByCategory?.data || []}
         />

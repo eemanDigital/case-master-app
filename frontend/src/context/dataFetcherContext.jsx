@@ -148,7 +148,7 @@ const DataFetcherContext = ({ children }) => {
         endpoint: "payments/totalWeekPaymentsToYear",
         key: "totalPaymentWeekToYear",
       },
-      { endpoint: "payments/total-balance", key: "totalBalanceOnPayments" },
+      { endpoint: "payments/totalBalance", key: "totalBalanceOnPayments" },
       { endpoint: "cases/case-status", key: "casesByStatus" },
       { endpoint: "cases/cases-by-court", key: "casesByCourt" },
       { endpoint: "cases/cases-by-natureOfCase", key: "casesByNature" },

@@ -9,7 +9,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-const CasesCharts = ({ data, title }) => {
+const CasesByCategoriesChart = ({ data, title }) => {
   // Transform the data
   const transformedData = data.map((item) => ({
     name: item.groupName,
@@ -38,4 +38,4 @@ const CasesCharts = ({ data, title }) => {
   );
 };
 
-export default CasesCharts;
+export default CasesByCategoriesChart;

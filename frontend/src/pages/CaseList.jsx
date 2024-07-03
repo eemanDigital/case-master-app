@@ -1,10 +1,8 @@
 import { Link } from "react-router-dom";
-import { Button, Card, Typography, Space, Pagination, Row, Col } from "antd";
+import { Button, Table, Typography, Pagination, Row, Col } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { ToastContainer } from "react-toastify";
 import Spinner from "../components/Spinner";
-
-// import Button from "../components/Button";
 import { useState } from "react";
 
 const { Title, Text } = Typography;
@@ -20,52 +18,68 @@ const CaseList = () => {
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  const casesData = Array.isArray(currentCases) // Check if it is array before mapping
-    ? currentCases?.map((singleCase) => {
-        const { firstParty, secondParty } = singleCase;
-        const firstName = firstParty?.name[0]?.name;
-        const secondName = secondParty?.name[0]?.name;
+  const columns = [
+    {
+      title: "Case",
+      dataIndex: "case",
+      key: "case",
+      render: (_, record) => (
+        <Link to={`${record._id}/casedetails`}>
+          <h1 className="font-bold hover:text-gray-600">{`${
+            record.firstParty?.name[0]?.name || ""
+          } vs ${record.secondParty?.name[0]?.name || ""}`}</h1>
+        </Link>
+      ),
+    },
+    {
+      title: "Suit No.",
+      dataIndex: "suitNo",
+      key: "suitNo",
+    },
+    {
+      title: "Mode of Commencement",
+      dataIndex: "modeOfCommencement",
+      key: "modeOfCommencement",
+    },
 
-        return (
-          <Col key={singleCase?._id} xs={24} sm={24} md={12} lg={8} xl={8}>
-            <Card
-              title={
-                <Link to={`${singleCase?._id}/casedetails`}>
-                  <Title level={3}>{`${firstName || ""} vs ${
-                    secondName || ""
-                  }`}</Title>
-                </Link>
-              }
-              bordered={false}
-              style={{ marginBottom: 16 }}>
-              <Space direction="vertical" size="small">
-                <Text type="info">Mode: {singleCase?.modeOfCommencement}</Text>
-                <Text>Suit No.: {singleCase?.suitNo}</Text>
-                <Text>Nature of Case: {singleCase?.natureOfCase}</Text>
-                <Text>Status: {singleCase?.caseStatus}</Text>
-                <Link to={`${singleCase?._id}/update`}>
-                  <Button>Update Case</Button>
-                </Link>
-              </Space>
-            </Card>
-          </Col>
-        );
-      })
-    : [];
+    {
+      title: "Nature of Case",
+      dataIndex: "natureOfCase",
+      key: "natureOfCase",
+    },
+    {
+      title: "Status",
+      dataIndex: "caseStatus",
+      key: "caseStatus",
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, record) => (
+        <Link to={`${record._id}/update`}>
+          <Button>Update Case</Button>
+        </Link>
+      ),
+    },
+  ];
 
   return (
     <section>
       {loading.cases && <Spinner />}
-      <Row style={{ marginTop: 16 }}>
+      <Row style={{ marginTop: 16, marginBottom: 24 }} justify="space-between">
+        <Title level={1}>Cases</Title>
         <Link to="add-case">
           <Button className="bg-blue-500 text-white">+ Add Case</Button>
         </Link>
       </Row>
-      <Title level={1} className="text-center" style={{ marginBottom: 24 }}>
-        Cases
-      </Title>
 
-      <Row gutter={[16, 16]}>{!error.cases && casesData}</Row>
+      <Table
+        columns={columns}
+        dataSource={currentCases}
+        pagination={false}
+        rowKey="_id"
+        loading={loading.cases}
+      />
 
       <Row justify="center" style={{ marginTop: 24 }}>
         <Pagination

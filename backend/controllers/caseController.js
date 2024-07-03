@@ -10,9 +10,7 @@ exports.createCase = catchAsync(async (req, res, next) => {
 });
 
 exports.getCases = catchAsync(async (req, res, next) => {
-  const cases = await Case.find()
-    .populate({ path: "client", select: "firstName secondName " })
-    .sort({ filingDate: -1 });
+  const cases = await Case.find().sort({ filingDate: -1 });
   // .populate({
   //   path: "task",
   //   select: "description status dateAssigned dueDate taskPriority",
@@ -32,7 +30,7 @@ exports.getCase = catchAsync(async (req, res, next) => {
       path: "reports",
       select: "-caseReported",
     })
-    .populate({ path: "documents" });
+    .populate({ path: "client", select: "firstName secondName " });
 
   if (!data) {
     return next(new AppError("No case found with that Id", 404));

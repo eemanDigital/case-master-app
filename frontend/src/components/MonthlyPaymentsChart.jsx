@@ -21,11 +21,11 @@ const MonthlyPaymentsChart = ({ data }) => {
   ];
 
   return (
-    <div className="bg-white p-4 shadow-md">
+    <div className="flex flex-col justify-between ">
       <PaymentFilterForm setYear={setYearMonth} setMonth={setMonth} />
 
       <div className=" flex justify-between  items-center  mb-5   ">
-        <ResponsiveContainer width="60%" height={400}>
+        <ResponsiveContainer width="60%" height={300}>
           <BarChart
             data={transformedData}
             margin={{ top: 20, right: 40, left: 50, bottom: 5 }}>
@@ -34,7 +34,7 @@ const MonthlyPaymentsChart = ({ data }) => {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="totalAmount" fill="#8884d8" barSize={50} />
+            <Bar dataKey="totalAmount" fill="#82ca9d" barSize={50} />
           </BarChart>
         </ResponsiveContainer>
 

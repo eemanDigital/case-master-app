@@ -55,19 +55,19 @@ export const paymentInitialValue = {
 export const caseInitialValue = {
   firstParty: {
     description: "",
-    name: [{ name: "" }],
-    processesFiled: [{ name: "" }],
+    name: [],
+    processesFiled: [],
   },
   secondParty: {
     description: "",
-    name: [{ name: "" }],
-    processesFiled: [{ name: "" }],
+    name: [],
+    processesFiled: [],
   },
   otherParty: [
     {
       description: "",
-      name: [{ name: "" }],
-      processesFiled: [{ name: "" }],
+      name: [],
+      processesFiled: [],
     },
   ],
   suitNo: "",
@@ -76,7 +76,7 @@ export const caseInitialValue = {
   courtNo: "",
   location: "",
   otherCourt: "",
-  judge: [{ name: "" }],
+  judge: [],
   caseSummary: "",
   caseStatus: "",
   natureOfCase: "",
@@ -89,9 +89,9 @@ export const caseInitialValue = {
   caseWeaknesses: [],
   casePriority: "",
   stepToBeTaken: [],
-  caseUpdates: [{ date: "", update: "" }],
+  caseUpdates: [],
 
   accountOfficer: [],
-  client: [{ name: "" }],
+  client: [],
   generalComment: "",
 };
