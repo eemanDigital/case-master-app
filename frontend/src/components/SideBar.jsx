@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
 import { RiCustomerService2Line } from "react-icons/ri";
+import { Button, Layout, Menu, theme } from "antd";
+const { Header, Sider, Content } = Layout;
 import avatar from "../assets/avatar.png";
 import { useLogout } from "../hooks/useLogout";
 import { useRemovePhoto } from "../hooks/useRemovePhoto";
@@ -80,13 +82,11 @@ const SideBar = ({ isOpen, handleOpen }) => {
   const { remove } = useRemovePhoto();
   const navigate = useNavigate();
   const { user } = useAuthContext();
-  // const { photo } = usePhotoContext();
 
-  // console.log("FILE", file?.data?.file);
-
-  // const { data } = user;
-  // console.log("TESTING", user?.data.user.photo);
-  // console.log("DATA", data);
+  const [collapsed, setCollapsed] = useState(false); //handle side bar collaps
+  const {
+    token: { colorBgContainer, borderRadiusLG },
+  } = theme.useToken();
 
   function handleLogout() {
     toast.success("Logout successful", {

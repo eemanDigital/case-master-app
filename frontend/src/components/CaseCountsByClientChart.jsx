@@ -67,7 +67,6 @@ const CaseCountsByClient = ({ data }) => {
           <XAxis dataKey="client" />
           <YAxis />
           <Tooltip content={<CustomTooltip />} />
-
           <Tooltip />
           <Legend />
           <Bar dataKey="count" fill="#8884d8" />
