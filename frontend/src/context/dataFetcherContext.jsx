@@ -30,6 +30,7 @@ const DataFetcherContext = ({ children }) => {
     casesByAccountOfficer: [],
     monthlyNewCases: [],
     yearlyNewCases: [],
+    events: [],
     loading: {
       cases: false,
       users: false,
@@ -56,6 +57,7 @@ const DataFetcherContext = ({ children }) => {
       casesByAccountOfficer: false,
       monthlyNewCases: false,
       yearlyNewCases: false,
+      events: false,
     },
     error: {
       cases: "",
@@ -83,6 +85,7 @@ const DataFetcherContext = ({ children }) => {
       casesByAccountOfficer: "",
       monthlyNewCases: "",
       yearlyNewCases: "",
+      events: "",
     },
   });
 
@@ -162,6 +165,7 @@ const DataFetcherContext = ({ children }) => {
       },
       { endpoint: "cases/monthly-new-cases", key: "monthlyNewCases" },
       { endpoint: "cases/yearly-new-cases", key: "yearlyNewCases" },
+      { endpoint: "events", key: "events" },
     ];
 
     endpoints.forEach(({ endpoint, key }) => {
