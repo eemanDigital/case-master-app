@@ -28,7 +28,7 @@ const CaseDetails = () => {
   if (error) return <p>Error loading data</p>;
 
   return (
-    <section className="p-6">
+    <section className="p-6 ">
       <div className="flex justify-between">
         <Link to="../..">
           <Button type="link">Go Back to case lists</Button>
@@ -252,35 +252,39 @@ const CaseDetails = () => {
         <List
           dataSource={documents}
           renderItem={(document, index) => (
-            <List.Item key={document?._id || index}>
-              <div className="flex gap-2 items-center">
-                <Text>{document?.fileName}</Text>
-                <FaDownload
-                  className="text-green-500 hover:text-green-700 cursor-pointer"
-                  onClick={(event) =>
-                    handleGeneralDownload(
-                      event,
-                      `${baseURL}/cases/${id}/documents/${document._id}/download`,
-                      document.fileName
-                    )
-                  }
-                />
+            <List.Item
+              key={document?._id || index}
+              className="flex gap-4 items-center p-7 bg-gray-200 hover:bg-gray-100 rounded-md">
+              <Text className="flex-1">{document?.fileName}</Text>
+              <button
+                aria-label={`Download ${document?.fileName}`}
+                className="p-2 text-2xl text-gray-500 hover:text-gray-700"
+                onClick={(event) =>
+                  handleGeneralDownload(
+                    event,
+                    `${baseURL}/cases/${id}/documents/${document._id}/download`,
+                    document.fileName
+                  )
+                }>
+                <FaDownload />
+              </button>
 
-                <RiDeleteBin2Line
-                  className="text-red-500"
-                  onClick={(event) =>
-                    Modal.confirm({
-                      title: "Are you sure you want to delete this document",
-                      onOk: () =>
-                        handleDeleteDocument(
-                          event,
-                          `cases/${id}/documents/${document._id}`,
-                          document._id
-                        ),
-                    })
-                  }
-                />
-              </div>
+              <button
+                aria-label={`Delete ${document?.fileName}`}
+                className="p-2 p-2 text-2xl text-red-500 hover:text-red-700"
+                onClick={(event) =>
+                  Modal.confirm({
+                    title: "Are you sure you want to delete this document?",
+                    onOk: () =>
+                      handleDeleteDocument(
+                        event,
+                        `cases/${id}/documents/${document._id}`,
+                        document._id
+                      ),
+                  })
+                }>
+                <RiDeleteBin2Line />
+              </button>
             </List.Item>
           )}
         />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext } from "react";
+import { useState, useEffect, createContext } from "react";
 import { Link } from "react-router-dom";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useDataFetch } from "../hooks/useDataFetch";
@@ -19,6 +19,8 @@ import MonthlyPaymentsChart from "./MonthlyPaymentsChart";
 import PaymentsEachMonthChart from "./PaymentsEachMonthChart";
 import CaseCountsByClientChart from "./CaseCountsByClientChart";
 import CaseCountsByYearChart from "./CaseCountsByYearChart ";
+import EventCalender from "./EventCalender";
+// import moment from "moment";
 
 const { Title, Text } = Typography;
 
@@ -32,6 +34,7 @@ const Dashboard = () => {
   const [yearMonth, setYearMonth] = useState(new Date().getFullYear());
   const [yearEachMonth, setYearEachMonth] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
+  // const [events, setEvents] = useState([]); //calender event
 
   const {
     data: getUserData,
@@ -78,10 +81,13 @@ const Dashboard = () => {
     loading: getterLoading,
     error: getterError,
     causeList,
+    reports,
+    events,
   } = useDataGetterHook();
 
-  // console.log("WTY", totalBalanceOnPayments.data);
+  // console.log(events.data.events, "EVENTS");
 
+  // end
   const { isAdmin } = useAdminHook();
 
   useEffect(() => {
@@ -114,6 +120,8 @@ const Dashboard = () => {
 
   const btnStyle = "bg-blue-500 text-white rounded-md";
 
+  // console.log(reports, events, "AD");
+
   const causeListTitle = (
     <div className="flex justify-between items-center">
       <h1 className="text-gray-700 text-[20px] font-bold">
@@ -130,7 +138,7 @@ const Dashboard = () => {
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
       <div className="mt-0">
         <h1 className="text-2xl font-bold text-gray-600 tracking-wider">
-          {user?.data?.user?.firstName}'s Dashboard,
+          {user?.data?.user?.firstName}&apos;s Dashboard,
         </h1>
       </div>
       <Row gutter={16} className="m-4 flex justify-between items-center">
@@ -154,6 +162,12 @@ const Dashboard = () => {
         </Col>
         <Col>
           <Todo />
+        </Col>
+        <Col>
+          <EventCalender
+            events={events?.data?.events}
+            causeListCalenderData={reports?.data}
+          />
         </Col>
       </Row>
       <Row gutter={16}>
