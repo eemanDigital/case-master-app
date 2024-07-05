@@ -1,17 +1,12 @@
 import { Link } from "react-router-dom";
 import { RiCustomerService2Line } from "react-icons/ri";
 import { Button, Layout, Menu, theme } from "antd";
-const { Header, Sider, Content } = Layout;
 import avatar from "../assets/avatar.png";
 import { useLogout } from "../hooks/useLogout";
 import { useRemovePhoto } from "../hooks/useRemovePhoto";
 import femaleAvatar from "../assets/female-avatar.png";
 import { RxDashboard } from "react-icons/rx";
-import {
-  IoBriefcaseSharp,
-  IoHelpCircleOutline,
-  IoMenuOutline,
-} from "react-icons/io5";
+import { IoBriefcaseSharp, IoHelpCircleOutline } from "react-icons/io5";
 import { TbLogout2 } from "react-icons/tb";
 import { TbReport } from "react-icons/tb";
 import { FaMoneyBill, FaTasks } from "react-icons/fa";
@@ -21,7 +16,7 @@ import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useNavigate } from "react-router-dom";
-import { Button, Layout, Menu, theme } from "antd";
+
 import { useState } from "react";
 
 const SideBar = ({ isOpen, handleOpen }) => {
@@ -153,7 +148,7 @@ const SideBar = ({ isOpen, handleOpen }) => {
             }}>
             <Button
               type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuUnfoldOutlined />}
+              icon={collapsed ? <MenuFoldOutlined /> : <MenuUnfoldOutlined />}
               onClick={() => setCollapsed(!collapsed)}
               style={{
                 fontSize: "16px",
