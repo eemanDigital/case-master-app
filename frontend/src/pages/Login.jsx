@@ -8,86 +8,14 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { GoogleLogin } from "@react-oauth/google";
-// import { googleLogout, useGoogleLogin } from "@react-oauth/google";
+import GoogleAuth from "./GoogleAuth";
+// import CalendarEventForm from "./GoogleCalenderForm";
 
 const Login = () => {
   const [click, setClick] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuthContext();
 
-  // google login
-
-  const handleCredentialResponse = (response) => {
-    // Extract the token from the response
-    const token = response.credential;
-
-    // Send the token to your backend
-    fetch("/auth/google", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ token: token }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Success:", data);
-        // Handle success response, maybe set user state or redirect
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        // Handle errors, such as displaying a notification
-      });
-  };
-  // const responseMessage = (response) => {
-  //   console.log("RESPONSE", response);
-  // };
-  // const errorMessage = (error) => {
-  //   console.log(error);
-  // };
-
-  // const [appUser, setAppUser] = useState([]);
-  // const [profile, setProfile] = useState([]);
-
-  // const login = useGoogleLogin({
-  //   onSuccess: (codeResponse) => {
-  //     const { access_token } = codeResponse;
-  //     console.log("API RES", access_token);
-  //   },
-
-  //   onError: (error) => console.log("Login Failed:", error),
-  //   scope: "email profile https://www.googleapis.com/auth/calendar",
-  // cookiePolicy: "single_host_policy",
-  // responseType: "code",
-  // accessType: "offline",
-  // });
-
-  // useEffect(() => {
-  //   if (appUser) {
-  //     axios
-  //       .get(
-  //         `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${appUser.access_token}`,
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${appUser.access_token}`,
-  //             Accept: "application/json",
-  //           },
-  //         }
-  //       )
-  //       .then((res) => {
-  //         setProfile(res.data);
-  //       })
-  //       .catch((err) => console.log(err));
-  //   }
-  // }, [appUser]);
-
-  // log out function to log the user out of google and set the profile array to null
-  // const logOut = () => {
-  //   googleLogout();
-  //   setProfile(null);
-  // };
-  //////////////////
   const [inputValue, setInputValue] = useState({
     email: "",
     password: "",
@@ -230,33 +158,10 @@ const Login = () => {
               </p>
             </div>
           </form>
-          {/* {profile ? (
-            <div>
-              <img src={profile.photo} alt="user image" />
-              <h3>User Logged in</h3>
-              <p>Name: {profile.name}</p>
-              <p>Email Address: {profile.email}</p>
-              <br />
-              <br />
-              <button onClick={logOut}>Log out</button>
-            </div>
-          ) : ( */}
-          {/* <Button
-            onSuccess={responseMessage}
-            onError={errorMessage}
-            onClick={() => login()}>
-            Sign in with Google 🚀{" "}
-          </Button> */}
-          {/* )} */}{" "}
-          <GoogleLogin
-            onSuccess={handleCredentialResponse}
-            onError={() => console.log("Login Failed")}
-            scope="email profile https://www.googleapis.com/auth/calendar"
-          />
+          <GoogleAuth />
+          {/* <CalendarEventForm /> */}
         </div>
       </div>
-
-      {/* Google login */}
     </section>
   );
 };

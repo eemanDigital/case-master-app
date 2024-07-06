@@ -17,6 +17,7 @@ const paymentRouter = require("./routes/paymentRoutes");
 const todoRoutes = require("./routes/todoRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const notificationRouter = require("./routes/notificationRoutes");
+const googleApiRouter = require("./routes/googleApiRoutes");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 
@@ -101,6 +102,7 @@ app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/todos", todoRoutes);
 app.use("/api/v1/events", eventRoutes);
+app.use("/api/v1/google", googleApiRouter);
 //handles non-existing route
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
