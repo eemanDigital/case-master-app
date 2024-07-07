@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const path = require("path");
 const cors = require("cors");
 const morgan = require("morgan");
+const passport = require("passport");
+const session = require("express-session");
 const cookieParser = require("cookie-parser");
 const userRouter = require("./routes/userRoutes");
 const caseRouter = require("./routes/caseRoutes");
@@ -17,7 +19,9 @@ const paymentRouter = require("./routes/paymentRoutes");
 const todoRoutes = require("./routes/todoRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const notificationRouter = require("./routes/notificationRoutes");
-const googleApiRouter = require("./routes/googleApiRoutes");
+// const googleApiRouter = require("./routes/googleApiRoutes");
+const googleAuthRouter = require("./routes/googleAuthRoutes");
+require("./utils/passportConfig");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 
@@ -63,6 +67,13 @@ app.use(
 // app.use(express.static("public"));
 
 app.use(cookieParser());
+app.use(
+  session({ secret: "your_secret", resave: false, saveUninitialized: false })
+);
+
+app.use(passport.initialize());
+app.use(passport.session());
+
 // connection to mongoose - MONGODB ATLAS
 const DB = process.env.DATABASE.replace(
   "<PASSWORD>",
@@ -91,10 +102,7 @@ if (process.env.NODE_ENV === "development") {
 // console.log(process.env);
 //routes mounting
 app.use("/api/v1/users", userRouter);
-app.use("/api/v1/google", googleApiRouter);
-
-// app.use("/api/v1/documents", fileRouter);
-// app.use("/api/v1/photos", photoRouter);
+app.use("/api/v1/auth", googleAuthRouter);
 app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/clients", clientRouter);

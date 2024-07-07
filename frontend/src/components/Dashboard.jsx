@@ -141,7 +141,8 @@ const Dashboard = () => {
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
       <div className="flex justify-between items-center mt-0">
         <h1 className="text-2xl font-bold text-gray-600 tracking-wider">
-          {user?.data?.user?.firstName}&apos;s Dashboard,
+          {user?.data?.user?.firstName}&apos;s Dashboard(
+          {user?.data?.user?.role}),
         </h1>
         <div className="w-12 h-12">
           <a
