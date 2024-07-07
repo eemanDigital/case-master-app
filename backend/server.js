@@ -34,6 +34,7 @@ const errorController = require("./controllers/errorController");
 
 //configure our node env
 dotenv.config({ path: "./config.env" });
+
 // MIDDLEWARES
 const app = express();
 app.use(express.urlencoded({ extended: true }));
@@ -90,6 +91,8 @@ if (process.env.NODE_ENV === "development") {
 // console.log(process.env);
 //routes mounting
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/google", googleApiRouter);
+
 // app.use("/api/v1/documents", fileRouter);
 // app.use("/api/v1/photos", photoRouter);
 app.use("/api/v1/cases", caseRouter);
@@ -102,7 +105,6 @@ app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/todos", todoRoutes);
 app.use("/api/v1/events", eventRoutes);
-app.use("/api/v1/google", googleApiRouter);
 //handles non-existing route
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));

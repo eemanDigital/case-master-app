@@ -1,24 +1,18 @@
-// const { OAuth2Client } = require("google-auth-library");
-const { google } = require("googleapis");
+const dotenv = require("dotenv");
 const catchAsync = require("../utils/catchAsync");
-const { auth } = require("google-auth-library");
+const { google } = require("googleapis");
 
-// console.log(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_SECRET_ID);
+dotenv.config({ path: "./config.env" });
+
 const oauth2Client = new google.auth.OAuth2(
-  "475787186709-i5iph876jt4hlchjqhig0faoukvo7pii.apps.googleusercontent.com",
-  "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",
-  "http://localhost:5173"
+  process.env.CLIENT_ID,
+  process.env.SECRET_ID,
+  process.env.REDIRECT_URI
 );
-// const oauth2Client = new google.auth.OAuth2(
-//   process.env.GOOGLE_CLIENT_ID,
-//   process.env.GOOGLE_SECRET_ID,
-//   process.env.REDIRECT
-// );
-
 // console.log(oauth2Client);
 
 const refreshToken =
-  "1//03pywlri-f3N6CgYIARAAGAMSNgF-L9IrMqH46sK_v5G5Ufhf35nfKdn6OkeQPQXmf8zFgit3ff6ot_oaplAd8GkkUr0gGCYMTA"; //should be stored in the db
+  "1//03pywlri-f3N6CgYIARAAGAMSNgF-L9IrMqH46sK_v5G5Ufhf35nfKdn6OkeQPQXmf8zFgit3ff6ot_oaplAd8GkkUr0gGCYMTA"; //should be stored in the db. just testing
 
 exports.createToken = catchAsync(async (req, res, next) => {
   const { code } = req.body;
@@ -46,7 +40,7 @@ exports.createEvents = catchAsync(async (req, res, next) => {
       summary: eventTitle,
       description: eventDescription,
       location: eventLocation,
-      colorId: "1",
+      colorId: "6",
       start: {
         dateTime: new Date(startTime),
       },

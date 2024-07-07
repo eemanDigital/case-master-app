@@ -14,17 +14,11 @@ const CalendarEventForm = () => {
     e.preventDefault();
 
     const event = {
-      summary: eventTitle,
-      description: eventDescription, // Include description in the event object
-      location: eventLocation, // Include location in the event object
-      start: {
-        dateTime: startTime,
-        timeZone: "America/Los_Angeles",
-      },
-      end: {
-        dateTime: endTime,
-        timeZone: "America/Los_Angeles",
-      },
+      eventTitle,
+      eventDescription, // Include description in the event object
+      eventLocation, // Include location in the event object
+      startTime,
+      endTime,
     };
 
     const headers = {
@@ -33,7 +27,7 @@ const CalendarEventForm = () => {
     };
 
     axios
-      .post(`${baseURL}/google/create-events`, event) // Correctly passing headers as part of the configuration object
+      .post(`${baseURL}/google/create-events`, event, { headers }) // Correctly passing headers as part of the configuration object
       .then((response) => {
         console.log(response.data);
       })

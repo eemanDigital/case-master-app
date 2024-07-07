@@ -2,7 +2,7 @@ const express = require("express");
 const {
   createToken,
   createEvents,
-} = require("../controllers/googleAuth2Controller");
+} = require("../controllers/googleAuthController");
 
 const router = express.Router();
 

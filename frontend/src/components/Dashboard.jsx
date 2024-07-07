@@ -20,6 +20,9 @@ import PaymentsEachMonthChart from "./PaymentsEachMonthChart";
 import CaseCountsByClientChart from "./CaseCountsByClientChart";
 import CaseCountsByYearChart from "./CaseCountsByYearChart ";
 import EventCalender from "./EventCalender";
+import googleCalender from "../assets/calender.svg";
+
+// import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
 
 const { Title, Text } = Typography;
@@ -136,11 +139,25 @@ const Dashboard = () => {
   return (
     <PaymentFiltersContext.Provider
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
-      <div className="mt-0">
+      <div className="flex justify-between items-center mt-0">
         <h1 className="text-2xl font-bold text-gray-600 tracking-wider">
           {user?.data?.user?.firstName}&apos;s Dashboard,
         </h1>
+        <div className="w-12 h-12">
+          <a
+            href="https://calendar.google.com/calendar"
+            target="_blank"
+            rel="noopener noreferrer">
+            {/* Google Calendar */}
+            <img
+              className="h-12 w-12"
+              src={googleCalender}
+              alt="google calendar logo"
+            />
+          </a>
+        </div>
       </div>
+
       <Row gutter={16} className="m-4 flex justify-between items-center">
         {isAdmin && (
           <Col>
@@ -154,6 +171,7 @@ const Dashboard = () => {
             <Button className={btnStyle}>Apply for leave</Button>
           </Link>
         </Col>
+
         <Col>
           <LeaveBalanceDisplay userId={userId} />
         </Col>
