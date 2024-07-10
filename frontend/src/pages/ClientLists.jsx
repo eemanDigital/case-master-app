@@ -3,24 +3,88 @@ import { Link } from "react-router-dom";
 import { Space, Table, Button, Spin, Alert, Modal, Divider } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import AddClientForm from "../components/AddClientForm";
+import { useEffect, useState } from "react";
+import SearchBar from "../components/SearchBar";
+import { useAdminHook } from "../hooks/useAdminHook";
+import { useAuthContext } from "../hooks/useAuthContext";
 
 const ClientLists = () => {
-  const { clients, loadingClients, errorClients } = useDataGetterHook();
-  const { Column, ColumnGroup } = Table;
+  const {
+    clients,
+    loading: loadingClients,
+    error: errorClients,
+  } = useDataGetterHook();
+  const [searchResults, setSearchResults] = useState([]);
 
-  // console.log(clients.data);
+  const { Column, ColumnGroup } = Table;
+  const { isStaff } = useAdminHook();
+  const { user } = useAuthContext();
+
+  const clientID = user?.data?.user?._id;
 
   const { data, loading, error, dataFetcher } = useDataFetch();
 
-  if (loadingClients) {
+  // console.log(clients?.data, "C");
+
+  useEffect(() => {
+    if (clients?.data) {
+      setSearchResults(clients?.data);
+    }
+  }, [clients]);
+
+  // handles search filter
+  const handleSearchChange = (e) => {
+    const searchTerm = e.target.value.trim().toLowerCase();
+
+    if (!searchTerm) {
+      setSearchResults(clients?.data);
+      return;
+    }
+
+    const results = clients?.data.filter((d) => {
+      // Check in user names
+      const firstUsernameMatch = d?.firstName
+        ?.toLowerCase()
+        .includes(searchTerm);
+
+      // Check in user names
+      const secondUsernameMatch = d?.secondName
+        ?.toLowerCase()
+        .includes(searchTerm);
+
+      // check by email
+      const emailMatch = d.email?.toLowerCase().includes(searchTerm);
+
+      // Check in position
+      const phoneMatch = d?.phone?.toLowerCase().includes(searchTerm);
+
+      return (
+        firstUsernameMatch || secondUsernameMatch || emailMatch || phoneMatch
+      );
+    });
+
+    setSearchResults(results);
+  };
+
+  if (loadingClients.clients) {
     return (
       <Spin size="large" className="flex justify-center items-center h-full" />
     );
   }
 
-  if (errorClients) {
+  // filter clients list by current clientId
+  const filteredClients = (clientId) => {
+    return clients?.data?.filter((client) => client?._id === clientId);
+  };
+
+  if (errorClients.clients) {
     return (
-      <Alert message="Error" description={errorClients} type="error" showIcon />
+      <Alert
+        message="Error"
+        description={errorClients.clients}
+        type="error"
+        showIcon
+      />
     );
   }
   const fileHeaders = {
@@ -33,9 +97,14 @@ const ClientLists = () => {
 
   return (
     <>
-      <AddClientForm />
+      <div
+        className={`flex md:flex-row flex-col justify-between items-center `}>
+        {isStaff && <AddClientForm />}
+        <SearchBar onSearch={handleSearchChange} />
+      </div>
+
       <Divider />
-      <Table dataSource={clients?.data}>
+      <Table dataSource={isStaff ? searchResults : filteredClients(clientID)}>
         <ColumnGroup title="Client Lists">
           <Column title="Client's Name" dataIndex="firstName" key="firstName" />
           <Column title="Second Name" dataIndex="secondName" key="secondName" />

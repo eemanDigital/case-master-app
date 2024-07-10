@@ -7,14 +7,16 @@ import { Table, Modal, Space, Button } from "antd";
 import CreateTaskForm from "../pages/CreateTaskForm";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { RiDeleteBin6Line } from "react-icons/ri";
+import { useAdminHook } from "../hooks/useAdminHook";
 
 const TaskList = () => {
   const { tasks, loadingError, errorTasks } = useDataGetterHook();
+
+  console.log("TASK", tasks);
   const { user } = useAuthContext();
   const { data, loading, error, dataFetcher } = useDataFetch();
 
-  const isAdmin = user?.data?.user?.role === "admin";
-  // const { id } = useParams();
+  const { isSuperOrAdmin } = useAdminHook();
 
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
@@ -99,7 +101,7 @@ const TaskList = () => {
       <Table
         columns={columns}
         dataSource={
-          isAdmin ? tasks?.data : filterTaskByUser(user?.data?.user?.id)
+          isSuperOrAdmin ? tasks?.data : filterTaskByUser(user?.data?.user?.id)
         }
         rowKey="_id"
       />

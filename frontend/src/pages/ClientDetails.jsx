@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { Col, Descriptions, Divider } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { formatDate } from "../utils/formatDate";
+// import { formatDate } from "../utils/formatDate";
 import UpdateClientInfo from "./UpdateClientInfo";
 import PaymentMadeOnCase from "./PaymentMadeOnCase";
 
@@ -28,22 +28,29 @@ const ClientDetails = () => {
           {data?.data?.firstName}
         </Descriptions.Item>
         <Descriptions.Item label="Second Name">
-          {data?.data?.secondName}
+          {data?.data?.secondName || <p>N/A</p>}
         </Descriptions.Item>
         <Descriptions.Item label="Email">{data?.data?.email}</Descriptions.Item>
         <Descriptions.Item label="Phone">{data?.data?.phone}</Descriptions.Item>
-        <Descriptions.Item label="Date of Birth">
+        {/* <Descriptions.Item label="Date of Birth">
           {formatDate(data?.data?.dob ? data?.data?.dob : null)}
-        </Descriptions.Item>
+        </Descriptions.Item> */}
         <Descriptions.Item label="Address">
           {data?.data?.address}
         </Descriptions.Item>
         <Descriptions.Item label="Case">
-          {data?.data?.case?.firstParty?.name[0]?.name} vs{" "}
-          {data?.data?.case?.secondParty?.name[0]?.name}
+          {data?.data?.case?.map((c, index) => (
+            <div key={index}>
+              <p>
+                {index + 1}: {c.firstParty?.name[0]?.name} vs{" "}
+                {c.secondParty?.name[0]?.name}
+              </p>
+              {index < data.data.case.length - 1 ? <br /> : ""}
+            </div>
+          ))}
         </Descriptions.Item>
-        <Descriptions.Item label="Active">
-          {data?.data?.active ? "Yes" : "No"}
+        <Descriptions.Item label="Is Active">
+          {data?.data?.active && "Yes, an active Client"}
         </Descriptions.Item>
       </Descriptions>
       <Divider />

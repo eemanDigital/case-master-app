@@ -75,8 +75,8 @@ const userSchema = new mongoose.Schema(
       trim: true,
       required: true,
       enum: [
-        "Principal",
-        "Managing Partner",
+        "principal",
+        "managing_partner",
         "Head of Chambers",
         "Associate",
         "Senior Associate",
@@ -113,10 +113,11 @@ const userSchema = new mongoose.Schema(
     universityAttended: String,
     lawSchoolAttended: String,
     annualLeaveEntitled: Number,
+
     yearOfCall: {
       type: Date,
       required: function () {
-        return ["Secretary", "Para-legal", "Other", "Client"].includes(
+        return ["secretary", "para_legal", "other", "client"].includes(
           this.position
         );
       },

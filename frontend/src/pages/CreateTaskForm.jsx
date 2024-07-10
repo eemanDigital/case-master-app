@@ -65,6 +65,7 @@ const CreateTaskForm = () => {
         Create Task
       </Button>
       <Modal
+        width="70%"
         title="Assign Task"
         open={open}
         onOk={handleOk}
@@ -78,10 +79,7 @@ const CreateTaskForm = () => {
             name="dynamic_form_complex"
             // autoComplete="off"
             className="flex  justify-center">
-            <Card
-              title="Add Task"
-              bordered={false}
-              style={{ width: 400, height: 750 }}>
+            <div className="flex flex-wrap justify-between items-center">
               <div>
                 {/* task title */}
                 <Form.Item
@@ -183,7 +181,7 @@ const CreateTaskForm = () => {
                   Save
                 </Button>
               </Form.Item>
-            </Card>
+            </div>
           </Form>
         </section>
       </Modal>

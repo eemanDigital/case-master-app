@@ -7,26 +7,10 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import { ToastContainer, toast } from "react-toastify";
 import { Button, Modal } from "antd";
 import useModal from "../hooks/useModal";
+import { positions, roles } from "../data/options";
 import "react-toastify/dist/ReactToastify.css";
 
 const UpdateUserPositionAndRole = ({ userId }) => {
-  const positions = [
-    "Select a position",
-    "Principal",
-    "Managing Partner",
-    "Head of Chambers",
-    "Associate",
-    "Senior Associate",
-    "Junior Associate",
-    "Counsel",
-    "Intern",
-    "Secretary",
-    "Para-legal",
-    "Client",
-    "Other",
-  ];
-  const roles = ["user", "admin", "secretary", "hr"];
-
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();
   const { data, loading, error, dataFetcher } = useDataFetch();

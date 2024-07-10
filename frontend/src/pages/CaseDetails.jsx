@@ -8,6 +8,7 @@ import { RiDeleteBin2Line } from "react-icons/ri";
 import CaseDocumentUpload from "../components/CaseDocumentUpload";
 import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
 import useDeleteDocument from "../hooks/useDeleteDocument";
+import { useAdminHook } from "../hooks/useAdminHook";
 
 const { Title, Text } = Typography;
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -15,6 +16,8 @@ const baseURL = import.meta.env.VITE_BASE_URL;
 const CaseDetails = () => {
   const { id } = useParams();
   const { dataFetcher, data, loading, error } = useDataFetch();
+  const { isStaff } = useAdminHook();
+
   const { handleDeleteDocument, documents } = useDeleteDocument(
     data?.data,
     "caseData"
@@ -35,7 +38,7 @@ const CaseDetails = () => {
         </Link>
 
         {/* case file upload */}
-        <CaseDocumentUpload caseId={id} />
+        {isStaff && <CaseDocumentUpload caseId={id} />}
       </div>
 
       <div className="my-4">

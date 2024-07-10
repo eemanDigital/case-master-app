@@ -19,8 +19,9 @@ import MonthlyPaymentsChart from "./MonthlyPaymentsChart";
 import PaymentsEachMonthChart from "./PaymentsEachMonthChart";
 import CaseCountsByClientChart from "./CaseCountsByClientChart";
 import CaseCountsByYearChart from "./CaseCountsByYearChart ";
-import EventCalender from "./EventCalender";
+// import EventCalender from "./EventCalender";
 import googleCalender from "../assets/calender.svg";
+import EventCalendar from "./EventCalender";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -32,7 +33,9 @@ export const PaymentFiltersContext = createContext();
 
 const Dashboard = () => {
   const { user } = useAuthContext();
+
   const userId = user?.data?.user?._id;
+
   const [year, setYear] = useState(new Date().getFullYear());
   const [yearMonth, setYearMonth] = useState(new Date().getFullYear());
   const [yearEachMonth, setYearEachMonth] = useState(new Date().getFullYear());
@@ -91,7 +94,7 @@ const Dashboard = () => {
   // console.log(events.data.events, "EVENTS");
 
   // end
-  const { isAdmin } = useAdminHook();
+  const { isAdmin, isStaff } = useAdminHook();
 
   useEffect(() => {
     if (userId) {
@@ -158,147 +161,145 @@ const Dashboard = () => {
           </a>
         </div>
       </div>
+      {isStaff && (
+        <>
+          <Row gutter={16} className="m-4 flex justify-between items-center">
+            {isAdmin && (
+              <Col>
+                <Link to="add-user">
+                  <Button className={btnStyle}>Add User</Button>
+                </Link>
+              </Col>
+            )}
+            <Col>
+              <Link to="leave-application">
+                <Button className={btnStyle}>Apply for leave</Button>
+              </Link>
+            </Col>
 
-      <Row gutter={16} className="m-4 flex justify-between items-center">
-        {isAdmin && (
-          <Col>
-            <Link to="add-user">
-              <Button className={btnStyle}>Add User</Button>
-            </Link>
-          </Col>
-        )}
-        <Col>
-          <Link to="leave-application">
-            <Button className={btnStyle}>Apply for leave</Button>
-          </Link>
-        </Col>
+            <Col>
+              <LeaveBalanceDisplay userId={userId} />
+            </Col>
+            <Col>
+              <CreateTaskForm />
+            </Col>
+            <Col>
+              <Todo />
+            </Col>
+            <Col>
+              <EventCalendar
+                events={events?.data?.events}
+                causeListCalenderData={reports?.data}
+              />
+            </Col>
+          </Row>
+          <Row gutter={16}>
+            <Col span={6}>
+              <Card>
+                <FaBriefcase className="text-3xl text-blue-500 mb-2" />
+                <Title level={4}>{cases?.results}</Title>
+                <Text>Number of Cases</Text>
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <FaUser className="text-3xl text-blue-500 mb-2" />
+                <Title level={4}>{users?.results}</Title>
+                <Text>Number of Staff</Text>
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <GoLaw className="text-3xl text-blue-500 mb-2" />
+                <Title level={4}>6</Title>
+                <Text>Number of Lawyers</Text>
+              </Card>
+            </Col>
+            <Col span={6}>
+              <Card>
+                <FaTasks className="text-3xl text-blue-500 mb-2" />
+                <Title level={4}>{tasks?.results}</Title>
+                <Text>Number of Assigned Tasks</Text>
+              </Card>
+            </Col>
+          </Row>
+          <Divider />
+          <div
+            className={`inner-shadow overflow-y-auto hide-scrollbar bg-white text-gray-600 ${
+              causeList.data?.todayResult === 0
+                ? "h-[180] w-[440px] display-shadow-none"
+                : "h-[240px]"
+            }`}>
+            {causeList.data?.todayResult === 0 ? (
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={
+                  <h3 className="text-blue-500 font-bold">
+                    You have no matter today in Court
+                  </h3>
+                }
+              />
+            ) : (
+              <SingleCauseList
+                causeListData={causeList.data?.reportsToday}
+                loadingCauseList={getterLoading.causeList}
+                errorCauseList={getterError.causeList}
+                title={causeListTitle}
+                h1Style="text-center text-2xl text-gray-600 font-bold"
+              />
+            )}
+          </div>{" "}
+          <div className="flex justify-between shadow-md rounded-md my-6 gap-2 bg-white">
+            <div className="flex w-full">
+              <AccountOfficerCharts
+                title="Cases By Account Officer"
+                data={casesByAccountOfficer?.data || []}
+              />
+            </div>
+          </div>
+          <div className="flex  md:flex-col  justify-between gap-2 w-full">
+            <MonthlyPaymentsChart data={fetchedMonthData?.data} />
+            <TotalPaymentCharts
+              paymentData={fetchedYearData?.data}
+              balanceData={totalBalanceOnPayments}
+            />
+            <PaymentsEachMonthChart data={fetchedEachMonthDataInYear?.data} />
+          </div>
+          <CaseCountsByClientChart data={casesByClient?.data} />
+          <div className=" bg-white flex  md:flex-row   justify-between  items-center p-4">
+            <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
 
-        <Col>
-          <LeaveBalanceDisplay userId={userId} />
-        </Col>
-        <Col>
-          <CreateTaskForm />
-        </Col>
-        <Col>
-          <Todo />
-        </Col>
-        <Col>
-          <EventCalender
-            events={events?.data?.events}
-            causeListCalenderData={reports?.data}
-          />
-        </Col>
-      </Row>
-      <Row gutter={16}>
-        <Col span={6}>
-          <Card>
-            <FaBriefcase className="text-3xl text-blue-500 mb-2" />
-            <Title level={4}>{cases?.results}</Title>
-            <Text>Number of Cases</Text>
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <FaUser className="text-3xl text-blue-500 mb-2" />
-            <Title level={4}>{users?.results}</Title>
-            <Text>Number of Staff</Text>
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <GoLaw className="text-3xl text-blue-500 mb-2" />
-            <Title level={4}>6</Title>
-            <Text>Number of Lawyers</Text>
-          </Card>
-        </Col>
-        <Col span={6}>
-          <Card>
-            <FaTasks className="text-3xl text-blue-500 mb-2" />
-            <Title level={4}>{tasks?.results}</Title>
-            <Text>Number of Assigned Tasks</Text>
-          </Card>
-        </Col>
-      </Row>
-      <Divider />
-
-      <div
-        className={`inner-shadow overflow-y-auto hide-scrollbar bg-white text-gray-600 ${
-          causeList.data?.todayResult === 0
-            ? "h-[180] w-[440px] display-shadow-none"
-            : "h-[240px]"
-        }`}>
-        {causeList.data?.todayResult === 0 ? (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <h3 className="text-blue-500 font-bold">
-                You have no matter today in Court
-              </h3>
-            }
-          />
-        ) : (
-          <SingleCauseList
-            causeListData={causeList.data?.reportsToday}
-            loadingCauseList={getterLoading.causeList}
-            errorCauseList={getterError.causeList}
-            title={causeListTitle}
-            h1Style="text-center text-2xl text-gray-600 font-bold"
-          />
-        )}
-      </div>
-
-      <div className="flex justify-between shadow-md rounded-md my-6 gap-2 bg-white">
-        <div className="flex w-full">
-          <AccountOfficerCharts
-            title="Cases By Account Officer"
-            data={casesByAccountOfficer?.data || []}
-          />
-        </div>
-      </div>
-
-      <div className="flex  md:flex-col  justify-between gap-2 w-full">
-        <MonthlyPaymentsChart data={fetchedMonthData?.data} />
-        <TotalPaymentCharts
-          paymentData={fetchedYearData?.data}
-          balanceData={totalBalanceOnPayments}
-        />
-        <PaymentsEachMonthChart data={fetchedEachMonthDataInYear?.data} />
-      </div>
-      <CaseCountsByClientChart data={casesByClient?.data} />
-
-      <div className=" bg-white flex  md:flex-row   justify-between  items-center p-4">
-        <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
-
-        <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
-      </div>
-
-      <div className="flex justify-between flex-wrap w-full py-12 px-6 my-8 shadow-md rounded-md gap-2 bg-white">
-        <CasesByCategoriesChart
-          title="Case By Status"
-          data={casesByStatus?.data || []}
-        />
-        <CasesByCategoriesChart
-          title="Nature of Case"
-          data={casesByNature?.data || []}
-        />
-        <CasesByCategoriesChart
-          title="Cases By Court"
-          data={casesByCourt?.data || []}
-        />
-        <CasesByCategoriesChart
-          title="Cases By Rating"
-          data={casesByRating?.data || []}
-        />
-        <CasesByCategoriesChart
-          title="Cases By Mode"
-          data={casesByMode?.data || []}
-        />
-        {/* <CasesByCategoriesChart title="Cases By Client" data={casesByClient?.data || []} /> */}
-        <CasesByCategoriesChart
-          title="Cases By Category"
-          data={casesByCategory?.data || []}
-        />
-      </div>
+            <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
+          </div>
+          <div className="flex justify-between flex-wrap w-full py-12 px-6 my-8 shadow-md rounded-md gap-2 bg-white">
+            <CasesByCategoriesChart
+              title="Case By Status"
+              data={casesByStatus?.data || []}
+            />
+            <CasesByCategoriesChart
+              title="Nature of Case"
+              data={casesByNature?.data || []}
+            />
+            <CasesByCategoriesChart
+              title="Cases By Court"
+              data={casesByCourt?.data || []}
+            />
+            <CasesByCategoriesChart
+              title="Cases By Rating"
+              data={casesByRating?.data || []}
+            />
+            <CasesByCategoriesChart
+              title="Cases By Mode"
+              data={casesByMode?.data || []}
+            />
+            {/* <CasesByCategoriesChart title="Cases By Client" data={casesByClient?.data || []} /> */}
+            <CasesByCategoriesChart
+              title="Cases By Category"
+              data={casesByCategory?.data || []}
+            />
+          </div>
+        </>
+      )}
     </PaymentFiltersContext.Provider>
   );
 };

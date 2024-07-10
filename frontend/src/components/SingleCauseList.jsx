@@ -19,7 +19,7 @@ const SingleCauseList = ({
   const onRowClick = (record, rowIndex) => {
     return {
       onClick: () => {
-        setSelectedReportId(causeListData[rowIndex]._id);
+        setSelectedReportId(causeListData[rowIndex]?._id);
       },
     };
   };

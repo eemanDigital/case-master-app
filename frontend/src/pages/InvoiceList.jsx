@@ -4,10 +4,17 @@ import { formatDate } from "../utils/formatDate";
 import { Table, Modal, Space, Button } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import moment from "moment";
+import { useEffect, useState } from "react";
+import SearchBar from "../components/SearchBar";
 
 const InvoiceList = () => {
   const { data, loading, error, dataFetcher } = useDataFetch();
-  const { invoices, laodingInvoices, errorInvoices } = useDataGetterHook();
+  const {
+    invoices,
+    loading: loadingInvoices,
+    error: errorInvoices,
+  } = useDataGetterHook();
+  const [searchResults, setSearchResults] = useState([]);
 
   //   console.log(invoices?.data[0]._id);
 
@@ -18,6 +25,44 @@ const InvoiceList = () => {
 
   const handleDeleteInvoice = async (id) => {
     await dataFetcher(`invoices/${id}`, "delete", fileHeaders);
+  };
+
+  // render all cases initially before filter
+  useEffect(() => {
+    if (invoices?.data) {
+      setSearchResults(invoices?.data);
+    }
+  }, [invoices]);
+
+  // handles search filter
+  const handleSearchChange = (e) => {
+    const searchTerm = e.target.value.trim().toLowerCase();
+
+    if (!searchTerm) {
+      setSearchResults(invoices?.data);
+      return;
+    }
+
+    const results = invoices?.data.filter((d) => {
+      // Check in client names
+      const clientNameMatch = d.client?.fullName
+        .toLowerCase()
+        .includes(searchTerm);
+      // Check in invoice reference
+      const referenceMatch = d.invoiceReference
+        ?.toLowerCase()
+        .includes(searchTerm);
+
+      // check by work title
+      const workTitleMatch = d.workTitle?.toLowerCase().includes(searchTerm);
+
+      // Check in invoice status //this is a strict match
+      const statusMatch = d.status.toLowerCase() === searchTerm.toLowerCase();
+
+      return clientNameMatch || referenceMatch || workTitleMatch || statusMatch;
+    });
+
+    setSearchResults(results);
   };
 
   const columns = [
@@ -31,6 +76,7 @@ const InvoiceList = () => {
       dataIndex: "client",
       key: "client",
       render: (client) => (client ? client.firstName : "N/A"),
+      responsive: ["md"],
     },
     {
       title: "Work Title",
@@ -91,11 +137,15 @@ const InvoiceList = () => {
 
   return (
     <div>
-      <Link to="invoices/add-invoices">
-        <Button className="bg-blue-500  text-white">Create Invoice</Button>
-      </Link>
+      <div className="flex md:flex-row flex-col  justify-between items-center">
+        <Link to="invoices/add-invoices">
+          <Button className="bg-blue-500  text-white">Create Invoice</Button>
+        </Link>
+
+        <SearchBar onSearch={handleSearchChange} />
+      </div>
       <h1 className="text-3xl font-bold text-gray-700 mb-7">Invoices</h1>
-      <Table columns={columns} dataSource={invoices?.data} rowKey="_id" />
+      <Table columns={columns} dataSource={searchResults} rowKey="_id" />
     </div>
   );
 };

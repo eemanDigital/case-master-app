@@ -16,14 +16,17 @@ import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import "react-toastify/dist/ReactToastify.css";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useNavigate } from "react-router-dom";
+import { useAdminHook } from "../hooks/useAdminHook";
 
 import { useState } from "react";
 
-const SideBar = ({ isOpen, handleOpen }) => {
+const SideBar = () => {
   const { logout } = useLogout();
   const { remove } = useRemovePhoto();
   const navigate = useNavigate();
   const { user } = useAuthContext();
+  const { isClient, isUser } = useAdminHook();
+
   const { Header, Sider, Content } = Layout;
   const [collapsed, setCollapsed] = useState(false);
   const {
@@ -105,6 +108,24 @@ const SideBar = ({ isOpen, handleOpen }) => {
     },
   ];
 
+  // Filter navItems based on the user's role
+  // Filter navItems based on the user's role
+  const filteredNavItems = navItems.filter((item) => {
+    if (
+      isClient &&
+      (item.key === "4" ||
+        item.key === "5" ||
+        item.key === "6" ||
+        item.key === "7")
+    ) {
+      return false; // Filter out keys for clients
+    }
+    if (isUser && item.key === "5") {
+      return false; // Filter out billing for ordinary users
+    }
+    return true;
+  });
+
   return (
     <>
       <Layout>
@@ -115,24 +136,33 @@ const SideBar = ({ isOpen, handleOpen }) => {
           className="fixed h-full"
           style={{ overflow: "auto", height: "100vh" }}>
           {/* user's profile */}
-          <div className="mt-4 p-4 flex justify-center items-center  tooltip">
+
+          {!isClient ? (
+            <div className="mt-4 p-4 flex justify-center items-center  tooltip">
+              <Link to="profile">
+                <img
+                  src={
+                    user?.data?.user?.photo
+                      ? `http://localhost:3000/images/users/${user?.data?.user?.photo}`
+                      : user?.data?.user?.gender === "male"
+                      ? avatar
+                      : femaleAvatar
+                  }
+                  alt={`${user?.data?.user?.firstName}'s profile image`}
+                  className="w-12 h-12 object-cover object-right-top rounded-full"
+                />
+              </Link>
+            </div>
+          ) : (
             <Link to="profile">
-              <img
-                src={
-                  user?.data?.user?.photo
-                    ? `http://localhost:3000/images/users/${user?.data?.user?.photo}`
-                    : user?.data?.user?.gender === "male"
-                    ? avatar
-                    : femaleAvatar
-                }
-                alt={`${user?.data?.user?.firstName}'s profile image`}
-                className="w-12 h-12 object-cover object-right-top rounded-full"
-              />
+              <h1 className="py-6 text-gray-300 hover:text-gray-500 font-bold  text-center ">
+                {user?.data?.user?.firstName}
+              </h1>
             </Link>
-          </div>
+          )}
 
           <Menu theme="dark" mode="inline" defaultSelectedKeys={["1"]}>
-            {navItems.map((item) => (
+            {filteredNavItems.map((item) => (
               <Menu.Item key={item.key} icon={item.icon}>
                 {item.label}
               </Menu.Item>

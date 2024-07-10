@@ -4,14 +4,15 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import CreatePaymentForm from "./CreatePaymentForm";
+import SearchBar from "../components/SearchBar";
+import { useEffect, useState } from "react";
+import { parse, isValid, format } from "date-fns";
 
 const PaymentList = () => {
-  const { payments, loadingPayments, errorPayments } = useDataGetterHook();
-  const { dataFetcher } = useDataFetch();
-  //   console.log("PAY", payments.data?.payments);
-  // Handle delete function
+  const { payments, loading, error } = useDataGetterHook();
+  const [searchResults, setSearchResults] = useState([]);
 
-  const isPaid = 0; //check paid fee
+  const { dataFetcher } = useDataFetch();
 
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
@@ -21,6 +22,54 @@ const PaymentList = () => {
     await dataFetcher(`payments/${id}`, "delete", fileHeaders);
   };
 
+  // render all cases initially before filter
+  useEffect(() => {
+    if (payments.data?.payments) {
+      setSearchResults(payments.data?.payments);
+    }
+  }, [payments]);
+  // handles search filter
+  const handleSearchChange = (e) => {
+    const searchTerm = e.target.value.trim().toLowerCase();
+
+    if (!searchTerm) {
+      setSearchResults(payments?.data?.payments);
+      return;
+    }
+
+    const results = payments?.data?.payments.filter((d) => {
+      // Check in client names
+      const clientNameMatch =
+        d.invoiceId?.client?.fullName.toLowerCase().includes(searchTerm) ||
+        d.invoiceId?.client?.firstName.toLowerCase().includes(searchTerm);
+
+      // Check in invoice reference
+      const referenceMatch = d.invoiceId?.invoiceReference
+        ?.toLowerCase()
+        .includes(searchTerm);
+
+      // Attempt to parse the search term as a date in different formats
+      // const dateFormats = ["yyyy-MM-dd", "MMM dd, yyyy"];
+      // let paymentDateMatch = false;
+
+      // for (const formatString of dateFormats) {
+      //   const parsedDate = parse(searchTerm, formatString, new Date());
+      //   if (isValid(parsedDate)) {
+      //     const formattedDate = format(parsedDate, "yyyy-MM-dd");
+      //     if (new Date(d.date).toISOString().slice(0, 10) === formattedDate) {
+      //       paymentDateMatch = true;
+      //       break;
+      //     }
+      //   }
+      // }
+
+      return clientNameMatch || referenceMatch;
+    });
+
+    setSearchResults(results);
+  };
+
+  // console.log("PP", payments?.data?.payments);
   // Define table columns
   const columns = [
     {
@@ -92,16 +141,20 @@ const PaymentList = () => {
   return (
     <div>
       <h1 className="text-3xl font-bold text-gray-700 mb-7">Payments</h1>
-      <CreatePaymentForm />
+      <div className="flex flex-col md:flex-row justify-between items-center m-3">
+        <CreatePaymentForm />
+        <SearchBar onSearch={handleSearchChange} />
+      </div>
 
       <Table
         columns={columns}
-        dataSource={payments.data?.payments}
+        // dataSource={payments.data?.payments}
+        dataSource={searchResults}
         rowKey="_id"
-        loading={loadingPayments}
+        loading={loading.payments}
         pagination={{ pageSize: 10 }}
       />
-      {errorPayments && <p>Error: {errorPayments.message}</p>}
+      {error.payments && <p>Error: {error.payments}</p>}
     </div>
   );
 };

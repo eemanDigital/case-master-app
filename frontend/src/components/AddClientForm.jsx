@@ -1,111 +1,44 @@
-// import { useContext } from "react";
-import Input from "./Inputs";
-import { Modal, Button } from "antd";
+import React, { useState } from "react";
+import { Modal, Button, Form, Input, Checkbox, Select } from "antd";
 import { useAuth } from "../hooks/useAuth";
-import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
-// const { Column, ColumnGroup } = Table;
+const { Option } = Select;
 
 const AddClientForm = () => {
-  const { data, loading, error, authenticate } = useAuth();
-  const [click, setClick] = useState(false);
-  const { cases } = useDataGetterHook();
-  const { dataFetcher } = useDataFetch();
-
-  const [inputValue, setInputValue] = useState({
-    firstName: "",
-    secondName: "",
-    password: "",
-    passwordConfirm: "",
-    email: "",
-    address: "",
-    dob: null,
-    phone: "",
-    yearOfCall: "",
-    active: null,
-    case: "",
-  });
-
-  // Modal
+  const { authenticate } = useAuth();
   const [open, setOpen] = useState(false);
-  const [confirmLoading, setConfirmLoading] = useState(false);
-  const [modalText, setModalText] = useState("Content of the modal");
+  const { cases } = useDataGetterHook();
+  const [form] = Form.useForm();
+
   const showModal = () => {
     setOpen(true);
   };
+
   const handleOk = () => {
-    setModalText("The modal will be closed after two seconds");
-    setConfirmLoading(true);
-    setTimeout(() => {
-      setOpen(false);
-      setConfirmLoading(false);
-    }, 2000);
+    form.submit();
   };
+
   const handleCancel = () => {
-    console.log("Clicked cancel button");
     setOpen(false);
   };
 
-  // handleChange function
-  function handleChange(e) {
-    const { name, value, checked } = e.target;
-    setInputValue((prevData) => ({
-      ...prevData,
-      [name]: name === "active" ? checked : value,
-    }));
-  }
-
-  // dispatch({ type: "LOGIN", filPayload: fileValue });
-  async function handleSubmit(e) {
-    e.preventDefault();
-
+  const handleSubmit = async (values) => {
     try {
-      // Call fetchData with endpoint, method, payload, and any additional arguments
-      await dataFetcher("clients/signup", "post", inputValue);
+      await authenticate("clients/signup", "post", values);
+      toast.success("Client added successfully!");
+      setOpen(false);
+      form.resetFields();
     } catch (err) {
-      console.log(err);
+      toast.error("Failed to add client.");
+      console.error(err);
     }
-  }
-
-  function handleClick() {
-    setClick(() => !click);
-  }
-
-  // cases data for select
-  const casesSelectField = Array.isArray(cases?.data) ? (
-    <>
-      <label
-        htmlFor="case"
-        className=" uppercase text-[12px] font-bold text-slate-700 ">
-        client's Case
-      </label>
-      <select
-        className="w-full px-3 py-2 text-gray-700 border rounded-lg focus:outline-none focus:shadow-outline"
-        value={inputValue.case}
-        name="case"
-        onChange={handleChange}>
-        {cases?.data.map((singleCase) => {
-          const { firstParty, secondParty } = singleCase;
-          const firstName = firstParty?.name[0]?.name;
-          const secondName = secondParty?.name[0]?.name;
-          return (
-            <option value={singleCase._id} key={singleCase._id}>
-              {firstName} vs {secondName}
-            </option>
-          );
-        })}
-      </select>
-    </>
-  ) : (
-    []
-  );
+  };
 
   return (
-    <section className=" bg-gray-200 ">
+    <section className="bg-gray-200">
       <Button onClick={showModal} className="bg-blue-500 text-white">
         Add Client
       </Button>
@@ -114,119 +47,94 @@ const AddClientForm = () => {
         title="Client Form"
         open={open}
         onOk={handleOk}
-        confirmLoading={loading}
         onCancel={handleCancel}>
-        <form
-          onSubmit={handleSubmit}
-          className="  bg-white   basis-3/5 shadow-md  rounded-md px-8 pt-6 pb-8 m-4">
-          <div>
-            <Input
-              type="text"
-              label="First Name"
-              placeholder="First Name"
-              htmlFor="First Name"
-              text="Please enter your first name"
-              value={inputValue.firstName}
-              name="firstName"
-              onChange={handleChange}
-            />
-          </div>
-          <div>
-            <Input
-              type="text"
-              label="second Name"
-              placeholder="second Name"
-              htmlFor="second Name"
-              value={inputValue.secondName}
-              name="secondName"
-              onChange={handleChange}
-            />
-          </div>
-          <div>
-            <Input
-              type="email"
-              label="Email"
-              placeholder="Email"
-              htmlFor="Email"
-              value={inputValue.email}
-              name="email"
-              onChange={handleChange}
-            />
-          </div>{" "}
-          <div>
-            <Input
-              type="password"
-              label="Password"
-              placeholder="*******"
-              htmlFor="Password"
-              value={inputValue.password}
-              name="password"
-              onChange={handleChange}
-            />
-          </div>
-          <div>
-            <Input
-              type="password"
-              label="Confirm Password"
-              placeholder="*******"
-              htmlFor="confirm password"
-              value={inputValue.passwordConfirm}
-              name="passwordConfirm"
-              onChange={handleChange}
-            />
-          </div>
-          <div>
-            <Input
-              type="Date"
-              label="Date of Birth"
-              placeholder="dob"
-              htmlFor="dob"
-              value={inputValue.dob}
-              name="dob"
-              onChange={handleChange}
-            />
-          </div>
-          <Input
-            type="text"
+        <Form
+          form={form}
+          onFinish={handleSubmit}
+          className="bg-white shadow-md rounded-md px-8 pt-6 pb-8 m-4"
+          layout="vertical">
+          <Form.Item
+            label="First Name"
+            name="firstName"
+            rules={[
+              { required: true, message: "Please enter your first name" },
+            ]}>
+            <Input placeholder="First Name" />
+          </Form.Item>
+          <Form.Item
+            label="Second Name"
+            name="secondName"
+            rules={[
+              { required: true, message: "Please enter your second name" },
+            ]}>
+            <Input placeholder="Second Name" />
+          </Form.Item>
+          <Form.Item
+            label="Email"
+            name="email"
+            rules={[
+              {
+                required: true,
+                type: "email",
+                message: "Please enter a valid email",
+              },
+            ]}>
+            <Input placeholder="Email" />
+          </Form.Item>
+          <Form.Item
+            label="Password"
+            name="password"
+            rules={[{ required: true, message: "Please enter your password" }]}>
+            <Input.Password placeholder="*******" />
+          </Form.Item>
+          <Form.Item
+            label="Confirm Password"
+            name="passwordConfirm"
+            rules={[
+              { required: true, message: "Please confirm your password" },
+            ]}>
+            <Input.Password placeholder="*******" />
+          </Form.Item>
+          <Form.Item
             label="Phone Contact"
-            placeholder="Phone Contact"
-            htmlFor="Phone Contact"
-            value={inputValue.phone}
             name="phone"
-            onChange={handleChange}
-          />
-          <div>
-            <Input
-              type="text"
-              label="address"
-              placeholder="No.2, Maitama Close, Abuja"
-              htmlFor="address"
-              value={inputValue.address}
-              name="address"
-              onChange={handleChange}
-            />
-          </div>
-          {casesSelectField}
-          <div className="flex items-center space-x-2 m-4">
-            <label
-              htmlFor="active"
-              className=" uppercase text-[12px] font-bold text-slate-700 ">
-              is client active
-            </label>
-            <input
-              className="form-checkbox h-5 w-5 text-blue-600"
-              onChange={handleChange}
-              type="checkbox"
-              checked={inputValue.active}
-              name="active"
-              id="active"
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row justify-between items-center">
-            <button onClick={handleClick}>Add Client</button>
-          </div>
-        </form>
-
+            rules={[
+              { required: true, message: "Please enter your phone number" },
+            ]}>
+            <Input placeholder="Phone Contact" />
+          </Form.Item>
+          <Form.Item
+            label="Address"
+            name="address"
+            rules={[{ required: true, message: "Please enter your address" }]}>
+            <Input placeholder="No.2, Maitama Close, Abuja" />
+          </Form.Item>
+          <Form.Item
+            label="Client's Case"
+            name="case"
+            rules={[
+              { required: true, message: "Please select at least one case" },
+            ]}>
+            <Select
+              mode="multiple"
+              placeholder="Select cases"
+              style={{ width: "100%" }}>
+              {cases?.data.map((singleCase) => {
+                const { firstParty, secondParty } = singleCase;
+                const firstName = firstParty?.name[0]?.name;
+                const secondName = secondParty?.name[0]?.name;
+                return (
+                  <Option value={singleCase._id} key={singleCase._id}>
+                    {firstName} vs {secondName}
+                  </Option>
+                );
+              })}
+            </Select>
+          </Form.Item>
+          <Form.Item name="active" valuePropName="checked">
+            <Checkbox>Is client active</Checkbox>
+          </Form.Item>
+        </Form>
         <ToastContainer />
       </Modal>
     </section>

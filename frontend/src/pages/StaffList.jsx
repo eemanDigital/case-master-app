@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { Link } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
@@ -6,19 +7,60 @@ import avatar from "../assets/avatar.png";
 import LeaveBalanceList from "./leaveBalanceList";
 import { useAuthContext } from "../hooks/useAuthContext";
 import CreateLeaveBalanceForm from "../components/CreateLeaveBalanceForm";
+import SearchBar from "../components/SearchBar";
 
 const StaffList = () => {
-  const { users, loadingUsers, errorUsers } = useDataGetterHook();
+  const {
+    users,
+    loading: loadingUsers,
+    error: errorUsers,
+  } = useDataGetterHook();
+  const [searchResults, setSearchResults] = useState([]);
+
   const { Column, ColumnGroup } = Table;
   //   const { user } = useAuthContext();
-  const { dataFetcher } = useDataFetch();
+  const { dataFetcher, loading, error } = useDataFetch();
   const { user } = useAuthContext();
 
   const isAdminOrHr =
     user?.data?.user?.role === "admin" || user?.data?.user?.role === "hr";
   const isAdmin = user?.data?.user?.role === "admin";
 
-  if (loadingUsers) {
+  //render all cases initially before filter
+  useEffect(() => {
+    if (users?.data) {
+      setSearchResults(users?.data);
+    }
+  }, [users]);
+
+  // handles search filter
+  const handleSearchChange = (e) => {
+    const searchTerm = e.target.value.trim().toLowerCase();
+
+    if (!searchTerm) {
+      setSearchResults(users?.data);
+      return;
+    }
+
+    const results = users?.data.filter((d) => {
+      // Check in user names
+      const usernameMatch = d.fullName.toLowerCase().includes(searchTerm);
+      // Check in role
+      const roleMatch = d.role?.toLowerCase().includes(searchTerm);
+
+      // check by email
+      const emailMatch = d.email?.toLowerCase().includes(searchTerm);
+
+      // Check in position
+      const positionMatch = d.position?.toLowerCase().includes(searchTerm);
+
+      return usernameMatch || emailMatch || positionMatch || roleMatch;
+    });
+
+    setSearchResults(results);
+  };
+
+  if (loadingUsers.users) {
     return (
       <div>
         <Spin
@@ -29,9 +71,14 @@ const StaffList = () => {
     );
   }
 
-  if (errorUsers) {
+  if (errorUsers.users) {
     return (
-      <Alert message="Error" description={errorUsers} type="error" showIcon />
+      <Alert
+        message="Error"
+        description={errorUsers.user}
+        type="error"
+        showIcon
+      />
     );
   }
 
@@ -42,9 +89,17 @@ const StaffList = () => {
     await dataFetcher(`users/${id}`, "delete", fileHeaders);
   };
 
+  // format position
+  const formatPosition = (position) => {
+    return position
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
   return (
     <>
-      <div className="flex justify-start items-center gap-3 my-4">
+      <div className="flex md:flex-row flex-col justify-between items-center gap-3 my-4">
         {isAdminOrHr && <LeaveBalanceList />}
 
         <Link to="leave-application-list">
@@ -55,8 +110,10 @@ const StaffList = () => {
           </Button>
         </Link>
         {isAdmin && <CreateLeaveBalanceForm />}
+
+        <SearchBar onSearch={handleSearchChange} />
       </div>
-      <Table dataSource={users?.data}>
+      <Table dataSource={searchResults}>
         <ColumnGroup title="Employee's Name">
           <Column
             title="Photo"
@@ -82,7 +139,12 @@ const StaffList = () => {
 
         <Column title="Email" dataIndex="email" key="email" />
         <Column title="Role" dataIndex="role" key="role" />
-        <Column title="Position" dataIndex="position" key="position" />
+        <Column
+          title="Position"
+          dataIndex="position"
+          key="position"
+          render={(text) => formatPosition(text)}
+        />
         {/* <Column title="Phone" dataIndex="phone" key="phone" /> */}
 
         <Column

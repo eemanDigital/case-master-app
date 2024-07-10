@@ -1,6 +1,6 @@
-import Input from "../components/Inputs";
+import Input from "./Inputs";
 import lawyer1 from "../assets/lawyer1.svg";
-import Button from "../components/Button";
+import Button from "./Button";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -8,10 +8,10 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import { useNavigate } from "react-router-dom";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import GoogleAuth from "./GoogleAuth";
+import GoogleAuth from "../pages/GoogleAuth";
 // import CalendarEventForm from "./GoogleCalenderForm";
 
-const Login = () => {
+const Login = ({ endpoint, title }) => {
   const [click, setClick] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -55,7 +55,7 @@ const Login = () => {
     }
     try {
       // Call fetchData with your endpoint, method, payload, and any additional arguments
-      await authenticate("users/login", "post", inputValue);
+      await authenticate(`${endpoint}`, "post", inputValue);
       // Handle successful response
       if (data?.status === "success") {
         navigate("/dashboard");
@@ -84,7 +84,7 @@ const Login = () => {
 
   return (
     <section className=" bg-gray-200 h-[100%] ">
-      <h1 className="text-5xl bold text-center p-5">Login to your account</h1>
+      <h1 className="text-5xl bold text-center p-5">{title}</h1>
       {/* <h2>{error?.response.data.message}</h2> */}
       <div className="flex flex-col md:flex-row  justify-center  ">
         <div className="flex flex-col  flex-none basis-2/5 text-center  items-center  rounded-md p-4 ">

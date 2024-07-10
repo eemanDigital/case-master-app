@@ -1,27 +1,39 @@
+const dotenv = require("dotenv");
 const catchAsync = require("../utils/catchAsync");
-const User = require("../models/userModel");
 const { google } = require("googleapis");
-const { oauth2Client, setCredentials } = require("../utils/oauthClient");
+
+dotenv.config({ path: "./config.env" });
+
+const oauth2Client = new google.auth.OAuth2(
+  process.env.CLIENT_ID,
+  process.env.SECRET_ID,
+  process.env.REDIRECT_URI
+);
+// console.log(oauth2Client);
+
+const refreshToken =
+  "1//03pywlri-f3N6CgYIARAAGAMSNgF-L9IrMqH46sK_v5G5Ufhf35nfKdn6OkeQPQXmf8zFgit3ff6ot_oaplAd8GkkUr0gGCYMTA"; //should be stored in the db. just testing
 
 exports.createToken = catchAsync(async (req, res, next) => {
   const { code } = req.body;
-  const { tokens } = await oauth2Client.getToken(code);
-
-  const user = await User.findById(req.user.id);
-  user.googleRefreshToken = tokens.refresh_token;
-  await user.save();
-
+  // console.log(code);
+  // get tokens
+  const { tokens } = await oauth2Client.getToken(code); //destructure tokens from response
+  // console.log(token);
   res.send(tokens);
 });
 
 exports.createEvents = catchAsync(async (req, res, next) => {
-  const { eventTitle, eventDescription, eventLocation, startTime, endTime } =
-    req.body;
+  const {
+    eventTitle,
+    eventDescription, // Include description in the event
+    eventLocation,
+    startTime,
+    endTime,
+  } = req.body;
 
-  const user = await User.findById(req.user.id).select("+googleRefreshToken");
-  const auth = await setCredentials(user);
-  const calendar = google.calendar({ version: "v3", auth });
-
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+  const calendar = google.calendar({ version: "v3", auth: oauth2Client });
   const response = await calendar.events.insert({
     calendarId: "primary",
     requestBody: {
@@ -29,10 +41,14 @@ exports.createEvents = catchAsync(async (req, res, next) => {
       description: eventDescription,
       location: eventLocation,
       colorId: "6",
-      start: { dateTime: new Date(startTime) },
-      end: { dateTime: new Date(endTime) },
+      start: {
+        dateTime: new Date(startTime),
+      },
+      end: {
+        dateTime: new Date(endTime),
+      },
     },
   });
 
-  res.send(response.data);
+  res.send(response);
 });

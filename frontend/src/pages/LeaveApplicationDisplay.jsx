@@ -44,7 +44,7 @@ const LeaveApplicationDisplay = () => {
     user?.data?.user?.role === "admin" || user?.data?.user?.role === "hr"
       ? leaveApps?.data
       : leaveApps?.data?.filter(
-          (app) => app.employee.id === user?.data?.user?.id
+          (app) => app?.employee?.id === user?.data?.user?.id
         );
 
   // console.log(filteredLeaveApps);

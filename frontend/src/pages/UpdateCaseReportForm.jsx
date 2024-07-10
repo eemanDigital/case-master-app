@@ -101,7 +101,7 @@ const UpdateCaseReportForm = ({ reportId }) => {
     <>
       <button
         onClick={showModal}
-        className="bg-blue-500 hover:bg-blue-700 text-white  py-2 px-4 my-2 tracking-wider ">
+        className="bg-gray-500 hover:bg-gray-600 text-white rounded-md font-bold py-2 px-4 my-2 tracking-wider ">
         Edit Report
       </button>
       <Modal

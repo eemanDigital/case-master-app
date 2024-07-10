@@ -71,9 +71,14 @@ const Navbar = () => {
           {mainNav.slice(0, 3)}
 
           {!user ? (
-            <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
-              <NavLink to="/login">log in</NavLink>
-            </li>
+            <>
+              <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
+                <NavLink to="/staff/login">Login</NavLink>
+              </li>
+              <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
+                <NavLink to="/clients/login">Client Login</NavLink>
+              </li>
+            </>
           ) : (
             <li className="btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block ">
               <NavLink to="dashboard">Dashboard</NavLink>

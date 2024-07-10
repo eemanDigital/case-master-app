@@ -1,20 +1,17 @@
 import {
   createBrowserRouter,
   createRoutesFromElements,
-  Navigate,
-  useLocation,
   Route,
   RouterProvider,
 } from "react-router-dom";
-import { useState } from "react";
 import Hero from "./components/Hero";
 import HomeLayout from "./components/HomeLayout";
 import Dashboard from "./components/Dashboard.jsx";
 import DashboardLayout from "./components/DashboardLayout.jsx";
 import CaseList from "./pages/CaseList.jsx";
 // import Task from "./pages/Task.jsx";
-import Billing from "./pages/Billing.jsx";
-import Login from "./pages/Login.jsx";
+// import Login from "./components/Login.jsx";
+import ClientLogin from "./pages/ClientLogin.jsx";
 import AddUserForm from "./pages/AddUserForm.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
@@ -22,9 +19,6 @@ import Profile from "./pages/Profile.jsx";
 import CaseReportList from "./pages/CaseReportList.jsx";
 import CreateCaseForm from "./pages/CreateCaseForm.jsx";
 import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
-import AuthContextProvider from "./context/authContext.jsx";
-import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
-import PhotoContextProvider from "./context/photoContext.jsx";
 // import EditUserProfile from "./pages/EditUserProfile.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
 // import UserTask from "./components/UserTask.jsx";
@@ -43,7 +37,7 @@ import TaskDetails from "./pages/TaskDetails.jsx";
 import ClientLists from "./pages/ClientLists.jsx";
 import ClientDetails from "./pages/ClientDetails.jsx";
 import InvoicePaymentHandler from "./components/InvoicePaymentHandler.jsx";
-import ProtectedRoute from "./components/ProtectRoutes.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
 import CreateInvoiceForm from "./components/CreateInvoiceForm.jsx";
 // import InvoiceList from "./pages/InvoiceList.jsx";
@@ -51,22 +45,20 @@ import InvoiceDetails from "./pages/InvoiceDetails.jsx";
 import UpdateInvoice from "./pages/UpdateInvoice.jsx";
 import { CauseList } from "./components/CauseList.jsx";
 import PaymentDetails from "./pages/PaymentDetails.jsx";
+// import { useAdminHook } from "./hooks/useAdminHook.jsx";
 import StaffList from "./pages/StaffList.jsx";
 import StaffDetails from "./pages/StaffDetails.jsx";
+import StaffLogin from "./pages/StaffLogin.jsx";
 
 function App() {
-  const [isOpen, setIsOpen] = useState(false);
-
-  //handle hamburger toggling
-  function handleOpen() {
-    setIsOpen((prev) => !prev);
-  }
+  // const { isClient, isStaff } = useAdminHook();
 
   const router = createBrowserRouter(
     createRoutesFromElements(
       <Route path="/" element={<HomeLayout />} errorElement={<Error />}>
         <Route path="/" element={<Hero />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/staff/login" element={<StaffLogin />} />
+        <Route path="/clients/login" element={<ClientLogin />} />
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/restPassword/:token" element={<ForgotPasswordReset />} />
         <Route path="/resetpassword" element={<ResetPassword />} />
@@ -80,20 +72,21 @@ function App() {
               <Navigate to="/login" />
             )
           }> */}
-        <Route
-          path="dashboard"
-          element={
-            <ProtectedRoute
-              element={
-                <DashboardLayout isOpen={isOpen} handleOpen={handleOpen} />
-              }
-            />
-          }>
+        <Route path="dashboard" element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="add-user" element={<AddUserForm />} />
-          <Route path="staff" element={<StaffList />} />
+
+          <Route
+            path="staff"
+            element={
+              <ProtectedRoute isStaffRoute={true}>
+                <StaffList />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="staff/:id/details" element={<StaffDetails />} />
-          <Route path="cases" element={<CaseList open={isOpen} />} />
+          <Route path="cases" element={<CaseList />} />
           <Route path="cases/:id/update" element={<UpdateCase />} />
           {/* <Route path="cases/:id/document" element={<CaseDocument />} /> */}
           {/* <Route path="create-case" element={<CreateCase />} /> */}
@@ -114,7 +107,17 @@ function App() {
             path="case-reports/add-report"
             element={<CreateCaseReportForm />}
           />
-          <Route path="billing" element={<Billing />} />
+
+          {/* Protected routes */}
+          <Route
+            path="billings"
+            element={
+              <ProtectedRoute isAdmin={true} isStaffRoute={true}>
+                <InvoicePaymentHandler />
+              </ProtectedRoute>
+            }
+          />
+
           {/* <Route path="documents" element={<CaseDocument />} /> */}
           <Route path="profile" element={<Profile />} />
           {/* <Route path="profile/edit" element={<EditUserProfile />} /> */}
@@ -126,7 +129,7 @@ function App() {
           <Route path="tasks/:id/details" element={<TaskDetails />} />
           <Route path="clients" element={<ClientLists />} />
           <Route path="clients/:id/details" element={<ClientDetails />} />
-          <Route path="billings" element={<InvoicePaymentHandler />} />
+          {/* <Route path="billings" element={<InvoicePaymentHandler />} /> */}
           {/* <Route path="billings/invoice" element={<Invoi />} /> */}
 
           <Route
@@ -168,15 +171,7 @@ function App() {
     )
   );
 
-  return (
-    <PhotoContextProvider>
-      <DataFetcherContext>
-        <AuthContextProvider>
-          <RouterProvider router={router} />
-        </AuthContextProvider>
-      </DataFetcherContext>
-    </PhotoContextProvider>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;

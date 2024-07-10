@@ -91,3 +91,21 @@ export const methodOptions = [
   { label: "Cash", value: "cash" },
   { label: "Cheque", value: "cheque" },
 ];
+
+export const positions = [
+  "Select a position",
+  "principal",
+  "managing_partner",
+  "head_of_chambers",
+  "associate",
+  "senior_associate",
+  "junior_associate",
+  "counsel",
+  "intern",
+  "secretary",
+  "paralegal",
+  "client",
+  "other",
+];
+
+export const roles = ["user", "admin", "secretary", "hr", "super-admin"];
