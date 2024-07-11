@@ -63,7 +63,7 @@ exports.signup = catchAsync(async (req, res, next) => {
 
   // url for to navigate
   // const url = `${req.protocol}://${req.get('host')/login}`
-  const url = "http://localhost:5173/login";
+  const url = "http://localhost:5173/login/staff";
   // send welcome message to user
   await new Email(user, url).sendWelcome();
 
@@ -331,7 +331,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     //   "host"
     // )}/api/v1/users/resetPassword/${resetToken}`;
 
-    const resetURL = `http://localhost:5173/restPassword/${resetToken}`;
+    const resetURL = `http://localhost:5173/resetPassword/staff/${resetToken}`;
 
     // call the reset password function to send mail
     await new Email(user, resetURL).sendPasswordReset();

@@ -11,7 +11,7 @@ import "react-toastify/dist/ReactToastify.css";
 import GoogleAuth from "../pages/GoogleAuth";
 // import CalendarEventForm from "./GoogleCalenderForm";
 
-const Login = ({ endpoint, title }) => {
+const Login = ({ endpoint, title, forgotPasswordLink }) => {
   const [click, setClick] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -151,7 +151,7 @@ const Login = ({ endpoint, title }) => {
             <div className="flex flex-col gap-4 justify-start items-start">
               <p>
                 <Link
-                  to="/forgotpassword"
+                  to={forgotPasswordLink}
                   className=" text-gray-800  font-bold">
                   Forgot password
                 </Link>

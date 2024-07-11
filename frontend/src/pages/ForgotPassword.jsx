@@ -5,15 +5,11 @@ import Button from "../components/Button";
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
-const ForgotPassword = () => {
+const ForgotPassword = ({ endpoint }) => {
   //getting data from our custom hooks for auth
   const { data, loading, error, authenticate } = useAuth();
 
-  // console.log(data);
-  // console.log(error?.response.data.message);
-
   const [click, setClick] = useState(false);
-  // const [photo, setPhoto] = useState("");
 
   const [inputValue, setInputValue] = useState({
     email: "",
@@ -36,7 +32,7 @@ const ForgotPassword = () => {
 
     try {
       // Call fetchData with your endpoint, method, payload, and any additional arguments
-      await authenticate("users/forgotpassword", "post", inputValue);
+      await authenticate(endpoint, "post", inputValue);
       // Handle successful response
     } catch (err) {
       // Handle error

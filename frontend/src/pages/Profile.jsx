@@ -1,19 +1,14 @@
-import Input from "../components/Inputs";
-import Button from "../components/Button";
-import { Link } from "react-router-dom";
 import avatar from "../assets/avatar.png";
-import femaleAvatar from "../assets/female-avatar.png";
 import { formatYear } from "../utils/formatDate";
-import { useState } from "react";
-import { useAuth } from "../hooks/useAuth";
+
 import { FaAddressBook, FaPhone } from "react-icons/fa";
 import { MdMail } from "react-icons/md";
 import { useAuthContext } from "../hooks/useAuthContext";
-import { ToastContainer, toast } from "react-toastify";
+
 import "react-toastify/dist/ReactToastify.css";
 import UpdateProfilePicture from "../components/UpdateProfilePicture";
 import EditUserProfile from "./EditUserProfile";
-import ResetPasswordAfterLogin from "./ResetPasswordAfterLogin";
+import ChangePassword from "./ChangePassword";
 import { useAdminHook } from "../hooks/useAdminHook";
 
 const Profile = () => {
@@ -99,7 +94,7 @@ const Profile = () => {
       </div>
 
       {/* RESET PASSWORD FORM */}
-      <ResetPasswordAfterLogin
+      <ChangePassword
         endpoint={`${
           isClient ? "clients/changepassword" : "users/changepassword"
         }`}

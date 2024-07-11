@@ -232,15 +232,14 @@ userSchema.pre("save", async function (next) {
 // If the user has not changed their password since that time, the method would return false
 userSchema.methods.changePasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
-    // we need to convert our passwordChangedAt to normal timestamp
-    const convertToTimeStamp = parseInt(
+    const changedTimestamp = parseInt(
       this.passwordChangedAt.getTime() / 1000,
       10
     );
-    //means the date the jwt was issued is less than the changed timestamp
-    return JWTTimestamp < convertToTimeStamp; //100 < 200
+    return JWTTimestamp < changedTimestamp;
   }
-  //false means pwd not changed
+
+  // False means NOT changed
   return false;
 };
 

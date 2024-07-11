@@ -9,25 +9,19 @@ import HomeLayout from "./components/HomeLayout";
 import Dashboard from "./components/Dashboard.jsx";
 import DashboardLayout from "./components/DashboardLayout.jsx";
 import CaseList from "./pages/CaseList.jsx";
-// import Task from "./pages/Task.jsx";
-// import Login from "./components/Login.jsx";
 import ClientLogin from "./pages/ClientLogin.jsx";
 import AddUserForm from "./pages/AddUserForm.jsx";
-import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import Profile from "./pages/Profile.jsx";
 import CaseReportList from "./pages/CaseReportList.jsx";
 import CreateCaseForm from "./pages/CreateCaseForm.jsx";
 import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
-// import EditUserProfile from "./pages/EditUserProfile.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
-// import UserTask from "./components/UserTask.jsx";
 import TaskReminderForm from "./components/TaskReminderForm.jsx";
 import CaseDetails from "./pages/CaseDetails.jsx";
 import Error from "./components/Error.jsx";
 import { Result, Button } from "antd";
 import { Link } from "react-router-dom";
-// import CaseDocument from "./pages/CaseDocuments.jsx";
 import TaskAttachment from "./pages/TaskAttachment.jsx";
 import LeaveAppForm from "./pages/LeaveAppForm.jsx";
 import LeaveApplicationDisplay from "./pages/LeaveApplicationDisplay.jsx";
@@ -38,7 +32,6 @@ import ClientLists from "./pages/ClientLists.jsx";
 import ClientDetails from "./pages/ClientDetails.jsx";
 import InvoicePaymentHandler from "./components/InvoicePaymentHandler.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
-import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
 import CreateInvoiceForm from "./components/CreateInvoiceForm.jsx";
 // import InvoiceList from "./pages/InvoiceList.jsx";
 import InvoiceDetails from "./pages/InvoiceDetails.jsx";
@@ -49,6 +42,10 @@ import PaymentDetails from "./pages/PaymentDetails.jsx";
 import StaffList from "./pages/StaffList.jsx";
 import StaffDetails from "./pages/StaffDetails.jsx";
 import StaffLogin from "./pages/StaffLogin.jsx";
+import ForgotPasswordClient from "./pages/ForgotPasswordClient.jsx";
+import ForgotPasswordStaff from "./pages/ForgotPasswordStaff.jsx";
+import ForgotPasswordResetStaff from "./pages/ForgotPasswordResetStaff.jsx";
+import ForgotPasswordResetClient from "./pages/ForgotPasswordResetClient.jsx";
 
 function App() {
   // const { isClient, isStaff } = useAdminHook();
@@ -59,8 +56,19 @@ function App() {
         <Route path="/" element={<Hero />} />
         <Route path="/staff/login" element={<StaffLogin />} />
         <Route path="/clients/login" element={<ClientLogin />} />
-        <Route path="/forgotpassword" element={<ForgotPassword />} />
-        <Route path="/restPassword/:token" element={<ForgotPasswordReset />} />
+        <Route
+          path="/forgotpassword/clients"
+          element={<ForgotPasswordClient />}
+        />
+        <Route path="/forgotpassword/staff" element={<ForgotPasswordStaff />} />
+        <Route
+          path="/resetPassword/staff/:token"
+          element={<ForgotPasswordResetStaff />}
+        />
+        <Route
+          path="/resetPassword/clients/:token"
+          element={<ForgotPasswordResetClient />}
+        />
         <Route path="/resetpassword" element={<ResetPassword />} />
         {/* 
         <Route

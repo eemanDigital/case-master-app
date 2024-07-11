@@ -11,7 +11,7 @@ import { Card } from "antd";
 const AccountOfficerCharts = ({ data, title }) => {
   const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
 
-  const transformedData = data.map((item) => ({
+  const transformedData = data?.map((item) => ({
     name: item.accountOfficer,
     value: item.count,
     cases: item.parties.join(", "), // Include cases in the transformed data
@@ -54,7 +54,7 @@ const AccountOfficerCharts = ({ data, title }) => {
             outerRadius={150}
             fill="#8884d8"
             dataKey="value">
-            {transformedData.map((entry, index) => (
+            {transformedData?.map((entry, index) => (
               <Cell
                 key={`cell-${index}`}
                 fill={COLORS[index % COLORS.length]}

@@ -20,7 +20,7 @@ export const useAdminHook = () => {
     user?.data?.user?.role === "hr" ||
     user?.data?.user?.role === "super-admin";
 
-  const isClient = user?.data.user?.role === "client";
+  const isClient = user?.data?.user?.role === "client";
 
   return {
     isAdmin,

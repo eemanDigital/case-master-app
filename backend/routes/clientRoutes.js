@@ -18,12 +18,12 @@ const { protect } = require("../controllers/authController");
 
 const router = express.Router();
 
-router.use(protect);
-
 router.post("/signup", signup);
 router.post("/login", login);
 router.post("/forgotpassword", forgotPassword);
 router.patch("/resetpassword/:token", resetPassword);
+
+// router.use(protect);
 router.get("/logout", logout);
 router.get("/loggedIn", isLoggedIn);
 router.patch("/changepassword", updatePassword);

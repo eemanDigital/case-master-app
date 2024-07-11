@@ -5,7 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const ResetPasswordAfterLogin = ({ endpoint }) => {
+const ChangePassword = ({ endpoint }) => {
   // const { inputValue, handleChange } = useContext(FormContext);
   const [click, setClick] = useState(false);
 
@@ -132,4 +132,4 @@ const ResetPasswordAfterLogin = ({ endpoint }) => {
   );
 };
 
-export default ResetPasswordAfterLogin;
+export default ChangePassword;

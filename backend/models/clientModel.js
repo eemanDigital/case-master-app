@@ -1,6 +1,8 @@
 const mongoose = require("mongoose");
 const validator = require("validator");
+const crypto = require("crypto");
 const bcrypt = require("bcryptjs");
+
 const clientSchema = new mongoose.Schema(
   {
     firstName: {
@@ -130,17 +132,17 @@ clientSchema.methods.correctPassword = async function (
   return await bcrypt.compare(candidatePassword.toString(), userPassword);
 };
 
+// voluntary password change by user
 clientSchema.methods.changePasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
-    // console.log(this.passwordChangedAt, JWTTimestamp);
-    const convertToTimeStamp = parseInt(
+    const changedTimestamp = parseInt(
       this.passwordChangedAt.getTime() / 1000,
       10
     );
-
-    return JWTTimestamp < convertToTimeStamp; //100 < 200
+    return JWTTimestamp < changedTimestamp;
   }
 
+  // False means NOT changed
   return false;
 };
 

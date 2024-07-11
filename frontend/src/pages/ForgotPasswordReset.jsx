@@ -4,7 +4,7 @@ import Button from "../components/Button";
 import { useAuth } from "../hooks/useAuth";
 import { useParams } from "react-router-dom";
 
-const ForgotPasswordReset = () => {
+const ForgotPasswordReset = ({ endpoint }) => {
   const { token } = useParams();
   //getting data from our custom hooks for auth
   const { data, loading, error, authenticate } = useAuth();
@@ -33,7 +33,7 @@ const ForgotPasswordReset = () => {
 
     try {
       // Call fetchData with your endpoint, method, payload, and any additional arguments
-      await authenticate(`users/resetpassword/${token}`, "patch", inputValue);
+      await authenticate(`${endpoint}/${token}`, "patch", inputValue);
       // Handle successful response
     } catch (err) {
       // Handle error

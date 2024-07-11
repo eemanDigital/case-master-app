@@ -199,7 +199,7 @@ caseSchema.pre(/^find/, function (next) {
   // Populate the accountOfficer field with the firstName and lastName of the user
   this.populate({
     path: "accountOfficer",
-    select: "firstName lastName",
+    select: "firstName lastName phone email photo",
   });
 
   next();

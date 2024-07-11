@@ -22,6 +22,7 @@ import CaseCountsByYearChart from "./CaseCountsByYearChart ";
 // import EventCalender from "./EventCalender";
 import googleCalender from "../assets/calender.svg";
 import EventCalendar from "./EventCalender";
+import AccountOfficerDetails from "./AccountOfficer";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -33,6 +34,8 @@ export const PaymentFiltersContext = createContext();
 
 const Dashboard = () => {
   const { user } = useAuthContext();
+
+  // console.log("USER CASE", user?.data?.user?.case);
 
   const userId = user?.data?.user?._id;
 
@@ -91,10 +94,8 @@ const Dashboard = () => {
     events,
   } = useDataGetterHook();
 
-  // console.log(events.data.events, "EVENTS");
-
   // end
-  const { isAdmin, isStaff } = useAdminHook();
+  const { isAdmin, isStaff, isClient } = useAdminHook();
 
   useEffect(() => {
     if (userId) {
@@ -142,6 +143,17 @@ const Dashboard = () => {
   return (
     <PaymentFiltersContext.Provider
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
+      {/* account officer for client */}
+      {isClient &&
+        user?.data?.user?.cases?.map((caseItem) =>
+          caseItem?.accountOfficer?.map((officer, index) => (
+            <AccountOfficerDetails
+              key={index} // Ideally, use a unique identifier if available
+              accountOfficer={officer}
+            />
+          ))
+        )}
+
       <div className="flex justify-between items-center mt-0">
         <h1 className="text-1xl font-bold text-gray-600  w-3/6 tracking-wider">
           {user?.data?.user?.firstName}&apos;s Dashboard(
