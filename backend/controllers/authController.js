@@ -5,6 +5,7 @@ const catchAsync = require("../utils/catchAsync");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
+const Client = require("../models/clientModel");
 // const Token = require("../models/tokenModel");
 const createSendToken = require("../utils/handleSendToken");
 const Email = require("../utils/email");
@@ -90,41 +91,43 @@ exports.login = catchAsync(async (req, res, next) => {
 
 ///PROTECT HANDLER FUNCTION
 //1) check if user has token
+
+// protect for both client and staff
 exports.protect = catchAsync(async (req, res, next) => {
+  // console.log("REQ Headers PROTECT", req.headers);
+
   let token;
-  // console.log(req.headers.authorization);
   if (
     req.headers.authorization &&
     req.headers.authorization.startsWith("Bearer")
   ) {
     token = req.headers.authorization.split(" ")[1];
   }
-  // console.log(token);
   if (!token) {
     return next(new AppError("Kindly login before accessing this page", 401));
   }
 
-  //2) verify the token whether valid
+  // Verify token
   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-  //3) check if user still exist
-  const currentUser = await User.findById(decoded.id);
+  // Check if user or client still exists
+  let currentUser = await User.findById(decoded.id);
   if (!currentUser) {
-    return next(new AppError("User no longer exist for this token", 401));
+    currentUser = await Client.findById(decoded.id);
+    if (!currentUser) {
+      return next(new AppError("User no longer exists for this token", 401));
+    }
   }
 
-  //4 Check if user changed password after the token was issued
+  // Check if user changed password after the token was issued
   if (currentUser.changePasswordAfter(decoded.iat)) {
-    console.log(decoded.iat);
     return next(
       new AppError("User recently changed password! Please log in again.", 401)
     );
   }
 
-  //5) give user access
+  // Grant access to the protected route
   req.user = currentUser;
-  // console.log("USER", req.user);
-
   next();
 });
 

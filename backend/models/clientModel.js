@@ -51,19 +51,21 @@ const clientSchema = new mongoose.Schema(
       //   "Please, provide a valid phone number",
       // ],
     },
-    dob: {
-      type: Date,
-      // required: [true, "Provide a date of birth"],
+    role: {
+      type: String,
+      default: "client",
     },
     address: {
       type: String,
       required: [true, "Provide client's address"],
       trim: true,
     },
-    case: {
-      type: mongoose.Schema.ObjectId,
-      ref: "Case",
-    },
+    case: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: "Case",
+      },
+    ],
     active: {
       type: Boolean,
       default: true,
@@ -103,11 +105,11 @@ clientSchema.methods.correctPassword = async function (
   return await bcrypt.compare(candidatePassword, clientPassword);
 };
 
-clientSchema.pre(/^find/, function (next) {
-  // this points to the current query
-  this.find({ active: { $ne: false } });
-  next();
-});
+// clientSchema.pre(/^find/, function (next) {
+//   // this points to the current query
+//   this.find({ active: { $ne: false } });
+//   next();
+// });
 
 clientSchema.methods.createPasswordResetToken = function () {
   //generate reset token

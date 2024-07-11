@@ -1,7 +1,10 @@
 // routes/eventRoutes.js
 const express = require("express");
 const eventController = require("../controllers/eventController");
+const { protect } = require("../controllers/authController");
 const router = express.Router();
+
+router.use(protect);
 
 router
   .route("/")

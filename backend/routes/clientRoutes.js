@@ -1,7 +1,6 @@
 const express = require("express");
 const {
   getClients,
-  createClient,
   getClient,
   updateClient,
   deleteClient,
@@ -15,8 +14,11 @@ const {
   updatePassword,
   login,
 } = require("../controllers/clientAuthController");
+const { protect } = require("../controllers/authController");
 
 const router = express.Router();
+
+router.use(protect);
 
 router.post("/signup", signup);
 router.post("/login", login);
@@ -28,9 +30,6 @@ router.patch("/changepassword", updatePassword);
 
 // Route to get all clients
 router.get("/", getClients);
-
-// Route to create a new client
-router.post("/", createClient);
 
 // Route to get a specific client by ID
 router.get("/:id", getClient);

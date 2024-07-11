@@ -55,62 +55,62 @@ exports.signup = catchAsync(async (req, res, next) => {
 exports.login = catchAsync(async (req, res, next) => {
   // console.log(req.cookies);
   let { email, password } = req.body;
-  // console.log("REQ USER", req.user);
+  // console.log("REQ Headers", req.headers);
 
   // 1) Check if email and password exist
   if (!email || !password) {
     next(new AppError("Provide email and password", 400));
   }
   //2) compare email and password with data in db
-  let user = await Client.findOne({ email }).select("+password");
+  let clientUser = await Client.findOne({ email }).select("+password");
 
-  if (!user || !(await bcrypt.compare(password, user.password))) {
+  if (!clientUser || !(await bcrypt.compare(password, clientUser.password))) {
     return next(new AppError("Incorrect email or password", 401));
   }
-  // console.log("USER", user);
+  console.log("clientUser", clientUser);
 
   createSendToken(clientUser, 200, res);
 });
 
 ///PROTECT HANDLER FUNCTION
 //1) check if user has token
-exports.protect = catchAsync(async (req, res, next) => {
-  let token;
-  // console.log(req.headers.authorization);
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    token = req.headers.authorization.split(" ")[1];
-  }
-  // console.log(token);
-  if (!token) {
-    return next(new AppError("Kindly login before accessing this page", 401));
-  }
+// exports.clientProtect = catchAsync(async (req, res, next) => {
+//   let token;
+//   console.log(req.headers.authorization);
+//   if (
+//     req.headers.authorization &&
+//     req.headers.authorization.startsWith("Bearer")
+//   ) {
+//     token = req.headers.authorization.split(" ")[1];
+//   }
+//   // console.log(token);
+//   if (!token) {
+//     return next(new AppError("Kindly login before accessing this page", 401));
+//   }
 
-  //2) verify the token whether valid
-  const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+//   //2) verify the token whether valid
+//   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-  //3) check if user still exist
-  const currentUser = await Client.findById(decoded.id);
-  if (!currentUser) {
-    return next(new AppError("User no longer exist for this token", 401));
-  }
+//   //3) check if user still exist
+//   const currentUser = await Client.findById(decoded.id);
+//   if (!currentUser) {
+//     return next(new AppError("User no longer exist for this token", 401));
+//   }
 
-  //4 Check if user changed password after the token was issued
-  if (currentUser.changePasswordAfter(decoded.iat)) {
-    console.log(decoded.iat);
-    return next(
-      new AppError("User recently changed password! Please log in again.", 401)
-    );
-  }
+//   //4 Check if user changed password after the token was issued
+//   if (currentUser.changePasswordAfter(decoded.iat)) {
+//     // console.log(decoded.iat);
+//     return next(
+//       new AppError("User recently changed password! Please log in again.", 401)
+//     );
+//   }
 
-  //5) give user access
-  req.ClientUser = currentUser;
-  // console.log("USER", req.user);
+//   //5) give user access
+//   req.ClientUser = currentUser;
+//   // console.log("USER", req.user);
 
-  next();
-});
+//   next();
+// });
 
 // CHECK LOGIN STATUS
 exports.isLoggedIn = async (req, res, next) => {
