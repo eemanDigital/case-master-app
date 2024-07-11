@@ -135,7 +135,7 @@ const CaseReportList = () => {
   const filterCaseByClient = (caseIds) => {
     return (
       reports?.data?.filter((report) =>
-        caseIds.includes(report?.caseReported?._id)
+        caseIds?.includes(report?.caseReported?._id)
       ) || []
     );
   };

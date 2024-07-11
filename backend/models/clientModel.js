@@ -98,67 +98,64 @@ clientSchema.pre(/^find/, function (next) {
   next();
 });
 
+/**
+ * IMPLEMENTING ENCRYPTION/HASHING OF PASSWORD FOR SECURITY
+ */
+clientSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) return next();
+  this.password = await bcrypt.hash(this.password, 12);
+
+  this.passwordConfirm = undefined;
+  next();
+});
+
+//need more explanation on this. This is for password Reset
+clientSchema.pre("save", function (next) {
+  if (!this.isModified("password") || this.isNew) return next();
+  this.passwordChangedAt = Date.now() - 1000; //-1000 ensure pwd is created after token has been changed
+  next();
+});
+
+//QUERY MIDDLEWARE
+
+clientSchema.pre(/^find/, function (next) {
+  this.find({ active: { $ne: false } });
+  next();
+});
+
 clientSchema.methods.correctPassword = async function (
   candidatePassword,
-  clientPassword
+  userPassword
 ) {
-  return await bcrypt.compare(candidatePassword, clientPassword);
+  return await bcrypt.compare(candidatePassword.toString(), userPassword);
 };
 
-// clientSchema.pre(/^find/, function (next) {
-//   // this points to the current query
-//   this.find({ active: { $ne: false } });
-//   next();
-// });
+clientSchema.methods.changePasswordAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    // console.log(this.passwordChangedAt, JWTTimestamp);
+    const convertToTimeStamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10
+    );
 
+    return JWTTimestamp < convertToTimeStamp; //100 < 200
+  }
+
+  return false;
+};
+
+//INSTANCE METHOD
 clientSchema.methods.createPasswordResetToken = function () {
-  //generate reset token
   const resetToken = crypto.randomBytes(32).toString("hex");
 
-  //encrypt the reset token and save in the db
   this.passwordResetToken = crypto
     .createHash("sha256")
     .update(resetToken)
     .digest("hex");
 
-  console.log({ resetToken }, this.passwordResetToken);
-
-  this.passwordResetExpires = Date.now() + 10 * 60 * 1000; //expires in 10m
-
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
+  // console.log(this.passwordResetExpire);
   return resetToken;
-};
-
-//password hashing middleware
-clientSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-
-  this.password = await bcrypt.hash(this.password, 12);
-
-  /**
-   * we set passwordConfirm to undefined to delete it
-   *   after validation
-   * we don't want it persisted to the db
-   * it is only needed for validation
-   */
-  this.passwordConfirm = undefined;
-  next();
-});
-
-// function to check if password was changed
-// If the client changed their password after the time represented by 1605105300, the method would return true.
-// If the client has not changed their password since that time, the method would return false
-clientSchema.methods.changePasswordAfter = function (JWTTimestamp) {
-  if (this.passwordChangedAt) {
-    // we need to convert our passwordChangedAt to normal timestamp
-    const convertToTimeStamp = parseInt(
-      this.passwordChangedAt.getTime() / 1000,
-      10
-    );
-    //means the date the jwt was issued is less than the changed timestamp
-    return JWTTimestamp < convertToTimeStamp; //100 < 200
-  }
-  //false means pwd not changed
-  return false;
 };
 
 const Client = mongoose.model("Client", clientSchema);

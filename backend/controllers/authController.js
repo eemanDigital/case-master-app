@@ -1,3 +1,4 @@
+const dotenv = require("dotenv");
 const crypto = require("crypto");
 const AppError = require("../utils/appError");
 const { promisify } = require("util");
@@ -9,6 +10,8 @@ const Client = require("../models/clientModel");
 // const Token = require("../models/tokenModel");
 const createSendToken = require("../utils/handleSendToken");
 const Email = require("../utils/email");
+
+dotenv.config({ path: "./config.env" });
 
 // ///// function to implement user signup
 exports.signup = catchAsync(async (req, res, next) => {
@@ -91,11 +94,45 @@ exports.login = catchAsync(async (req, res, next) => {
 
 ///PROTECT HANDLER FUNCTION
 //1) check if user has token
+// exports.protect = catchAsync(async (req, res, next) => {
+//   let token;
+//   // console.log(req.headers.authorization);
+//   if (
+//     req.headers.authorization &&
+//     req.headers.authorization.startsWith("Bearer")
+//   ) {
+//     token = req.headers.authorization.split(" ")[1];
+//   }
+//   // console.log(token);
+//   if (!token) {
+//     return next(new AppError("Kindly login before accessing this page", 401));
+//   }
 
-// protect for both client and staff
+//   //2) verify the token whether valid
+//   const decoded = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+//   //3) check if user still exist
+//   const currentUser = await User.findById(decoded.id);
+//   if (!currentUser) {
+//     return next(new AppError("User no longer exist for this token", 401));
+//   }
+
+//   //4 Check if user changed password after the token was issued
+//   if (currentUser.changePasswordAfter(decoded.iat)) {
+//     console.log(decoded.iat);
+//     return next(
+//       new AppError("User recently changed password! Please log in again.", 401)
+//     );
+//   }
+
+//   //5) give user access
+//   req.user = currentUser;
+//   // console.log("USER", req.user);
+
+//   next();
+// });
+
 exports.protect = catchAsync(async (req, res, next) => {
-  // console.log("REQ Headers PROTECT", req.headers);
-
   let token;
   if (
     req.headers.authorization &&
@@ -189,6 +226,72 @@ exports.logout = (req, res, next) => {
   res.cookie("jwt", "", { expires: new Date(0), httpOnly: true });
   res.status(200).json({ status: "success" });
 };
+
+//FORGOT PASSWORD HANDLER
+// exports.forgotPassword = catchAsync(async (req, res, next) => {
+//   const { email } = req.body;
+
+//   //get user's email and check whether user exists
+//   const user = await User.findOne({ email });
+//   if (!user) {
+//     return next(new AppError("User not found", 404));
+//   }
+
+//   // create password reset token
+//   let resetToken = crypto.randomBytes(32).toString("hex") + user._id;
+//   console.log(resetToken);
+//   // res.send("reset token sent");
+
+//   //encrypt token to be saved in the DB
+//   const encryptedToken = crypto
+//     .createHash("sha256")
+//     .update(resetToken)
+//     .digest("hex");
+
+//   // console.log("encrypted", encryptedToken);
+
+//   // save encrypted token in the database
+
+//   let token = await new Token({
+//     userId: user._id,
+//     token: encryptedToken,
+//     createAt: Date.now(),
+//     expiresAt: Date.now() + 30 * (60 * 1000), // expire in thirty minutes
+//   });
+//   token.save();
+
+//   // reset url
+//   const resetURL = `${process.env.FRONTEND_URL}/resetpassword/${resetToken}`;
+
+//   // construct and send password reset email
+//   const message = `<h2>Hello ${user.firstName}</h2>
+//   <p>Please use the url to reset your password</p>
+//   <p>This reset link is valid for only 30 minutes</p>
+
+//   <a href=${resetURL} clicktracking=off >${resetURL}</a>
+
+//   <p>Thanks</p>
+
+//   <p>eemanTech</p>
+
+//   `;
+
+//   const subject = "Password Reset Request";
+//   const sentTo = user.email;
+//   const sendFrom = process.env.EMAIL_USER;
+
+//   try {
+//     await sendEmail(subject, message, sentTo, sendFrom);
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Reset email sent",
+//     });
+//   } catch (err) {
+//     res.status(500);
+//     throw new Error("Email not sent, try again");
+//   }
+// });
 
 // CHANGE PASSWORD HANDLER
 exports.updatePassword = catchAsync(async (req, res, next) => {

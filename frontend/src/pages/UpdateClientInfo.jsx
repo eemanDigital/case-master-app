@@ -1,60 +1,100 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Modal, Button, Form, Input, Checkbox, Select } from "antd";
-import { useAuth } from "../hooks/useAuth";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import axios from "axios";
 import { useParams } from "react-router-dom";
+import { useDataFetch } from "../hooks/useDataFetch";
+import useModal from "../hooks/useModal";
 
 const { Option } = Select;
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const UpdateClientInfo = () => {
-  const { authenticate } = useAuth();
-  const [open, setOpen] = useState(false);
+  const { open, showModal, handleOk, handleCancel } = useModal();
   const { cases } = useDataGetterHook();
-  const { id } = useParams();
   const [form] = Form.useForm();
-  const [loadingInfo, setLoadingInfo] = useState(true);
+  const { TextArea } = Input;
+  const { dataFetcher, data } = useDataFetch(); //general data fetcher
+
+  const { id } = useParams();
+  // console.log(id);
+  // const { singleData, singleDataFetcher } = useSingleDataFetcher();
+  const [formData, setFormData] = useState({});
+  const [loading, setLoading] = useState(true);
+
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("jwt="))
+    ?.split("=")[1];
+
+  const fileHeaders = {
+    "Content-Type": "multipart/form-data",
+  };
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await axios.get(`${baseURL}/clients/${id}`);
-        form.setFieldsValue(response?.data?.data);
+        const response = await axios.get(`${baseURL}/clients/${id}`, {
+          headers: {
+            ...fileHeaders,
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        // console.log("RES", response.data.data);
+
+        setFormData((prevData) => {
+          return {
+            ...prevData,
+            ...response?.data?.data,
+          };
+        });
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
-        setLoadingInfo(false);
+        setLoading(false);
       }
     }
     fetchData();
-  }, [id, form]);
+  }, [id]);
 
-  const showModal = () => {
-    setOpen(true);
-  };
+  // FORM SUBMISSION
+  // form submit functionalities
+  const handleSubmission = useCallback(
+    (result) => {
+      if (result?.error) {
+        // Handle Error here
+      } else {
+        // Handle Success here
+        // form.resetFields();
+      }
+    },
+    []
+    // [form]
+  );
 
-  const handleOk = () => {
-    form.submit();
-  };
-
-  const handleCancel = () => {
-    setOpen(false);
-  };
-
-  const handleSubmit = async (values) => {
+  // submit data
+  const onSubmit = useCallback(async () => {
+    let values;
     try {
-      await axios.patch(`${baseURL}/clients/${id}`, values);
-      toast.success("Client information updated successfully!");
-      setOpen(false);
-    } catch (err) {
-      toast.error("Failed to update client information.");
-      console.error(err);
+      values = await form.validateFields(); // Validate the form fields
+    } catch (errorInfo) {
+      return;
     }
-  };
+    const result = await dataFetcher(`clients/${id}`, "patch", values); // Submit the form data to the backend
+    // console.log(values);
+
+    handleSubmission(result); // Handle the submission after the API Call
+  }, [form, handleSubmission, dataFetcher, id]);
+
+  // filter options for the select field
+
+  // loading state handler
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <section className="bg-gray-200">
@@ -66,11 +106,12 @@ const UpdateClientInfo = () => {
         title="Update Client Information"
         open={open}
         onOk={handleOk}
-        confirmLoading={loadingInfo}
+        confirmLoading={loading}
         onCancel={handleCancel}>
         <Form
           form={form}
-          onFinish={handleSubmit}
+          initialValues={formData}
+          // onFinish={handleSubmit}
           className="bg-white shadow-md rounded-md px-8 pt-6 pb-8 m-4"
           layout="vertical">
           <Form.Item
@@ -82,7 +123,7 @@ const UpdateClientInfo = () => {
             <Input placeholder="First Name" />
           </Form.Item>
           <Form.Item
-            label="Last Name"
+            label="Second Name"
             name="secondName"
             // rules={[
             //   { required: true, message: "Please enter your last name" },
@@ -143,6 +184,11 @@ const UpdateClientInfo = () => {
             <Checkbox>Client Active</Checkbox>
           </Form.Item>
         </Form>
+        <Form.Item>
+          <Button onClick={onSubmit} type="default" htmlType="submit">
+            Submit
+          </Button>
+        </Form.Item>
         <ToastContainer />
       </Modal>
     </section>

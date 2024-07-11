@@ -143,7 +143,7 @@ const Dashboard = () => {
     <PaymentFiltersContext.Provider
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
       <div className="flex justify-between items-center mt-0">
-        <h1 className="text-2xl font-bold text-gray-600 tracking-wider">
+        <h1 className="text-1xl font-bold text-gray-600  w-3/6 tracking-wider">
           {user?.data?.user?.firstName}&apos;s Dashboard(
           {user?.data?.user?.role}),
         </h1>

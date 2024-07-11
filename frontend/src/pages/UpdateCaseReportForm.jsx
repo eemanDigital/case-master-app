@@ -31,8 +31,6 @@ const UpdateCaseReportForm = ({ reportId }) => {
 
   const { userData } = useUserSelectOptions();
 
-  console.log("USERID", userData);
-
   const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
     useModal(); //modal hook
 

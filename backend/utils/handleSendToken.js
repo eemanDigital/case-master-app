@@ -1,4 +1,7 @@
+const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
+
+dotenv.config({ path: "./config.env" });
 
 // Function to generate a JWT token with the user's ID embedded
 const signToken = (id) => {
@@ -41,5 +44,6 @@ const createSendToken = (user, statusCode, res) => {
     },
   });
 };
+// console.log("JWT S", process.env.JWT_SECRET);
 
 module.exports = createSendToken;
