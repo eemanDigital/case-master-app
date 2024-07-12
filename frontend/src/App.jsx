@@ -13,7 +13,6 @@ import ClientLogin from "./pages/ClientLogin.jsx";
 import AddUserForm from "./pages/AddUserForm.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import Profile from "./pages/Profile.jsx";
-import CaseReportList from "./pages/CaseReportList.jsx";
 import CreateCaseForm from "./pages/CreateCaseForm.jsx";
 import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
@@ -46,6 +45,7 @@ import ForgotPasswordClient from "./pages/ForgotPasswordClient.jsx";
 import ForgotPasswordStaff from "./pages/ForgotPasswordStaff.jsx";
 import ForgotPasswordResetStaff from "./pages/ForgotPasswordResetStaff.jsx";
 import ForgotPasswordResetClient from "./pages/ForgotPasswordResetClient.jsx";
+import MainCaseReportList from "./pages/MainCaseReportList.jsx";
 
 function App() {
   // const { isClient, isStaff } = useAdminHook();
@@ -100,7 +100,7 @@ function App() {
           {/* <Route path="create-case" element={<CreateCase />} /> */}
           <Route path="cases/add-case" element={<CreateCaseForm />} />
           <Route path="cases/:id/casedetails" element={<CaseDetails />} />
-          <Route path="case-reports" element={<CaseReportList />} />
+          <Route path="case-reports" element={<MainCaseReportList />} />
           <Route path="leave-application" element={<LeaveAppForm />} />
           <Route
             path="leave-application/:id/details"

@@ -105,13 +105,13 @@ const caseSchema = new mongoose.Schema(
         values: ["pending", "closed", "decided", "settled", "lost", "won"],
       },
     },
-    caseStatus: {
-      type: String,
-      trim: true,
-      enum: {
-        values: ["pending", "closed", "decided", "settled"],
-      },
-    },
+    // caseStatus: {
+    //   type: String,
+    //   trim: true,
+    //   enum: {
+    //     values: ["pending", "closed", "decided", "settled"],
+    //   },
+    // },
     natureOfCase: {
       type: String,
       trim: true,

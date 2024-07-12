@@ -95,7 +95,7 @@ clientSchema.virtual("fullName").get(function () {
 clientSchema.pre(/^find/, function (next) {
   this.populate({
     path: "case",
-    select: "firstParty.name.name secondParty.name.name ",
+    select: "firstParty.name.name secondParty.name.name caseStatus reports",
   });
   next();
 });

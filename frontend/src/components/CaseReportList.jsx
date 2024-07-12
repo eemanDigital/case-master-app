@@ -1,9 +1,8 @@
 import { Link } from "react-router-dom";
 import { Card, Typography, Space, Pagination, Button, Modal } from "antd";
-import { useDataGetterHook } from "../hooks/useDataGetterHook"; // Ensure the correct path
 import { formatDate } from "../utils/formatDate";
 import { useEffect, useState } from "react";
-import UpdateCaseReportForm from "./UpdateCaseReportForm";
+import UpdateCaseReportForm from "../pages/UpdateCaseReportForm";
 import { handleDownload } from "../utils/downloadHandler";
 import axios from "axios";
 import SearchBar from "../components/SearchBar";
@@ -13,8 +12,7 @@ import { useAuthContext } from "../hooks/useAuthContext";
 const { Title } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
-const CaseReportList = () => {
-  const { reports, errorReports, loadingReports } = useDataGetterHook();
+const CaseReportList = ({ title, showFilter, reports }) => {
   const { isStaff } = useAdminHook();
   const { user } = useAuthContext();
   const caseIDs = user?.data?.user?.case?.map((caseItem) => caseItem?._id);
@@ -96,8 +94,8 @@ const CaseReportList = () => {
 
   // render all cases initially before filter
   useEffect(() => {
-    if (reports?.data) {
-      setSearchResults(reports?.data);
+    if (reports) {
+      setSearchResults(reports);
     }
   }, [reports]);
   // handles search filter
@@ -105,10 +103,10 @@ const CaseReportList = () => {
     const searchTerm = e.target.value.trim().toLowerCase();
 
     if (!searchTerm) {
-      setSearchResults(reports?.data);
+      setSearchResults(reports);
       return;
     }
-    const results = reports?.data.filter((d) => {
+    const results = reports?.filter((d) => {
       // Check in firstParty names
       const firstPartyMatch = d.caseReported?.firstParty?.name?.some(
         (nameObj) => nameObj?.name?.toLowerCase().includes(searchTerm)
@@ -128,13 +126,11 @@ const CaseReportList = () => {
   };
 
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
-  if (loadingReports) return <p>Loading...</p>;
-  if (errorReports) return <p>{errorReports}</p>;
 
   // filter case by client
   const filterCaseByClient = (caseIds) => {
     return (
-      reports?.data?.filter((report) =>
+      reports?.filter((report) =>
         caseIds?.includes(report?.caseReported?._id)
       ) || []
     );
@@ -143,7 +139,7 @@ const CaseReportList = () => {
   return (
     <section className="w-full">
       <h1 className="text-2xl text-gray-600 text-center font-bold md:text-left">
-        Case Reports
+        {title}
       </h1>
       <div className="flex justify-between items-center m-2">
         {isStaff && (
@@ -151,7 +147,7 @@ const CaseReportList = () => {
             <Button>+ Add New Report</Button>
           </Link>
         )}
-        <SearchBar onSearch={handleSearchChange} />
+        {showFilter && <SearchBar onSearch={handleSearchChange} />}
       </div>
       {/* isStaff ? currentReport : filterCaseByClient(caseID) */}
       <Space direction="vertical" size="large">
@@ -194,22 +190,23 @@ const CaseReportList = () => {
                   </p>
                 </Space>
               </Space>
-              {isStaff && (
-                <div className="flex justify-between">
-                  <UpdateCaseReportForm reportId={report._id} />
 
-                  <button
-                    className="bg-green-500 hover:bg-green-700 rounded-md text-white py-2 px-4 my-2 tracking-wider"
-                    onClick={(event) =>
-                      handleDownload(
-                        event,
-                        `${downloadURL}/reports/pdf/${report?._id}`,
-                        "report.pdf"
-                      )
-                    }>
-                    Download Report
-                  </button>
+              <div className="flex justify-between">
+                {isStaff && <UpdateCaseReportForm reportId={report._id} />}
 
+                <button
+                  className="bg-green-500 hover:bg-green-700 rounded-md text-white py-2 px-4 my-2 tracking-wider"
+                  onClick={(event) =>
+                    handleDownload(
+                      event,
+                      `${downloadURL}/reports/pdf/${report?._id}`,
+                      "report.pdf"
+                    )
+                  }>
+                  Download Report
+                </button>
+
+                {isStaff && (
                   <button
                     className="bg-red-500 hover:bg-red-700 rounded-md text-white py-2 px-4 my-2 tracking-wider"
                     onClick={() => {
@@ -221,8 +218,8 @@ const CaseReportList = () => {
                     type="primary">
                     Delete
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </Card>
           )
         )}
@@ -230,7 +227,7 @@ const CaseReportList = () => {
 
       <Pagination
         current={currentPage}
-        total={reports?.data?.length}
+        total={reports?.length}
         pageSize={itemsPerPage}
         onChange={paginate}
       />

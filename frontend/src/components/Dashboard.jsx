@@ -23,6 +23,7 @@ import CaseCountsByYearChart from "./CaseCountsByYearChart ";
 import googleCalender from "../assets/calender.svg";
 import EventCalendar from "./EventCalender";
 import AccountOfficerDetails from "./AccountOfficer";
+import ClientDashboard from "./ClientDashboard";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -34,6 +35,8 @@ export const PaymentFiltersContext = createContext();
 
 const Dashboard = () => {
   const { user } = useAuthContext();
+
+  // account officer
 
   // console.log("USER CASE", user?.data?.user?.case);
 
@@ -143,22 +146,18 @@ const Dashboard = () => {
   return (
     <PaymentFiltersContext.Provider
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
-      {/* account officer for client */}
-      {isClient &&
-        user?.data?.user?.cases?.map((caseItem) =>
-          caseItem?.accountOfficer?.map((officer, index) => (
-            <AccountOfficerDetails
-              key={index} 
-              accountOfficer={officer}
-            />
-          ))
-        )}
-
       <div className="flex justify-between items-center mt-0">
-        <h1 className="text-1xl font-bold text-gray-600  w-3/6 tracking-wider">
-          {user?.data?.user?.firstName}&apos;s Dashboard(
-          {user?.data?.user?.role}),
-        </h1>
+        {isClient ? (
+          <h1 className="text-1xl font-bold text-gray-600  w-3/6 tracking-wider">
+            Welcome back, {user?.data?.user?.firstName}({user?.data?.user?.role}
+            ),
+          </h1>
+        ) : (
+          <h1 className="text-1xl font-bold text-gray-600  w-3/6 tracking-wider">
+            {user?.data?.user?.firstName}&apos;s Dashboard(
+            {user?.data?.user?.role}),
+          </h1>
+        )}
         <div className="w-12 h-12">
           <a
             href="https://calendar.google.com/calendar"
@@ -173,6 +172,10 @@ const Dashboard = () => {
           </a>
         </div>
       </div>
+
+      {/* client's Dashboard */}
+      {isClient && <ClientDashboard />}
+
       {isStaff && (
         <>
           <Row gutter={16} className="m-4 flex justify-between items-center">
