@@ -148,7 +148,7 @@ const Dashboard = () => {
         user?.data?.user?.cases?.map((caseItem) =>
           caseItem?.accountOfficer?.map((officer, index) => (
             <AccountOfficerDetails
-              key={index} // Ideally, use a unique identifier if available
+              key={index} 
               accountOfficer={officer}
             />
           ))
