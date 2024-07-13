@@ -41,6 +41,8 @@ const InvoiceDetails = () => {
 
   const invoice = data?.data;
 
+  console.log("INVD", invoice.case);
+
   return (
     <>
       <Button onClick={() => navigate(-1)}>Go Back</Button>

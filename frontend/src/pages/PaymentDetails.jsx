@@ -162,6 +162,11 @@ const PaymentDetails = () => {
               </Card>
             ))}
           </Descriptions.Item>
+
+          <Descriptions.Item label="Case">
+            {invoice?.case?.firstParty?.name[0].name} Vs{" "}
+            {invoice?.case?.secondParty?.name[0].name}
+          </Descriptions.Item>
           <Descriptions.Item label="Due Date">
             {formatDate(invoice?.dueDate)}
           </Descriptions.Item>

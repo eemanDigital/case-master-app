@@ -1,20 +1,25 @@
-import React from "react";
-import { Card, Row, Col, Typography, Spin, Alert } from "antd";
+import { Spin, Alert } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAuthContext } from "../hooks/useAuthContext";
-import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
+// import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import CaseReportList from "./CaseReportList";
-
-const { Text } = Typography;
+import SingleCauseList from "./SingleCauseList";
 
 const ClientCaseDetails = () => {
-  const { cases, reports, loading, error } = useDataGetterHook();
+  const { causeList, reports, loading, error } = useDataGetterHook();
   const { user } = useAuthContext();
 
   const clientCase = user?.data?.user?.case;
+  const clientCaseIds = clientCase.map((item) => item.id); //get caseIDs
+  const causeListData = causeList?.data?.reportsThisMonth || []; //cause list data for the month
+
+  // filter out clients cases
+  const filteredCauseList = causeListData.filter((items) =>
+    clientCaseIds.includes(items?.caseReported.id)
+  );
 
   // Ensure reports are loaded
-  if (loading.reports) {
+  if (loading.reports || loading.causeList) {
     return (
       <Spin
         tip="Loading..."
@@ -23,11 +28,11 @@ const ClientCaseDetails = () => {
     );
   }
 
-  if (error.reports) {
+  if (error.reports || error.causeList) {
     return (
       <Alert
         message="Error"
-        description={error.reports}
+        description={error.reports || error.causeList}
         type="error"
         showIcon
         style={{ marginTop: "20px" }}
@@ -49,38 +54,28 @@ const ClientCaseDetails = () => {
   //   console.log(firstReportsArray, "RE");
 
   return (
-    <div className="flex justify-between  p-4 my-4 mx-2 gap-4 rounded-md">
-      <div className="mb-6">
-        {/* <h1 className="text-gray-700 text-2xl font-medium">Case Overview</h1> */}
-      </div>
+    <div className="flex justify-between   p-4 my-4 mx-2 gap-4 rounded-md">
+      <div className=" flex justify-evenly items-center md:items-center md:flex-row flex-col gap-3">
+        <div className="w-[480px] h-[340px]  p-4 shadow-inner bg-gray-300 overflow-scroll hide-scrollbar">
+          <CaseReportList
+            showFilter={false}
+            title="Latest Case Report"
+            reports={firstReportsArray}
+          />
+        </div>
 
-      {/* <Row gutter={[16, 16]}>
-        {clientCase?.map((singleCase, index) => (
-          <Col key={index} xs={24} sm={12} md={11}>
-            <Card
-              title={`Case: ${singleCase.firstParty?.name[0]?.name} vs ${singleCase.secondParty?.name[0]?.name}`}
-              bordered={false}
-              hoverable
-              style={{ width: "100%", marginBottom: "20px" }}>
-              <p>
-                <span className="font-medium">Status: </span>
-                {singleCase.caseStatus === "decided" ? (
-                  <CheckCircleOutlined style={{ color: "green" }} />
-                ) : (
-                  <CloseCircleOutlined style={{ color: "red" }} />
-                )}
-                {singleCase.caseStatus}
-              </p>
-            </Card>
-          </Col>
-        ))}
-      </Row> */}
-      <div className="w-[480px] h-[340px]  p-6 shadow-inner bg-gray-300 overflow-scroll hide-scrollbar">
-        <CaseReportList
-          showFilter={false}
-          title="Latest Case Report"
-          reports={firstReportsArray}
-        />
+        <div className=" w-[50%] pt-5">
+          <h1 className="  text-2xl text-center font-medium  text-gray-700">
+            Case Schedule
+          </h1>
+          <SingleCauseList
+            causeListData={filteredCauseList}
+            loadingCauseList={loading.causeList}
+            errorCauseList={error.causeList}
+            addResultNumber={false}
+            showDownloadBtn={false}
+          />
+        </div>
       </div>
     </div>
   );

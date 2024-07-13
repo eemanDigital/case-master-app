@@ -6,29 +6,38 @@ import { formatDate } from "../utils/formatDate";
 import CreatePaymentForm from "./CreatePaymentForm";
 import SearchBar from "../components/SearchBar";
 import { useEffect, useState } from "react";
-import { parse, isValid, format } from "date-fns";
+import { useAuthContext } from "../hooks/useAuthContext";
+import { useAdminHook } from "../hooks/useAdminHook";
 
 const PaymentList = () => {
-  const { payments, loading, error } = useDataGetterHook();
+  const {
+    payments,
+    loading: loadingPayment,
+    error: paymentError,
+  } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
-
-  const { dataFetcher } = useDataFetch();
+  const { user } = useAuthContext();
+  const { isClient } = useAdminHook();
+  const loggedInClientId = user?.data?.user.id;
+  const { dataFetcher, loading, error } = useDataFetch();
 
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
   };
+
   const handleDeletePayment = async (id) => {
     // Implement delete functionality here
     await dataFetcher(`payments/${id}`, "delete", fileHeaders);
   };
 
-  // render all cases initially before filter
+  // Render all cases initially before filter
   useEffect(() => {
     if (payments.data?.payments) {
       setSearchResults(payments.data?.payments);
     }
   }, [payments]);
-  // handles search filter
+
+  // Handles search filter
   const handleSearchChange = (e) => {
     const searchTerm = e.target.value.trim().toLowerCase();
 
@@ -48,29 +57,16 @@ const PaymentList = () => {
         ?.toLowerCase()
         .includes(searchTerm);
 
-      // Attempt to parse the search term as a date in different formats
-      // const dateFormats = ["yyyy-MM-dd", "MMM dd, yyyy"];
-      // let paymentDateMatch = false;
-
-      // for (const formatString of dateFormats) {
-      //   const parsedDate = parse(searchTerm, formatString, new Date());
-      //   if (isValid(parsedDate)) {
-      //     const formattedDate = format(parsedDate, "yyyy-MM-dd");
-      //     if (new Date(d.date).toISOString().slice(0, 10) === formattedDate) {
-      //       paymentDateMatch = true;
-      //       break;
-      //     }
-      //   }
-      // }
-
       return clientNameMatch || referenceMatch;
     });
-
     setSearchResults(results);
   };
 
-  // console.log("PP", payments?.data?.payments);
-  // Define table columns
+  // filter payment base on clientId
+  const filteredPaymentForClient = searchResults.filter(
+    (item) => item.clientId === loggedInClientId
+  );
+
   const columns = [
     {
       title: "Invoice Reference",
@@ -82,7 +78,6 @@ const PaymentList = () => {
       dataIndex: ["invoiceId", "client", "firstName"],
       key: "client",
     },
-
     {
       title: "Amount Paid",
       dataIndex: "amountPaid",
@@ -103,7 +98,6 @@ const PaymentList = () => {
         <div className="text-green-600">{formatDate(date)}</div>
       ),
     },
-
     {
       title: "Balance",
       dataIndex: "balance",
@@ -148,13 +142,12 @@ const PaymentList = () => {
 
       <Table
         columns={columns}
-        // dataSource={payments.data?.payments}
-        dataSource={searchResults}
+        dataSource={isClient ? filteredPaymentForClient : searchResults}
         rowKey="_id"
-        loading={loading.payments}
+        loading={loadingPayment.payments}
         pagination={{ pageSize: 10 }}
       />
-      {error.payments && <p>Error: {error.payments}</p>}
+      {paymentError.payments && <p>Error: {paymentError.payments}</p>}
     </div>
   );
 };

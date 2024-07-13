@@ -46,6 +46,7 @@ import ForgotPasswordStaff from "./pages/ForgotPasswordStaff.jsx";
 import ForgotPasswordResetStaff from "./pages/ForgotPasswordResetStaff.jsx";
 import ForgotPasswordResetClient from "./pages/ForgotPasswordResetClient.jsx";
 import MainCaseReportList from "./pages/MainCaseReportList.jsx";
+import PaymentMadeOnCase from "./pages/PaymentMadeOnCase.jsx";
 
 function App() {
   // const { isClient, isStaff } = useAdminHook();
@@ -117,14 +118,7 @@ function App() {
           />
 
           {/* Protected routes */}
-          <Route
-            path="billings"
-            element={
-              <ProtectedRoute isAdmin={true} isStaffRoute={true}>
-                <InvoicePaymentHandler />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="billings" element={<InvoicePaymentHandler />} />
 
           {/* <Route path="documents" element={<CaseDocument />} /> */}
           <Route path="profile" element={<Profile />} />
@@ -156,6 +150,11 @@ function App() {
             path="billings/payments/:id/details"
             element={<PaymentDetails />}
           />
+          <Route
+            path="billings/payments/client/:clientId/case/:caseId"
+            element={<PaymentMadeOnCase />}
+          />
+
           <Route path="cause-list" element={<CauseList />} />
 
           {/* errorElement= {<ErrorPage />} */}

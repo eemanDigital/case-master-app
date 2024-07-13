@@ -22,7 +22,6 @@ import CaseCountsByYearChart from "./CaseCountsByYearChart ";
 // import EventCalender from "./EventCalender";
 import googleCalender from "../assets/calender.svg";
 import EventCalendar from "./EventCalender";
-import AccountOfficerDetails from "./AccountOfficer";
 import ClientDashboard from "./ClientDashboard";
 
 // import { calender } from "../assets/calendar.svg";
@@ -146,7 +145,7 @@ const Dashboard = () => {
   return (
     <PaymentFiltersContext.Provider
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
-      <div className="flex justify-between items-center mt-0">
+      <div className="flex justify-between items-center mt-6">
         {isClient ? (
           <h1 className="text-1xl font-bold text-gray-600  w-3/6 tracking-wider">
             Welcome back, {user?.data?.user?.firstName}({user?.data?.user?.role}

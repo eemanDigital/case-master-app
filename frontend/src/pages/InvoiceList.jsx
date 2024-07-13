@@ -6,6 +6,8 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import SearchBar from "../components/SearchBar";
+import { useAuthContext } from "../hooks/useAuthContext";
+import { useAdminHook } from "../hooks/useAdminHook";
 
 const InvoiceList = () => {
   const { data, loading, error, dataFetcher } = useDataFetch();
@@ -16,7 +18,9 @@ const InvoiceList = () => {
   } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
 
-  //   console.log(invoices?.data[0]._id);
+  const { user } = useAuthContext();
+  const { isClient } = useAdminHook();
+  const loggedInClientId = user?.data?.user.id;
 
   //   handle delete
   const fileHeaders = {
@@ -64,6 +68,11 @@ const InvoiceList = () => {
 
     setSearchResults(results);
   };
+
+  // filter payment base on clientId
+  const filteredInvoiceForClient = searchResults.filter(
+    (item) => item.client?.id === loggedInClientId
+  );
 
   const columns = [
     {
@@ -145,7 +154,11 @@ const InvoiceList = () => {
         <SearchBar onSearch={handleSearchChange} />
       </div>
       <h1 className="text-3xl font-bold text-gray-700 mb-7">Invoices</h1>
-      <Table columns={columns} dataSource={searchResults} rowKey="_id" />
+      <Table
+        columns={columns}
+        dataSource={isClient ? filteredInvoiceForClient : searchResults}
+        rowKey="_id"
+      />
     </div>
   );
 };

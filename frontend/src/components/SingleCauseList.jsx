@@ -7,6 +7,7 @@ const SingleCauseList = ({
   causeListData,
   loadingCauseList,
   errorCauseList,
+  addResultNumber,
   result,
   onDownloadCauseList,
   title,
@@ -72,17 +73,19 @@ const SingleCauseList = ({
 
   return (
     <>
-      <Card>
-        {title || (
-          <h1
-            className={
-              h1Style ||
-              `text-3xl font-bold text-center text-gray-500 leading-tight  tracking-wide`
-            }>
-            Number of Cases: {result}
-          </h1>
-        )}
-      </Card>
+      {addResultNumber && (
+        <Card>
+          {title || (
+            <h1
+              className={
+                h1Style ||
+                `text-3xl font-bold text-center text-gray-500 leading-tight  tracking-wide`
+              }>
+              Number of Cases: {result}
+            </h1>
+          )}
+        </Card>
+      )}
       <div>
         {selectedReportId && isSuperOrAdmin && (
           <LawyersInCourtForm reportId={selectedReportId} />

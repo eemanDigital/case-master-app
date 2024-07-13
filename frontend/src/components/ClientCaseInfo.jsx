@@ -3,7 +3,7 @@ import avatar from "../assets/avatar.png";
 import { CheckCircleOutlined } from "@ant-design/icons";
 import { MdPendingActions } from "react-icons/md";
 
-function AccountOfficerDetails({ cases }) {
+function ClientCaseInfo({ cases }) {
   return (
     <div className="flex flex-col justify-center items-start flex-wrap">
       {/* <h1 className="text-2xl text-gray-500 p-2 font-bold">
@@ -11,14 +11,16 @@ function AccountOfficerDetails({ cases }) {
           cases.length > 1 ? "Officers" : "Officer"
         } `}
       </h1> */}
-      <div className="flex flex-wrap justify-center gap-4">
+      <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-4">
         {cases.map((singleCase, index) => (
-          <div key={index} className="bg-white rounded-lg shadow-sm p-4 w-80">
+          <div
+            key={index}
+            className="bg-white rounded-lg shadow-sm p-4 md:w-[50%] w-full h-[200px]">
             <h4 className="text-lg font-medium mb-1 text-gray-600  text-justify">
               Case {index + 1}: {singleCase.firstParty?.name[0]?.name} vs{" "}
               {singleCase.secondParty?.name[0]?.name}
             </h4>
-            <p className=" capitalize">
+            <p className=" capitalize ">
               <div className="flex items-center justify-between">
                 <p className="font-medium ">Status: </p>
                 {singleCase.caseStatus === "decided" ? (
@@ -77,4 +79,4 @@ function AccountOfficerDetails({ cases }) {
   );
 }
 
-export default AccountOfficerDetails;
+export default ClientCaseInfo;

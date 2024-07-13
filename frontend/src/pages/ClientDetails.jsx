@@ -11,8 +11,6 @@ const ClientDetails = () => {
 
   const { dataFetcher, data, loading, error } = useDataFetch();
 
-  // console.log("CLIENT", data);
-
   useEffect(() => {
     dataFetcher(`clients/${id}`, "GET");
   }, [id]);
@@ -55,10 +53,10 @@ const ClientDetails = () => {
       </Descriptions>
       <Divider />
 
-      <PaymentMadeOnCase
+      {/* <PaymentMadeOnCase
         clientId={data?.data?._id}
         caseId={data?.data?.case?._id}
-      />
+      /> */}
     </>
   );
 };

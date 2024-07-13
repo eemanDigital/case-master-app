@@ -1,61 +1,83 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Descriptions, Button, Card, Spin, Alert, Modal } from "antd";
+import { useNavigate, useParams } from "react-router-dom";
+import { Descriptions, Button, Card, Spin, Alert } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
-import useModal from "../hooks/useModal";
 
-const PaymentMadeOnCase = ({ clientId, caseId }) => {
+const PaymentMadeOnCase = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
-  const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
-    useModal();
-
   const navigate = useNavigate();
+  const { clientId, caseId } = useParams();
 
   useEffect(() => {
     if (clientId && caseId) {
-      dataFetcher(
-        `payments/totalPaymentSum/client/${clientId}/case/${caseId}`,
-        "GET"
-      );
+      dataFetcher(`payments/client/${clientId}/case/${caseId}`, "GET");
     }
   }, [clientId, caseId]);
 
-  if (loading) return <Spin tip="Loading..." />;
-  if (error)
+  if (loading)
     return (
-      <Alert
-        message="Error"
-        description={error.message}
-        type="error"
-        showIcon
+      <Spin
+        tip="Loading..."
+        size="large"
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: "100vh",
+        }}
       />
     );
+  if (error)
+    return (
+      <Alert message="Error" description={error} type="error" showIcon banner />
+    );
 
-  const paymentAmount = data?.data ? data.data : 0;
+  const totalPayment = data?.totalPayment || 0;
+  const paymentData = data?.data || [];
 
   return (
     <>
-      <Button onClick={() => navigate(-1)}>Go Back</Button>
-      <Button type="primary" onClick={showModal} className="mx-2 bg-blue-500">
-        Payment made on case
+      <Button key="1" type="primary" onClick={() => navigate(-1)}>
+        Go Back
       </Button>
-
-      <Modal
-        title="Payment Details on Case"
-        open={open}
-        onOk={handleOk}
-        onCancel={handleCancel}>
-        <Card className="text-black w-[100%] mt-4" bordered={false}>
+      ,
+      <Card className="mt-4">
+        {paymentData.map((payment, index) => (
           <Descriptions
+            key={index}
             bordered
             column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}
-            size="middle">
-            <Descriptions.Item label="Total Payment">
-              ₦{paymentAmount?.toLocaleString()}
+            size="middle"
+            title={`Payment ${index + 1} Details`}
+            className="mt-4">
+            <Descriptions.Item label="Amount Paid">
+              ₦{payment.amountPaid.toLocaleString()}
+            </Descriptions.Item>
+            <Descriptions.Item label="Date">
+              {new Date(payment.date).toLocaleDateString()}
+            </Descriptions.Item>
+            <Descriptions.Item label="Client">
+              {payment.client.firstName} {payment.client.secondName}
+            </Descriptions.Item>
+            <Descriptions.Item label="First Party">
+              {payment.case.firstParty.join(", ")}
+            </Descriptions.Item>
+            <Descriptions.Item label="Second Party">
+              {payment.case.secondParty.join(", ")}
             </Descriptions.Item>
           </Descriptions>
-        </Card>
-      </Modal>
+        ))}
+
+        <Descriptions
+          bordered
+          column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}
+          size="middle"
+          title="Total Payment Summary">
+          <Descriptions.Item label="Total Payment">
+            <h1 className=" font-bold"> ₦{totalPayment.toLocaleString()}</h1>
+          </Descriptions.Item>
+        </Descriptions>
+      </Card>
     </>
   );
 };

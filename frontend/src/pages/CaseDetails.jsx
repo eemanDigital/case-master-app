@@ -9,6 +9,7 @@ import CaseDocumentUpload from "../components/CaseDocumentUpload";
 import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
 import useDeleteDocument from "../hooks/useDeleteDocument";
 import { useAdminHook } from "../hooks/useAdminHook";
+import PaymentMadeOnCase from "./PaymentMadeOnCase";
 
 const { Title, Text } = Typography;
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -30,8 +31,10 @@ const CaseDetails = () => {
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error loading data</p>;
 
+  console.log("id", data?.data?.client);
   return (
     <section className="p-6 ">
+      {/* <PaymentMadeOnCase caseId={id} clientId={data?.data?.client?._id} /> */}
       <div className="flex justify-between">
         <Link to="../..">
           <Button type="link">Go Back to case lists</Button>
@@ -230,20 +233,7 @@ const CaseDetails = () => {
         />
         <Divider />
         <Title level={4}>Client</Title>
-        <List
-          dataSource={data?.data?.client || []}
-          renderItem={(item, index) => (
-            <List.Item key={item?._id || index}>
-              <Text>
-                {item.fullName || (
-                  <span className="text-red-500 font-semibold">
-                    Not provided
-                  </span>
-                )}
-              </Text>
-            </List.Item>
-          )}
-        />
+        <Text>{data?.data?.client?.fullName}</Text>
         <Divider />
         <Text strong>General Comment: </Text> {data?.data?.generalComment}
       </div>

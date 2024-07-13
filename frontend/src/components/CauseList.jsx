@@ -20,6 +20,7 @@ export const CauseList = () => {
             errorCauseList={error.causeList}
             result={causeList.data?.weekResults}
             showDownloadBtn={true}
+            addResultNumber={true}
             onDownloadCauseList={(event) =>
               handleDownload(
                 event,
@@ -37,6 +38,7 @@ export const CauseList = () => {
             errorCauseList={error.causeList}
             result={causeList.data?.nextWeekResults}
             showDownloadBtn={true}
+            addResultNumber={true}
             onDownloadCauseList={(event) =>
               handleDownload(
                 event,
@@ -54,6 +56,7 @@ export const CauseList = () => {
             errorCauseList={error.causeList}
             result={causeList.data?.monthResults}
             showDownloadBtn={true}
+            addResultNumber={true}
             onDownloadCauseList={(event) =>
               handleDownload(
                 event,
@@ -69,6 +72,7 @@ export const CauseList = () => {
             causeListData={causeList.data?.reportsThisYear}
             loadingCauseList={loading.causeList}
             errorCauseList={error.causeList}
+            addResultNumber={true}
             result={causeList.data?.yearResults}
           />
         );

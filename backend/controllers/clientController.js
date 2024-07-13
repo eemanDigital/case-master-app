@@ -68,7 +68,7 @@ exports.updateClient = catchAsync(async (req, res, next) => {
 
   // 3) Update user document
   const updatedClient = await Client.findByIdAndUpdate(
-    req.user.id,
+    req.params.id,
     filteredBody,
     {
       new: true,
@@ -76,7 +76,7 @@ exports.updateClient = catchAsync(async (req, res, next) => {
     }
   );
   // console.log("UPC", updatedClient);
-  console.log("FILTER BODY", req.body);
+  // console.log("FILTER BODY", req.body);
 
   res.status(200).json({
     status: "success",

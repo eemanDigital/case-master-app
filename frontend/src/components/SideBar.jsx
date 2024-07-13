@@ -109,14 +109,10 @@ const SideBar = () => {
   ];
 
   // Filter navItems based on the user's role
-  // Filter navItems based on the user's role
   const filteredNavItems = navItems.filter((item) => {
     if (
       isClient &&
-      (item.key === "4" ||
-        item.key === "5" ||
-        item.key === "6" ||
-        item.key === "7")
+      (item.key === "4" || item.key === "6" || item.key === "7")
     ) {
       return false; // Filter out keys for clients
     }

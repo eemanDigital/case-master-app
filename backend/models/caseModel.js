@@ -179,12 +179,10 @@ const caseSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
-    client: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Client",
-      },
-    ],
+    client: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Client",
+    },
 
     generalComment: String,
     documents: [documentSchema],
