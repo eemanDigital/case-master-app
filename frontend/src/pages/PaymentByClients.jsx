@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, Alert, Table, Divider } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAuthContext } from "../hooks/useAuthContext";
@@ -9,7 +10,8 @@ const PaymentByClient = () => {
   const { user } = useAuthContext();
   const { isClient } = useAdminHook();
   const loggedInClientId = user?.data?.user.id;
-  // const { clientId, caseId } = useParams();
+
+  const [pagination, setPagination] = useState({ pageSize: 8, current: 1 });
 
   if (loading.clientPayments) return <h1>Loading... </h1>;
   if (error.clientPayments)
@@ -29,6 +31,10 @@ const PaymentByClient = () => {
     (items) => items.client?._id === loggedInClientId
   );
 
+  const handleTableChange = (pagination) => {
+    setPagination(pagination);
+  };
+
   const columns = [
     {
       title: "Client Name",
@@ -45,17 +51,22 @@ const PaymentByClient = () => {
 
   return (
     <>
-      <Card className="text-black mt-4" bordered={false}>
-        <Table
-          dataSource={isClient ? filteredPaymentForClient : paymentData}
-          columns={columns}
-          rowKey={(record) => record._id}
-          pagination={false}
-        />
-      </Card>
-      <Divider />
+      <div className="flex flex-col md:flex-row justify-between md:items-start items-center gap-3 w-full">
+        <Card
+          title="Total Payment By Each Client"
+          className="text-black mt-4 w-[70%] "
+          bordered={false}>
+          <Table
+            dataSource={isClient ? filteredPaymentForClient : paymentData}
+            columns={columns}
+            rowKey={(record) => record._id}
+            pagination={pagination}
+            onChange={handleTableChange}
+          />
+        </Card>
 
-      <AllCasesListForPayment />
+        <AllCasesListForPayment />
+      </div>
     </>
   );
 };

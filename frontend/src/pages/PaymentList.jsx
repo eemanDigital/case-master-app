@@ -17,7 +17,7 @@ const PaymentList = () => {
   } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
   const { user } = useAuthContext();
-  const { isClient } = useAdminHook();
+  const { isClient, isSuperOrAdmin } = useAdminHook();
   const loggedInClientId = user?.data?.user.id;
   const { dataFetcher, loading, error } = useDataFetch();
 
@@ -104,7 +104,7 @@ const PaymentList = () => {
       key: "balance",
       render: (balance) => (
         <div className={`${balance === 0 ? "text-green-600" : "text-red-500"}`}>
-          ₦{balance}
+          {balance === 0 ? <p>Payment Completed</p> : `₦${balance}`}
         </div>
       ),
     },
@@ -116,17 +116,19 @@ const PaymentList = () => {
           <Button type="link">
             <Link to={`payments/${record?._id}/details`}>Get Details</Link>
           </Button>
-          <Button
-            onClick={() => {
-              Modal.confirm({
-                title: "Are you sure you want to delete this payment?",
-                onOk: () => handleDeletePayment(record?._id),
-              });
-            }}
-            type="primary"
-            danger>
-            Delete
-          </Button>
+          {isSuperOrAdmin && (
+            <Button
+              onClick={() => {
+                Modal.confirm({
+                  title: "Are you sure you want to delete this payment?",
+                  onOk: () => handleDeletePayment(record?._id),
+                });
+              }}
+              type="primary"
+              danger>
+              Delete
+            </Button>
+          )}
         </Space>
       ),
     },

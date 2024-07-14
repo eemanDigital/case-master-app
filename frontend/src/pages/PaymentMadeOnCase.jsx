@@ -2,11 +2,18 @@ import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Descriptions, Button, Card, Spin, Alert } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
+import { useAuthContext } from "../hooks/useAuthContext";
+import { useAdminHook } from "../hooks/useAdminHook";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
 const PaymentMadeOnCase = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
+  const { invoices } = useDataGetterHook();
   const navigate = useNavigate();
   const { clientId, caseId } = useParams();
+  const { user } = useAuthContext();
+  const { isClient } = useAdminHook();
+  const loggedInClientId = user?.data?.user.id;
 
   useEffect(() => {
     if (clientId && caseId) {
@@ -14,7 +21,7 @@ const PaymentMadeOnCase = () => {
     }
   }, [clientId, caseId]);
 
-  if (loading)
+  if (loading) {
     return (
       <Spin
         tip="Loading..."
@@ -27,20 +34,40 @@ const PaymentMadeOnCase = () => {
         }}
       />
     );
-  if (error)
+  }
+
+  if (error) {
     return (
-      <Alert message="Error" description={error} type="error" showIcon banner />
+      <Alert
+        message="Error"
+        description={error.message}
+        type="error"
+        showIcon
+        banner
+      />
     );
+  }
 
   const totalPayment = data?.totalPayment || 0;
   const paymentData = data?.data || [];
+
+  const paymentInvoiceIds = paymentData.map((item) => item.invoiceId);
+  const matchedInvoices = invoices?.data?.filter((invoice) =>
+    paymentInvoiceIds?.includes(invoice?._id)
+  );
+
+  const totalAmountDue = matchedInvoices?.reduce(
+    (acc, invoice) => acc + invoice?.totalAmountDue,
+    0
+  );
+
+  const balance = totalAmountDue - totalPayment;
 
   return (
     <>
       <Button key="1" type="primary" onClick={() => navigate(-1)}>
         Go Back
       </Button>
-      ,
       <Card className="mt-4">
         {paymentData.map((payment, index) => (
           <Descriptions
@@ -72,9 +99,30 @@ const PaymentMadeOnCase = () => {
           bordered
           column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}
           size="middle"
+          title="Total Amount Due">
+          <Descriptions.Item label="Total Amount Due">
+            <h1 className="font-bold">₦{totalAmountDue?.toLocaleString()}</h1>
+          </Descriptions.Item>
+        </Descriptions>
+
+        <Descriptions
+          bordered
+          column={{ xs: 1, sm: 1, md: 2, lg: 2, xl: 3 }}
+          size="middle"
           title="Total Payment Summary">
           <Descriptions.Item label="Total Payment">
-            <h1 className=" font-bold"> ₦{totalPayment.toLocaleString()}</h1>
+            <h1 className="font-bold">₦{totalPayment?.toLocaleString()}</h1>
+          </Descriptions.Item>
+          <Descriptions.Item label={balance ? "Balance" : "Payment Status"}>
+            {totalPayment === totalAmountDue ? (
+              <h1 className="bg-green-600 text-center p-2 w-36 text-white">
+                Payment Completed
+              </h1>
+            ) : (
+              <h1 className="text-red-500 font-medium">
+                ₦{balance.toLocaleString()}
+              </h1>
+            )}
           </Descriptions.Item>
         </Descriptions>
       </Card>

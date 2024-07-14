@@ -15,13 +15,13 @@ function ClientCaseInfo({ cases }) {
         {cases.map((singleCase, index) => (
           <div
             key={index}
-            className="bg-white rounded-lg shadow-sm p-4 md:w-[50%] w-full h-[200px]">
+            className="bg-white rounded-lg shadow-sm p-4 md:w-[80%] w-full h-[200px]">
             <h4 className="text-lg font-medium mb-1 text-gray-600  text-justify">
               Case {index + 1}: {singleCase.firstParty?.name[0]?.name} vs{" "}
               {singleCase.secondParty?.name[0]?.name}
             </h4>
             <p className=" capitalize ">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between  ">
                 <p className="font-medium ">Status: </p>
                 {singleCase.caseStatus === "decided" ? (
                   <p>

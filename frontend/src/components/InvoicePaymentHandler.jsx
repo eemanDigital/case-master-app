@@ -21,7 +21,7 @@ const InvoicePaymentHandler = () => {
   };
 
   return (
-    <>
+    <div className="m-5">
       <SwitchButton
         currentState={selectedState}
         updatedState={setSelectedState}
@@ -42,7 +42,7 @@ const InvoicePaymentHandler = () => {
       />
 
       {renderSelectedState()}
-    </>
+    </div>
   );
 };
 

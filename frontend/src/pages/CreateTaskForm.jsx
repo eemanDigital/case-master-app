@@ -15,13 +15,15 @@ import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import useModal from "../hooks/useModal";
 import { SelectInputs } from "../components/DynamicInputs";
+import useClientSelectOptions from "../hooks/useClientSelectOptions";
 
 const CreateTaskForm = () => {
   // destructure textarea from input
   const { TextArea } = Input;
-
   const { casesOptions } = useCaseSelectOptions();
   const { userData } = useUserSelectOptions();
+  const { clientOptions } = useClientSelectOptions();
+
   const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
     useModal(); //modal hook
 
@@ -128,18 +130,45 @@ const CreateTaskForm = () => {
                 name="assignedTo"
                 label="Assigned To"
                 initialValue={formData?.assignedTo}
-                rules={[
-                  {
-                    required: true,
-                    message: "Please, select reporter!",
-                  },
-                ]}>
+                // rules={[
+                //   {
+                //     required: true,
+                //     message:
+                //       "A task must be assigned to either a staff or a client",
+                //   },
+                // ]}
+              >
                 <Select
                   mode="multiple"
                   noStyle
                   notFoundContent={data ? <Spin size="small" /> : null}
                   placeholder="Select a staff"
                   options={userData}
+                  allowClear
+                  style={{
+                    width: "100%",
+                  }}
+                />
+              </Form.Item>
+              {/* assignedToClient */}
+
+              <Form.Item
+                name="assignedToClient"
+                label="Assigned To Client"
+                initialValue={formData?.assignedToClient}
+                // rules={[
+                //   {
+                //     required: true,
+                //     message:
+                //       "A task must be assigned to either a staff or a client",
+                //   },
+                // ]}
+              >
+                <Select
+                  noStyle
+                  notFoundContent={data ? <Spin size="small" /> : null}
+                  placeholder="Select a client"
+                  options={clientOptions}
                   allowClear
                   style={{
                     width: "100%",

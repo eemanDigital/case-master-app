@@ -60,9 +60,24 @@ const taskSchema = new mongoose.Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        required: [true, "A task must be assigned to a staff"],
+        required: [
+          function () {
+            return !this.assignedToClient;
+          },
+          "A task must be assigned to either a staff or a client",
+        ],
       },
     ],
+    assignedToClient: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Client",
+      required: [
+        function () {
+          return this.assignedTo.length === 0;
+        },
+        "A task must be assigned to either a staff or a client",
+      ],
+    },
     dateAssigned: {
       type: Date,
       default: Date.now,
@@ -103,7 +118,8 @@ taskSchema.pre(/^find/, function (next) {
       path: "caseToWorkOn",
       select: "firstParty.name.name secondParty.name.name ",
     })
-    .populate({ path: "assignedBy", select: "firstName lastName" });
+    .populate({ path: "assignedBy", select: "firstName lastName" })
+    .populate({ path: "assignedToClient", select: "firstName secondName" });
   next();
 });
 

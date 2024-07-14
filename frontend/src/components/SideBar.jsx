@@ -70,7 +70,7 @@ const SideBar = () => {
     {
       key: "4",
       icon: <FaTasks />,
-      label: <Link to="tasks">Tasks</Link>,
+      label: <Link to="tasks">{isClient ? "Message" : "Tasks"}</Link>,
     },
     {
       key: "5",
@@ -110,10 +110,7 @@ const SideBar = () => {
 
   // Filter navItems based on the user's role
   const filteredNavItems = navItems.filter((item) => {
-    if (
-      isClient &&
-      (item.key === "4" || item.key === "6" || item.key === "7")
-    ) {
+    if (isClient && (item.key === "6" || item.key === "7")) {
       return false; // Filter out keys for clients
     }
     if (isUser && item.key === "5") {

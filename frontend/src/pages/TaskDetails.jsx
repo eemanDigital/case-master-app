@@ -26,11 +26,13 @@ const TaskDetails = () => {
 
   const currentUser = user?.data?.user?._id;
   const assignedById = task?.assignedBy?._id;
-  const isAssignedBy = currentUser === assignedById;
+  const isAssignedBy = currentUser === assignedById; //current loggedIn Staff User
 
   const isAssignedToCurrentUser = task?.assignedTo?.some(
     (staff) => staff._id === currentUser
   );
+  const isAssignedToCurrentClientUser = //current loggedIn Client User
+    task?.assignedToClient?._id === currentUser;
 
   useEffect(() => {
     dataFetcher(`tasks/${id}`, "GET");
@@ -44,7 +46,7 @@ const TaskDetails = () => {
   };
 
   return (
-    <>
+    <div className="mt-10">
       <TaskDocUpload taskId={task?._id} />
 
       <Descriptions title="Task Details" bordered>
@@ -52,7 +54,10 @@ const TaskDetails = () => {
         <Descriptions.Item label="Assigned By">
           {task?.assignedBy ? task.assignedBy?.fullName : "N/A"}
         </Descriptions.Item>
-        <Descriptions.Item label="Assigned To">
+        <Descriptions.Item label=" Assigned to Client">
+          {task?.assignedToClient ? task.assignedToClient?.fullName : "N/A"}
+        </Descriptions.Item>
+        <Descriptions.Item label="Assigned To Staff">
           {task?.assignedTo
             ? task.assignedTo.map((staff) => (
                 <p key={staff._id}>{staff.fullName}</p>
@@ -141,21 +146,25 @@ const TaskDetails = () => {
       <Divider />
 
       {/* ensure only the person to whom task is assigned sees the button */}
-      {!isAssignedBy && isAssignedToCurrentUser && (
-        <TaskResponseForm taskId={task?._id} />
-      )}
+      {(!isAssignedBy && isAssignedToCurrentUser) ||
+        (!isAssignedBy && isAssignedToCurrentClientUser && (
+          <TaskResponseForm taskId={task?._id} />
+        ))}
 
       <Descriptions title="Task Response" bordered>
         {task?.taskResponse?.length > 0 ? (
           task.taskResponse.map((res) => (
             <div key={res._id}>
               <Descriptions.Item>
-                <Button
-                  onClick={() => handleDeleteApp(task?._id, res?._id)}
-                  type="default"
-                  danger>
-                  Delete Response
-                </Button>
+                {isAssignedToCurrentUser ||
+                  (isAssignedToCurrentClientUser && (
+                    <Button
+                      onClick={() => handleDeleteApp(task?._id, res?._id)}
+                      type="default"
+                      danger>
+                      Delete Response
+                    </Button>
+                  ))}
               </Descriptions.Item>
               <Descriptions.Item label="Task Completed">
                 {res.completed && <h1>Yes</h1>}
@@ -188,7 +197,7 @@ const TaskDetails = () => {
           <h3>No Response Yet</h3>
         )}
       </Descriptions>
-    </>
+    </div>
   );
 };
 

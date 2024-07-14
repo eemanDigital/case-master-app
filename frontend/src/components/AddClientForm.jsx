@@ -119,7 +119,7 @@ const AddClientForm = () => {
               mode="multiple"
               placeholder="Select cases"
               style={{ width: "100%" }}>
-              {cases?.data.map((singleCase) => {
+              {cases?.data?.map((singleCase) => {
                 const { firstParty, secondParty } = singleCase;
                 const firstName = firstParty?.name[0]?.name;
                 const secondName = secondParty?.name[0]?.name;

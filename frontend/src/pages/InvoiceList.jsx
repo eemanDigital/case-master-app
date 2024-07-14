@@ -19,7 +19,7 @@ const InvoiceList = () => {
   const [searchResults, setSearchResults] = useState([]);
 
   const { user } = useAuthContext();
-  const { isClient } = useAdminHook();
+  const { isClient, isSuperOrAdmin } = useAdminHook();
   const loggedInClientId = user?.data?.user.id;
 
   //   handle delete
@@ -128,17 +128,19 @@ const InvoiceList = () => {
           <Button type="link">
             <Link to={`invoices/${record?._id}/details`}>Get Details</Link>
           </Button>
-          <Button
-            onClick={() => {
-              Modal.confirm({
-                title: "Are you sure you want to delete this invoice?",
-                onOk: () => handleDeleteInvoice(record?._id),
-              });
-            }}
-            type="primary"
-            danger>
-            Delete
-          </Button>
+          {isSuperOrAdmin && (
+            <Button
+              onClick={() => {
+                Modal.confirm({
+                  title: "Are you sure you want to delete this invoice?",
+                  onOk: () => handleDeleteInvoice(record?._id),
+                });
+              }}
+              type="primary"
+              danger>
+              Delete
+            </Button>
+          )}
         </Space>
       ),
     },
@@ -146,7 +148,7 @@ const InvoiceList = () => {
 
   return (
     <div>
-      <div className="flex md:flex-row flex-col  justify-between items-center">
+      <div className="flex md:flex-row flex-col  justify-between items-center mt-4">
         <Link to="invoices/add-invoices">
           <Button className="bg-blue-500  text-white">Create Invoice</Button>
         </Link>

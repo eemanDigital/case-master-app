@@ -12,11 +12,11 @@ import { useAdminHook } from "../hooks/useAdminHook";
 const TaskList = () => {
   const { tasks, loadingError, errorTasks } = useDataGetterHook();
 
-  console.log("TASK", tasks);
   const { user } = useAuthContext();
+  const loggedInClientId = user?.data?.user.id;
   const { data, loading, error, dataFetcher } = useDataFetch();
 
-  const { isSuperOrAdmin } = useAdminHook();
+  const { isSuperOrAdmin, isStaff, isClient } = useAdminHook();
 
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
@@ -40,6 +40,12 @@ const TaskList = () => {
         assignedTo
           ? assignedTo.map((staff) => <p key={staff._id}>{staff.fullName}</p>)
           : "N/A",
+    },
+    {
+      title: "Assigned To Client",
+      dataIndex: "assignedToClient",
+      key: "assignedToClient",
+      render: (client) => client?.fullName,
     },
     {
       title: "Task Priority",
@@ -81,7 +87,7 @@ const TaskList = () => {
     },
   ];
 
-  // filter task by user
+  // filter task by user. User only see his own task for staff
   const filterTaskByUser = (userId) => {
     if (!tasks?.data) return [];
     return tasks?.data.filter(
@@ -90,10 +96,17 @@ const TaskList = () => {
     );
   };
 
-  return (
-    <div>
-      <CreateTaskForm />
+  // filter task by user client. client only see his own task/msg
+  const filterTaskByClientUser = (userId) => {
+    if (!tasks?.data) return [];
+    return tasks?.data.filter((task) => task?.assignedToClient?._id === userId);
+  };
 
+  console.log(filterTaskByClientUser(loggedInClientId), "FLUC");
+
+  return (
+    <div className="mt-10">
+      {isStaff && <CreateTaskForm />}
       {/* <Link to="upload" className="text-right">
         <Button>Attach Document to Task</Button>
       </Link>
@@ -101,7 +114,11 @@ const TaskList = () => {
       <Table
         columns={columns}
         dataSource={
-          isSuperOrAdmin ? tasks?.data : filterTaskByUser(user?.data?.user?.id)
+          isSuperOrAdmin
+            ? tasks?.data
+            : isClient
+            ? filterTaskByClientUser(loggedInClientId)
+            : filterTaskByUser(tasks?.data, user?.data?.user?.id)
         }
         rowKey="_id"
       />

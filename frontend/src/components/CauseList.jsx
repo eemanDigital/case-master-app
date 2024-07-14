@@ -51,7 +51,7 @@ export const CauseList = () => {
       case "month":
         return (
           <SingleCauseList
-            causeListData={causeList?.data.reportsThisMonth}
+            causeListData={causeList?.data?.reportsThisMonth}
             loadingCauseList={loading.causeList}
             errorCauseList={error.causeList}
             result={causeList.data?.monthResults}
