@@ -8,7 +8,10 @@ const UpdateProfilePicture = () => {
   const [formData, setFormData] = useState({ photo: null });
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();
-  const { dataFetcher } = useDataFetch();
+  const { dataFetcher, data, loading, error } = useDataFetch();
+
+  console.log(data, "DATA");
+  console.log(error, "ERROR");
 
   const handleFileChange = (e) => {
     const { files } = e.target;
@@ -24,12 +27,13 @@ const UpdateProfilePicture = () => {
     const payload = new FormData();
     payload.append("photo", formData.photo);
 
-    try {
-      await dataFetcher("users/updateUser", "patch", payload, fileHeaders);
+    await dataFetcher("users/updateUser", "patch", payload, fileHeaders);
+
+    if (data?.data?.status === "success") {
       message.success("Profile picture updated successfully!");
       handleCancel(); // Close the modal on successful upload
-    } catch (err) {
-      console.log(err);
+    }
+    if (error) {
       message.error("Failed to update profile picture. Please try again.");
     }
   };
@@ -76,7 +80,7 @@ const UpdateProfilePicture = () => {
             <button
               type="submit"
               className="bg-blue-500 text-white hover:bg-blue-600 p-2 rounded-md">
-              Upload Photo
+              {!loading ? "uploading file..." : "Upload Photo"}
             </button>
           </div>
         </form>

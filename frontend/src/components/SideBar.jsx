@@ -135,14 +135,10 @@ const SideBar = () => {
               <Link to="profile">
                 <img
                   src={
-                    user?.data?.user?.photo
-                      ? `http://localhost:3000/images/users/${user?.data?.user?.photo}`
-                      : user?.data?.user?.gender === "male"
-                      ? avatar
-                      : femaleAvatar
+                    user?.data?.user?.photo ? user.data.user.photo : avatar // Fallback avatar if photo is not available
                   }
-                  alt={`${user?.data?.user?.firstName}'s profile image`}
-                  className="w-12 h-12 object-cover object-right-top rounded-full"
+                  alt={`${user?.data?.user?.firstName}'s profile image`} // Make sure this uses the correct path
+                  className="object-cover object-right-top h-14 w-14  rounded-full border-2 border-blue-500"
                 />
               </Link>
             </div>

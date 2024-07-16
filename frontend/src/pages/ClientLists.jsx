@@ -17,7 +17,7 @@ const ClientLists = () => {
   const [searchResults, setSearchResults] = useState([]);
 
   const { Column, ColumnGroup } = Table;
-  const { isStaff } = useAdminHook();
+  const { isStaff, isAdminOrHr, isAdmin, isSuperOrAdmin } = useAdminHook();
   const { user } = useAuthContext();
 
   const clientID = user?.data?.user?._id;
@@ -122,18 +122,20 @@ const ClientLists = () => {
               <Button type="link">
                 <Link to={`${record?.id}/details`}>Get Details</Link>
               </Button>
-              <Button
-                onClick={() => {
-                  Modal.confirm({
-                    title:
-                      "Are you sure you want to delete this client information?",
-                    onOk: () => handleDeleteApp(record?.id),
-                  });
-                }}
-                type="primary"
-                danger>
-                Delete
-              </Button>
+              {isSuperOrAdmin && (
+                <Button
+                  onClick={() => {
+                    Modal.confirm({
+                      title:
+                        "Are you sure you want to delete this client information?",
+                      onOk: () => handleDeleteApp(record?.id),
+                    });
+                  }}
+                  type="primary"
+                  danger>
+                  Delete
+                </Button>
+              )}
             </Space>
           )}
         />

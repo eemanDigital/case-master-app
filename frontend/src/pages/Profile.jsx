@@ -20,6 +20,8 @@ const Profile = () => {
     user.data.user.position = null;
   }
 
+  console.log(user?.data?.user?.photo, "PHOTO");
+
   return (
     <section className="flex flex-col justify-center items-center ">
       {/* PROFILE CARD */}
@@ -80,14 +82,14 @@ const Profile = () => {
           </div>
         </div>
 
-        <div className=" w-max-[300px]">
+        <div className="w-max-[300px]">
           <img
             src={
               user?.data?.user?.photo
-                ? `http://localhost:3000/images/users/${user?.data?.user?.photo}`
-                : avatar
+                ? user.data.user.photo // Use the Cloudinary URL directly
+                : avatar // Fallback avatar if photo is not available
             }
-            alt={`${user?.data?.firstName}'s profile image`}
+            alt={`${user?.data?.user?.firstName}'s profile image`} // Make sure this uses the correct path
             className="object-cover object-right-top h-36 w-36 sm:h-48 sm:w-48 rounded-full border-4 border-blue-500"
           />
         </div>

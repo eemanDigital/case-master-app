@@ -41,35 +41,35 @@ export const useDataFetch = () => {
       });
 
       setData(response.data);
-      toast.success(response.data.status, {
-        position: "top-right",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        toastId: 12,
-        progress: undefined,
-        theme: "light",
-      });
+      // toast.success(response.data.status, {
+      //   position: "top-right",
+      //   autoClose: 5000,
+      //   hideProgressBar: false,
+      //   closeOnClick: true,
+      //   pauseOnHover: true,
+      //   draggable: true,
+      //   toastId: 12,
+      //   progress: undefined,
+      //   theme: "light",
+      // });
 
       return response.data;
     } catch (err) {
       setError(err);
 
-      const { response } = err;
+      // const { response } = err;
 
-      toast.error(response?.data?.message, {
-        position: "top-right",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        toastId: 11,
-        progress: undefined,
-        theme: "light",
-      });
+      // toast.error(response?.data?.message, {
+      //   position: "top-right",
+      //   autoClose: 2000,
+      //   hideProgressBar: false,
+      //   closeOnClick: true,
+      //   pauseOnHover: true,
+      //   draggable: true,
+      //   toastId: 11,
+      //   progress: undefined,
+      //   theme: "light",
+      // });
 
       return { error: err };
     } finally {

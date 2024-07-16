@@ -8,6 +8,7 @@ import axios from "axios";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useAuthContext } from "../hooks/useAuthContext";
+import useTextShorten from "../hooks/useTextShorten";
 
 const { Title } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
@@ -15,14 +16,11 @@ const downloadURL = import.meta.env.VITE_BASE_URL;
 const CaseReportList = ({ title, showFilter, reports }) => {
   const { isStaff } = useAdminHook();
   const { user } = useAuthContext();
+  const { shortenText } = useTextShorten();
   const caseIDs = user?.data?.user?.case?.map((caseItem) => caseItem?._id);
-
-  // console.log("RE", reports);
-
   const [searchResults, setSearchResults] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5); // Number of items per page
-  const [showFullText, setShowFullText] = useState(false); // State to manage update display
   const indexOfLastReport = currentPage * itemsPerPage;
   const indexOfFirstReport = indexOfLastReport - itemsPerPage;
   const currentReports = searchResults.slice(
@@ -30,67 +28,19 @@ const CaseReportList = ({ title, showFilter, reports }) => {
     indexOfLastReport
   );
 
-  // handle update text shortening
-  const toggleShowFullText = () => {
-    setShowFullText(!showFullText); // Toggle between showing full text or shortened
-  };
-  // shorten report update
-  const shortenText = (text, maxLength) => {
-    if (!showFullText && text.length > maxLength) {
-      return (
-        <span>
-          {text.substring(0, maxLength)}...
-          <button
-            onClick={toggleShowFullText}
-            style={{
-              marginLeft: "5px",
-              color: "blue",
-              cursor: "pointer",
-              background: "none",
-              border: "none",
-              textDecoration: "underline",
-            }}>
-            Read More
-          </button>
-        </span>
-      );
-    } else {
-      return (
-        <span>
-          {text}
-          <button
-            onClick={toggleShowFullText}
-            style={{
-              marginLeft: "5px",
-              color: "blue",
-              cursor: "pointer",
-              background: "none",
-              border: "none",
-              textDecoration: "underline",
-            }}>
-            Show Less
-          </button>
-        </span>
-      );
-    }
-  };
-  //////////////////////////////
   // Handle delete
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
   };
   const handleDeleteReport = async (id) => {
     try {
-      // Assuming dataFetcher is a function that handles API requests
       await axios.delete(`http://localhost:3000/api/v1/reports/${id}`, {
         headers: fileHeaders,
       });
-      // Optionally, refresh the reports data after deletion
     } catch (err) {
       console.error("Failed to delete report:", err);
     }
   };
-  /////////////////////////////////////////////
 
   // render all cases initially before filter
   useEffect(() => {
@@ -98,6 +48,7 @@ const CaseReportList = ({ title, showFilter, reports }) => {
       setSearchResults(reports);
     }
   }, [reports]);
+
   // handles search filter
   const handleSearchChange = (e) => {
     const searchTerm = e.target.value.trim().toLowerCase();
@@ -107,16 +58,13 @@ const CaseReportList = ({ title, showFilter, reports }) => {
       return;
     }
     const results = reports?.filter((d) => {
-      // Check in firstParty names
       const firstPartyMatch = d.caseReported?.firstParty?.name?.some(
         (nameObj) => nameObj?.name?.toLowerCase().includes(searchTerm)
       );
-      // Check in secondParty names
       const secondPartyMatch = d?.caseReported?.secondParty?.name?.some(
         (nameObj) => nameObj?.name.toLowerCase().includes(searchTerm)
       );
       const adjournedFor = d?.adjournedFor?.toLowerCase().includes(searchTerm);
-      // check by update no
       const update = d?.update?.toLowerCase().includes(searchTerm);
 
       return firstPartyMatch || secondPartyMatch || update || adjournedFor;
@@ -137,7 +85,7 @@ const CaseReportList = ({ title, showFilter, reports }) => {
   };
 
   return (
-    <section className="w-full">
+    <section className="w-full mt-7">
       <h1 className="text-2xl text-gray-600 text-center font-bold md:text-left">
         {title}
       </h1>
@@ -149,8 +97,7 @@ const CaseReportList = ({ title, showFilter, reports }) => {
         )}
         {showFilter && <SearchBar onSearch={handleSearchChange} />}
       </div>
-      {/* isStaff ? currentReport : filterCaseByClient(caseID) */}
-      <Space direction="vertical" size="large">
+      <Space direction="vertical" size="large" className="w-full">
         {(isStaff ? currentReports : filterCaseByClient(caseIDs))?.map(
           (report) => (
             <Card
@@ -163,14 +110,14 @@ const CaseReportList = ({ title, showFilter, reports }) => {
                 </h1>
               }>
               <Space direction="vertical" size="small">
-                <p className="   font-bold font-poppins">
+                <p className="font-bold font-poppins">
                   Reported on:{" "}
-                  <span className="text-rose-500 ">
+                  <span className="text-rose-500">
                     {formatDate(report?.date)}
                   </span>
                 </p>
                 <p className="font-poppins text-justify">
-                  {shortenText(report?.update, 300)}
+                  {shortenText(report?.update, 300, report._id)}
                 </p>
                 <Space direction="horizontal" size="large">
                   <p className="font-bold">
@@ -190,10 +137,8 @@ const CaseReportList = ({ title, showFilter, reports }) => {
                   </p>
                 </Space>
               </Space>
-
               <div className="flex justify-between">
                 {isStaff && <UpdateCaseReportForm reportId={report._id} />}
-
                 <button
                   className="bg-green-500 hover:bg-green-700 rounded-md text-white py-2 px-4 my-2 tracking-wider"
                   onClick={(event) =>
@@ -205,7 +150,6 @@ const CaseReportList = ({ title, showFilter, reports }) => {
                   }>
                   Download Report
                 </button>
-
                 {isStaff && (
                   <button
                     className="bg-red-500 hover:bg-red-700 rounded-md text-white py-2 px-4 my-2 tracking-wider"
@@ -224,7 +168,6 @@ const CaseReportList = ({ title, showFilter, reports }) => {
           )
         )}
       </Space>
-
       <Pagination
         current={currentPage}
         total={reports?.length}

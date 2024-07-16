@@ -14,6 +14,8 @@ import {
   Modal,
 } from "antd";
 import axios from "axios";
+import ReactQuill from "react-quill";
+import { formats } from "../utils/quillFormat";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -90,8 +92,8 @@ const UpdateCaseReportForm = ({ reportId }) => {
     } catch (errorInfo) {
       return;
     }
-    const result = await dataFetcher(`reports/${reportId}`, "PATCH", values); // Submit the form data to the backend
-    console.log(values);
+    const result = await dataFetcher(`reports/${reportId}`, "patch", values); // Submit the form data to the backend
+    // console.log(values);
     handleSubmission(result); // Handle the submission after the API Call
   }, [form, handleSubmission, dataFetcher]);
 
@@ -103,10 +105,10 @@ const UpdateCaseReportForm = ({ reportId }) => {
         Edit Report
       </button>
       <Modal
-        title="Send Reminder on Task"
         open={open}
         onOk={handleOk}
-        // confirmLoading={}
+        width={900}
+        footer={null}
         onCancel={handleCancel}>
         <Form
           layout="vertical"
@@ -115,7 +117,10 @@ const UpdateCaseReportForm = ({ reportId }) => {
           // autoComplete="off"
           className="flex  justify-center">
           {/* <h1 className="text-4xl">Case Report</h1> */}
-          <Card title="Case Report" bordered={false} style={{ width: 700 }}>
+          <Card
+            title="Update Case Report"
+            bordered={false}
+            style={{ width: 850 }}>
             <Form.Item name="date" label="Report Date">
               <DatePicker />
             </Form.Item>
@@ -132,8 +137,16 @@ const UpdateCaseReportForm = ({ reportId }) => {
                   message: "Please write your update!",
                 },
               ]}>
-              <TextArea rows={8} placeholder="Your text here..." />
+              {/* <TextArea rows={8} placeholder="Your text here..." /> */}
+              <ReactQuill
+                className="h-[200px] mb-7"
+                theme="snow"
+                formats={formats}
+                // value={formData.body}
+                dangerouslySetInnerHTML={{ __html: formData?.update }}
+              />
             </Form.Item>
+
             {/* MATTER ADJOURNED FOR */}
             <Form.Item
               name="adjournedFor"

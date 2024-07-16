@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { Link } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
+import { useAdminHook } from "../hooks/useAdminHook";
 import { Space, Table, Button, Spin, Alert, Modal } from "antd";
 import avatar from "../assets/avatar.png";
 import LeaveBalanceList from "./leaveBalanceList";
@@ -21,10 +22,7 @@ const StaffList = () => {
   //   const { user } = useAuthContext();
   const { dataFetcher, loading, error } = useDataFetch();
   const { user } = useAuthContext();
-
-  const isAdminOrHr =
-    user?.data?.user?.role === "admin" || user?.data?.user?.role === "hr";
-  const isAdmin = user?.data?.user?.role === "admin";
+  const { isAdminOrHr, isAdmin, isSuperOrAdmin } = useAdminHook();
 
   //render all cases initially before filter
   useEffect(() => {
@@ -157,17 +155,19 @@ const StaffList = () => {
                   Get Details
                 </Link>
               </Button>
-              <Button
-                onClick={() => {
-                  Modal.confirm({
-                    title: "Are you sure you want to delete this user?",
-                    onOk: () => handleDeleteUser(record.id),
-                  });
-                }}
-                type="primary"
-                danger>
-                Delete
-              </Button>
+              {isSuperOrAdmin && (
+                <Button
+                  onClick={() => {
+                    Modal.confirm({
+                      title: "Are you sure you want to delete this user?",
+                      onOk: () => handleDeleteUser(record.id),
+                    });
+                  }}
+                  type="primary"
+                  danger>
+                  Delete
+                </Button>
+              )}
             </Space>
           )}
         />
