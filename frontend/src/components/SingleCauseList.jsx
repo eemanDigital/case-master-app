@@ -50,7 +50,7 @@ const SingleCauseList = ({
         <ul>
           {lawyersInCourt &&
             lawyersInCourt.map((lawyer, index) => (
-              <li className="text-blue-600 font-semibold" key={index}>
+              <li className="text-blue-700 capitalize " key={index}>
                 {lawyer.fullName}
                 <span>,Esq</span>.
               </li>

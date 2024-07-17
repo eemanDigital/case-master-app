@@ -20,8 +20,6 @@ const Profile = () => {
     user.data.user.position = null;
   }
 
-  console.log(user?.data?.user?.photo, "PHOTO");
-
   return (
     <section className="flex flex-col justify-center items-center ">
       {/* PROFILE CARD */}

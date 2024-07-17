@@ -1,97 +1,53 @@
-const dotenv = require("dotenv");
-const cloudinary = require("cloudinary").v2; // Import Cloudinary package
+// const dotenv = require("dotenv");
+// const cloudinary = require("cloudinary").v2; // Import Cloudinary package
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
-const multer = require("multer");
-const sharp = require("sharp");
-// const { uploadImageToCloudinary } = require("../utils/cloudinary");
+// const multer = require("multer");
+const filterObj = require("../utils/filterObj");
 
-dotenv.config({ path: "./config.env" });
+// // const { uploadImageToCloudinary } = require("../utils/cloudinary");
 
-// Configure Cloudinary with credentials from environment variables
-cloudinary.config({
-  cloud_name: process.env.CLOUD_NAME,
-  api_key: process.env.CLOUD_API_KEY,
-  api_secret: process.env.CLOUD_SECRET,
-});
+// dotenv.config({ path: "./config.env" });
 
-// const uploadImageToCloudinary = catchAsync(async (buffer) => {
-//   // Convert Buffer to base64
-//   const base64String = buffer.toString("base64");
-
-//   // Prepare data URI
-//   const dataUri = `data:image/jpeg;base64,${base64String}`;
-
-//   // Upload to Cloudinary
-//   const result = await cloudinary.uploader.upload(dataUri, {
-//     resource_type: "image",
-//   });
-//   // console.log("RE", result);
-//   return result;
+// // Configure Cloudinary with credentials from environment variables
+// cloudinary.config({
+//   cloud_name: process.env.CLOUD_NAME,
+//   api_key: process.env.CLOUD_API_KEY,
+//   api_secret: process.env.CLOUD_SECRET,
 // });
 
-const multerStorage = multer.memoryStorage();
+// const multerStorage = multer.memoryStorage();
 
-const multerFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image")) {
-    cb(null, true);
-  } else {
-    cb(new AppError("Not an image! Please upload only images.", 400), false);
-  }
-};
+// const multerFilter = (req, file, cb) => {
+//   if (file.mimetype.startsWith("image")) {
+//     cb(null, true);
+//   } else {
+//     cb(new AppError("Not an image! Please upload only images.", 400), false);
+//   }
+// };
 
-const upload = multer({
-  storage: multerStorage,
-  fileFilter: multerFilter,
-});
+// const upload = multer({
+//   storage: multerStorage,
+//   fileFilter: multerFilter,
+// });
 
-exports.uploadUserPhoto = upload.single("photo");
+// exports.uploadUserPhoto = upload.single("photo");
 
-// resize image
+// async function handleUpload(file) {
+//   const res = await cloudinary.uploader.upload(file, {
+//     resource_type: "auto",
+//   });
+//   return res;
+// }
+
 // exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
-//   if (!req.file) return next();
-
-//   const buffer = await sharp(req.file.buffer)
-//     .resize(500, 500)
-//     .toFormat("jpeg")
-//     .jpeg({ quality: 90 })
-//     .toBuffer();
-
-//   // Upload the processed image buffer to Cloudinary
-//   const uploadResult = uploadImageToCloudinary(buffer);
-//   const secureUrl = uploadResult.secure_url;
-//   console.log(secureUrl, "Secure URL");
-//   console.log(uploadResult, "UP");
-//   // Save the Cloudinary URL to the request file object
+//   const b64 = Buffer.from(req.file.buffer).toString("base64");
+//   let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+//   const uploadResult = await handleUpload(dataURI);
 //   req.file.cloudinaryUrl = uploadResult.secure_url;
-
 //   next();
 // });
-
-async function handleUpload(file) {
-  const res = await cloudinary.uploader.upload(file, {
-    resource_type: "auto",
-  });
-  return res;
-}
-
-exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
-  const b64 = Buffer.from(req.file.buffer).toString("base64");
-  let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-  const uploadResult = await handleUpload(dataURI);
-  req.file.cloudinaryUrl = uploadResult.secure_url;
-  next();
-});
-
-// Function to filter out restricted fields
-const filterObj = (obj, ...allowedFields) => {
-  const newObj = {};
-  Object.keys(obj).forEach((el) => {
-    if (allowedFields.includes(el)) newObj[el] = obj[el];
-  });
-  return newObj;
-};
 
 // GET ALL USERS
 exports.getUsers = catchAsync(async (req, res, next) => {

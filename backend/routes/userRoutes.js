@@ -3,8 +3,6 @@ const {
   getUsers,
   getUser,
   updateUser,
-  uploadUserPhoto,
-  resizeUserPhoto,
   deleteUsers,
   updateUserByAdmin,
 } = require("../controllers/userController");
@@ -19,6 +17,10 @@ const {
   resetPassword,
   restrictTo,
 } = require("../controllers/authController");
+const {
+  uploadUserPhoto,
+  resizeUserPhoto,
+} = require("../controllers/photoContoller");
 
 const router = express.Router();
 

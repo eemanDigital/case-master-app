@@ -56,6 +56,6 @@ router.post(
 // Single case manipulation routes
 router.get("/:caseId", getCase);
 router.patch("/:caseId", updateCase);
-router.delete("/:caseId", restrictTo("admin"), deleteCase);
+router.delete("/:caseId", restrictTo("admin, super-admin"), deleteCase);
 
 module.exports = router;
