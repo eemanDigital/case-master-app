@@ -22,16 +22,24 @@ export async function handleGeneralDownload(event, URL, fileName) {
       throw new Error("Failed to download file");
     }
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.style.display = "none";
-    a.href = url;
-    a.download = fileName || "download";
-    document.body.appendChild(a);
-    a.click();
-    window.URL.revokeObjectURL(url);
-  } catch (err) {
-    console.log(err);
+    const data = await response.json(); // Parse the JSON to get the data object
+
+    console.log("RES", data);
+
+    if (data.status === "success") {
+      // Use the fileName and fileUrl from the response
+      const downloadUrl = data.fileUrl;
+      const downloadFileName = data.fileName || fileName; // Use the fileName from the response or fallback to the parameter
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute("download", downloadFileName);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+    } else {
+      console.error("Failed to download file:", data);
+    }
+  } catch (error) {
+    console.error("Error fetching file:", error);
   }
 }

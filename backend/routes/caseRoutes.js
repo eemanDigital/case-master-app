@@ -12,7 +12,10 @@ const {
   getCasesByClient,
 } = require("../controllers/caseController");
 const { protect, restrictTo } = require("../controllers/authController");
-const { multerFileUploader } = require("../utils/multerFileUploader.js");
+const {
+  multerFileUploader,
+  uploadToCloudinary,
+} = require("../utils/multerFileUploader.js");
 const {
   createDocument,
   downloadDocument,
@@ -49,8 +52,9 @@ router.post("/", createCase);
 // Document upload route
 router.post(
   "/:id/documents",
-  multerFileUploader("public/caseDoc", "file"),
-  createDocument(Case, "public/caseDoc")
+  multerFileUploader("file"),
+  uploadToCloudinary,
+  createDocument(Case)
 );
 
 // Single case manipulation routes

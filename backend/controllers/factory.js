@@ -7,11 +7,13 @@ const fs = require("fs");
 exports.downloadDocument = (model) => {
   return catchAsync(async (req, res, next) => {
     const { parentId, documentId } = req.params;
+
     // Fetch the case by ID
     const docData = await model.findById(parentId);
     if (!docData) {
       return next(new AppError(`No case found with ID: ${parentId}`, 404));
     }
+
     // Fetch the document by ID
     const document = docData.documents.id(documentId);
     if (!document) {
@@ -19,24 +21,24 @@ exports.downloadDocument = (model) => {
         new AppError(`No document found with ID: ${documentId}`, 404)
       );
     }
-    const filePath = path.join(__dirname, "..", document.file);
-    // Check if the file exists synchronously
-    if (!fs.existsSync(filePath)) {
-      console.error("File does not exist", filePath);
-      return next(new AppError("File not found", 404));
-    }
-    // If the file exists, download it
-    res.download(filePath, document.fileName, (err) => {
-      if (err) {
-        console.error("File download failed", err);
-        return next(new AppError("File download failed", 500));
-      }
+
+    const fileUrl = document.file;
+    const fileName = document.fileName;
+
+    console.log(fileUrl, fileName);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        fileUrl,
+        fileName,
+      },
     });
   });
 };
 
 // document upload handler
-exports.createDocument = (model, fileDirectory) => {
+exports.createDocument = (model) => {
   return catchAsync(async (req, res, next) => {
     const { id } = req.params;
     const { fileName } = req.body;
@@ -52,12 +54,18 @@ exports.createDocument = (model, fileDirectory) => {
       );
     }
 
-    const filePath = path.join(fileDirectory, file.filename);
+    // Use Cloudinary URL instead of constructing a local file path
+    const filePath = req.file.cloudinaryUrl;
+
+    if (!filePath) {
+      return next(new AppError("Error uploading file to Cloudinary", 500));
+    }
 
     const document = {
       fileName,
       file: filePath,
     };
+    console.log(filePath, "PATHURL");
 
     const updatedDoc = await model.findByIdAndUpdate(
       id,
@@ -70,7 +78,7 @@ exports.createDocument = (model, fileDirectory) => {
     }
 
     res.status(200).json({
-      message: "Document successfully uploaded",
+      message: "success",
       updatedDoc,
     });
   });

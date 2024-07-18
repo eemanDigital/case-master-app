@@ -14,7 +14,7 @@ const CaseDocumentUpload = ({ caseId }) => {
 
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal(); // modal hook
-  const { dataFetcher } = useDataFetch();
+  const { dataFetcher, data, loading, error } = useDataFetch();
 
   const handleFileChange = (e) => {
     const { name, value, files } = e.target;
@@ -36,21 +36,25 @@ const CaseDocumentUpload = ({ caseId }) => {
     payload.append("fileName", formData.fileName);
     payload.append("file", formData.file);
 
-    try {
-      await dataFetcher(
-        `cases/${caseId}/documents`,
-        "post",
-        payload,
-        fileHeaders
-      );
+    await dataFetcher(
+      `cases/${caseId}/documents`,
+      "post",
+      payload,
+      fileHeaders
+    );
+    if (data?.data?.message === "success") {
       message.success("Document uploaded successfully!");
       handleCancel(); // Close the modal on successful upload
-    } catch (err) {
-      console.log(err);
-      message.error("Failed to upload document. Please try again.");
+    }
+
+    if (error) {
+      message.error(
+        error.message || "Failed to upload document. Please try again."
+      );
     }
   };
 
+  // console.log("DATA", data, error);
   const handleClick = () => {
     setClick(() => !click);
   };
@@ -116,7 +120,7 @@ const CaseDocumentUpload = ({ caseId }) => {
               onClick={handleClick}
               type="submit"
               className="bg-blue-500 text-white hover:bg-blue-600 p-2 rounded-md ">
-              Upload Document
+              {loading ? "uploading file..." : "Upload Document"}
             </button>
           </div>
         </form>
