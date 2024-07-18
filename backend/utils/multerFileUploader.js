@@ -1,7 +1,6 @@
 const multer = require("multer");
 const path = require("path");
-const cloudinary = require("./cloudinary");
-const AppError = require("../utils/appError");
+const cloudinary = require("cloudinary").v2;
 const streamifier = require("streamifier");
 
 exports.multerFileUploader = (multerFileName) => {
@@ -18,9 +17,8 @@ exports.multerFileUploader = (multerFileName) => {
       return cb(null, true);
     } else {
       cb(
-        new AppError(
-          "Invalid file type. Only JPEG, PNG, DOC, DOCX, PDF, TXT files are allowed.",
-          400
+        new Error(
+          "Invalid file type. Only JPEG, PNG, DOC, DOCX, PDF, TXT files are allowed."
         ),
         false
       );
@@ -35,19 +33,20 @@ exports.multerFileUploader = (multerFileName) => {
   return upload.single(multerFileName);
 };
 
-// Middleware to upload file to Cloudinary
 exports.uploadToCloudinary = (req, res, next) => {
   if (!req.file) return next();
 
   const uploadStream = (buffer) => {
     return new Promise((resolve, reject) => {
       const stream = cloudinary.uploader.upload_stream(
-        { resource_type: "auto" },
+        {
+          resource_type: "auto",
+          public_id: path.parse(req.file.originalname).name, // Use original filename without extension
+          format: path.extname(req.file.originalname).slice(1), // Explicitly set the format
+        },
         (error, result) => {
           if (error) {
-            return reject(
-              new AppError("Error uploading file to Cloudinary", 500)
-            );
+            return reject(new Error("Error uploading file to Cloudinary"));
           }
           resolve(result);
         }
@@ -60,6 +59,7 @@ exports.uploadToCloudinary = (req, res, next) => {
   uploadStream(req.file.buffer)
     .then((result) => {
       req.file.cloudinaryUrl = result.secure_url;
+      req.file.cloudinaryPublicId = result.public_id;
       next();
     })
     .catch((error) => {

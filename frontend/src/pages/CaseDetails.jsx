@@ -253,8 +253,8 @@ const CaseDetails = () => {
                     onClick={(event) =>
                       handleGeneralDownload(
                         event,
-                        `${baseURL}/cases/${id}/documents/${document._id}/download`,
-                        document.fileName
+                        `${baseURL}/cases/${id}/documents/${document?._id}/download`,
+                        document?.fileName
                       )
                     }>
                     <FaDownload />

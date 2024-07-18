@@ -1,6 +1,48 @@
-const fileHeaders = {
-  "Content-Type": "application/json",
-};
+// const fileHeaders = {
+//   "Content-Type": "application/json",
+// };
+
+// // Retrieve token from browser cookies
+// const token = document.cookie
+//   .split("; ")
+//   .find((row) => row.startsWith("jwt="))
+//   ?.split("=")[1];
+
+// export async function handleGeneralDownload(event, URL, fileName) {
+//   event.preventDefault();
+//   try {
+//     const response = await fetch(URL, {
+//       method: "GET",
+//       headers: {
+//         Authorization: `Bearer ${token}`,
+//       },
+//     });
+
+//     if (!response.ok) {
+//       throw new Error("Failed to download file");
+//     }
+
+//     const data = await response.json();
+//     console.log(data, "DATA");
+
+//     if (data.status === "success") {
+//       const downloadUrl = data.data.fileUrl;
+//       const downloadFileName =
+//         `${data.data.fileName}.${data.data.fileExtension}` || fileName;
+
+//       const link = document.createElement("a");
+//       link.href = downloadUrl;
+//       link.download = downloadFileName;
+//       document.body.appendChild(link);
+//       link.click();
+//       document.body.removeChild(link);
+//     } else {
+//       console.error("Failed to download file:", data);
+//     }
+//   } catch (error) {
+//     console.error("Error fetching file:", error);
+//   }
+// }
 
 // Retrieve token from browser cookies
 const token = document.cookie
@@ -14,28 +56,33 @@ export async function handleGeneralDownload(event, URL, fileName) {
     const response = await fetch(URL, {
       method: "GET",
       headers: {
-        ...fileHeaders,
+        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
     });
+
     if (!response.ok) {
       throw new Error("Failed to download file");
     }
 
-    const data = await response.json(); // Parse the JSON to get the data object
-
-    console.log("RES", data);
+    const data = await response.json();
 
     if (data.status === "success") {
-      // Use the fileName and fileUrl from the response
-      const downloadUrl = data.fileUrl;
-      const downloadFileName = data.fileName || fileName; // Use the fileName from the response or fallback to the parameter
+      const downloadUrl = data.data.fileUrl;
+      const originalFileName = data.data.fileName || fileName;
+
+      // Extract the file extension from the URL
+      const fileExtension = downloadUrl.split(".").pop();
+      const downloadFileName = originalFileName.includes(".")
+        ? originalFileName
+        : `${originalFileName}.${fileExtension}`;
+
       const link = document.createElement("a");
       link.href = downloadUrl;
-      link.setAttribute("download", downloadFileName);
+      link.download = downloadFileName;
       document.body.appendChild(link);
       link.click();
-      link.parentNode.removeChild(link);
+      document.body.removeChild(link);
     } else {
       console.error("Failed to download file:", data);
     }
