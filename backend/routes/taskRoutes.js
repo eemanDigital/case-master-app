@@ -22,7 +22,10 @@ const {
   deleteDocument,
   createDocument,
 } = require("../controllers/factory");
-const { multerFileUploader } = require("../utils/multerFileUploader");
+const {
+  multerFileUploader,
+  uploadToCloudinary,
+} = require("../utils/multerFileUploader");
 
 const router = express.Router();
 
@@ -34,8 +37,9 @@ router.delete("/:parentId/documents/:documentId", deleteDocument(Task));
 
 router.post(
   "/:id/documents",
-  multerFileUploader("public/taskDoc", "file"),
-  createDocument(Task, "public/taskDoc")
+  multerFileUploader("file"),
+  uploadToCloudinary,
+  createDocument(Task)
 );
 ///////////////////
 

@@ -1,18 +1,11 @@
 const multer = require("multer");
 const path = require("path");
+const cloudinary = require("./cloudinary");
+const AppError = require("../utils/appError");
+const streamifier = require("streamifier");
 
-// Multer configuration
-
-exports.multerFileUploader = (directory, multerFileName) => {
-  const multerStorage = multer.diskStorage({
-    destination: (req, file, cb) => {
-      cb(null, directory); // replace with your destination path
-    },
-    filename: (req, file, cb) => {
-      const ext = path.extname(file.originalname);
-      cb(null, `case-${req.user.id}-${Date.now()}${ext}`);
-    },
-  });
+exports.multerFileUploader = (multerFileName) => {
+  const multerStorage = multer.memoryStorage();
 
   const multerFilter = (req, file, cb) => {
     const filetypes = /jpeg|jpg|png|doc|docx|pdf|txt/;
@@ -40,4 +33,36 @@ exports.multerFileUploader = (directory, multerFileName) => {
   });
 
   return upload.single(multerFileName);
+};
+
+// Middleware to upload file to Cloudinary
+exports.uploadToCloudinary = (req, res, next) => {
+  if (!req.file) return next();
+
+  const uploadStream = (buffer) => {
+    return new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { resource_type: "auto" },
+        (error, result) => {
+          if (error) {
+            return reject(
+              new AppError("Error uploading file to Cloudinary", 500)
+            );
+          }
+          resolve(result);
+        }
+      );
+
+      streamifier.createReadStream(buffer).pipe(stream);
+    });
+  };
+
+  uploadStream(req.file.buffer)
+    .then((result) => {
+      req.file.cloudinaryUrl = result.secure_url;
+      next();
+    })
+    .catch((error) => {
+      next(error);
+    });
 };
