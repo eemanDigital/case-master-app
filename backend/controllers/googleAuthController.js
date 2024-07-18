@@ -11,9 +11,7 @@ const oauth2Client = new google.auth.OAuth2(
 );
 // console.log(oauth2Client);
 
-const refreshToken =
-  "1//03pywlri-f3N6CgYIARAAGAMSNgF-L9IrMqH46sK_v5G5Ufhf35nfKdn6OkeQPQXmf8zFgit3ff6ot_oaplAd8GkkUr0gGCYMTA"; //should be stored in the db. just testing
-
+const refreshToken = process.env.GOGGLE_REFRESH_TOKEN; //should be stored in the db. just testing
 exports.createToken = catchAsync(async (req, res, next) => {
   const { code } = req.body;
   // console.log(code);
