@@ -13,7 +13,7 @@ const {
   createTaskResponse,
   deleteTaskResponse,
   getTaskResponse,
-  taskResponseFileUpload,
+  // taskResponseFileUpload,
   downloadFile,
 } = require("../controllers/taskResponseController");
 const { protect } = require("../controllers/authController");
@@ -32,6 +32,7 @@ const router = express.Router();
 router.use(protect); //protect route from access unless user log in
 
 // document upload route
+
 router.get("/:parentId/documents/:documentId/download", downloadDocument(Task));
 router.delete("/:parentId/documents/:documentId", deleteDocument(Task));
 
@@ -54,7 +55,12 @@ router.post("/", createTask);
 
 // sub-doc route for task response
 router.get("/:taskId/response/:responseId/download", downloadFile);
-router.post("/:taskId/response", taskResponseFileUpload, createTaskResponse);
+router.post(
+  "/:taskId/response",
+  multerFileUploader("doc"),
+  uploadToCloudinary,
+  createTaskResponse
+);
 router.delete("/:taskId/response/:responseId", deleteTaskResponse);
 router.get("/:taskId/response/:responseId", getTaskResponse);
 // router.patch("/:taskId/response/:responseId", updateTaskResponse);

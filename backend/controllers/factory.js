@@ -11,7 +11,7 @@ exports.downloadDocument = (model) => {
     // Fetch the case by ID
     const docData = await model.findById(parentId);
     if (!docData) {
-      return next(new AppError(`No case found with ID: ${parentId}`, 404));
+      return next(new AppError(`No document found with ID: ${parentId}`, 404));
     }
 
     // Fetch the document by ID
@@ -25,7 +25,7 @@ exports.downloadDocument = (model) => {
     const fileUrl = document.file;
     const fileName = document.fileName;
 
-    console.log(fileUrl, fileName);
+    // console.log(fileUrl, fileName);
 
     res.status(200).json({
       status: "success",

@@ -8,83 +8,83 @@ const path = require("path");
 
 // multer config
 
-const multerStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "public/taskResponseDoc");
-  },
-  filename: (req, file, cb) => {
-    // const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(
-      null,
-      file.fieldname + "_" + Date.now() + path.extname(file.originalname)
-    );
+// const multerStorage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     cb(null, "public/taskResponseDoc");
+//   },
+//   filename: (req, file, cb) => {
+//     // const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+//     cb(
+//       null,
+//       file.fieldname + "_" + Date.now() + path.extname(file.originalname)
+//     );
 
-    // console.log(req.file);
-  },
-});
+//     // console.log(req.file);
+//   },
+// });
 
-const fileFilter = (req, file, cb) => {
-  // filter out file if not specified here
-  if (
-    file.mimetype === "image/jpeg" ||
-    file.mimetype === "image/jpg" ||
-    file.mimetype === "image/png" ||
-    file.mimetype === "application/pdf" ||
-    file.mimetype ===
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || // For .docx files
-    file.mimetype === "text/plain" // For plain text files
-  ) {
-    cb(null, true);
-  } else {
-    cb(
-      new AppError(
-        "Not a valid document! Please upload only valid document.",
-        400
-      ),
-      false
-    );
-  }
-};
+// const fileFilter = (req, file, cb) => {
+//   // filter out file if not specified here
+//   if (
+//     file.mimetype === "image/jpeg" ||
+//     file.mimetype === "image/jpg" ||
+//     file.mimetype === "image/png" ||
+//     file.mimetype === "application/pdf" ||
+//     file.mimetype ===
+//       "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || // For .docx files
+//     file.mimetype === "text/plain" // For plain text files
+//   ) {
+//     cb(null, true);
+//   } else {
+//     cb(
+//       new AppError(
+//         "Not a valid document! Please upload only valid document.",
+//         400
+//       ),
+//       false
+//     );
+//   }
+// };
 
-const upload = multer({
-  storage: multerStorage,
+// const upload = multer({
+//   storage: multerStorage,
 
-  // limits: {
-  //   fileSize: 1024 * 1024 * 5,
-  // },
-  fileFilter: fileFilter,
-});
+//   // limits: {
+//   //   fileSize: 1024 * 1024 * 5,
+//   // },
+//   fileFilter: fileFilter,
+// });
 
-// module.exports = upload;
-// Middleware to handle file upload errors
-const uploadErrorHandler = (err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    // Multer error occurred
-    res.status(400).json({ error: "File upload error", message: err.message });
-  } else if (err) {
-    // Other non-Multer error occurred
-    res
-      .status(500)
-      .json({ error: "Internal server error", message: err.message });
-  } else {
-    // No error occurred, proceed to the next middleware
-    next();
-  }
-};
+// // module.exports = upload;
+// // Middleware to handle file upload errors
+// const uploadErrorHandler = (err, req, res, next) => {
+//   if (err instanceof multer.MulterError) {
+//     // Multer error occurred
+//     res.status(400).json({ error: "File upload error", message: err.message });
+//   } else if (err) {
+//     // Other non-Multer error occurred
+//     res
+//       .status(500)
+//       .json({ error: "Internal server error", message: err.message });
+//   } else {
+//     // No error occurred, proceed to the next middleware
+//     next();
+//   }
+// };
 
-exports.taskResponseFileUpload = (req, res, next) => {
-  // Use the upload middleware to handle file upload
-  upload.single("doc")(req, res, (err) => {
-    // upload.single("file")(req, res, (err) => {
-    if (err) {
-      // Pass the error to the error handling middleware
-      uploadErrorHandler(err, req, res, next);
-    } else {
-      // No error occurred, proceed to the next middleware
-      next();
-    }
-  });
-};
+// exports.taskResponseFileUpload = (req, res, next) => {
+//   // Use the upload middleware to handle file upload
+//   upload.single("doc")(req, res, (err) => {
+//     // upload.single("file")(req, res, (err) => {
+//     if (err) {
+//       // Pass the error to the error handling middleware
+//       uploadErrorHandler(err, req, res, next);
+//     } else {
+//       // No error occurred, proceed to the next middleware
+//       next();
+//     }
+//   });
+// };
 // create response
 exports.createTaskResponse = catchAsync(async (req, res, next) => {
   // get parent id
@@ -93,10 +93,14 @@ exports.createTaskResponse = catchAsync(async (req, res, next) => {
 
   console.log("FILE =>", req.file);
 
-  const filePath = req.file ? req.file.path : null;
+  const filePath = req.file.cloudinaryUrl;
+
+  if (!filePath) {
+    return next(new AppError("Error uploading file to Cloudinary", 500));
+  }
 
   response.doc = filePath;
-  console.log("FILE =>", response);
+  // console.log("FILE =>", response);
 
   // Find the parent task
   const parentTask = await Task.findById(id);
@@ -163,29 +167,47 @@ exports.downloadFile = catchAsync(async (req, res, next) => {
     next(new AppError("response not found"));
   }
 
-  const file = task.taskResponse[responseIndex].doc;
-  const filePath = path.join(__dirname, `../${file}`);
-  res.download(filePath);
+  const fileUrl = task.taskResponse[responseIndex].doc;
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      fileUrl,
+    },
+  });
+  // const filePath = path.join(__dirname, `../${file}`);
+  // res.download(filePath);
 });
 
-// update response
-//   exports.updateTaskResponse = catchAsync(async (req, res, next) => {
-//     const { taskId, responseId } = req.params;
-//     const task = await Task.findById(taskId);
+// exports.downloadDocument = (model) => {
+//   return catchAsync(async (req, res, next) => {
+//     const { parentId, documentId } = req.params;
 
-//     if (!task) {
-//       next(new AppError("task/response does not exist"));
+//     // Fetch the case by ID
+//     const docData = await model.findById(parentId);
+//     if (!docData) {
+//       return next(new AppError(`No document found with ID: ${parentId}`, 404));
 //     }
 
-//     const responseIndex = task.taskResponse.findIndex(
-//       (r) => r._id.toString() === responseId
-//     );
-//     if (responseIndex === -1) {
-//       next(new AppError("response not found"));
+//     // Fetch the document by ID
+//     const document = docData.documents.id(documentId);
+//     if (!document) {
+//       return next(
+//         new AppError(`No document found with ID: ${documentId}`, 404)
+//       );
 //     }
 
-//     task.taskResponse[responseIndex] = req.body;
-//     await task.save();
+//     const fileUrl = document.file;
+//     const fileName = document.fileName;
 
-//     res.status(200).json({ message: "success" });
+//     // console.log(fileUrl, fileName);
+
+//     res.status(200).json({
+//       status: "success",
+//       data: {
+//         fileUrl,
+//         fileName,
+//       },
+//     });
 //   });
+// };

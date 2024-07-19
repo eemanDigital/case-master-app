@@ -23,7 +23,7 @@ module.exports = class Email {
       });
     }
 
-    console.log(process.env.EMAIL_HOST);
+    // console.log(process.env.EMAIL_HOST);
     return nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: process.env.EMAIL_PORT,
@@ -66,6 +66,9 @@ module.exports = class Email {
 
   async sendWelcomeClient() {
     await this.send("welcome-client", "Thank for engaging our services");
+  }
+  async sendCaseReport() {
+    await this.send("case-report", "Latest Case Report");
   }
 
   // method to allow user reset password after forgetting one
