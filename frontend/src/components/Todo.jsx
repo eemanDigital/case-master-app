@@ -1,6 +1,7 @@
-import TodoHeader from "./TodoHeader";
+import TodoHeader from "./TodoList";
 import useModal from "../hooks/useModal";
 import { Modal, Button } from "antd";
+import TodoList from "./TodoList";
 
 const Todo = () => {
   const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
@@ -19,7 +20,7 @@ const Todo = () => {
         onCancel={handleCancel}
         width={800}>
         <div>
-          <TodoHeader title="To Do List" />
+          <TodoList title="To Do List" />
         </div>
       </Modal>
     </div>

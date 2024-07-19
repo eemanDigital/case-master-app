@@ -178,19 +178,19 @@ exports.updatePassword = catchAsync(async (req, res, next) => {
 // });
 
 //Middleware to implement restriction by role
-// exports.restrictToClient = (...roles) => {
-//   // console.log("ROLES", ...roles);
-//   return (req, res, next) => {
-//     if (!roles.includes(req.user?.role)) {
-//       // console.log("ROLE", req.user);
-//       return next(
-//         new AppError("You do not have permission to perform this action", 403)
-//       );
-//     }
+exports.restrictTo = (...roles) => {
+  // console.log("ROLES", ...roles);
+  return (req, res, next) => {
+    if (!roles.includes(req.user?.role)) {
+      // console.log("ROLE", req.user);
+      return next(
+        new AppError("You do not have permission to perform this action", 403)
+      );
+    }
 
-//     next();
-//   };
-// };
+    next();
+  };
+};
 
 exports.forgotPassword = catchAsync(async (req, res, next) => {
   // 1) Get user based on POSTed email

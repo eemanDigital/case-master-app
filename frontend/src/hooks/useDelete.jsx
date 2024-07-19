@@ -42,9 +42,14 @@ const useDelete = (docData, storageName) => {
         ...prevDocs,
         documents.find((doc) => doc._id === documentId),
       ]);
+
+      const errorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        "There was an error deleting the document.";
       notification.error({
         message: "Delete Failed",
-        description: "There was an error deleting the document.",
+        description: errorMessage,
       });
       console.error(err);
     }

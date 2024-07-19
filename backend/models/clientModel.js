@@ -56,7 +56,7 @@ const clientSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: {
-        values: ["user", "admin", "secretary", "hr", "client"],
+        values: ["user", "super-admin", "admin", "secretary", "hr", "client"],
         message: "Select a valid role.",
       },
       default: "client",

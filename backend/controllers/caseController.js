@@ -60,8 +60,8 @@ exports.updateCase = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteCase = catchAsync(async (req, res, next) => {
-  const _id = req.params.caseId;
-  const data = await Case.findByIdAndDelete({ _id });
+  // const _id = req.params.caseId;
+  const data = await Case.findByIdAndDelete(req.params.caseId);
 
   if (!data) {
     return next(new AppError("case with that Id does not exist", 404));

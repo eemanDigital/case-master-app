@@ -84,7 +84,21 @@ exports.createDocument = (model) => {
   });
 };
 
-// delete document handler
+// general delete handler
+exports.deleteOne = (Model) =>
+  catchAsync(async (req, res, next) => {
+    const doc = await Model.findByIdAndDelete(req.params.id);
+
+    if (!doc) {
+      return next(new AppError(`No Tour Found with that ID`, 404));
+    }
+    res.status(204).json({
+      status: "success",
+      data: null,
+    });
+  });
+
+// delete document/file handler
 exports.deleteDocument = (model) => {
   return catchAsync(async (req, res, next) => {
     const { parentId, documentId } = req.params;

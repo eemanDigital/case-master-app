@@ -11,6 +11,7 @@ import useDeleteDocument from "../hooks/useDeleteDocument";
 import TaskResponseForm from "../components/TaskResponseForm";
 import moment from "moment";
 import { useAuthContext } from "../hooks/useAuthContext";
+import TaskResponse from "../components/TaskResponse";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -118,8 +119,9 @@ const TaskDetails = () => {
             </div>
             <FaDownload
               className="text-white text-[12px] hover:text-gray-300 cursor-pointer ml-2"
-              onClick={() =>
+              onClick={(event) =>
                 handleGeneralDownload(
+                  event,
                   `${baseURL}/tasks/${task._id}/documents/${document._id}/download`,
                   document.fileName
                 )
@@ -151,52 +153,11 @@ const TaskDetails = () => {
           <TaskResponseForm taskId={task?._id} />
         ))}
 
-      <Descriptions title="Task Response" bordered>
-        {task?.taskResponse?.length > 0 ? (
-          task.taskResponse.map((res) => (
-            <div key={res._id}>
-              <Descriptions.Item>
-                {isAssignedToCurrentUser ||
-                  (isAssignedToCurrentClientUser && (
-                    <Button
-                      onClick={() => handleDeleteApp(task?._id, res?._id)}
-                      type="default"
-                      danger>
-                      Delete Response
-                    </Button>
-                  ))}
-              </Descriptions.Item>
-              <Descriptions.Item label="Task Completed">
-                {res.completed && <h1>Yes</h1>}
-              </Descriptions.Item>
-              <Descriptions.Item label="Comment">
-                {res?.comment}
-              </Descriptions.Item>
-              <Descriptions.Item label="Time Submitted">
-                {formatDate(res?.timestamp)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Attached Document">
-                <p
-                  onClick={() =>
-                    handleGeneralDownload(
-                      `${baseURL}/tasks/${task._id}/response/${res._id}/download`,
-                      "response"
-                    )
-                  }>
-                  Document:
-                  {res?.doc ? (
-                    <FaFile className="text-blue-500 hover:text-blue-600 text-2xl cursor-pointer" />
-                  ) : (
-                    <p>None Attached</p>
-                  )}
-                </p>
-              </Descriptions.Item>
-            </div>
-          ))
-        ) : (
-          <h3>No Response Yet</h3>
-        )}
-      </Descriptions>
+      <TaskResponse
+        task={task}
+        isAssignedToCurrentUser={isAssignedToCurrentUser}
+        isAssignedToCurrentClientUser={isAssignedToCurrentClientUser}
+      />
     </div>
   );
 };

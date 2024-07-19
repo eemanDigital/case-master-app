@@ -1,10 +1,18 @@
 import PropTypes from "prop-types";
-import moment from "moment";
-import { RiDeleteBin6Line } from "react-icons/ri";
-import { MdDone } from "react-icons/md";
 import { useDataFetch } from "../hooks/useDataFetch";
+import { FaFile } from "react-icons/fa6";
+import { Button, Descriptions } from "antd";
+import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
+import { formatDate } from "../utils/formatDate";
+import { useAuthContext } from "../hooks/useAuthContext";
 
-const TaskResponse = ({ task }) => {
+const baseURL = import.meta.env.VITE_BASE_URL;
+
+const TaskResponse = ({
+  task,
+  isAssignedToCurrentClientUser,
+  isAssignedToCurrentUser,
+}) => {
   const { dataFetcher, loading, error } = useDataFetch();
 
   const fileHeaders = {
@@ -27,58 +35,70 @@ const TaskResponse = ({ task }) => {
 
   return (
     <>
-      {task.taskResponse &&
-        task.taskResponse.map((res) => (
-          <div
-            key={res._id}
-            className="bg-blue-400 rounded-md text-white px-3 mt-2">
-            <button
-              onClick={() => {
-                if (
-                  window.confirm(
-                    "Are you sure you want to delete this response?"
-                  )
-                ) {
-                  handleDelete(task._id, res._id);
-                }
-              }}
-              title="Delete Response"
-              className="text-red-600 cursor-pointer hover:text-red-400">
-              <RiDeleteBin6Line />
-            </button>
-
-            {res.completed && (
-              <div className="bg-green-600 inline-block text-white px-2 rounded-md">
-                Task Completed <MdDone className="text-xl" />
-              </div>
-            )}
-
-            <div className="block">{res.comment}</div>
-
-            <div className="inline-block text-xs bg-red-600 px-1 rounded-md">
-              {moment(res?.timestamp).startOf().fromNow()}
+      <Descriptions title="Task Response" bordered>
+        {task?.taskResponse?.length > 0 ? (
+          task.taskResponse.map((res) => (
+            <div key={res._id}>
+              <Descriptions.Item>
+                {isAssignedToCurrentUser ||
+                  (isAssignedToCurrentClientUser && (
+                    <Button
+                      onClick={() => handleDelete(task?._id, res?._id)}
+                      type="default"
+                      danger>
+                      Delete Response
+                    </Button>
+                  ))}
+              </Descriptions.Item>
+              <Descriptions.Item label="Task Completed">
+                {res.completed && <h1>Yes</h1>}
+              </Descriptions.Item>
+              <Descriptions.Item label="Comment">
+                {res?.comment}
+              </Descriptions.Item>
+              <Descriptions.Item label="Time Submitted">
+                {formatDate(res?.timestamp)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Attached Document">
+                <p
+                  onClick={(event) =>
+                    handleGeneralDownload(
+                      event,
+                      `${baseURL}/tasks/${task._id}/response/${res._id}/download`,
+                      "response"
+                    )
+                  }>
+                  Document:
+                  {res?.doc ? (
+                    <FaFile className="text-blue-500 hover:text-blue-600 text-2xl cursor-pointer" />
+                  ) : (
+                    <p>None Attached</p>
+                  )}
+                </p>
+              </Descriptions.Item>
             </div>
-
-            {res.file && <h1 className="text-sm">Download File</h1>}
-          </div>
-        ))}
+          ))
+        ) : (
+          <h3>No Response Yet</h3>
+        )}
+      </Descriptions>
     </>
   );
 };
 
-TaskResponse.propTypes = {
-  task: PropTypes.shape({
-    _id: PropTypes.string.isRequired,
-    taskResponse: PropTypes.arrayOf(
-      PropTypes.shape({
-        _id: PropTypes.string.isRequired,
-        completed: PropTypes.bool,
-        comment: PropTypes.string,
-        timestamp: PropTypes.string,
-        file: PropTypes.string,
-      })
-    ),
-  }).isRequired,
-};
+// TaskResponse.propTypes = {
+//   task: PropTypes.shape({
+//     _id: PropTypes.string.isRequired,
+//     taskResponse: PropTypes.arrayOf(
+//       PropTypes.shape({
+//         _id: PropTypes.string.isRequired,
+//         completed: PropTypes.bool,
+//         comment: PropTypes.string,
+//         timestamp: PropTypes.string,
+//         file: PropTypes.string,
+//       })
+//     ),
+//   }).isRequired,
+// };
 
 export default TaskResponse;

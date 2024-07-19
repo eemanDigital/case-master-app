@@ -15,7 +15,7 @@ exports.createTodo = catchAsync(async (req, res, next) => {
 });
 
 exports.getTodos = catchAsync(async (req, res, next) => {
-  const todos = await Todo.find().sort({ dueDate: -1 });
+  const todos = await Todo.find().sort("-createdAt");
   res.status(200).json({
     status: "success",
     results: todos.length,

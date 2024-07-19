@@ -5,7 +5,7 @@ import TodoTask from "./TodoTask";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import TodoForm from "../pages/TodoForm";
 
-const TodoHeader = ({ title }) => {
+const TodoList = ({ title }) => {
   const { todos, error, loading } = useDataGetterHook();
   const [optimisticTodos, setOptimisticTodos] = useState([]); //handles optimistic update
 
@@ -39,8 +39,8 @@ const TodoHeader = ({ title }) => {
   );
 };
 
-TodoHeader.propTypes = {
+TodoList.propTypes = {
   title: PropTypes.string.isRequired,
 };
 
-export default TodoHeader;
+export default TodoList;

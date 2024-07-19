@@ -186,7 +186,13 @@ const caseSchema = new mongoose.Schema(
 
     generalComment: String,
     documents: [documentSchema],
+    active: {
+      type: Boolean,
+      default: true,
+      select: false,
+    },
   },
+
   {
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
@@ -200,6 +206,12 @@ caseSchema.pre(/^find/, function (next) {
     select: "firstName lastName phone email photo",
   });
 
+  next();
+});
+
+// middle to deactivate document upon delete
+caseSchema.pre(/^find/, function (next) {
+  this.find({ active: { $ne: false } });
   next();
 });
 
