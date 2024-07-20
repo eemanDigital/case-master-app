@@ -22,7 +22,7 @@ const {
   deleteDocument,
   getCasesByGroup,
 } = require("../controllers/factory.js");
-const cacheMiddleware = require("../utils/cacheMiddleware.js");
+const { cacheMiddleware } = require("../utils/cacheMiddleware.js");
 
 const router = express.Router();
 
@@ -47,7 +47,7 @@ router.get("/:parentId/documents/:documentId/download", downloadDocument(Case));
 router.delete("/:parentId/documents/:documentId", deleteDocument(Case));
 
 // Basic CRUD routes for cases
-router.get("/", getCases);
+router.get("/", cacheMiddleware("cases"), getCases);
 router.post("/", createCase);
 
 // Document upload route
