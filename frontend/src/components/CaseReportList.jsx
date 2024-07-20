@@ -10,7 +10,7 @@ import { useAdminHook } from "../hooks/useAdminHook";
 import { useAuthContext } from "../hooks/useAuthContext";
 import useTextShorten from "../hooks/useTextShorten";
 
-const { Title } = Typography;
+// const { Title } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
 const CaseReportList = ({ title, showFilter, reports }) => {

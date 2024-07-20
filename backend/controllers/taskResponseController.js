@@ -175,39 +175,5 @@ exports.downloadFile = catchAsync(async (req, res, next) => {
       fileUrl,
     },
   });
-  // const filePath = path.join(__dirname, `../${file}`);
-  // res.download(filePath);
 });
 
-// exports.downloadDocument = (model) => {
-//   return catchAsync(async (req, res, next) => {
-//     const { parentId, documentId } = req.params;
-
-//     // Fetch the case by ID
-//     const docData = await model.findById(parentId);
-//     if (!docData) {
-//       return next(new AppError(`No document found with ID: ${parentId}`, 404));
-//     }
-
-//     // Fetch the document by ID
-//     const document = docData.documents.id(documentId);
-//     if (!document) {
-//       return next(
-//         new AppError(`No document found with ID: ${documentId}`, 404)
-//       );
-//     }
-
-//     const fileUrl = document.file;
-//     const fileName = document.fileName;
-
-//     // console.log(fileUrl, fileName);
-
-//     res.status(200).json({
-//       status: "success",
-//       data: {
-//         fileUrl,
-//         fileName,
-//       },
-//     });
-//   });
-// };

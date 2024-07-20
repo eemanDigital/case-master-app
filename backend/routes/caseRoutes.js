@@ -22,6 +22,7 @@ const {
   deleteDocument,
   getCasesByGroup,
 } = require("../controllers/factory.js");
+const cacheMiddleware = require("../utils/cacheMiddleware.js");
 
 const router = express.Router();
 

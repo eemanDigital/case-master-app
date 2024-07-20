@@ -132,6 +132,7 @@ const TaskDetails = () => {
       </div>
 
       <Divider />
+      {/* TASK REMINDER */}
       {task?.reminder && (
         <Alert
           message={`Reminder: ${task.reminder.message}`}
@@ -153,6 +154,7 @@ const TaskDetails = () => {
           <TaskResponseForm taskId={task?._id} />
         ))}
 
+{/* TASK RESPONSE */}
       <TaskResponse
         task={task}
         isAssignedToCurrentUser={isAssignedToCurrentUser}

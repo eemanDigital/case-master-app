@@ -1,6 +1,8 @@
 const Case = require("../models/caseModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
+const redis = require("redis");
+const redisClient = require("../utils/redisClient");
 
 exports.createCase = catchAsync(async (req, res, next) => {
   const singleCase = await Case.create(req.body);
@@ -10,14 +12,36 @@ exports.createCase = catchAsync(async (req, res, next) => {
 });
 
 exports.getCases = catchAsync(async (req, res, next) => {
-  const cases = await Case.find().sort({ filingDate: -1 });
-  // .populate({
-  //   path: "task",
-  //   select: "description status dateAssigned dueDate taskPriority",
-  // })
-  // .populate({ path: "reports", select: "date update" });
+  const redisKey = "cases"; // Define a key to store the cases in Redis
+
+  let isCached = false;
+  let cases;
+
+  // Check if cases are cached in Redis
+  const cachedResult = await redisClient.get(redisKey);
+  if (cachedResult) {
+    isCached = true;
+    cases = JSON.parse(cachedResult);
+  } else {
+    // Fetch cases from the database
+    cases = await Case.find().sort("-filingDate");
+
+    // Handle the case where no cases are found
+    if (cases.length === 0) {
+      return next(new AppError("No case found", 404));
+    }
+
+    // Store the fetched cases in Redis
+    await redisClient.set(redisKey, JSON.stringify(cases), {
+      EX: 600, //remove data after 10min
+      NX: true,
+    });
+  }
+
+  // Send the response
   res.status(200).json({
     results: cases.length,
+    fromCache: isCached,
     data: cases,
   });
 });

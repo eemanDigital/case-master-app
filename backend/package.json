@@ -30,6 +30,8 @@
     "passport-google-oauth20": "^2.0.0",
     "pdf-creator-node": "^2.3.5",
     "pug": "^3.0.3",
+    "redis": "^4.6.15",
+    "redis-server": "^1.2.2",
     "sharp": "^0.33.3",
     "streamifier": "^0.1.1",
     "validator": "^13.11.0"
