@@ -22,7 +22,7 @@ const {
   deleteDocument,
   getCasesByGroup,
 } = require("../controllers/factory.js");
-const { cacheMiddleware } = require("../utils/cacheMiddleware.js");
+const cacheMiddleware = require("../utils/cacheMiddleware.js");
 
 const router = express.Router();
 
@@ -37,17 +37,38 @@ router.get("/cases-by-mode", getCasesByGroup("$modeOfCommencement", Case));
 router.get("/cases-by-category", getCasesByGroup("$category", Case));
 
 // Specific case retrieval routes
-router.get("/cases-by-client", getCasesByClient);
-router.get("/cases-by-accountOfficer", getCasesByAccountOfficer);
-router.get("/monthly-new-cases", getMonthlyNewCases);
-router.get("/yearly-new-cases", getYearlyNewCases);
+router.get(
+  "/cases-by-client",
+  cacheMiddleware(() => "cbc"),
+  getCasesByClient
+);
+router.get(
+  "/cases-by-accountOfficer",
+  cacheMiddleware(() => "casesao"),
+  getCasesByAccountOfficer
+);
+router.get(
+  "/monthly-new-cases",
+  cacheMiddleware(() => "mnc"),
+  getMonthlyNewCases
+);
+router.get(
+  "/yearly-new-cases",
+  cacheMiddleware(() => "ync"),
+
+  getYearlyNewCases
+);
 
 // Document related routes
 router.get("/:parentId/documents/:documentId/download", downloadDocument(Case));
 router.delete("/:parentId/documents/:documentId", deleteDocument(Case));
 
 // Basic CRUD routes for cases
-router.get("/", cacheMiddleware("cases"), getCases);
+router.get(
+  "/",
+  cacheMiddleware((req) => "cases"),
+  getCases
+);
 router.post("/", createCase);
 
 // Document upload route
@@ -59,7 +80,11 @@ router.post(
 );
 
 // Single case manipulation routes
-router.get("/:caseId", getCase);
+router.get(
+  "/:caseId",
+  cacheMiddleware((req) => "singleCase"),
+  getCase
+);
 router.patch("/:caseId", updateCase);
 router.delete("/:caseId", restrictTo("admin", "super-admin"), deleteCase);
 

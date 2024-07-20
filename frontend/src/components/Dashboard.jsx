@@ -96,6 +96,8 @@ const Dashboard = () => {
     events,
   } = useDataGetterHook();
 
+  console.log(monthlyNewCases, yearlyNewCases, "AO");
+
   // end
   const { isAdmin, isStaff, isClient } = useAdminHook();
 

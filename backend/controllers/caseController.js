@@ -1,8 +1,7 @@
 const Case = require("../models/caseModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
-const redis = require("redis");
-const redisClient = require("../utils/redisClient");
+const setRedisCache = require("../utils/setRedisCache");
 
 exports.createCase = catchAsync(async (req, res, next) => {
   const singleCase = await Case.create(req.body);
@@ -11,9 +10,37 @@ exports.createCase = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.getCases = catchAsync(async (req, res, next) => {
-  const redisKey = "cases"; // Define a key to store the cases in Redis
+// exports.getCases = catchAsync(async (req, res, next) => {
+//   const redisKey = "cases"; // Define a key to store the cases in Redis
 
+//   // Fetch cases from the database
+//   let cases = await Case.find().sort("-filingDate");
+
+//   // Handle the case where no cases are found
+//   if (cases.length === 0) {
+//     return next(new AppError("No case found", 404));
+//   }
+
+//   // Store the fetched cases in Redis
+//   await redisClient.set(redisKey, JSON.stringify(cases), {
+//     EX: 600, // Remove data after 10min
+//     NX: true,
+//   });
+
+//   // Send the response
+//   res.status(200).json({
+//     results: cases.length,
+//     fromCache: false,
+//     data: cases,
+//   });
+// });
+
+/**
+ * Controller function to fetch cases from the database.
+ * If no cases are found, an error is returned.
+ * The fetched cases are also stored in Redis.
+ */
+exports.getCases = catchAsync(async (req, res, next) => {
   // Fetch cases from the database
   let cases = await Case.find().sort("-filingDate");
 
@@ -22,13 +49,10 @@ exports.getCases = catchAsync(async (req, res, next) => {
     return next(new AppError("No case found", 404));
   }
 
-  // Store the fetched cases in Redis
-  await redisClient.set(redisKey, JSON.stringify(cases), {
-    EX: 600, // Remove data after 10min
-    NX: true,
-  });
+  // set redis key for caching
+  setRedisCache("cases", cases);
 
-  // Send the response
+  // Send the response with the fetched cases
   res.status(200).json({
     results: cases.length,
     fromCache: false,
@@ -49,7 +73,12 @@ exports.getCase = catchAsync(async (req, res, next) => {
   if (!data) {
     return next(new AppError("No case found with that Id", 404));
   }
+
+  // set redis key for caching
+  setRedisCache("singleCase", data);
+
   res.status(200).json({
+    fromCache: false,
     data,
   });
 });
@@ -133,8 +162,12 @@ exports.getCasesByAccountOfficer = catchAsync(async (req, res, next) => {
     },
   ]);
 
+  // set redis key for caching
+  setRedisCache("casesao", results, 1200);
+
   res.status(200).json({
     message: "success",
+    fromCache: false,
     data: results,
   });
 });
@@ -186,8 +219,12 @@ exports.getCasesByClient = catchAsync(async (req, res, next) => {
     },
   ]);
 
+  // set redis key for caching
+  setRedisCache("cbc", results, 1200);
+
   res.status(200).json({
     message: "success",
+    fromCache: false,
     data: results,
   });
 });
@@ -224,8 +261,12 @@ exports.getMonthlyNewCases = catchAsync(async (req, res, next) => {
     },
   ]);
 
+  // set redis key for caching
+  setRedisCache("mnc", result, 1200);
+
   res.status(200).json({
     message: "success",
+    fromCache: false,
     data: result,
   });
 });
@@ -261,8 +302,12 @@ exports.getYearlyNewCases = catchAsync(async (req, res, next) => {
     },
   ]);
 
+  // set redis key for caching
+  setRedisCache("ync", result, 1200);
+
   res.status(200).json({
     message: "success",
+    fromCache: false,
     data: result,
   });
 });

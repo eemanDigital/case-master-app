@@ -1,53 +1,35 @@
-const { createClient } = require("redis");
+const redisClient = require("./redisClient");
 
-// Create and connect the Redis client
-const redisClient = createClient();
-redisClient.connect().catch(console.error);
-
-// cacheMiddleware.js
-
-// exports.cacheMiddleware = async (req, res, next) => {
-//   const redisKey = "cases"; // The key used for caching
-
-//   try {
-//     const cachedResult = await redisClient.get(redisKey);
-//     if (cachedResult) {
-//       const cases = JSON.parse(cachedResult);
-//       return res.status(200).json({
-//         results: cases.length,
-//         fromCache: true,
-//         data: cases,
-//       });
-//     } else {
-//       next(); // No cache found, proceed to getCases function
-//     }
-//   } catch (error) {
-//     console.error("Cache middleware error:", error);
-//     next(error); // Proceed with error handling
-//   }
-// };
-
-// cacheMiddleware.js
-exports.cacheMiddleware = (key) => {
+/**
+ * Cache middleware that checks for cached data based on a generated key.
+ * @param {Function} keyGenerator - Function to generate cache keys based on the request.
+ * @returns {Function} Express middleware function.
+ */
+const cacheMiddleware = (keyGenerator) => {
   return async (req, res, next) => {
+    // Generate the cache key using the provided key generator function
+    const cacheKey = keyGenerator(req);
     try {
-      const cachedResult = await redisClient.get(key);
+      // Try to get cached data from Redis
+      const cachedResult = await redisClient.get(cacheKey);
       if (cachedResult) {
-        // Parse the cached result
+        // Parse and return the cached data
         const data = JSON.parse(cachedResult);
-
-        // Directly return the parsed data without assuming its type
         return res.status(200).json({
-          results: Array.isArray(data) ? data.length : 1, // If it's an array, return its length, otherwise assume it's a single object
+          results: Array.isArray(data) ? data.length : 1, // Determine the number of results
           fromCache: true,
           data: data,
         });
       } else {
-        next(); // No cache found, proceed to the next middleware
+        // No cached data found, proceed to the next middleware or route handler
+        next();
       }
     } catch (error) {
+      // Handle any errors that occur during caching
       console.error("Cache middleware error:", error);
       next(error); // Proceed with error handling
     }
   };
 };
+
+module.exports = cacheMiddleware;
