@@ -2,6 +2,7 @@ const path = require("path");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const fs = require("fs");
+const setRedisCache = require("../utils/setRedisCache");
 
 // document download handler
 exports.downloadDocument = (model) => {
@@ -152,8 +153,12 @@ exports.getCasesByGroup = (field, model) =>
       },
     ]);
 
+    // set redis cache for caching data
+    setRedisCache(field, results, 5000);
+
     res.status(200).json({
       message: "success",
+      fromCache: false,
       data: results,
     });
   });

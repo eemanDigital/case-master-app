@@ -2,11 +2,12 @@ const Invoice = require("../models/invoiceModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const multer = require("multer");
-const pdf = require("pdf-creator-node");
-const path = require("path");
-const pug = require("pug");
-const pdfoptions = require("../utils/pdfoptions");
+// const pdf = require("pdf-creator-node");
+// const path = require("path");
+// const pug = require("pug");
+// const pdfoptions = require("../utils/pdfoptions");
 const { generatePdf } = require("../utils/generatePdf");
+const setRedisCache = require("../utils/setRedisCache");
 
 // handle signature upload for the invoice
 const multerStorage = multer.memoryStorage();
@@ -45,8 +46,12 @@ exports.getAllInvoices = catchAsync(async (req, res, next) => {
     createdAt: -1,
   });
 
+  // set redis cache
+  setRedisCache("invoices", invoices, 5000);
+
   res.status(200).json({
     status: "success",
+    fromCache: false,
     results: invoices.length,
     data: invoices,
   });
@@ -59,7 +64,11 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
     return next(new AppError("No invoice found with that ID", 404));
   }
 
+  // set redis cache
+  setRedisCache("invoice", invoice, 5000);
+
   res.status(200).json({
+    fromCache: false,
     status: "success",
     data: invoice,
   });

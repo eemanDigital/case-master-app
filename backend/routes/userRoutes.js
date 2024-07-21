@@ -21,6 +21,7 @@ const {
   uploadUserPhoto,
   resizeUserPhoto,
 } = require("../controllers/photoContoller");
+const cacheMiddleware = require("../utils/cacheMiddleware");
 
 const router = express.Router();
 
@@ -56,8 +57,16 @@ router.patch(
   updateUserByAdmin
 );
 // Get all users and specific user by userId
-router.get("/", getUsers);
-router.get("/:userId", getUser);
+router.get(
+  "/",
+  cacheMiddleware(() => "users"),
+  getUsers
+);
+router.get(
+  "/:userId",
+  cacheMiddleware(() => "user"),
+  getUser
+);
 // Update user details, with photo upload and resize
 router.patch("/updateUser", uploadUserPhoto, resizeUserPhoto, updateUser);
 // Delete user by ID

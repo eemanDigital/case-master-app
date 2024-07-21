@@ -15,6 +15,7 @@ const {
   generateCauseListNextWeek,
 } = require("../controllers/CaseReportController");
 const { protect } = require("../controllers/authController");
+const cacheMiddleware = require("../utils/cacheMiddleware");
 
 const router = express.Router();
 
@@ -22,7 +23,11 @@ router.use(protect);
 
 router.post("/", createReport);
 router.get("/", getReports);
-router.get("/upcoming", getUpcomingMatter);
+router.get(
+  "/upcoming",
+  cacheMiddleware(() => "causeListToday"),
+  getUpcomingMatter
+);
 // Specific route for generating cause list should be before the general /:reportId route
 router.get("/pdf/causeList/week", generateCauseListWeek);
 router.get("/pdf/causeList/month", generateCauseListMonth);

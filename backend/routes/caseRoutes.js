@@ -29,12 +29,36 @@ const router = express.Router();
 router.use(protect);
 
 // Aggregate routes for various case groupings
-router.get("/case-status", getCasesByGroup("$caseStatus", Case));
-router.get("/cases-by-court", getCasesByGroup("$courtName", Case));
-router.get("/cases-by-natureOfCase", getCasesByGroup("$natureOfCase", Case));
-router.get("/cases-by-rating", getCasesByGroup("$casePriority", Case));
-router.get("/cases-by-mode", getCasesByGroup("$modeOfCommencement", Case));
-router.get("/cases-by-category", getCasesByGroup("$category", Case));
+router.get(
+  "/case-status",
+  cacheMiddleware(() => "$caseStatus"),
+  getCasesByGroup("$caseStatus", Case)
+);
+router.get(
+  "/cases-by-court",
+  cacheMiddleware(() => "$courtName"),
+  getCasesByGroup("$courtName", Case)
+);
+router.get(
+  "/cases-by-natureOfCase",
+  cacheMiddleware(() => "$natureOfCase"),
+  getCasesByGroup("$natureOfCase", Case)
+);
+router.get(
+  "/cases-by-rating",
+  cacheMiddleware(() => "$casePriority"),
+  getCasesByGroup("$casePriority", Case)
+);
+router.get(
+  "/cases-by-mode",
+  cacheMiddleware(() => "$modeOfCommencement"),
+  getCasesByGroup("$modeOfCommencement", Case)
+);
+router.get(
+  "/cases-by-category",
+  cacheMiddleware(() => "$category"),
+  getCasesByGroup("$category", Case)
+);
 
 // Specific case retrieval routes
 router.get(
@@ -66,7 +90,7 @@ router.delete("/:parentId/documents/:documentId", deleteDocument(Case));
 // Basic CRUD routes for cases
 router.get(
   "/",
-  cacheMiddleware((req) => "cases"),
+  cacheMiddleware(() => "cases"),
   getCases
 );
 router.post("/", createCase);
@@ -82,7 +106,7 @@ router.post(
 // Single case manipulation routes
 router.get(
   "/:caseId",
-  cacheMiddleware((req) => "singleCase"),
+  cacheMiddleware(() => "singleCase"),
   getCase
 );
 router.patch("/:caseId", updateCase);

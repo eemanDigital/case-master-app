@@ -3,6 +3,7 @@ const Invoice = require("../models/invoiceModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
+const setRedisCache = require("../utils/setRedisCache");
 
 // Create a new payment
 
@@ -47,34 +48,17 @@ exports.createPayment = catchAsync(async (req, res, next) => {
 
   res.status(201).json({
     status: "success",
+    fromCache: false,
     data: newPayment,
-  });
-});
-
-// Get all payments for a specific client and case
-exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
-  const { clientId, caseId } = req.params;
-  const payments = await Payment.find({
-    clientId: clientId,
-    caseId: caseId,
-  }).sort({ createAt: -1 });
-
-  if (!payments) {
-    return next(
-      new AppError("No payments found for this client and case", 404)
-    );
-  }
-
-  res.status(200).json({
-    message: "success",
-    result: payments.length,
-    data: payments,
   });
 });
 
 // Get all payments
 exports.getAllPayments = catchAsync(async (req, res, next) => {
   const payments = await Payment.find().sort("-date");
+
+  // set redis cache
+  setRedisCache("payments", payments, 1200);
 
   res.status(200).json({
     status: "success",
@@ -92,8 +76,12 @@ exports.getPayment = catchAsync(async (req, res, next) => {
     return next(new AppError("Payment not found", 404));
   }
 
+  // set redis cache
+  setRedisCache("payment", payment, 1200);
+
   res.status(200).json({
     message: "success",
+    fromCache: false,
     data: payment,
   });
 });
@@ -127,6 +115,26 @@ exports.deletePayment = catchAsync(async (req, res, next) => {
   res.status(200).json({ message: "Payment deleted" });
 });
 
+// Get all payments for a specific client and case
+// exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
+//   const { clientId, caseId } = req.params;
+//   const payments = await Payment.find({
+//     clientId: clientId,
+//     caseId: caseId,
+//   }).sort({ createAt: -1 });
+
+//   if (!payments) {
+//     return next(
+//       new AppError("No payments found for this client and case", 404)
+//     );
+//   }
+
+//   res.status(200).json({
+//     message: "success",
+//     result: payments.length,
+//     data: payments,
+//   });
+// });
 // get total payment base on case and client
 exports.totalPaymentOnCase = catchAsync(async (req, res, next) => {
   const clientId = req.params.clientId;
@@ -156,8 +164,12 @@ exports.totalPaymentOnCase = catchAsync(async (req, res, next) => {
     },
   ]);
 
+  // set redis cache
+  setRedisCache("paymentOnCase", totalPaymentSum, 1200);
+
   res.status(200).json({
     message: "success",
+    fromCache: false,
     data: totalPaymentSum.length > 0 ? totalPaymentSum[0].totalAmount : 0,
   });
 });
@@ -184,8 +196,11 @@ exports.totalPaymentClient = catchAsync(async (req, res, next) => {
     },
   ]);
 
+  setRedisCache("paymentByClient", totalPaymentSum, 1200);
+
   res.status(200).json({
     message: "success",
+    fromCache: false,
     data: totalPaymentSum.length > 0 ? totalPaymentSum[0].totalAmount : 0,
   });
 });
@@ -220,8 +235,12 @@ exports.paymentEachClient = catchAsync(async (req, res, next) => {
     },
   ]);
 
+  // set redis cache
+  setRedisCache("paymentByEachClient", totalPaymentSumByClient, 1200);
+
   res.status(200).json({
     message: "success",
+    fromCache: false,
     data: totalPaymentSumByClient,
   });
 });
@@ -260,8 +279,11 @@ exports.totalPaymentsByMonthAndYear = catchAsync(async (req, res, next) => {
     },
   ]);
 
+  // setRedisCache("paymentMonthAndYear", totalPayments, 1200);
+
   res.status(200).json({
     message: "success",
+    fromCache: false,
     data:
       totalPayments.length > 0
         ? totalPayments[0]
@@ -303,6 +325,8 @@ exports.totalPaymentsByMonthInYear = catchAsync(async (req, res, next) => {
       },
     },
   ]);
+  // set redis cache
+  setRedisCache("paymentMonthInYear", totalPayments, 1200);
 
   res.status(200).json({
     message: "success",
@@ -336,8 +360,12 @@ exports.totalPaymentsByYear = catchAsync(async (req, res, next) => {
     },
   ]);
 
+  // set redis cache
+  // setRedisCache("paymentByYear", totalPayments, 1200);
+
   res.status(200).json({
     message: "success",
+    fromCache: false,
     data:
       totalPayments.length > 0
         ? totalPayments[0]
@@ -347,160 +375,20 @@ exports.totalPaymentsByYear = catchAsync(async (req, res, next) => {
 
 // get total outstanding balance
 exports.getTotalBalance = catchAsync(async (req, res, next) => {
-  const result = await Payment.aggregate([
+  const results = await Payment.aggregate([
     {
       $group: { _id: null, totalBalance: { $sum: "$balance" } },
     },
   ]);
 
+  // set redis cache
+  setRedisCache("totalBalance", results, 1200);
   res.status(200).json({
     message: "success",
-    data: result,
+    data: results,
   });
 });
 
-// exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
-//   const { clientId, caseId } = req.params;
-
-//   const payments = await Payment.aggregate([
-//     {
-//       $match: {
-//         clientId: new mongoose.Types.ObjectId(clientId),
-//         caseId: new mongoose.Types.ObjectId(caseId),
-//       },
-//     },
-//     {
-//       $lookup: {
-//         from: "cases", // replace with your actual Case collection name
-//         localField: "caseId",
-//         foreignField: "_id",
-//         as: "case",
-//       },
-//     },
-//     {
-//       $unwind: "$case",
-//     },
-//     {
-//       $lookup: {
-//         from: "clients", // replace with your actual Client collection name
-//         localField: "clientId",
-//         foreignField: "_id",
-//         as: "client",
-//       },
-//     },
-//     {
-//       $unwind: "$client",
-//     },
-//     {
-//       $group: {
-//         _id: null,
-//         totalPayment: { $sum: "$amountPaid" },
-//         payments: { $push: "$$ROOT" },
-//       },
-//     },
-//     {
-//       $project: {
-//         _id: 0,
-//         totalPayment: 1,
-//         payments: 1,
-//       },
-//     },
-//     {
-//       $sort: { "payments.createAt": -1 },
-//     },
-//   ]);
-
-//   if (!payments || payments.length === 0) {
-//     return next(
-//       new AppError("No payments found for this client and case", 404)
-//     );
-//   }
-
-//   res.status(200).json({
-//     message: "success",
-//     result: payments[0].payments.length,
-//     totalPayment: payments[0].totalPayment,
-//     data: payments[0].payments,
-//   });
-// });
-
-// exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
-//   const { clientId, caseId } = req.params;
-
-//   const payments = await Payment.aggregate([
-//     {
-//       $match: {
-//         clientId: new mongoose.Types.ObjectId(clientId),
-//         caseId: new mongoose.Types.ObjectId(caseId),
-//       },
-//     },
-//     {
-//       $lookup: {
-//         from: "cases", // replace with your actual Case collection name
-//         localField: "caseId",
-//         foreignField: "_id",
-//         as: "case",
-//       },
-//     },
-//     {
-//       $unwind: "$case",
-//     },
-//     {
-//       $lookup: {
-//         from: "clients", // replace with your actual Client collection name
-//         localField: "clientId",
-//         foreignField: "_id",
-//         as: "client",
-//       },
-//     },
-//     {
-//       $unwind: "$client",
-//     },
-//     {
-//       $group: {
-//         _id: null,
-//         totalPayment: { $sum: "$amountPaid" },
-//         payments: {
-//           $push: {
-//             amountPaid: "$amountPaid",
-//             date: "$date",
-//             client: {
-//               firstName: "$client.firstName",
-//               secondName: "$client.secondName",
-//             },
-//             case: {
-//               firstParty: "$case.firstParty.name.name",
-//               secondParty: "$case.secondParty.name.name",
-//             },
-//           },
-//         },
-//       },
-//     },
-//     {
-//       $project: {
-//         _id: 0,
-//         totalPayment: 1,
-//         payments: 1,
-//       },
-//     },
-//     {
-//       $sort: { "payments.date": -1 },
-//     },
-//   ]);
-
-//   if (!payments || payments.length === 0) {
-//     return next(
-//       new AppError("No payments found for this client and case", 404)
-//     );
-//   }
-
-//   res.status(200).json({
-//     message: "success",
-//     result: payments[0].payments.length,
-//     totalPayment: payments[0].totalPayment,
-//     data: payments[0].payments,
-//   });
-// });
 exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
   const { clientId, caseId } = req.params;
 
@@ -588,6 +476,8 @@ exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
     );
   }
 
+  // set redis cache
+  setRedisCache("paymentByClientAndCase", payments, 1200);
   res.status(200).json({
     message: "success",
     result: payments[0].payments.length,

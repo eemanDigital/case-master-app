@@ -41,7 +41,7 @@ const MonthlyPaymentsChart = ({ data }) => {
         <div className="w-[200px]">
           <Title level={4}>Year: {data?.year}</Title>
           <Title level={4}>Month: {data?.month}</Title>
-          <Title level={4}>₦{data?.totalAmount.toLocaleString()}</Title>
+          <Title level={4}>₦{data?.totalAmount?.toLocaleString()}</Title>
         </div>
       </div>
     </div>

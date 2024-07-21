@@ -15,6 +15,7 @@ const {
   login,
 } = require("../controllers/clientAuthController");
 const { protect, restrictTo } = require("../controllers/authController");
+const cacheMiddleware = require("../utils/cacheMiddleware");
 
 const router = express.Router();
 
@@ -29,10 +30,18 @@ router.get("/loggedIn", isLoggedIn);
 router.patch("/changepassword", updatePassword);
 
 // Route to get all clients
-router.get("/", getClients);
+router.get(
+  "/",
+  cacheMiddleware(() => "clients"),
+  getClients
+);
 
 // Route to get a specific client by ID
-router.get("/:id", getClient);
+router.get(
+  "/:id",
+  cacheMiddleware(() => "client"),
+  getClient
+);
 
 // Route to update a specific client by ID
 router.patch("/:id", updateClient);

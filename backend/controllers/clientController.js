@@ -1,6 +1,7 @@
 const Client = require("../models/clientModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const setRedisCache = require("../utils/setRedisCache");
 
 // exports.createClient = catchAsync(async (req, res, next) => {
 //   const client = await Client.create(req.body);
@@ -23,8 +24,12 @@ const filterObj = (obj, ...allowedFields) => {
 exports.getClients = catchAsync(async (req, res, next) => {
   const clients = await Client.find({});
 
+  // set redis cache
+  setRedisCache("clients", clients, 2400);
+
   res.status(200).json({
     status: "success",
+    fromCache: false,
     results: clients.length,
     data: clients,
   });
@@ -37,8 +42,12 @@ exports.getClient = catchAsync(async (req, res, next) => {
     return next(new AppError("No client found with that ID", 404));
   }
 
+  // set redis cache
+  setRedisCache("client", client, 2400);
+
   res.status(200).json({
     status: "success",
+    fromCache: false,
     data: client,
   });
 });

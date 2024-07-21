@@ -49,9 +49,9 @@ const SingleCauseList = ({
       render: (lawyersInCourt) => (
         <ul>
           {lawyersInCourt &&
-            lawyersInCourt.map((lawyer, index) => (
+            lawyersInCourt?.map((lawyer, index) => (
               <li className="text-blue-700 capitalize " key={index}>
-                {lawyer.fullName}
+                {lawyer?.fullName}
                 <span>,Esq</span>.
               </li>
             ))}
@@ -63,12 +63,12 @@ const SingleCauseList = ({
   // causelist data from case report
   const data =
     causeListData &&
-    causeListData.map((report, index) => ({
+    causeListData?.map((report, index) => ({
       key: index,
-      case: `${report.caseReported.firstParty.name[0].name} vs ${report.caseReported.secondParty.name[0].name}`,
-      adjournedFor: report.adjournedFor,
-      adjournedDate: formatDate(report.adjournedDate),
-      lawyersInCourt: report.lawyersInCourt,
+      case: `${report?.caseReported?.firstParty?.name[0]?.name} vs ${report?.caseReported?.secondParty?.name[0]?.name}`,
+      adjournedFor: report?.adjournedFor,
+      adjournedDate: formatDate(report?.adjournedDate),
+      lawyersInCourt: report?.lawyersInCourt,
     }));
 
   return (

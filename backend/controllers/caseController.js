@@ -10,31 +10,6 @@ exports.createCase = catchAsync(async (req, res, next) => {
   });
 });
 
-// exports.getCases = catchAsync(async (req, res, next) => {
-//   const redisKey = "cases"; // Define a key to store the cases in Redis
-
-//   // Fetch cases from the database
-//   let cases = await Case.find().sort("-filingDate");
-
-//   // Handle the case where no cases are found
-//   if (cases.length === 0) {
-//     return next(new AppError("No case found", 404));
-//   }
-
-//   // Store the fetched cases in Redis
-//   await redisClient.set(redisKey, JSON.stringify(cases), {
-//     EX: 600, // Remove data after 10min
-//     NX: true,
-//   });
-
-//   // Send the response
-//   res.status(200).json({
-//     results: cases.length,
-//     fromCache: false,
-//     data: cases,
-//   });
-// });
-
 /**
  * Controller function to fetch cases from the database.
  * If no cases are found, an error is returned.

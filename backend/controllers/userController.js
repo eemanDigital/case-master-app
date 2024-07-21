@@ -1,14 +1,19 @@
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
-// const multer = require("multer");
 const filterObj = require("../utils/filterObj");
+const setRedisCache = require("../utils/setRedisCache");
 
 // GET ALL USERS
 exports.getUsers = catchAsync(async (req, res, next) => {
   const users = await User.find({});
+
+  // set redis cache
+  setRedisCache("users", users, 1200);
+
   res.status(200).json({
     results: users.length,
+    fromCache: false,
     data: users,
   });
 });
@@ -24,6 +29,10 @@ exports.getUser = catchAsync(async (req, res, next) => {
   if (!data) {
     return next(new AppError("No user found with that Id", 404));
   }
+
+  // set redis cache
+  setRedisCache("user", data, 1200);
+
   res.status(200).json({
     data,
   });

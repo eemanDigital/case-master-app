@@ -40,24 +40,20 @@ const CreateCaseForm = () => {
   const [form] = Form.useForm();
   const [formData, setFormData] = useState(caseInitialValue);
   // destructor authenticate from useDataFetch
-  const { dataFetcher, data } = useDataFetch(); //general data fetcher
+  const { dataFetcher, data, loading, error } = useDataFetch(); //general data fetcher
   // destructure user data for accountOfficers
   const { userData } = useUserSelectOptions();
   const { clientOptions } = useClientSelectOptions();
 
   // form submit functionalities
-  const handleSubmission = useCallback(
-    (result) => {
-      if (result?.error) {
-        // Handle Error here
-      } else {
-        // Handle Success here
-        // form.resetFields();
-      }
-    },
-    []
-    // [form]
-  );
+  const handleSubmission = useCallback((result) => {
+    if (result?.error) {
+      // Handle Error here
+    } else {
+      // Handle Success here
+      form.resetFields();
+    }
+  }, [][form]);
 
   // submit data
   const onSubmit = useCallback(async () => {

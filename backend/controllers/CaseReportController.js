@@ -5,6 +5,7 @@ const catchAsync = require("../utils/catchAsync");
 const { generatePdf } = require("../utils/generatePdf");
 
 const moment = require("moment");
+const setRedisCache = require("../utils/setRedisCache");
 
 exports.createReport = catchAsync(async (req, res, next) => {
   // if (!req.body.case) req.body.case = req.params.tourId;
@@ -151,6 +152,8 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
   })
     .sort("adjournedDate")
     .select("caseReported adjournedFor adjournedDate");
+
+  setRedisCache("causeListToday", reportsToday, 1200);
 
   res.status(200).json({
     message: "success",

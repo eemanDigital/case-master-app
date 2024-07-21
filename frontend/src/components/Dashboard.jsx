@@ -96,8 +96,6 @@ const Dashboard = () => {
     events,
   } = useDataGetterHook();
 
-  console.log(monthlyNewCases, yearlyNewCases, "AO");
-
   // end
   const { isAdmin, isStaff, isClient } = useAdminHook();
 
@@ -143,6 +141,8 @@ const Dashboard = () => {
       </Link>
     </div>
   );
+
+  console.log(fetchedMonthData, "AO");
 
   return (
     <PaymentFiltersContext.Provider
