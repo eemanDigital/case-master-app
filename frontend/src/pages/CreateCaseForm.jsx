@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
-import { useDataFetch } from "../hooks/useDataFetch";
+import { useState } from "react";
 import { DeleteOutlined } from "@ant-design/icons";
 import {
   PartyDynamicInputs,
@@ -33,42 +32,19 @@ import {
 // import CaseDocument from "./CaseDocument";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import { caseInitialValue } from "../utils/initialValues";
+import useHandleSubmit from "../hooks/useHandleSubmit";
 const CreateCaseForm = () => {
-  // destructure textarea from input
-  // const { TextArea } = Input;
-
-  const [form] = Form.useForm();
   const [formData, setFormData] = useState(caseInitialValue);
   // destructor authenticate from useDataFetch
-  const { dataFetcher, data, loading, error } = useDataFetch(); //general data fetcher
+  // const { dataFetcher, data, loading, error } = useDataFetch(); //general data fetcher
   // destructure user data for accountOfficers
   const { userData } = useUserSelectOptions();
   const { clientOptions } = useClientSelectOptions();
-
-  // form submit functionalities
-  const handleSubmission = useCallback((result) => {
-    if (result?.error) {
-      // Handle Error here
-    } else {
-      // Handle Success here
-      form.resetFields();
-    }
-  }, [][form]);
-
-  // submit data
-  const onSubmit = useCallback(async () => {
-    let values;
-    try {
-      values = await form.validateFields(); // Validate the form fields
-      console.log("case data", values);
-    } catch (errorInfo) {
-      return;
-    }
-    const result = await dataFetcher("cases", "POST", values); // Submit the form data to the backend
-    console.log(values);
-
-    handleSubmission(result); // Handle the submission after the API Call
-  }, [form, handleSubmission, dataFetcher]);
+  // custom hook to handle form submission
+  const { form, onSubmit, data, loading, error } = useHandleSubmit(
+    "cases",
+    "post"
+  );
 
   // filter function for Select
   const filterOption = (input, option) =>

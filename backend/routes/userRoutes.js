@@ -64,7 +64,7 @@ router.get(
 );
 router.get(
   "/:userId",
-  cacheMiddleware(() => "user"),
+  cacheMiddleware((req) => `user:${req.params.userId}`),
   getUser
 );
 // Update user details, with photo upload and resize

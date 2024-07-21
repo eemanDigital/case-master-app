@@ -28,7 +28,7 @@ router.get("/total-amount-due-on-invoice", getTotalAmountDueOnInvoice);
 router
   .route("/:id")
   .get(
-    cacheMiddleware(() => "invoice"),
+    cacheMiddleware((req) => `invoice:${req.params.id}`),
     getInvoice
   )
   .patch(updateInvoice)

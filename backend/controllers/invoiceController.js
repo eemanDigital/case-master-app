@@ -65,7 +65,7 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
   }
 
   // set redis cache
-  setRedisCache("invoice", invoice, 5000);
+  setRedisCache(`invoice:${req.params.id}`, invoice, 5000);
 
   res.status(200).json({
     fromCache: false,

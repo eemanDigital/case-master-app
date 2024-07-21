@@ -50,7 +50,7 @@ exports.getCase = catchAsync(async (req, res, next) => {
   }
 
   // set redis key for caching
-  setRedisCache("singleCase", data);
+  setRedisCache(`singleCase:${req.params.caseId}`, data);
 
   res.status(200).json({
     fromCache: false,

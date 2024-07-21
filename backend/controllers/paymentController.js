@@ -76,9 +76,6 @@ exports.getPayment = catchAsync(async (req, res, next) => {
     return next(new AppError("Payment not found", 404));
   }
 
-  // set redis cache
-  setRedisCache("payment", payment, 1200);
-
   res.status(200).json({
     message: "success",
     fromCache: false,
@@ -165,7 +162,11 @@ exports.totalPaymentOnCase = catchAsync(async (req, res, next) => {
   ]);
 
   // set redis cache
-  setRedisCache("paymentOnCase", totalPaymentSum, 1200);
+  setRedisCache(
+    `paymentOnCase:${req.params.clientId}${req.params.caseId}`,
+    totalPaymentSum,
+    1200
+  );
 
   res.status(200).json({
     message: "success",
@@ -196,7 +197,7 @@ exports.totalPaymentClient = catchAsync(async (req, res, next) => {
     },
   ]);
 
-  setRedisCache("paymentByClient", totalPaymentSum, 1200);
+  setRedisCache(`paymentByClient:${clientId}`, totalPaymentSum, 1200);
 
   res.status(200).json({
     message: "success",
@@ -279,7 +280,7 @@ exports.totalPaymentsByMonthAndYear = catchAsync(async (req, res, next) => {
     },
   ]);
 
-  // setRedisCache("paymentMonthAndYear", totalPayments, 1200);
+  // setRedisCache(`paymentMonthAndYear:${year}${month}`, totalPayments, 1200);
 
   res.status(200).json({
     message: "success",
@@ -326,7 +327,7 @@ exports.totalPaymentsByMonthInYear = catchAsync(async (req, res, next) => {
     },
   ]);
   // set redis cache
-  setRedisCache("paymentMonthInYear", totalPayments, 1200);
+  setRedisCache(`paymentMonthInYear:${year}`, totalPayments, 1200);
 
   res.status(200).json({
     message: "success",
@@ -361,7 +362,7 @@ exports.totalPaymentsByYear = catchAsync(async (req, res, next) => {
   ]);
 
   // set redis cache
-  // setRedisCache("paymentByYear", totalPayments, 1200);
+  setRedisCache(`paymentByYear:${year}`, totalPayments, 1200);
 
   res.status(200).json({
     message: "success",
@@ -477,7 +478,7 @@ exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
   }
 
   // set redis cache
-  setRedisCache("paymentByClientAndCase", payments, 1200);
+  setRedisCache(`paymentByClientAndCase:${clientId}${caseId}`, payments, 1200);
   res.status(200).json({
     message: "success",
     result: payments[0].payments.length,

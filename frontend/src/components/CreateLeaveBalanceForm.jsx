@@ -1,74 +1,21 @@
-import { useState, useCallback } from "react";
-import { useDataFetch } from "../hooks/useDataFetch";
-
+import { useState } from "react";
 import { Button, Input, Form, Modal, Select, Card, Spin } from "antd";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import useHandleSubmit from "../hooks/useHandleSubmit";
+import useModal from "../hooks/useModal";
+import useUserSelectOptions from "../hooks/useUserSelectOptions";
 
 const CreateLeaveBalanceForm = ({ userId }) => {
-  //   const { id } = useParams();
-  const [open, setOpen] = useState(false);
-  //   const [confirmLoading, setConfirmLoading] = useState(false);
-  //   const [modalText, setModalText] = useState("Content of the modal");
-  const showModal = () => {
-    setOpen(true);
-  };
-  //   const handleOk = () => {
-  //     setModalText("The modal will be closed after two seconds");
-  //     setConfirmLoading(true);
-  //     setTimeout(() => {
-  //       setOpen(false);
-  //       setConfirmLoading(false);
-  //     }, 2000);
-  //   };
-  const handleCancel = () => {
-    console.log("Clicked cancel button");
-    setOpen(false);
-  };
-
-  const [form] = Form.useForm();
   const [formData, setFormData] = useState({});
-  // destructor authenticate from useAuth
-  const { dataFetcher, data, loading } = useDataFetch();
-  const { users } = useDataGetterHook();
-
-  //  get users/reporter data
-  const usersData = Array.isArray(users?.data)
-    ? users?.data.map((user) => {
-        return {
-          value: user?._id,
-          label: user?.fullName,
-        };
-      })
-    : [];
-
-  // console.log(users);
-
-  // form submit functionalities
-  const handleSubmission = useCallback(
-    (result) => {
-      if (result?.error) {
-        // Handle Error here
-      } else {
-        // Handle Success here
-        // form.resetFields();
-      }
-    },
-    []
-    // [form]
+  // hook for modal
+  const { open, handleCancel, showModal } = useModal();
+  // hook for user data options
+  const { userData } = useUserSelectOptions();
+  // hooks to handle form submit
+  const { form, onSubmit, loading, data, error } = useHandleSubmit(
+    "leaves/balances",
+    "POST"
   );
 
-  // submit data
-  const onSubmit = useCallback(async () => {
-    let values;
-    try {
-      values = await form.validateFields(); // Validate the form fields
-    } catch (errorInfo) {
-      return;
-    }
-    const result = await dataFetcher("leaves/balances", "POST", values); // Submit the form data to the backend
-    console.log(values);
-    handleSubmission(result); // Handle the submission after the API Call
-  }, [form, handleSubmission, dataFetcher]);
   return (
     <>
       <Button onClick={showModal} className="bg-blue-500 text-white">
@@ -105,7 +52,7 @@ const CreateLeaveBalanceForm = ({ userId }) => {
                     noStyle
                     notFoundContent={data ? <Spin size="small" /> : null}
                     placeholder="Select a staff"
-                    options={usersData}
+                    options={userData}
                     allowClear
                     style={{
                       width: "100%",

@@ -106,7 +106,7 @@ router.post(
 // Single case manipulation routes
 router.get(
   "/:caseId",
-  cacheMiddleware(() => "singleCase"),
+  cacheMiddleware((req) => `singleCase:${req.params.caseId}`),
   getCase
 );
 router.patch("/:caseId", updateCase);

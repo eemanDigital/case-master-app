@@ -7,6 +7,8 @@ import avatar from "../assets/avatar.png";
 import { formatDate } from "../utils/formatDate";
 // import EditUserProfile from "./EditUserProfile";
 import UpdateUserPositionAndRole from "./UpdateUserPositionAndRole";
+import LeaveBalanceDisplay from "../components/LeaveBalanceDisplay";
+import LeaveApplicationDetails from "./LeaveApplicationDetails";
 
 const StaffDetails = () => {
   const { id } = useParams();
@@ -28,24 +30,23 @@ const StaffDetails = () => {
         <Alert message="Error" description={error} type="error" showIcon />
       ) : (
         <div>
-          <Col>
+          <div>
             <img
-              className="w-24 h-24 object-cover rounded-full"
               src={
                 data?.data?.photo
-                  ? `http://localhost:3000/images/users/${data?.data?.photo}`
-                  : avatar
+                  ? data?.data?.photo // Use the Cloudinary URL directly
+                  : avatar // Fallback avatar if photo is not available
               }
-              alt="Staff Avatar"
+              alt={`${data?.data?.firstName}'s profile image`} // Make sure this uses the correct path
+              className="w-24 h-24 object-cover rounded-full"
             />
-          </Col>
-          <Divider />
-          <div className="flex justify-between items-center">
-            <Button onClick={() => navigate(-1)} className="m-2">
-              Go Back
-            </Button>
             <UpdateUserPositionAndRole userId={data?.data._id} />
           </div>
+          <Divider />
+          <Button onClick={() => navigate(-1)} className="m-2">
+            Go Back
+          </Button>
+
           <Descriptions title="Staff Details" bordered>
             <Descriptions.Item label="First Name">
               {data?.data?.firstName}
@@ -83,6 +84,10 @@ const StaffDetails = () => {
             </Descriptions.Item>
           </Descriptions>
           <Divider />
+          {/* leave balance component */}
+          <LeaveBalanceDisplay userId={id} />
+          <Divider />
+          <LeaveApplicationDetails userId={id} />
         </div>
       )}
     </>

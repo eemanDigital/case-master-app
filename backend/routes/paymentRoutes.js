@@ -29,7 +29,9 @@ router.get(
 // Route to get total payments for a specific month and year
 router.get(
   "/totalPayments/:year/:month",
-  cacheMiddleware(() => "paymentMonthAndYear"),
+  cacheMiddleware(
+    (req) => `paymentMonthAndYear:${req.params.year}${req.params.month}`
+  ),
 
   paymentController.totalPaymentsByMonthAndYear
 );
@@ -37,30 +39,34 @@ router.get(
 // Route to get total payments for an entire year
 router.get(
   "/totalPayments/:year",
-  cacheMiddleware(() => "paymentByYear"),
+  cacheMiddleware((req) => `paymentByYear:${req.params.year}`),
   paymentController.totalPaymentsByYear
 );
 router.get(
   "/client/:clientId/case/:caseId",
-  cacheMiddleware(() => "paymentByClientAndCase"),
+  cacheMiddleware(
+    (req) => `paymentByClientAndCase:${req.params.clientId}${req.params.caseId}`
+  ),
   paymentController.getPaymentsByClientAndCase
 );
 
 router.get(
   "/totalPaymentSum/client/:clientId/case/:caseId",
-  cacheMiddleware(() => "paymentOnCase"),
+  cacheMiddleware(
+    (req) => `paymentOnCase:${req.params.clientId}${req.params.caseId}`
+  ),
   paymentController.totalPaymentOnCase
 );
 router.get(
   "/totalPaymentSum/client/:clientId",
-  cacheMiddleware(() => "paymentByClient"),
+  cacheMiddleware((req) => `paymentByClient:${req.params.clientId}`),
   paymentController.totalPaymentClient
 );
 
 // get payment received in each month of a year
 router.get(
   "/totalPaymentsByMonthInYear/:year",
-  cacheMiddleware(() => "paymentMonthInYear"),
+  cacheMiddleware((req) => `paymentMonthInYear:${req.params.year}`),
   paymentController.totalPaymentsByMonthInYear
 );
 // Get a specific payment by ID

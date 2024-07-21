@@ -31,7 +31,7 @@ exports.getUser = catchAsync(async (req, res, next) => {
   }
 
   // set redis cache
-  setRedisCache("user", data, 1200);
+  setRedisCache(`user:${req.params.userId}`, data, 1200);
 
   res.status(200).json({
     data,

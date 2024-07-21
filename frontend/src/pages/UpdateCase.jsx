@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { useDataFetch } from "../hooks/useDataFetch";
+
 import {
   DeleteOutlined,
   MinusCircleOutlined,
@@ -30,18 +30,25 @@ import {
   modesOptions,
 } from "../data/options";
 import useClientSelectOptions from "../hooks/useClientSelectOptions";
+import useHandleSubmit from "../hooks/useHandleSubmit";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 const UpdateCase = () => {
-  // destructure textarea from input
-  const [form] = Form.useForm();
   const { TextArea } = Input;
-  const { dataFetcher, data } = useDataFetch(); //general data fetcher
+  const { id } = useParams();
+
+  // custom hook to handle form submission
+  const {
+    form,
+    onSubmit,
+    data,
+    loading: loadingState,
+    error,
+  } = useHandleSubmit(`cases/${id}`, "patch");
 
   const { userData } = useUserSelectOptions();
   const { clientOptions } = useClientSelectOptions();
 
-  const { id } = useParams();
   // console.log(id);
   // const { singleData, singleDataFetcher } = useSingleDataFetcher();
   const [formData, setFormData] = useState({});
@@ -81,35 +88,6 @@ const UpdateCase = () => {
     }
     fetchData();
   }, [id]);
-
-  // FORM SUBMISSION
-  // form submit functionalities
-  const handleSubmission = useCallback(
-    (result) => {
-      if (result?.error) {
-        // Handle Error here
-      } else {
-        // Handle Success here
-        // form.resetFields();
-      }
-    },
-    []
-    // [form]
-  );
-
-  // submit data
-  const onSubmit = useCallback(async () => {
-    let values;
-    try {
-      values = await form.validateFields(); // Validate the form fields
-    } catch (errorInfo) {
-      return;
-    }
-    const result = await dataFetcher(`cases/${id}`, "patch", values); // Submit the form data to the backend
-    // console.log(values);
-
-    handleSubmission(result); // Handle the submission after the API Call
-  }, [form, handleSubmission, dataFetcher, id]);
 
   // filter options for the select field
   const filterOption = (input, option) =>
