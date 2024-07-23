@@ -4,12 +4,13 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import { useAuthContext } from "../hooks/useAuthContext";
 import LeaveResponseForm from "../components/LeaveResponseForm";
+import useErrorMessage from "../hooks/useErrorMessage";
+import { useAdminHook } from "../hooks/useAdminHook";
 
 const LeaveApplicationDetails = ({ userId }) => {
   const { dataFetcher, data, loading, error } = useDataFetch();
-  const { user } = useAuthContext();
-  const isAdmin =
-    user?.data?.user?.role === "admin" || user?.data?.user?.role === "hr";
+  useErrorMessage(error); //custom hook for error message
+  const { isAdminOrHr } = useAdminHook();
 
   useEffect(() => {
     if (userId) {
@@ -17,16 +18,10 @@ const LeaveApplicationDetails = ({ userId }) => {
     }
   }, [userId]);
 
+  console.log("LA", data);
+
   return (
     <Spin spinning={loading}>
-      {/* {error && (
-        <Notification
-          message="Error"
-          description={error?.response?.data?.message || "Something went wrong"}
-          type="error"
-          showIcon
-        />
-      )} */}
       {!loading && (
         <>
           {data ? (
@@ -63,7 +58,7 @@ const LeaveApplicationDetails = ({ userId }) => {
                   {data?.data?.typeOfLeave}
                 </Descriptions.Item>
               </Descriptions>
-              {isAdmin && <LeaveResponseForm appId={data?.data?.id} />}
+              {isAdminOrHr && <LeaveResponseForm appId={data?.data?.id} />}
             </>
           ) : (
             <Empty description="No Leave Application" />

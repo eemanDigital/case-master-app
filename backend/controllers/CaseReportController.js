@@ -153,7 +153,7 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
     .sort("adjournedDate")
     .select("caseReported adjournedFor adjournedDate");
 
-  setRedisCache("causeListToday", reportsToday, 1200);
+  // setRedisCache("causeListToday", reportsToday, 1200);
 
   res.status(200).json({
     message: "success",

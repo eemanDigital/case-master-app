@@ -38,6 +38,10 @@ async function handleUpload(file) {
 }
 
 exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
+  if (!req.file) {
+    return next(); // If no file is uploaded, proceed to the next middleware
+  }
+
   const b64 = Buffer.from(req.file.buffer).toString("base64");
   let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
   const uploadResult = await handleUpload(dataURI);

@@ -23,6 +23,7 @@ import CaseCountsByYearChart from "./CaseCountsByYearChart ";
 import googleCalender from "../assets/calender.svg";
 import EventCalendar from "./EventCalender";
 import ClientDashboard from "./ClientDashboard";
+import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -194,7 +195,7 @@ const Dashboard = () => {
             </Col>
 
             <Col>
-              <LeaveBalanceDisplay userId={userId} />
+              <CreateLeaveBalanceForm />
             </Col>
             <Col>
               <CreateTaskForm />
@@ -241,10 +242,10 @@ const Dashboard = () => {
           </Row>
           <Divider />
           <div
-            className={`inner-shadow overflow-y-auto hide-scrollbar bg-white text-gray-600 ${
+            className={`overflow-y-auto hide-scrollbar ${
               causeList.data?.todayResult === 0
                 ? "h-[180] w-[440px] display-shadow-none"
-                : "h-[240px]"
+                : ""
             }`}>
             {causeList.data?.todayResult === 0 ? (
               <Empty

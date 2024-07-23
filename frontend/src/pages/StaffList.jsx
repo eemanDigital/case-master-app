@@ -21,7 +21,8 @@ const StaffList = () => {
   const { Column, ColumnGroup } = Table;
   //   const { user } = useAuthContext();
   const { dataFetcher, loading, error } = useDataFetch();
-  const { user } = useAuthContext();
+  //  const { user } = useAuthContext();
+  // const loggedInUserId = user?.data?.user.id;
   const { isAdminOrHr, isAdmin, isSuperOrAdmin } = useAdminHook();
 
   //render all cases initially before filter
@@ -121,11 +122,8 @@ const StaffList = () => {
               <div className="flex items-center justify-center">
                 <img
                   className="w-12 h-12 object-cover rounded-full"
-                  src={
-                    photo
-                      ? `http://localhost:3000/images/users/${photo}`
-                      : avatar
-                  }
+                  src={photo ? photo : avatar}
+                  alt="staff"
                 />
               </div>
             )}

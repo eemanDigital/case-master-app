@@ -1,27 +1,24 @@
 import { useEffect } from "react";
+import { Spin, Descriptions, Empty } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { Spin, Alert, Descriptions } from "antd";
+import useErrorMessage from "../hooks/useErrorMessage";
 
 const LeaveBalanceDisplay = ({ userId }) => {
   const { data, loading, error, dataFetcher } = useDataFetch();
 
+  useErrorMessage(error); // Use the custom hook
+
   useEffect(() => {
     if (userId) {
-      dataFetcher(`leaves/balances/${userId}`, "get");
+      dataFetcher(`leaves/balances/${userId}`, "GET");
     }
   }, [userId]);
 
   return (
     <Spin spinning={loading}>
-      {error && (
-        <Alert
-          message="Error"
-          description={error?.response?.data?.message || "Something went wrong"}
-          type="error"
-          showIcon
-        />
-      )}
-      {!loading && !error && (
+      {loading && <Empty description="Fetching leave balance..." />}
+
+      {!loading && !error && data?.data ? (
         <Descriptions title="Leave Balance Information" bordered>
           <Descriptions.Item label="Annual Leave Balance">
             {data?.data?.annualLeaveBalance || 0}
@@ -30,6 +27,8 @@ const LeaveBalanceDisplay = ({ userId }) => {
             {data?.data?.sickLeaveBalance || 0}
           </Descriptions.Item>
         </Descriptions>
+      ) : (
+        <Empty description="No leave balance data available." />
       )}
     </Spin>
   );

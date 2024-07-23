@@ -23,7 +23,7 @@ import { Result, Button } from "antd";
 import { Link } from "react-router-dom";
 import TaskAttachment from "./pages/TaskAttachment.jsx";
 import LeaveAppForm from "./pages/LeaveAppForm.jsx";
-import LeaveApplicationDisplay from "./pages/LeaveApplicationDisplay.jsx";
+import LeaveApplicationList from "./pages/LeaveApplicationList.jsx";
 import LeaveApplicationDetails from "./pages/LeaveApplicationDetails.jsx";
 import TaskList from "./components/TaskList.jsx";
 import TaskDetails from "./pages/TaskDetails.jsx";
@@ -109,7 +109,7 @@ function App() {
           />
           <Route
             path="staff/leave-application-list"
-            element={<LeaveApplicationDisplay />}
+            element={<LeaveApplicationList />}
           />
 
           <Route

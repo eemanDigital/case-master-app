@@ -23,11 +23,7 @@ router.use(protect);
 
 router.post("/", createReport);
 router.get("/", getReports);
-router.get(
-  "/upcoming",
-  cacheMiddleware(() => "causeListToday"),
-  getUpcomingMatter
-);
+router.get("/upcoming", getUpcomingMatter);
 // Specific route for generating cause list should be before the general /:reportId route
 router.get("/pdf/causeList/week", generateCauseListWeek);
 router.get("/pdf/causeList/month", generateCauseListMonth);
