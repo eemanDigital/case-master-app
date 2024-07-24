@@ -104,12 +104,12 @@ function App() {
           <Route path="case-reports" element={<MainCaseReportList />} />
           <Route path="leave-application" element={<LeaveAppForm />} />
           <Route
-            path="leave-application/:id/details"
-            element={<LeaveApplicationDetails />}
+            path="staff/leave-application"
+            element={<LeaveApplicationList />}
           />
           <Route
-            path="staff/leave-application-list"
-            element={<LeaveApplicationList />}
+            path="staff/leave-application/:id/details"
+            element={<LeaveApplicationDetails />}
           />
 
           <Route

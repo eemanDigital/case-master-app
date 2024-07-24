@@ -24,6 +24,7 @@ import googleCalender from "../assets/calender.svg";
 import EventCalendar from "./EventCalender";
 import ClientDashboard from "./ClientDashboard";
 import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
+import LeaveNotification from "./LeaveNotification";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -98,7 +99,7 @@ const Dashboard = () => {
   } = useDataGetterHook();
 
   // end
-  const { isAdmin, isStaff, isClient } = useAdminHook();
+  const { isAdminOrHr, isAdmin, isStaff, isClient } = useAdminHook();
 
   useEffect(() => {
     if (userId) {
@@ -143,7 +144,7 @@ const Dashboard = () => {
     </div>
   );
 
-  console.log(fetchedMonthData, "AO");
+  // console.log(fetchedMonthData, "AO");
 
   return (
     <PaymentFiltersContext.Provider
@@ -161,6 +162,8 @@ const Dashboard = () => {
           </h1>
         )}
         <div className="w-12 h-12">
+          {isAdminOrHr && <LeaveNotification />}
+
           <a
             href="https://calendar.google.com/calendar"
             target="_blank"
@@ -244,14 +247,14 @@ const Dashboard = () => {
           <div
             className={`overflow-y-auto hide-scrollbar ${
               causeList.data?.todayResult === 0
-                ? "h-[180] w-[440px] display-shadow-none"
+                ? "h-[180] w-full display-shadow-none bg-white"
                 : ""
             }`}>
             {causeList.data?.todayResult === 0 ? (
               <Empty
                 image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={
-                  <h3 className="text-blue-500 font-bold">
+                  <h3 className="text-blue-600  font-medium text-2xl">
                     You have no matter today in Court
                   </h3>
                 }

@@ -10,6 +10,7 @@ import LeaveBalanceDisplay from "../components/LeaveBalanceDisplay";
 import LeaveApplicationDetails from "./LeaveApplicationDetails";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useAuthContext } from "../hooks/useAuthContext";
+// import useErrorMessage from "../hooks/useErrorMessage";
 
 const StaffDetails = () => {
   const { id } = useParams();
@@ -18,6 +19,8 @@ const StaffDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const navigate = useNavigate();
   const { isAdminOrHr } = useAdminHook();
+
+  // useErrorMessage(error);
 
   useEffect(() => {
     dataFetcher(`users/${id}`, "GET");
@@ -127,15 +130,6 @@ const StaffDetails = () => {
           </Button>
 
           {renderStaffDetails()}
-
-          <Divider />
-          {(isAdminOrHr || isCurrentUser) && (
-            <>
-              <LeaveBalanceDisplay userId={id} />
-              <Divider />
-              <LeaveApplicationDetails userId={id} />
-            </>
-          )}
         </div>
       )}
     </>

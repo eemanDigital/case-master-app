@@ -4,7 +4,6 @@ import { Button, Layout, Menu, theme } from "antd";
 import avatar from "../assets/avatar.png";
 import { useLogout } from "../hooks/useLogout";
 import { useRemovePhoto } from "../hooks/useRemovePhoto";
-import femaleAvatar from "../assets/female-avatar.png";
 import { RxDashboard } from "react-icons/rx";
 import { IoBriefcaseSharp, IoHelpCircleOutline } from "react-icons/io5";
 import { TbLogout2 } from "react-icons/tb";
@@ -17,8 +16,10 @@ import "react-toastify/dist/ReactToastify.css";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useNavigate } from "react-router-dom";
 import { useAdminHook } from "../hooks/useAdminHook";
-
 import { useState } from "react";
+
+const { Header, Sider, Content } = Layout;
+const { SubMenu } = Menu;
 
 const SideBar = () => {
   const { logout } = useLogout();
@@ -26,9 +27,8 @@ const SideBar = () => {
   const navigate = useNavigate();
   const { user } = useAuthContext();
   const { isClient, isUser } = useAdminHook();
-
-  const { Header, Sider, Content } = Layout;
   const [collapsed, setCollapsed] = useState(false);
+
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -81,6 +81,17 @@ const SideBar = () => {
       key: "6",
       icon: <FaUsers />,
       label: <Link to="staff">Staff</Link>,
+
+      children: [
+        {
+          key: "6-1",
+          label: <Link to="staff/leave-application">Leave Application</Link>,
+        },
+        // {
+        //   key: "6-2",
+        //   label: <Link to="staff/leave-balance">Leave Balance</Link>,
+        // },
+      ],
     },
     {
       key: "7",
@@ -102,7 +113,7 @@ const SideBar = () => {
       icon: <TbLogout2 />,
       label: (
         <Link className="text-gray-200" onClick={handleLogout}>
-          logout
+          Logout
         </Link>
       ),
     },
@@ -129,36 +140,39 @@ const SideBar = () => {
           className="fixed h-full"
           style={{ overflow: "auto", height: "100vh" }}>
           {/* user's profile */}
-
           {!isClient ? (
-            <div className="mt-4 p-4 flex justify-center items-center  tooltip">
+            <div className="mt-4 p-4 flex justify-center items-center tooltip">
               <Link to="profile">
                 <img
-                  src={
-                    user?.data?.user?.photo ? user.data.user.photo : avatar // Fallback avatar if photo is not available
-                  }
-                  alt={`${user?.data?.user?.firstName}'s profile image`} // Make sure this uses the correct path
-                  className="object-cover object-right-top h-14 w-14  rounded-full border-2 border-blue-500"
+                  src={user?.data?.user?.photo ? user.data.user.photo : avatar}
+                  alt={`${user?.data?.user?.firstName}'s profile image`}
+                  className="object-cover object-right-top h-14 w-14 rounded-full border-2 border-blue-500"
                 />
               </Link>
             </div>
           ) : (
             <Link to="profile">
-              <h1 className="py-6 text-gray-300 hover:text-gray-500 font-bold  text-center ">
+              <h1 className="py-6 text-gray-300 hover:text-gray-500 font-bold text-center">
                 {user?.data?.user?.firstName}
               </h1>
             </Link>
           )}
-
           <Menu theme="dark" mode="inline" defaultSelectedKeys={["1"]}>
-            {filteredNavItems.map((item) => (
-              <Menu.Item key={item.key} icon={item.icon}>
-                {item.label}
-              </Menu.Item>
-            ))}
+            {filteredNavItems.map((item) =>
+              item.children ? (
+                <SubMenu key={item.key} icon={item.icon} title={item.label}>
+                  {item.children.map((child) => (
+                    <Menu.Item key={child.key}>{child.label}</Menu.Item>
+                  ))}
+                </SubMenu>
+              ) : (
+                <Menu.Item key={item.key} icon={item.icon}>
+                  {item.label}
+                </Menu.Item>
+              )
+            )}
           </Menu>
         </Sider>
-
         <Layout>
           <Header
             style={{
@@ -183,7 +197,8 @@ const SideBar = () => {
               minHeight: 280,
               background: colorBgContainer,
               borderRadius: borderRadiusLG,
-            }}>
+            }}
+          >
             Content
           </Content> */}
         </Layout>

@@ -14,7 +14,7 @@ router.get("/applications", leaveAppController.getLeaveApplications);
 router.get("/applications/:id", leaveAppController.getLeaveApplication);
 router.put(
   "/applications/:id",
-  restrictTo("admin", "hr"),
+  restrictTo("super-admin", "admin", "hr"),
   leaveAppController.updateLeaveApplication
 );
 router.delete("/applications/:id", leaveAppController.deleteLeaveApplication);
@@ -23,14 +23,14 @@ router.delete("/applications/:id", leaveAppController.deleteLeaveApplication);
 // Apply the restrictTo middleware only to leave balance routes
 router.post(
   "/balances",
-  restrictTo("admin", "hr"),
+  restrictTo("super-admin", "admin", "hr"),
   leaveBalanceController.createLeaveBalance
 );
 router.get("/balances/:employeeId", leaveBalanceController.getLeaveBalance);
 router.get("/balances", leaveBalanceController.getLeaveBalances);
 router.put(
   "/balances/:employeeId",
-  restrictTo("admin", "hr"),
+  restrictTo("super-admin", "admin", "hr"),
   leaveBalanceController.updateLeaveBalance
 );
 router.delete("/balances/:id", leaveBalanceController.deleteLeaveBalance);

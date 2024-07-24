@@ -29,14 +29,23 @@ const CaseReportList = ({ title, showFilter, reports }) => {
   );
 
   // Handle delete
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("jwt="))
+    ?.split("=")[1];
+
   const fileHeaders = {
-    "Content-Type": "multipart/form-data",
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: `Bearer ${token}`,
+    },
   };
   const handleDeleteReport = async (id) => {
     try {
-      await axios.delete(`http://localhost:3000/api/v1/reports/${id}`, {
-        headers: fileHeaders,
-      });
+      await axios.delete(
+        `http://localhost:3000/api/v1/reports/${id}`,
+        fileHeaders
+      );
     } catch (err) {
       console.error("Failed to delete report:", err);
     }

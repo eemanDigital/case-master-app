@@ -6,7 +6,6 @@ const LeaveBalance = require("../models/leaveBalanceModel");
 exports.createLeaveApplication = catchAsync(async (req, res, next) => {
   // get current user
   const userId = req.user._id;
-  console.log(req.body);
 
   // get the leave balance for the employee
   const leaveBalance = await LeaveBalance.findOne({

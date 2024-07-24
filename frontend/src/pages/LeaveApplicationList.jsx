@@ -1,31 +1,38 @@
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { Link } from "react-router-dom";
 import { useAuthContext } from "../hooks/useAuthContext";
+import { useAdminHook } from "../hooks/useAdminHook";
 import { Space, Table, Button, Spin, Alert, Modal } from "antd";
 import { formatDate } from "../utils/formatDate";
 import { useDataFetch } from "../hooks/useDataFetch";
 import avatar from "../assets/avatar.png";
 
 const LeaveApplicationList = () => {
-  const { leaveApps, loadingLeaveApp, errorLeaveApp } = useDataGetterHook();
+  const {
+    leaveApps,
+    loading: loadingLeaveApp,
+    error: errorLeaveApp,
+  } = useDataGetterHook();
   const { Column, ColumnGroup } = Table;
   const { user } = useAuthContext();
+  const { isAdminOrHr } = useAdminHook();
 
-  // const userId = user?.data?.user?.id
+  const userId = user?.data?.user?.id;
 
   const { data, loading, error, dataFetcher } = useDataFetch();
 
-  if (loadingLeaveApp) {
+  if (loadingLeaveApp?.leaveApps) {
     return (
       <Spin size="large" className="flex justify-center items-center h-full" />
     );
   }
 
-  if (errorLeaveApp) {
+  console.log(errorLeaveApp, "LEAVEERR");
+  if (errorLeaveApp?.leaveApps) {
     return (
       <Alert
         message="Error"
-        description={errorLeaveApp}
+        description={errorLeaveApp?.leaveApps}
         type="error"
         showIcon
       />
@@ -40,14 +47,11 @@ const LeaveApplicationList = () => {
   };
 
   // Filter the leave applications based on the user's role
-  const filteredLeaveApps =
-    user?.data?.user?.role === "admin" || user?.data?.user?.role === "hr"
-      ? leaveApps?.data
-      : leaveApps?.data?.filter(
-          (app) => app?.employee?.id === user?.data?.user?.id
-        );
-
-  // console.log(filteredLeaveApps);
+  const filteredLeaveApps = isAdminOrHr
+    ? leaveApps?.data
+    : leaveApps?.data?.filter(
+        (app) => app?.employee?.id === user?.data?.user?.id
+      );
 
   return (
     <Table dataSource={filteredLeaveApps}>
@@ -60,9 +64,7 @@ const LeaveApplicationList = () => {
             <div className="flex items-center justify-center">
               <img
                 className="w-12 h-12 object-cover rounded-full"
-                src={
-                  photo ? `http://localhost:3000/images/users/${photo}` : avatar
-                }
+                src={photo ? photo : avatar}
               />
             </div>
           )}
@@ -117,9 +119,7 @@ const LeaveApplicationList = () => {
         render={(text, record) => (
           <Space size="middle">
             <Button type="link">
-              <Link to={`/dashboard/leave-application/${record?.id}/details`}>
-                Get Details
-              </Link>
+              <Link to={`${record?.id}/details`}>Get Details</Link>
             </Button>
             <Button
               onClick={() => {

@@ -18,12 +18,21 @@ const TaskList = () => {
 
   const { isSuperOrAdmin, isStaff, isClient } = useAdminHook();
 
+  // Handle delete
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("jwt="))
+    ?.split("=")[1];
+
   const fileHeaders = {
-    "Content-Type": "multipart/form-data",
+    headers: {
+      "Content-Type": "multipart/form-data",
+      Authorization: `Bearer ${token}`,
+    },
   };
 
   const handleDeleteApp = async (id) => {
-    await dataFetcher(`tasks/${id}`, "delete", fileHeaders);
+    await dataFetcher(`tasks/${id}`, "delete", { headers: fileHeaders });
   };
 
   const columns = [
