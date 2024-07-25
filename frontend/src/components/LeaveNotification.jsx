@@ -36,7 +36,7 @@ const LeaveNotification = () => {
   const content = (
     <List
       itemLayout="horizontal"
-      dataSource={isAdminOrHr && pendingLeaves}
+      dataSource={pendingLeaves}
       renderItem={(item) => (
         <List.Item>
           <List.Item.Meta
