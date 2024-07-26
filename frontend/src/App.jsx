@@ -42,11 +42,13 @@ import StaffList from "./pages/StaffList.jsx";
 import StaffDetails from "./pages/StaffDetails.jsx";
 import StaffLogin from "./pages/StaffLogin.jsx";
 import ForgotPasswordClient from "./pages/ForgotPasswordClient.jsx";
+import LoginProtectedRoute from "./components/LoginProtectRoute.jsx";
 import ForgotPasswordStaff from "./pages/ForgotPasswordStaff.jsx";
 import ForgotPasswordResetStaff from "./pages/ForgotPasswordResetStaff.jsx";
 import ForgotPasswordResetClient from "./pages/ForgotPasswordResetClient.jsx";
 import MainCaseReportList from "./pages/MainCaseReportList.jsx";
 import PaymentMadeOnCase from "./pages/PaymentMadeOnCase.jsx";
+import TwoFactorAuth from "./components/TwoFactorAuth.jsx";
 
 function App() {
   // const { isClient, isStaff } = useAdminHook();
@@ -70,6 +72,10 @@ function App() {
           path="/resetPassword/clients/:token"
           element={<ForgotPasswordResetClient />}
         />
+        <Route
+          path="/two-factor-auth/users/:email"
+          element={<TwoFactorAuth />}
+        />
         <Route path="/resetpassword" element={<ResetPassword />} />
         {/* 
         <Route
@@ -83,6 +89,15 @@ function App() {
           }> */}
         <Route path="dashboard" element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
+          {/* <Route
+            index
+            element={
+              <LoginProtectedRoute>
+                <Dashboard />
+              </LoginProtectedRoute>
+            }
+          /> */}
+
           <Route path="add-user" element={<AddUserForm />} />
 
           <Route

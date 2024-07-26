@@ -2,12 +2,18 @@
 import Input from "../components/Inputs";
 import lawyer1 from "../assets/lawyer1.svg";
 import Select from "../components/Select";
+
 import { Link } from "react-router-dom";
 import Button from "../components/Button";
 import { useAuth } from "../hooks/useAuth";
 import { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import PasswordInput from "../components/PasswordInput";
+import useTogglePassword from "../hooks/useTogglePassword";
+import { addUserInitValue } from "../utils/initialValues";
+import { gender, positions, roles } from "../data/options";
+import PasswordCheckCard from "../components/PasswordCheckCard";
 // import { useAuthContext } from "../hooks/useAuthContext";
 
 // import useFetch from "../hooks/useFetch";
@@ -15,50 +21,25 @@ import "react-toastify/dist/ReactToastify.css";
 // const URL = "http://localhost:3000/api/v1/users/signup";
 
 const SignUp = () => {
-  const positions = [
-    "Select a position",
-    "Principal",
-    "Managing Partner",
-    "Head of Chambers",
-    "Associate",
-    "Senior Associate",
-    "Junior Associate",
-    "Counsel",
-    "Intern",
-    "Secretary",
-    "Para-legal",
-    "Client",
-    "Other",
-  ];
-
-  const roles = ["user", "super-admin", "admin", "secretary", "hr"];
-  const gender = ["male", "female"];
-
   const { data, loading, error, authenticate } = useAuth();
   const [click, setClick] = useState(false);
 
   // console.log(fileData.data?.file);
   // console.log(data);
-  const [inputValue, setInputValue] = useState({
-    firstName: "",
-    lastName: "",
-    middleName: "",
-    email: "",
-    password: "",
-    passwordConfirm: "",
-    gender: "",
-    address: "",
-    bio: "",
-    role: "",
-    position: "",
-    annualLeaveEntitled: "",
-    phone: "",
-    yearOfCall: "",
-    otherPosition: "",
-    practiceArea: "",
-    universityAttended: "",
-    lawSchoolAttended: "",
-  });
+  const [inputValue, setInputValue] = useState(addUserInitValue);
+  const { password } = inputValue;
+  //password check state
+  // const [isUpper, setIsUpper] = useState(false)
+  // const [isNumber, setIsNumber] = useState(false)
+  // const [isChar, setIsChar] = useState(false)
+  // const [isLength, setIsLength] = useState(false)
+  ///////////////////////////////////////
+
+  // handle password token hook
+  const { togglePassword: togglePassword1, showPassword: showPassword1 } =
+    useTogglePassword();
+  const { togglePassword: togglePassword2, showPassword: showPassword2 } =
+    useTogglePassword();
 
   // const { dispatch } = useAuthContext();
   // derived state to check if user select "Other"
@@ -93,11 +74,13 @@ const SignUp = () => {
   console.log(inputValue);
 
   return (
-    <section className=" bg-gray-200 ">
+    <>
       <h1 className="text-5xl bold text-center p-5">Add Staff</h1>
+      <section className="flex bg-gray-200 ">
+        <PasswordCheckCard password={password} />
 
-      <div className="flex flex-col md:flex-row  justify-center  ">
-        <div className="flex flex-col  flex-none basis-2/5 text-center  items-center  rounded-md p-4 ">
+        <div className="flex flex-col md:flex-row  w-full justify-center  ">
+          {/* <div className="flex flex-col  flex-none basis-2/5 text-center  items-center  rounded-md p-4 ">
           <img
             src={lawyer1}
             alt="lawyer's image"
@@ -111,85 +94,91 @@ const SignUp = () => {
             Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptatem,
             at dolorem delectus optio est deserunt autem? In enim sequi illum.
           </p>
-        </div>
+        </div> */}
 
-        <form
-          onSubmit={handleSubmit}
-          className="  bg-white   basis-3/5 shadow-md  rounded-md px-8 pt-6 pb-8 m-4">
-          <div className="flex flex-col sm:flex-row -mx-3 mb-6 gap-2">
-            <div>
-              <Input
-                type="text"
-                label="First Name"
-                placeholder="First Name"
-                htmlFor="First Name"
-                text="Please enter your first name"
-                value={inputValue.firstName}
-                name="firstName"
-                onChange={handleChange}
-              />
+          <form
+            onSubmit={handleSubmit}
+            className="  bg-white w-full   basis-3/5 shadow-md  rounded-md px-8 pt-6 pb-8 m-4">
+            <div className="sm:flex-row -mx-3 mb-6 gap-2">
+              <div>
+                <Input
+                  type="text"
+                  label="First Name"
+                  placeholder="First Name"
+                  htmlFor="First Name"
+                  text="Please enter your first name"
+                  value={inputValue.firstName}
+                  name="firstName"
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <Input
+                  type="text"
+                  label="Last Name"
+                  placeholder="Last Name"
+                  htmlFor="Last Name"
+                  value={inputValue.lastName}
+                  name="lastName"
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <Input
+                  type="text"
+                  label="Middle Name"
+                  placeholder="Middle Name"
+                  htmlFor="Middle Name"
+                  value={inputValue.middleName}
+                  name="middleName"
+                  onChange={handleChange}
+                />
+              </div>
             </div>
-            <div>
-              <Input
-                type="text"
-                label="Last Name"
-                placeholder="Last Name"
-                htmlFor="Last Name"
-                value={inputValue.lastName}
-                name="lastName"
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <Input
-                type="text"
-                label="Middle Name"
-                placeholder="Middle Name"
-                htmlFor="Middle Name"
-                value={inputValue.middleName}
-                name="middleName"
-                onChange={handleChange}
-              />
-            </div>
-          </div>
 
-          <div className="flex flex-col sm:flex-row -mx-3 mb-6 gap-2">
-            <div>
-              <Input
-                type="email"
-                label="Email"
-                placeholder="Email"
-                htmlFor="Email"
-                value={inputValue.email}
-                name="email"
-                onChange={handleChange}
-              />
+            <div className=" mb-6 gap-2">
+              <div>
+                <Input
+                  type="email"
+                  label="Email"
+                  placeholder="Email"
+                  htmlFor="Email"
+                  value={inputValue.email}
+                  name="email"
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <PasswordInput
+                  type="password"
+                  label="Password"
+                  placeholder="*******"
+                  htmlFor="Password"
+                  value={inputValue.password}
+                  name="password"
+                  handleChange={handleChange}
+                  showPassword={showPassword1}
+                  togglePassword={togglePassword1}
+                  onPaste={() => {}}
+                />
+              </div>
+              <div>
+                <PasswordInput
+                  type="password"
+                  label="Confirm Password"
+                  placeholder="*******"
+                  htmlFor="confirm password"
+                  value={inputValue.passwordConfirm}
+                  name="passwordConfirm"
+                  handleChange={handleChange}
+                  showPassword={showPassword2}
+                  togglePassword={togglePassword2}
+                  onPaste={() => {}}
+                />
+              </div>
             </div>
-            <div>
-              <Input
-                type="password"
-                label="Password"
-                placeholder="*******"
-                htmlFor="Password"
-                value={inputValue.password}
-                name="password"
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <Input
-                type="password"
-                label="Confirm Password"
-                placeholder="*******"
-                htmlFor="confirm password"
-                value={inputValue.passwordConfirm}
-                name="passwordConfirm"
-                onChange={handleChange}
-              />
-            </div>
-          </div>
 
-          <div className="flex flex-col sm:flex-row -mx-3 mb-6 gap-2 justify-between  md:items-center">
+            {/* <div className="flex flex-col sm:flex-row -mx-3 mb-6 gap-2 justify-between  md:items-center"> */}
             <div>
               <Input
                 type="Date"
@@ -223,8 +212,8 @@ const SignUp = () => {
                 onChange={handleChange}
               />
             </div>
-          </div>
-          <div className="flex flex-col sm:flex-row -mx-3 mb-6 flex-wrap gap-2 justify-between  sm:items-center">
+            {/* </div> */}
+            {/* <div className="flex flex-col sm:flex-row -mx-3 mb-6 flex-wrap gap-2 justify-between  sm:items-center"> */}
             {/* <div>
               <Input
                 type="file"
@@ -236,7 +225,7 @@ const SignUp = () => {
                 htmlFor="photo"
               />
             </div> */}
-            <div className="w-[300px]">
+            <div>
               <Select
                 label="Position"
                 options={positions}
@@ -245,7 +234,7 @@ const SignUp = () => {
                 onChange={handleChange}
               />
             </div>
-            <div className="w-[300px]">
+            <div>
               <Select
                 label="gender"
                 options={gender}
@@ -254,7 +243,7 @@ const SignUp = () => {
                 onChange={handleChange}
               />
             </div>
-            <div className="w-[300px]">
+            <div>
               <Select
                 label="role"
                 options={roles}
@@ -324,37 +313,38 @@ const SignUp = () => {
                 onChange={handleChange}
               />
             </div>
-          </div>
+            {/* </div> */}
 
-          <div>
-            <Input
-              type="text"
-              textarea
-              label="bio"
-              placeholder="bio"
-              htmlFor="bio"
-              value={inputValue.bio}
-              name="bio"
-              onChange={handleChange}
-            />
-          </div>
+            <div>
+              <Input
+                type="text"
+                textarea
+                label="bio"
+                placeholder="bio"
+                htmlFor="bio"
+                value={inputValue.bio}
+                name="bio"
+                onChange={handleChange}
+              />
+            </div>
 
-          <div className="flex flex-col sm:flex-row justify-between items-center">
-            <p>
-              <span>
-                Already have an account?{" "}
-                <Link to="/login" className=" text-gray-800  font-bold">
-                  Login here
-                </Link>
-              </span>
-            </p>
+            <div className="flex flex-col sm:flex-row justify-between items-center">
+              <p>
+                <span>
+                  Already have an account?{" "}
+                  <Link to="/login" className=" text-gray-800  font-bold">
+                    Login here
+                  </Link>
+                </span>
+              </p>
 
-            <Button onClick={handleClick}>Add User</Button>
-          </div>
-        </form>
-      </div>
-      <ToastContainer />
-    </section>
+              <Button onClick={handleClick}>Add User</Button>
+            </div>
+          </form>
+        </div>
+        <ToastContainer />
+      </section>
+    </>
   );
 };
 

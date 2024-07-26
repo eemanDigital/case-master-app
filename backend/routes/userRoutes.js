@@ -16,6 +16,7 @@ const {
   forgotPassword,
   resetPassword,
   restrictTo,
+  refreshToken,
 } = require("../controllers/authController");
 const {
   uploadUserPhoto,
@@ -39,6 +40,7 @@ router.post("/login", login);
 // Password forgot and reset routes
 router.post("/forgotpassword", forgotPassword);
 router.patch("/resetpassword/:token", resetPassword);
+router.post("/refresh-token", refreshToken);
 // Check if user is logged in
 router.get("/loggedIn", isLoggedIn);
 

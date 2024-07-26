@@ -1,43 +1,79 @@
-// import { notification } from "antd";
-// import axios from "axios";
+import axios from "axios";
 
-// const baseURL = import.meta.env.VITE_BASE_URL;
+const baseURL = import.meta.env.VITE_BASE_URL;
 
-// const getToken = () => {
-//   return document.cookie
-//     .split("; ")
-//     .find((row) => row.startsWith("jwt="))
-//     ?.split("=")[1];
-// };
+const api = axios.create({
+  baseURL,
+  withCredentials: true,
+});
 
-// export const checkAuthStatus = async () => {
-//   try {
-//     const token = getToken();
-//     if (!token) {
-//       throw new Error("No token found");
-//     }
+let isRefreshing = false;
+let failedQueue = [];
 
-//     const response = await axios.get(`${baseURL}/users/loggedIn`, {
-//       headers: {
-//         Authorization: `Bearer ${token}`,
-//       },
-//       withCredentials: true,
-//     });
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
 
-//     console.log(response, "AUTH STATUS");
+  failedQueue = [];
+};
 
-//     return response.data.loggedIn; // Assuming your endpoint returns a `loggedIn` field
-//   } catch (err) {
-//     const errorMessage =
-//       err.response?.data?.message ||
-//       err.message ||
-//       "There was an error checking log in status";
-//     notification.error({
-//       message: "Check Failed",
-//       description: errorMessage,
-//     });
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
 
-//     console.error("Error checking auth status", err);
-//     return false;
-//   }
-// };
+    if (error.response.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then(() => {
+            return api(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const { data } = await api.post("/users/refresh-token");
+        isRefreshing = false;
+        processQueue(null, data.accessToken);
+        return api(originalRequest);
+      } catch (refreshError) {
+        isRefreshing = false;
+        processQueue(refreshError, null);
+        // Redirect to login or handle refresh failure
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+export const checkAuth = async () => {
+  try {
+    const response = await api.get("/users/loggedIn");
+    return response.data.isLoggedIn;
+  } catch (error) {
+    console.error("Error checking authentication:", error);
+    return false;
+  }
+};
+
+export const refreshToken = async () => {
+  try {
+    const response = await api.post("/users/refresh-token");
+    return response.data.accessToken;
+  } catch (error) {
+    console.error("Error refreshing token:", error);
+    return null;
+  }
+};

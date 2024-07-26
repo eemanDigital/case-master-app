@@ -112,9 +112,8 @@ const SideBar = () => {
       key: "10",
       icon: <TbLogout2 />,
       label: (
-        <Link className="text-gray-200" onClick={handleLogout}>
-          Logout
-        </Link>
+        // <Link className="text-gray-200" onClick={handleLogout}>
+        <Link className="text-gray-200">Logout</Link>
       ),
     },
   ];

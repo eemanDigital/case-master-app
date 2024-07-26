@@ -3,80 +3,52 @@ import lawyer1 from "../assets/lawyer1.svg";
 import Button from "./Button";
 import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { useAuth } from "../hooks/useAuth";
+// import { useAuth } from "../hooks/useAuth";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useNavigate } from "react-router-dom";
+import useTogglePassword from "../hooks/useTogglePassword";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import GoogleAuth from "../pages/GoogleAuth";
+// import GoogleAuth from "../pages/GoogleAuth";
+import { FaGoogle } from "react-icons/fa6";
+import PasswordInput from "./PasswordInput";
+
 // import CalendarEventForm from "./GoogleCalenderForm";
+
+const baseURL = import.meta.env.VITE_BASE_URL;
 
 const Login = ({ endpoint, title, forgotPasswordLink }) => {
   const [click, setClick] = useState(false);
+  const { showPassword, togglePassword } = useTogglePassword();
   const navigate = useNavigate();
-  const { user } = useAuthContext();
+  // const { user } = useAuthContext();
+  const { dispatch } = useAuthContext();
 
   const [inputValue, setInputValue] = useState({
     email: "",
     password: "",
   });
 
-  // getting data from out custom hook
-  const { data, loading, error, authenticate } = useAuth();
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setInputValue((prevValue) => ({
+      ...prevValue,
+      [name]: value,
+    }));
+  };
 
-  function handleChange(e) {
-    const inputText = e.target.value;
-    const inputName = e.target.name;
-
-    setInputValue((prevValue) => {
-      return { ...prevValue, [inputName]: inputText };
-    });
-  }
-
-  // function to handle for submission
-  async function handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!inputValue.email || !inputValue.password) {
-      toast.error("Enter both your email and password", {});
+      toast.error("Enter both your email and password");
       return;
     }
-    if (user) {
-      toast.info("You are already logged in", {
-        position: "top-right",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        progress: undefined,
-        theme: "light",
-      });
-      return;
-    }
-    try {
-      // Call fetchData with your endpoint, method, payload, and any additional arguments
-      await authenticate(`${endpoint}`, "post", inputValue);
-      // Handle successful response
-      if (data?.status === "success") {
-        navigate("/dashboard");
-      }
-    } catch (err) {
-      console.log(err);
-    }
-  }
-
-  function handleClick() {
-    setClick(() => !click);
-  }
-
+  };
   // console.log("data", data.status);
 
-  // redirect user upon successful login
-  useEffect(() => {
-    if (data?.status === "success") {
-      navigate("/dashboard");
-    }
-  }, [data, navigate]);
+  const error = false;
+
+  console.log(inputValue);
 
   let inputStyle = ` appearance-none block  sm:w-[344px] bg-gray-200 text-red border ${
     error && "border-red-500"
@@ -102,6 +74,11 @@ const Login = ({ endpoint, title, forgotPasswordLink }) => {
           </p>
         </div>
         <div className=" flex  flex-col justify-center items-center bg-white  basis-2/5  shadow-md rounded-md px-8 pt-6 pb-8 m-4">
+          <button className="flex items-center gap-1">
+            <FaGoogle />
+            <span> Sign in with Google</span>
+          </button>
+          <h1 className="font-bold"> Or</h1>
           <form onSubmit={handleSubmit}>
             <div className="flex  flex-col items-center -mx-3  mb-6 gap-2">
               <div>
@@ -116,20 +93,21 @@ const Login = ({ endpoint, title, forgotPasswordLink }) => {
                   onChange={handleChange}
                 />
               </div>
-              <div>
-                <Input
-                  inputStyle={inputStyle}
-                  type="password"
-                  label="Password"
-                  placeholder="*******"
-                  htmlFor="Password"
-                  value={inputValue.password}
+              <div className="relative">
+                <PasswordInput
+                  error={false}
                   name="password"
-                  onChange={handleChange}
+                  value={inputValue.password}
+                  placeholder="*******"
+                  handleChange={handleChange}
+                  showPassword={showPassword}
+                  togglePassword={togglePassword}
+                  onPaste={() => {}}
                 />
               </div>
               <Button
-                onClick={handleClick}
+                // onClick={handleClick}
+                type="submit"
                 buttonStyle="bg-slate-500 m-2 px-5 py-2 rounded w-full text-slate-200 hover:bg-slate-400">
                 Login
                 <ToastContainer
@@ -158,7 +136,7 @@ const Login = ({ endpoint, title, forgotPasswordLink }) => {
               </p>
             </div>
           </form>
-          <GoogleAuth />
+          {/* <GoogleAuth /> */}
           {/* <CalendarEventForm /> */}
         </div>
       </div>

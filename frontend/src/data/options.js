@@ -109,3 +109,5 @@ export const positions = [
 ];
 
 export const roles = ["user", "admin", "secretary", "hr", "super-admin"];
+
+export const gender = ["male", "female"];

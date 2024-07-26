@@ -95,3 +95,24 @@ export const caseInitialValue = {
   client: [],
   generalComment: "",
 };
+
+export const addUserInitValue = {
+  firstName: "",
+  lastName: "",
+  middleName: "",
+  email: "",
+  password: "",
+  passwordConfirm: "",
+  gender: "",
+  address: "",
+  bio: "",
+  role: "",
+  position: "",
+  annualLeaveEntitled: "",
+  phone: "",
+  yearOfCall: "",
+  otherPosition: "",
+  practiceArea: "",
+  universityAttended: "",
+  lawSchoolAttended: "",
+};

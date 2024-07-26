@@ -1,4 +1,13 @@
-const Input = ({ label, text, textarea, disable, inputStyle, ...props }) => {
+const Input = ({
+  label,
+  text,
+  textarea,
+  type,
+  onPaste,
+  disable,
+  inputStyle,
+  ...props
+}) => {
   // console.log(props);
   return (
     <p>
@@ -16,6 +25,7 @@ const Input = ({ label, text, textarea, disable, inputStyle, ...props }) => {
       ) : (
         <input
           placeholder
+          type={type}
           {...props}
           // disabled
           className={
