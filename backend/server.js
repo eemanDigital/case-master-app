@@ -55,7 +55,7 @@ app.use("/css", express.static(path.join(__dirname, "views/css")));
 // app.use(cors());
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: ["http://localhost:5173", "https://casemaster.vercel.app"],
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
     credentials: true,
   })

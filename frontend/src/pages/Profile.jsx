@@ -90,15 +90,15 @@ const Profile = () => {
             alt={`${user?.data?.user?.firstName}'s profile image`} // Make sure this uses the correct path
             className="object-cover object-right-top h-36 w-36 sm:h-48 sm:w-48 rounded-full border-4 border-blue-500"
           />
+
+          {/* CHANGE PASSWORD FORM */}
+          <ChangePassword
+            endpoint={`${
+              isClient ? "clients/changepassword" : "users/changepassword"
+            }`}
+          />
         </div>
       </div>
-
-      {/* RESET PASSWORD FORM */}
-      <ChangePassword
-        endpoint={`${
-          isClient ? "clients/changepassword" : "users/changepassword"
-        }`}
-      />
     </section>
   );
 };

@@ -49,6 +49,7 @@ import ForgotPasswordResetClient from "./pages/ForgotPasswordResetClient.jsx";
 import MainCaseReportList from "./pages/MainCaseReportList.jsx";
 import PaymentMadeOnCase from "./pages/PaymentMadeOnCase.jsx";
 import TwoFactorAuth from "./components/TwoFactorAuth.jsx";
+import VerifyAccount from "./components/VerifyAccount.jsx";
 
 function App() {
   // const { isClient, isStaff } = useAdminHook();
@@ -98,6 +99,7 @@ function App() {
             }
           /> */}
 
+          <Route path="verify-account/:token" element={<VerifyAccount />} />
           <Route path="add-user" element={<AddUserForm />} />
 
           <Route

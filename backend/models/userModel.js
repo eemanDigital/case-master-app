@@ -51,7 +51,11 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    photo: String,
+    photo: {
+      type: String,
+      default:
+        "https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?t=st=1722072885~exp=1722076485~hmac=fad6e85b55559cb0eff906e5e75cc3ce337bce7edda8da18f4ccdcb02a7442ad&w=740",
+    },
     gender: {
       type: String,
       enum: ["male", "female"],
@@ -114,6 +118,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       required: [true, "Please provide your phone number"],
+      default: "+234",
     },
     practiceArea: String,
     universityAttended: String,
@@ -141,6 +146,16 @@ const userSchema = new mongoose.Schema(
       type: Date,
       // required: true,
     },
+    isVerified: {
+      type: String,
+      default: false,
+    },
+
+    userAgent: {
+      type: Array,
+      required: true,
+      default: [],
+    },
     passwordResetToken: String,
     passwordResetExpires: Date,
 
@@ -150,6 +165,10 @@ const userSchema = new mongoose.Schema(
       default: true,
       select: false,
     },
+  },
+  {
+    timestamps: true,
+    minimize: false,
   },
 
   {

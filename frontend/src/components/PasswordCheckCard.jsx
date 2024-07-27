@@ -8,61 +8,49 @@ const PasswordCheckCard = ({ password }) => {
   const [isChar, setIsChar] = useState(false);
   const [isLength, setIsLength] = useState(false);
 
-  const checkIcon = <FaCheck className="text-green-500 " size={15} />;
-  const timesIcon = <FaTimes className="text-red-500" size={20} />;
+  const checkIcon = <FaCheck className="text-green-500" />;
+  const timesIcon = <FaTimes className="text-red-500" />;
 
   // switch condition handler
   function switchIcon(condition) {
-    if (condition) {
-      return checkIcon;
-    }
-    return timesIcon;
+    return condition ? checkIcon : timesIcon;
   }
 
   useEffect(() => {
-    if (password.match(/^(?=.*[a-z])(?=.*[A-Z])/)) {
-      setIsUpperLower(true);
-    }
-    if (password.match(/^(?=.*\d)/)) {
-      setIsNumber(true);
-    }
-    if (password.match(/^(?=.*[!@#$%^&*])/)) {
-      setIsChar(true);
-    }
-    if (password.length >= 8) {
-      setIsLength(true);
-    }
+    // Check for lowercase and uppercase
+    setIsUpperLower(password.match(/(?=.*[a-z])(?=.*[A-Z])/) !== null);
+
+    // Check for number
+    setIsNumber(password.match(/(?=.*\d)/) !== null);
+
+    // Check for special character
+    setIsChar(password.match(/(?=.*[!@#$%^&*])/) !== null);
+
+    // Check for length
+    setIsLength(password.length >= 8);
   }, [password]);
 
   return (
-    <Card className="p-4 shadow-lg w-[300px] h-[220px]">
-      <ul className="list-none space-y-2">
-        <li className="flex items-center">
-          <span className="flex items-center">
-            {switchIcon(isUpperLower)}
-            <span className="ml-2">LowerCase and Uppercase</span>
-          </span>
+    <div className="text-xs">
+      <ul className="flex flex-col space-y-2">
+        <li className="flex items-center space-x-3">
+          {switchIcon(isUpperLower)}
+          <span className="text-sm">Lowercase and Uppercase</span>
         </li>
-        <li className="flex items-center">
-          <span className="flex items-center">
-            {switchIcon(isNumber)}
-            <span className="ml-2">(0-12)</span>
-          </span>
+        <li className="flex items-center space-x-3">
+          {switchIcon(isNumber)}
+          <span className="text-sm">Number (0-9)</span>
         </li>
-        <li className="flex items-center">
-          <span className="flex items-center">
-            {switchIcon(isChar)}
-            <span className="ml-2">special character ($%^&@)</span>
-          </span>
+        <li className="flex items-center space-x-3">
+          {switchIcon(isChar)}
+          <span className="text-sm">Special character (!@#$%^&*)</span>
         </li>
-        <li className="flex items-center">
-          <span className="flex items-center">
-            {switchIcon(isLength)}
-            <span className="ml-2">At least 8 characters</span>
-          </span>
+        <li className="flex items-center space-x-3">
+          {switchIcon(isLength)}
+          <span className="text-sm">At least 8 characters</span>
         </li>
       </ul>
-    </Card>
+    </div>
   );
 };
 

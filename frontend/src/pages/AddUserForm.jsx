@@ -77,8 +77,6 @@ const SignUp = () => {
     <>
       <h1 className="text-5xl bold text-center p-5">Add Staff</h1>
       <section className="flex bg-gray-200 ">
-        <PasswordCheckCard password={password} />
-
         <div className="flex flex-col md:flex-row  w-full justify-center  ">
           {/* <div className="flex flex-col  flex-none basis-2/5 text-center  items-center  rounded-md p-4 ">
           <img
@@ -162,6 +160,8 @@ const SignUp = () => {
                   onPaste={() => {}}
                 />
               </div>
+              <PasswordCheckCard password={password} />
+
               <div>
                 <PasswordInput
                   type="password"

@@ -12,8 +12,12 @@ const PasswordInput = ({
   showPassword,
   togglePassword,
   onPaste,
-  ...props
+  input,
+  style,
 }) => {
+  const defaultStyle = `appearance-none block w-full bg-gray-200 text-red border ${
+    error ? "border-red-500" : ""
+  } rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`;
   return (
     <div className="relative">
       <label
@@ -22,9 +26,7 @@ const PasswordInput = ({
         {label}
       </label>
       <input
-        className={`appearance-none block w-full bg-gray-200 text-red border ${
-          error ? "border-red-500" : ""
-        } rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`}
+        className={style || defaultStyle}
         type={showPassword ? "text" : "password"}
         required
         placeholder={placeholder}
@@ -34,7 +36,7 @@ const PasswordInput = ({
         onPaste={onPaste}
       />
       <div
-        className="absolute inset-y-0 right-0  pr-3 flex items-center cursor-pointer"
+        className="absolute inset-y-0 right-0 pt-5  pr-3 flex items-center cursor-pointer"
         onClick={togglePassword}>
         {showPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
       </div>

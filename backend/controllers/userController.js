@@ -3,6 +3,7 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const filterObj = require("../utils/filterObj");
 const setRedisCache = require("../utils/setRedisCache");
+const sendMail = require("../utils/email");
 
 // GET ALL USERS
 exports.getUsers = catchAsync(async (req, res, next) => {
@@ -20,7 +21,7 @@ exports.getUsers = catchAsync(async (req, res, next) => {
 
 // GET A USER
 exports.getUser = catchAsync(async (req, res, next) => {
-  const _id = req.params.userId;
+  const _id = req.params.userId; //he used req.user._id
   const data = await User.findById({ _id }).populate({
     path: "task",
     select: "-assignedTo",
@@ -86,25 +87,24 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 });
 
 // UPDATE USER PROFILE BY ADMIN
-exports.updateUserByAdmin = catchAsync(async (req, res, next) => {
-  const filteredBody = filterObj(req.body, "role", "position");
-  const user = await User.findByIdAndUpdate(req.params.id, filteredBody, {
-    new: true,
-    runValidators: true,
-  });
+exports.upgradeUser = catchAsync(async (req, res, next) => {
+  const { role, id } = req.body;
 
+  const user = await User.findById(id);
   if (!user) {
     return next(new AppError("No user found with that ID", 404));
   }
+  user.role = role;
 
+  await user.save({ validateBeforeSave: false });
   res.status(200).json({
-    status: "success",
+    message: `User role updated to ${role}`,
     data: user,
   });
 });
 
 // DELETE USER
-exports.deleteUsers = catchAsync(async (req, res, next) => {
+exports.deleteUser = catchAsync(async (req, res, next) => {
   const user = await User.findByIdAndDelete(req.params.id);
 
   if (!user) {
@@ -112,7 +112,28 @@ exports.deleteUsers = catchAsync(async (req, res, next) => {
   }
 
   res.status(204).json({
-    status: "success",
+    message: "User deleted",
     data: null,
   });
+});
+
+exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
+  const { send_to, reply_to, template, subject, url } = req.body;
+
+  if (!send_to || !reply_to || !template || !subject) {
+    return next(new AppError("Missing email fields", 404));
+  }
+
+  // get user
+  const user = await User.findOne({ email: send_to });
+  if (!user) {
+    return next(new AppError("No user found with that ID", 404));
+  }
+
+  const send_from = process.env.EMAIL_USER_OUTLOOK;
+  const name = user.firstName;
+  const link = ` ${process.env.FRONTEND_URL}/${url}`;
+
+  await sendMail(subject, send_to, send_from, reply_to, template, name, link);
+  res.status(200).json({ message: "Email Sent" });
 });

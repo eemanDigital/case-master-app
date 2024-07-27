@@ -1,29 +1,32 @@
 const nodemailer = require("nodemailer");
-const pug = require("pug");
-const htmlToText = require("html-to-text");
+const hbs = require("nodemailer-express-handlebars");
+const path = require("path");
 
-module.exports = class Email {
-  constructor(user, url) {
-    this.to = user.email;
-    this.firstName = user.firstName.split(" ")[0];
-    this.url = url;
-    this.from = `Lukman Asinmi <${process.env.EMAIL_FROM}>`;
-  }
-
-  createNewTransport() {
+const sendMail = async (
+  subject,
+  send_to,
+  send_from,
+  reply_to,
+  template,
+  name,
+  link
+) => {
+  function createNewTransport() {
     if (process.env.NODE_ENV === "production") {
-      // return a transport for production
-      // for example, using Sendgrid
       return nodemailer.createTransport({
-        service: "Sendgrid",
+        service: "outlook",
+        host: process.env.EMAIL_HOST_OUTLOOK,
+        port: 587,
         auth: {
-          user: process.env.SENDGRID_USERNAME,
-          pass: process.env.SENDGRID_PASSWORD,
+          user: process.env.EMAIL_USER_OUTLOOK,
+          pass: process.env.OUTLOOK_PASSWORD,
+        },
+        tls: {
+          rejectUnauthorized: false,
         },
       });
     }
 
-    // console.log(process.env.EMAIL_HOST);
     return nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: process.env.EMAIL_PORT,
@@ -34,48 +37,39 @@ module.exports = class Email {
     });
   }
 
-  async send(template, subject, attachments = []) {
-    const html = pug.renderFile(
-      `${__dirname}/../views/emails/${template}.pug`,
-      {
-        firstName: this.firstName,
-        url: this.url,
-        subject,
-      }
-    );
+  const handlebarsOptions = {
+    viewEngine: {
+      extName: ".handlebars",
+      partialsDir: path.resolve("./views"),
+      defaultLayout: false,
+    },
+    viewPath: path.resolve("./views"),
+    extName: ".handlebars",
+  };
 
-    const mailOptions = {
-      from: this.from,
-      to: this.to,
-      subject,
-      html,
-      text: htmlToText.htmlToText(html),
-      attachments: attachments.map((attachment) => ({
-        filename: attachment.filename,
-        path: attachment.path,
-      })),
-    };
+  const transporter = createNewTransport();
+  transporter.use("compile", hbs(handlebarsOptions));
 
-    await this.createNewTransport().sendMail(mailOptions);
-  }
+  // options for sending email
+  const mailOptions = {
+    from: send_from,
+    to: send_to,
+    replyTo: reply_to,
+    template,
+    subject,
+    context: {
+      name,
+      link,
+    },
+  };
 
-  // method to sent welcome email to new user
-  async sendWelcome() {
-    await this.send("welcome", "Welcome to CaseMaster");
-  }
-
-  async sendWelcomeClient() {
-    await this.send("welcome-client", "Thank for engaging our services");
-  }
-  async sendCaseReport() {
-    await this.send("case-report", "Latest Case Report");
-  }
-
-  // method to allow user reset password after forgetting one
-  async sendPasswordReset() {
-    await this.send(
-      "passwordReset",
-      "Your Password Reset Token. Valid for 10 minutes"
-    );
-  }
+  await transporter.sendMail(mailOptions, function (err, info) {
+    if (err) {
+      console.error("Error sending email:", err);
+    } else {
+      console.log("Email sent:", info.response);
+    }
+  });
 };
+
+module.exports = sendMail;

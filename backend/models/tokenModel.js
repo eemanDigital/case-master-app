@@ -1,15 +1,22 @@
 const mongoose = require("mongoose");
 
-
 const tokenSchema = mongoose.Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
     ref: "user",
   },
-  token: {
+  verificationToken: {
     type: String,
-    required: true,
+    default: "",
+  },
+  resetToken: {
+    type: String,
+    default: "",
+  },
+  loginToken: {
+    type: String,
+    default: "",
   },
   createAt: {
     type: Date,
