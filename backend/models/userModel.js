@@ -147,7 +147,7 @@ const userSchema = new mongoose.Schema(
       // required: true,
     },
     isVerified: {
-      type: String,
+      type: Boolean,
       default: false,
     },
 
@@ -235,7 +235,6 @@ userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
   this.password = await bcrypt.hash(this.password, 12);
-
   /**
    * we set passwordConfirm to undefined to delete it
    *   after validation

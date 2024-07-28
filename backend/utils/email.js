@@ -40,10 +40,10 @@ const sendMail = async (
   const handlebarsOptions = {
     viewEngine: {
       extName: ".handlebars",
-      partialsDir: path.resolve("./views"),
+      partialsDir: path.resolve("./views/emails"),
       defaultLayout: false,
     },
-    viewPath: path.resolve("./views"),
+    viewPath: path.resolve("./views/emails"),
     extName: ".handlebars",
   };
 

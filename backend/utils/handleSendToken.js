@@ -1,5 +1,6 @@
 const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
 
 dotenv.config({ path: "./config.env" });
 
@@ -32,4 +33,9 @@ exports.createSendToken = (user, statusCode, res) => {
       user,
     },
   });
+};
+
+// hash token method
+exports.hashToken = (token) => {
+  return crypto.createHash("sha256").update(token.toString()).digest("hex");
 };

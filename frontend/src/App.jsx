@@ -64,9 +64,9 @@ function App() {
           path="/forgotpassword/clients"
           element={<ForgotPasswordClient />}
         />
-        <Route path="/forgotpassword/staff" element={<ForgotPasswordStaff />} />
+        <Route path="/forgotpassword" element={<ForgotPasswordStaff />} />
         <Route
-          path="/resetPassword/staff/:token"
+          path="/resetPassword/:token"
           element={<ForgotPasswordResetStaff />}
         />
         <Route

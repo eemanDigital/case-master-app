@@ -117,6 +117,7 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
   });
 });
 
+// send automated email to user
 exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
   const { send_to, reply_to, template, subject, url } = req.body;
 

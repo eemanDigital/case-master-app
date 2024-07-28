@@ -5,7 +5,6 @@ const {
   updateUser,
   deleteUser,
   updateUserByAdmin,
-  verificationEmail,
   upgradeUser,
   sendAutomatedEmail,
 } = require("../controllers/userController");
@@ -19,9 +18,12 @@ const {
   resetPassword,
   restrictTo,
   refreshToken,
-  sendVerificationEmail,
-
+  sendLoginCode,
   register,
+  sendVerificationEmail,
+  verifyUser,
+  changePassword,
+  loginWithCode,
 } = require("../controllers/authController");
 const {
   uploadUserPhoto,
@@ -43,22 +45,27 @@ router.post(
 // User login
 router.get("/login", login);
 // // Password forgot and reset routes
-// router.post("/forgotpassword", forgotPassword);
-// router.patch("/resetpassword/:token", resetPassword);
+router.post("/forgotpassword", forgotPassword);
 // router.post("/refresh-token", refreshToken);
 // // Check if user is logged in
 router.get("/loggedIn", isLoggedIn);
+router.patch("/verifyUser/:verificationToken", verifyUser);
+router.patch("/resetpassword/:resetToken", resetPassword);
+router.post("/sendLoginCode/:email", sendLoginCode);
+router.post("/loginWithCode/:email", loginWithCode);
 
 // // Middleware to protect routes below this line
 router.use(protect);
 
 // // Protected routes
 // // User logout
-router.get("/logout", logout);
 router.post("/sendAutomatedEmail", sendAutomatedEmail);
 router.post("/sendVerificationEmail", sendVerificationEmail);
+
+router.get("/logout", logout);
+
 // // Change password for logged-in user
-// router.patch("/changepassword", updatePassword);
+router.patch("/changepassword", changePassword);
 // // Admin updates user by ID, restricted to super-admin
 router.post("/upgradeUser", restrictTo("super-admin"), upgradeUser);
 // // Get all users and specific user by userId
