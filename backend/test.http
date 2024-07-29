@@ -18,12 +18,27 @@ content-type: application/json
 
 ###
 
-POST http://localhost:3000/api/v1/users/login  HTTP/1.1 
+GET  http://localhost:3000/api/v1/users/login  HTTP/1.1 
 content-type: application/json
 
 {
-  
+  "email":"asinmi4real@gmail.com",
+  "password":"test1234"
 }
+
+### access code
+
+POST  http://localhost:3000/api/v1/users/sendLoginCode/asinmi4real@gmail.com  HTTP/1.1 
+content-type: application/json
+
+### login user with access code
+POST  http://localhost:3000/api/v1/users/loginWithcode/asinmi4real@gmail.com  HTTP/1.1 
+content-type: application/json
+
+{
+  "loginCode":"878062"
+}
+
 
 ###
 

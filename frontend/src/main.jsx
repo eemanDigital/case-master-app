@@ -1,6 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
+import { Provider } from "react-redux";
+import { store } from "./redux/store/store.js";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import AuthContextProvider from "./context/authContext.jsx";
 
@@ -11,15 +13,17 @@ import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
 const googleClientId = import.meta.env.VITE_CALENDER_CLIENT_ID;
 
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <GoogleOAuthProvider clientId={googleClientId}>
-    <AuthContextProvider>
-      <PhotoContextProvider>
-        <DataFetcherContext>
-          <React.StrictMode>
-            <App />
-          </React.StrictMode>
-        </DataFetcherContext>
-      </PhotoContextProvider>
-    </AuthContextProvider>
-  </GoogleOAuthProvider>
+  <React.StrictMode>
+    <Provider store={store}>
+      <GoogleOAuthProvider clientId={googleClientId}>
+        <AuthContextProvider>
+          <PhotoContextProvider>
+            <DataFetcherContext>
+              <App />
+            </DataFetcherContext>
+          </PhotoContextProvider>
+        </AuthContextProvider>
+      </GoogleOAuthProvider>
+    </Provider>
+  </React.StrictMode>
 );
