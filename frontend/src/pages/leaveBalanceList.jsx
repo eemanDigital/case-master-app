@@ -4,6 +4,7 @@ import { useAuthContext } from "../hooks/useAuthContext";
 import { Space, Table, Button, Spin, Alert, Modal } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import avatar from "../assets/avatar.png";
+import { useSelector } from "react-redux";
 
 const { Column, ColumnGroup } = Table;
 
@@ -13,7 +14,8 @@ const LeaveBalanceList = () => {
 
   // console.log("LB", leaveBalance);
 
-  const { user } = useAuthContext(); //user from context
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth); //user from context
 
   // Modal
   const [open, setOpen] = useState(false);
@@ -65,10 +67,10 @@ const LeaveBalanceList = () => {
 
   // Filter the leave applications based on the user's role
   const filteredLeaveBalance =
-    user?.data?.user?.role === "admin" || user?.data?.user?.role === "hr"
+    user?.data?.role === "admin" || user?.data?.role === "hr"
       ? leaveBalance?.data
       : leaveBalance?.data?.filter(
-          (balance) => balance.employee.id === user?.data?.user?.id
+          (balance) => balance?.employee?.id === user?.data?.id
         );
 
   // console.log("BA", filteredLeaveBalance);

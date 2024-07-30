@@ -10,25 +10,29 @@ import {
   message,
 } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { ToastContainer } from "react-toastify";
 import Spinner from "../components/Spinner";
 import { useEffect, useState } from "react";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
-import { useAuthContext } from "../hooks/useAuthContext";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
 import useDelete from "../hooks/useDelete"; // Import the useDelete hook
-import { FaTrash } from "react-icons/fa6";
+// import { FaTrash } from "react-icons/fa6";
+import { useSelector } from "react-redux";
 
 const { Title, Text } = Typography;
 
 const CaseList = () => {
   const { cases, loading, error } = useDataGetterHook();
+
+  console.log(cases, "CASES");
   const [searchResults, setSearchResults] = useState([]);
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
   const { isStaff, isClient } = useAdminHook();
 
-  const caseIDs = user?.data?.user?.case?.map((caseItem) => caseItem?._id);
+  const caseIDs = user?.data?.case?.map((caseItem) => caseItem?._id);
+
+  // log("caseIDs", caseIDs);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -196,8 +200,6 @@ const CaseList = () => {
           onChange={paginate}
         />
       </Row>
-
-      <ToastContainer />
     </section>
   );
 };

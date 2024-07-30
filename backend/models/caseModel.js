@@ -181,7 +181,7 @@ const caseSchema = new mongoose.Schema(
     ],
     client: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Client",
+      ref: "User",
     },
 
     generalComment: String,

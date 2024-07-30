@@ -7,15 +7,16 @@ import { handleDownload } from "../utils/downloadHandler";
 import axios from "axios";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
-import { useAuthContext } from "../hooks/useAuthContext";
 import useTextShorten from "../hooks/useTextShorten";
+import { useSelector } from "react-redux";
 
 // const { Title } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
 const CaseReportList = ({ title, showFilter, reports }) => {
   const { isStaff } = useAdminHook();
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
   const { shortenText } = useTextShorten();
   const caseIDs = user?.data?.user?.case?.map((caseItem) => caseItem?._id);
   const [searchResults, setSearchResults] = useState([]);

@@ -3,8 +3,6 @@ import Select from "../components/Select";
 import Button from "../components/Button";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useState } from "react";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
 const LeaveAppForm = () => {
   const leaveType = [
@@ -117,8 +115,6 @@ const LeaveAppForm = () => {
           <Button onClick={handleClick}>Submit</Button>
         </div>
       </form>
-
-      <ToastContainer />
     </section>
   );
 };

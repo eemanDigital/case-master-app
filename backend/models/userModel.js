@@ -13,7 +13,17 @@ const userSchema = new mongoose.Schema(
     lastName: {
       type: String,
       trim: true,
-      required: [true, "A user must provide first name"],
+      required: function () {
+        return this.role !== "client";
+      },
+    },
+
+    secondName: {
+      type: String,
+      trim: true,
+      // required: function(){
+      //   return this.role === "client"
+      // },
     },
 
     middleName: String,
@@ -59,8 +69,11 @@ const userSchema = new mongoose.Schema(
     gender: {
       type: String,
       enum: ["male", "female"],
-      required: [true, "Please select your gender"],
+      required: function () {
+        return this.role !== "client";
+      },
     },
+
     address: {
       type: String,
       trim: true,
@@ -80,7 +93,9 @@ const userSchema = new mongoose.Schema(
     position: {
       type: String,
       trim: true,
-      required: true,
+      required: function () {
+        return this.role !== "client";
+      },
       enum: [
         "Principal",
         "Managing Partner",
@@ -91,12 +106,10 @@ const userSchema = new mongoose.Schema(
         "Counsel",
         "Intern",
         "Secretary",
-
         "Para-legal",
-        "Client",
         "Other",
       ],
-      default: "Counsel",
+
       validate: (value) => {
         if (
           !value.match(
@@ -106,6 +119,12 @@ const userSchema = new mongoose.Schema(
           return "Invalid position. Please select a valid option from the list.";
         }
       },
+    },
+
+    isLawyer: {
+      type: Boolean,
+      default: false,
+      required: true,
     },
 
     otherPosition: String,
@@ -120,32 +139,37 @@ const userSchema = new mongoose.Schema(
       required: [true, "Please provide your phone number"],
       default: "+234",
     },
-    practiceArea: String,
-    universityAttended: String,
-    lawSchoolAttended: String,
-    annualLeaveEntitled: Number,
-    // leaveBalance: Number,
 
-    // task: {
-    //   type: mongoose.Schema.Types.ObjectId,
-    //   ref: "Task",
-    // },
-
+    practiceArea: {
+      type: String,
+      required: function () {
+        return this.isLawyer === true;
+      },
+    },
+    lawSchoolAttended: {
+      type: String,
+      required: function () {
+        return this.isLawyer === true;
+      },
+    },
     yearOfCall: {
       type: Date,
-      // required: null,
       required: function () {
-        return ["Secretary", "Para-legal", "Other", "Client"].includes(
-          this.position
-        );
+        return this.isLawyer === true;
       },
       max: Date.now,
     },
 
-    passwordChangedAt: {
-      type: Date,
-      // required: true,
-    },
+    clientCase: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: "Case",
+        // required:function() {
+        //   return this.role === "client"
+        // }
+      },
+    ],
+
     isVerified: {
       type: Boolean,
       default: false,
@@ -156,8 +180,12 @@ const userSchema = new mongoose.Schema(
       required: true,
       default: [],
     },
-    passwordResetToken: String,
-    passwordResetExpires: Date,
+    // passwordResetToken: String,
+    // passwordResetExpires: Date,
+    // passwordChangedAt: {
+    //   type: Date,
+    //   // required: true,
+    // },
 
     //handles user's deletion of account
     active: {

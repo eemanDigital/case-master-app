@@ -1,6 +1,6 @@
 // import { useForm } from "react-hook-form";
 
-const Select = ({ label, options, ...props }) => {
+const Select = ({ label, style, options, ...props }) => {
   // const { register } = useForm();
 
   return (
@@ -13,7 +13,7 @@ const Select = ({ label, options, ...props }) => {
           {...props}
           // disabled
           // {...register(selectFieldName)}
-          className="appearance-none block w-full bg-gray-200 text-gray-700 border border-red-500 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white"
+          className="appearance-none block w-full bg-gray-200 text-gray-700 border   rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white"
           // className="block appearance-none w-full bg-gray-200 border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
           id="grid-state">
           {options.map((el, index) => {

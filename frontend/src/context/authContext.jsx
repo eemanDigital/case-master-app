@@ -1,5 +1,5 @@
 import { createContext, useReducer, useEffect } from "react";
-import { checkAuth, refreshToken } from "../utils/checkAuthStatus";
+// import { checkAuth, refreshToken } from "../utils/checkAuthStatus";
 import axios from "axios";
 
 export const AuthContext = createContext();
@@ -23,7 +23,8 @@ const AuthContextProvider = ({ children }) => {
 
   useEffect(() => {
     const initAuth = async () => {
-      const isLoggedIn = await checkAuth();
+      // const isLoggedIn = await checkAuth();
+      const isLoggedIn = false;
       if (isLoggedIn) {
         const user = JSON.parse(localStorage.getItem("user"));
         if (user) {
@@ -31,7 +32,8 @@ const AuthContextProvider = ({ children }) => {
         }
       } else {
         // If not logged in, attempt to refresh the token
-        const newToken = await refreshToken();
+        // const newToken = await refreshToken();
+        const newToken = "";
         if (newToken) {
           const user = JSON.parse(localStorage.getItem("user"));
           if (user) {

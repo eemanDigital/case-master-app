@@ -9,13 +9,14 @@ import UpdateUserPositionAndRole from "./UpdateUserPositionAndRole";
 import LeaveBalanceDisplay from "../components/LeaveBalanceDisplay";
 import LeaveApplicationDetails from "./LeaveApplicationDetails";
 import { useAdminHook } from "../hooks/useAdminHook";
-import { useAuthContext } from "../hooks/useAuthContext";
+import { useSelector } from "react-redux";
 // import useErrorMessage from "../hooks/useErrorMessage";
 
 const StaffDetails = () => {
   const { id } = useParams();
-  const { user } = useAuthContext();
-  const loggedInClientId = user?.data?.user.id;
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
+  const loggedInClientId = user?.data?.id;
   const { dataFetcher, data, loading, error } = useDataFetch();
   const navigate = useNavigate();
   const { isAdminOrHr } = useAdminHook();

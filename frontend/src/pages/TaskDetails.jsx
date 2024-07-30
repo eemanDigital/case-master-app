@@ -10,8 +10,8 @@ import { RiDeleteBin2Line } from "react-icons/ri";
 import useDeleteDocument from "../hooks/useDeleteDocument";
 import TaskResponseForm from "../components/TaskResponseForm";
 import moment from "moment";
-import { useAuthContext } from "../hooks/useAuthContext";
 import TaskResponse from "../components/TaskResponse";
+import { useSelector } from "react-redux";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -22,7 +22,8 @@ const TaskDetails = () => {
     "taskData"
   );
   const { id } = useParams();
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
   const task = data?.data;
 
   const currentUser = user?.data?.user?._id;
@@ -154,7 +155,7 @@ const TaskDetails = () => {
           <TaskResponseForm taskId={task?._id} />
         ))}
 
-{/* TASK RESPONSE */}
+      {/* TASK RESPONSE */}
       <TaskResponse
         task={task}
         isAssignedToCurrentUser={isAssignedToCurrentUser}

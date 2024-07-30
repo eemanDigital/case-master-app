@@ -1,40 +1,68 @@
 import { useState } from "react";
-import { useDataFetch } from "../hooks/useDataFetch";
-import { Button, Modal, message, Spin, Alert } from "antd";
+import { Button, Modal, message } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import useModal from "../hooks/useModal";
+import { useDataFetch } from "../hooks/useDataFetch";
 
 const UpdateProfilePicture = () => {
   const [formData, setFormData] = useState({ photo: null });
+  const [preview, setPreview] = useState(null); // State for image preview
+  const [uploading, setUploading] = useState(false); // State to track if uploading
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();
   const { dataFetcher, data, loading, error } = useDataFetch();
 
-  console.log(data, "DATA");
-  console.log(error, "ERROR");
-
+  // Handle file selection and image preview
   const handleFileChange = (e) => {
     const { files } = e.target;
-    setFormData({ photo: files[0] });
+    if (files[0]) {
+      setFormData({ photo: files[0] });
+
+      // Create a preview URL for the selected image
+      const file = files[0];
+      const previewURL = URL.createObjectURL(file);
+      setPreview(previewURL);
+    }
   };
 
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
   };
 
+  // Handle file upload
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const payload = new FormData();
-    payload.append("photo", formData.photo);
+    if (
+      formData.photo !== null &&
+      (formData.photo.type === "image/jpeg" ||
+        formData.photo.type === "image/jpg" ||
+        formData.photo.type === "image/png")
+    ) {
+      setUploading(true); // Set uploading state
 
-    await dataFetcher("users/updateUser", "patch", payload, fileHeaders);
+      const payload = new FormData();
+      payload.append("photo", formData.photo);
 
-    if (data?.data?.status === "success") {
-      message.success("Profile picture updated successfully!");
-      handleCancel(); // Close the modal on successful upload
-    }
-    if (error) {
-      message.error("Failed to update profile picture. Please try again.");
+      try {
+        const response = await dataFetcher(
+          "users/updateUser",
+          "patch",
+          payload,
+          fileHeaders
+        );
+        if (response?.data?.status === "success") {
+          message.success("Profile picture updated successfully!");
+          handleCancel(); // Close the modal on successful upload
+        } else {
+          message.error("Failed to update profile picture. Please try again.");
+        }
+      } catch (err) {
+        message.error("Failed to update profile picture. Please try again.");
+      } finally {
+        setUploading(false); // Reset uploading state
+      }
+    } else {
+      message.error("Invalid file type. Please upload a JPEG or PNG image.");
     }
   };
 
@@ -76,11 +104,23 @@ const UpdateProfilePicture = () => {
               )}
             </div>
           </div>
-          <div className="flex justify-end">
+
+          <div className="mt-4">
+            <img
+              src={preview === null ? formData.photo : preview}
+              alt="Preview"
+              className="w-full h-auto object-cover"
+            />
+          </div>
+
+          <div className="flex justify-end mt-4">
             <button
               type="submit"
-              className="bg-blue-500 text-white hover:bg-blue-600 p-2 rounded-md">
-              {!loading ? "uploading file..." : "Upload Photo"}
+              className={`bg-blue-500 text-white hover:bg-blue-600 p-2 rounded-md ${
+                uploading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              disabled={uploading}>
+              {uploading ? "Uploading..." : "Upload Photo"}
             </button>
           </div>
         </form>

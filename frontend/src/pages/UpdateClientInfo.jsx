@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
 import { Modal, Button, Form, Input, Checkbox, Select } from "antd";
-import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import axios from "axios";
@@ -189,7 +188,6 @@ const UpdateClientInfo = () => {
             Submit
           </Button>
         </Form.Item>
-        <ToastContainer />
       </Modal>
     </section>
   );

@@ -50,7 +50,7 @@ const expenseSchema = new Schema({
 const invoiceSchema = new Schema(
   {
     case: { type: Schema.Types.ObjectId, ref: "Case" },
-    client: { type: Schema.Types.ObjectId, ref: "Client", required: true },
+    client: { type: Schema.Types.ObjectId, ref: "User", required: true },
     workTitle: {
       type: String,
       maxlength: [50, "Title should not be more than 50 characters"],

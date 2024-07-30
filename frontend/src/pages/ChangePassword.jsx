@@ -2,7 +2,7 @@ import Input from "../components/Inputs";
 import Button from "../components/Button";
 import { useState } from "react";
 import { useAuth } from "../hooks/useAuth";
-import { ToastContainer, toast } from "react-toastify";
+
 // import {useTogglePass}
 import "react-toastify/dist/ReactToastify.css";
 import PasswordCheckCard from "../components/PasswordCheckCard";
@@ -142,19 +142,6 @@ const ChangePassword = ({ endpoint }) => {
                 onClick={handleClick}
                 buttonStyle="bg-slate-500 px-5 py-2 rounded w-full text-slate-200 hover:bg-slate-400">
                 Submit
-                <ToastContainer
-                  position="top-right"
-                  autoClose={5000}
-                  hideProgressBar={false}
-                  newestOnTop={false}
-                  closeOnClick
-                  rtl={false}
-                  pauseOnFocusLoss
-                  draggable
-                  pauseOnHover
-                  theme="light"
-                  // transition: Bounce,
-                />
               </Button>
             </form>
           </div>

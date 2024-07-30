@@ -20,12 +20,14 @@ const cryptr = new Cryptr(process.env.CRYPTR_SECRET_KEY);
 
 // ///// function to implement user signup
 exports.register = catchAsync(async (req, res, next) => {
-  const { email, password, passwordConfirm, firstName, lastName } = req.body;
+  const { email, password, passwordConfirm } = req.body;
   // console.log(req.originalUrl);
   // console.log(req.baseUrl);
 
-  if (!email || !password || !firstName || !lastName) {
-    return next(new AppError("Please, provide all the required fields", 400));
+  if (!email || !password || !passwordConfirm) {
+    return next(
+      new AppError("Please, provide email and passwords fields", 400)
+    );
   }
 
   if (password.length < 8) {
@@ -55,6 +57,7 @@ exports.register = catchAsync(async (req, res, next) => {
   const user = await User.create({
     firstName: req.body.firstName,
     lastName: req.body.lastName,
+    secondName: req.body.secondName, //for client
     middleName: req.body.middleName,
     email: req.body.email,
     password: req.body.password,
@@ -73,10 +76,12 @@ exports.register = catchAsync(async (req, res, next) => {
     universityAttended: req.body.universityAttended,
     lawSchoolAttended: req.body.lawSchoolAttended,
     isVerified: req.body.isVerified,
+    isLawyer: req.body.isLawyer,
     userAgent: userAgent,
   });
 
-  createSendToken(user, 201, res);
+  // createSendToken(user, 201, res);
+  res.status(201).json({ message: "User Registered Successfully" });
 
   // url for to navigate
   // const url = `${req.protocol}://${req.get('host')/login}`
@@ -108,7 +113,6 @@ exports.login = catchAsync(async (req, res, next) => {
   // Trigger user 2FA auth for unknown user agent
   const ua = parser(req.headers["user-agent"]); // Get user-agent header
   const currentUserAgent = ua.ua;
-  // console.log(currentUserAgent);
 
   const allowedAgent = user.userAgent.includes(currentUserAgent);
 
@@ -133,9 +137,12 @@ exports.login = catchAsync(async (req, res, next) => {
       expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour
     }).save();
 
-    return res.status(200).json({
-      message: "This browser or device is unknown, kindly, very it was you",
-    });
+    return next(
+      new AppError(
+        "This browser or device is unknown. Please verify that it was you.",
+        403
+      )
+    );
   }
 
   // 4) If everything is ok, send token to client
@@ -233,15 +240,19 @@ exports.logout = (req, res) => {
 exports.protect = catchAsync(async (req, res, next) => {
   // 1) Getting token and check of it's there
   let token;
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    token = req.headers.authorization.split(" ")[1];
-  } else if (req.cookies.jwt) {
+  // if (
+  //   req.headers.authorization &&
+  //   req.headers.authorization.startsWith("Bearer")
+  // ) {
+  //   token = req.headers.authorization.split(" ")[1];
+  // } else if (req.cookies.jwt) {
+  //   token = req.cookies.jwt;
+  // }
+
+  if (req.cookies.jwt) {
     token = req.cookies.jwt;
   }
-
+  // console.log(token);
   if (!token) {
     return next(
       new AppError("You are not logged in! Please log in to get access.", 401)
@@ -300,21 +311,48 @@ exports.isVerified = catchAsync(async (req, res, next) => {
 });
 
 // // CHECK LOGIN STATUS
+
 exports.isLoggedIn = async (req, res) => {
   const token = req.cookies.jwt;
-
   if (!token) {
     return res.json(false);
   }
+  try {
+    const verified = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
 
-  const verified = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-
-  if (verified) {
-    res.json(true);
+    // If verification is successful, respond with true
+    if (verified) {
+      return res.json(true);
+    }
+    // If verification fails, respond with false
+    return res.json(false);
+  } catch (error) {
+    // If token verification throws an error, respond with false
+    console.error("Error verifying token:", error);
+    return res.json(false);
   }
-  return res.json(false);
 };
 
+// exports.isLoggedIn = async (req, res) => {
+//   try {
+//     const token = req.cookies.jwt;
+
+//     if (!token) {
+//       return res.json(false);
+//     }
+
+//     const verified = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
+//     if (verified) {
+//       return res.json(true);
+//     } else {
+//       return res.json(false);
+//     }
+//   } catch (error) {
+//     console.error("Error verifying token:", error);
+//     return res.json(false);
+//   }
+// };
 // forgot password handler
 exports.forgotPassword = catchAsync(async (req, res, next) => {
   // 1) Get user based on POSTed email
@@ -430,28 +468,23 @@ exports.changePassword = catchAsync(async (req, res, next) => {
 
 // send verification email
 exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
-  // Get user from the database
   const user = await User.findById(req.user._id);
   if (!user) {
     return next(new AppError("User does not exist", 404));
   }
 
-  // Check if user is already verified
   if (user.isVerified) {
     return next(new AppError("User already verified", 400));
   }
 
-  // Check for existing token and delete if found
   const existingToken = await Token.findOne({ userId: user._id });
   if (existingToken) {
     await existingToken.deleteOne();
   }
 
-  // Create a new verification token
   const vToken = crypto.randomBytes(32).toString("hex") + user._id;
   const hashedToken = hashToken(vToken);
 
-  // Save the new token to the database
   await new Token({
     userId: user._id,
     verificationToken: hashedToken,
@@ -459,10 +492,8 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
     expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour
   }).save();
 
-  // Create the verification URL
   const verificationURL = `${process.env.FRONTEND_URL}/dashboard/verify-account/${vToken}`;
 
-  // Prepare email details
   const subject = "Verify Your Account - CaseMaster";
   const send_to = user.email;
   const send_from = process.env.EMAIL_USER_OUTLOOK;
@@ -470,13 +501,13 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
   const template = "verifyEmail";
   const name = user.firstName;
   const link = verificationURL;
+
   try {
     await sendMail(subject, send_to, send_from, reply_to, template, name, link);
+    return res.status(200).json({ message: "Verification Email Sent" });
   } catch (error) {
-    res.status(200).json({ message: "Verification Email Sent" });
+    return next(new AppError("Email sending failed", 400));
   }
-  // Send the verification email
-  return next(new AppError("Email sending failed", 400));
 });
 
 // verify user

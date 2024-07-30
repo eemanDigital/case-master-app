@@ -21,8 +21,9 @@ exports.getUsers = catchAsync(async (req, res, next) => {
 
 // GET A USER
 exports.getUser = catchAsync(async (req, res, next) => {
-  const _id = req.params.userId; //he used req.user._id
-  const data = await User.findById({ _id }).populate({
+  // const _id = req.params.userId; //he used req.user._id
+  console.log(req.user.id);
+  const data = await User.findById(req.user._id).populate({
     path: "task",
     select: "-assignedTo",
   });
@@ -32,7 +33,26 @@ exports.getUser = catchAsync(async (req, res, next) => {
   }
 
   // set redis cache
-  setRedisCache(`user:${req.params.userId}`, data, 1200);
+  // setRedisCache(`user:${req.params.userId}`, data, 1200);
+
+  res.status(200).json({
+    data,
+  });
+});
+// GET A USER
+exports.getSingleUser = catchAsync(async (req, res, next) => {
+  // const _id = req.params.userId; //he used req.user._id
+  const data = await User.findById(req.params.id).populate({
+    path: "task",
+    select: "-assignedTo",
+  });
+
+  if (!data) {
+    return next(new AppError("No user found with that Id", 404));
+  }
+
+  // set redis cache
+  // setRedisCache(`user:${req.params.userId}`, data, 1200);
 
   res.status(200).json({
     data,

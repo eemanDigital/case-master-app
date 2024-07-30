@@ -2,12 +2,13 @@ import { Calendar, Modal, Badge } from "antd";
 import moment from "moment";
 import useModal from "../hooks/useModal";
 import { useState } from "react";
-import { useAuthContext } from "../hooks/useAuthContext";
+import { useSelector } from "react-redux";
 
 const EventsCalendar = ({ tasks }) => {
   const { open, showModal, handleOk, handleCancel } = useModal();
   const [selectedTaskDate, setSelectedTaskDate] = useState(null);
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
   const userId = user?.data?.user?._id;
 
   const onSelect = (date) => {

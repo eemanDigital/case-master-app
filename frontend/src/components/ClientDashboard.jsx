@@ -1,10 +1,11 @@
 import { useAdminHook } from "../hooks/useAdminHook";
-import { useAuthContext } from "../hooks/useAuthContext";
 import ClientCaseInfo from "./ClientCaseInfo";
 import ClientCaseDetails from "./ClientCaseDetails";
+import { useSelector } from "react-redux";
 
 const ClientDashboard = () => {
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
 
   return (

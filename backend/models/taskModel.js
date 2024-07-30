@@ -70,7 +70,7 @@ const taskSchema = new mongoose.Schema(
     ],
     assignedToClient: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Client",
+      ref: "User",
       required: [
         function () {
           return this.assignedTo.length === 0;

@@ -7,6 +7,7 @@ const {
   updateUserByAdmin,
   upgradeUser,
   sendAutomatedEmail,
+  getSingleUser,
 } = require("../controllers/userController");
 const {
   login,
@@ -43,12 +44,12 @@ router.post(
   register
 );
 // User login
-router.get("/login", login);
+router.post("/login", login);
 // // Password forgot and reset routes
 router.post("/forgotpassword", forgotPassword);
 // router.post("/refresh-token", refreshToken);
 // // Check if user is logged in
-router.get("/loggedIn", isLoggedIn);
+router.get("/loginStatus", isLoggedIn);
 router.patch("/verifyUser/:verificationToken", verifyUser);
 router.patch("/resetpassword/:resetToken", resetPassword);
 router.post("/sendLoginCode/:email", sendLoginCode);
@@ -74,13 +75,19 @@ router.get(
   cacheMiddleware(() => "users"),
   getUsers
 );
-// router.get(
-//   "/:userId",
-//   cacheMiddleware((req) => `user:${req.params.userId}`),
-//   getUser
-// );
+router.get(
+  "/getUser",
+  // cacheMiddleware((req) => `user:${req.params.userId}`),
+  getUser
+);
+
 // // Update user details, with photo upload and resize
-// router.patch("/updateUser", uploadUserPhoto, resizeUserPhoto, updateUser);
+router.patch("/updateUser", uploadUserPhoto, resizeUserPhoto, updateUser);
+router.get(
+  "/:id",
+  // cacheMiddleware((req) => `user:${req.params.userId}`),
+  getSingleUser
+);
 // // Delete user by ID
 router.delete("/:id", restrictTo("admin", "super-admin"), deleteUser);
 

@@ -90,7 +90,6 @@ export const caseInitialValue = {
   casePriority: "",
   stepToBeTaken: [],
   caseUpdates: [],
-
   accountOfficer: [],
   client: [],
   generalComment: "",
@@ -99,6 +98,7 @@ export const caseInitialValue = {
 export const addUserInitValue = {
   firstName: "",
   lastName: "",
+  secondName: "",
   middleName: "",
   email: "",
   password: "",
@@ -110,6 +110,8 @@ export const addUserInitValue = {
   position: "",
   annualLeaveEntitled: "",
   phone: "",
+  isLawyer: false,
+  clientCase: [],
   yearOfCall: "",
   otherPosition: "",
   practiceArea: "",

@@ -4,7 +4,8 @@ import { RiMenu3Fill } from "react-icons/ri";
 import { AiOutlineClose } from "react-icons/ai";
 import {} from "react-icons/ri";
 import { useState } from "react";
-import { useAuthContext } from "../hooks/useAuthContext";
+import { useSelector } from "react-redux";
+import { ShowOnLogin, ShowOnLogout } from "./protect/Protect";
 
 const navItems = [
   {
@@ -35,7 +36,8 @@ let mainNav = navItems.map((item, index) => {
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
 
   return (
     <nav className="md:px-10 px-8 md:py-0 py-2 md:flex items-center bg-white justify-between  z-50">
@@ -70,20 +72,19 @@ const Navbar = () => {
         <ul className=" md:flex gap-4 pr-10 items-center justify-between ">
           {mainNav.slice(0, 3)}
 
-          {!user ? (
-            <>
-              <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
-                <NavLink to="/staff/login">Login</NavLink>
-              </li>
-              <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
-                <NavLink to="/clients/login">Client Login</NavLink>
-              </li>
-            </>
-          ) : (
+          <ShowOnLogout>
+            <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
+              <NavLink to="/login">Login</NavLink>
+            </li>
+            <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
+              <NavLink to="/clients/login">Client Login</NavLink>
+            </li>
+          </ShowOnLogout>
+          <ShowOnLogin>
             <li className="btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block ">
               <NavLink to="dashboard">Dashboard</NavLink>
             </li>
-          )}
+          </ShowOnLogin>
           <li className="my-4">
             <NavLink className=" btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block w-32 hover:bg-gray-500 md:static">
               Get Started

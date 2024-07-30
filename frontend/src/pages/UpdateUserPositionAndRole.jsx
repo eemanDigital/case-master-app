@@ -1,20 +1,19 @@
 import Input from "../components/Inputs";
 import Select from "../components/Select";
-import { useAuth } from "../hooks/useAuth";
 import { useState, useEffect } from "react";
-import { useAuthContext } from "../hooks/useAuthContext";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { ToastContainer, toast } from "react-toastify";
 import { Button, Modal } from "antd";
 import useModal from "../hooks/useModal";
 import { positions, roles } from "../data/options";
 import "react-toastify/dist/ReactToastify.css";
+import { useSelector } from "react-redux";
 
 const UpdateUserPositionAndRole = ({ userId }) => {
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();
   const { data, loading, error, dataFetcher } = useDataFetch();
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
 
   const [inputValue, setInputValue] = useState({
     firstName: "",
@@ -121,7 +120,6 @@ const UpdateUserPositionAndRole = ({ userId }) => {
             </button>
           </div>
         </form>
-        <ToastContainer />
       </Modal>
     </section>
   );

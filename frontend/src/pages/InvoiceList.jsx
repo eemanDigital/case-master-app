@@ -6,8 +6,8 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import moment from "moment";
 import { useEffect, useState } from "react";
 import SearchBar from "../components/SearchBar";
-import { useAuthContext } from "../hooks/useAuthContext";
 import { useAdminHook } from "../hooks/useAdminHook";
+import { useSelector } from "react-redux";
 
 const InvoiceList = () => {
   const { data, loading, error, dataFetcher } = useDataFetch();
@@ -18,7 +18,8 @@ const InvoiceList = () => {
   } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
 
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
   const { isClient, isSuperOrAdmin } = useAdminHook();
   const loggedInClientId = user?.data?.user.id;
 

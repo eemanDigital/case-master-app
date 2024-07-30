@@ -2,11 +2,10 @@ import Input from "../components/Inputs";
 import Select from "../components/Select";
 import { useAuth } from "../hooks/useAuth";
 import { useState, useEffect } from "react";
-import { useAuthContext } from "../hooks/useAuthContext";
-import { ToastContainer, toast } from "react-toastify";
 import { Button, Modal } from "antd";
 import useModal from "../hooks/useModal";
 import "react-toastify/dist/ReactToastify.css";
+import { useSelector } from "react-redux";
 
 const EditUserProfile = () => {
   const positions = [
@@ -29,7 +28,8 @@ const EditUserProfile = () => {
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();
   const { data, loading, error, authenticate } = useAuth();
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
 
   const [inputValue, setInputValue] = useState({
     firstName: "",
@@ -58,13 +58,13 @@ const EditUserProfile = () => {
   }
 
   useEffect(() => {
-    if (user?.data.user) {
+    if (user?.data) {
       setInputValue((prevData) => ({
         ...prevData,
-        ...user?.data.user,
+        ...user?.data,
       }));
     }
-  }, [user?.data.user]);
+  }, [user?.data]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -152,6 +152,17 @@ const EditUserProfile = () => {
             />
             <Input
               type="text"
+              label="Role"
+              placeholder="Role"
+              value={inputValue.role}
+              name="role"
+              onChange={handleChange}
+              disable
+            />
+          </div>
+          <div>
+            <Input
+              type="text"
               label="Practice Area"
               placeholder="Practice Area"
               value={inputValue.practiceArea}
@@ -233,7 +244,6 @@ const EditUserProfile = () => {
             </button>
           </div>
         </form>
-        <ToastContainer />
       </Modal>
     </section>
   );

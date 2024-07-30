@@ -1,13 +1,14 @@
 import { Spin, Alert } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { useAuthContext } from "../hooks/useAuthContext";
 // import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import CaseReportList from "./CaseReportList";
 import SingleCauseList from "./SingleCauseList";
+import { useSelector } from "react-redux";
 
 const ClientCaseDetails = () => {
   const { causeList, reports, loading, error } = useDataGetterHook();
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
 
   const clientCase = user?.data?.user?.case;
   const clientCaseIds = clientCase.map((item) => item.id); //get caseIDs

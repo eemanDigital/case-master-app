@@ -5,13 +5,15 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { useSelector } from "react-redux";
 
 const PaymentMadeOnCase = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { invoices } = useDataGetterHook();
   const navigate = useNavigate();
   const { clientId, caseId } = useParams();
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
   const loggedInClientId = user?.data?.user.id;
 

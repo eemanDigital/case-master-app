@@ -6,6 +6,7 @@ import { Space, Table, Button, Spin, Alert, Modal } from "antd";
 import { formatDate } from "../utils/formatDate";
 import { useDataFetch } from "../hooks/useDataFetch";
 import avatar from "../assets/avatar.png";
+import { useSelector } from "react-redux";
 
 const LeaveApplicationList = () => {
   const {
@@ -14,7 +15,8 @@ const LeaveApplicationList = () => {
     error: errorLeaveApp,
   } = useDataGetterHook();
   const { Column, ColumnGroup } = Table;
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
   const { isAdminOrHr } = useAdminHook();
 
   const userId = user?.data?.user?.id;

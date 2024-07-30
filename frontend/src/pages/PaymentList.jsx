@@ -6,8 +6,9 @@ import { formatDate } from "../utils/formatDate";
 import CreatePaymentForm from "./CreatePaymentForm";
 import SearchBar from "../components/SearchBar";
 import { useEffect, useState } from "react";
-import { useAuthContext } from "../hooks/useAuthContext";
+
 import { useAdminHook } from "../hooks/useAdminHook";
+import { useSelector } from "react-redux";
 
 const PaymentList = () => {
   const {
@@ -16,9 +17,10 @@ const PaymentList = () => {
     error: paymentError,
   } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
   const { isClient, isSuperOrAdmin } = useAdminHook();
-  const loggedInClientId = user?.data?.user.id;
+  const loggedInClientId = user?.data?.user?.id;
   const { dataFetcher, loading, error } = useDataFetch();
 
   const fileHeaders = {

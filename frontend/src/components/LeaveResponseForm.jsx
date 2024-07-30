@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { ToastContainer } from "react-toastify";
 import { Modal } from "antd";
 import Input from "./Inputs";
 import Select from "./Select";
@@ -170,8 +169,6 @@ const LeaveResponseForm = ({ appId }) => {
               <Button onClick={handleClick}>Submit</Button>
             </div>
           </form>
-
-          <ToastContainer />
         </section>
       </Modal>
     </>

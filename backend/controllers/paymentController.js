@@ -217,7 +217,8 @@ exports.paymentEachClient = catchAsync(async (req, res, next) => {
     },
     {
       $lookup: {
-        from: "clients", // The actual name of the Client collection
+        // from: "clients", // The actual name of the Client collection
+        from: "users", // The actual name of the Client collection
         localField: "_id",
         foreignField: "_id",
         as: "client",
@@ -413,7 +414,7 @@ exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
     },
     {
       $lookup: {
-        from: "clients", // replace with your actual Client collection name
+        from: "users", // replace with your actual Client collection name
         localField: "clientId",
         foreignField: "_id",
         as: "client",

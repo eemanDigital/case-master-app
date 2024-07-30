@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Modal, Button, Form, Input, Checkbox, Select } from "antd";
-import { useAuth } from "../hooks/useAuth";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import { toast } from "react-toastify";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { useDispatch } from "react-redux";
+import { register } from "../redux/features/auth/authSlice";
 
 const { Option } = Select;
 
 const AddClientForm = () => {
-  const { authenticate } = useAuth();
+  const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
   const { cases } = useDataGetterHook();
   const [form] = Form.useForm();
@@ -27,10 +27,10 @@ const AddClientForm = () => {
 
   const handleSubmit = async (values) => {
     try {
-      await authenticate("clients/signup", "post", values);
-      toast.success("Client added successfully!");
+      await dispatch(register(values));
+      // toast.success("Client added successfully!");
       setOpen(false);
-      form.resetFields();
+      // form.resetFields();
     } catch (err) {
       toast.error("Failed to add client.");
       console.error(err);
@@ -43,6 +43,7 @@ const AddClientForm = () => {
         Add Client
       </Button>
       <Modal
+        footer={null}
         width={580}
         title="Client Form"
         open={open}
@@ -109,14 +110,14 @@ const AddClientForm = () => {
             rules={[{ required: true, message: "Please enter your address" }]}>
             <Input placeholder="No.2, Maitama Close, Abuja" />
           </Form.Item>
-          <Form.Item
+          {/* <Form.Item
             label="Client's Case"
-            name="case"
+            name="clientCase"
             rules={[
               { required: true, message: "Please select at least one case" },
             ]}>
             <Select
-              mode="multiple"
+              // mode="multiple"
               placeholder="Select cases"
               style={{ width: "100%" }}>
               {cases?.data?.map((singleCase) => {
@@ -130,12 +131,17 @@ const AddClientForm = () => {
                 );
               })}
             </Select>
-          </Form.Item>
+          </Form.Item> */}
           <Form.Item name="active" valuePropName="checked">
             <Checkbox>Is client active</Checkbox>
           </Form.Item>
+
+          <Form.Item>
+            <Button type="default" htmlType="submit">
+              Submit
+            </Button>
+          </Form.Item>
         </Form>
-        <ToastContainer />
       </Modal>
     </section>
   );

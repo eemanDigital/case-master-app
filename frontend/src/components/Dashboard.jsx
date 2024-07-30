@@ -1,9 +1,7 @@
 import { useState, useEffect, createContext } from "react";
 import { Link } from "react-router-dom";
-import { useAuthContext } from "../hooks/useAuthContext";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { Button, Empty, Row, Col, Typography, Card, Divider } from "antd";
-import LeaveBalanceDisplay from "./LeaveBalanceDisplay";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { GoLaw } from "react-icons/go";
@@ -25,6 +23,7 @@ import EventCalendar from "./EventCalender";
 import ClientDashboard from "./ClientDashboard";
 import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
 import LeaveNotification from "./LeaveNotification";
+import { useSelector } from "react-redux";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -35,13 +34,15 @@ const { Title, Text } = Typography;
 export const PaymentFiltersContext = createContext();
 
 const Dashboard = () => {
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, user } = useSelector(
+    (state) => state.auth
+  );
 
   // account officer
 
-  // console.log("USER CASE", user?.data?.user?.case);
+  console.log("USER DATA", user?.data?.firstName);
 
-  const userId = user?.data?.user?._id;
+  const userId = user?.data?._id;
 
   const [year, setYear] = useState(new Date().getFullYear());
   const [yearMonth, setYearMonth] = useState(new Date().getFullYear());
@@ -152,13 +153,13 @@ const Dashboard = () => {
       <div className="flex justify-between items-center mt-6">
         {isClient ? (
           <h1 className="text-1xl font-bold text-gray-600  w-3/6 tracking-wider">
-            Welcome back, {user?.data?.user?.firstName}({user?.data?.user?.role}
+            Welcome back, {user?.data?.firstName}({user?.data?.role}
             ),
           </h1>
         ) : (
           <h1 className="text-1xl font-bold text-gray-600  w-3/6 tracking-wider">
-            {user?.data?.user?.firstName}&apos;s Dashboard(
-            {user?.data?.user?.role}),
+            {user?.data?.firstName || "........"}&apos;s Dashboard(
+            {user?.data?.role}),
           </h1>
         )}
         <div className="w-12 h-12">

@@ -6,7 +6,6 @@ import { useAdminHook } from "../hooks/useAdminHook";
 import { Space, Table, Button, Spin, Alert, Modal } from "antd";
 import avatar from "../assets/avatar.png";
 import LeaveBalanceList from "./leaveBalanceList";
-import { useAuthContext } from "../hooks/useAuthContext";
 import CreateLeaveBalanceForm from "../components/CreateLeaveBalanceForm";
 import SearchBar from "../components/SearchBar";
 
@@ -19,9 +18,8 @@ const StaffList = () => {
   const [searchResults, setSearchResults] = useState([]);
 
   const { Column, ColumnGroup } = Table;
-  //   const { user } = useAuthContext();
   const { dataFetcher, loading, error } = useDataFetch();
-  //  const { user } = useAuthContext();
+
   // const loggedInUserId = user?.data?.user.id;
   const { isAdminOrHr, isAdmin, isSuperOrAdmin } = useAdminHook();
 
@@ -149,7 +147,7 @@ const StaffList = () => {
           render={(text, record) => (
             <Space size="middle">
               <Button type="link">
-                <Link to={`/dashboard/staff/${record.id}/details`}>
+                <Link to={`/dashboard/staff/${record?._id}/details`}>
                   Get Details
                 </Link>
               </Button>

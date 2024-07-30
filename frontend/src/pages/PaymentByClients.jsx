@@ -4,10 +4,12 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useAdminHook } from "../hooks/useAdminHook";
 import AllCasesListForPayment from "./AllCasesListForPayment";
+import { useSelector } from "react-redux";
 
 const PaymentByClient = () => {
   const { clientPayments, cases, loading, error } = useDataGetterHook();
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
   const loggedInClientId = user?.data?.user.id;
 

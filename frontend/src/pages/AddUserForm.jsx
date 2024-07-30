@@ -2,38 +2,41 @@
 import Input from "../components/Inputs";
 import lawyer1 from "../assets/lawyer1.svg";
 import Select from "../components/Select";
-
 import { Link } from "react-router-dom";
 import Button from "../components/Button";
-import { useAuth } from "../hooks/useAuth";
 import { useState } from "react";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import PasswordInput from "../components/PasswordInput";
 import useTogglePassword from "../hooks/useTogglePassword";
 import { addUserInitValue } from "../utils/initialValues";
 import { gender, positions, roles } from "../data/options";
 import PasswordCheckCard from "../components/PasswordCheckCard";
-// import { useAuthContext } from "../hooks/useAuthContext";
-
-// import useFetch from "../hooks/useFetch";
-
-// const URL = "http://localhost:3000/api/v1/users/signup";
+import { validateRegister } from "../utils/addUserValidation";
+import { useDispatch, useSelector } from "react-redux";
+import { register } from "../redux/features/auth/authSlice";
+import { toast } from "react-toastify";
 
 const SignUp = () => {
-  const { data, loading, error, authenticate } = useAuth();
   const [click, setClick] = useState(false);
 
-  // console.log(fileData.data?.file);
-  // console.log(data);
+  // destructure init value
   const [inputValue, setInputValue] = useState(addUserInitValue);
-  const { password } = inputValue;
-  //password check state
-  // const [isUpper, setIsUpper] = useState(false)
-  // const [isNumber, setIsNumber] = useState(false)
-  // const [isChar, setIsChar] = useState(false)
-  // const [isLength, setIsLength] = useState(false)
-  ///////////////////////////////////////
+  const {
+    firstName,
+    lastName,
+    password,
+    email,
+    passwordConfirm,
+    address,
+    yearOfCall,
+    lawSchoolAttended,
+    phone,
+    universityAttended,
+  } = inputValue;
+  const dispatch = useDispatch();
+  // const navigate = useNavigate();
+  // const { isError, isSuccess, isLoading, message } = useSelector(
+  //   (state) => state.auth
+  // );
 
   // handle password token hook
   const { togglePassword: togglePassword1, showPassword: showPassword1 } =
@@ -47,31 +50,44 @@ const SignUp = () => {
 
   // handleChange function
   function handleChange(e) {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
 
     setInputValue((prevData) => ({
       ...prevData,
-      [name]: value, // Handle file or text input
+      [name]: type === "checkbox" ? checked : value, // Handle checkbox or text input
     }));
   }
 
   // dispatch({ type: "LOGIN", filPayload: fileValue });
-  async function handleSubmit(e) {
+  async function registerUser(e) {
     e.preventDefault();
 
-    try {
-      // Call fetchData with endpoint, method, payload, and any additional arguments
-      await authenticate("users/signup", "post", inputValue);
-    } catch (err) {
-      console.log(err);
-    }
+    // validate registeration inputs
+    validateRegister(
+      firstName,
+      lastName,
+      password,
+      email,
+      passwordConfirm,
+      address,
+      yearOfCall,
+      lawSchoolAttended,
+      phone,
+      gender,
+      universityAttended
+    );
+
+    // dispatch
+    await dispatch(register(inputValue));
+
+    // Reset state after submission
+    setInputValue(addUserInitValue);
   }
 
   function handleClick() {
     setClick(() => !click);
   }
-
-  console.log(inputValue);
+  // console.log(inputValue);
 
   return (
     <>
@@ -95,7 +111,7 @@ const SignUp = () => {
         </div> */}
 
           <form
-            onSubmit={handleSubmit}
+            onSubmit={registerUser}
             className="  bg-white w-full   basis-3/5 shadow-md  rounded-md px-8 pt-6 pb-8 m-4">
             <div className="sm:flex-row -mx-3 mb-6 gap-2">
               <div>
@@ -117,6 +133,17 @@ const SignUp = () => {
                   placeholder="Last Name"
                   htmlFor="Last Name"
                   value={inputValue.lastName}
+                  name="lastName"
+                  onChange={handleChange}
+                />
+              </div>
+              <div>
+                <Input
+                  type="text"
+                  label="Second Name"
+                  placeholder="Client Second Name"
+                  htmlFor="secondName"
+                  value={inputValue.secondName}
                   name="lastName"
                   onChange={handleChange}
                 />
@@ -157,12 +184,11 @@ const SignUp = () => {
                   handleChange={handleChange}
                   showPassword={showPassword1}
                   togglePassword={togglePassword1}
-                  onPaste={() => {}}
                 />
               </div>
               <PasswordCheckCard password={password} />
 
-              <div>
+              <div className="mt-4">
                 <PasswordInput
                   type="password"
                   label="Confirm Password"
@@ -173,11 +199,27 @@ const SignUp = () => {
                   handleChange={handleChange}
                   showPassword={showPassword2}
                   togglePassword={togglePassword2}
-                  onPaste={() => {}}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    // disable pasting by user
+                    toast.error("You cannot past into input field");
+                    return false;
+                  }}
                 />
               </div>
+              <div className="py-3">
+                <label className="flex items-center space-x-2 uppercase text-gray-700 font-bold text-[14px]">
+                  <span>Is User A Lawyer:</span>
+                  <input
+                    type="checkbox"
+                    name="isLawyer"
+                    checked={inputValue.isLawyer || false}
+                    onChange={handleChange}
+                    className="form-checkbox h-5 w-5 text-blue-600"
+                  />
+                </label>
+              </div>
             </div>
-
             {/* <div className="flex flex-col sm:flex-row -mx-3 mb-6 gap-2 justify-between  md:items-center"> */}
             <div>
               <Input
@@ -279,7 +321,7 @@ const SignUp = () => {
                 onChange={handleChange}
               />
             </div>
-            <div>
+            {/* <div>
               <Input
                 type="number"
                 label="Leave Entitled"
@@ -289,7 +331,7 @@ const SignUp = () => {
                 name="annualLeaveEntitled"
                 onChange={handleChange}
               />
-            </div>
+            </div> */}
 
             <div>
               <Input
@@ -342,7 +384,6 @@ const SignUp = () => {
             </div>
           </form>
         </div>
-        <ToastContainer />
       </section>
     </>
   );

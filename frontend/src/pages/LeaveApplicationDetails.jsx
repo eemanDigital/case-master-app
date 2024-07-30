@@ -13,7 +13,6 @@ import {
 } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
-import { useAuthContext } from "../hooks/useAuthContext";
 import LeaveResponseForm from "../components/LeaveResponseForm";
 // import useErrorMessage from "../hooks/useErrorMessage";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -24,6 +23,7 @@ import {
   FileTextOutlined,
 } from "@ant-design/icons";
 import LeaveBalanceDisplay from "../components/LeaveBalanceDisplay";
+import { useSelector } from "react-redux";
 
 const { Title, Text } = Typography;
 
@@ -32,8 +32,9 @@ const LeaveApplicationDetails = ({ userId }) => {
   const { id } = useParams();
   // useErrorMessage(error);
   const { isAdminOrHr } = useAdminHook();
-  const { user } = useAuthContext();
-  const loggedInClientId = user?.data?.user.id;
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
+  const loggedInClientId = user?.data?.id;
 
   const isCurrentUser = loggedInClientId === id; //check if id is the same
 

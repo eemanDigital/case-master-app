@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useAuthContext } from "../hooks/useAuthContext";
+import { useSelector } from "react-redux";
 
 const ClientLists = () => {
   const {
@@ -18,7 +19,8 @@ const ClientLists = () => {
 
   const { Column, ColumnGroup } = Table;
   const { isStaff, isAdminOrHr, isAdmin, isSuperOrAdmin } = useAdminHook();
-  const { user } = useAuthContext();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
 
   const clientID = user?.data?.user?._id;
 

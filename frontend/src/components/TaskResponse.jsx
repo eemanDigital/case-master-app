@@ -4,7 +4,6 @@ import { FaFile } from "react-icons/fa6";
 import { Button, Descriptions } from "antd";
 import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
 import { formatDate } from "../utils/formatDate";
-import { useAuthContext } from "../hooks/useAuthContext";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 

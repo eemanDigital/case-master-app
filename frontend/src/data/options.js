@@ -93,21 +93,29 @@ export const methodOptions = [
 ];
 
 export const positions = [
-  "Select a position",
-  "principal",
-  "managing_partner",
-  "head_of_chambers",
-  "associate",
-  "senior_associate",
-  "junior_associate",
-  "counsel",
-  "intern",
-  "secretary",
-  "paralegal",
-  "client",
+  "select user's position",
+  "Principal",
+  "Managing Partner",
+  "Head of Chambers",
+  "Associate",
+  "Senior Associate",
+  "Junior Associate",
+  "Counsel",
+  "Intern",
+  "Secretary",
+  "Paralegal",
+  "Client",
   "other",
 ];
 
-export const roles = ["user", "admin", "secretary", "hr", "super-admin"];
+export const roles = [
+  "select user's role",
+  "user",
+  "admin",
+  "secretary",
+  "hr",
+  "super-admin",
+  "client",
+];
 
-export const gender = ["male", "female"];
+export const gender = ["select user's gender", "male", "female"];

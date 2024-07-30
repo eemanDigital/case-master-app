@@ -2,18 +2,20 @@ import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import TaskReminderForm from "./TaskReminderForm";
-import { useAuthContext } from "../hooks/useAuthContext";
 import { Table, Modal, Space, Button } from "antd";
 import CreateTaskForm from "../pages/CreateTaskForm";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import { useAdminHook } from "../hooks/useAdminHook";
+import { useSelector } from "react-redux";
 
 const TaskList = () => {
   const { tasks, loadingError, errorTasks } = useDataGetterHook();
+  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
+    useSelector((state) => state.auth);
 
-  const { user } = useAuthContext();
-  const loggedInClientId = user?.data?.user.id;
+  console.log("TASK", tasks);
+  const loggedInClientId = user?.data?._id;
   const { data, loading, error, dataFetcher } = useDataFetch();
 
   const { isSuperOrAdmin, isStaff, isClient } = useAdminHook();
@@ -47,14 +49,18 @@ const TaskList = () => {
       key: "assignedTo",
       render: (assignedTo) =>
         assignedTo
-          ? assignedTo.map((staff) => <p key={staff._id}>{staff.fullName}</p>)
+          ? assignedTo.map((staff) => (
+              <p key={staff._id}>
+                {staff.firstName} {staff.lastName}
+              </p>
+            ))
           : "N/A",
     },
     {
       title: "Assigned To Client",
       dataIndex: "assignedToClient",
       key: "assignedToClient",
-      render: (client) => client?.fullName,
+      render: (client) => client?.firstName,
     },
     {
       title: "Task Priority",

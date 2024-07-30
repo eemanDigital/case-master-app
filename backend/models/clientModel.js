@@ -14,6 +14,12 @@ const clientSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+
+    secondName: {
+      type: String,
+      trim: true,
+    },
+
     email: {
       type: String,
       trim: true,

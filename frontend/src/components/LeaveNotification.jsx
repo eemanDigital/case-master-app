@@ -4,7 +4,6 @@ import { BellOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
-import { useAuthContext } from "../hooks/useAuthContext";
 
 const LeaveNotification = () => {
   const {
@@ -14,7 +13,6 @@ const LeaveNotification = () => {
   } = useDataGetterHook();
 
   const { isAdminOrHr } = useAdminHook();
-  //   const { user } = useAuthContext();
   //   const loggedInClientId = user?.data?.user.id;
 
   //   const isCurrentUser = loggedInClientId === id; //check if id is the same
