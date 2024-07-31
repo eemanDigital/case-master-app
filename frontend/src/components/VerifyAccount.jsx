@@ -1,8 +1,23 @@
 import { Button, Card } from "antd";
+import { useDispatch, useSelector } from "react-redux";
+import { useParams } from "react-router-dom";
+import { RESET, verifyUser } from "../redux/features/auth/authSlice";
+import LoadingSpinner from "./LoadingSpinner";
 
 const VerifyAccount = () => {
+  const dispatch = useDispatch();
+  const { token } = useParams();
+  const { isLoading } = useSelector((state) => state.auth);
+
+  // verify user handler
+  const verifyUserAccount = async () => {
+    await dispatch(verifyUser(token));
+    await dispatch(RESET());
+  };
+
   return (
     <div>
+      {isLoading && <LoadingSpinner />}
       <section>
         <div>
           <Card>
@@ -14,7 +29,11 @@ const VerifyAccount = () => {
             </p>
 
             <div className=" text-center space-y-4">
-              <Button className="bg-blue-500 text-white">Verify Account</Button>
+              <Button
+                onClick={verifyUserAccount}
+                className="bg-blue-500 text-white">
+                Verify Account
+              </Button>
             </div>
           </Card>
         </div>

@@ -11,7 +11,7 @@ const PaymentByClient = () => {
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
-  const loggedInClientId = user?.data?.user.id;
+  const loggedInClientId = user?.data?.id;
 
   const [pagination, setPagination] = useState({ pageSize: 8, current: 1 });
 

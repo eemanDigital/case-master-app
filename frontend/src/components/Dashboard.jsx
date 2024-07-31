@@ -24,6 +24,9 @@ import ClientDashboard from "./ClientDashboard";
 import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
 import LeaveNotification from "./LeaveNotification";
 import { useSelector } from "react-redux";
+import Notification from "./Notification";
+import useUsersCount from "../hooks/useUsersCount";
+import { FaHandshake, FaUsers } from "react-icons/fa6";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -37,19 +40,11 @@ const Dashboard = () => {
   const { isError, isSuccess, isLoading, message, user } = useSelector(
     (state) => state.auth
   );
-
-  // account officer
-
-  console.log("USER DATA", user?.data?.firstName);
-
   const userId = user?.data?._id;
-
   const [year, setYear] = useState(new Date().getFullYear());
   const [yearMonth, setYearMonth] = useState(new Date().getFullYear());
   const [yearEachMonth, setYearEachMonth] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
-  // const [events, setEvents] = useState([]); //calender event
-
   const {
     data: getUserData,
     loading: loadUserData,
@@ -100,7 +95,10 @@ const Dashboard = () => {
   } = useDataGetterHook();
 
   // end
-  const { isAdminOrHr, isAdmin, isStaff, isClient } = useAdminHook();
+  const { isAdminOrHr, isAdmin, isStaff, isClient, isVerified } =
+    useAdminHook();
+  // user count
+  const { lawyerCount, clientCount, staff } = useUsersCount(users);
 
   useEffect(() => {
     if (userId) {
@@ -151,6 +149,7 @@ const Dashboard = () => {
     <PaymentFiltersContext.Provider
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
       <div className="flex justify-between items-center mt-6">
+        {!isVerified && <Notification />}
         {isClient ? (
           <h1 className="text-1xl font-bold text-gray-600  w-3/6 tracking-wider">
             Welcome back, {user?.data?.firstName}({user?.data?.role}
@@ -216,31 +215,31 @@ const Dashboard = () => {
           </Row>
           <Row gutter={16}>
             <Col span={6}>
-              <Card>
+              <Card className="bg-blue-100">
                 <FaBriefcase className="text-3xl text-blue-500 mb-2" />
                 <Title level={4}>{cases?.results}</Title>
                 <Text>Number of Cases</Text>
               </Card>
             </Col>
             <Col span={6}>
-              <Card>
-                <FaUser className="text-3xl text-blue-500 mb-2" />
-                <Title level={4}>{users?.results}</Title>
+              <Card className="bg-green-100">
+                <FaUsers className="text-3xl text-green-500 mb-2" />
+                <Title level={4}>{staff}</Title>
                 <Text>Number of Staff</Text>
               </Card>
             </Col>
             <Col span={6}>
-              <Card>
-                <GoLaw className="text-3xl text-blue-500 mb-2" />
-                <Title level={4}>6</Title>
+              <Card className="bg-yellow-100">
+                <GoLaw className="text-3xl text-yellow-500 mb-2" />
+                <Title level={4}>{lawyerCount}</Title>
                 <Text>Number of Lawyers</Text>
               </Card>
             </Col>
             <Col span={6}>
-              <Card>
-                <FaTasks className="text-3xl text-blue-500 mb-2" />
-                <Title level={4}>{tasks?.results}</Title>
-                <Text>Number of Assigned Tasks</Text>
+              <Card className="bg-red-100">
+                <FaHandshake className="text-3xl text-red-500 mb-2" />
+                <Title level={4}>{clientCount}</Title>
+                <Text>Number of Clients</Text>
               </Card>
             </Col>
           </Row>

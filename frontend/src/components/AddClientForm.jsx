@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { Modal, Button, Form, Input, Checkbox, Select } from "antd";
 import { toast } from "react-toastify";
+import { useAuth } from "../hooks/useAuth";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useDispatch } from "react-redux";
-import { register } from "../redux/features/auth/authSlice";
+import { sendVerificationMail } from "../redux/features/auth/authSlice";
 
 const { Option } = Select;
 
 const AddClientForm = () => {
-  const dispatch = useDispatch();
   const [open, setOpen] = useState(false);
+  const dispatch = useDispatch();
+  const { authenticate, loading } = useAuth();
   const { cases } = useDataGetterHook();
   const [form] = Form.useForm();
 
@@ -27,8 +29,9 @@ const AddClientForm = () => {
 
   const handleSubmit = async (values) => {
     try {
-      await dispatch(register(values));
-      // toast.success("Client added successfully!");
+      await authenticate("users/register", "post", values);
+      await dispatch(sendVerificationMail());
+
       setOpen(false);
       // form.resetFields();
     } catch (err) {
@@ -62,6 +65,7 @@ const AddClientForm = () => {
             ]}>
             <Input placeholder="First Name" />
           </Form.Item>
+
           <Form.Item
             label="Second Name"
             name="secondName"
@@ -70,6 +74,7 @@ const AddClientForm = () => {
             ]}>
             <Input placeholder="Second Name" />
           </Form.Item>
+
           <Form.Item
             label="Email"
             name="email"
@@ -110,6 +115,9 @@ const AddClientForm = () => {
             rules={[{ required: true, message: "Please enter your address" }]}>
             <Input placeholder="No.2, Maitama Close, Abuja" />
           </Form.Item>
+          <Form.Item label="Role" name="role" initialValue="client">
+            <Input disabled placeholder="Client" />
+          </Form.Item>
           {/* <Form.Item
             label="Client's Case"
             name="clientCase"
@@ -138,7 +146,7 @@ const AddClientForm = () => {
 
           <Form.Item>
             <Button type="default" htmlType="submit">
-              Submit
+              {loading ? "Submitting..." : "Submit"}
             </Button>
           </Form.Item>
         </Form>

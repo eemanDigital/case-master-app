@@ -18,7 +18,8 @@ const CaseReportList = ({ title, showFilter, reports }) => {
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
   const { shortenText } = useTextShorten();
-  const caseIDs = user?.data?.user?.case?.map((caseItem) => caseItem?._id);
+  const caseIDs = user?.data?.clientCase?.map((caseItem) => caseItem?._id);
+
   const [searchResults, setSearchResults] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5); // Number of items per page

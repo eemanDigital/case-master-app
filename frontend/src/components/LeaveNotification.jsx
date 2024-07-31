@@ -13,23 +13,12 @@ const LeaveNotification = () => {
   } = useDataGetterHook();
 
   const { isAdminOrHr } = useAdminHook();
-  //   const loggedInClientId = user?.data?.user.id;
 
   //   const isCurrentUser = loggedInClientId === id; //check if id is the same
 
   const pendingLeaves = useMemo(() => {
     return leaveApps?.data?.filter((leave) => leave?.status === "pending");
   }, [leaveApps]);
-
-  //   const approvedLeaves = useMemo(() => {
-  //     return leaveApps?.data?.filter((leave) => leave?.status === "approved");
-  //   }, [leaveApps]);
-
-  //   const filteredLeaveApps = isAdminOrHr
-  //     ? approvedLeaves?.data
-  //     : approvedLeaves?.data?.filter(
-  //         (app) => app?.employee?.id === user?.data?.user?.id
-  //       );
 
   const content = (
     <List

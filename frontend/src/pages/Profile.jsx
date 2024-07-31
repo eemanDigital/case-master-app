@@ -30,7 +30,7 @@ const Profile = () => {
         <div className="flex flex-col items-center md:items-start  justify-start">
           <h1 className="text-2xl font-bold text-center text-rose-700">
             {user?.data?.firstName} {user?.data?.lastName}{" "}
-            {user?.data?.user?.middleName}
+            {user?.data?.middleName}
           </h1>
           <hr className=" w-72 " />
           <small className="text-center mb-4 block">

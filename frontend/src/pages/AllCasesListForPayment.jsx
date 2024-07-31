@@ -9,7 +9,7 @@ const AllCasesListForPayment = () => {
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
-  const loggedInClientId = user?.data?.user.id;
+  const loggedInClientId = user?.data?.id;
 
   if (loading.cases) return <h1>Loading... </h1>;
   if (error.cases)

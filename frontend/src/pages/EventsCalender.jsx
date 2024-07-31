@@ -9,7 +9,6 @@ const EventsCalendar = ({ tasks }) => {
   const [selectedTaskDate, setSelectedTaskDate] = useState(null);
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
-  const userId = user?.data?.user?._id;
 
   const onSelect = (date) => {
     const tasksForDate = tasks.filter(

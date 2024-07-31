@@ -21,7 +21,7 @@ const InvoiceList = () => {
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
   const { isClient, isSuperOrAdmin } = useAdminHook();
-  const loggedInClientId = user?.data?.user.id;
+  const loggedInClientId = user?.data?.id;
 
   //   handle delete
   const fileHeaders = {

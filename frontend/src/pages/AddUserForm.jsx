@@ -12,7 +12,10 @@ import { gender, positions, roles } from "../data/options";
 import PasswordCheckCard from "../components/PasswordCheckCard";
 import { validateRegister } from "../utils/addUserValidation";
 import { useDispatch, useSelector } from "react-redux";
-import { register } from "../redux/features/auth/authSlice";
+import {
+  register,
+  sendVerificationMail,
+} from "../redux/features/auth/authSlice";
 import { toast } from "react-toastify";
 
 const SignUp = () => {
@@ -79,6 +82,7 @@ const SignUp = () => {
 
     // dispatch
     await dispatch(register(inputValue));
+    await dispatch(sendVerificationMail());
 
     // Reset state after submission
     setInputValue(addUserInitValue);

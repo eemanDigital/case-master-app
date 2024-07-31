@@ -26,7 +26,7 @@ const TaskDetails = () => {
     useSelector((state) => state.auth);
   const task = data?.data;
 
-  const currentUser = user?.data?.user?._id;
+  const currentUser = user?.data?._id;
   const assignedById = task?.assignedBy?._id;
   const isAssignedBy = currentUser === assignedById; //current loggedIn Staff User
 

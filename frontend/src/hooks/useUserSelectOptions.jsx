@@ -4,12 +4,14 @@ const useUserSelectOptions = () => {
   const { users } = useDataGetterHook();
 
   const userData = Array.isArray(users?.data)
-    ? users?.data.map((user) => {
-        return {
-          value: user?._id,
-          label: user?.fullName,
-        };
-      })
+    ? users?.data
+        .filter((staff) => staff.role !== "client")
+        .map((s) => {
+          return {
+            value: s?.id,
+            label: `${s.firstName} ${s.lastName}`,
+          };
+        })
     : [];
 
   return { userData };

@@ -104,6 +104,7 @@ const Login = () => {
                   showPassword={showPassword}
                   togglePassword={togglePassword}
                   onPaste={() => {}}
+                  style={inputStyle}
                 />
               </div>
               <Button
@@ -114,7 +115,7 @@ const Login = () => {
             </div>
             <div className="flex flex-col gap-4 justify-start items-start">
               <p>
-                <Link to="forgotpassword" className="text-gray-800 font-bold">
+                <Link to="/forgotpassword" className="text-gray-800 font-bold">
                   Forgot password
                 </Link>
               </p>

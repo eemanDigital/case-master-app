@@ -1,5 +1,6 @@
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import {
+  getUser,
   selectIsLoggedIn,
   selectUser,
 } from "../../redux/features/auth/authSlice";
@@ -29,30 +30,58 @@ export const ShowOnLogout = ({ children }) => {
 
 export const ShowAdmin = ({ children }) => {
   const isLoggedIn = useSelector(selectIsLoggedIn);
-  const userRole = useSelector(selectUser);
+  const user = useSelector(selectUser);
 
-  if (
-    (!isLoggedIn && userRole.role === "admin") ||
-    userRole.role === "super-admin"
-  ) {
+  if ((!isLoggedIn && user.role === "admin") || user.role === "super-admin") {
     return <>{children}</>;
   }
   return null;
 };
 
+// export const ShowOnLoginAndRedirect = () => {
+//   const isLoggedIn = useSelector(selectIsLoggedIn);
+//   const navigate = useNavigate();
+//   const [checkedLogin, setCheckedLogin] = useState(false);
+//   const {isLoading} = useSelector(state => state.auth)
+
+//   useEffect(() => {
+//     if (!isLoggedIn) {
+//       // toast.error("You need to login to access your dashboard");
+//       // navigate("/login"); // Redirect to login page (adjust the path if needed)
+
+//     } else {
+//       setCheckedLogin(true);
+//     }
+//   }, [isLoggedIn, navigate]);
+
+//   if (!checkedLogin) {
+//     return null; // Render nothing until login status is checked
+//   }
+
+//   // If logged in and checked, render the child routes
+//   return <Outlet />;
+// };
+
 export const ShowOnLoginAndRedirect = () => {
-  const isLoggedIn = useSelector(selectIsLoggedIn);
+  const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { isLoggedIn, isLoading } = useSelector((state) => state.auth);
   const [checkedLogin, setCheckedLogin] = useState(false);
 
   useEffect(() => {
     if (!isLoggedIn) {
-      toast.error("You need to login to access your dashboard");
-      navigate("/login"); // Redirect to login page (adjust the path if needed)
+      dispatch(getUser()); // Dispatch the action to get the user
     } else {
       setCheckedLogin(true);
     }
-  }, [isLoggedIn, navigate]);
+  }, [isLoggedIn, dispatch]);
+
+  useEffect(() => {
+    if (!isLoggedIn && !isLoading) {
+      // toast.error("You need to login to access your dashboard");
+      navigate("/login"); // Redirect to login page
+    }
+  }, [isLoggedIn, isLoading, navigate]);
 
   if (!checkedLogin) {
     return null; // Render nothing until login status is checked

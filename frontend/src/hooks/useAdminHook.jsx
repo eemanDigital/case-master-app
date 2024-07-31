@@ -21,6 +21,9 @@ export const useAdminHook = () => {
 
   const isClient = user?.data?.role === "client";
 
+  // for verified user
+  const isVerified = user?.data?.isVerified === true;
+
   return {
     isAdmin,
     isSuperAdmin,
@@ -29,5 +32,6 @@ export const useAdminHook = () => {
     isClient,
     isStaff,
     isUser,
+    isVerified,
   };
 };

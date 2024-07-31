@@ -82,7 +82,7 @@ const TaskList = () => {
             <Link to={`${record?.id}/details`}>Get Details</Link>
           </Button>
 
-          {user?.data?.user?._id === record?.assignedBy?._id && (
+          {user?.user?._id === record?.assignedBy?._id && (
             <RiDeleteBin6Line
               className="text-red-500 text-2xl cursor-pointer hover:text-red-700"
               onClick={() => {
@@ -94,7 +94,7 @@ const TaskList = () => {
             />
           )}
           {/* Check if the current user is the one who assigned the task for each record */}
-          {user?.data?.user?._id === record?.assignedBy?._id && (
+          {user?.data?._id === record?.assignedBy?._id && (
             <TaskReminderForm id={record._id} />
           )}
         </Space>
@@ -133,7 +133,7 @@ const TaskList = () => {
             ? tasks?.data
             : isClient
             ? filterTaskByClientUser(loggedInClientId)
-            : filterTaskByUser(tasks?.data, user?.data?.user?.id)
+            : filterTaskByUser(tasks?.data, user?.data?.id)
         }
         rowKey="_id"
       />

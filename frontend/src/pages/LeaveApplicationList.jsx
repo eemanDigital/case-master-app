@@ -19,7 +19,7 @@ const LeaveApplicationList = () => {
     useSelector((state) => state.auth);
   const { isAdminOrHr } = useAdminHook();
 
-  const userId = user?.data?.user?.id;
+  const userId = user?.data?.id;
 
   const { data, loading, error, dataFetcher } = useDataFetch();
 
@@ -51,9 +51,7 @@ const LeaveApplicationList = () => {
   // Filter the leave applications based on the user's role
   const filteredLeaveApps = isAdminOrHr
     ? leaveApps?.data
-    : leaveApps?.data?.filter(
-        (app) => app?.employee?.id === user?.data?.user?.id
-      );
+    : leaveApps?.data?.filter((app) => app?.employee?.id === user?.data?.id);
 
   return (
     <Table dataSource={filteredLeaveApps}>

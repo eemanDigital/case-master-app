@@ -11,7 +11,7 @@ const ClientDashboard = () => {
   return (
     <div>
       {/* account officer for client */}
-      {isClient && <ClientCaseInfo cases={user?.data?.user?.case} />}
+      {isClient && <ClientCaseInfo cases={user?.data?.clientCase} />}
       {/* case details */}
       <ClientCaseDetails />
     </div>

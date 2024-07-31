@@ -1,66 +1,68 @@
 import { useState } from "react";
 import Input from "../components/Inputs";
 import Button from "../components/Button";
-import { useAuth } from "../hooks/useAuth";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { RESET, resetPassword } from "../redux/features/auth/authSlice";
+import PasswordCheckCard from "../components/PasswordCheckCard";
+import { toast } from "react-toastify";
 
-const ForgotPasswordReset = ({ endpoint }) => {
-  const { token } = useParams();
-  //getting data from our custom hooks for auth
-  const { data, loading, error, authenticate } = useAuth();
-
-  const [click, setClick] = useState(false);
-  // const [photo, setPhoto] = useState("");
+const ForgotPasswordReset = () => {
+  const { token } = useParams(); // Get the token from URL params
+  const dispatch = useDispatch();
+  const { isLoading } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
 
   const [inputValue, setInputValue] = useState({
     password: "",
     passwordConfirm: "",
   });
 
-  // handleChange function
+  // Handle input change
   function handleChange(e) {
     const inputText = e.target.value;
     const inputName = e.target.name;
 
-    setInputValue((prevValue) => {
-      return { ...prevValue, [inputName]: inputText };
-    });
+    setInputValue((prevValue) => ({
+      ...prevValue,
+      [inputName]: inputText,
+    }));
   }
 
-  // function to handle for submission
+  // Handle form submission
   async function handleSubmit(e) {
     e.preventDefault();
 
-    try {
-      // Call fetchData with your endpoint, method, payload, and any additional arguments
-      await authenticate(`${endpoint}/${token}`, "patch", inputValue);
-      // Handle successful response
-    } catch (err) {
-      // Handle error
+    if (inputValue.password !== inputValue.passwordConfirm) {
+      // Show error if passwords do not match
+      return toast.error("Passwords do not match.");
     }
-  }
 
-  function handleClick() {
-    setClick(() => !click);
+    await dispatch(resetPassword({ resetToken: token, userData: inputValue }));
+    await dispatch(RESET());
+    navigate("/login");
   }
 
   let inputStyle =
-    " appearance-none block  sm:w-[344px] bg-gray-200 text-red border border-red-500 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white";
+    "appearance-none block sm:w-[344px] bg-gray-200 text-red border border-red-500 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white";
 
   return (
-    <section className=" bg-gray-200 h-screen ">
-      <h1 className="text-5xl bold text-center p-5">Reset your Password</h1>
+    <section className="bg-gray-200 h-screen">
+      <h1 className="text-5xl font-bold text-center p-5">
+        Reset your Password
+      </h1>
 
-      <div className="flex flex-col md:flex-row  justify-center  ">
+      <div className="flex flex-col md:flex-row justify-center">
         <form
           onSubmit={handleSubmit}
-          className=" flex  flex-col justify-center items-center bg-white  basis-2/5  shadow-md rounded-md px-8 pt-6 pb-8 m-4">
-          <div className="flex  flex-col items-center -mx-3  mb-6 gap-2">
+          className="flex flex-col justify-center items-center bg-white basis-2/5 shadow-md rounded-md px-8 pt-6 pb-8 m-4">
+          <div className="flex flex-col items-center -mx-3 mb-6 gap-2">
             <div>
               <Input
                 inputStyle={inputStyle}
                 type="password"
-                label=" new Password"
+                label="New Password"
                 placeholder="*******"
                 htmlFor="password"
                 name="password"
@@ -69,22 +71,24 @@ const ForgotPasswordReset = ({ endpoint }) => {
               />
             </div>
 
+            <PasswordCheckCard password={inputValue.password} />
+
             <div>
               <Input
                 inputStyle={inputStyle}
                 type="password"
-                label=" Confirm new Password"
+                label="Confirm New Password"
                 placeholder="*******"
-                htmlFor="confirm password"
-                value={inputValue.passwordConfirm}
+                htmlFor="passwordConfirm"
                 name="passwordConfirm"
+                value={inputValue.passwordConfirm}
                 onChange={handleChange}
               />
             </div>
             <Button
-              onClick={handleClick}
+              type="submit"
               buttonStyle="bg-slate-500 m-2 px-5 py-2 rounded w-full text-slate-200 hover:bg-slate-400">
-              Submit{" "}
+              {isLoading ? <LoadingSpinner /> : "Submit"}
             </Button>
           </div>
         </form>

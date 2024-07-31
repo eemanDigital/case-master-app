@@ -12,7 +12,7 @@ const ClientDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
 
   useEffect(() => {
-    dataFetcher(`clients/${id}`, "GET");
+    dataFetcher(`users/${id}`, "GET");
   }, [id]);
 
   return (

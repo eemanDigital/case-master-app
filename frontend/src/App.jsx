@@ -61,15 +61,16 @@ import {
 import { ShowOnLoginAndRedirect } from "./components/protect/Protect.jsx";
 import { setLoading } from "./redux/features/loader/loadingSlice.js";
 import LoadingSpinner from "./components/LoadingSpinner.jsx";
+import ForgotPassword from "./pages/ForgotPassword.jsx";
+import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
 
 // enable axios to get credentials everywhere in the app
 axios.defaults.withCredentials = true;
 
 function App() {
   const dispatch = useDispatch();
-  const isLoggedIn = useSelector(selectIsLoggedIn);
-  const user = useSelector(selectUser);
   const isLoading = useSelector((state) => state.loading);
+  const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
 
   useEffect(() => {
     async function checkAuthStatus() {
@@ -81,7 +82,7 @@ function App() {
       dispatch(setLoading(false));
     }
     checkAuthStatus();
-  }, [dispatch]);
+  }, [dispatch, isLoggedIn]);
 
   const router = createBrowserRouter(
     createRoutesFromElements(
@@ -93,19 +94,18 @@ function App() {
           path="/forgotpassword/clients"
           element={<ForgotPasswordClient />}
         />
-        <Route path="/forgotpassword" element={<ForgotPasswordStaff />} />
-        <Route
-          path="/resetPassword/:token"
-          element={<ForgotPasswordResetStaff />}
-        />
-        <Route
-          path="/resetPassword/clients/:token"
-          element={<ForgotPasswordResetClient />}
-        />
+        <Route path="/forgotpassword" element={<ForgotPassword />} />
+        <Route path="/resetPassword/:token" element={<ForgotPasswordReset />} />
+
         <Route
           path="/two-factor-auth/users/:email"
           element={<TwoFactorAuth />}
         />
+        <Route
+          path="dashboard/verify-account/:token"
+          element={<VerifyAccount />}
+        />
+
         <Route path="/resetpassword" element={<ResetPassword />} />
         <Route
           path="*"
@@ -125,7 +125,6 @@ function App() {
         <Route element={<ShowOnLoginAndRedirect />}>
           <Route path="dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
-            <Route path="verify-account/:token" element={<VerifyAccount />} />
             <Route path="add-user" element={<AddUserForm />} />
             <Route
               path="staff"

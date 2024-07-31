@@ -10,13 +10,13 @@ const ClientCaseDetails = () => {
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
 
-  const clientCase = user?.data?.user?.case;
-  const clientCaseIds = clientCase.map((item) => item.id); //get caseIDs
+  const clientCase = user?.data?.clientCase;
+  const clientCaseIds = clientCase?.map((item) => item?.id); //get caseIDs
   const causeListData = causeList?.data?.reportsThisMonth || []; //cause list data for the month
 
   // filter out clients cases
   const filteredCauseList = causeListData.filter((items) =>
-    clientCaseIds.includes(items?.caseReported.id)
+    clientCaseIds.includes(items?.caseReported?.id)
   );
 
   // Ensure reports are loaded

@@ -258,10 +258,8 @@ exports.protect = catchAsync(async (req, res, next) => {
       new AppError("You are not logged in! Please log in to get access.", 401)
     );
   }
-
   // 2) Verification of token
   const verified = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-
   // 3) Check if user still exists
   const currentUser = await User.findById(verified.id);
   if (!currentUser) {
@@ -355,8 +353,10 @@ exports.isLoggedIn = async (req, res) => {
 // };
 // forgot password handler
 exports.forgotPassword = catchAsync(async (req, res, next) => {
+  const { email } = req.body;
   // 1) Get user based on POSTed email
-  const user = await User.findOne({ email: req.body.email });
+  console.log(`Searching for user with email: ${email}`);
+  const user = await User.findOne({ email });
   if (!user) {
     return next(new AppError("There is no user with email address.", 404));
   }
@@ -449,21 +449,23 @@ exports.changePassword = catchAsync(async (req, res, next) => {
   await user.save({ validateBeforeSave: false });
   // User.findByIdAndUpdate will NOT work as intended!
 
+  res.status(200).json({ message: "Password Changed" });
   // Prepare email details
-  const subject = "Password Change - CaseMaster";
-  const send_to = user.email;
-  const send_from = process.env.EMAIL_USER_OUTLOOK;
-  const reply_to = "noreply@gmail.com";
-  const template = "changePassword";
-  const name = user.firstName;
-  const link = "";
-  try {
-    await sendMail(subject, send_to, send_from, reply_to, template, name, link);
-    // 4) Log user in, send JWT
-    createSendToken(user, 200, res);
-  } catch (error) {
-    return next(new AppError("Email sending failed", 400));
-  }
+  // const subject = "Password Change - CaseMaster";
+  // const send_to = user.email;
+  // const send_from = process.env.EMAIL_USER_OUTLOOK;
+  // const reply_to = "noreply@gmail.com";
+  // const template = "changePassword";
+  // const name = user.firstName;
+  // const link = "";
+  // try {
+  //   await sendMail(subject, send_to, send_from, reply_to, template, name, link);
+  //   // 4) Log user in, send JWT
+  //   // createSendToken(user, 200, res);
+  //   res.status(200).json({ message: "Password Changed Successfully" });
+  // } catch (error) {
+  //   return next(new AppError("Email sending failed", 400));
+  // }
 });
 
 // send verification email
@@ -483,6 +485,7 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
   }
 
   const vToken = crypto.randomBytes(32).toString("hex") + user._id;
+  console.log("VT", vToken);
   const hashedToken = hashToken(vToken);
 
   await new Token({

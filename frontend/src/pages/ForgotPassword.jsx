@@ -3,17 +3,20 @@ import Input from "../components/Inputs";
 import lawyer1 from "../assets/lawyer1.svg";
 import Button from "../components/Button";
 import { Link } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
+import { useDispatch, useSelector } from "react-redux";
+import { forgotUserPassword, RESET } from "../redux/features/auth/authSlice";
+import LoadingSpinner from "../components/LoadingSpinner";
 
-const ForgotPassword = ({ endpoint }) => {
+const ForgotPassword = () => {
   //getting data from our custom hooks for auth
-  const { data, loading, error, authenticate } = useAuth();
+  // const { data, loading, error, authenticate } = useAuth();
+  const dispatch = useDispatch();
+  const { isLoading } = useSelector((state) => state.auth);
 
   const [click, setClick] = useState(false);
 
   const [inputValue, setInputValue] = useState({
     email: "",
-    password: "",
   });
 
   // handleChange function
@@ -30,13 +33,12 @@ const ForgotPassword = ({ endpoint }) => {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    try {
-      // Call fetchData with your endpoint, method, payload, and any additional arguments
-      await authenticate(endpoint, "post", inputValue);
-      // Handle successful response
-    } catch (err) {
-      // Handle error
-    }
+    // Call fetchData with your endpoint, method, payload, and any additional arguments
+    console.log(inputValue);
+
+    await dispatch(forgotUserPassword(inputValue));
+    await dispatch(RESET(inputValue));
+    // Handle successful response
   }
 
   function handleClick() {
@@ -81,7 +83,7 @@ const ForgotPassword = ({ endpoint }) => {
                 onChange={handleChange}
               />
             </div>
-
+            {isLoading && <LoadingSpinner />}
             <Button
               onClick={handleClick}
               buttonStyle="bg-slate-500 m-2 px-5 py-2 rounded w-full text-slate-200 hover:bg-slate-400">

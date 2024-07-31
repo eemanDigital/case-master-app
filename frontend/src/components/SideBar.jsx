@@ -16,6 +16,7 @@ import { useAdminHook } from "../hooks/useAdminHook";
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { logout, RESET } from "../redux/features/auth/authSlice";
+import { shortenText } from "../utils/shortenText";
 
 const { Header, Sider, Content } = Layout;
 const { SubMenu } = Menu;
@@ -123,6 +124,8 @@ const SideBar = () => {
     return true;
   });
 
+  // function to shorten text
+
   return (
     <>
       <Layout>
@@ -146,7 +149,7 @@ const SideBar = () => {
           ) : (
             <Link to="profile">
               <h1 className="py-6 text-gray-300 hover:text-gray-500 font-bold text-center">
-                {user?.data?.firstName}
+                {shortenText(user?.data?.firstName, 10)}
               </h1>
             </Link>
           )}

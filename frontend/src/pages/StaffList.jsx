@@ -20,6 +20,7 @@ const StaffList = () => {
   const { Column, ColumnGroup } = Table;
   const { dataFetcher, loading, error } = useDataFetch();
 
+  console.log("USERS", users);
   // const loggedInUserId = user?.data?.user.id;
   const { isAdminOrHr, isAdmin, isSuperOrAdmin } = useAdminHook();
 

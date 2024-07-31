@@ -1,6 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
-import { useAuthContext } from "./useAuthContext";
+// import { useAuthContext } from "./useAuthContext";
 import { toast } from "react-toastify";
 
 const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
@@ -10,7 +10,7 @@ export const useAuth = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const { dispatch } = useAuthContext();
+  // const { dispatch } = useAuthContext();
 
   const authenticate = async (
     endpoint,
@@ -56,36 +56,16 @@ export const useAuth = () => {
       });
 
       setData(response.data);
-      // toast.success(response.data.status, {
-      //   position: "top-right",
-      //   autoClose: 5000,
-      //   hideProgressBar: false,
-      //   closeOnClick: true,
-      //   pauseOnHover: true,
-      //   draggable: true,
-      //   toastId: 12,
-      //   progress: undefined,
-      //   theme: "light",
-      // });
+      toast.success(response.data.status);
 
       localStorage.setItem("user", JSON.stringify(response.data));
-      dispatch({ type: "LOGIN", payload: response.data });
+      // dispatch({ type: "LOGIN", payload: response.data });
     } catch (err) {
       setError(err);
 
       const { response } = err;
 
-      toast.error(response.data.message, {
-        position: "top-right",
-        autoClose: 2000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-        toastId: 11,
-        progress: undefined,
-        theme: "light",
-      });
+      toast.error(response.data.message);
     } finally {
       setLoading(false);
     }

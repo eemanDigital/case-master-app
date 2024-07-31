@@ -10,12 +10,24 @@ import useTogglePassword from "../hooks/useTogglePassword";
 import PasswordInput from "../components/PasswordInput";
 import useModal from "../hooks/useModal";
 import { Modal } from "antd";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import {
+  changePassword,
+  logout,
+  RESET,
+} from "../redux/features/auth/authSlice";
+import { useNavigate } from "react-router-dom";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { sendAutomatedEmail } from "../redux/features/emails/emailSlice";
 
-const ChangePassword = ({ endpoint }) => {
-  // const { inputValue, handleChange } = useContext(FormContext);
+const ChangePassword = () => {
+  const dispatch = useDispatch();
+  const { isLoading, isError, user } = useSelector((state) => state.auth);
   const [click, setClick] = useState(false);
   const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
     useModal();
+  const navigate = useNavigate();
 
   const [inputValue, setInputValue] = useState({
     passwordCurrent: "",
@@ -24,13 +36,11 @@ const ChangePassword = ({ endpoint }) => {
   });
 
   // getting data from out custom hook
-  const { loading, error, authenticate } = useAuth();
   const { togglePassword: togglePassword1, showPassword: showPassword1 } =
     useTogglePassword();
   const { togglePassword: togglePassword2, showPassword: showPassword2 } =
     useTogglePassword();
 
-  // console.log(user?.data?.user?.gender);
   function handleChange(e) {
     const inputText = e.target.value;
     const inputName = e.target.name;
@@ -40,8 +50,15 @@ const ChangePassword = ({ endpoint }) => {
     });
   }
 
-  console.log(inputValue);
-
+  // sending email data
+  const emailData = {
+    subject: "Password Changed - CaseMaster",
+    send_to: user.data.email,
+    reply_to: "noreply@gmail.com",
+    template: "changePassword",
+    // url: "/forgotpassword",
+    url: "/dashboard/profile", //you may consider changing it to reflect the forgotpwd url
+  };
   // function to handle for submission
   async function handleSubmit(e) {
     e.preventDefault();
@@ -54,15 +71,11 @@ const ChangePassword = ({ endpoint }) => {
       return;
     }
 
-    try {
-      // Call fetchData with your endpoint, method, payload, and any additional arguments
-      await authenticate(endpoint, "patch", inputValue);
-      // Handle successful response
-
-      //
-    } catch (err) {
-      console.log(err);
-    }
+    await dispatch(changePassword(inputValue));
+    await dispatch(sendAutomatedEmail(emailData)); //send email
+    await dispatch(logout(inputValue));
+    await dispatch(RESET());
+    navigate("/login");
   }
 
   function handleClick() {
@@ -71,7 +84,7 @@ const ChangePassword = ({ endpoint }) => {
 
   //form input styling
   let inputStyle = ` appearance-none block  sm:w-[344px] bg-gray-200 text-red border ${
-    error && "border-red-500"
+    isError && "border-red-500"
   } rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`;
 
   return (
@@ -138,6 +151,8 @@ const ChangePassword = ({ endpoint }) => {
                 </div>
                 <PasswordCheckCard password={inputValue.password} />
               </div>
+
+              {isLoading && <LoadingSpinner />}
               <Button
                 onClick={handleClick}
                 buttonStyle="bg-slate-500 px-5 py-2 rounded w-full text-slate-200 hover:bg-slate-400">
