@@ -10,7 +10,7 @@ import "./index.css";
 import PhotoContextProvider from "./context/photoContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
 
-const googleClientId = import.meta.env.VITE_CALENDER_CLIENT_ID;
+const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID; //google oauth client id
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>

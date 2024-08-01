@@ -13,10 +13,14 @@ const Client = require("../models/clientModel");
 const { createSendToken, hashToken } = require("../utils/handleSendToken");
 const Token = require("../models/tokenModel");
 const sendMail = require("../utils/email");
+const { OAuth2Client } = require("google-auth-library");
 
 dotenv.config({ path: "./config.env" });
 
 const cryptr = new Cryptr(process.env.CRYPTR_SECRET_KEY);
+
+// create new instance of google oauth2
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 // ///// function to implement user signup
 exports.register = catchAsync(async (req, res, next) => {
@@ -538,4 +542,60 @@ exports.verifyUser = catchAsync(async (req, res, next) => {
   await user.save({ validateBeforeSave: false });
 
   res.status(200).json({ message: "Account verification successful" });
+});
+
+// login with google
+exports.loginWithGoogle = catchAsync(async (req, res, next) => {
+  const { userToken } = req.body;
+
+  // verify token received from the frontend
+  const ticket = await client.verifyIdToken({
+    idToken: userToken,
+    audience: process.env.GOOGLE_CLIENT_ID,
+  });
+
+  // get payload
+  const payload = ticket.getPayload();
+
+  const { name, email, picture, sub } = payload;
+
+  // check if user exist
+  const user = await User.findOne({ email });
+  // get password for user
+  // const password = Date.now() + sub;
+  if (!user) {
+    next(new AppError("You have not been registered as a user", 403));
+  }
+
+  // Trigger user 2FA auth for unknown user agent
+  const ua = parser(req.headers["user-agent"]); // Get user-agent header
+  const currentUserAgent = ua.ua;
+
+  const allowedAgent = user.userAgent.includes(currentUserAgent);
+
+  if (!allowedAgent) {
+    // Generate 6 digit code
+    const loginCode = Math.floor(100000 + Math.random() * 900000);
+console.log(loginCode)
+    // Encrypt loginCode
+    const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
+
+    // Check for existing token and delete if found
+    const userToken = await Token.findOne({ userId: user._id });
+    if (userToken) {
+      await userToken.deleteOne();
+    }
+
+    // Save the new token to the database
+    await new Token({
+      userId: user._id,
+      loginToken: encryptedLoginCode,
+      createAt: Date.now(),
+      expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour
+    }).save();
+
+    return next(new AppError("New Browser or device detected", 400));
+  }
+
+  createSendToken(user, 200, res);
 });

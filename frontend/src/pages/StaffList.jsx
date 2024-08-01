@@ -15,9 +15,11 @@ import { deleteUser, getUsers } from "../redux/features/auth/authSlice";
 const StaffList = () => {
   const [searchResults, setSearchResults] = useState([]);
   const dispatch = useDispatch();
-  const { isLoading, users } = useSelector((state) => state.auth);
+  const { isSuccess, isError, isLoading, users } = useSelector(
+    (state) => state.auth
+  );
 
-  console.log("USERS", users);
+  // console.log("USERS", users);
   const { Column, ColumnGroup } = Table;
   const { isAdminOrHr, isAdmin, isSuperOrAdmin } = useAdminHook();
 

@@ -8,8 +8,15 @@ import useTogglePassword from "../hooks/useTogglePassword";
 import { toast } from "react-toastify";
 import { FaGoogle } from "react-icons/fa6";
 import PasswordInput from "./PasswordInput";
-import { login, RESET, sendLoginCode } from "../redux/features/auth/authSlice";
+import {
+  login,
+  loginWithGoogle,
+  RESET,
+  sendLoginCode,
+} from "../redux/features/auth/authSlice";
 import { useDispatch, useSelector } from "react-redux";
+import { GoogleLogin } from "@react-oauth/google";
+import GoogleUserLogin from "../pages/GoogleUserLogin";
 
 const Login = () => {
   const { showPassword, togglePassword } = useTogglePassword();
@@ -85,10 +92,13 @@ const Login = () => {
           </p>
         </div>
         <div className="flex flex-col justify-center items-center bg-white basis-2/5 shadow-md rounded-md px-8 pt-6 pb-8 m-4">
-          <button className="flex items-center gap-1">
-            <FaGoogle />
-            <span> Sign in with Google</span>
-          </button>
+          {/* <span> Sign in with Google</span> */}
+
+          {/* <button className="flex items-center gap-1"> */}
+          {/* <FaGoogle /> */}
+          {/* </button> */}
+          <GoogleUserLogin />
+
           <h1 className="font-bold"> Or</h1>
           <form onSubmit={loginUser}>
             <div className="flex flex-col items-center -mx-3 mb-6 gap-2">

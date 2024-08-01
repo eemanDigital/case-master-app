@@ -25,6 +25,7 @@ const {
   verifyUser,
   changePassword,
   loginWithCode,
+  loginWithGoogle,
 } = require("../controllers/authController");
 const {
   uploadUserPhoto,
@@ -54,6 +55,7 @@ router.patch("/verifyUser/:verificationToken", verifyUser);
 router.patch("/resetpassword/:resetToken", resetPassword);
 router.post("/sendLoginCode/:email", sendLoginCode);
 router.post("/loginWithCode/:email", loginWithCode);
+router.post("/google/callback", loginWithGoogle);
 
 // // Middleware to protect routes below this line
 router.use(protect);
