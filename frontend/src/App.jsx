@@ -40,12 +40,8 @@ import StaffList from "./pages/StaffList.jsx";
 import StaffDetails from "./pages/StaffDetails.jsx";
 import StaffLogin from "./pages/StaffLogin.jsx";
 import ForgotPasswordClient from "./pages/ForgotPasswordClient.jsx";
-import ForgotPasswordStaff from "./pages/ForgotPasswordStaff.jsx";
-import ForgotPasswordResetStaff from "./pages/ForgotPasswordResetStaff.jsx";
-import ForgotPasswordResetClient from "./pages/ForgotPasswordResetClient.jsx";
 import MainCaseReportList from "./pages/MainCaseReportList.jsx";
 import PaymentMadeOnCase from "./pages/PaymentMadeOnCase.jsx";
-import TwoFactorAuth from "./components/TwoFactorAuth.jsx";
 import VerifyAccount from "./components/VerifyAccount.jsx";
 import axios from "axios";
 import { ToastContainer } from "react-toastify";
@@ -63,6 +59,8 @@ import { setLoading } from "./redux/features/loader/loadingSlice.js";
 import LoadingSpinner from "./components/LoadingSpinner.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
+import SendLoginCode from "./components/LoginWithCode.jsx";
+import LoginWithCode from "./components/LoginWithCode.jsx";
 
 // enable axios to get credentials everywhere in the app
 axios.defaults.withCredentials = true;
@@ -97,10 +95,7 @@ function App() {
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/resetPassword/:token" element={<ForgotPasswordReset />} />
 
-        <Route
-          path="/two-factor-auth/users/:email"
-          element={<TwoFactorAuth />}
-        />
+        <Route path="/loginWithCode/:email" element={<LoginWithCode />} />
         <Route
           path="dashboard/verify-account/:token"
           element={<VerifyAccount />}

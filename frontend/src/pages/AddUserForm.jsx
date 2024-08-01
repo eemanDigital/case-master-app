@@ -2,7 +2,7 @@
 import Input from "../components/Inputs";
 import lawyer1 from "../assets/lawyer1.svg";
 import Select from "../components/Select";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 import { useState } from "react";
 import PasswordInput from "../components/PasswordInput";
@@ -13,6 +13,7 @@ import PasswordCheckCard from "../components/PasswordCheckCard";
 import { validateRegister } from "../utils/addUserValidation";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  getUser,
   register,
   sendVerificationMail,
 } from "../redux/features/auth/authSlice";
@@ -20,7 +21,7 @@ import { toast } from "react-toastify";
 
 const SignUp = () => {
   const [click, setClick] = useState(false);
-
+  const navigate = useNavigate();
   // destructure init value
   const [inputValue, setInputValue] = useState(addUserInitValue);
   const {
@@ -85,7 +86,7 @@ const SignUp = () => {
     await dispatch(sendVerificationMail());
 
     // Reset state after submission
-    setInputValue(addUserInitValue);
+    // setInputValue(addUserInitValue);
   }
 
   function handleClick() {
@@ -141,17 +142,7 @@ const SignUp = () => {
                   onChange={handleChange}
                 />
               </div>
-              <div>
-                <Input
-                  type="text"
-                  label="Second Name"
-                  placeholder="Client Second Name"
-                  htmlFor="secondName"
-                  value={inputValue.secondName}
-                  name="lastName"
-                  onChange={handleChange}
-                />
-              </div>
+
               <div>
                 <Input
                   type="text"

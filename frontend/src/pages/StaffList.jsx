@@ -7,22 +7,24 @@ import { Space, Table, Button, Spin, Alert, Modal } from "antd";
 import avatar from "../assets/avatar.png";
 import LeaveBalanceList from "./leaveBalanceList";
 import CreateLeaveBalanceForm from "../components/CreateLeaveBalanceForm";
+import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBar from "../components/SearchBar";
+import { useDispatch, useSelector } from "react-redux";
+import { deleteUser, getUsers } from "../redux/features/auth/authSlice";
 
 const StaffList = () => {
-  const {
-    users,
-    loading: loadingUsers,
-    error: errorUsers,
-  } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
-
-  const { Column, ColumnGroup } = Table;
-  const { dataFetcher, loading, error } = useDataFetch();
+  const dispatch = useDispatch();
+  const { isLoading, users } = useSelector((state) => state.auth);
 
   console.log("USERS", users);
-  // const loggedInUserId = user?.data?.user.id;
+  const { Column, ColumnGroup } = Table;
   const { isAdminOrHr, isAdmin, isSuperOrAdmin } = useAdminHook();
+
+  // fetch users
+  useEffect(() => {
+    dispatch(getUsers());
+  }, [dispatch]);
 
   //render all cases initially before filter
   useEffect(() => {
@@ -45,55 +47,35 @@ const StaffList = () => {
       const usernameMatch = d.fullName.toLowerCase().includes(searchTerm);
       // Check in role
       const roleMatch = d.role?.toLowerCase().includes(searchTerm);
-
       // check by email
       const emailMatch = d.email?.toLowerCase().includes(searchTerm);
-
       // Check in position
       const positionMatch = d.position?.toLowerCase().includes(searchTerm);
-
       return usernameMatch || emailMatch || positionMatch || roleMatch;
     });
-
     setSearchResults(results);
   };
 
-  if (loadingUsers.users) {
+  if (isLoading) {
     return (
       <div>
-        <Spin
-          size="large"
-          className="flex justify-center items-center h-full"
-        />
+        <LoadingSpinner />
       </div>
     );
   }
 
-  if (errorUsers.users) {
-    return (
-      <Alert
-        message="Error"
-        description={errorUsers.user}
-        type="error"
-        showIcon
-      />
-    );
-  }
-
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
-  const handleDeleteUser = async (id) => {
-    await dataFetcher(`users/${id}`, "delete", fileHeaders);
+  const removeUser = async (id) => {
+    await dispatch(deleteUser(id));
+    await dispatch(getUsers());
   };
 
   // format position
-  const formatPosition = (position) => {
-    return position
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
+  // const formatPosition = (position) => {
+  //   return position
+  //     .split("_")
+  //     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+  //     .join(" ");
+  // };
 
   return (
     <>
@@ -111,6 +93,7 @@ const StaffList = () => {
 
         <SearchBar onSearch={handleSearchChange} />
       </div>
+
       <Table dataSource={searchResults}>
         <ColumnGroup title="Employee's Name">
           <Column
@@ -134,12 +117,7 @@ const StaffList = () => {
 
         <Column title="Email" dataIndex="email" key="email" />
         <Column title="Role" dataIndex="role" key="role" />
-        <Column
-          title="Position"
-          dataIndex="position"
-          key="position"
-          render={(text) => formatPosition(text)}
-        />
+        <Column title="Position" dataIndex="position" key="position" />
         {/* <Column title="Phone" dataIndex="phone" key="phone" /> */}
 
         <Column
@@ -157,7 +135,7 @@ const StaffList = () => {
                   onClick={() => {
                     Modal.confirm({
                       title: "Are you sure you want to delete this user?",
-                      onOk: () => handleDeleteUser(record.id),
+                      onOk: () => removeUser(record._id),
                     });
                   }}
                   type="primary"

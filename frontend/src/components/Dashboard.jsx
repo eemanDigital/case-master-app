@@ -95,8 +95,14 @@ const Dashboard = () => {
   } = useDataGetterHook();
 
   // end
-  const { isAdminOrHr, isAdmin, isStaff, isClient, isVerified } =
-    useAdminHook();
+  const {
+    isAdminOrHr,
+    isSuperOrAdmin,
+    isAdmin,
+    isStaff,
+    isClient,
+    isVerified,
+  } = useAdminHook();
   // user count
   const { lawyerCount, clientCount, staff } = useUsersCount(users);
 
@@ -184,7 +190,7 @@ const Dashboard = () => {
       {isStaff && (
         <>
           <Row gutter={16} className="m-4 flex justify-between items-center">
-            {isAdmin && (
+            {isSuperOrAdmin && (
               <Col>
                 <Link to="add-user">
                   <Button className={btnStyle}>Add User</Button>
@@ -217,7 +223,7 @@ const Dashboard = () => {
             <Col span={6}>
               <Card className="bg-blue-100">
                 <FaBriefcase className="text-3xl text-blue-500 mb-2" />
-                <Title level={4}>{cases?.results}</Title>
+                <Title level={4}>{cases?.results || 0}</Title>
                 <Text>Number of Cases</Text>
               </Card>
             </Col>

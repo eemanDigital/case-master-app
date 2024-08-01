@@ -103,7 +103,7 @@ export const positions = [
   "Counsel",
   "Intern",
   "Secretary",
-  "Paralegal",
+  "Para-legal",
   "Client",
   "other",
 ];

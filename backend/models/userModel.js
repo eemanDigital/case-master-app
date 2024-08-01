@@ -152,6 +152,12 @@ const userSchema = new mongoose.Schema(
         return this.isLawyer === true;
       },
     },
+    universityAttended: {
+      type: String,
+      required: function () {
+        return this.role === "client";
+      },
+    },
     yearOfCall: {
       type: Date,
       required: function () {

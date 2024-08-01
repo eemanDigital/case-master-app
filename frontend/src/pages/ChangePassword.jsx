@@ -53,7 +53,7 @@ const ChangePassword = () => {
   // sending email data
   const emailData = {
     subject: "Password Changed - CaseMaster",
-    send_to: user.data.email,
+    send_to: user.data?.email,
     reply_to: "noreply@gmail.com",
     template: "changePassword",
     // url: "/forgotpassword",

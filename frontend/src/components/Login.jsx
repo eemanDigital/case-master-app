@@ -8,16 +8,15 @@ import useTogglePassword from "../hooks/useTogglePassword";
 import { toast } from "react-toastify";
 import { FaGoogle } from "react-icons/fa6";
 import PasswordInput from "./PasswordInput";
-import { login, RESET } from "../redux/features/auth/authSlice";
+import { login, RESET, sendLoginCode } from "../redux/features/auth/authSlice";
 import { useDispatch, useSelector } from "react-redux";
 
 const Login = () => {
   const { showPassword, togglePassword } = useTogglePassword();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { isError, isSuccess, isLoading, message, isLoggedIn } = useSelector(
-    (state) => state.auth
-  );
+  const { isError, isSuccess, isLoading, message, isLoggedIn, twoFactor } =
+    useSelector((state) => state.auth);
   const [inputValue, setInputValue] = useState({
     email: "",
     password: "",
@@ -44,14 +43,25 @@ const Login = () => {
     if (isSuccess && isLoggedIn) {
       navigate("/dashboard");
     }
-    if (isError) {
-      toast.error(message);
+    // if two factor(new browser) is spotted trigger send login code
+    if (isError && twoFactor) {
+      dispatch(sendLoginCode(inputValue.email));
+      navigate(`/loginWithCode/${inputValue.email}`);
     }
     if (isSuccess && !isLoggedIn) {
       toast.success(message);
     }
     dispatch(RESET());
-  }, [isSuccess, isLoggedIn, isError, message, dispatch, navigate]);
+  }, [
+    isSuccess,
+    isLoggedIn,
+    isError,
+    message,
+    dispatch,
+    navigate,
+    twoFactor,
+    inputValue.email,
+  ]);
 
   const inputStyle = `appearance-none block sm:w-[344px] bg-gray-200 text-red border ${
     isError && "border-red-500"

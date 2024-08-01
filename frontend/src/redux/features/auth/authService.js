@@ -32,6 +32,14 @@ const getUser = async () => {
   // console.log("rRESd", response.data);
   return response.data;
 };
+
+/// get user
+const getUsers = async () => {
+  const response = await axios.get(API_URL);
+  console.log(response);
+  return response.data;
+};
+
 ///send verification email
 const sendVerificationMail = async () => {
   const response = await axios.post(API_URL + "sendVerificationEmail");
@@ -65,17 +73,38 @@ const changePassword = async (userData) => {
   return response.data.message;
 };
 
+// delete user
+const deleteUser = async (id) => {
+  const response = await axios.delete(API_URL + id);
+  return response.data.message;
+};
+// send Login code 2FA
+const sendLoginCode = async (email) => {
+  const response = await axios.post(API_URL + `sendLoginCode/${email}`);
+  return response.data.message;
+};
+
+// login with code after email sent (2FA)
+const loginWithCode = async (code, email) => {
+  const response = await axios.post(API_URL + `loginWithCode/${email}`, code);
+  return response.data;
+};
+
 const authService = {
   register,
   login,
   logout,
   getLoginStatus,
   getUser,
+  getUsers,
   sendVerificationMail,
   verifyUser,
   forgotUserPassword,
   resetPassword,
   changePassword,
+  deleteUser,
+  sendLoginCode,
+  loginWithCode,
 };
 
 export default authService;

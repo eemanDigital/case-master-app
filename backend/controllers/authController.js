@@ -137,12 +137,7 @@ exports.login = catchAsync(async (req, res, next) => {
       expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour
     }).save();
 
-    return next(
-      new AppError(
-        "This browser or device is unknown. Please verify that it was you.",
-        403
-      )
-    );
+    return next(new AppError("New Browser or device detected", 400));
   }
 
   // 4) If everything is ok, send token to client
@@ -173,6 +168,7 @@ exports.sendLoginCode = catchAsync(async (req, res, next) => {
   // decrypt
   const decryptedLoginCode = cryptr.decrypt(loginCode);
 
+  console.log("CODE", decryptedLoginCode);
   // // Prepare email details
   const subject = "Login Access Code - CaseMaster";
   const send_to = email;
@@ -190,9 +186,12 @@ exports.sendLoginCode = catchAsync(async (req, res, next) => {
   }
 });
 
+// 2fa
 exports.loginWithCode = catchAsync(async (req, res, next) => {
   const { email } = req.params;
   const { loginCode } = req.body;
+
+  console.log("Email Code", email, loginCode);
 
   const user = await User.findOne({ email });
   // if user not found
@@ -206,7 +205,7 @@ exports.loginWithCode = catchAsync(async (req, res, next) => {
     expiresAt: { $gt: Date.now() },
   });
   if (!userToken) {
-    return next(new AppError("Invalid or expired token. Please re-login", 404));
+    return next(new AppError("Invalid or expired token", 404));
   }
 
   const decryptedLoginCode = cryptr.decrypt(userToken.loginToken);
