@@ -1,12 +1,12 @@
-// const express = require("express");
-// const {
-//   createToken,
-//   createEvents,
-// } = require("../controllers/googleAuthController");
+const express = require("express");
+const {
+  createToken,
+  createEvents,
+} = require("../controllers/googleCalenderController");
 
-// const router = express.Router();
+const router = express.Router();
 
-// router.post("/create-token", createToken);
-// router.post("/create-events", createEvents);
+router.post("/create-token", createToken);
+router.post("/create-events", createEvents);
 
-// module.exports = router;
+module.exports = router;

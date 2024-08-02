@@ -19,7 +19,6 @@ import CaseCountsByClientChart from "./CaseCountsByClientChart";
 import CaseCountsByYearChart from "./CaseCountsByYearChart ";
 // import EventCalender from "./EventCalender";
 import googleCalender from "../assets/calender.svg";
-import EventCalendar from "./EventCalender";
 import ClientDashboard from "./ClientDashboard";
 import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
 import LeaveNotification from "./LeaveNotification";
@@ -27,6 +26,8 @@ import { useSelector } from "react-redux";
 import Notification from "./Notification";
 import useUsersCount from "../hooks/useUsersCount";
 import { FaHandshake, FaUsers } from "react-icons/fa6";
+import GoogleCalenderForm from "../pages/CalenderEvent";
+import CalenderEvent from "../pages/CalenderEvent";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -170,6 +171,8 @@ const Dashboard = () => {
         <div className="w-12 h-12">
           {isAdminOrHr && <LeaveNotification />}
 
+          {/* google calender link */}
+
           <a
             href="https://calendar.google.com/calendar"
             target="_blank"
@@ -212,11 +215,9 @@ const Dashboard = () => {
             <Col>
               <Todo />
             </Col>
+
             <Col>
-              <EventCalendar
-                events={events?.data?.events}
-                causeListCalenderData={reports?.data}
-              />
+              <CalenderEvent />
             </Col>
           </Row>
           <Row gutter={16}>

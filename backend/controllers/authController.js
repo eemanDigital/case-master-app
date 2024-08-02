@@ -557,12 +557,12 @@ exports.loginWithGoogle = catchAsync(async (req, res, next) => {
   // get payload
   const payload = ticket.getPayload();
 
-  const { name, email, picture, sub } = payload;
+  const { email } = payload;
 
   // check if user exist
   const user = await User.findOne({ email });
-  // get password for user
-  // const password = Date.now() + sub;
+
+  // check if user exist
   if (!user) {
     next(new AppError("You have not been registered as a user", 403));
   }
@@ -576,7 +576,7 @@ exports.loginWithGoogle = catchAsync(async (req, res, next) => {
   if (!allowedAgent) {
     // Generate 6 digit code
     const loginCode = Math.floor(100000 + Math.random() * 900000);
-console.log(loginCode)
+    console.log(loginCode);
     // Encrypt loginCode
     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
 

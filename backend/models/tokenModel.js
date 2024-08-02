@@ -18,6 +18,10 @@ const tokenSchema = mongoose.Schema({
     type: String,
     default: "",
   },
+  googleRefreshToken: {
+    type: String,
+    default: "",
+  },
   createAt: {
     type: Date,
     required: true,
