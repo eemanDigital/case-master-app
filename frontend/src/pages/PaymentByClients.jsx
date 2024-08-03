@@ -1,13 +1,16 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, Alert, Table, Divider } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAuthContext } from "../hooks/useAuthContext";
 import { useAdminHook } from "../hooks/useAdminHook";
 import AllCasesListForPayment from "./AllCasesListForPayment";
 import { useSelector } from "react-redux";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { toast } from "react-toastify";
 
 const PaymentByClient = () => {
-  const { clientPayments, cases, loading, error } = useDataGetterHook();
+  const { clientPayments, cases, loading, error, fetchData } =
+    useDataGetterHook();
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
@@ -15,16 +18,13 @@ const PaymentByClient = () => {
 
   const [pagination, setPagination] = useState({ pageSize: 8, current: 1 });
 
+  // fetch data
+  useEffect(() => {
+    fetchData("payments/paymentEachClient", "clientPayments");
+  }, []);
+
   if (loading.clientPayments) return <h1>Loading... </h1>;
-  if (error.clientPayments)
-    return (
-      <Alert
-        message="Error"
-        description={error.clientPayments}
-        type="error"
-        showIcon
-      />
-    );
+  if (error.clientPayments) return toast.error(error.clientPayments);
 
   const paymentData = clientPayments?.data || [];
 
@@ -36,6 +36,8 @@ const PaymentByClient = () => {
   const handleTableChange = (pagination) => {
     setPagination(pagination);
   };
+
+  console.log(clientPayments, "payment");
 
   const columns = [
     {
@@ -53,6 +55,8 @@ const PaymentByClient = () => {
 
   return (
     <>
+      {loading.clientPayments && <LoadingSpinner />}
+
       <div className="flex flex-col md:flex-row justify-between md:items-start items-center gap-3 w-full">
         <Card
           title="Total Payment By Each Client"

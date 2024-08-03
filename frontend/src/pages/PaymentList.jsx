@@ -15,6 +15,7 @@ const PaymentList = () => {
     payments,
     loading: loadingPayment,
     error: paymentError,
+    fetchData,
   } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
@@ -22,6 +23,11 @@ const PaymentList = () => {
   const { isClient, isSuperOrAdmin } = useAdminHook();
   const loggedInClientId = user?.data?.id;
   const { dataFetcher, loading, error } = useDataFetch();
+
+  // fetch data
+  useEffect(() => {
+    fetchData("payments", "payments");
+  }, []);
 
   const fileHeaders = {
     "Content-Type": "multipart/form-data",

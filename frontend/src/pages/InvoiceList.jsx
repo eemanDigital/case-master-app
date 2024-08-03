@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useSelector } from "react-redux";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { toast } from "react-toastify";
 
 const InvoiceList = () => {
   const { data, loading, error, dataFetcher } = useDataFetch();
@@ -15,6 +17,7 @@ const InvoiceList = () => {
     invoices,
     loading: loadingInvoices,
     error: errorInvoices,
+    fetchData,
   } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
 
@@ -22,6 +25,11 @@ const InvoiceList = () => {
     useSelector((state) => state.auth);
   const { isClient, isSuperOrAdmin } = useAdminHook();
   const loggedInClientId = user?.data?.id;
+
+  // fetch data
+  useEffect(() => {
+    fetchData("invoices", "invoices");
+  }, []);
 
   //   handle delete
   const fileHeaders = {
@@ -74,6 +82,8 @@ const InvoiceList = () => {
   const filteredInvoiceForClient = searchResults.filter(
     (item) => item.client?.id === loggedInClientId
   );
+
+  // loading and error
 
   const columns = [
     {
@@ -147,8 +157,12 @@ const InvoiceList = () => {
     },
   ];
 
+  // error
+  if (errorInvoices.invoices) return toast.error(errorInvoices.invoices);
+
   return (
     <div>
+      {loadingInvoices.invoices && <LoadingSpinner />}
       <div className="flex md:flex-row flex-col  justify-between items-center mt-4">
         <Link to="invoices/add-invoices">
           <Button className="bg-blue-500  text-white">Create Invoice</Button>

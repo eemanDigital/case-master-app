@@ -5,7 +5,6 @@ import {
   Typography,
   Pagination,
   Row,
-  Col,
   Modal,
   message,
 } from "antd";
@@ -15,62 +14,53 @@ import { useEffect, useState } from "react";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
-import useDelete from "../hooks/useDelete"; // Import the useDelete hook
-// import { FaTrash } from "react-icons/fa6";
+import LoadingSpinner from "../components/LoadingSpinner";
+import useDelete from "../hooks/useDelete";
 import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
 
-const { Title, Text } = Typography;
+const { Title } = Typography;
 
 const CaseList = () => {
-  const { cases, loading, error } = useDataGetterHook();
-
-  console.log(cases, "CASES");
+  const { cases, loading, error, fetchData } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
   const { isStaff, isClient } = useAdminHook();
-
+  const { isLoggedIn, user } = useSelector((state) => state.auth);
   const caseIDs = user?.data?.case?.map((caseItem) => caseItem?._id);
 
-  // log("caseIDs", caseIDs);
-
-  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const indexOfLastCase = currentPage * itemsPerPage;
   const indexOfFirstCase = indexOfLastCase - itemsPerPage;
   const currentCases = searchResults?.slice(indexOfFirstCase, indexOfLastCase);
+
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // Render all cases initially before filter
+  useEffect(() => {
+    fetchData("cases", "cases");
+  }, []);
+
   useEffect(() => {
     if (cases?.data) {
-      setSearchResults(cases?.data);
+      setSearchResults(cases.data);
     }
   }, [cases]);
 
-  // Handle search filter for cases
   const handleSearchChange = (e) => {
     const searchTerm = e.target.value.trim().toLowerCase();
-
     if (!searchTerm) {
       setSearchResults(cases?.data);
       return;
     }
     const results = cases?.data.filter((d) => {
-      // Check in firstParty names
       const firstPartyMatch = d.firstParty.name.some((nameObj) =>
         nameObj.name.toLowerCase().includes(searchTerm)
       );
-      // Check in secondParty names
       const secondPartyMatch = d.secondParty.name.some((nameObj) =>
         nameObj.name.toLowerCase().includes(searchTerm)
       );
-      // Check by suit no
       const suit_no = d.suitNo.toLowerCase().includes(searchTerm);
-      // Check by case status
       const status = d.caseStatus.toLowerCase().includes(searchTerm);
-      // Check in natureOfCase
       const natureOfCaseMatch = d.natureOfCase
         .toLowerCase()
         .includes(searchTerm);
@@ -84,23 +74,16 @@ const CaseList = () => {
         modeMatch
       );
     });
-
     setSearchResults(results || cases?.data);
   };
 
-  // Filter case by client
   const filterCasesByClient = (caseIds) => {
     if (!cases?.data) return [];
     return cases?.data?.filter((caseItem) => caseIds?.includes(caseItem?._id));
   };
 
-  // useDelete hook for handling deletions
-  const { handleDeleteDocument, documents, setDocuments } = useDelete(
-    cases?.data,
-    "cases"
-  );
+  const { handleDeleteDocument } = useDelete(cases?.data, "cases");
 
-  // Display data in table
   const columns = [
     {
       title: "Case",
@@ -124,17 +107,11 @@ const CaseList = () => {
       dataIndex: "caseStatus",
       key: "caseStatus",
     },
-    // {
-    //   title: "Mode of Commencement",
-    //   dataIndex: "modeOfCommencement",
-    //   key: "modeOfCommencement",
-    // },
     {
       title: "Nature of Case",
       dataIndex: "natureOfCase",
       key: "natureOfCase",
     },
-
     {
       title: "Action",
       key: "action",
@@ -144,12 +121,11 @@ const CaseList = () => {
             <Link to={`${record._id}/update`}>
               <Button>Update Case</Button>
             </Link>
-
             <button
-              className=" mx-6 text-red-500 hover:text-red-700"
+              className="mx-6 text-red-500 hover:text-red-700"
               onClick={(event) =>
                 Modal.confirm({
-                  title: "Are you sure you want to delete this task?",
+                  title: "Are you sure you want to delete this case?",
                   icon: <ExclamationCircleOutlined />,
                   content: "This action cannot be undone",
                   okText: "Yes",
@@ -157,23 +133,25 @@ const CaseList = () => {
                   cancelText: "No",
                   onOk: () =>
                     handleDeleteDocument(
-                      event, // Pass event to handleDeleteDocument
-                      `cases/${record._id}`, // Adjust the URL to match your backend endpoint
+                      event,
+                      `cases/${record._id}`,
                       record._id
                     ),
                 })
               }>
-              delete
+              Delete
             </button>
           </>
         ) : null,
     },
   ];
 
+  if (loading.cases) return <LoadingSpinner />;
+  if (error.cases) return toast.error(error.cases);
+
   return (
     <section>
       <Title level={1}>Cases</Title>
-      {/* Search bar */}
       {loading.cases && <Spinner />}
       <div className="flex md:flex-row flex-col justify-between items-center mb-4">
         {isStaff && (
@@ -183,7 +161,6 @@ const CaseList = () => {
         )}
         <SearchBar data={cases?.data} onSearch={handleSearchChange} />
       </div>
-
       <Table
         columns={columns}
         dataSource={isStaff ? currentCases : filterCasesByClient(caseIDs)}
@@ -191,7 +168,6 @@ const CaseList = () => {
         rowKey="_id"
         loading={loading.cases}
       />
-
       <Row justify="center" style={{ marginTop: 12 }}>
         <Pagination
           current={currentPage}

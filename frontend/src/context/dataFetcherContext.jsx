@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect } from "react";
+import { createContext, useState } from "react";
 import axios from "axios";
 
 // Create a context
@@ -9,7 +9,6 @@ const DataFetcherContext = ({ children }) => {
     cases: [],
     users: [],
     reports: [],
-    // files: [],
     tasks: [],
     leaveApps: [],
     leaveBalance: [],
@@ -20,6 +19,7 @@ const DataFetcherContext = ({ children }) => {
     todos: [],
     totalPaymentWeekToYear: [],
     totalBalanceOnPayments: [],
+    clientPayments: [],
     casesByStatus: [],
     casesByCourt: [],
     casesByNature: [],
@@ -35,15 +35,14 @@ const DataFetcherContext = ({ children }) => {
       cases: false,
       users: false,
       reports: false,
-      // files: false,
       tasks: false,
       leaveApps: false,
       leaveBalance: false,
       clients: false,
       invoices: false,
       causeList: false,
+      clientPayments: false,
       payments: false,
-      clientsPayments: false,
       todos: false,
       totalPaymentWeekToYear: false,
       totalBalanceOnPayments: false,
@@ -63,7 +62,6 @@ const DataFetcherContext = ({ children }) => {
       cases: "",
       users: "",
       reports: "",
-      // files: "",
       tasks: "",
       leaveApps: "",
       leaveBalance: "",
@@ -71,7 +69,6 @@ const DataFetcherContext = ({ children }) => {
       invoices: "",
       causeList: "",
       payments: "",
-      clientPayments: "",
       todos: "",
       totalPaymentWeekToYear: "",
       totalBalanceOnPayments: "",
@@ -81,6 +78,7 @@ const DataFetcherContext = ({ children }) => {
       casesByRating: "",
       casesByMode: "",
       casesByCategory: "",
+      clientPayments: "",
       casesByClient: "",
       casesByAccountOfficer: "",
       monthlyNewCases: "",
@@ -89,15 +87,15 @@ const DataFetcherContext = ({ children }) => {
     },
   });
 
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("jwt="))
-    ?.split("=")[1];
+  // const token = document.cookie
+  //   .split("; ")
+  //   .find((row) => row.startsWith("jwt="))
+  //   ?.split("=")[1];
 
-  const headers = {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  };
+  // const headers = {
+  //   "Content-Type": "application/json",
+  //   Authorization: `Bearer ${token}`,
+  // };
 
   const fetchData = async (endpoint, key) => {
     try {
@@ -106,11 +104,11 @@ const DataFetcherContext = ({ children }) => {
         loading: { ...prevState.loading, [key]: true },
       }));
       const response = await axios.get(
-        `http://localhost:3000/api/v1/${endpoint}`,
-        {
-          headers,
-          withCredentials: true,
-        }
+        `http://localhost:3000/api/v1/${endpoint}`
+        // {
+        //   headers,
+        //   withCredentials: true,
+        // }
       );
       setState((prevState) => ({
         ...prevState,
@@ -121,7 +119,11 @@ const DataFetcherContext = ({ children }) => {
         ...prevState,
         error: {
           ...prevState.error,
-          [key]: err.message || `Failed to fetch ${key}`,
+          [key]:
+            (err.response && err.response.data && err.response.data.message) ||
+            err.message ||
+            err.toString() ||
+            `Failed to fetch ${key}`,
         },
       }));
     } finally {
@@ -132,48 +134,11 @@ const DataFetcherContext = ({ children }) => {
     }
   };
 
-  useEffect(() => {
-    const endpoints = [
-      { endpoint: "cases", key: "cases" },
-      { endpoint: "users", key: "users" },
-      { endpoint: "reports", key: "reports" },
-      // { endpoint: "documents", key: "files" },
-      { endpoint: "tasks", key: "tasks" },
-      { endpoint: "leaves/applications", key: "leaveApps" },
-      { endpoint: "leaves/balances", key: "leaveBalance" },
-      { endpoint: "clients", key: "clients" },
-      { endpoint: "invoices", key: "invoices" },
-      { endpoint: "reports/upcoming", key: "causeList" },
-      { endpoint: "payments", key: "payments" },
-      { endpoint: "payments/paymentEachClient", key: "clientPayments" },
-      { endpoint: "todos", key: "todos" },
-      {
-        endpoint: "payments/totalWeekPaymentsToYear",
-        key: "totalPaymentWeekToYear",
-      },
-      { endpoint: "payments/totalBalance", key: "totalBalanceOnPayments" },
-      { endpoint: "cases/case-status", key: "casesByStatus" },
-      { endpoint: "cases/cases-by-court", key: "casesByCourt" },
-      { endpoint: "cases/cases-by-natureOfCase", key: "casesByNature" },
-      { endpoint: "cases/cases-by-rating", key: "casesByRating" },
-      { endpoint: "cases/cases-by-mode", key: "casesByMode" },
-      { endpoint: "cases/cases-by-category", key: "casesByCategory" },
-      { endpoint: "cases/cases-by-client", key: "casesByClient" },
-      {
-        endpoint: "cases/cases-by-accountOfficer",
-        key: "casesByAccountOfficer",
-      },
-      { endpoint: "cases/monthly-new-cases", key: "monthlyNewCases" },
-      { endpoint: "cases/yearly-new-cases", key: "yearlyNewCases" },
-      { endpoint: "events", key: "events" },
-    ];
-
-    endpoints.forEach(({ endpoint, key }) => {
-      fetchData(endpoint, key);
-    });
-  }, []);
-
-  return <DataContext.Provider value={state}>{children}</DataContext.Provider>;
+  return (
+    <DataContext.Provider value={{ ...state, fetchData }}>
+      {children}
+    </DataContext.Provider>
+  );
 };
 
 export { DataContext, DataFetcherContext };

@@ -1,26 +1,42 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 // import { Button } from "antd";
 import TodoTask from "./TodoTask";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import TodoForm from "../pages/TodoForm";
+import LoadingSpinner from "./LoadingSpinner";
+import { toast } from "react-toastify";
 
 const TodoList = ({ title }) => {
-  const { todos, error, loading } = useDataGetterHook();
-  const [optimisticTodos, setOptimisticTodos] = useState([]); //handles optimistic update
+  // Destructure the necessary properties from the custom hook
+  const { todos, error, loading, fetchData } = useDataGetterHook();
 
+  // State to handle optimistic updates
+  const [optimisticTodos, setOptimisticTodos] = useState([]);
+
+  // Fetch data when the component mounts
+  useEffect(() => {
+    fetchData("todos", "todos");
+  }, []);
+
+  // Function to add a new todo optimistically
   const addOptimisticTodo = (todo) => {
     setOptimisticTodos((prev) => [...prev, todo]);
   };
 
+  // Function to remove a todo optimistically by its id
   const removeOptimisticTodo = (id) => {
-    setOptimisticTodos((prev) => prev.filter((todo) => todo._id !== id));
+    setOptimisticTodos((prev) => prev.filter((todo) => todo?._id !== id));
   };
 
-  const allTodos = [...todos.data.todos, ...optimisticTodos];
+  // Combine fetched todos and optimistic todos
+  const allTodos = [...(todos?.data?.todos || []), ...optimisticTodos];
 
-  if (loading.todos) return <p>Loading...</p>;
-  if (error.todos) return <p>Error: {error.todos}</p>;
+  // Display loading message if data is being fetched
+  if (loading.todos) return <LoadingSpinner />;
+
+  // Display error message if there was an error fetching data
+  if (error.todos) return toast.error(error.todos);
 
   return (
     <section className="flex flex-col  px-4 pt-2 p-2 rounded-md">
@@ -33,7 +49,7 @@ const TodoList = ({ title }) => {
       </div>
 
       <div className="mt-4">
-        <TodoTask tasks={allTodos} />
+        <TodoTask tasks={allTodos || []} />
       </div>
     </section>
   );

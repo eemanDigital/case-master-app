@@ -75,8 +75,6 @@ const Dashboard = () => {
   const {
     cases,
     users,
-    tasks,
-    // totalPaymentWeekToYear,
     totalBalanceOnPayments,
     casesByStatus,
     casesByCourt,
@@ -91,21 +89,33 @@ const Dashboard = () => {
     loading: getterLoading,
     error: getterError,
     causeList,
-    reports,
-    events,
+    fetchData,
   } = useDataGetterHook();
 
   // end
-  const {
-    isAdminOrHr,
-    isSuperOrAdmin,
-    isAdmin,
-    isStaff,
-    isClient,
-    isVerified,
-  } = useAdminHook();
+  const { isAdminOrHr, isSuperOrAdmin, isStaff, isClient, isVerified } =
+    useAdminHook();
   // user count
   const { lawyerCount, clientCount, staff } = useUsersCount(users);
+
+  useEffect(() => {
+    fetchData("cases", "cases");
+    fetchData("users", "users");
+    fetchData("reports", "reports");
+    fetchData("cases/case-status", "casesByStatus");
+    fetchData("cases/cases-by-court", "casesByCourt");
+    fetchData("cases/cases-by-natureOfCase", "casesByNature");
+    fetchData("cases/cases-by-rating", "casesByRating");
+    fetchData("cases/cases-by-mode", "casesByMode");
+    fetchData("cases/cases-by-category", "casesByCategory");
+    fetchData("cases/cases-by-client", "casesByClient");
+    fetchData("cases/cases-by-client", "casesByClient");
+    fetchData("cases/cases-by-accountOfficer", "casesByAccountOfficer");
+    fetchData("cases/monthly-new-cases", "monthlyNewCases");
+    fetchData("cases/yearly-new-cases", "yearlyNewCases");
+    fetchData("payments/paymentEachClient", "clientPayments");
+    fetchData("payments/totalBalance", "totalBalanceOnPayments");
+  }, []);
 
   useEffect(() => {
     if (userId) {

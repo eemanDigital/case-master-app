@@ -1,3 +1,6 @@
+@baseUrl = http://localhost:3000/api/v1/
+@jwt_token = jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2YTUzMGNmYWUzYWRlZWQ3YTk5NTA3YiIsImlhdCI6MTcyMjY3NjA4OSwiZXhwIjoxNzIyNzYyNDg5fQ.xNPVuIF-ANRNgbth8CEj4zt9GwiPcPDgvl3IXH-mS-4;
+
 #CREATE USER
 POST http://localhost:3000/api/v1/users/signup  HTTP/1.1 
 content-type: application/json
@@ -18,7 +21,7 @@ content-type: application/json
 
 ###
 
-GET  http://localhost:3000/api/v1/users/login  HTTP/1.1 
+POST  {{baseUrl}}users/login  HTTP/1.1 
 content-type: application/json
 
 {
@@ -70,12 +73,9 @@ content-type: application/json
 GET http://localhost:3000/api/v1/tasks  HTTP/1.1 
 content-type: application/json
 
-
-###
-
 # GET CASES
 GET http://localhost:3000/api/v1/cases  HTTP/1.1 
-content-type: application/json
+Authorization: Bearer {{jwt_token}}
 
 ###
 # forgot password
@@ -205,6 +205,9 @@ content-type: application/json
 
 
 ###
+GET {{{{baseUrl}}}}cases/case-status  HTTP/1.1 
+content-type: application/json
 
-GET http://localhost:3000/api/v1/cases/case-status  HTTP/1.1 
+###
+GET {{baseUrl}}payments/paymentEachClient HTTP/1.1 
 content-type: application/json

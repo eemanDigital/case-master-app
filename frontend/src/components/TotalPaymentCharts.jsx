@@ -9,7 +9,7 @@ import {
   YAxis,
   ResponsiveContainer,
 } from "recharts";
-import { Card, Divider, Typography } from "antd";
+import { Typography } from "antd";
 
 const { Title } = Typography;
 
@@ -28,7 +28,7 @@ const TotalPaymentCharts = ({ paymentData, balanceData }) => {
   const COLORS = ["#0088FE", "#f0f0f0"];
 
   return (
-    <div className=" ">
+    <div className="bg-white p-3">
       <h1 className="text-[20px] font-bold mb-2">{`Total Payments: ${year}`}</h1>
       <ResponsiveContainer width="100%" height={200}>
         <PieChart>

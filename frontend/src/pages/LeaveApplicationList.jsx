@@ -1,45 +1,40 @@
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { Link } from "react-router-dom";
-import { useAuthContext } from "../hooks/useAuthContext";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { Space, Table, Button, Spin, Alert, Modal } from "antd";
 import { formatDate } from "../utils/formatDate";
 import { useDataFetch } from "../hooks/useDataFetch";
 import avatar from "../assets/avatar.png";
 import { useSelector } from "react-redux";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { useEffect } from "react";
+import { toast } from "react-toastify";
 
 const LeaveApplicationList = () => {
   const {
     leaveApps,
     loading: loadingLeaveApp,
     error: errorLeaveApp,
+    fetchData,
   } = useDataGetterHook();
   const { Column, ColumnGroup } = Table;
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
   const { isAdminOrHr } = useAdminHook();
-
-  const userId = user?.data?.id;
-
   const { data, loading, error, dataFetcher } = useDataFetch();
 
+  useEffect(() => {
+    fetchData("leaves/applications", "leaveApps");
+  }, []);
+
   if (loadingLeaveApp?.leaveApps) {
-    return (
-      <Spin size="large" className="flex justify-center items-center h-full" />
-    );
+    return <LoadingSpinner />;
   }
 
-  console.log(errorLeaveApp, "LEAVEERR");
   if (errorLeaveApp?.leaveApps) {
-    return (
-      <Alert
-        message="Error"
-        description={errorLeaveApp?.leaveApps}
-        type="error"
-        showIcon
-      />
-    );
+    return toast.error(errorLeaveApp?.leaveApps);
   }
+
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
   };

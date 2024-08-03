@@ -8,17 +8,27 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useSelector } from "react-redux";
+import { useEffect } from "react";
+import LoadingSpinner from "./LoadingSpinner";
+import { toast } from "react-toastify";
 
 const TaskList = () => {
-  const { tasks, loadingError, errorTasks } = useDataGetterHook();
+  const {
+    tasks,
+    loading: loadingTasks,
+    error: taskError,
+    fetchData,
+  } = useDataGetterHook();
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
-
-  console.log("TASK", tasks);
   const loggedInClientId = user?.data?._id;
   const { data, loading, error, dataFetcher } = useDataFetch();
-
   const { isSuperOrAdmin, isStaff, isClient } = useAdminHook();
+
+  // fetch tasks data
+  useEffect(() => {
+    fetchData("tasks", "tasks");
+  }, []);
 
   // Handle delete
   const token = document.cookie
@@ -37,6 +47,12 @@ const TaskList = () => {
     await dataFetcher(`tasks/${id}`, "delete", { headers: fileHeaders });
   };
 
+  // Display loading message if data is being fetched
+  if (loading.todos) return <LoadingSpinner />;
+
+  // Display error message if there was an error fetching data
+  if (loadingTasks.tasks) return toast.error(taskError.tasks);
+
   const columns = [
     {
       title: "Task Title",
@@ -50,8 +66,8 @@ const TaskList = () => {
       render: (assignedTo) =>
         assignedTo
           ? assignedTo.map((staff) => (
-              <p key={staff._id}>
-                {staff.firstName} {staff.lastName}
+              <p key={staff?._id}>
+                {staff?.firstName} {staff?.lastName}
               </p>
             ))
           : "N/A",

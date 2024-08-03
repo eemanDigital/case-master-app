@@ -4,15 +4,24 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import CaseReportList from "./CaseReportList";
 import SingleCauseList from "./SingleCauseList";
 import { useSelector } from "react-redux";
+import { useEffect } from "react";
+import { toast } from "react-toastify";
+import LoadingSpinner from "./LoadingSpinner";
 
 const ClientCaseDetails = () => {
-  const { causeList, reports, loading, error } = useDataGetterHook();
+  const { causeList, reports, loading, error, fetchData } = useDataGetterHook();
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
 
   const clientCase = user?.data?.clientCase;
   const clientCaseIds = clientCase?.map((item) => item?.id); //get caseIDs
   const causeListData = causeList?.data?.reportsThisMonth || []; //cause list data for the month
+
+  // fetch data
+  useEffect(() => {
+    fetchData("reports/upcoming", "causeList");
+    fetchData("reports", "reports");
+  }, []);
 
   // filter out clients cases
   const filteredCauseList = causeListData.filter((items) =>
@@ -21,24 +30,12 @@ const ClientCaseDetails = () => {
 
   // Ensure reports are loaded
   if (loading.reports || loading.causeList) {
-    return (
-      <Spin
-        tip="Loading..."
-        style={{ marginTop: "20px", textAlign: "center" }}
-      />
-    );
+    <LoadingSpinner />;
   }
 
+  // toast error if found
   if (error.reports || error.causeList) {
-    return (
-      <Alert
-        message="Error"
-        description={error.reports || error.causeList}
-        type="error"
-        showIcon
-        style={{ marginTop: "20px" }}
-      />
-    );
+    return toast.error(error.reports || error.causeList);
   }
 
   // Extract the first report for each unique case

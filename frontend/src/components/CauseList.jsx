@@ -1,14 +1,19 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SingleCauseList from "./SingleCauseList";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import SwitchButton from "./SwitchButton";
 import { handleDownload } from "../utils/downloadHandler";
 
+const downloadURL = import.meta.env.VITE_BASE_URL;
+
 export const CauseList = () => {
   const [selectedReport, setSelectedReport] = useState("currentWeek");
-  const { causeList, loading, error } = useDataGetterHook();
+  const { causeList, loading, error, fetchData } = useDataGetterHook();
 
-  const downloadURL = import.meta.env.VITE_BASE_URL;
+  // fetch data
+  useEffect(() => {
+    fetchData("reports/upcoming", "causeList");
+  }, []);
 
   const renderReport = () => {
     switch (selectedReport) {
