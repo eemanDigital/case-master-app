@@ -61,6 +61,7 @@ import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
 import SendLoginCode from "./components/LoginWithCode.jsx";
 import LoginWithCode from "./components/LoginWithCode.jsx";
+import AppLayout from "./components/AppLayout.jsx";
 
 // enable axios to get credentials everywhere in the app
 axios.defaults.withCredentials = true;
@@ -86,22 +87,7 @@ function App() {
     createRoutesFromElements(
       <Route path="/" element={<HomeLayout />} errorElement={<Error />}>
         <Route index element={<Hero />} />
-        <Route path="/login" element={<StaffLogin />} />
-        <Route path="/clients/login" element={<ClientLogin />} />
-        <Route
-          path="/forgotpassword/clients"
-          element={<ForgotPasswordClient />}
-        />
-        <Route path="/forgotpassword" element={<ForgotPassword />} />
-        <Route path="/resetPassword/:token" element={<ForgotPasswordReset />} />
 
-        <Route path="/loginWithCode/:email" element={<LoginWithCode />} />
-        <Route
-          path="dashboard/verify-account/:token"
-          element={<VerifyAccount />}
-        />
-
-        <Route path="/resetpassword" element={<ResetPassword />} />
         <Route
           path="*"
           element={
@@ -117,66 +103,87 @@ function App() {
             />
           }
         />
-        <Route element={<ShowOnLoginAndRedirect />}>
-          <Route path="dashboard" element={<DashboardLayout />}>
-            <Route index element={<Dashboard />} />
-            <Route path="add-user" element={<AddUserForm />} />
-            <Route
-              path="staff"
-              element={
-                <ProtectedRoute isStaffRoute={true}>
-                  <StaffList />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="staff/:id/details" element={<StaffDetails />} />
-            <Route path="cases" element={<CaseList />} />
-            <Route path="cases/:id/update" element={<UpdateCase />} />
-            <Route path="cases/add-case" element={<CreateCaseForm />} />
-            <Route path="cases/:id/casedetails" element={<CaseDetails />} />
-            <Route path="case-reports" element={<MainCaseReportList />} />
-            <Route path="leave-application" element={<LeaveAppForm />} />
-            <Route
-              path="staff/leave-application"
-              element={<LeaveApplicationList />}
-            />
-            <Route
-              path="staff/leave-application/:id/details"
-              element={<LeaveApplicationDetails />}
-            />
-            <Route
-              path="case-reports/add-report"
-              element={<CreateCaseReportForm />}
-            />
-            <Route path="billings" element={<InvoicePaymentHandler />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="tasks" element={<TaskList />} />
-            <Route path="tasks/reminder/:id" element={<TaskReminderForm />} />
-            <Route path="tasks/upload" element={<TaskAttachment />} />
-            <Route path="tasks/:id/details" element={<TaskDetails />} />
-            <Route path="clients" element={<ClientLists />} />
-            <Route path="clients/:id/details" element={<ClientDetails />} />
-            <Route
-              path="billings/invoices/add-invoices"
-              element={<CreateInvoiceForm />}
-            />
-            <Route
-              path="billings/invoices/:id/details"
-              element={<InvoiceDetails />}
-            />
-            <Route
-              path="billings/invoices/:id/update"
-              element={<UpdateInvoice />}
-            />
-            <Route
-              path="billings/payments/:id/details"
-              element={<PaymentDetails />}
-            />
-            <Route
-              path="billings/payments/client/:clientId/case/:caseId"
-              element={<PaymentMadeOnCase />}
-            />
-            <Route path="cause-list" element={<CauseList />} />
+        <Route element={<AppLayout />}>
+          <Route path="/login" element={<StaffLogin />} />
+          <Route path="/clients/login" element={<ClientLogin />} />
+          <Route path="/resetpassword" element={<ResetPassword />} />
+
+          <Route
+            path="/forgotpassword/clients"
+            element={<ForgotPasswordClient />}
+          />
+          <Route path="/forgotpassword" element={<ForgotPassword />} />
+          <Route
+            path="/resetPassword/:token"
+            element={<ForgotPasswordReset />}
+          />
+
+          <Route path="/loginWithCode/:email" element={<LoginWithCode />} />
+          <Route
+            path="dashboard/verify-account/:token"
+            element={<VerifyAccount />}
+          />
+          <Route element={<ShowOnLoginAndRedirect />}>
+            <Route path="dashboard" element={<DashboardLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="add-user" element={<AddUserForm />} />
+              <Route
+                path="staff"
+                element={
+                  <ProtectedRoute isStaffRoute={true}>
+                    <StaffList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="staff/:id/details" element={<StaffDetails />} />
+              <Route path="cases" element={<CaseList />} />
+              <Route path="cases/:id/update" element={<UpdateCase />} />
+              <Route path="cases/add-case" element={<CreateCaseForm />} />
+              <Route path="cases/:id/casedetails" element={<CaseDetails />} />
+              <Route path="case-reports" element={<MainCaseReportList />} />
+              <Route path="leave-application" element={<LeaveAppForm />} />
+              <Route
+                path="staff/leave-application"
+                element={<LeaveApplicationList />}
+              />
+              <Route
+                path="staff/leave-application/:id/details"
+                element={<LeaveApplicationDetails />}
+              />
+              <Route
+                path="case-reports/add-report"
+                element={<CreateCaseReportForm />}
+              />
+              <Route path="billings" element={<InvoicePaymentHandler />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="tasks" element={<TaskList />} />
+              <Route path="tasks/reminder/:id" element={<TaskReminderForm />} />
+              <Route path="tasks/upload" element={<TaskAttachment />} />
+              <Route path="tasks/:id/details" element={<TaskDetails />} />
+              <Route path="clients" element={<ClientLists />} />
+              <Route path="clients/:id/details" element={<ClientDetails />} />
+              <Route
+                path="billings/invoices/add-invoices"
+                element={<CreateInvoiceForm />}
+              />
+              <Route
+                path="billings/invoices/:id/details"
+                element={<InvoiceDetails />}
+              />
+              <Route
+                path="billings/invoices/:id/update"
+                element={<UpdateInvoice />}
+              />
+              <Route
+                path="billings/payments/:id/details"
+                element={<PaymentDetails />}
+              />
+              <Route
+                path="billings/payments/client/:clientId/case/:caseId"
+                element={<PaymentMadeOnCase />}
+              />
+              <Route path="cause-list" element={<CauseList />} />
+            </Route>
           </Route>
         </Route>
       </Route>

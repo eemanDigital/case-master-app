@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import SingleCauseList from "./SingleCauseList";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import SwitchButton from "./SwitchButton";
@@ -9,6 +10,9 @@ const downloadURL = import.meta.env.VITE_BASE_URL;
 export const CauseList = () => {
   const [selectedReport, setSelectedReport] = useState("currentWeek");
   const { causeList, loading, error, fetchData } = useDataGetterHook();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  console.log(searchParams.get("type"));
 
   // fetch data
   useEffect(() => {

@@ -8,7 +8,7 @@ const useUserSelectOptions = () => {
         .filter((staff) => staff.role !== "client")
         .map((s) => {
           return {
-            value: s?.id,
+            value: s?._id,
             label: `${s.firstName} ${s.lastName}`,
           };
         })

@@ -9,12 +9,14 @@ import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
 import useTextShorten from "../hooks/useTextShorten";
 import { useSelector } from "react-redux";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
 // const { Title } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
 const CaseReportList = ({ title, showFilter, reports }) => {
   const { isStaff } = useAdminHook();
+  const { fetchData } = useDataGetterHook();
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
   const { shortenText } = useTextShorten();
@@ -48,6 +50,7 @@ const CaseReportList = ({ title, showFilter, reports }) => {
         `http://localhost:3000/api/v1/reports/${id}`,
         fileHeaders
       );
+      await fetchData(); //refresh data after delete
     } catch (err) {
       console.error("Failed to delete report:", err);
     }

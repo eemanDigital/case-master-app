@@ -28,6 +28,7 @@ import useUsersCount from "../hooks/useUsersCount";
 import { FaHandshake, FaUsers } from "react-icons/fa6";
 import GoogleCalenderForm from "../pages/CalenderEvent";
 import CalenderEvent from "../pages/CalenderEvent";
+import DashBoardDataCount from "./DashBoardDataCount";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -113,6 +114,7 @@ const Dashboard = () => {
     fetchData("cases/cases-by-accountOfficer", "casesByAccountOfficer");
     fetchData("cases/monthly-new-cases", "monthlyNewCases");
     fetchData("cases/yearly-new-cases", "yearlyNewCases");
+    fetchData("reports/upcoming", "causeList");
     fetchData("payments/paymentEachClient", "clientPayments");
     fetchData("payments/totalBalance", "totalBalanceOnPayments");
   }, []);
@@ -165,125 +167,77 @@ const Dashboard = () => {
   return (
     <PaymentFiltersContext.Provider
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
-      <div className="flex justify-between items-center mt-6">
+      <div className="flex justify-between items-center">
         {!isVerified && <Notification />}
-        {isClient ? (
-          <h1 className="text-1xl font-bold text-gray-600  w-3/6 tracking-wider">
-            Welcome back, {user?.data?.firstName}({user?.data?.role}
-            ),
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between px-6 rounded-lg">
+        <div className="flex items-center space-x-4">
+          {/* {isClient ? (
+            <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
+              Welcome back, {user?.data?.firstName} ({user?.data?.role})
+            </h1>
+          ) : (
+            <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
+              {user?.data?.firstName || "........"}'s Dashboard (
+              {user?.data?.role})
+            </h1>
+          )} */}
+          <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
+            {" "}
+            Dashboard
           </h1>
-        ) : (
-          <h1 className="text-1xl font-bold text-gray-600  w-3/6 tracking-wider">
-            {user?.data?.firstName || "........"}&apos;s Dashboard(
-            {user?.data?.role}),
-          </h1>
-        )}
-        <div className="w-12 h-12">
           {isAdminOrHr && <LeaveNotification />}
+        </div>
 
-          {/* google calender link */}
-
-          <a
-            href="https://calendar.google.com/calendar"
-            target="_blank"
-            rel="noopener noreferrer">
-            {/* Google Calendar */}
-            <img
-              className="h-12 w-12"
-              src={googleCalender}
-              alt="google calendar logo"
-            />
-          </a>
+        <div className="flex items-center space-x-4">
+          <CalenderEvent />
+          <div className="w-12 h-12">
+            <a
+              href="https://calendar.google.com/calendar"
+              target="_blank"
+              rel="noopener noreferrer">
+              <img
+                className="h-12 w-12"
+                src={googleCalender}
+                alt="google calendar logo"
+              />
+            </a>
+          </div>
         </div>
       </div>
 
       {/* client's Dashboard */}
       {isClient && <ClientDashboard />}
-
       {isStaff && (
         <>
-          <Row gutter={16} className="m-4 flex justify-between items-center">
-            {isSuperOrAdmin && (
-              <Col>
-                <Link to="add-user">
-                  <Button className={btnStyle}>Add User</Button>
-                </Link>
-              </Col>
-            )}
-            <Col>
-              <Link to="leave-application">
-                <Button className={btnStyle}>Apply for leave</Button>
-              </Link>
-            </Col>
-
-            <Col>
-              <CreateLeaveBalanceForm />
-            </Col>
-            <Col>
-              <CreateTaskForm />
-            </Col>
-            <Col>
-              <Todo />
-            </Col>
-
-            <Col>
-              <CalenderEvent />
-            </Col>
-          </Row>
-          <Row gutter={16}>
-            <Col span={6}>
-              <Card className="bg-blue-100">
-                <FaBriefcase className="text-3xl text-blue-500 mb-2" />
-                <Title level={4}>{cases?.results || 0}</Title>
-                <Text>Number of Cases</Text>
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card className="bg-green-100">
-                <FaUsers className="text-3xl text-green-500 mb-2" />
-                <Title level={4}>{staff}</Title>
-                <Text>Number of Staff</Text>
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card className="bg-yellow-100">
-                <GoLaw className="text-3xl text-yellow-500 mb-2" />
-                <Title level={4}>{lawyerCount}</Title>
-                <Text>Number of Lawyers</Text>
-              </Card>
-            </Col>
-            <Col span={6}>
-              <Card className="bg-red-100">
-                <FaHandshake className="text-3xl text-red-500 mb-2" />
-                <Title level={4}>{clientCount}</Title>
-                <Text>Number of Clients</Text>
-              </Card>
-            </Col>
-          </Row>
-          <Divider />
+          {/* data count cards */}
+          <DashBoardDataCount
+            cases={cases}
+            staff={staff}
+            lawyerCount={lawyerCount}
+            clientCount={clientCount}
+          />
           <div
             className={`overflow-y-auto hide-scrollbar ${
               causeList.data?.todayResult === 0
                 ? "h-[180] w-full display-shadow-none bg-white"
                 : ""
             }`}>
-            {causeList.data?.todayResult === 0 ? (
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  <h3 className="text-blue-600  font-medium text-2xl">
-                    You have no matter today in Court
-                  </h3>
-                }
-              />
+            {!causeList.data?.todayResult > 0 ? (
+              <h3 className="text-blue-600  font-medium text-2xl">
+                You have no matter today in Court
+              </h3>
             ) : (
-              <SingleCauseList
-                causeListData={causeList.data?.reportsToday}
-                loadingCauseList={getterLoading.causeList}
-                errorCauseList={getterError.causeList}
-                title={causeListTitle}
-                h1Style="text-center text-2xl text-gray-600 font-bold"
-              />
+              <div className="w-[370px] bg-white">
+                <SingleCauseList
+                  causeListData={causeList.data?.reportsToday}
+                  loadingCauseList={getterLoading.causeList}
+                  errorCauseList={getterError.causeList}
+                  title={causeListTitle}
+                  h1Style="text-center text-2xl text-gray-600 font-bold"
+                />
+              </div>
             )}
           </div>{" "}
           <div className="flex justify-between shadow-md rounded-md my-6 gap-2 bg-white">

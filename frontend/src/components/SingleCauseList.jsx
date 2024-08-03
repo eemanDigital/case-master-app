@@ -51,17 +51,19 @@ const SingleCauseList = ({
       title: "Lawyers In Court",
       dataIndex: "lawyersInCourt",
       key: "lawyersInCourt",
-      render: (lawyersInCourt) => (
-        <ul>
-          {lawyersInCourt &&
-            lawyersInCourt?.map((lawyer, index) => (
-              <li className="text-blue-700 capitalize " key={index}>
-                {lawyer?.fullName}
+      render: (lawyersInCourt) =>
+        lawyersInCourt.length > 0 ? (
+          <ul>
+            {lawyersInCourt.map((lawyer, index) => (
+              <li className="text-blue-700 capitalize" key={index}>
+                {lawyer.firstName} {lawyer.lastName}
                 <span>,Esq</span>.
               </li>
             ))}
-        </ul>
-      ),
+          </ul>
+        ) : (
+          <p className="text-red-600">Not Yet Assigned</p>
+        ),
     },
   ];
 

@@ -82,16 +82,21 @@ const StaffList = () => {
   return (
     <>
       <div className="flex md:flex-row flex-col justify-between items-center gap-3 my-4">
-        {isAdminOrHr && <LeaveBalanceList />}
-
-        <Link to="leave-application-list">
-          <Button className="bg-blue-500 text-white">
-            {isAdminOrHr
-              ? "Manage Leave Applications"
-              : "Your Leave Applications"}
-          </Button>
-        </Link>
-        {isAdmin && <CreateLeaveBalanceForm />}
+        {isAdminOrHr && (
+          <>
+            <Link to="add-user">
+              <Button className="blue-btn">Add User</Button>
+            </Link>
+            <Link to="leave-application-list">
+              <Button className="blue-btn">
+                {isAdminOrHr
+                  ? "Manage Leave Applications"
+                  : "Your Leave Applications"}
+              </Button>
+            </Link>
+            <CreateLeaveBalanceForm /> <LeaveBalanceList />
+          </>
+        )}
 
         <SearchBar onSearch={handleSearchChange} />
       </div>
