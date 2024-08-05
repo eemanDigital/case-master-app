@@ -12,7 +12,14 @@ export const CauseList = () => {
   const { causeList, loading, error, fetchData } = useDataGetterHook();
 
   const [searchParams, setSearchParams] = useSearchParams();
-  console.log(searchParams.get("type"));
+
+  // Update selectedReport based on searchParams
+  useEffect(() => {
+    const reportType = searchParams.get("type");
+    if (reportType) {
+      setSelectedReport(reportType);
+    }
+  }, [searchParams]);
 
   // fetch data
   useEffect(() => {
@@ -104,25 +111,29 @@ export const CauseList = () => {
           currentState={selectedReport}
           updatedState={setSelectedReport}
           stateText="currentWeek"
-          text="   Current Week"
+          text="Current Week"
+          onClick={() => setSearchParams({ type: "currentWeek" })}
         />
         <SwitchButton
           currentState={selectedReport}
           updatedState={setSelectedReport}
           stateText="nextWeek"
-          text="    Next Week"
+          text="Next Week"
+          onClick={() => setSearchParams({ type: "nextWeek" })}
         />
         <SwitchButton
           currentState={selectedReport}
           updatedState={setSelectedReport}
           stateText="month"
           text="Month"
+          onClick={() => setSearchParams({ type: "month" })}
         />
         <SwitchButton
           currentState={selectedReport}
           updatedState={setSelectedReport}
           stateText="year"
           text="Year"
+          onClick={() => setSearchParams({ type: "year" })}
         />
       </div>
 

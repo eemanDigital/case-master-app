@@ -8,13 +8,13 @@ export const useDataFetch = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const getTokenFromCookies = () => {
-    const token = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("jwt="))
-      ?.split("=")[1];
-    return token;
-  };
+  // const getTokenFromCookies = () => {
+  //   const token = document.cookie
+  //     .split("; ")
+  //     .find((row) => row.startsWith("jwt="))
+  //     ?.split("=")[1];
+  //   return token;
+  // };
 
   const handleResponse = (response) => {
     setData(response.data);
@@ -22,34 +22,28 @@ export const useDataFetch = () => {
   };
 
   const handleError = (err) => {
-    setError(err);
-    const dataError = err.response?.data?.message;
+    const { response } = err;
+    const errorMessage = response?.data?.message || "An error occurred";
+    setError(errorMessage);
 
-    return { error: dataError };
+    return { error: errorMessage };
   };
 
   const dataFetcher = async (
     endpoint,
     method = "GET",
-    payload = null,
-    customHeaders = {}
+    payload = null
+    // customHeaders = {}
   ) => {
     setLoading(true);
     try {
       const url = `${baseURL}/${endpoint}`;
-      const token = getTokenFromCookies();
-
-      const headers = {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...customHeaders,
-      };
 
       const response = await axios({
         method,
         url,
         data: payload,
-        headers,
+        // headers,
         withCredentials: true,
       });
 

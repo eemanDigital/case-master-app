@@ -3,13 +3,18 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { Link } from "react-router-dom";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useSelector } from "react-redux";
+import { useEffect } from "react";
 
 const AllCasesListForPayment = () => {
-  const { cases, loading, error } = useDataGetterHook();
+  const { cases, loading, error, fetchData } = useDataGetterHook();
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
   const loggedInClientId = user?.data?.id;
+
+  useEffect(() => {
+    fetchData("cases", "cases");
+  }, []);
 
   if (loading.cases) return <h1>Loading... </h1>;
   if (error.cases)

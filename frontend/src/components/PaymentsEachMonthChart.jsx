@@ -29,6 +29,7 @@ const months = [
 
 const PaymentsEachMonthChart = ({ data }) => {
   const { setYearEachMonth } = useContext(PaymentFiltersContext);
+
   // Transform data to include month names
   const transformedData = data?.map((item) => ({
     ...item,

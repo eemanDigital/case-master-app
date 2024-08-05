@@ -93,9 +93,13 @@ const invoiceSchema = new Schema(
     totalAmountDue: { type: Number, default: 0 },
     totalInvoiceAmount: { type: Number, default: 0 }, // represents the sum total of all charges related to the invoice before any deductions
     amountPaid: { type: Number, default: 0 },
-    signature: String, // image
   },
-  { timestamps: true }
+  { timestamps: true },
+
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  }
 );
 
 // Populate middleware

@@ -1,18 +1,18 @@
+import React, { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { formatDate } from "../utils/formatDate";
 import { Table, Modal, Space, Button } from "antd";
-import { useDataFetch } from "../hooks/useDataFetch";
-import moment from "moment";
-import { useEffect, useState } from "react";
-import SearchBar from "../components/SearchBar";
-import { useAdminHook } from "../hooks/useAdminHook";
-import { useSelector } from "react-redux";
-import LoadingSpinner from "../components/LoadingSpinner";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import moment from "moment";
+
+import { formatDate } from "../utils/formatDate";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { useAdminHook } from "../hooks/useAdminHook";
+import LoadingSpinner from "../components/LoadingSpinner";
+import SearchBar from "../components/SearchBar";
+import { deleteData } from "../redux/features/delete/deleteSlice";
 
 const InvoiceList = () => {
-  const { data, loading, error, dataFetcher } = useDataFetch();
   const {
     invoices,
     loading: loadingInvoices,
@@ -20,70 +20,85 @@ const InvoiceList = () => {
     fetchData,
   } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
-
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { isLoading, isError, isSuccess, message } = useSelector(
+    (state) => state.delete
+  );
+  const dispatch = useDispatch();
   const { isClient, isSuperOrAdmin } = useAdminHook();
+  const { user } = useSelector((state) => state.auth);
   const loggedInClientId = user?.data?.id;
 
-  // fetch data
-  useEffect(() => {
+  const fetchInvoices = useCallback(() => {
     fetchData("invoices", "invoices");
   }, []);
 
-  //   handle delete
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
+  useEffect(() => {
+    fetchInvoices();
+  }, [fetchInvoices]);
 
-  const handleDeleteInvoice = async (id) => {
-    await dataFetcher(`invoices/${id}`, "delete", fileHeaders);
-  };
-
-  // render all cases initially before filter
   useEffect(() => {
     if (invoices?.data) {
-      setSearchResults(invoices?.data);
+      setSearchResults(invoices.data);
     }
   }, [invoices]);
 
-  // handles search filter
-  const handleSearchChange = (e) => {
-    const searchTerm = e.target.value.trim().toLowerCase();
+  const handleSearchChange = useCallback(
+    (e) => {
+      const searchTerm = e.target.value.trim().toLowerCase();
 
-    if (!searchTerm) {
-      setSearchResults(invoices?.data);
-      return;
-    }
+      if (!searchTerm) {
+        setSearchResults(invoices?.data);
+        return;
+      }
 
-    const results = invoices?.data.filter((d) => {
-      // Check in client names
-      const clientNameMatch = d.client?.fullName
-        .toLowerCase()
-        .includes(searchTerm);
-      // Check in invoice reference
-      const referenceMatch = d.invoiceReference
-        ?.toLowerCase()
-        .includes(searchTerm);
+      const results = invoices?.data.filter((d) => {
+        const clientNameMatch = `${d.client?.firstName} ${d.client?.secondName}`
+          .toLowerCase()
+          .includes(searchTerm);
+        const referenceMatch = d.invoiceReference
+          ?.toLowerCase()
+          .includes(searchTerm);
+        const workTitleMatch = d.workTitle?.toLowerCase().includes(searchTerm);
+        const statusMatch = d.status.toLowerCase() === searchTerm.toLowerCase();
 
-      // check by work title
-      const workTitleMatch = d.workTitle?.toLowerCase().includes(searchTerm);
+        return (
+          clientNameMatch || referenceMatch || workTitleMatch || statusMatch
+        );
+      });
 
-      // Check in invoice status //this is a strict match
-      const statusMatch = d.status.toLowerCase() === searchTerm.toLowerCase();
+      setSearchResults(results);
+    },
+    [invoices?.data]
+  );
 
-      return clientNameMatch || referenceMatch || workTitleMatch || statusMatch;
-    });
-
-    setSearchResults(results);
-  };
-
-  // filter payment base on clientId
   const filteredInvoiceForClient = searchResults.filter(
     (item) => item.client?.id === loggedInClientId
   );
 
-  // loading and error
+  // handle delete
+  const deleteInvoice = async (id) => {
+    try {
+      await dispatch(deleteData(`invoices/${id}`));
+    } catch (error) {
+      toast.error("Failed to delete invoice");
+    }
+  };
+
+  useEffect(() => {
+    if (isError) {
+      toast.error(message);
+    }
+    if (isSuccess) {
+      toast.success(message);
+      // Refetch the data after any successful operation
+      fetchInvoices();
+    }
+  }, [isError, isSuccess, message, fetchInvoices]);
+
+  if (errorInvoices.invoices) {
+    toast.error(errorInvoices.invoices);
+    return null;
+  }
 
   const columns = [
     {
@@ -95,7 +110,8 @@ const InvoiceList = () => {
       title: "Client",
       dataIndex: "client",
       key: "client",
-      render: (client) => (client ? client.firstName : "N/A"),
+      render: (client) =>
+        client ? `${client.firstName} ${client.secondName}` : "N/A",
       responsive: ["md"],
     },
     {
@@ -144,11 +160,12 @@ const InvoiceList = () => {
               onClick={() => {
                 Modal.confirm({
                   title: "Are you sure you want to delete this invoice?",
-                  onOk: () => handleDeleteInvoice(record?._id),
+                  onOk: () => deleteInvoice(record?._id),
                 });
               }}
               type="primary"
               danger>
+              {isLoading && <LoadingSpinner />}
               Delete
             </Button>
           )}
@@ -157,17 +174,13 @@ const InvoiceList = () => {
     },
   ];
 
-  // error
-  if (errorInvoices.invoices) return toast.error(errorInvoices.invoices);
-
   return (
     <div>
       {loadingInvoices.invoices && <LoadingSpinner />}
-      <div className="flex md:flex-row flex-col  justify-between items-center mt-4">
+      <div className="flex md:flex-row flex-col justify-between items-center mt-4">
         <Link to="invoices/add-invoices">
-          <Button className="bg-blue-500  text-white">Create Invoice</Button>
+          <Button className="bg-blue-500 text-white">Create Invoice</Button>
         </Link>
-
         <SearchBar onSearch={handleSearchChange} />
       </div>
       <h1 className="text-3xl font-bold text-gray-700 mb-7">Invoices</h1>

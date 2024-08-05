@@ -1,16 +1,14 @@
 import { useEffect, useState } from "react";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { useDataFetch } from "../hooks/useDataFetch";
-import { useAdminHook } from "../hooks/useAdminHook";
-import { Space, Table, Button, Spin, Alert, Modal } from "antd";
+import { Space, Table, Button, Modal } from "antd";
 import avatar from "../assets/avatar.png";
 import LeaveBalanceList from "./leaveBalanceList";
 import CreateLeaveBalanceForm from "../components/CreateLeaveBalanceForm";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBar from "../components/SearchBar";
-import { useDispatch, useSelector } from "react-redux";
 import { deleteUser, getUsers } from "../redux/features/auth/authSlice";
+import { useAdminHook } from "../hooks/useAdminHook";
 
 const StaffList = () => {
   const [searchResults, setSearchResults] = useState([]);
@@ -19,7 +17,6 @@ const StaffList = () => {
     (state) => state.auth
   );
 
-  // console.log("USERS", users);
   const { Column, ColumnGroup } = Table;
   const { isAdminOrHr, isAdmin, isSuperOrAdmin } = useAdminHook();
 
@@ -28,12 +25,12 @@ const StaffList = () => {
     dispatch(getUsers());
   }, [dispatch]);
 
-  //render all cases initially before filter
+  // render all cases initially before filter
   useEffect(() => {
     if (users?.data) {
       setSearchResults(users?.data);
     }
-  }, [users]);
+  }, [users?.data]); // Only depend on users.data to avoid unnecessary re-renders
 
   // handles search filter
   const handleSearchChange = (e) => {
@@ -45,39 +42,19 @@ const StaffList = () => {
     }
 
     const results = users?.data.filter((d) => {
-      // Check in user names
       const usernameMatch = d.fullName.toLowerCase().includes(searchTerm);
-      // Check in role
       const roleMatch = d.role?.toLowerCase().includes(searchTerm);
-      // check by email
       const emailMatch = d.email?.toLowerCase().includes(searchTerm);
-      // Check in position
       const positionMatch = d.position?.toLowerCase().includes(searchTerm);
       return usernameMatch || emailMatch || positionMatch || roleMatch;
     });
     setSearchResults(results);
   };
 
-  if (isLoading) {
-    return (
-      <div>
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
   const removeUser = async (id) => {
     await dispatch(deleteUser(id));
     await dispatch(getUsers());
   };
-
-  // format position
-  // const formatPosition = (position) => {
-  //   return position
-  //     .split("_")
-  //     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-  //     .join(" ");
-  // };
 
   return (
     <>
@@ -125,7 +102,6 @@ const StaffList = () => {
         <Column title="Email" dataIndex="email" key="email" />
         <Column title="Role" dataIndex="role" key="role" />
         <Column title="Position" dataIndex="position" key="position" />
-        {/* <Column title="Phone" dataIndex="phone" key="phone" /> */}
 
         <Column
           title="Action"

@@ -28,9 +28,10 @@ export const invoiceInitialValue = {
     reference: "",
   },
   status: "unpaid",
-  paymentInstructionTAndC: "",
-  taxType: "",
-  taxRate: 0.0,
+  paymentInstructionTAndC:
+    "Payment must be made on or before 20 days on receipt of this invoice",
+  taxType: "VAT",
+  taxRate: 7.5,
   taxAmount: 0.0,
   totalAmountWithTax: 0.0,
   totalExpenses: 0,

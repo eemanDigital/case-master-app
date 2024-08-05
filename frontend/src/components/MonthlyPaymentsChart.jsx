@@ -21,10 +21,10 @@ const MonthlyPaymentsChart = ({ data }) => {
   ];
 
   return (
-    <div className="flex flex-col justify-between ">
+    <div className="bg-white p-6 m-4 flex flex-col justify-between  rounded-md">
       <PaymentFilterForm setYear={setYearMonth} setMonth={setMonth} />
 
-      <div className=" flex justify-between  items-center  mb-5   ">
+      <div className=" flex  justify-between  items-center  mb-5   ">
         <ResponsiveContainer width="60%" height={300}>
           <BarChart
             data={transformedData}

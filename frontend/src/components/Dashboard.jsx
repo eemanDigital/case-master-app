@@ -4,10 +4,6 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import { Button, Empty, Row, Col, Typography, Card, Divider } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
-import { GoLaw } from "react-icons/go";
-import { FaBriefcase, FaUser, FaTasks } from "react-icons/fa";
-import CreateTaskForm from "../pages/CreateTaskForm";
-import Todo from "./Todo";
 import SingleCauseList from "./SingleCauseList";
 import CasesByCategoriesChart from "./CasesByCategoriesChart";
 import AccountOfficerCharts from "./AccountOfficerCharts";
@@ -20,15 +16,13 @@ import CaseCountsByYearChart from "./CaseCountsByYearChart ";
 // import EventCalender from "./EventCalender";
 import googleCalender from "../assets/calender.svg";
 import ClientDashboard from "./ClientDashboard";
-import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
 import LeaveNotification from "./LeaveNotification";
 import { useSelector } from "react-redux";
 import Notification from "./Notification";
 import useUsersCount from "../hooks/useUsersCount";
-import { FaHandshake, FaUsers } from "react-icons/fa6";
-import GoogleCalenderForm from "../pages/CalenderEvent";
 import CalenderEvent from "../pages/CalenderEvent";
 import DashBoardDataCount from "./DashBoardDataCount";
+import LatestCaseReports from "./LatestCaseReports";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -94,8 +88,7 @@ const Dashboard = () => {
   } = useDataGetterHook();
 
   // end
-  const { isAdminOrHr, isSuperOrAdmin, isStaff, isClient, isVerified } =
-    useAdminHook();
+  const { isAdminOrHr, isStaff, isClient, isVerified } = useAdminHook();
   // user count
   const { lawyerCount, clientCount, staff } = useUsersCount(users);
 
@@ -132,10 +125,10 @@ const Dashboard = () => {
   }, [year]);
 
   useEffect(() => {
-    if (month && year) {
+    if (month && yearMonth) {
       dataFetcherMonth(`payments/totalPayments/${yearMonth}/${month}`, "GET");
     }
-  }, [year, month]);
+  }, [month, yearMonth]);
 
   // get data each month in a year
   useEffect(() => {
@@ -147,10 +140,7 @@ const Dashboard = () => {
     }
   }, [yearEachMonth]);
 
-  const btnStyle = "bg-blue-500 text-white rounded-md";
-
   // console.log(reports, events, "AD");
-
   const causeListTitle = (
     <div className="flex justify-between items-center">
       <h1 className="text-gray-700 text-[20px] font-bold">
@@ -218,30 +208,40 @@ const Dashboard = () => {
             lawyerCount={lawyerCount}
             clientCount={clientCount}
           />
-          <div
-            className={`overflow-y-auto hide-scrollbar ${
-              causeList.data?.todayResult === 0
-                ? "h-[180] w-full display-shadow-none bg-white"
-                : ""
-            }`}>
-            {!causeList.data?.todayResult > 0 ? (
-              <h3 className="text-blue-600  font-medium text-2xl">
-                You have no matter today in Court
-              </h3>
-            ) : (
-              <div className="w-[370px] bg-white">
-                <SingleCauseList
-                  causeListData={causeList.data?.reportsToday}
-                  loadingCauseList={getterLoading.causeList}
-                  errorCauseList={getterError.causeList}
-                  title={causeListTitle}
-                  h1Style="text-center text-2xl text-gray-600 font-bold"
-                />
-              </div>
-            )}
-          </div>{" "}
+          <div className="dashboard-container">
+            <div
+              className={`cause-list-container   ${
+                causeList.data?.todayResult === 0
+                  ? "h-[180] w-full display-shadow-none bg-white"
+                  : ""
+              }`}>
+              {!causeList.data?.todayResult > 0 ? (
+                <h3 className="text-blue-600 p-5 font-medium text-center">
+                  You have no matter today in Court
+                </h3>
+              ) : (
+                <div className="w-[370px] bg-white">
+                  <h4 className="text-center font-bold">Toady's Cause List</h4>
+                  <SingleCauseList
+                    causeListData={causeList.data?.reportsToday}
+                    loadingCauseList={getterLoading.causeList}
+                    errorCauseList={getterError.causeList}
+                    title={causeListTitle}
+                    h1Style="text-center text-2xl text-gray-600 font-bold"
+                    hideButton={true}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="latest-case-reports-container">
+              <LatestCaseReports />
+            </div>
+          </div>
+
           <div className="flex justify-between shadow-md rounded-md my-6 gap-2 bg-white">
             <div className="flex w-full">
+              <CaseCountsByClientChart data={casesByClient?.data} />
               <AccountOfficerCharts
                 title="Cases By Account Officer"
                 data={casesByAccountOfficer?.data || []}
@@ -256,7 +256,6 @@ const Dashboard = () => {
             />
             <PaymentsEachMonthChart data={fetchedEachMonthDataInYear?.data} />
           </div>
-          <CaseCountsByClientChart data={casesByClient?.data} />
           <div className=" bg-white flex  md:flex-row   justify-between  items-center p-4">
             <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
 

@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Descriptions, Button, Card, Spin, Alert } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { useAuthContext } from "../hooks/useAuthContext";
+// import { useAuthContext } from "../hooks/useAuthContext";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useSelector } from "react-redux";
@@ -15,7 +15,7 @@ const PaymentMadeOnCase = () => {
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
-  const loggedInClientId = user?.data?.user.id;
+  const loggedInClientId = user?.data?.id;
 
   useEffect(() => {
     if (clientId && caseId) {
@@ -40,13 +40,18 @@ const PaymentMadeOnCase = () => {
 
   if (error) {
     return (
-      <Alert
-        message="Error"
-        description={error.message}
-        type="error"
-        showIcon
-        banner
-      />
+      <>
+        <Button className="blue-btn m-4" onClick={() => navigate(-1)}>
+          Go Back
+        </Button>
+        <Alert
+          message="Error"
+          description={error}
+          type="error"
+          showIcon
+          banner
+        />
+      </>
     );
   }
 
@@ -67,7 +72,7 @@ const PaymentMadeOnCase = () => {
 
   return (
     <>
-      <Button key="1" type="primary" onClick={() => navigate(-1)}>
+      <Button className="blue-btn" onClick={() => navigate(-1)}>
         Go Back
       </Button>
       <Card className="mt-4">

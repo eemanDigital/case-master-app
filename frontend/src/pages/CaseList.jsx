@@ -10,35 +10,53 @@ import {
 } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import Spinner from "../components/Spinner";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
 import LoadingSpinner from "../components/LoadingSpinner";
-import useDelete from "../hooks/useDelete";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 
 const { Title } = Typography;
 
 const CaseList = () => {
   const { cases, loading, error, fetchData } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
-  const { isStaff, isClient } = useAdminHook();
-  const { isLoggedIn, user } = useSelector((state) => state.auth);
+  const { isStaff } = useAdminHook();
+  const { user } = useSelector((state) => state.auth);
+  const { isError, isSuccess, message } = useSelector((state) => state.delete);
   const caseIDs = user?.data?.case?.map((caseItem) => caseItem?._id);
-
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const indexOfLastCase = currentPage * itemsPerPage;
   const indexOfFirstCase = indexOfLastCase - itemsPerPage;
   const currentCases = searchResults?.slice(indexOfFirstCase, indexOfLastCase);
-
+  const dispatch = useDispatch();
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  useEffect(() => {
+  // fetch cases
+  const fetchCases = useCallback(() => {
     fetchData("cases", "cases");
   }, []);
+  useEffect(() => {
+    fetchCases();
+  }, [fetchCases]);
+
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success(message);
+      dispatch(RESET());
+      fetchCases(); //updatate cases
+    }
+    if (isError) {
+      toast.error(message);
+      dispatch(RESET());
+    }
+  }, [isSuccess, isError, message, dispatch, fetchCases]);
+
+  ///////////////////////
 
   useEffect(() => {
     if (cases?.data) {
@@ -46,6 +64,7 @@ const CaseList = () => {
     }
   }, [cases]);
 
+  // search handler
   const handleSearchChange = (e) => {
     const searchTerm = e.target.value.trim().toLowerCase();
     if (!searchTerm) {
@@ -82,7 +101,14 @@ const CaseList = () => {
     return cases?.data?.filter((caseItem) => caseIds?.includes(caseItem?._id));
   };
 
-  const { handleDeleteDocument } = useDelete(cases?.data, "cases");
+  // delete case
+  const deleteCase = async (id) => {
+    try {
+      await dispatch(deleteData(`cases/${id}`));
+    } catch (error) {
+      toast.error("Failed to delete invoice");
+    }
+  };
 
   const columns = [
     {
@@ -131,12 +157,7 @@ const CaseList = () => {
                   okText: "Yes",
                   okType: "danger",
                   cancelText: "No",
-                  onOk: () =>
-                    handleDeleteDocument(
-                      event,
-                      `cases/${record._id}`,
-                      record._id
-                    ),
+                  onOk: () => deleteCase(record._id),
                 })
               }>
               Delete

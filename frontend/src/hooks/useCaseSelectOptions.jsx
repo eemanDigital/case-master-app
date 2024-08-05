@@ -1,7 +1,13 @@
+import { useEffect } from "react";
 import { useDataGetterHook } from "./useDataGetterHook";
 
 const useCaseSelectOptions = () => {
-  const { cases } = useDataGetterHook();
+  const { cases, fetchData } = useDataGetterHook();
+
+  // fetch users
+  useEffect(() => {
+    fetchData("cases", "cases");
+  }, []);
 
   const casesOptions = Array.isArray(cases?.data)
     ? cases?.data.map((singleCase) => {

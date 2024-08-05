@@ -2,17 +2,19 @@
 @jwt_token = jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY2YTUzMGNmYWUzYWRlZWQ3YTk5NTA3YiIsImlhdCI6MTcyMjY3NjA4OSwiZXhwIjoxNzIyNzYyNDg5fQ.xNPVuIF-ANRNgbth8CEj4zt9GwiPcPDgvl3IXH-mS-4;
 
 #CREATE USER
-POST http://localhost:3000/api/v1/users/signup  HTTP/1.1 
+POST http://localhost:3000/api/v1/users/register  HTTP/1.1 
 content-type: application/json
 
 {
   "firstName": "test  ",
-  "lastName": "Lukmans",
+  "lastName": "<div>Ademola</div>",
   "email": "luk@example.com",
   "password": "test1234",
   "passwordConfirm": "test1234",
   "position": "Principal",
-  "photo": "https://example.com/photo.jpg",
+  "phone":"12344555",
+  "gender":"male",
+  "address":"address",
   "yearOfCall": "2010-01-01",
   "practiceArea": "Property Law",
   "universityAttended": "University of UI",
@@ -28,6 +30,9 @@ content-type: application/json
   "email":"asinmi4real@gmail.com",
   "password":"test1234"
 }
+
+  # "email":{"$gt":""},
+
 ### login with google
 
 POST  http://localhost:3000/api/v1/users//google/callback  HTTP/1.1 
@@ -72,6 +77,8 @@ content-type: application/json
 # GET TASKS
 GET http://localhost:3000/api/v1/tasks  HTTP/1.1 
 content-type: application/json
+
+###
 
 # GET CASES
 GET http://localhost:3000/api/v1/cases  HTTP/1.1 
@@ -149,8 +156,8 @@ content-type: application/json
 
 ###
 
-# GET CASE
-GET http://localhost:3000/api/v1/case  HTTP/1.1 
+# GET Invoices
+GET {{baseUrl}}invoices  HTTP/1.1 
 content-type: application/json
 
 ###
@@ -205,9 +212,15 @@ content-type: application/json
 
 
 ###
-GET {{{{baseUrl}}}}cases/case-status  HTTP/1.1 
+GET {{baseUrl}}cases/case-status  HTTP/1.1 
 content-type: application/json
 
 ###
+GET {{baseUrl}}reports/pdf/causeList/week  HTTP/1.1 
+content-type: application/json
+###
 GET {{baseUrl}}payments/paymentEachClient HTTP/1.1 
+content-type: application/json
+###
+GET {{baseUrl}}payments/client/665df5b07108ca4adc18a65c/case/6683152cddcd8e8eae3309c7 HTTP/1.1 
 content-type: application/json

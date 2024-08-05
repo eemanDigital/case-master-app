@@ -4,12 +4,9 @@ const AppError = require("../utils/appError");
 const LeaveBalance = require("../models/leaveBalanceModel");
 
 exports.createLeaveApplication = catchAsync(async (req, res, next) => {
-  // get current user
-  const userId = req.user._id;
-
   // get the leave balance for the employee
   const leaveBalance = await LeaveBalance.findOne({
-    employee: userId,
+    employee: req.user._id,
   });
   if (!leaveBalance) {
     return next(new AppError("No leave balance found for that employee", 404));

@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { Table, Modal, Space, Button } from "antd";
-import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import CreatePaymentForm from "./CreatePaymentForm";
@@ -8,7 +7,8 @@ import SearchBar from "../components/SearchBar";
 import { useEffect, useState } from "react";
 
 import { useAdminHook } from "../hooks/useAdminHook";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { deleteData } from "../redux/features/delete/deleteSlice";
 
 const PaymentList = () => {
   const {
@@ -21,21 +21,19 @@ const PaymentList = () => {
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
   const { isClient, isSuperOrAdmin } = useAdminHook();
+  const dispatch = useDispatch();
   const loggedInClientId = user?.data?.id;
-  const { dataFetcher, loading, error } = useDataFetch();
 
   // fetch data
   useEffect(() => {
     fetchData("payments", "payments");
-  }, []);
+  }, [fetchData]);
 
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
+  const deletePayment = async (id) => {
+    // Implement delete functionality here;
+    await dispatch(deleteData(`payments/${id}`));
 
-  const handleDeletePayment = async (id) => {
-    // Implement delete functionality here
-    await dataFetcher(`payments/${id}`, "delete", fileHeaders);
+    await fetchData("payments", "payments");
   };
 
   // Render all cases initially before filter
@@ -129,7 +127,7 @@ const PaymentList = () => {
               onClick={() => {
                 Modal.confirm({
                   title: "Are you sure you want to delete this payment?",
-                  onOk: () => handleDeletePayment(record?._id),
+                  onOk: () => deletePayment(record?._id),
                 });
               }}
               type="primary"

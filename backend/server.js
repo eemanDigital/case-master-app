@@ -4,6 +4,12 @@ const mongoose = require("mongoose");
 const path = require("path");
 const cors = require("cors");
 const morgan = require("morgan");
+const rateLimit = require("express-rate-limit");
+const helmet = require("helmet");
+const { JSDOM } = require("jsdom");
+const createDOMPurify = require("dompurify");
+const hpp = require("hpp");
+const mongoSanitize = require("express-mongo-sanitize");
 const cookieParser = require("cookie-parser");
 const userRouter = require("./routes/userRoutes");
 const caseRouter = require("./routes/caseRoutes");
@@ -37,13 +43,36 @@ dotenv.config({ path: "./config.env" });
 
 // MIDDLEWARES
 const app = express();
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(helmet()); //set security http header -
 
-// template
-// app.set("view engine", "pug");
-// app.set("views", path.join(__dirname, "views"));
-// // app.use(expressLayouts);
+app.use(express.urlencoded({ extended: true }));
+// body parser, reading data from body into req.body
+app.use(
+  express.json({
+    // limit amount of data in the body
+    limit: "10kb",
+  })
+);
+
+// data sanitization against noSql query injection
+app.use(mongoSanitize());
+// Middleware to sanitize user input;
+// ensures that any user input received in req.body is sanitized to prevent XSS attacks.
+// app.use((req, res, next) => {
+//   if (req.body) {
+//     for (const key in req.body) {
+//       if (req.body.hasOwnProperty(key)) {
+//         req.body[key] = DOMPurify.sanitize(req.body[key]);
+//       }
+//     }
+//   }
+//   next();
+// });
+
+// clears parameter polution
+app.use(hpp());
+
+// serving static file
 app.use(express.static(path.join(__dirname, "public")));
 // Set up Pug as the view engine
 app.set("view engine", "pug");
@@ -68,10 +97,6 @@ const DB = process.env.DATABASE.replace(
   "<PASSWORD>",
   process.env.DATABASE_PASSWORD
 );
-// mongoose.connect(DB, { autoIndex: true }).then(() => {
-//   console.log("Cloud Database connected");
-// });
-
 // connection to mongoose - MONGODB LOCAL DATABASE
 mongoose
   .connect(process.env.DATABASE_LOCAL, {})
@@ -82,11 +107,19 @@ mongoose
     console.error("Error connecting to database:", err);
   });
 
+// development logging
 console.log(app.get("env"));
-
 if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
+
+// rate limiter - to limit number of request to the app
+const limiter = rateLimit({
+  max: 200, //allows 100 req from same IP in 1hr
+  windowMs: 60 * 60 * 100,
+  message: "To many request from this IP, please try again in an 1hr",
+});
+// app.use("/api", limiter);
 
 // console.log(process.env);
 //routes mounting

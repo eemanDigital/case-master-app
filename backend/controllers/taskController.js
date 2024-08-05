@@ -72,17 +72,8 @@ exports.deleteTask = catchAsync(async (req, res, next) => {
     return next(new AppError("No leave application found with that ID", 404));
   }
 
-  // check user's role to allow delete
-  if (req.user.role === "admin") {
-    await Task.findByIdAndDelete(req.params.id);
-  } else {
-    return next(
-      new AppError("You are not authorised to perform this operation", 400)
-    );
-  }
-
   res.status(204).json({
-    status: "success",
+    message: "Task deleted",
     data: null,
   });
 });

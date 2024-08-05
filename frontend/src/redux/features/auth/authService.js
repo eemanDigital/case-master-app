@@ -36,7 +36,6 @@ const getUser = async () => {
 /// get user
 const getUsers = async () => {
   const response = await axios.get(API_URL);
-  console.log(response);
   return response.data;
 };
 
@@ -78,6 +77,7 @@ const deleteUser = async (id) => {
   const response = await axios.delete(API_URL + id);
   return response.data.message;
 };
+
 // send Login code 2FA
 const sendLoginCode = async (email) => {
   const response = await axios.post(API_URL + `sendLoginCode/${email}`);

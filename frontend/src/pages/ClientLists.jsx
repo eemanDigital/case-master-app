@@ -6,24 +6,39 @@ import AddClientForm from "../components/AddClientForm";
 import { useEffect, useState } from "react";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { deleteUser, getUsers } from "../redux/features/auth/authSlice";
+import { toast } from "react-toastify";
 
 const ClientLists = () => {
-  const {
-    users: clients,
-    loading: loadingClients,
-    error: errorClients,
-  } = useDataGetterHook();
+  // const {
+  //   users: clients,
+  //   loading: loadingClients,
+  //   error: errorClients,
+  // } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
+  const dispatch = useDispatch();
 
   const { Column, ColumnGroup } = Table;
   const { isStaff, isSuperOrAdmin, isClient } = useAdminHook();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const {
+    isError,
+    isSuccess,
+    isLoading,
+    message,
+    isLoggedIn,
+    user,
+    users: clients,
+  } = useSelector((state) => state.auth);
 
   const loggedInClient = user?.data?._id;
 
   const { data, loading, error, dataFetcher } = useDataFetch();
+
+  // fetch client
+  useEffect(() => {
+    dispatch(getUsers());
+  }, [dispatch]);
 
   useEffect(() => {
     // clients only see there cases
@@ -78,29 +93,20 @@ const ClientLists = () => {
     setSearchResults(results);
   };
 
-  if (loadingClients.clients) {
+  if (isLoading) {
     return (
       <Spin size="large" className="flex justify-center items-center h-full" />
     );
   }
 
-  if (errorClients.clients) {
-    return (
-      <Alert
-        message="Error"
-        description={errorClients.clients}
-        type="error"
-        showIcon
-      />
-    );
+  if (isError) {
+    return toast.error(message);
   }
 
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
-
-  const handleDeleteApp = async (id) => {
-    await dataFetcher(`users/${id}`, "delete", fileHeaders);
+  // remove client handler
+  const removeClient = async (id) => {
+    await dispatch(deleteUser(id));
+    await dispatch(getUsers());
   };
 
   return (
@@ -135,7 +141,7 @@ const ClientLists = () => {
                     Modal.confirm({
                       title:
                         "Are you sure you want to delete this client information?",
-                      onOk: () => handleDeleteApp(record?.id),
+                      onOk: () => removeClient(record?.id),
                     });
                   }}
                   type="primary"

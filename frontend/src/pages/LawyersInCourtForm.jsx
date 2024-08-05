@@ -1,10 +1,11 @@
 import { useState, useCallback, useEffect } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import useModal from "../hooks/useModal";
-import { Button, Input, Form, Card, Select, Modal } from "antd";
+import { Button, Form, Select } from "antd";
 import axios from "axios";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { useNavigate } from "react-router-dom";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -12,15 +13,12 @@ const LawyersInCourtForm = ({ reportId }) => {
   const [form] = Form.useForm();
   const [formData, setFormData] = useState({});
   const [loading, setLoading] = useState(true);
+  const { fetchData } = useDataGetterHook();
+  const { userData } = useUserSelectOptions();
+  const navigate = useNavigate(); // Initialize navigate
 
   // handle reports post and get report data
   const { dataFetcher, data } = useDataFetch();
-
-  const { userData } = useUserSelectOptions();
-
-  const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
-    useModal(); //modal hook
-
   const token = document.cookie
     .split("; ")
     .find((row) => row.startsWith("jwt="))
@@ -46,6 +44,9 @@ const LawyersInCourtForm = ({ reportId }) => {
             ...response?.data?.data,
           };
         });
+
+        // Set form fields with fetched data
+        form.setFieldsValue(response?.data?.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -53,7 +54,7 @@ const LawyersInCourtForm = ({ reportId }) => {
       }
     }
     fetchData();
-  }, [reportId]);
+  }, [reportId, form]);
 
   // form submit functionalities
   const handleSubmission = useCallback(
@@ -63,10 +64,10 @@ const LawyersInCourtForm = ({ reportId }) => {
       } else {
         // Handle Success here
         form.resetFields();
+        navigate("/dashboard/cause-list"); // Redirect to /cause-list page
       }
     },
-    []
-    // [form]
+    [navigate, form]
   );
 
   // submit data
@@ -78,59 +79,47 @@ const LawyersInCourtForm = ({ reportId }) => {
       return;
     }
     const result = await dataFetcher(`reports/${reportId}`, "PATCH", values); // Submit the form data to the backend
-    console.log(values);
+    //get list after submit
+    await fetchData("reports", "reports");
+    window.location.reload(); //force reload of page to reflect change
+
     handleSubmission(result); // Handle the submission after the API Call
-  }, [form, handleSubmission, dataFetcher]);
+  }, [form, handleSubmission, dataFetcher, fetchData, reportId]);
 
   return (
     <>
-      <button
-        onClick={showModal}
-        className="bg-blue-500 hover:bg-blue-700 text-white  py-2 px-4 my-2 tracking-wider ">
-        Assign Lawyer To Court
-      </button>
-      <Modal
-        title="Assign Lawyer"
-        open={open}
-        onOk={handleOk}
-        // confirmLoading={}
-        onCancel={handleCancel}
-        width={400}
-        footer={null}>
-        <Form
-          layout="vertical"
-          form={form}
-          name="form to assign lawyer to court"
-          // autoComplete="off"
-          className="flex  justify-center">
-          {/* <h1 className="text-4xl">Case Report</h1> */}
-          <Card bordered={false}>
-            <div>
-              <Form.Item
-                name="lawyersInCourt"
-                label="Lawyer in Court"
-                className="w-[200px]"
-                initialValue={formData?.lawyersInCourt}>
-                <Select
-                  // noStyle
-                  mode="multiple"
-                  placeholder="Select lawyers..."
-                  options={userData}
-                  allowClear
-                  // style={{
-                  //   width: "100%",
-                  // }}
-                />
-              </Form.Item>
-            </div>
-            <Form.Item>
-              <Button onClick={onSubmit} type="default" htmlType="submit">
-                Save
-              </Button>
-            </Form.Item>
-          </Card>
-        </Form>
-      </Modal>
+      <Form
+        layout="vertical"
+        form={form}
+        name="form to assign lawyer to court"
+        autoComplete="off"
+        className="flex flex-col md:flex-row md:items-end md:space-x-4 justify-center"
+        initialValues={formData}>
+        <div className="flex-grow">
+          <Form.Item
+            name="lawyersInCourt"
+            label="Lawyer in Court"
+            className="w-full"
+            initialValue={formData?.lawyersInCourt}>
+            <Select
+              mode="multiple"
+              placeholder="Select lawyers..."
+              options={userData}
+              allowClear
+              className="w-[20px]"
+            />
+          </Form.Item>
+        </div>
+        <Form.Item className="md:mb-0">
+          <Button
+            onClick={onSubmit}
+            type="default"
+            htmlType="submit"
+            className="w-full md:w-auto">
+            Save
+          </Button>
+        </Form.Item>
+      </Form>
     </>
   );
 };

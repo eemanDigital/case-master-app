@@ -1,4 +1,4 @@
-import { createContext, useState } from "react";
+import { createContext, useCallback, useState } from "react";
 import axios from "axios";
 
 // Create a context
@@ -87,17 +87,7 @@ const DataFetcherContext = ({ children }) => {
     },
   });
 
-  // const token = document.cookie
-  //   .split("; ")
-  //   .find((row) => row.startsWith("jwt="))
-  //   ?.split("=")[1];
-
-  // const headers = {
-  //   "Content-Type": "application/json",
-  //   Authorization: `Bearer ${token}`,
-  // };
-
-  const fetchData = async (endpoint, key) => {
+  const fetchData = useCallback(async (endpoint, key) => {
     try {
       setState((prevState) => ({
         ...prevState,
@@ -132,7 +122,7 @@ const DataFetcherContext = ({ children }) => {
         loading: { ...prevState.loading, [key]: false },
       }));
     }
-  };
+  }, []);
 
   return (
     <DataContext.Provider value={{ ...state, fetchData }}>

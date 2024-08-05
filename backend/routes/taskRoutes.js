@@ -16,7 +16,7 @@ const {
   // taskResponseFileUpload,
   downloadFile,
 } = require("../controllers/taskResponseController");
-const { protect } = require("../controllers/authController");
+const { protect, restrictTo } = require("../controllers/authController");
 const {
   downloadDocument,
   deleteDocument,
@@ -50,7 +50,7 @@ router.get("/:taskId", getTask);
 // router.get("/download/:taskId", downloadFile);
 // router.patch("/:id", fileUpload, updateTask);
 router.patch("/:id", updateTask);
-router.delete("/:id", deleteTask);
+router.delete("/:id", restrictTo("admin", "super-admin"), deleteTask);
 router.post("/", createTask);
 
 // sub-doc route for task response

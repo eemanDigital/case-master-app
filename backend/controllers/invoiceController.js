@@ -9,48 +9,16 @@ const multer = require("multer");
 const { generatePdf } = require("../utils/generatePdf");
 const setRedisCache = require("../utils/setRedisCache");
 
-// handle signature upload for the invoice
-const multerStorage = multer.memoryStorage();
-
-const multerFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith("image")) {
-    cb(null, true);
-  } else {
-    cb(new AppError("Not an file! Please upload only images.", 400), false);
-  }
-};
-
-const upload = multer({
-  storage: multerStorage,
-  fileFilter: multerFilter,
-});
-
-exports.uploadUserSignature = upload.single("signature");
-
-exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
-  if (!req.file) return next();
-
-  req.file.filename = `invoice-${req?.user?.id}-${Date.now()}.jpeg`;
-
-  await sharp(req.file.buffer)
-    .resize(200, 200)
-    .toFormat("jpeg")
-    .jpeg({ quality: 90 })
-    .toFile(`public/images/signature/${req.file?.filename}`);
-
-  next();
-});
-
 exports.getAllInvoices = catchAsync(async (req, res, next) => {
   const invoices = await Invoice.find().sort({
     createdAt: -1,
   });
 
   // set redis cache
-  setRedisCache("invoices", invoices, 5000);
+  // setRedisCache("invoices", invoices, 5000);
 
   res.status(200).json({
-    status: "success",
+    message: "success",
     fromCache: false,
     results: invoices.length,
     data: invoices,
@@ -75,11 +43,10 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
 });
 
 exports.createInvoice = catchAsync(async (req, res, next) => {
-  const filename = req.file ? req.file.filename : null;
-  const newInvoice = await Invoice.create({ signature: filename, ...req.body });
+  const newInvoice = await Invoice.create(req.body);
 
   res.status(201).json({
-    status: "success",
+    message: "success",
     data: newInvoice,
   });
 });
@@ -95,7 +62,7 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
   }
 
   res.status(200).json({
-    status: "success",
+    message: "success",
     data: invoice,
   });
 });
@@ -108,7 +75,7 @@ exports.deleteInvoice = catchAsync(async (req, res, next) => {
   }
 
   res.status(204).json({
-    status: "success",
+    message: "success",
     data: null,
   });
 });

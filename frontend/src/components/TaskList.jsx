@@ -4,13 +4,13 @@ import { formatDate } from "../utils/formatDate";
 import TaskReminderForm from "./TaskReminderForm";
 import { Table, Modal, Space, Button } from "antd";
 import CreateTaskForm from "../pages/CreateTaskForm";
-import { useDataFetch } from "../hooks/useDataFetch";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import { useAdminHook } from "../hooks/useAdminHook";
-import { useSelector } from "react-redux";
-import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { useCallback, useEffect } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import { toast } from "react-toastify";
+import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 
 const TaskList = () => {
   const {
@@ -19,39 +19,48 @@ const TaskList = () => {
     error: taskError,
     fetchData,
   } = useDataGetterHook();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { isError, isSuccess, message } = useSelector((state) => state.delete);
+  const { user } = useSelector((state) => state.auth);
   const loggedInClientId = user?.data?._id;
-  const { data, loading, error, dataFetcher } = useDataFetch();
-  const { isSuperOrAdmin, isStaff, isClient } = useAdminHook();
 
-  // fetch tasks data
+  const { isSuperOrAdmin, isStaff, isClient } = useAdminHook();
+  const dispatch = useDispatch();
+
+  // // fetch tasks data
+  // const fetchTasks = useCallback(() => {
+  // }, []);
+
   useEffect(() => {
     fetchData("tasks", "tasks");
-  }, []);
+  }, [fetchData]);
 
-  // Handle delete
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("jwt="))
-    ?.split("=")[1];
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success(message);
+      dispatch(RESET());
+      fetchData();
+    }
+    if (isError) {
+      toast.error(message);
+      dispatch(RESET());
+    }
+  }, [isSuccess, isError, message, dispatch, fetchData]);
 
-  const fileHeaders = {
-    headers: {
-      "Content-Type": "multipart/form-data",
-      Authorization: `Bearer ${token}`,
-    },
+  // handle delete
+  const deleteTask = async (id) => {
+    try {
+      await dispatch(deleteData(`tasks/${id}`));
+    } catch (error) {
+      toast.error("Failed to delete task");
+    }
   };
 
-  const handleDeleteApp = async (id) => {
-    await dataFetcher(`tasks/${id}`, "delete", { headers: fileHeaders });
-  };
-
+  console.log(message, ">SG");
   // Display loading message if data is being fetched
-  if (loading.todos) return <LoadingSpinner />;
+  if (loadingTasks.tasks) return <LoadingSpinner />;
 
   // Display error message if there was an error fetching data
-  if (loadingTasks.tasks) return toast.error(taskError.tasks);
+  if (taskError.error) return toast.error(taskError.error);
 
   const columns = [
     {
@@ -103,13 +112,12 @@ const TaskList = () => {
               className="text-red-500 text-2xl cursor-pointer hover:text-red-700"
               onClick={() => {
                 Modal.confirm({
-                  title: "Are you sure you want to delete this application?",
-                  onOk: () => handleDeleteApp(record?.id),
+                  title: "Are you sure you want to delete this task?",
+                  onOk: () => deleteTask(record?.id),
                 });
               }}
             />
           )}
-          {/* Check if the current user is the one who assigned the task for each record */}
           {user?.data?._id === record?.assignedBy?._id && (
             <TaskReminderForm id={record._id} />
           )}
@@ -133,15 +141,9 @@ const TaskList = () => {
     return tasks?.data.filter((task) => task?.assignedToClient?._id === userId);
   };
 
-  console.log(filterTaskByClientUser(loggedInClientId), "FLUC");
-
   return (
     <div className="mt-10">
       {isStaff && <CreateTaskForm />}
-      {/* <Link to="upload" className="text-right">
-        <Button>Attach Document to Task</Button>
-      </Link>
-      <h1 className="text-3xl font-bold text-gray-700 mb-7">Assigned Tasks</h1> */}
       <Table
         columns={columns}
         dataSource={
@@ -149,7 +151,7 @@ const TaskList = () => {
             ? tasks?.data
             : isClient
             ? filterTaskByClientUser(loggedInClientId)
-            : filterTaskByUser(tasks?.data, user?.data?.id)
+            : filterTaskByUser(loggedInClientId)
         }
         rowKey="_id"
       />

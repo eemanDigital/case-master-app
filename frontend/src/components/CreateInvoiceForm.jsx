@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
@@ -20,42 +20,56 @@ import { invoiceOptions } from "../data/options";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useClientSelectOptions from "../hooks/useClientSelectOptions";
 import { invoiceInitialValue } from "../utils/initialValues";
+import { toast } from "react-toastify";
+import LoadingSpinner from "./LoadingSpinner";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
 const { TextArea } = Input;
 
 const CreateInvoiceForm = () => {
   const [form] = Form.useForm();
-
+  const { fetchData } = useDataGetterHook();
   const [formData, setFormData] = useState(invoiceInitialValue);
-
-  const { dataFetcher, data } = useDataFetch();
+  const { dataFetcher, data, error, loading } = useDataFetch();
   const { casesOptions } = useCaseSelectOptions();
   const { clientOptions } = useClientSelectOptions();
   const navigate = useNavigate();
 
-  const handleSubmission = useCallback((result) => {
-    if (result?.error) {
-      // Handle Error here
-    } else {
-      // Handle Success here
-      // form.resetFields();
-    }
-  }, []);
+  const handleSubmission = useCallback(
+    (result) => {
+      if (result?.error) {
+        toast.error(result.error);
+      } else {
+        toast.success("Invoice created successfully");
+        form.resetFields();
+      }
+    },
+    [form]
+  );
 
   const onSubmit = useCallback(async () => {
-    let values;
     try {
-      values = await form.validateFields();
+      const values = await form.validateFields();
+      const result = await dataFetcher("invoices", "POST", values);
+      await fetchData("invoices", "invoices");
+      handleSubmission(result);
     } catch (errorInfo) {
-      return;
+      console.log("Validation failed:", errorInfo);
     }
-    const result = await dataFetcher("invoices", "POST", values);
-    console.log(values);
-
-    handleSubmission(result);
-  }, [form, handleSubmission, dataFetcher]);
+  }, [form, handleSubmission, dataFetcher, fetchData]);
 
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
+
+  useEffect(() => {
+    if (data?.data?.message === "success") {
+      navigate("/dashboard/invoices");
+    }
+  }, [data, navigate]);
+
+  if (error) {
+    toast.error(error);
+    return null;
+  }
 
   return (
     <>
@@ -382,6 +396,7 @@ const CreateInvoiceForm = () => {
         <Divider />
         <Form.Item>
           <Button onClick={onSubmit} type="default" htmlType="submit">
+            {/* {loading && <LoadingSpinner />} */}
             Submit
           </Button>
         </Form.Item>
