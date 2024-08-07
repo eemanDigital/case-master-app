@@ -155,13 +155,6 @@ const LeaveApplicationDetails = ({ userId }) => {
           </Col>
         </Row>
       </Card>
-
-      <Divider />
-      {(isAdminOrHr || isCurrentUser) && (
-        <>
-          <LeaveBalanceDisplay userId={data?.data?.employee?._id} />
-        </>
-      )}
     </div>
   );
 

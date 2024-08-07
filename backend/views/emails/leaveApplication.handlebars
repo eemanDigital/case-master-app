@@ -1,0 +1,36 @@
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leave Application</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+      .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px
+      solid #ddd; border-radius: 5px; background-color: #f9f9f9; } .header {
+      text-align: center; margin-bottom: 20px; } .header h1 { margin: 0;
+      font-size: 24px; color: #333; } .content { margin-bottom: 20px; } .content
+      p { margin: 0 0 10px; } .footer { text-align: center; font-size: 12px;
+      color: #777; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Leave Application</h1>
+      </div>
+      <div class="content">
+        <p>Dear {{applyTo}},</p>
+        <p>I am writing to inform you that I would like to apply for leave.</p>
+        <p><strong>Leave Type:</strong> {{leaveType}}</p>
+        <p><strong>Start Date:</strong> {{startDate}}</p>
+        <p><strong>End Date:</strong> {{endDate}}</p>
+        <p>Thank you for considering my application.</p>
+        <p>Best regards,</p>
+        <p>{{applicantName}}</p>
+      </div>
+      <div class="footer">
+        <p>This is an automated message. Please do not reply to this email.</p>
+      </div>
+    </div>
+  </body>
+</html>

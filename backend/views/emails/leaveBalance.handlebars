@@ -1,0 +1,38 @@
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Leave Balance Awarded</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; background-color:
+      #f4f4f4; margin: 0; padding: 0; } .container { width: 80%; margin: 0 auto;
+      padding: 20px; border: 1px solid #ddd; border-radius: 5px;
+      background-color: #ffffff; } .header { text-align: center; padding-bottom:
+      20px; } .content { margin-top: 20px; } .footer { margin-top: 30px;
+      text-align: center; font-size: 0.9em; color: #777; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Leave Balance Awarded</h1>
+      </div>
+      <div class="content">
+        <p>Dear {{name}},</p>
+        <p>We are pleased to inform you that a leave balance has been awarded to
+          you. Below are the details:</p>
+        <ul>
+          <li><strong>Leave Type:</strong> {{leaveType}}</li>
+          <li><strong>Leave Balance:</strong> {{leaveBalance}} days</li>
+        </ul>
+        {{! <p>Please make sure to utilize your leave balance within the stipulated
+          time frame.</p> }}
+        <p>If you have any questions, feel free to contact the HR department.</p>
+        <p>Best regards,</p>
+        <p>{{companyName}}</p>
+      </div>
+      <div class="footer">
+        <p>&copy; {{year}} {{companyName}}. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>

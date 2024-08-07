@@ -24,7 +24,22 @@ const useUserSelectOptions = () => {
         })
     : [];
 
-  return { userData };
+  const adminOptions = Array.isArray(users?.data)
+    ? users?.data
+        .filter(
+          (ad) =>
+            ad.role === "admin" || ad.role === "super-admin" || ad.role === "hr"
+        )
+        .map((ad) => {
+          const label = `${ad.firstName} ${ad.lastName}`;
+
+          return {
+            value: ad?.email,
+            label: label,
+          };
+        })
+    : [];
+  return { userData, adminOptions };
 };
 
 export default useUserSelectOptions;

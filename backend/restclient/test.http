@@ -27,8 +27,8 @@ POST  {{baseUrl}}users/login  HTTP/1.1
 content-type: application/json
 
 {
-  "email":"dex@gmail.com",
-  "password":"Test1234"
+  "email":"asinmi4real@gmail.com",
+  "password":"test1234"
 }
 
   # "email":{"$gt":""},
@@ -227,3 +227,15 @@ content-type: application/json
 ###
 GET {{baseUrl}}reports HTTP/1.1 
 content-type: application/json
+
+
+###
+POST  {{baseUrl}}leaves/applications HTTP/1.1 
+content-type: application/json
+
+
+{
+  "startDate":"2024-08-11",
+  "endDate":"2024-08-21",
+  "applyTo": "admin2@gmail.com"
+}

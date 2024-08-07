@@ -6,13 +6,7 @@ import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 
-const useHandleSubmit = (
-  endpoint,
-  method,
-  emailData,
-  refreshDataCallback,
-  path
-) => {
+const useHandleSubmit = (endpoint, method, emailData, refreshDataCallback) => {
   const [form] = Form.useForm();
   const { dataFetcher, data, loading, error } = useDataFetch(); // General data fetcher
   const dispatch = useDispatch();

@@ -23,6 +23,7 @@ import useUsersCount from "../hooks/useUsersCount";
 import CalenderEvent from "../pages/CalenderEvent";
 import DashBoardDataCount from "./DashBoardDataCount";
 import LatestCaseReports from "./LatestCaseReports";
+import LeaveAppForm from "../pages/LeaveAppForm";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -178,6 +179,8 @@ const Dashboard = () => {
             Dashboard
           </h1>
           {isAdminOrHr && <LeaveNotification />}
+
+          <LeaveAppForm />
         </div>
 
         <div className="flex items-center space-x-4">

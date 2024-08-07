@@ -18,7 +18,7 @@ const StaffList = () => {
   );
 
   const { Column, ColumnGroup } = Table;
-  const { isAdminOrHr, isAdmin, isSuperOrAdmin } = useAdminHook();
+  const { isAdminOrHr, isSuperOrAdmin } = useAdminHook();
 
   // fetch users
   useEffect(() => {

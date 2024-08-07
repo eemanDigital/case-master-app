@@ -131,6 +131,14 @@ const StaffDetails = () => {
           </Button>
 
           {renderStaffDetails()}
+
+          <Divider />
+
+          {(isAdminOrHr || isCurrentUser) && (
+            <>
+              <LeaveBalanceDisplay userId={data?.data?._id} />
+            </>
+          )}
         </div>
       )}
     </>

@@ -17,7 +17,6 @@ router.put(
   restrictTo("super-admin", "admin", "hr"),
   leaveAppController.updateLeaveApplication
 );
-router.delete("/applications/:id", leaveAppController.deleteLeaveApplication);
 
 // LEAVE BALANCE ROUTES
 // Apply the restrictTo middleware only to leave balance routes
@@ -33,6 +32,7 @@ router.put(
   restrictTo("super-admin", "admin", "hr"),
   leaveBalanceController.updateLeaveBalance
 );
+router.delete("/applications/:id", leaveAppController.deleteLeaveApplication);
 router.delete("/balances/:id", leaveBalanceController.deleteLeaveBalance);
 
 module.exports = router;

@@ -8,8 +8,7 @@ const sendMail = async (
   send_from,
   reply_to,
   template,
-  name,
-  link
+  context
 ) => {
   function createNewTransport() {
     if (process.env.NODE_ENV === "production") {
@@ -57,10 +56,7 @@ const sendMail = async (
     replyTo: reply_to,
     template,
     subject,
-    context: {
-      name,
-      link,
-    },
+    context, // This now includes all dynamic data
   };
 
   await transporter.sendMail(mailOptions, function (err, info) {

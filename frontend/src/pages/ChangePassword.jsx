@@ -25,7 +25,7 @@ const ChangePassword = () => {
   const dispatch = useDispatch();
   const { isLoading, isError, user } = useSelector((state) => state.auth);
   const [click, setClick] = useState(false);
-  const { open, showModal, handleOk, handleCancel } = useModal();
+  const { open, showModal, handleCancel } = useModal();
   const navigate = useNavigate();
 
   const [inputValue, setInputValue] = useState({
@@ -33,7 +33,6 @@ const ChangePassword = () => {
     password: "",
     passwordConfirm: "",
   });
-
   // getting data from out custom hook
   const { togglePassword: togglePassword1, showPassword: showPassword1 } =
     useTogglePassword();
@@ -48,11 +47,10 @@ const ChangePassword = () => {
       return { ...prevValue, [inputName]: inputText };
     });
   }
-
   // sending email data
   const emailData = {
     subject: "Password Changed - CaseMaster",
-    send_to: user.data?.email,
+    send_to: user?.data?.email,
     reply_to: "noreply@gmail.com",
     template: "changePassword",
     // url: "/forgotpassword",
@@ -69,7 +67,6 @@ const ChangePassword = () => {
       toast.error("Please, fill all the password fields", {});
       return;
     }
-
     await dispatch(changePassword(inputValue));
     await dispatch(sendAutomatedEmail(emailData)); //send email
     await dispatch(logout(inputValue));

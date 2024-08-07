@@ -8,7 +8,7 @@ exports.createLeaveBalance = catchAsync(async (req, res, next) => {
   // console.log("USER", req.user);
 
   res.status(201).json({
-    status: "success",
+    message: "success",
     data: leaveBalance,
   });
 });

@@ -16,6 +16,10 @@ const leaveApplicationSchema = new mongoose.Schema(
       type: Date,
       required: [true, "Provide end date"],
     },
+    applyTo: {
+      type: String,
+      required: [true, "Provide the authority you are applying to"],
+    },
     typeOfLeave: {
       type: String,
       required: [true, "Specify the type of leave"],

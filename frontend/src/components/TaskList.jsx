@@ -50,6 +50,7 @@ const TaskList = () => {
   const deleteTask = async (id) => {
     try {
       await dispatch(deleteData(`tasks/${id}`));
+      await fetchData("tasks", "tasks");
     } catch (error) {
       toast.error("Failed to delete task");
     }

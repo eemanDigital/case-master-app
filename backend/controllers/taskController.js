@@ -66,7 +66,7 @@ exports.updateTask = catchAsync(async (req, res, next) => {
 });
 
 exports.deleteTask = catchAsync(async (req, res, next) => {
-  let task = await Task.findById(req.params.id);
+  let task = await Task.findByIdAndDelete(req.params.id);
 
   if (!task) {
     return next(new AppError("No leave application found with that ID", 404));

@@ -5,10 +5,12 @@ import { Space, Table, Button, Spin, Alert, Modal } from "antd";
 import { formatDate } from "../utils/formatDate";
 import { useDataFetch } from "../hooks/useDataFetch";
 import avatar from "../assets/avatar.png";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useEffect } from "react";
 import { toast } from "react-toastify";
+import { deleteUser } from "../redux/features/auth/authSlice";
+import { deleteData } from "../redux/features/delete/deleteSlice";
 
 const LeaveApplicationList = () => {
   const {
@@ -21,6 +23,8 @@ const LeaveApplicationList = () => {
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
   const { isAdminOrHr } = useAdminHook();
+  const dispatch = useDispatch();
+
   const { data, loading, error, dataFetcher } = useDataFetch();
 
   useEffect(() => {
@@ -35,12 +39,13 @@ const LeaveApplicationList = () => {
     return toast.error(errorLeaveApp?.leaveApps);
   }
 
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
   // delete leave app
-  const handleDeleteApp = async (id) => {
-    await dataFetcher(`leaves/applications/${id}`, "delete", fileHeaders);
+  const removeApplication = async (id) => {
+    try {
+      await dispatch(deleteData(`leaves/applications/${id}`));
+    } catch (error) {
+      toast.error("Failed to delete invoice");
+    }
   };
 
   // Filter the leave applications based on the user's role
@@ -120,7 +125,7 @@ const LeaveApplicationList = () => {
               onClick={() => {
                 Modal.confirm({
                   title: "Are you sure you want to delete this application?",
-                  onOk: () => handleDeleteApp(record?.id),
+                  onOk: () => removeApplication(record?._id),
                 });
               }}
               type="primary"

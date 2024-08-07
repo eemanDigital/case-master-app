@@ -1,49 +1,72 @@
-import { useEffect, useMemo, useState } from "react";
-import { Button, Input, Form, Modal, Select, Card, Spin } from "antd";
-import useHandleSubmit from "../hooks/useHandleSubmit";
+import { useEffect } from "react";
+import { Button, Input, Form, Modal, Select, Card } from "antd";
 import useModal from "../hooks/useModal";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
+import { useDispatch, useSelector } from "react-redux";
+import { getUsers } from "../redux/features/auth/authSlice";
 import { toast } from "react-toastify";
-import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useDataFetch } from "../hooks/useDataFetch";
+import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
+// import LoadingSpinner from "./LoadingSpinner";
 
-const CreateLeaveBalanceForm = ({ userId }) => {
-  const [formData, setFormData] = useState({});
-  // hook for modal
+const CreateLeaveBalanceForm = () => {
+  const [form] = Form.useForm();
+  const dispatch = useDispatch();
+  const { users, user } = useSelector((state) => state.auth);
   const { open, handleCancel, showModal } = useModal();
-  // hook for user data options
   const { userData } = useUserSelectOptions();
-  const { user } = useSelector((state) => state.auth);
-  const navigate = useNavigate();
-
-  const {
-    onSubmit,
-    form,
-    data: hookData,
-    loading: hookLoading,
-    error: hookError,
-  } = useHandleSubmit("leaves/balances", "POST", emailData);
-
-  const emailData = useMemo(
-    () => ({
-      subject: "Case Report - A.T. Lukman & Co.",
-      send_to: formData.employee,
-      send_from: user?.data?.email,
-      reply_to: "noreply@gmail.com",
-      template: "caseReport",
-      url: "dashboard/staff",
-    }),
-    [formData.employee, user?.data?.email]
-  );
+  const { data, error: dataError, loading, dataFetcher } = useDataFetch();
 
   useEffect(() => {
-    if (hookData) {
-      toast.success("Report Created");
-      navigate(-1);
-    } else if (hookError) {
-      toast.error(hookError);
+    dispatch(getUsers());
+  }, [dispatch]);
+
+  const onFinish = async (values) => {
+    try {
+      // get the selected user's for email data
+      const selectedUser = users?.data?.find((u) => u._id === values.employee);
+      if (!selectedUser) {
+        toast.error("Selected user not found");
+        return;
+      }
+      // prepare email data
+      const emailData = {
+        subject: "Leave Balance Award- A.T. Lukman & Co.",
+        send_to: selectedUser.email,
+        send_from: user?.data?.email,
+        reply_to: "noreply@gmail.com",
+        template: "leaveBalance",
+        url: "dashboard/staff",
+        context: {
+          leaveType: "Annual Leave",
+          leaveBalance: values.annualLeaveBalance,
+        },
+      };
+      // post data
+      await dataFetcher("leaves/balances", "POST", values);
+      if (!dataError && emailData) {
+        await dispatch(sendAutomatedCustomEmail(emailData)); // Send email if emailData is provided
+      }
+      form.resetFields(); //reset fields
+    } catch (error) {
+      console.error("Error creating leave balance:", error);
+      toast.error(error || "An error occurred while creating leave balance");
     }
-  }, [hookData, navigate, hookError]);
+  };
+
+  // send success message
+  if (data?.message === "success") {
+    toast.success("Leave Balance Created");
+  }
+
+  // send error message
+  if (dataError) {
+    toast.error(dataError);
+  }
+
+  // if (!users?.data) {
+  //   return <LoadingSpinner />;
+  // }
 
   return (
     <>
@@ -53,65 +76,56 @@ const CreateLeaveBalanceForm = ({ userId }) => {
       <Modal
         title="Leave Balance Form"
         open={open}
-        // onOk={handleOk}
-        // confirmLoading={loading}
         onCancel={handleCancel}
         footer={null}>
-        <section className="flex justify-between gap-8 ">
-          <Form
-            layout="vertical"
-            form={form}
-            name="leave application form"
-            // autoComplete="off"
-            className="flex  justify-center">
-            <Card title="" bordered={false} style={{ width: 400, height: 350 }}>
-              <div>
-                <Form.Item
-                  name="employee"
-                  label="Employee"
-                  initialValue={formData?.employee}
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please, select employee!",
-                    },
-                  ]}>
-                  <Select
-                    mode="multiple"
-                    noStyle
-                    placeholder="Select a staff"
-                    options={userData}
-                    allowClear
-                    style={{
-                      width: "100%",
-                    }}
-                  />
-                </Form.Item>
-                <Form.Item
-                  label="Annual Leave Balance"
-                  name="annualLeaveBalance"
-                  initialValue={formData?.annualLeaveBalance}>
-                  <Input />
-                </Form.Item>
-                {/* sick leave Balance */}
-                <Form.Item
-                  label="Sick Leave Balance"
-                  name="sickLeaveBalance"
-                  initialValue={formData?.sickLeaveBalance}>
-                  <Input />
-                </Form.Item>
-              </div>
-
-              <Form.Item>
-                <Button onClick={onSubmit} type="default" htmlType="submit">
-                  Save
-                </Button>
-              </Form.Item>
-            </Card>
-          </Form>
-        </section>
+        <Form
+          form={form}
+          layout="vertical"
+          name="leave application form"
+          onFinish={onFinish}>
+          <Card title="" bordered={false} style={{ width: 400, height: 350 }}>
+            <Form.Item
+              name="employee"
+              label="Employee"
+              rules={[
+                { required: true, message: "Please select an employee" },
+              ]}>
+              <Select
+                placeholder="Select a staff"
+                options={userData}
+                allowClear
+                style={{ width: "100%" }}
+              />
+            </Form.Item>
+            <Form.Item
+              label="Annual Leave Balance"
+              name="annualLeaveBalance"
+              rules={[
+                {
+                  required: true,
+                  message: "Please enter annual leave balance",
+                },
+              ]}>
+              <Input />
+            </Form.Item>
+            <Form.Item
+              label="Sick Leave Balance"
+              name="sickLeaveBalance"
+              rules={[
+                { required: true, message: "Please enter sick leave balance" },
+              ]}>
+              <Input />
+            </Form.Item>
+            <Form.Item>
+              <Button className="blue-btn" htmlType="submit">
+                Save
+              </Button>
+            </Form.Item>
+          </Card>
+        </Form>
       </Modal>
     </>
   );
 };
+
 export default CreateLeaveBalanceForm;

@@ -161,7 +161,9 @@ exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
 
 // send other custom automated emails
 exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
-  const { send_from, send_to, reply_to, template, subject, url } = req.body;
+  console.log(req.body);
+  const { send_from, send_to, reply_to, template, subject, url, context } =
+    req.body;
 
   if (!send_from || !send_to || !reply_to || !template || !subject) {
     return next(new AppError("Missing email fields", 404));
@@ -173,10 +175,15 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
     return next(new AppError("No user found with that ID", 404));
   }
 
-  // const send_from = process.env.EMAIL_USER_OUTLOOK;
-  const name = user.firstName;
-  const link = ` ${process.env.FRONTEND_URL}/${url}`;
+  // Prepare the context
+  const fullContext = {
+    ...context,
+    name: user.firstName,
+    link: `${process.env.FRONTEND_URL}/${url}`,
+    year: new Date().getFullYear(),
+    companyName: process.env.COMPANY_NAME || "A.T Lukman & Co",
+  };
 
-  await sendMail(subject, send_to, send_from, reply_to, template, name, link);
+  await sendMail(subject, send_to, send_from, reply_to, template, fullContext);
   res.status(200).json({ message: "Email Sent" });
 });
