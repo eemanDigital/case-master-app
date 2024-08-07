@@ -35,6 +35,11 @@ const reportSchema = new mongoose.Schema(
       ref: "User",
     },
 
+    clientEmail: {
+      type: String,
+      require: true,
+    },
+
     lawyersInCourt: [
       {
         type: mongoose.Schema.ObjectId,

@@ -27,8 +27,8 @@ POST  {{baseUrl}}users/login  HTTP/1.1
 content-type: application/json
 
 {
-  "email":"asinmi4real@gmail.com",
-  "password":"test1234"
+  "email":"dex@gmail.com",
+  "password":"Test1234"
 }
 
   # "email":{"$gt":""},
@@ -208,9 +208,6 @@ content-type: application/json
 GET http://localhost:3000/api/v1/uploads/photos/6639edcf4b99c7ad3af85dca  HTTP/1.1 
 content-type: application/json
 
-
-
-
 ###
 GET {{baseUrl}}cases/case-status  HTTP/1.1 
 content-type: application/json
@@ -223,4 +220,10 @@ GET {{baseUrl}}payments/paymentEachClient HTTP/1.1
 content-type: application/json
 ###
 GET {{baseUrl}}payments/client/665df5b07108ca4adc18a65c/case/6683152cddcd8e8eae3309c7 HTTP/1.1 
+content-type: application/json
+
+
+# reports
+###
+GET {{baseUrl}}reports HTTP/1.1 
 content-type: application/json

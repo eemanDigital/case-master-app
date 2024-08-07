@@ -1,8 +1,11 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button, Input, Form, Modal, Select, Card, Spin } from "antd";
 import useHandleSubmit from "../hooks/useHandleSubmit";
 import useModal from "../hooks/useModal";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
+import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 const CreateLeaveBalanceForm = ({ userId }) => {
   const [formData, setFormData] = useState({});
@@ -10,11 +13,37 @@ const CreateLeaveBalanceForm = ({ userId }) => {
   const { open, handleCancel, showModal } = useModal();
   // hook for user data options
   const { userData } = useUserSelectOptions();
-  // hooks to handle form submit
-  const { form, onSubmit, loading, data, error } = useHandleSubmit(
-    "leaves/balances",
-    "POST"
+  const { user } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
+
+  const {
+    onSubmit,
+    form,
+    data: hookData,
+    loading: hookLoading,
+    error: hookError,
+  } = useHandleSubmit("leaves/balances", "POST", emailData);
+
+  const emailData = useMemo(
+    () => ({
+      subject: "Case Report - A.T. Lukman & Co.",
+      send_to: formData.employee,
+      send_from: user?.data?.email,
+      reply_to: "noreply@gmail.com",
+      template: "caseReport",
+      url: "dashboard/staff",
+    }),
+    [formData.employee, user?.data?.email]
   );
+
+  useEffect(() => {
+    if (hookData) {
+      toast.success("Report Created");
+      navigate(-1);
+    } else if (hookError) {
+      toast.error(hookError);
+    }
+  }, [hookData, navigate, hookError]);
 
   return (
     <>
@@ -25,7 +54,7 @@ const CreateLeaveBalanceForm = ({ userId }) => {
         title="Leave Balance Form"
         open={open}
         // onOk={handleOk}
-        confirmLoading={loading}
+        // confirmLoading={loading}
         onCancel={handleCancel}
         footer={null}>
         <section className="flex justify-between gap-8 ">
@@ -50,7 +79,6 @@ const CreateLeaveBalanceForm = ({ userId }) => {
                   <Select
                     mode="multiple"
                     noStyle
-                    notFoundContent={data ? <Spin size="small" /> : null}
                     placeholder="Select a staff"
                     options={userData}
                     allowClear

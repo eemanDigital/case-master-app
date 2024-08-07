@@ -30,7 +30,20 @@ const useClientSelectOptions = () => {
           };
         })
     : [];
-  return { clientOptions };
+
+  const clientEmailsOption = Array.isArray(clients?.data)
+    ? clients?.data
+        .filter((client) => client.role === "client")
+        .map((client) => {
+          const label = client.firstName;
+
+          return {
+            value: client?.email,
+            label: label,
+          };
+        })
+    : [];
+  return { clientOptions, clientEmailsOption };
 };
 
 export default useClientSelectOptions;

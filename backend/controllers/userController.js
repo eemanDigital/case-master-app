@@ -158,3 +158,25 @@ exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
   await sendMail(subject, send_to, send_from, reply_to, template, name, link);
   res.status(200).json({ message: "Email Sent" });
 });
+
+// send other custom automated emails
+exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
+  const { send_from, send_to, reply_to, template, subject, url } = req.body;
+
+  if (!send_from || !send_to || !reply_to || !template || !subject) {
+    return next(new AppError("Missing email fields", 404));
+  }
+
+  // get user
+  const user = await User.findOne({ email: send_to });
+  if (!user) {
+    return next(new AppError("No user found with that ID", 404));
+  }
+
+  // const send_from = process.env.EMAIL_USER_OUTLOOK;
+  const name = user.firstName;
+  const link = ` ${process.env.FRONTEND_URL}/${url}`;
+
+  await sendMail(subject, send_to, send_from, reply_to, template, name, link);
+  res.status(200).json({ message: "Email Sent" });
+});

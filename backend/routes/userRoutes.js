@@ -8,6 +8,7 @@ const {
   upgradeUser,
   sendAutomatedEmail,
   getSingleUser,
+  sendAutomatedCustomEmail,
 } = require("../controllers/userController");
 const {
   login,
@@ -63,6 +64,7 @@ router.use(protect);
 // // Protected routes
 // // User logout
 router.post("/sendAutomatedEmail", sendAutomatedEmail);
+router.post("/sendAutomatedCustomEmail", sendAutomatedCustomEmail);
 router.post("/sendVerificationEmail", sendVerificationEmail);
 
 router.get("/logout", logout);

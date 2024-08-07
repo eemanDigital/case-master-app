@@ -25,8 +25,7 @@ const ChangePassword = () => {
   const dispatch = useDispatch();
   const { isLoading, isError, user } = useSelector((state) => state.auth);
   const [click, setClick] = useState(false);
-  const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
-    useModal();
+  const { open, showModal, handleOk, handleCancel } = useModal();
   const navigate = useNavigate();
 
   const [inputValue, setInputValue] = useState({

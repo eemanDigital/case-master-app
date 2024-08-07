@@ -11,9 +11,26 @@ const initialState = {
 // send automated email
 export const sendAutomatedEmail = createAsyncThunk(
   "email/sendAutomatedEmail",
-  async (userData, thunkAPI) => {
+  async (emailData, thunkAPI) => {
     try {
-      return await emailService.sendAutomatedEmail(userData);
+      return await emailService.sendAutomatedEmail(emailData);
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+export const sendAutomatedCustomEmail = createAsyncThunk(
+  "email/sendAutomatedCustomEmail",
+  async (emailData, thunkAPI) => {
+    try {
+      return await emailService.sendAutomatedCustomEmail(emailData);
     } catch (error) {
       const message =
         (error.response &&
@@ -31,10 +48,11 @@ const emailSlice = createSlice({
   initialState,
   reducers: {
     EMAIL_RESET(state) {
-      (state.sendingEmail = false), (state.emailSent = false), (state.msg = "");
+      state.sendingEmail = false;
+      state.emailSent = false;
+      state.msg = "";
     },
   },
-
   extraReducers: (builder) => {
     builder
       // send automated email
@@ -48,6 +66,22 @@ const emailSlice = createSlice({
         toast.success(action.payload);
       })
       .addCase(sendAutomatedEmail.rejected, (state, action) => {
+        state.sendingEmail = false;
+        state.emailSent = false;
+        state.msg = action.payload;
+        toast.error(action.payload);
+      })
+      // send Automated Custom Email
+      .addCase(sendAutomatedCustomEmail.pending, (state) => {
+        state.sendingEmail = true;
+      })
+      .addCase(sendAutomatedCustomEmail.fulfilled, (state, action) => {
+        state.sendingEmail = false;
+        state.emailSent = true;
+        state.msg = action.payload;
+        toast.success(action.payload);
+      })
+      .addCase(sendAutomatedCustomEmail.rejected, (state, action) => {
         state.sendingEmail = false;
         state.emailSent = false;
         state.msg = action.payload;

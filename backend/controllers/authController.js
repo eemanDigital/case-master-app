@@ -195,8 +195,6 @@ exports.loginWithCode = catchAsync(async (req, res, next) => {
   const { email } = req.params;
   const { loginCode } = req.body;
 
-  console.log("Email Code", email, loginCode);
-
   const user = await User.findOne({ email });
   // if user not found
   if (!user) {
