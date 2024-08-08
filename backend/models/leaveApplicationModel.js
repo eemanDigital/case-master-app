@@ -56,7 +56,7 @@ const leaveApplicationSchema = new mongoose.Schema(
 leaveApplicationSchema.pre(/^find/, function (next) {
   this.populate({
     path: "employee",
-    select: "firstName lastName photo",
+    select: "firstName lastName photo email",
   });
   next();
 });

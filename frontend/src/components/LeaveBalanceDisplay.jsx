@@ -1,7 +1,7 @@
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Spin, Descriptions, Empty, Card } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
-// import useErrorMessage from "../hooks/useErrorMessage";
 
 const LeaveBalanceDisplay = ({ userId }) => {
   const { data, loading, error, dataFetcher } = useDataFetch();
@@ -9,9 +9,12 @@ const LeaveBalanceDisplay = ({ userId }) => {
   // useErrorMessage(error); // Use the custom hook
 
   useEffect(() => {
-    if (userId) {
-      dataFetcher(`leaves/balances/${userId}`, "GET");
-    }
+    const getBalance = async () => {
+      if (userId) {
+        await dataFetcher(`leaves/balances/${userId}`, "GET");
+      }
+    };
+    getBalance();
   }, [userId]);
 
   return (
@@ -22,10 +25,16 @@ const LeaveBalanceDisplay = ({ userId }) => {
         <Card>
           <Descriptions title="Leave Balance Information" bordered>
             <Descriptions.Item label="Annual Leave Balance">
-              {data?.data?.annualLeaveBalance || 0}
+              <h1 className="text-2xl font-bold">
+                {" "}
+                {data?.data?.annualLeaveBalance || 0}
+              </h1>
             </Descriptions.Item>
             <Descriptions.Item label="Sick Leave Balance">
-              {data?.data?.sickLeaveBalance || 0}
+              <h1 className="text-2xl font-bold">
+                {" "}
+                {data?.data?.sickLeaveBalance || 0}
+              </h1>
             </Descriptions.Item>
           </Descriptions>
         </Card>

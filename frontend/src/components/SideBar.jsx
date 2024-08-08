@@ -76,12 +76,12 @@ const SideBar = () => {
       children: [
         {
           key: "6-1",
-          label: <Link to="staff/leave-application">Leave Application</Link>,
+          label: <Link to="staff/leave-application">Leave Applications</Link>,
         },
-        // {
-        //   key: "6-2",
-        //   label: <Link to="staff/leave-balance">Leave Balance</Link>,
-        // },
+        {
+          key: "6-2",
+          label: <Link to="staff/leave-balance">Leave Balance</Link>,
+        },
       ],
     },
     {

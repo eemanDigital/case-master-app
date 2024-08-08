@@ -71,7 +71,7 @@ const StaffList = () => {
                   : "Your Leave Applications"}
               </Button>
             </Link>
-            <CreateLeaveBalanceForm /> <LeaveBalanceList />
+            <CreateLeaveBalanceForm />
           </>
         )}
 

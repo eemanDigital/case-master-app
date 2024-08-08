@@ -62,6 +62,7 @@ import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
 import SendLoginCode from "./components/LoginWithCode.jsx";
 import LoginWithCode from "./components/LoginWithCode.jsx";
 import AppLayout from "./components/AppLayout.jsx";
+import LeaveBalanceList from "./pages/leaveBalanceList.jsx";
 
 // enable axios to get credentials everywhere in the app
 axios.defaults.withCredentials = true;
@@ -123,7 +124,7 @@ function App() {
         {/* <Route element={<ShowOnLoginAndRedirect />}> */}
         <Route path="dashboard" element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
-          <Route path="add-user" element={<AddUserForm />} />
+          <Route path="staff/add-user" element={<AddUserForm />} />
           <Route
             path="staff"
             element={
@@ -143,6 +144,7 @@ function App() {
             path="staff/leave-application"
             element={<LeaveApplicationList />}
           />
+          <Route path="staff/leave-balance" element={<LeaveBalanceList />} />
           <Route
             path="staff/leave-application/:id/details"
             element={<LeaveApplicationDetails />}

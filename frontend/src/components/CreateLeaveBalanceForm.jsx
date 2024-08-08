@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Button, Input, Form, Modal, Select, Card } from "antd";
 import useModal from "../hooks/useModal";
+import moment from "moment";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import { useDispatch, useSelector } from "react-redux";
 import { getUsers } from "../redux/features/auth/authSlice";
@@ -85,6 +86,12 @@ const CreateLeaveBalanceForm = () => {
           onFinish={onFinish}>
           <Card title="" bordered={false} style={{ width: 400, height: 350 }}>
             <Form.Item
+              label="Date"
+              name="daysAwarded"
+              initialValue={moment().format("YYYY-MM-DD")}>
+              <Input disabled />
+            </Form.Item>
+            <Form.Item
               name="employee"
               label="Employee"
               rules={[
@@ -116,6 +123,7 @@ const CreateLeaveBalanceForm = () => {
               ]}>
               <Input />
             </Form.Item>
+
             <Form.Item>
               <Button className="blue-btn" htmlType="submit">
                 Save

@@ -15,6 +15,11 @@ const leaveBalanceSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    dayAwarded: {
+      type: Date,
+      default: Date.now,
+    },
+
     // add other types of leaves if needed
   },
   {

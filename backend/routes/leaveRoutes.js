@@ -26,13 +26,25 @@ router.post(
   leaveBalanceController.createLeaveBalance
 );
 router.get("/balances/:employeeId", leaveBalanceController.getLeaveBalance);
-router.get("/balances", leaveBalanceController.getLeaveBalances);
+router.get(
+  "/balances",
+  // restrictTo("super-admin", "admin", "hr"),
+  leaveBalanceController.getLeaveBalances
+);
 router.put(
   "/balances/:employeeId",
   restrictTo("super-admin", "admin", "hr"),
   leaveBalanceController.updateLeaveBalance
 );
-router.delete("/applications/:id", leaveAppController.deleteLeaveApplication);
-router.delete("/balances/:id", leaveBalanceController.deleteLeaveBalance);
+router.delete(
+  "/applications/:id",
+  restrictTo("super-admin", "admin", "hr"),
+  leaveAppController.deleteLeaveApplication
+);
+router.delete(
+  "/balances/:id",
+  restrictTo("super-admin", "admin", "hr"),
+  leaveBalanceController.deleteLeaveBalance
+);
 
 module.exports = router;

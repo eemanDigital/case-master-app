@@ -14,6 +14,10 @@ const tokenSchema = mongoose.Schema({
     type: String,
     default: "",
   },
+  loginToken: {
+    type: String,
+    default: "",
+  },
   refresh_token: {
     type: String,
     default: "",

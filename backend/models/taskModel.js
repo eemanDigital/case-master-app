@@ -116,7 +116,7 @@ taskSchema.pre(/^find/, function (next) {
   this.populate({ path: "assignedTo", select: "firstName lastName" })
     .populate({
       path: "caseToWorkOn",
-      select: "firstParty.name.name secondParty.name.name ",
+      select: "firstParty.name.name secondParty.name.name  email",
     })
     .populate({ path: "assignedBy", select: "firstName lastName" })
     .populate({ path: "assignedToClient", select: "firstName secondName" });

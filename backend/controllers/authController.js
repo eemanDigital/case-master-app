@@ -124,6 +124,8 @@ exports.login = catchAsync(async (req, res, next) => {
     // Generate 6 digit code
     const loginCode = Math.floor(100000 + Math.random() * 900000);
 
+    console.log(loginCode);
+
     // Encrypt loginCode
     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
 
@@ -149,15 +151,107 @@ exports.login = catchAsync(async (req, res, next) => {
 });
 
 // send login code handler
+// exports.sendLoginCode = catchAsync(async (req, res, next) => {
+//   const { email } = req.params;
+//   const user = await User.findOne({ email });
+//   // if user not found
+//   if (!user) {
+//     return next(new AppError("There is no user with email address.", 404));
+//   }
+
+//   // find login code for user
+//   let userToken = await Token.findOne({
+//     userId: user._id,
+//     expiresAt: { $gt: Date.now() },
+//   });
+
+//   if (!userToken) {
+//     return next(new AppError("Invalid or expired token. Please re-login", 404));
+//   }
+
+//   // get the loginCode and decrypt
+//   const loginCode = userToken.loginToken;
+//   // decrypt
+//   const decryptedLoginCode = cryptr.decrypt(loginCode);
+
+//   console.log("CODE", decryptedLoginCode);
+//   // // Prepare email details
+//   const subject = "Login Access Code - CaseMaster";
+//   const send_to = email;
+//   const send_from = process.env.EMAIL_USER_OUTLOOK;
+//   const reply_to = "noreply@gmail.com";
+//   const template = "loginCode";
+//   const name = user.firstName;
+//   const link = decryptedLoginCode;
+//   try {
+//     await sendMail(subject, send_to, send_from, reply_to, template, name, link);
+//     res.status(200).json({ message: `Access Code sent to your ${email}` });
+//   } catch (error) {
+//     // Send the verification email
+//     return next(new AppError("Email sending failed", 400));
+//   }
+// });
+
+// exports.sendLoginCode = catchAsync(async (req, res, next) => {
+//   const { email } = req.params;
+//   const user = await User.findOne({ email });
+
+//   console.log(user, "USER");
+
+//   // if user not found
+//   if (!user) {
+//     return next(new AppError("There is no user with email address.", 404));
+//   }
+
+//   // find login code for user
+//   let userToken = await Token.findOne({
+//     userId: user._id,
+//     expiresAt: { $gt: Date.now() },
+//   });
+
+//   if (!userToken) {
+//     return next(new AppError("Invalid or expired token. Please re-login", 404));
+//   }
+
+//   // get the loginCode and decrypt
+//   const loginCode = userToken.loginToken;
+//   // Check if loginCode is valid
+//   if (!loginCode) {
+//     return next(new AppError("Login code is missing or invalid.", 400));
+//   }
+
+//   // decrypt
+//   let decryptedLoginCode;
+//   try {
+//     decryptedLoginCode = cryptr.decrypt(loginCode);
+//   } catch (error) {
+//     return next(new AppError("Failed to decrypt login code.", 400));
+//   }
+
+//   // Prepare email details
+//   const subject = "Login Access Code - CaseMaster";
+//   const send_to = email;
+//   const send_from = process.env.EMAIL_USER_OUTLOOK;
+//   const reply_to = "noreply@gmail.com";
+//   const template = "loginCode";
+//   const name = user.firstName;
+//   const link = decryptedLoginCode;
+
+//   try {
+//     await sendMail(subject, send_to, send_from, reply_to, template, name, link);
+//     res.status(200).json({ message: `Access Code sent to your ${email}` });
+//   } catch (error) {
+//     return next(new AppError("Email sending failed", 400));
+//   }
+// });
 exports.sendLoginCode = catchAsync(async (req, res, next) => {
   const { email } = req.params;
   const user = await User.findOne({ email });
-  // if user not found
+
   if (!user) {
     return next(new AppError("There is no user with email address.", 404));
   }
 
-  // find login code for user
   let userToken = await Token.findOne({
     userId: user._id,
     expiresAt: { $gt: Date.now() },
@@ -167,29 +261,32 @@ exports.sendLoginCode = catchAsync(async (req, res, next) => {
     return next(new AppError("Invalid or expired token. Please re-login", 404));
   }
 
-  // get the loginCode and decrypt
   const loginCode = userToken.loginToken;
-  // decrypt
-  const decryptedLoginCode = cryptr.decrypt(loginCode);
+  if (!loginCode) {
+    return next(new AppError("Login code is missing or invalid.", 400));
+  }
 
-  console.log("CODE", decryptedLoginCode);
-  // // Prepare email details
+  let decryptedLoginCode;
+  try {
+    decryptedLoginCode = cryptr.decrypt(loginCode);
+  } catch (error) {
+    return next(new AppError("Failed to decrypt login code.", 400));
+  }
+
   const subject = "Login Access Code - CaseMaster";
   const send_to = email;
   const send_from = process.env.EMAIL_USER_OUTLOOK;
   const reply_to = "noreply@gmail.com";
   const template = "loginCode";
-  const name = user.firstName;
-  const link = decryptedLoginCode;
+  const context = { name: user.firstName, link: decryptedLoginCode };
+
   try {
-    await sendMail(subject, send_to, send_from, reply_to, template, name, link);
+    await sendMail(subject, send_to, send_from, reply_to, template, context);
     res.status(200).json({ message: `Access Code sent to your ${email}` });
   } catch (error) {
-    // Send the verification email
     return next(new AppError("Email sending failed", 400));
   }
 });
-
 // 2fa
 exports.loginWithCode = catchAsync(async (req, res, next) => {
   const { email } = req.params;
@@ -200,6 +297,7 @@ exports.loginWithCode = catchAsync(async (req, res, next) => {
   if (!user) {
     return next(new AppError("User not found.", 404));
   }
+
   // find login code
   // find login code for user
   let userToken = await Token.findOne({
@@ -503,11 +601,10 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
   const send_from = process.env.EMAIL_USER_OUTLOOK;
   const reply_to = "noreply@gmail.com";
   const template = "verifyEmail";
-  const name = user.firstName;
-  const link = verificationURL;
+  const context = { name: user.firstName, link: verificationURL };
 
   try {
-    await sendMail(subject, send_to, send_from, reply_to, template, name, link);
+    await sendMail(subject, send_to, send_from, reply_to, template, context);
     return res.status(200).json({ message: "Verification Email Sent" });
   } catch (error) {
     return next(new AppError("Email sending failed", 400));

@@ -108,7 +108,7 @@ body {
   border-radius: 0.375rem;
 }
 
-/* custom table style */
+/* custom table style - cause-list and report*/
 .dashboard-container {
   display: flex;
   justify-content: space-between;
@@ -120,7 +120,7 @@ body {
 .latest-case-reports-container {
   flex: 1; /* Allow the containers to grow and shrink equally */
   min-width: 300px; /* Set a minimum width to prevent them from getting too small */
-  max-width: 55%; /* Set a maximum width to prevent them from getting too big */
+  max-width: 50%; /* Set a maximum width to prevent them from getting too big */
   height: 200px;
   border-radius: 10px;
 

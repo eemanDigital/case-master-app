@@ -44,6 +44,7 @@ const LeaveAppForm = () => {
         context: {
           leaveType: values.typeOfLeave,
           startDate: values.startDate,
+          daysAppliedFor: data?.data?.daysAppliedFor,
           endDate: values.endDate,
           applicantName: user?.data?.firstName,
         },
@@ -71,6 +72,7 @@ const LeaveAppForm = () => {
     toast.error(dataError);
   }
 
+  console.log(data, "data");
   return (
     <>
       <Button className="blue-btn" onClick={showModal}>

@@ -9,7 +9,6 @@ import { useDispatch, useSelector } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useEffect } from "react";
 import { toast } from "react-toastify";
-import { deleteUser } from "../redux/features/auth/authSlice";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 
 const LeaveApplicationList = () => {
@@ -24,8 +23,6 @@ const LeaveApplicationList = () => {
     useSelector((state) => state.auth);
   const { isAdminOrHr } = useAdminHook();
   const dispatch = useDispatch();
-
-  const { data, loading, error, dataFetcher } = useDataFetch();
 
   useEffect(() => {
     fetchData("leaves/applications", "leaveApps");
@@ -43,6 +40,7 @@ const LeaveApplicationList = () => {
   const removeApplication = async (id) => {
     try {
       await dispatch(deleteData(`leaves/applications/${id}`));
+      await fetchData("leaves/applications", "leaveApps");
     } catch (error) {
       toast.error("Failed to delete invoice");
     }
@@ -51,11 +49,11 @@ const LeaveApplicationList = () => {
   // Filter the leave applications based on the user's role
   const filteredLeaveApps = isAdminOrHr
     ? leaveApps?.data
-    : leaveApps?.data?.filter((app) => app?.employee?.id === user?.data?.id);
+    : leaveApps?.data?.filter((app) => app?.employee?._id === user?.data?._id);
 
   return (
     <Table dataSource={filteredLeaveApps}>
-      <ColumnGroup title="Employee's Name">
+      <ColumnGroup title="Leave Applications">
         <Column
           title="Photo"
           dataIndex={["employee", "photo"]}

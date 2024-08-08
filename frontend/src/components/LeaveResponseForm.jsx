@@ -1,177 +1,136 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Modal, Button, Form, Input, Select } from "antd";
+import { toast } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
+import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { Modal } from "antd";
-import Input from "./Inputs";
-import Select from "./Select";
-import Button from "./Button";
+import { formatDate } from "../utils/formatDate";
 
 const LeaveResponseForm = ({ appId }) => {
-  //   const { id } = useParams();
   const [open, setOpen] = useState(false);
+  const { user } = useSelector((state) => state.auth);
+  const { data, loading, error: dataError, dataFetcher } = useDataFetch();
+  const dispatch = useDispatch();
 
-  //   const [confirmLoading, setConfirmLoading] = useState(false);
-  //   const [modalText, setModalText] = useState("Content of the modal");
+  const [form] = Form.useForm();
+
   const showModal = () => {
     setOpen(true);
   };
-  //   const handleOk = () => {
-  //     setModalText("The modal will be closed after two seconds");
-  //     setConfirmLoading(true);
-  //     setTimeout(() => {
-  //       setOpen(false);
-  //       setConfirmLoading(false);
-  //     }, 2000);
-  //   };
+
   const handleCancel = () => {
-    console.log("Clicked cancel button");
     setOpen(false);
   };
 
-  //   leave status response
-  const status = ["select response type", "approved", "rejected"];
+  const statusOptions = [
+    { label: "Select response type", value: "" },
+    { label: "Approved", value: "approved" },
+    { label: "Rejected", value: "rejected" },
+  ];
 
-  const { data, loading, error, dataFetcher } = useDataFetch();
-  const [click, setClick] = useState(false);
-
-  const [inputValue, setInputValue] = useState({
-    startDate: null,
-    endDate: null,
-    status: null,
-    responseMessage: null,
-  });
-
-  // handleChange function
-  function handleChange(e) {
-    const { name, value } = e.target;
-
-    setInputValue((prevData) => ({
-      ...prevData,
-      [name]: value, // Handle file or text input
-    }));
-  }
-
-  // dispatch({ type: "LOGIN", filPayload: fileValue });
-  async function handleSubmit(e) {
-    e.preventDefault();
-
+  const handleFinish = async (values) => {
     try {
-      // Call fetchData with endpoint, method, payload, and any additional arguments
-      await dataFetcher(`leaves/applications/${appId}`, "put", inputValue);
+      const emailData = {
+        subject: "Leave Application Response- A.T. Lukman & Co.",
+        send_to: data?.data?.employee?.email,
+        send_from: user?.data?.email,
+        reply_to: "noreply@gmail.com",
+        template: "leaveResponse",
+        url: "dashboard/staff",
+        context: {
+          applicationDate: formatDate(data?.data?.createdAt),
+          typeOfLeave: data?.data?.typeOfLeave,
+          startDate: values.startDate || data?.data.startDate,
+          endDate: values.endDate || data?.data.endDate,
+          status: values.status,
+          daysApproved: data?.data?.daysApproved,
+          responseMessage: values.responseMessage,
+          approvedBy: user?.data?.firstName,
+        },
+      };
+
+      await dataFetcher(`leaves/applications/${appId}`, "put", values);
+
+      if (data?.message === "success") {
+        toast.success("Response submitted successfully");
+      }
+      await dispatch(sendAutomatedCustomEmail(emailData));
+
+      form.resetFields();
+      setOpen(false);
     } catch (err) {
-      console.log(err);
+      console.error(err);
+      toast.error("An error occurred while submitting the response");
     }
-  }
+  };
 
-  function handleClick() {
-    setClick(() => !click);
-  }
-
-  console.log(inputValue);
-
-  //  get users/reporter data
-  //   const usersData = Array.isArray(users?.data)
-  //     ? users?.data.map((user) => {
-  //         return {
-  //           value: user?._id,
-  //           label: user?.fullName,
-  //         };
-  //       })
-  //     : [];
-
-  // const employeeSelectField = Array.isArray(users?.data) ? (
-  //   <select
-  //     label="employee"
-  //     value={inputValue.employee}
-  //     name="employee"
-  //     onChange={handleChange}>
-  //     {users?.data.map((user) => {
-  //       return (
-  //         <option value={user._id} key={user._id}>
-  //           {user.fullName}
-  //         </option>
-  //       );
-  //     })}
-  //   </select>
-  // ) : (
-  //   []
-  // );
+  if (dataError) return toast.error("Failed to submit response");
 
   return (
     <>
-      <Button onClick={showModal} className="bg-green-700 text-white">
+      <Button onClick={showModal} className="blue-btn">
         Respond To Leave Application
       </Button>
       <Modal
         title="Leave Application Response"
         open={open}
-        // onOk={handleOk}
+        footer={null}
         confirmLoading={loading}
         onCancel={handleCancel}>
-        <section className="flex flex-col items-center justify-center">
-          <form
-            onSubmit={handleSubmit}
-            className="  bg-white   basis-3/5 shadow-md  rounded-md px-8 pt-6 pb-8 m-4">
-            <h1 className="text-2xl font-bold text-center mb-4">
-              Leave Application Response
-            </h1>
-
-            <div className="flex flex-col  mb-6 gap-2 justify-between ">
-              {/* {employeeSelectField} */}
-              <div>
-                <Input
-                  type="Date"
-                  label="Start Date"
-                  placeholder="Start Date"
-                  htmlFor="Start Date"
-                  value={inputValue.startDate}
-                  name="startDate"
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <Input
-                  type="Date"
-                  label="End Date"
-                  placeholder="End Date"
-                  htmlFor="End Date"
-                  value={inputValue.endDate}
-                  name="endDate"
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div className="w-[300px]">
-                <Select
-                  required
-                  label="Status"
-                  options={status}
-                  value={inputValue.status}
-                  name="status"
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div>
-                <Input
-                  type="text"
-                  label="Response message"
-                  textarea
-                  placeholder="your message..."
-                  htmlFor="responseMessage"
-                  value={inputValue.responseMessage}
-                  name="responseMessage"
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row justify-between items-center">
-              <Button onClick={handleClick}>Submit</Button>
-            </div>
-          </form>
-        </section>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleFinish}
+          initialValues={{
+            startDate: data?.data?.startDate,
+            endDate: data?.data?.endDate,
+            status: "",
+            responseMessage: data?.data?.responseMessage || "",
+          }}>
+          <Form.Item
+            name="startDate"
+            label="Start Date"
+            // rules={[{ required: true, message: "Please select start date" }]}
+          >
+            <Input type="date" />
+          </Form.Item>
+          <Form.Item
+            name="endDate"
+            label="End Date"
+            // rules={[{ required: true, message: "Please select end date" }]}
+          >
+            <Input type="date" />
+          </Form.Item>
+          <Form.Item
+            name="status"
+            label="Status"
+            rules={[
+              { required: true, message: "Please select response status" },
+            ]}>
+            <Select options={statusOptions} />
+          </Form.Item>
+          <Form.Item
+            name="responseMessage"
+            label="Response Message"
+            rules={[
+              { required: true, message: "Please provide a response message" },
+            ]}>
+            <Input.TextArea placeholder="Your message..." />
+          </Form.Item>
+          <Form.Item>
+            <Button
+              type="primary"
+              htmlType="submit"
+              className="blue-btn"
+              // loading={loading}
+            >
+              Submit
+            </Button>
+          </Form.Item>
+        </Form>
       </Modal>
     </>
   );
 };
+
 export default LeaveResponseForm;

@@ -5,7 +5,7 @@ const catchAsync = require("../utils/catchAsync");
 exports.createLeave = catchAsync(async (req, res, next) => {
   const newLeave = await LeaveResponse.create(req.body);
   res.status(201).json({
-    status: "success",
+    message: "success",
     data: newLeave,
   });
 });
@@ -25,7 +25,7 @@ exports.updateLeave = catchAsync(async (req, res, next) => {
   }
 
   res.status(200).json({
-    status: "success",
+    message: "success",
     data: updatedLeave,
   });
 });
@@ -38,7 +38,7 @@ exports.getLeave = catchAsync(async (req, res, next) => {
     return next(new AppError("The leave does not exist", 404));
   }
   res.status(200).json({
-    status: "success",
+    message: "success",
     data: leave,
   });
 });

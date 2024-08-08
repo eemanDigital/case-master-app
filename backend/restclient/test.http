@@ -27,9 +27,17 @@ POST  {{baseUrl}}users/login  HTTP/1.1
 content-type: application/json
 
 {
-  "email":"asinmi4real@gmail.com",
-  "password":"test1234"
+  "email":"taj@gmail.com",
+  "password":"Test1234@"
 }
+
+###
+POST  {{baseUrl}}users/sendLoginCode/taj@gmail.com  HTTP/1.1 
+content-type: application/json
+
+# {
+#   "loginCode":"208844"
+# }
 
   # "email":{"$gt":""},
 

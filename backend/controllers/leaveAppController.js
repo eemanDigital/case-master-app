@@ -165,8 +165,6 @@ exports.deleteLeaveApplication = catchAsync(async (req, res, next) => {
     return next(new AppError("No leave application found with that ID", 404));
   }
 
-  // await LeaveApplication.findByIdAndDelete(req.params.id); // Delete the leave application
-
   res.status(204).json({
     message: "success",
     data: null,

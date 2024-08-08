@@ -1,16 +1,6 @@
 import React, { useEffect } from "react";
-import { useParams } from "react-router-dom";
-import {
-  Card,
-  Spin,
-  Alert,
-  Empty,
-  Typography,
-  Tag,
-  Row,
-  Col,
-  Divider,
-} from "antd";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { Card, Spin, Empty, Typography, Row, Col, Divider, Button } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import LeaveResponseForm from "../components/LeaveResponseForm";
@@ -30,6 +20,7 @@ const { Title, Text } = Typography;
 const LeaveApplicationDetails = ({ userId }) => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { id } = useParams();
+  const navigate = useNavigate();
   // useErrorMessage(error);
   const { isAdminOrHr } = useAdminHook();
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
@@ -164,17 +155,22 @@ const LeaveApplicationDetails = ({ userId }) => {
         <>
           {data ? (
             <>
-              {renderLeaveDetails()}
               {isAdminOrHr && (
                 <>
-                  <Divider />
                   <LeaveResponseForm appId={data?.data?.id} />
+
+                  <Button onClick={() => navigate(-1)}>Go Back</Button>
+
+                  <Divider />
                 </>
               )}
+              {renderLeaveDetails()}
             </>
           ) : (
             <Empty description="No Leave Application" />
           )}
+          <Divider />
+          <LeaveBalanceDisplay userId={data?.data?.employee?._id} />
         </>
       )}
     </Spin>
