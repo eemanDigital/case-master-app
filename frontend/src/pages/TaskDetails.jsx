@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Descriptions, Divider, Modal, Card, Button, Alert } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
@@ -16,7 +16,7 @@ import { useSelector } from "react-redux";
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const TaskDetails = () => {
-  const { dataFetcher, data, loading, error } = useDataFetch();
+  const { dataFetcher, data, loading, error: dataError } = useDataFetch();
   const { handleDeleteDocument, documents } = useDeleteDocument(
     data?.data,
     "taskData"
@@ -25,10 +25,10 @@ const TaskDetails = () => {
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);
   const task = data?.data;
-
   const currentUser = user?.data?._id;
   const assignedById = task?.assignedBy?._id;
   const isAssignedBy = currentUser === assignedById; //current loggedIn Staff User
+  const navigate = useNavigate();
 
   const isAssignedToCurrentUser = task?.assignedTo?.some(
     (staff) => staff._id === currentUser
@@ -36,25 +36,31 @@ const TaskDetails = () => {
   const isAssignedToCurrentClientUser = //current loggedIn Client User
     task?.assignedToClient?._id === currentUser;
 
+  // console.log(currentUser, assignedById, isAssignedBy, isAssignedToCurrentUser);
+
   useEffect(() => {
     dataFetcher(`tasks/${id}`, "GET");
   }, [id]);
 
   if (loading) return <p>Loading...</p>;
-  if (error) return <p>Error: {error.message}</p>;
+  if (dataError) return <p>Error: {dataError}</p>;
 
-  const handleDeleteApp = async (taskId, responseId) => {
-    await dataFetcher(`tasks/${taskId}/response/${responseId}`, "DELETE");
-  };
+  // const handleDeleteApp = async (taskId, responseId) => {
+  //   await dataFetcher(`tasks/${taskId}/response/${responseId}`, "DELETE");
+  // };
 
   return (
     <div className="mt-10">
+      <Button onClick={() => navigate(-1)}>Go Back</Button>
+
       <TaskDocUpload taskId={task?._id} />
 
       <Descriptions title="Task Details" bordered>
         <Descriptions.Item label="Task Title">{task?.title}</Descriptions.Item>
         <Descriptions.Item label="Assigned By">
-          {task?.assignedBy ? task.assignedBy?.fullName : "N/A"}
+          {task?.assignedBy
+            ? `${task.assignedBy?.firstName} ${task.assignedBy?.lastName} (${task.assignedBy?.position}) `
+            : "N/A"}
         </Descriptions.Item>
         <Descriptions.Item label=" Assigned to Client">
           {task?.assignedToClient ? task.assignedToClient?.fullName : "N/A"}
@@ -62,7 +68,9 @@ const TaskDetails = () => {
         <Descriptions.Item label="Assigned To Staff">
           {task?.assignedTo
             ? task.assignedTo.map((staff) => (
-                <p key={staff._id}>{staff.fullName}</p>
+                <p key={staff._id}>
+                  {staff.firstName} {staff.lastName}
+                </p>
               ))
             : "N/A"}
         </Descriptions.Item>
@@ -150,10 +158,10 @@ const TaskDetails = () => {
       <Divider />
 
       {/* ensure only the person to whom task is assigned sees the button */}
-      {(!isAssignedBy && isAssignedToCurrentUser) ||
-        (!isAssignedBy && isAssignedToCurrentClientUser && (
+      {!isAssignedBy &&
+        (isAssignedToCurrentUser || isAssignedToCurrentClientUser) && (
           <TaskResponseForm taskId={task?._id} />
-        ))}
+        )}
 
       {/* TASK RESPONSE */}
       <TaskResponse

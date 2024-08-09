@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { taskPriorityOptions } from "./../data/options";
 import {
@@ -6,213 +6,205 @@ import {
   Input,
   Form,
   Modal,
-  Card,
-  Spin,
   Select,
   DatePicker,
+  Typography,
 } from "antd";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import useModal from "../hooks/useModal";
 import { SelectInputs } from "../components/DynamicInputs";
 import useClientSelectOptions from "../hooks/useClientSelectOptions";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { useDispatch, useSelector } from "react-redux";
+import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
+import { getUsers } from "../redux/features/auth/authSlice";
+import { formatDate } from "../utils/formatDate";
+
+const { TextArea } = Input;
+const { Title } = Typography;
 
 const CreateTaskForm = () => {
-  // destructure textarea from input
-  const { TextArea } = Input;
   const { casesOptions } = useCaseSelectOptions();
   const { userData } = useUserSelectOptions();
   const { clientOptions } = useClientSelectOptions();
-
-  const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
-    useModal(); //modal hook
-
+  const { fetchData } = useDataGetterHook();
+  const dispatch = useDispatch();
+  const { users, user } = useSelector((state) => state.auth);
+  const { open, confirmLoading, showModal, handleOk, handleCancel } =
+    useModal();
   const [form] = Form.useForm();
-  const [formData, setFormData] = useState({});
-  // destructor authenticate from useAuth
-  const { dataFetcher, data } = useDataFetch();
+  const { dataFetcher } = useDataFetch();
 
-  // form submit functionalities
   const handleSubmission = useCallback(
     (result) => {
       if (result?.error) {
         // Handle Error here
       } else {
         // Handle Success here
-        // form.resetFields();
+        form.resetFields();
       }
     },
-    []
-    // [form]
+    [form]
   );
 
-  // submit data
+  // / fetch users
+  useEffect(() => {
+    dispatch(getUsers());
+  }, [dispatch]);
+
+  const handleSubmit = useCallback(
+    async (values) => {
+      try {
+        // Extract user IDs from values.assignedTo
+        const assignedUserIds = values.assignedTo || []; // Ensure it's an array
+
+        // Find corresponding user objects from the users state
+        const assignedUsers = users?.data?.filter((user) =>
+          assignedUserIds.includes(user._id)
+        );
+
+        // Map user objects to their email addresses
+        const sendToEmails = assignedUsers?.map((user) => user.email);
+        // Prepare email data
+        const emailData = {
+          subject: "New Task Assigned - A.T. Lukman & Co.",
+          send_to: sendToEmails,
+          send_from: user?.data?.email,
+          reply_to: "noreply@gmail.com",
+          template: "taskAssignment",
+          context: {
+            sendersName: user?.data?.firstName,
+            sendersPosition: user?.data?.position,
+            title: values.title,
+            dueDate: formatDate(values.dueDate),
+            instruction: values.instruction,
+            taskPriority: values.taskPriority,
+            url: "dashboard/tasks",
+          },
+        };
+
+        // Post data
+        const result = await dataFetcher("tasks", "POST", values);
+        await fetchData("tasks", "tasks");
+        handleSubmission(result);
+
+        // Send email if emailData is provided
+        if (!result?.error && emailData) {
+          await dispatch(sendAutomatedCustomEmail(emailData));
+        }
+        form.resetFields();
+      } catch (err) {
+        console.error(err);
+      }
+    },
+    [dataFetcher, fetchData, form, handleSubmission, user, users, dispatch]
+  );
+
   const onSubmit = useCallback(async () => {
     let values;
     try {
-      values = await form.validateFields(); // Validate the form fields
-      // console.log("TA", values);
+      values = await form.validateFields();
     } catch (errorInfo) {
       return;
     }
-    const result = await dataFetcher("tasks", "POST", values); // Submit the form data to the backend
-    console.log(values);
-    handleSubmission(result); // Handle the submission after the API Call
-  }, [form, handleSubmission, dataFetcher]);
+    await handleSubmit(values);
+  }, [form, handleSubmit]);
 
-  // console.log("TAF", formData);
   return (
     <>
-      <Button onClick={showModal} className="bg-green-700 text-white">
+      <Button
+        onClick={showModal}
+        className="blue-btn text-white rounded-lg shadow-md transition duration-300">
         Create Task
       </Button>
       <Modal
-        width="70%"
-        title="Assign Task"
+        width="80%"
+        title={<Title level={3}>Assign Task</Title>}
         open={open}
         onOk={handleOk}
         footer={null}
-        // confirmLoading={}
-        onCancel={handleCancel}>
-        <section className="flex justify-between gap-8 ">
-          <Form
-            layout="vertical"
-            form={form}
-            name="dynamic_form_complex"
-            // autoComplete="off"
-            className="flex  justify-center">
-            <div className="flex flex-wrap justify-between items-center">
-              <div>
-                {/* task title */}
-                <Form.Item
-                  label="Task Title"
-                  name="title"
-                  initialValue={formData?.title}>
-                  <Input />
-                </Form.Item>
-              </div>
+        onCancel={handleCancel}
+        confirmLoading={confirmLoading}
+        className="modal-container">
+        <Form
+          layout="vertical"
+          form={form}
+          name="create_task_form"
+          className="flex flex-col gap-6">
+          <Form.Item label="Task Title" name="title">
+            <Input placeholder="Enter task title" />
+          </Form.Item>
 
-              {/* instruction */}
-              <Form.Item
-                name="instruction"
-                label="Write Instruction here..."
-                //   tooltip="This is a required field"
-                initialValue={formData?.instruction}
-                rules={[
-                  {
-                    required: true,
-                    message: "Please, provide your instruction!",
-                  },
-                ]}>
-                <TextArea rows={5} placeholder="Your text here..." />
-              </Form.Item>
+          <Form.Item
+            name="instruction"
+            label="Instruction"
+            rules={[
+              {
+                required: true,
+                message: "Please provide instructions for the task!",
+              },
+            ]}>
+            <TextArea rows={4} placeholder="Enter detailed instructions" />
+          </Form.Item>
 
-              {/* case to work on */}
-              <Form.Item
-                name="caseToWorkOn"
-                label="Case To Work On"
-                initialValue={formData?.caseToWorkOn}>
-                <Select
-                  noStyle
-                  notFoundContent={data ? <Spin size="small" /> : null}
-                  placeholder="Select a case here"
-                  options={casesOptions}
-                  allowClear
-                  style={{
-                    width: "100%",
-                  }}
-                />
-              </Form.Item>
+          <Form.Item name="caseToWorkOn" label="Case To Work On">
+            <Select
+              placeholder="Select a case"
+              options={casesOptions}
+              allowClear
+              className="w-full"
+            />
+          </Form.Item>
 
-              {/* assigned to */}
+          <Form.Item name="assignedTo" label="Assigned To">
+            <Select
+              mode="multiple"
+              placeholder="Select staff members"
+              options={userData}
+              allowClear
+              className="w-full"
+            />
+          </Form.Item>
 
-              <Form.Item
-                name="assignedTo"
-                label="Assigned To"
-                initialValue={formData?.assignedTo}
-                // rules={[
-                //   {
-                //     required: true,
-                //     message:
-                //       "A task must be assigned to either a staff or a client",
-                //   },
-                // ]}
-              >
-                <Select
-                  mode="multiple"
-                  noStyle
-                  notFoundContent={data ? <Spin size="small" /> : null}
-                  placeholder="Select a staff"
-                  options={userData}
-                  allowClear
-                  style={{
-                    width: "100%",
-                  }}
-                />
-              </Form.Item>
-              {/* assignedToClient */}
+          <Form.Item name="assignedToClient" label="Assigned To Client">
+            <Select
+              placeholder="Select a client"
+              options={clientOptions}
+              allowClear
+              className="w-full"
+            />
+          </Form.Item>
 
-              <Form.Item
-                name="assignedToClient"
-                label="Assigned To Client"
-                initialValue={formData?.assignedToClient}
-                // rules={[
-                //   {
-                //     required: true,
-                //     message:
-                //       "A task must be assigned to either a staff or a client",
-                //   },
-                // ]}
-              >
-                <Select
-                  noStyle
-                  notFoundContent={data ? <Spin size="small" /> : null}
-                  placeholder="Select a client"
-                  options={clientOptions}
-                  allowClear
-                  style={{
-                    width: "100%",
-                  }}
-                />
-              </Form.Item>
+          <Form.Item
+            name="dueDate"
+            label="Due Date"
+            rules={[
+              {
+                required: true,
+                message: "Specify the due date for the task",
+              },
+            ]}>
+            <DatePicker className="w-full" />
+          </Form.Item>
 
-              {/* date assigned */}
-              {/* <Form.Item name="dateAssigned" label="Assigned Date">
-            <DatePicker />
-          </Form.Item> */}
+          <SelectInputs
+            defaultValue="high"
+            fieldName="taskPriority"
+            label="Task Priority"
+            options={taskPriorityOptions}
+          />
 
-              {/* due date */}
-              <Form.Item
-                name="dueDate"
-                label="Due Date"
-                rules={[
-                  {
-                    required: true,
-                    message: "Specify date for staff to complete the task",
-                  },
-                ]}>
-                <DatePicker />
-              </Form.Item>
-              {/* UPDATE */}
-
-              {/* task priority */}
-
-              <SelectInputs
-                defaultValue="high"
-                fieldName="taskPriority"
-                label="Task Priority"
-                initialValue={formData?.taskPriority}
-                options={taskPriorityOptions}
-              />
-
-              <Form.Item>
-                <Button onClick={onSubmit} type="default" htmlType="submit">
-                  Save
-                </Button>
-              </Form.Item>
-            </div>
-          </Form>
-        </section>
+          <Form.Item>
+            <Button
+              onClick={onSubmit}
+              type="primary"
+              htmlType="submit"
+              className="w-full">
+              Save
+            </Button>
+          </Form.Item>
+        </Form>
       </Modal>
     </>
   );

@@ -7,10 +7,11 @@ import CreateTaskForm from "../pages/CreateTaskForm";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useDispatch, useSelector } from "react-redux";
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import { toast } from "react-toastify";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
+import TaskTimeTracker from "./TaskTimeTracker";
 
 const TaskList = () => {
   const {
@@ -56,12 +57,13 @@ const TaskList = () => {
     }
   };
 
-  console.log(message, ">SG");
   // Display loading message if data is being fetched
   if (loadingTasks.tasks) return <LoadingSpinner />;
 
   // Display error message if there was an error fetching data
   if (taskError.error) return toast.error(taskError.error);
+
+  // console.log("TASKS", tasks?.data);
 
   const columns = [
     {
@@ -107,8 +109,8 @@ const TaskList = () => {
           <Button type="link">
             <Link to={`${record?.id}/details`}>Get Details</Link>
           </Button>
-
-          {user?.user?._id === record?.assignedBy?._id && (
+          {/* only the person assigning assignment see the btn */}
+          {user?.data?._id === record?.assignedBy?._id && (
             <RiDeleteBin6Line
               className="text-red-500 text-2xl cursor-pointer hover:text-red-700"
               onClick={() => {
@@ -120,7 +122,7 @@ const TaskList = () => {
             />
           )}
           {user?.data?._id === record?.assignedBy?._id && (
-            <TaskReminderForm id={record._id} />
+            <TaskReminderForm id={record.id} />
           )}
         </Space>
       ),
@@ -156,6 +158,8 @@ const TaskList = () => {
         }
         rowKey="_id"
       />
+
+      {/* <TaskTimeTracker tasks={tasks?.data} userId={loggedInClientId} /> */}
     </div>
   );
 };

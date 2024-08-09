@@ -1,0 +1,26 @@
+<html>
+  <head>
+    <title>Task Notification</title>
+    <style>
+      body { font-family: Arial, sans-serif; } .task { border: 1px solid #ddd;
+      padding: 10px; margin-bottom: 10px; } .task-title { font-weight: bold; }
+      .task-due { color: #888; }
+    </style>
+  </head>
+  <body>
+    <h1>Task Notification</h1>
+
+    <div class="task">
+      <div class="task-title">{{title}}</div>
+      <div class="task-due">Due On: {{dueDate}}</div>
+      <div class="task-status">Instruction: {{instruction}}</div>
+      <div class="task-status">Task Priority: {{taskPriority}}</div>
+      <p>Kindly, Check your dashboard for more detail:{{link}}</p>
+      <div>From: {{sendersName}}, <span>{{sendersPosition}}</span></div>
+    </div>
+    <footer><p>&copy;
+        {{year}}
+        CaseMaster Team. All rights reserved.</p></footer>
+
+  </body>
+</html>

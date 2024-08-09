@@ -1,23 +1,24 @@
 import { useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import Input from "../components/Inputs";
-import { Button, Modal, message } from "antd";
+import { Button, Modal } from "antd";
 import useModal from "../hooks/useModal";
-// import "antd/dist/antd.css"; // Ensure Ant Design styles are imported
+import { toast } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
+import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 
 const TaskResponseForm = ({ taskId }) => {
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
   const [formData, setFormData] = useState({
     comment: "",
     doc: null,
     completed: false,
   });
 
-  const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
-    useModal();
+  const { open, showModal, handleCancel } = useModal();
 
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const { dataFetcher, loading, data, error } = useDataFetch();
+  const { dataFetcher, loading, data, error: dataError } = useDataFetch();
 
   function handleChange(e) {
     const { name, value, files, checked } = e.target;
@@ -28,10 +29,6 @@ const TaskResponseForm = ({ taskId }) => {
     }));
   }
 
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -41,19 +38,43 @@ const TaskResponseForm = ({ taskId }) => {
     payload.append("completed", formData.completed);
 
     try {
-      await dataFetcher(
-        `tasks/${taskId}/response`,
-        "post",
-        payload,
-        fileHeaders
-      );
-      message.success("Document uploaded successfully!");
-      handleCancel(); // Close the modal on successful upload
+      await dataFetcher(`tasks/${taskId}/response`, "post", payload);
+      if (data?.message === "success") {
+        toast.success("Document uploaded successfully!");
+
+        // Prepare email data
+        const emailData = {
+          subject: "Task Response Submitted - A.T. Lukman & Co.",
+          send_to: data?.assignedBy?.email,
+          send_from: user?.data?.email,
+          reply_to: "noreply@gmail.com",
+          template: "taskResponse",
+          context: {
+            recipient: data?.assignedBy.firstName,
+            position: data?.assignedBy.position,
+            comment: formData.comment,
+            completed: formData.completed,
+            url: "dashboard/tasks",
+          },
+        };
+        // Send email if emailData is provided
+        await dispatch(sendAutomatedCustomEmail(emailData));
+        toast.success("Email sent successfully!");
+
+        handleCancel(); // Close the modal on successful upload
+      } else {
+        throw new Error("Failed to upload document.");
+      }
     } catch (err) {
-      console.log(err);
-      message.error("Failed to upload document. Please try again.");
+      console.error(err);
+      toast.error("Failed to upload document. Please try again.");
     }
   };
+
+  if (dataError) {
+    toast.error(dataError);
+    return null;
+  }
 
   return (
     <>
@@ -114,13 +135,6 @@ const TaskResponseForm = ({ taskId }) => {
               name="comment"
               onChange={handleChange}
             />
-          </div>
-          <div className="w-full">
-            {/* <button
-              type="submit"
-              className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
-              Submit
-            </button> */}
           </div>
         </form>
       </Modal>

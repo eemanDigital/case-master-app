@@ -13,9 +13,7 @@ import { useAdminHook } from "../hooks/useAdminHook";
 const StaffList = () => {
   const [searchResults, setSearchResults] = useState([]);
   const dispatch = useDispatch();
-  const { isSuccess, isError, isLoading, users } = useSelector(
-    (state) => state.auth
-  );
+  const { users } = useSelector((state) => state.auth);
 
   const { Column, ColumnGroup } = Table;
   const { isAdminOrHr, isSuperOrAdmin } = useAdminHook();
@@ -42,7 +40,9 @@ const StaffList = () => {
     }
 
     const results = users?.data.filter((d) => {
-      const usernameMatch = d.fullName.toLowerCase().includes(searchTerm);
+      const usernameMatch = `${d.firstName}${d.lastName}`
+        .toLowerCase()
+        .includes(searchTerm);
       const roleMatch = d.role?.toLowerCase().includes(searchTerm);
       const emailMatch = d.email?.toLowerCase().includes(searchTerm);
       const positionMatch = d.position?.toLowerCase().includes(searchTerm);

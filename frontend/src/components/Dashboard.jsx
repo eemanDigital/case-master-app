@@ -24,6 +24,7 @@ import CalenderEvent from "../pages/CalenderEvent";
 import DashBoardDataCount from "./DashBoardDataCount";
 import LatestCaseReports from "./LatestCaseReports";
 import LeaveAppForm from "../pages/LeaveAppForm";
+import TaskTimeTracker from "./TaskTimeTracker";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -71,6 +72,7 @@ const Dashboard = () => {
   const {
     cases,
     users,
+    tasks,
     totalBalanceOnPayments,
     casesByStatus,
     casesByCourt,
@@ -97,6 +99,7 @@ const Dashboard = () => {
     fetchData("cases", "cases");
     fetchData("users", "users");
     fetchData("reports", "reports");
+    fetchData("tasks", "tasks");
     fetchData("cases/case-status", "casesByStatus");
     fetchData("cases/cases-by-court", "casesByCourt");
     fetchData("cases/cases-by-natureOfCase", "casesByNature");
@@ -164,16 +167,6 @@ const Dashboard = () => {
 
       <div className="flex flex-wrap items-center justify-between px-6 rounded-lg">
         <div className="flex items-center space-x-4">
-          {/* {isClient ? (
-            <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
-              Welcome back, {user?.data?.firstName} ({user?.data?.role})
-            </h1>
-          ) : (
-            <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
-              {user?.data?.firstName || "........"}'s Dashboard (
-              {user?.data?.role})
-            </h1>
-          )} */}
           <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
             {" "}
             Dashboard
@@ -182,6 +175,7 @@ const Dashboard = () => {
 
           <LeaveAppForm />
         </div>
+        <TaskTimeTracker tasks={tasks?.data} userId={userId} />
 
         <div className="flex items-center space-x-4">
           <CalenderEvent />

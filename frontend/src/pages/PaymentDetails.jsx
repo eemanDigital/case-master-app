@@ -216,7 +216,7 @@ const PaymentDetails = () => {
           </Descriptions.Item>
         </Descriptions>
 
-        <Link to={`../billings/invoices/${invoice._id}/update`}>
+        <Link to={`../billings/invoices/${invoice?._id}/update`}>
           <Button>Update Payment</Button>
         </Link>
       </Card>

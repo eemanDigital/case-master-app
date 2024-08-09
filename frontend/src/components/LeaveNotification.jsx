@@ -1,20 +1,21 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Badge, Popover, List, Button, Spin, Alert } from "antd";
 import { BellOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { useAdminHook } from "../hooks/useAdminHook";
 
 const LeaveNotification = () => {
   const {
     leaveApps,
     loading: loadingLeaveApp,
     error: errorLeaveApp,
+    fetchData,
   } = useDataGetterHook();
 
-  const { isAdminOrHr } = useAdminHook();
-
   //   const isCurrentUser = loggedInClientId === id; //check if id is the same
+  useEffect(() => {
+    fetchData("leaves/applications", "leaveApps");
+  }, []);
 
   const pendingLeaves = useMemo(() => {
     return leaveApps?.data?.filter((leave) => leave?.status === "pending");
@@ -28,8 +29,10 @@ const LeaveNotification = () => {
         <List.Item>
           <List.Item.Meta
             title={
-              <Link to={`staff/leave-application/${item?.id}/details`}>
-                {item?.employee?.fullName}
+              <Link
+                className="font-medium text-blue-600"
+                to={`staff/leave-application/${item?.id}/details`}>
+                Applicant: {item?.employee?.firstName}
               </Link>
             }
             description={`${item?.typeOfLeave} - ${new Date(
@@ -69,7 +72,12 @@ const LeaveNotification = () => {
       trigger="click"
       placement="bottomRight">
       <Badge count={pendingLeaves?.length} overflowCount={99}>
-        <Button icon={<BellOutlined />} shape="circle" size="large" />
+        <Button
+          icon={<BellOutlined />}
+          shape="circle"
+          size="large"
+          className="bg-blue-600 text-white"
+        />
       </Badge>
     </Popover>
   );
