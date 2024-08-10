@@ -17,7 +17,10 @@ const reminderSchema = new mongoose.Schema({
 // taskResponse sub-doc
 const taskResponseSchema = new mongoose.Schema({
   completed: Boolean,
-  doc: String,
+  doc: {
+    type: String,
+    required: false,
+  },
   comment: String,
   timestamp: {
     type: Date,

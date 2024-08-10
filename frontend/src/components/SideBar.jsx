@@ -7,7 +7,7 @@ import { RxDashboard } from "react-icons/rx";
 import { IoBriefcaseSharp, IoHelpCircleOutline } from "react-icons/io5";
 import { TbLogout2 } from "react-icons/tb";
 import { TbReport } from "react-icons/tb";
-import { FaMoneyBill, FaTasks } from "react-icons/fa";
+import { FaFile, FaMoneyBill, FaTasks } from "react-icons/fa";
 import { FaUsers, FaListUl } from "react-icons/fa6";
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import "react-toastify/dist/ReactToastify.css";
@@ -96,11 +96,16 @@ const SideBar = () => {
     },
     {
       key: "9",
+      icon: <FaFile />,
+      label: <Link to="documents">Documents</Link>,
+    },
+    {
+      key: "10",
       icon: <IoHelpCircleOutline />,
       label: <Link to="help-center">Help Center</Link>,
     },
     {
-      key: "10",
+      key: "11",
       icon: <TbLogout2 />,
       label: (
         <Link className="text-gray-200" onClick={handleLogout}>

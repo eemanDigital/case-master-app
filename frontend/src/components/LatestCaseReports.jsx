@@ -47,7 +47,7 @@ const LatestCaseReports = () => {
   if (error.reports) return <div>Error: {error.reports}</div>; // Handle error state
 
   return (
-    <div>
+    <div className="bg-white shadow-md ">
       <Link
         className="text-blue-600 underline p-2 text-[12px] block hover:text-blue-800 hover:font-bold "
         to="case-reports">

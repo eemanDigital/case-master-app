@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import moment from "moment";
-import { List, Tag } from "antd";
+import { List, Tag, Pagination } from "antd";
 import { ClockCircleOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 
 const TaskTimeTracker = ({ tasks, userId }) => {
   const [timeLeft, setTimeLeft] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
 
   useEffect(() => {
     // Function to update the time left for each task
@@ -43,11 +45,21 @@ const TaskTimeTracker = ({ tasks, userId }) => {
     return null;
   }
 
+  const handlePageChange = (page, pageSize) => {
+    setCurrentPage(page);
+    setPageSize(pageSize);
+  };
+
+  const paginatedTasks = userTasks.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
+
   return (
-    <div className="w-[30%] bg-white shadow-md rounded-md font-medium text-center text-gray-800 p-2">
-      <h1>Task Timers</h1>
+    <div className="w-full h-[300px] bg-white shadow-md rounded-md font-medium text-center text-gray-800 p-4">
+      <h1>Current Tasks</h1>
       <List
-        dataSource={userTasks}
+        dataSource={paginatedTasks}
         renderItem={(task) => (
           <List.Item
             key={task._id}
@@ -60,14 +72,32 @@ const TaskTimeTracker = ({ tasks, userId }) => {
             </div>
             <Tag
               className="font-bold"
-              color={timeLeft[task._id] === "Overdue" ? "red" : "green"}>
-              {task.dueDate
+              color={
+                task.taskResponse?.[0]?.completed
+                  ? "green"
+                  : timeLeft[task?._id] === "Overdue"
+                  ? "red"
+                  : "black"
+              }>
+              {task.taskResponse?.[0]?.completed
+                ? "Task Completed"
+                : task.dueDate
                 ? timeLeft[task._id] || "Calculating..."
                 : "No deadline"}
             </Tag>
           </List.Item>
         )}
       />
+      {userTasks.length > 5 && (
+        <Pagination
+          current={currentPage}
+          pageSize={pageSize}
+          total={userTasks.length}
+          onChange={handlePageChange}
+          showSizeChanger
+          pageSizeOptions={["5", "10", "20"]}
+        />
+      )}
     </div>
   );
 };

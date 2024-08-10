@@ -1,25 +1,37 @@
-// const express = require("express");
-// const {
-//   createFile,
-//   getFiles,
-//   downloadFile,
-//   getFile,
-//   updateFile,
-//   deleteFile,
-// } = require("../controllers/fileController");
-// const { protect } = require("../controllers/authController");
+const express = require("express");
+const {
+  createFile,
+  getFiles,
+  downloadFile,
+  getFile,
+  updateFile,
+  deleteFile,
+} = require("../controllers/fileController");
+const { protect } = require("../controllers/authController");
+const {
+  uploadToCloudinary,
+  multerFileUploader,
+} = require("../utils/multerFileUploader");
+const File = require("../models/fileModel");
+const { downloadDocument } = require("../controllers/factory");
 
-// const { fileUpload } = require("../utils/multerDocHandler");
+const router = express.Router();
 
-// const router = express.Router();
-// // protect route
-// router.use(protect);
+// Protect all routes
+router.use(protect);
 
-// router.post("/", fileUpload, createFile);
-// router.get("/", fileUpload, getFiles);
-// router.get("/download/:id", fileUpload, downloadFile);
-// router.get("/file/:id", fileUpload, getFile);
-// // router.patch("//:id", fileUpload, updateFile);
-// router.delete("/:id", fileUpload, deleteFile);
+// File routes
+router.post("/", multerFileUploader("file"), uploadToCloudinary, createFile);
+router.get("/:id/download", downloadFile);
 
-// module.exports = router;
+router.get("/", getFiles);
+router.get("/file/:id", getFile);
+router.patch(
+  "/:id",
+  multerFileUploader("file"),
+  uploadToCloudinary,
+  updateFile
+);
+router.delete("/:id", deleteFile);
+
+module.exports = router;

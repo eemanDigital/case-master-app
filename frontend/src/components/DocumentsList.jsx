@@ -1,87 +1,175 @@
-// import { formatDate } from "../utils/formatDate";
-// import { FaFileAlt } from "react-icons/fa";
-// import { FaDeleteLeft, FaDownload } from "react-icons/fa6";
-// import { download } from "../utils/download";
+import { useState, useEffect } from "react";
+import { formatDate } from "../utils/formatDate";
+import { FaFileAlt, FaTrash, FaDownload } from "react-icons/fa";
 
-// import { useDataGetterHook } from "../hooks/useDataGetterHook";
-// import { useDataFetch } from "../hooks/useDataFetch";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { useDataFetch } from "../hooks/useDataFetch";
+import { Table, Button, Popconfirm } from "antd";
 
-// import { useState } from "react";
+import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
+import SearchBar from "./SearchBar";
+import { toast } from "react-toastify";
+import LoadingSpinner from "./LoadingSpinner";
+const baseURL = import.meta.env.VITE_BASE_URL;
 
-// const DocumentsList = () => {
-//   const { files } = useDataGetterHook();
-//   const { dataFetcher } = useDataFetch();
-//   const [documentList, setDocumentList] = useState();
+const DocumentsList = () => {
+  // Custom hook to fetch documents data
+  const {
+    documents,
+    fetchData,
+    error: errorDoc,
+    loading: loadingDoc,
+  } = useDataGetterHook();
 
-//   // delete handler
+  // State to manage search results
+  const [searchResults, setSearchResults] = useState([]);
 
-//   const fileHeaders = {
-//     "Content-Type": "multipart/form-data",
-//   };
+  // Custom hook to handle data fetching
+  const { dataFetcher, loading, error: dataError } = useDataFetch();
 
-//   // async function deleteFile(id) {
-//   //   setDocumentList((prevDocuments) =>
-//   //     prevDocuments?.filter((item) => item._id !== id)
-//   //   );
+  // State to manage the list of documents
+  const [documentList, setDocumentList] = useState([]);
 
-//   //   try {
-//   //     await dataFetcher(`documents/${id}`, "delete", fileHeaders);
-//   //   } catch (err) {
-//   //     console.error("Error deleting document:", err);
-//   //     // Revert local state to previous state
-//   //     setDocumentList(files.data);
-//   //   }
-//   // }
+  // Fetch documents data on component mount
+  useEffect(() => {
+    fetchData("documents", "documents");
+  }, []);
 
-//   const fileDoc =
-//     files.data &&
-//     files.data.map((doc) => {
-//       // console.log(doc._id);
-//       return (
-//         <div key={doc._id} className="pt-4">
-//           <h3 className=" font-bold">{doc.fileName}</h3>
-//           <FaDeleteLeft onClick={() => deleteFile(doc._id)} />
-//           <div className="inline-flex gap-1 items-center bg-gray-300 px-5 py-2 rounded-md  cursor-pointer hover:bg-gray-200">
-//             <FaFileAlt className="text-4xl text-gray-600" />
+  // Update search results when documents data changes
+  useEffect(() => {
+    if (documents?.data) {
+      setSearchResults(documents?.data);
+    }
+  }, [documents?.data]);
 
-//             <FaDownload
-//               onClick={() => download(doc._id, doc.fileName)}
-//               className="text-red-800 text-1xl"
-//             />
-//           </div>
-//           <small className="block ">Uploaded on: {formatDate(doc.date)}</small>
-//         </div>
-//       );
-//     });
+  // Handle search input change
+  const handleSearchChange = (e) => {
+    const searchTerm = e.target.value.trim().toLowerCase();
+    if (!searchTerm) {
+      setSearchResults(documents?.data);
+      return;
+    }
+    const results = documents?.data.filter((d) => {
+      const fileNameMatch = d.fileName?.toLowerCase().includes(searchTerm);
+      return fileNameMatch;
+    });
+    setSearchResults(results);
+  };
 
-//   async function deleteFile(id) {
-//     // Optimistically update the UI by filtering out the deleted file // not functioning yet
+  // Update document list when documents data changes
+  useEffect(() => {
+    if (documents.data) {
+      setDocumentList(documents?.data);
+    }
+  }, [documents?.data]);
 
-//     setDocumentList(files.data?.filter((item) => item._id !== id));
-//     try {
-//       // Make the API call to delete the file
-//       await dataFetcher(`documents/${id}`, "delete", fileHeaders);
-//     } catch (err) {
-//       console.error("Error deleting document:", err);
-//       // If an error occurs during deletion, revert the UI changes
-//       // You can choose to handle this differently, such as displaying an error message
-//       setTimeout(() => {
-//         setDocumentList(files.data); // Revert to the original data
-//       }, 0);
-//     }
-//   }
+  // Handle document deletion
+  const deleteFile = async (id) => {
+    try {
+      const response = await dataFetcher(`documents/${id}`, "delete", {
+        "Content-Type": "multipart/form-data",
+      });
+      setDocumentList((prevDocs) => prevDocs.filter((doc) => doc._id !== id));
+      if (response?.message === "success") {
+        toast.success("Document deleted successfully");
+      }
+    } catch (err) {
+      console.error("Error deleting document:", err);
+      toast.error("Failed to delete document");
+    }
+  };
 
-//   return (
-//     <div className="flex justify-between items-center flex-wrap">
-//       {files.data?.length > 0 ? (
-//         fileDoc
-//       ) : (
-//         <h1 className=" font-bold text-3xl  text-red-600 mt-5">
-//           You have no Document left
-//         </h1>
-//       )}
-//     </div>
-//   );
-// };
+  // Define table columns
+  const columns = [
+    {
+      title: "Document",
+      dataIndex: "fileName",
+      key: "fileName",
+      render: (text, record) => (
+        <div className="flex items-center space-x-2">
+          <FaFileAlt className="text-gray-500" />
+          <span>{text}</span>
+        </div>
+      ),
+    },
+    {
+      title: "Upload Date",
+      dataIndex: "date",
+      key: "date",
+      render: (text) => <span>{formatDate(text)}</span>,
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, record) => (
+        <div className="flex justify-between space-x-2">
+          <Button
+            onClick={(event) =>
+              handleGeneralDownload(
+                event,
+                `${baseURL}/documents/${record._id}/download`,
+                record?.fileName
+              )
+            }
+            icon={<FaDownload />}
+            className="text-blue-600 hover:text-blue-800">
+            Download
+          </Button>
+          <Popconfirm
+            title="Are you sure you want to delete this document?"
+            onConfirm={() => deleteFile(record._id)}
+            okText="Yes"
+            cancelText="No">
+            <Button
+              icon={<FaTrash />}
+              className="text-red-600 hover:text-red-800">
+              Delete
+            </Button>
+          </Popconfirm>
+        </div>
+      ),
+    },
+  ];
 
-// export default DocumentsList;
+  return (
+    <div className="w-full p-4">
+      {/* Show loading spinner if documents are being fetched */}
+      {loadingDoc.documents && <LoadingSpinner />}
+
+      {/* Show error message if there is an error fetching documents */}
+      {errorDoc.documents && (
+        <div className="text-center py-8">
+          <h3 className="text-xl font-semibold text-red-600">
+            Failed to display documents
+          </h3>
+        </div>
+      )}
+
+      {/* Search bar component */}
+      <SearchBar onSearch={handleSearchChange} />
+
+      <h2 className="text-2xl font-bold m-4">Documents</h2>
+
+      {/* Display documents table if there are documents, otherwise show a message */}
+      {documentList.length > 0 ? (
+        <Table
+          dataSource={searchResults}
+          columns={columns}
+          rowKey="_id"
+          className="w-full"
+          responsive
+        />
+      ) : (
+        !loadingDoc && (
+          <div className="text-center py-8">
+            <h3 className="text-xl font-semibold text-gray-600">
+              No documents available
+            </h3>
+          </div>
+        )
+      )}
+    </div>
+  );
+};
+
+export default DocumentsList;

@@ -175,7 +175,6 @@ const Dashboard = () => {
 
           <LeaveAppForm />
         </div>
-        <TaskTimeTracker tasks={tasks?.data} userId={userId} />
 
         <div className="flex items-center space-x-4">
           <CalenderEvent />
@@ -205,46 +204,45 @@ const Dashboard = () => {
             lawyerCount={lawyerCount}
             clientCount={clientCount}
           />
-          <div className="flex flex-col md:flex-row items-start">
+          <div className="flex flex-col gap-4 m-4 md:flex-row items-start">
             <CaseCountsByClientChart data={casesByClient?.data} />
             <AccountOfficerCharts
               title="Cases By Account Officer"
               data={casesByAccountOfficer?.data || []}
             />
 
-            <div className=" flex flex-col gap-4 items-end">
-              <div
-                className={`cause-list-container   ${
-                  causeList.data?.todayResult === 0
-                    ? "h-[180] w-full display-shadow-none bg-white"
-                    : ""
-                }`}>
-                {!causeList.data?.todayResult > 0 ? (
-                  <h3 className="bg-slate-800 text-white  p-5 font-medium text-center">
-                    You have no matter today in Court
-                  </h3>
-                ) : (
-                  <div className="w-[370px] bg-slate-800">
-                    <h4 className="text-center font-bold">
-                      Toady's Cause List
-                    </h4>
-                    <SingleCauseList
-                      causeListData={causeList.data?.reportsToday}
-                      loadingCauseList={getterLoading.causeList}
-                      errorCauseList={getterError.causeList}
-                      title={causeListTitle}
-                      h1Style="text-center text-2xl text-gray-600 font-bold"
-                      hideButton={true}
-                    />
-                  </div>
-                )}
-              </div>
-
-              <div className="latest-case-reports-container">
-                <LatestCaseReports />
-              </div>
-            </div>
+            {/* <div className=" flex flex-col gap-4 items-end"> */}
+            {/* <div className="latest-case-reports-container"> */}
+            <TaskTimeTracker tasks={tasks?.data} userId={userId} />
+            {/* </div> */}
           </div>
+          {/* </div> */}
+          <div
+            className={`cause-list-container   ${
+              causeList.data?.todayResult === 0
+                ? "h-[180] w-full display-shadow-none bg-white"
+                : ""
+            }`}>
+            {!causeList.data?.todayResult > 0 ? (
+              <h3 className="bg-slate-800 text-white  p-5 font-medium text-center">
+                You have no matter today in Court
+              </h3>
+            ) : (
+              <div className="w-[370px] bg-slate-800">
+                <h4 className="text-center font-bold">Toady's Cause List</h4>
+
+                <SingleCauseList
+                  causeListData={causeList.data?.reportsToday}
+                  loadingCauseList={getterLoading.causeList}
+                  errorCauseList={getterError.causeList}
+                  title={causeListTitle}
+                  h1Style="text-center text-2xl text-gray-600 font-bold"
+                  hideButton={true}
+                />
+              </div>
+            )}
+          </div>
+          <LatestCaseReports />
 
           {/* <div className="flex justify-between shadow-md rounded-md my-6 gap-2 bg-white"> */}
           {/* <div className="flex w-full"> */}

@@ -20,6 +20,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { getUsers } from "../redux/features/auth/authSlice";
 import { formatDate } from "../utils/formatDate";
+import { toast } from "react-toastify";
 
 const { TextArea } = Input;
 const { Title } = Typography;
@@ -31,6 +32,8 @@ const CreateTaskForm = () => {
   const { fetchData } = useDataGetterHook();
   const dispatch = useDispatch();
   const { users, user } = useSelector((state) => state.auth);
+  const { sendingEmail, emailSent, msg } = useSelector((state) => state.email);
+
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();
   const [form] = Form.useForm();
@@ -110,6 +113,12 @@ const CreateTaskForm = () => {
     }
     await handleSubmit(values);
   }, [form, handleSubmit]);
+
+  useEffect(() => {
+    if (emailSent) {
+      toast.success(msg);
+    }
+  }, [emailSent, msg]);
 
   return (
     <>

@@ -63,6 +63,8 @@ import SendLoginCode from "./components/LoginWithCode.jsx";
 import LoginWithCode from "./components/LoginWithCode.jsx";
 import AppLayout from "./components/AppLayout.jsx";
 import LeaveBalanceList from "./pages/leaveBalanceList.jsx";
+import DocumentsList from "./components/DocumentsList.jsx";
+import DocumentForm from "./pages/DocumentsForm.jsx";
 
 // enable axios to get credentials everywhere in the app
 axios.defaults.withCredentials = true;
@@ -149,6 +151,7 @@ function App() {
             path="staff/leave-application/:id/details"
             element={<LeaveApplicationDetails />}
           />
+          <Route path="documents" element={<DocumentForm />} />
           <Route
             path="case-reports/add-report"
             element={<CreateCaseReportForm />}

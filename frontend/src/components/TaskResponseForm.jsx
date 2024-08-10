@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import Input from "../components/Inputs";
 import { Button, Modal } from "antd";
@@ -6,10 +6,12 @@ import useModal from "../hooks/useModal";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
+import { FaCheck, FaTimes } from "react-icons/fa";
 
 const TaskResponseForm = ({ taskId }) => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const { sendingEmail, emailSent, msg } = useSelector((state) => state.email);
   const [formData, setFormData] = useState({
     comment: "",
     doc: null,
@@ -18,14 +20,20 @@ const TaskResponseForm = ({ taskId }) => {
 
   const { open, showModal, handleCancel } = useModal();
 
-  const { dataFetcher, loading, data, error: dataError } = useDataFetch();
+  const { dataFetcher, loading, error: dataError } = useDataFetch();
 
   function handleChange(e) {
     const { name, value, files, checked } = e.target;
     setFormData((prevData) => ({
       ...prevData,
       [name]:
-        name === "doc" ? files[0] : name === "completed" ? checked : value,
+        name === "doc"
+          ? files.length > 0
+            ? files[0]
+            : null
+          : name === "completed"
+          ? checked
+          : value,
     }));
   }
 
@@ -34,42 +42,62 @@ const TaskResponseForm = ({ taskId }) => {
 
     const payload = new FormData();
     payload.append("comment", formData.comment);
-    payload.append("doc", formData.doc);
+    if (formData.doc) {
+      payload.append("doc", formData.doc);
+    }
     payload.append("completed", formData.completed);
 
     try {
-      await dataFetcher(`tasks/${taskId}/response`, "post", payload);
-      if (data?.message === "success") {
-        toast.success("Document uploaded successfully!");
-
-        // Prepare email data
-        const emailData = {
-          subject: "Task Response Submitted - A.T. Lukman & Co.",
-          send_to: data?.assignedBy?.email,
-          send_from: user?.data?.email,
-          reply_to: "noreply@gmail.com",
-          template: "taskResponse",
-          context: {
-            recipient: data?.assignedBy.firstName,
-            position: data?.assignedBy.position,
-            comment: formData.comment,
-            completed: formData.completed,
-            url: "dashboard/tasks",
-          },
-        };
-        // Send email if emailData is provided
-        await dispatch(sendAutomatedCustomEmail(emailData));
-        toast.success("Email sent successfully!");
-
-        handleCancel(); // Close the modal on successful upload
-      } else {
-        throw new Error("Failed to upload document.");
+      const response = await dataFetcher(
+        `tasks/${taskId}/response`,
+        "post",
+        payload
+      );
+      if (response?.message === "success") {
+        toast.success("Task response submitted successfully!");
       }
+
+      const emailData = {
+        subject: "Task Response Submitted - A.T. Lukman & Co.",
+        send_to: response?.data?.assignedBy?.email,
+        send_from: user?.data?.email,
+        reply_to: "noreply@atlukman.com",
+        template: "taskResponse",
+        url: "dashboard/tasks",
+
+        context: {
+          recipient: response?.data?.assignedBy?.firstName,
+          position: response?.data?.assignedBy?.position,
+          comment: formData?.comment,
+          completed: formData?.completed ? <FaCheck /> : <FaTimes />,
+        },
+      };
+
+      try {
+        if (response?.message === "success") {
+          await dispatch(sendAutomatedCustomEmail(emailData));
+        }
+      } catch (emailError) {
+        console.error("Failed to send email:", emailError);
+        toast.warning(
+          "Task response submitted, but failed to send email notification."
+        );
+      }
+
+      handleCancel(); // Close the modal on successful submission
     } catch (err) {
       console.error(err);
-      toast.error("Failed to upload document. Please try again.");
+      toast.error(
+        err.message || "Failed to submit task response. Please try again."
+      );
     }
   };
+
+  useEffect(() => {
+    if (emailSent) {
+      toast.success(msg);
+    }
+  }, [emailSent, msg]);
 
   if (dataError) {
     toast.error(dataError);
@@ -80,8 +108,9 @@ const TaskResponseForm = ({ taskId }) => {
     <>
       <Button
         onClick={showModal}
-        className="bg-blue-500 hover:bg-blue-600 text-white">
-        Send Task Response
+        className="bg-blue-500 hover:bg-blue-600 text-white"
+        disabled={sendingEmail}>
+        {sendingEmail ? "Sending..." : "Send Task Response"}
       </Button>
       <Modal
         title="Task Report Form"
@@ -95,8 +124,9 @@ const TaskResponseForm = ({ taskId }) => {
             key="submit"
             type="primary"
             className="bg-blue-500 hover:bg-blue-600"
-            onClick={handleSubmit}>
-            Submit
+            onClick={handleSubmit}
+            disabled={sendingEmail}>
+            {sendingEmail ? "Sending..." : "Submit"}
           </Button>,
         ]}>
         <form
@@ -104,7 +134,7 @@ const TaskResponseForm = ({ taskId }) => {
           className="flex flex-col justify-center items-center space-y-4">
           <div className="flex flex-col items-start w-full">
             <label htmlFor="doc" className="mb-1 font-semibold">
-              Upload Document
+              Upload Document (optional)
             </label>
             <input
               type="file"
@@ -113,6 +143,11 @@ const TaskResponseForm = ({ taskId }) => {
               onChange={handleChange}
               className="border p-2 rounded w-full"
             />
+            {formData.doc && (
+              <p className="mt-1 text-sm text-gray-500">
+                File selected: {formData.doc.name}
+              </p>
+            )}
           </div>
           <div className="flex items-center w-full">
             <label htmlFor="completed" className="mr-2 font-semibold">

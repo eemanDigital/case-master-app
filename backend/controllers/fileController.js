@@ -51,6 +51,11 @@ const path = require("path");
 // });
 
 // exports.createFile = catchAsync(async (req, res, next) => {
+
+//   if (req.file) {
+//     const filePath = req.file.cloudinaryUrl;
+//     // response.doc = filePath;
+//   }
 //   const { file, body } = req;
 //   if (!file || !body) {
 //     return next(new AppError("Please provide a file and request body", 400));
@@ -69,63 +74,31 @@ const path = require("path");
 //   const singleFile = await Case.create({ documents: [document], ...rest });
 //   res.status(201).json({ data: singleFile });
 // });
-// add file
+
 exports.createFile = catchAsync(async (req, res, next) => {
-  //     const { fileName } = req.body;
+  const { fileName } = req.body;
+  let filePath = null;
 
-  //   // check if user input filename and file
-  //     if (!file) {
-  //       return next(new AppError("Please, upload a file", 400));
-  //     }
-  const filename = req.file ? req.file.filename : null;
+  // Check if a file was uploaded
+  if (req.file) {
+    filePath = req.file.cloudinaryUrl;
+  }
+  console.log(filePath);
 
-  const doc = await File.create({ file: filename, ...req.body });
+  const doc = await File.create({ fileName, file: filePath });
 
   res.status(201).json({
-    message: "Success",
+    message: "success",
     data: doc,
   });
 });
-
 exports.getFiles = catchAsync(async (req, res, next) => {
-  const files = await File.find();
+  const files = await File.find().sort("-date");
 
   res.status(200).json({
-    message: "Success",
+    message: "success",
     data: files,
   });
-});
-// exports.downloadFile = catchAsync(async (req, res, next) => {
-//   const doc = await File.findById(req.params.id);
-//   if (!doc) {
-//     return next(new AppError("No Document found", 404));
-//   }
-
-//   res.download(doc.file); // This will initiate a file download with the provided file path
-// });
-
-// exports.downloadFile = catchAsync(async (req, res, next) => {
-//   const { id } = req.params;
-//   const doc = await File.findById(id);
-//   if (!doc) {
-//     return next(new AppError("No Document found", 404));
-//   }
-//   const file = doc.file;
-//   // const filePath = path.join(__dirname, `../${file}`);
-
-//   console.log(file);
-//   res.download(file);
-// });
-exports.downloadFile = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
-  console.log(id);
-  const doc = await File.findById(id);
-  if (!doc) {
-    return next(new AppError("No Document found", 404));
-  }
-  const file = doc.file;
-  const filePath = path.join(__dirname, `../public/caseDoc/${file}`); // Assuming the files are in the uploads folder
-  res.download(filePath);
 });
 
 exports.getFile = catchAsync(async (req, res, next) => {
@@ -163,7 +136,39 @@ exports.deleteFile = catchAsync(async (req, res, next) => {
     return next(new AppError(`No Tour Found with that ID`, 404));
   }
   res.status(204).json({
-    status: "success",
+    message: "success",
     data: null,
+  });
+});
+
+// exports.downloadFile = catchAsync(async (req, res, next) => {
+//   const { id } = req.params;
+//   console.log(id);
+//   const doc = await File.findById(id);
+//   if (!doc) {
+//     return next(new AppError("No Document found", 404));
+//   }
+//   const file = doc.file;
+//   const filePath = path.join(__dirname, `../public/caseDoc/${file}`); // Assuming the files are in the uploads folder
+//   res.download(filePath);
+// });
+
+exports.downloadFile = catchAsync(async (req, res, next) => {
+  // Fetch the case by ID
+  const doc = await File.findById(req.params.id);
+  if (!doc) {
+    return next(new AppError(`No document found with ID: ${parentId}`, 404));
+  }
+  const fileUrl = doc.file;
+  const fileName = doc.fileName;
+
+  // console.log(fileUrl, fileName);
+
+  res.status(200).json({
+    message: "success",
+    data: {
+      fileUrl,
+      fileName,
+    },
   });
 });

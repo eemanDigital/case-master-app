@@ -1,8 +1,4 @@
 // Retrieve token from browser cookies
-const token = document.cookie
-  .split("; ")
-  .find((row) => row.startsWith("jwt="))
-  ?.split("=")[1];
 
 export async function handleGeneralDownload(event, URL, fileName) {
   event.preventDefault();
@@ -11,8 +7,8 @@ export async function handleGeneralDownload(event, URL, fileName) {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
+      credentials: "include",
     });
 
     if (!response.ok) {

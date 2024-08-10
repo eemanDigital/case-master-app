@@ -9,34 +9,13 @@ const fileSchema = mongoose.Schema({
 
   file: {
     type: String,
-
-    // required: [true, "Please, select a file"],
+    required: [true, "Please, select a file"],
   },
 
   date: {
     type: Date,
     default: Date.now,
   },
-
-  case: [
-    {
-      type: mongoose.Schema.ObjectId,
-      ref: "Case",
-    },
-  ],
-
-  task: [
-    {
-      type: mongoose.Schema.ObjectId,
-      ref: "Task",
-    },
-  ],
-  taskResponse: [
-    {
-      type: mongoose.Schema.ObjectId,
-      ref: "Task",
-    },
-  ],
 });
 
 const File = mongoose.model("File", fileSchema);

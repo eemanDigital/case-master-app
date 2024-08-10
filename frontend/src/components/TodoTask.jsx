@@ -1,160 +1,129 @@
-import { useState, useEffect } from "react";
-import PropTypes from "prop-types";
-import { Table, Pagination, Modal, notification } from "antd";
-import { FaCheckCircle, FaTimesCircle, FaTrash } from "react-icons/fa";
-import { ExclamationCircleOutlined } from "@ant-design/icons";
-import useDelete from "../hooks/useDelete";
-import useUpdate from "../hooks/useUpdate";
+import { useState } from "react";
+import { useDataFetch } from "../hooks/useDataFetch";
+import Input from "../components/Inputs";
+import { Button, Modal } from "antd";
+import useModal from "../hooks/useModal";
+import { toast } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
+import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 
-const TodoTask = ({ tasks }) => {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+const TaskResponseForm = ({ taskId }) => {
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const [formData, setFormData] = useState({
+    comment: "",
+    doc: null,
+    completed: false,
+  });
 
-  // Using tasks as the initial docData
-  const { handleDeleteDocument, documents, setDocuments } = useDelete(
-    tasks,
-    "tasks"
-  );
-  const { handleUpdate } = useUpdate();
+  const { open, showModal, handleCancel } = useModal();
 
-  useEffect(() => {
-    // Ensure documents are set initially from tasks
-    if (tasks) {
-      setDocuments(tasks);
+  const { dataFetcher, loading, data, error: dataError } = useDataFetch();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const payload = new FormData();
+    payload.append("comment", formData.comment);
+    payload.append("doc", formData.doc);
+    payload.append("completed", formData.completed);
+
+    try {
+      const response = await dataFetcher(
+        `tasks/${taskId}/response`,
+        "post",
+        payload
+      );
+      console.log("API Response:", response);
+
+      if (response && response.message === "success") {
+        toast.success("Document uploaded successfully!");
+        console.log("Task response data:", response);
+
+        // Prepare email data
+        const emailData = {
+          subject: "Task Response Submitted - A.T. Lukman & Co.",
+          send_to: response.assignedBy?.email,
+          send_from: user?.data?.email,
+          reply_to: "noreply@gmail.com",
+          template: "taskResponse",
+          context: {
+            recipient: response.assignedBy?.firstName,
+            position: response.assignedBy?.position,
+            comment: formData.comment,
+            completed: formData.completed,
+            url: "dashboard/tasks",
+          },
+        };
+
+        console.log("Email data:", emailData);
+
+        // Send email if emailData is provided
+        try {
+          const emailResult = await dispatch(
+            sendAutomatedCustomEmail(emailData)
+          );
+          console.log("Email dispatch result:", emailResult);
+          if (emailResult.payload && emailResult.payload.success) {
+            toast.success("Email sent successfully!");
+          } else {
+            console.error("Email sending failed:", emailResult);
+            toast.error("Failed to send email. Please try again.");
+          }
+        } catch (emailError) {
+          console.error("Error sending email:", emailError);
+          toast.error("Error sending email. Please try again.");
+        }
+
+        handleCancel(); // Close the modal on successful upload
+      } else {
+        console.error("Unexpected API response:", response);
+        toast.error("Unexpected response from server. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error uploading document:", err);
+      toast.error("Failed to upload document. Please try again.");
     }
-  }, [tasks, setDocuments]);
-
-  const handleDoubleClick = (record) => {
-    const updatedTask = { ...record, isCompleted: !record.isCompleted };
-
-    // Optimistically update the UI
-    const updatedDocuments = documents.map((doc) =>
-      doc._id === record._id ? updatedTask : doc
-    );
-    setDocuments(updatedDocuments);
-
-    // Update the backend
-    handleUpdate(`todos/${record._id}`, {
-      isCompleted: updatedTask.isCompleted,
-    });
   };
 
-  const columns = [
-    {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-    },
-    {
-      title: "Priority",
-      dataIndex: "priority",
-      key: "priority",
-      render: (priority) => (
-        <span
-          className={`px-2 py-1 rounded ${
-            priority === "high"
-              ? "bg-red-500 text-white"
-              : priority === "medium"
-              ? "bg-yellow-500 text-white"
-              : "bg-green-500 text-white"
-          }`}>
-          {priority.charAt(0).toUpperCase() + priority.slice(1)}
-        </span>
-      ),
-    },
-    {
-      title: "Status",
-      dataIndex: "isCompleted",
-      key: "isCompleted",
-      render: (isCompleted) =>
-        isCompleted ? (
-          <FaCheckCircle className="text-green-500" />
-        ) : (
-          <FaTimesCircle className="text-red-500" />
-        ),
-    },
-    {
-      title: "Created At",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      render: (createdAt) => (
-        <small className=" font-bold">
-          {new Date(createdAt).toLocaleString()}
-        </small>
-      ),
-    },
-    {
-      title: "Due Date",
-      dataIndex: "dueDate",
-      key: "dueDate",
-      render: (dueDate) =>
-        dueDate ? (
-          <small className=" font-bold">
-            {new Date(dueDate).toLocaleString()}
-          </small>
-        ) : (
-          "No due date"
-        ),
-    },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <div className="flex space-x-2">
-          <button
-            className="text-red-500 hover:text-red-700"
-            onClick={() =>
-              Modal.confirm({
-                title: "Are you sure you want to delete this task?",
-                icon: <ExclamationCircleOutlined />,
-                content: "This action cannot be undone",
-                okText: "Yes",
-                okType: "danger",
-                cancelText: "No",
-                onOk() {
-                  handleDeleteDocument(`todos/${record._id}`, record._id);
-                },
-              })
-            }>
-            <FaTrash />
-          </button>
-        </div>
-      ),
-    },
-  ];
+  if (dataError) {
+    console.error("Data fetch error:", dataError);
+    toast.error(`Error: ${dataError}`);
+    return null;
+  }
 
-  const handlePageChange = (page) => {
-    setCurrentPage(page);
-  };
-
+  console.log("DATA", data);
   return (
-    <div>
-      <Table
-        dataSource={documents.slice(
-          (currentPage - 1) * pageSize,
-          currentPage * pageSize
-        )}
-        columns={columns}
-        pagination={false}
-        rowKey="_id" // Assuming each task has a unique '_id' field
-        onRow={(record) => ({
-          onDoubleClick: () => handleDoubleClick(record),
-          className: "hover:bg-blue-100",
-        })}
-      />
-      <Pagination
-        current={currentPage}
-        onChange={handlePageChange}
-        total={documents.length}
-        pageSize={pageSize}
-        showSizeChanger={false}
-      />
-    </div>
+    <>
+      <Button
+        onClick={showModal}
+        className="bg-blue-500 hover:bg-blue-600 text-white">
+        Send Task Response
+      </Button>
+      <Modal
+        title="Task Report Form"
+        open={open}
+        onCancel={handleCancel}
+        footer={[
+          <Button key="cancel" onClick={handleCancel}>
+            Cancel
+          </Button>,
+          <Button
+            key="submit"
+            type="primary"
+            className="bg-blue-500 hover:bg-blue-600"
+            onClick={handleSubmit}>
+            Submit
+          </Button>,
+        ]}>
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col justify-center items-center space-y-4">
+          {/* Form fields remain the same */}
+        </form>
+      </Modal>
+    </>
   );
 };
 
-TodoTask.propTypes = {
-  tasks: PropTypes.array.isRequired,
-};
-
-export default TodoTask;
+export default TaskResponseForm;

@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Descriptions, Divider, Modal, Card, Button, Alert } from "antd";
+import { Divider, Modal, Card, Button, Alert, Spin } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import TaskDocUpload from "./TaskDocUpload";
@@ -22,126 +22,139 @@ const TaskDetails = () => {
     "taskData"
   );
   const { id } = useParams();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
   const task = data?.data;
   const currentUser = user?.data?._id;
   const assignedById = task?.assignedBy?._id;
-  const isAssignedBy = currentUser === assignedById; //current loggedIn Staff User
+  const isAssignedBy = currentUser === assignedById;
   const navigate = useNavigate();
 
   const isAssignedToCurrentUser = task?.assignedTo?.some(
     (staff) => staff._id === currentUser
   );
-  const isAssignedToCurrentClientUser = //current loggedIn Client User
+  const isAssignedToCurrentClientUser =
     task?.assignedToClient?._id === currentUser;
-
-  // console.log(currentUser, assignedById, isAssignedBy, isAssignedToCurrentUser);
 
   useEffect(() => {
     dataFetcher(`tasks/${id}`, "GET");
   }, [id]);
 
-  if (loading) return <p>Loading...</p>;
-  if (dataError) return <p>Error: {dataError}</p>;
+  if (loading)
+    return (
+      <Spin
+        size="large"
+        className="flex justify-center items-center h-screen"
+      />
+    );
+  if (dataError)
+    return (
+      <Alert message={`Error: ${dataError}`} type="error" className="mt-4" />
+    );
 
-  // const handleDeleteApp = async (taskId, responseId) => {
-  //   await dataFetcher(`tasks/${taskId}/response/${responseId}`, "DELETE");
-  // };
+  const DetailItem = ({ label, value }) => (
+    <div className="mb-4">
+      <span className="font-semibold">{label}:</span> {value}
+    </div>
+  );
 
   return (
-    <div className="mt-10">
-      <Button onClick={() => navigate(-1)}>Go Back</Button>
+    <div className="container mx-auto px-4 py-8">
+      <Button onClick={() => navigate(-1)} className="mb-6">
+        Go Back
+      </Button>
+
+      <Card title="Task Details" className="mb-8 shadow-md">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <DetailItem label="Task Title" value={task?.title} />
+          <DetailItem
+            label="Assigned By"
+            value={
+              task?.assignedBy
+                ? `${task.assignedBy?.firstName} ${task.assignedBy?.lastName} (${task.assignedBy?.position})`
+                : "N/A"
+            }
+          />
+          <DetailItem
+            label="Assigned to Client"
+            value={
+              task?.assignedToClient ? task.assignedToClient?.fullName : "N/A"
+            }
+          />
+          <DetailItem
+            label="Assigned To Staff"
+            value={
+              task?.assignedTo
+                ? task.assignedTo
+                    .map((staff) => `${staff.firstName} ${staff.lastName}`)
+                    .join(", ")
+                : "N/A"
+            }
+          />
+          <DetailItem
+            label="Case to Work On"
+            value={
+              task?.caseToWorkOn
+                ? task.caseToWorkOn
+                    .map((taskCase) => {
+                      const firstName = taskCase.firstParty?.name[0]?.name;
+                      const secondName = taskCase.secondParty?.name[0]?.name;
+                      return `${firstName} vs ${secondName}`;
+                    })
+                    .join(", ")
+                : "N/A"
+            }
+          />
+          <DetailItem label="Instruction" value={task?.instruction} />
+          <DetailItem label="Task Priority" value={task?.taskPriority} />
+          <DetailItem
+            label="Time Assigned"
+            value={formatDate(task?.dateAssigned)}
+          />
+          <DetailItem label="Due Date" value={formatDate(task?.dueDate)} />
+        </div>
+      </Card>
 
       <TaskDocUpload taskId={task?._id} />
 
-      <Descriptions title="Task Details" bordered>
-        <Descriptions.Item label="Task Title">{task?.title}</Descriptions.Item>
-        <Descriptions.Item label="Assigned By">
-          {task?.assignedBy
-            ? `${task.assignedBy?.firstName} ${task.assignedBy?.lastName} (${task.assignedBy?.position}) `
-            : "N/A"}
-        </Descriptions.Item>
-        <Descriptions.Item label=" Assigned to Client">
-          {task?.assignedToClient ? task.assignedToClient?.fullName : "N/A"}
-        </Descriptions.Item>
-        <Descriptions.Item label="Assigned To Staff">
-          {task?.assignedTo
-            ? task.assignedTo.map((staff) => (
-                <p key={staff._id}>
-                  {staff.firstName} {staff.lastName}
-                </p>
-              ))
-            : "N/A"}
-        </Descriptions.Item>
-        <Descriptions.Item label="Case to Work On">
-          {task?.caseToWorkOn
-            ? task.caseToWorkOn.map((taskCase) => {
-                const { firstParty, secondParty } = taskCase;
-                const firstName = firstParty?.name[0]?.name;
-                const secondName = secondParty?.name[0]?.name;
-                return (
-                  <p key={taskCase._id}>
-                    {firstName} vs {secondName}
-                  </p>
-                );
-              })
-            : "N/A"}
-        </Descriptions.Item>
-        <Descriptions.Item label="Instruction">
-          {task?.instruction}
-        </Descriptions.Item>
-        <Descriptions.Item label="Task Priority">
-          {task?.taskPriority}
-        </Descriptions.Item>
-        <Descriptions.Item label="Time Assigned">
-          {formatDate(task?.dateAssigned)}
-        </Descriptions.Item>
-        <Descriptions.Item label="Due Date">
-          {formatDate(task?.dueDate)}
-        </Descriptions.Item>
-      </Descriptions>
-
-      <div className="mt-4">
-        <h1 className="text-3xl text-gray-700">Task Attachment</h1>
-        {documents.map((document) => (
-          <div
-            key={document._id}
-            className="relative bg-blue-500 m-1 p-4 w-[140px] text-white rounded-md inline-flex items-center">
-            <div className="absolute top-1 right-1">
-              <RiDeleteBin2Line
-                className="text-red-700 hover:text-red-500 cursor-pointer text-[13px]"
-                onClick={() =>
-                  Modal.confirm({
-                    title: "Are you sure you want to delete this document?",
-                    onOk: () =>
-                      handleDeleteDocument(
-                        `tasks/${task._id}/documents/${document._id}`,
-                        document._id
-                      ),
-                  })
+      <Card title="Task Attachments" className="mb-8 shadow-md">
+        <div className="flex flex-wrap gap-4">
+          {documents.map((document) => (
+            <div
+              key={document._id}
+              className="relative bg-blue-500 p-4 w-[140px] text-white rounded-md flex items-center">
+              <div className="absolute top-1 right-1">
+                <RiDeleteBin2Line
+                  className="text-red-700 hover:text-red-500 cursor-pointer text-[13px]"
+                  onClick={() =>
+                    Modal.confirm({
+                      title: "Are you sure you want to delete this document?",
+                      onOk: () =>
+                        handleDeleteDocument(
+                          `tasks/${task._id}/documents/${document._id}`,
+                          document._id
+                        ),
+                    })
+                  }
+                />
+              </div>
+              <div className="flex-grow">
+                <p className="text-[12px] truncate">{document?.fileName}</p>
+              </div>
+              <FaDownload
+                className="text-white text-[12px] hover:text-gray-300 cursor-pointer ml-2"
+                onClick={(event) =>
+                  handleGeneralDownload(
+                    event,
+                    `${baseURL}/tasks/${task._id}/documents/${document._id}/download`,
+                    document.fileName
+                  )
                 }
               />
             </div>
-            <div className="flex-grow">
-              <p className="text-[12px]">{document?.fileName}</p>
-            </div>
-            <FaDownload
-              className="text-white text-[12px] hover:text-gray-300 cursor-pointer ml-2"
-              onClick={(event) =>
-                handleGeneralDownload(
-                  event,
-                  `${baseURL}/tasks/${task._id}/documents/${document._id}/download`,
-                  document.fileName
-                )
-              }
-            />
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      </Card>
 
-      <Divider />
-      {/* TASK REMINDER */}
       {task?.reminder && (
         <Alert
           message={`Reminder: ${task.reminder.message}`}
@@ -150,25 +163,24 @@ const TaskDetails = () => {
             .fromNow()}`}
           type="warning"
           showIcon
-          className="my-4"
-          style={{ fontSize: "16px", fontWeight: "bold" }}
+          className="mb-8"
         />
       )}
 
-      <Divider />
-
-      {/* ensure only the person to whom task is assigned sees the button */}
       {!isAssignedBy &&
         (isAssignedToCurrentUser || isAssignedToCurrentClientUser) && (
-          <TaskResponseForm taskId={task?._id} />
+          <Card className="mb-8 shadow-md">
+            <TaskResponseForm taskId={task?._id} />
+          </Card>
         )}
 
-      {/* TASK RESPONSE */}
-      <TaskResponse
-        task={task}
-        isAssignedToCurrentUser={isAssignedToCurrentUser}
-        isAssignedToCurrentClientUser={isAssignedToCurrentClientUser}
-      />
+      <Card title="Task Responses" className="shadow-md">
+        <TaskResponse
+          task={task}
+          isAssignedToCurrentUser={isAssignedToCurrentUser}
+          isAssignedToCurrentClientUser={isAssignedToCurrentClientUser}
+        />
+      </Card>
     </div>
   );
 };

@@ -1,18 +1,17 @@
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useEffect, useState } from "react";
 import { formatDate } from "../utils/formatDate";
 import {
   Button,
-  Divider,
   Typography,
-  Row,
-  Col,
   Card,
   List,
   Modal,
   Pagination,
   Empty,
+  Table,
+  Space,
 } from "antd";
 import { FaDownload } from "react-icons/fa6";
 import { RiDeleteBin2Line } from "react-icons/ri";
@@ -21,8 +20,9 @@ import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
 import useDeleteDocument from "../hooks/useDeleteDocument";
 import { useAdminHook } from "../hooks/useAdminHook";
 import useTextShorten from "../hooks/useTextShorten";
+import LoadingSpinner from "../components/LoadingSpinner";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const CaseDetails = () => {
@@ -30,8 +30,7 @@ const CaseDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { isStaff } = useAdminHook();
   const { shortenText } = useTextShorten();
-  // const [showFullText, setShowFullText] = useState({}); // State to manage update display
-
+  const navigate = useNavigate();
   const { handleDeleteDocument, documents } = useDeleteDocument(
     data?.data,
     "caseData"
@@ -51,7 +50,7 @@ const CaseDetails = () => {
   };
 
   // loading and error state
-  if (loading) return <p>Loading...</p>;
+  if (loading) return <LoadingSpinner />;
   if (error) return <p>Error loading data</p>;
 
   const paginatedReports = data?.data?.reports?.slice(
@@ -59,61 +58,70 @@ const CaseDetails = () => {
     currentPage * pageSize
   );
 
-  return (
-    <>
-      <div className="flex justify-between">
-        <Link to="../..">
-          <Button type="link">Go Back to case lists</Button>
-        </Link>
+  // Define columns for the document table
+  const columns = [
+    {
+      title: "File Name",
+      dataIndex: "fileName",
+      key: "fileName",
+      render: (text) => <span className="text-gray-800">{text}</span>,
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, record) => (
+        <Space size="middle">
+          <Button
+            type="link"
+            icon={<FaDownload />}
+            onClick={(event) =>
+              handleGeneralDownload(
+                event,
+                `${baseURL}/cases/${id}/documents/${record._id}/download`,
+                record.fileName
+              )
+            }>
+            Download
+          </Button>
+          {isStaff && (
+            <Button
+              type="link"
+              danger
+              icon={<RiDeleteBin2Line />}
+              onClick={(event) =>
+                Modal.confirm({
+                  title: "Are you sure you want to delete this document?",
+                  onOk: () =>
+                    handleDeleteDocument(
+                      event,
+                      `cases/${id}/documents/${record._id}`,
+                      record._id
+                    ),
+                })
+              }>
+              Delete
+            </Button>
+          )}
+        </Space>
+      ),
+    },
+  ];
 
-        {/* case file upload */}
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between mb-6">
+        <Link to="../..">
+          <Button onClick={() => navigate(-1)}>Go Back</Button>
+        </Link>
         {isStaff && <CaseDocumentUpload caseId={id} />}
       </div>
 
-      <section className="flex justify-between   flex-col md:flex-row gap-4 mx-4 my-2">
-        <div className="w-[500px]">
-          <div className="my-4">
-            <Row justify="space-between">
-              <Col>
-                <h1>{data?.data?.firstParty.description}</h1>
-                {data?.data?.firstParty?.name?.map((singleName, index) => (
-                  <div key={singleName?._id || index}>
-                    <Text strong>{index + 1}. </Text>
-                    <Text>{singleName.name}</Text>
-                  </div>
-                ))}
-              </Col>
-              <Col>
-                <h1>{data?.data?.secondParty.description}</h1>
-                {data?.data?.secondParty?.name?.map((singleName, index) => (
-                  <div key={singleName?._id || index}>
-                    <Text strong>{index + 1}. </Text>
-                    <Text>{singleName.name}</Text>
-                  </div>
-                ))}
-              </Col>
-              <Col>
-                {data?.data?.otherParty.map((singleParty, index) => (
-                  <Card
-                    key={singleParty.description || index}
-                    title={singleParty.description}>
-                    {singleParty?.name?.map((n, idx) => (
-                      <div key={n?._id || idx}>
-                        <Text strong>{idx + 1}. </Text>
-                        <Text>{n.name}</Text>
-                      </div>
-                    ))}
-                  </Card>
-                ))}
-              </Col>
-            </Row>
-          </div>
-
-          <Divider />
-
-          <div className="mt-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="space-y-6">
+          {/* Case details section */}
+          <Card title="Case Details" className="shadow-md">
             <List
-              itemLayout="vertical"
+              itemLayout="horizontal"
               dataSource={[
                 { label: "SUIT NO:", value: data?.data?.suitNo },
                 {
@@ -147,191 +155,84 @@ const CaseDetails = () => {
                   value: data?.data?.casePriority,
                 },
               ]}
-              renderItem={(item, index) => (
-                <List.Item key={index}>
-                  <Text strong>{item.label}</Text> {item.value}
-                </List.Item>
-              )}
-            />
-            <Divider />
-            {data?.data?.judge.map((j, index) => (
-              <Text key={j?._id || index} strong>
-                Judge:{" "}
-                {j.name || (
-                  <span className="text-red-500 font-semibold">
-                    Not provided
-                  </span>
-                )}
-              </Text>
-            ))}
-            <Title level={4}>Case Strength</Title>
-            <List
-              dataSource={data?.data?.caseStrengths || []}
-              renderItem={(item, index) => (
-                <List.Item key={item?._id || index}>
-                  <Text>
-                    {item?.name || (
-                      <span className="text-red-500 font-semibold">
-                        Not provided
-                      </span>
-                    )}
-                  </Text>
-                </List.Item>
-              )}
-            />
-            <Title level={4}>Case Weaknesses</Title>
-            <List
-              dataSource={data?.data?.caseWeaknesses || []}
-              renderItem={(item, index) => (
-                <List.Item key={item?._id || index}>
-                  <Text>
-                    {item?.name || (
-                      <span className="text-red-500 font-semibold">
-                        Not provided
-                      </span>
-                    )}
-                  </Text>
-                </List.Item>
-              )}
-            />
-            <Divider />
-            {Array.isArray(data?.data?.stepToBeTaken) &&
-            data?.data?.stepToBeTaken.length > 0 ? (
-              data?.data?.stepToBeTaken.map((step, index) => (
-                <Text key={step?._id || index} strong>
-                  Steps to be taken:{" "}
-                  {step.name || (
-                    <span className="text-red-500 font-semibold">
-                      Not provided
-                    </span>
-                  )}
-                </Text>
-              ))
-            ) : (
-              <Text strong>
-                <span className="text-red-500 font-semibold">
-                  No steps to be taken are provided.
-                </span>
-              </Text>
-            )}
-            <Title level={4}>Account Officer </Title>
-            <List
-              dataSource={data?.data?.accountOfficer || []}
-              renderItem={(item, index) => (
-                <List.Item key={item?._id || index}>
-                  <Text>
-                    {item.fullName || (
-                      <span className="text-red-500 font-semibold">
-                        No Account Officer
-                      </span>
-                    )}
-                  </Text>
-                </List.Item>
-              )}
-            />
-            <Divider />
-            <Title level={4}>Client</Title>
-            <Text>{data?.data?.client?.fullName}</Text>
-            <Divider />
-            <Text strong>General Comment: </Text> {data?.data?.generalComment}
-          </div>
-
-          <Title level={2} className="text-gray-700 mt-4">
-            Attached Documents
-          </Title>
-          <div>
-            <List
-              dataSource={documents}
-              renderItem={(document, index) => (
-                <List.Item
-                  key={document?._id || index}
-                  className="flex gap-4 items-center p-7 bg-gray-200 hover:bg-gray-100 rounded-md">
-                  <Text className="flex-1">{document?.fileName}</Text>
-                  <button
-                    aria-label={`Download ${document?.fileName}`}
-                    className="p-2 text-2xl text-gray-500 hover:text-gray-700"
-                    onClick={(event) =>
-                      handleGeneralDownload(
-                        event,
-                        `${baseURL}/cases/${id}/documents/${document?._id}/download`,
-                        document?.fileName
+              renderItem={(item) => (
+                <List.Item>
+                  <List.Item.Meta
+                    title={<Text strong>{item.label}</Text>}
+                    description={
+                      item.value || (
+                        <span className="text-red-500">Not provided</span>
                       )
-                    }>
-                    <FaDownload />
-                  </button>
-
-                  <button
-                    aria-label={`Delete ${document?.fileName}`}
-                    className="p-2 p-2 text-2xl text-red-500 hover:text-red-700"
-                    onClick={(event) =>
-                      Modal.confirm({
-                        title: "Are you sure you want to delete this document?",
-                        onOk: () =>
-                          handleDeleteDocument(
-                            event,
-                            `cases/${id}/documents/${document._id}`,
-                            document._id
-                          ),
-                      })
-                    }>
-                    <RiDeleteBin2Line />
-                  </button>
+                    }
+                  />
                 </List.Item>
               )}
             />
-          </div>
+          </Card>
+
+          {/* Document table section */}
+          <Card title="Attached Documents" className="shadow-md">
+            <Table
+              columns={columns}
+              dataSource={documents}
+              rowKey={(record) => record._id}
+              pagination={false}
+              className="w-full"
+              scroll={{ x: true }}
+            />
+          </Card>
         </div>
 
-        <div>
-          <Title level={4}>Case History</Title>
-          {Array.isArray(data?.data?.reports) &&
-          data?.data?.reports.length > 0 ? (
-            <>
-              {paginatedReports.map((u, index) => (
-                <Card className="w-[500px]" key={u?._id || index}>
-                  <p>
-                    <Text strong>Date: </Text>
-                    {formatDate(u?.date) || (
-                      <span className="text-red-500 font-semibold">
-                        Not provided
-                      </span>
-                    )}
-                  </p>
-                  <p>
-                    <Text strong>Update: </Text>
-
-                    {shortenText(u?.update, 150, u._id)}
-
-                    {/* {u.update || (
-                      <span className="text-red-500 font-semibold">
-                        Not provided
-                      </span>
-                    )} */}
-                  </p>
-                  <p>
-                    <Text strong>Next Adjourned Date: </Text>
-                    {(u?.adjournedDate && formatDate(u?.adjournedDate)) || (
-                      <span className="text-red-500 font-semibold">
-                        Not provided
-                      </span>
-                    )}
-                  </p>
-                </Card>
-              ))}
-              <Pagination
-                current={currentPage}
-                pageSize={pageSize}
-                total={data?.data?.reports.length}
-                onChange={handlePageChange}
-                className="mt-4"
-              />
-            </>
-          ) : (
-            <Empty description="No case history available." />
-          )}
+        <div className="space-y-6">
+          {/* Case history section */}
+          <Card title="Case History" className="shadow-md">
+            {Array.isArray(data?.data?.reports) &&
+            data?.data?.reports.length > 0 ? (
+              <>
+                <List
+                  itemLayout="vertical"
+                  dataSource={paginatedReports}
+                  renderItem={(u) => (
+                    <List.Item key={u._id}>
+                      <List.Item.Meta
+                        title={<Text strong>{formatDate(u.date)}</Text>}
+                        description={
+                          <>
+                            <p>
+                              <Text strong>Update:</Text>{" "}
+                              {shortenText(u.update, 150, u._id)}
+                            </p>
+                            <p>
+                              <Text strong>Next Adjourned Date:</Text>{" "}
+                              {u.adjournedDate ? (
+                                formatDate(u.adjournedDate)
+                              ) : (
+                                <span className="text-red-500">
+                                  Not provided
+                                </span>
+                              )}
+                            </p>
+                          </>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+                <Pagination
+                  current={currentPage}
+                  pageSize={pageSize}
+                  total={data?.data?.reports.length}
+                  onChange={handlePageChange}
+                  className="mt-4"
+                />
+              </>
+            ) : (
+              <Empty description="No case history available." />
+            )}
+          </Card>
         </div>
-      </section>
-    </>
+      </div>
+    </div>
   );
 };
 

@@ -85,6 +85,8 @@ exports.createDocument = (model) => {
   });
 };
 
+// for documents alone
+
 // general delete handler
 exports.deleteOne = (Model) =>
   catchAsync(async (req, res, next) => {
