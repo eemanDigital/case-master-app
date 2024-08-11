@@ -88,6 +88,12 @@ const taskSchema = new mongoose.Schema(
     dueDate: {
       type: Date,
       required: [true, "A task must have a due date"],
+      validate: {
+        validator: function (value) {
+          return value > this.dateAssigned;
+        },
+        message: "Due date must be after date task is assigned",
+      },
       default: Date.now,
     },
     instruction: {

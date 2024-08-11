@@ -39,17 +39,16 @@ const TodoList = ({ title }) => {
   if (error.todos) return toast.error(error.todos);
 
   return (
-    <section className="flex flex-col  px-4 pt-2 p-2 rounded-md">
+    <section className="flex flex-col bg-white pt-2 p-2 rounded-md">
       <div className="flex justify-between items-center">
         <h3 className="text-2xl font-bold">{title}</h3>
+      </div>
+      <div className="mt-4">
+        <TodoTask tasks={allTodos || []} />
         <TodoForm
           addOptimisticTodo={addOptimisticTodo}
           removeOptimisticTodo={removeOptimisticTodo}
         />
-      </div>
-
-      <div className="mt-4">
-        <TodoTask tasks={allTodos || []} />
       </div>
     </section>
   );

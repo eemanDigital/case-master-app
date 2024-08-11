@@ -1,10 +1,22 @@
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Card, Typography, Space, Pagination, Button, Modal } from "antd";
+import {
+  Card,
+  Typography,
+  Space,
+  Pagination,
+  Button,
+  Modal,
+  Tooltip,
+} from "antd";
+import {
+  DownloadOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+} from "@ant-design/icons";
 import { formatDate } from "../utils/formatDate";
-import { useCallback, useEffect, useState } from "react";
 import UpdateCaseReportForm from "../pages/UpdateCaseReportForm";
 import { handleDownload } from "../utils/downloadHandler";
-import axios from "axios";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
 import useTextShorten from "../hooks/useTextShorten";
@@ -13,7 +25,7 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import { toast } from "react-toastify";
 
-// const { Title } = Typography;
+const { Title, Text } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
 const CaseReportList = ({
@@ -26,26 +38,20 @@ const CaseReportList = ({
 }) => {
   const { isStaff } = useAdminHook();
   const { fetchData } = useDataGetterHook();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
   const {
     isError: deleteError,
     isSuccess: deleteSuccess,
     message: deleteMsg,
   } = useSelector((state) => state.delete);
-
   const { shortenText } = useTextShorten();
-  const caseIDs = user?.data?.clientCase?.map((caseItem) => caseItem?._id);
+  const dispatch = useDispatch();
+
   const [searchResults, setSearchResults] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(5); // Number of items per page
-  const indexOfLastReport = currentPage * itemsPerPage;
-  const indexOfFirstReport = indexOfLastReport - itemsPerPage;
-  const currentReports = searchResults.slice(
-    indexOfFirstReport,
-    indexOfLastReport
-  );
-  const dispatch = useDispatch();
+  const [itemsPerPage] = useState(5);
+
+  const caseIDs = user?.data?.clientCase?.map((caseItem) => caseItem?._id);
 
   useEffect(() => {
     if (deleteSuccess) {
@@ -58,29 +64,14 @@ const CaseReportList = ({
     }
   }, [deleteSuccess, deleteError, deleteMsg, dispatch]);
 
-  // handle delete
-  const deleteReport = async (id) => {
-    try {
-      await dispatch(deleteData(`reports/${id}`));
-      // toast.success("Invoice deleted successfully");
-      // // Refetch the data after successful deletion
-      fetchData("reports", "reports");
-    } catch (error) {
-      toast.error("Failed to delete invoice");
-    }
-  };
-
-  // render all cases initially before filter
   useEffect(() => {
     if (reports) {
       setSearchResults(reports);
     }
   }, [reports]);
 
-  // handles search filter
   const handleSearchChange = (e) => {
     const searchTerm = e.target.value.trim().toLowerCase();
-
     if (!searchTerm) {
       setSearchResults(reports);
       return;
@@ -94,16 +85,20 @@ const CaseReportList = ({
       );
       const adjournedFor = d?.adjournedFor?.toLowerCase().includes(searchTerm);
       const update = d?.update?.toLowerCase().includes(searchTerm);
-
       return firstPartyMatch || secondPartyMatch || update || adjournedFor;
     });
-    setSearchResults(results || cases?.data);
+    setSearchResults(results || []);
   };
 
-  // pagination
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
+  const deleteReport = async (id) => {
+    try {
+      await dispatch(deleteData(`reports/${id}`));
+      fetchData("reports", "reports");
+    } catch (error) {
+      toast.error("Failed to delete report");
+    }
+  };
 
-  // filter case by client
   const filterCaseByClient = (caseIds) => {
     return (
       reports?.filter((report) =>
@@ -112,91 +107,119 @@ const CaseReportList = ({
     );
   };
 
+  const indexOfLastReport = currentPage * itemsPerPage;
+  const indexOfFirstReport = indexOfLastReport - itemsPerPage;
+  const currentReports = searchResults.slice(
+    indexOfFirstReport,
+    indexOfLastReport
+  );
+
   return (
-    <section className="w-full mt-4">
-      <h1
-        className={
-          titleStyle ||
-          "text-2xl text-gray-600 text-center font-bold md:text-left"
-        }>
+    <section className="w-full font-poppins mt-8 bg-gray-50 p-6 rounded-lg shadow-md">
+      <Title
+        level={2}
+        className={`${titleStyle || "text-2xl text-gray-800 font-bold mb-6"} ${
+          hideButtons ? "text-center" : ""
+        }`}>
         {title}
-      </h1>
-      <div className="flex justify-between items-center m-2">
+      </Title>
+      <div className="flex justify-between items-center mb-6">
         {!hideButtons && isStaff && (
           <Link to="add-report">
-            <Button>+ Add New Report</Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              className="bg-blue-500 hover:bg-blue-600">
+              Add New Report
+            </Button>
           </Link>
         )}
-        {showFilter && <SearchBar onSearch={handleSearchChange} />}
+        {showFilter && (
+          <SearchBar onSearch={handleSearchChange} className="w-64" />
+        )}
       </div>
       <Space direction="vertical" size="large" className="w-full">
         {(isStaff ? currentReports : filterCaseByClient(caseIDs))?.map(
           (report) => (
             <Card
-              style={{ width: "100%" }}
               key={report._id}
+              className="w-full bg-white shadow-sm hover:shadow-md transition-shadow duration-300"
               title={
-                <h1 className={nameStyle || "text-2xl text-gray-700"}>
+                <Title
+                  level={4}
+                  className={
+                    nameStyle || "text-lg text-gray-700 font-semibold"
+                  }>
                   {report?.caseReported?.firstParty?.name[0]?.name} vs{" "}
                   {report?.caseReported?.secondParty?.name[0]?.name}
-                </h1>
+                </Title>
               }>
-              <Space direction="vertical" size="small">
+              <Space direction="vertical" size="small" className="w-full">
                 {!hideButtons && (
-                  <p className="font-bold font-poppins">
+                  <Text strong className="text-gray-600">
                     Reported on:{" "}
-                    <span className="text-rose-500">
+                    <span className="text-blue-500">
                       {formatDate(report?.date)}
                     </span>
-                  </p>
+                  </Text>
                 )}
-                <p className="font-poppins text-justify">
+                <Text className="text-gray-700 text-justify">
                   {shortenText(report?.update, 300, report._id)}
-                </p>
-                <Space direction="horizontal" size="large">
-                  <p className="font-bold">
+                </Text>
+                <Space
+                  direction="horizontal"
+                  size="large"
+                  className="w-full justify-between">
+                  <Text strong>
                     Adjourned For:{" "}
-                    <span className="text-rose-600 font-bold">
+                    <span className="text-rose-600">
                       {report?.adjournedFor}
                     </span>
-                  </p>
-                  <p className="font-bold">
+                  </Text>
+                  <Text strong>
                     Adjourned Date:{" "}
                     <span className="text-blue-500">
                       {formatDate(report?.adjournedDate)}
                     </span>
-                  </p>
-                  <p className="font-bold">
-                    Reported By: {report?.reportedBy?.fullName}
-                  </p>
+                  </Text>
+                  <Text strong>
+                    Reported By:{" "}
+                    <span className="text-gray-700">
+                      {report?.reportedBy?.fullName}
+                    </span>
+                  </Text>
                 </Space>
               </Space>
               {!hideButtons && (
-                <div className="flex justify-between">
+                <div className="flex justify-end mt-4 space-x-2">
                   {isStaff && <UpdateCaseReportForm reportId={report._id} />}
-                  <button
-                    className="bg-green-500 hover:bg-green-700 rounded-md text-white py-2 px-4 my-2 tracking-wider"
-                    onClick={(event) =>
-                      handleDownload(
-                        event,
-                        `${downloadURL}/reports/pdf/${report?._id}`,
-                        "report.pdf"
-                      )
-                    }>
-                    Download Report
-                  </button>
+                  <Tooltip title="Download Report">
+                    <Button
+                      icon={<DownloadOutlined />}
+                      className="bg-green-500 text-white hover:bg-green-600"
+                      onClick={(event) =>
+                        handleDownload(
+                          event,
+                          `${downloadURL}/reports/pdf/${report?._id}`,
+                          "report.pdf"
+                        )
+                      }
+                    />
+                  </Tooltip>
                   {isStaff && (
-                    <button
-                      className="bg-red-500 hover:bg-red-700 rounded-md text-white py-2 px-4 my-2 tracking-wider"
-                      onClick={() => {
-                        Modal.confirm({
-                          title: "Are you sure you want to delete this report?",
-                          onOk: () => deleteReport(report?._id),
-                        });
-                      }}
-                      type="primary">
-                      Delete
-                    </button>
+                    <Tooltip title="Delete Report">
+                      <Button
+                        icon={<DeleteOutlined />}
+                        className="bg-red-500 text-white hover:bg-red-600"
+                        onClick={() => {
+                          Modal.confirm({
+                            title:
+                              "Are you sure you want to delete this report?",
+                            onOk: () => deleteReport(report?._id),
+                          });
+                        }}
+                      />
+                    </Tooltip>
                   )}
                 </div>
               )}
@@ -209,7 +232,8 @@ const CaseReportList = ({
           current={currentPage}
           total={reports?.length}
           pageSize={itemsPerPage}
-          onChange={paginate}
+          onChange={(page) => setCurrentPage(page)}
+          className="mt-6 text-center"
         />
       )}
     </section>

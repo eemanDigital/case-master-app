@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
+import { EditOutlined } from "@ant-design/icons";
 import useModal from "../hooks/useModal";
 import {
   Button,
@@ -12,6 +13,7 @@ import {
   Select,
   DatePicker,
   Modal,
+  Tooltip,
 } from "antd";
 import axios from "axios";
 import ReactQuill from "react-quill";
@@ -36,25 +38,19 @@ const UpdateCaseReportForm = ({ reportId }) => {
   const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
     useModal(); //modal hook
 
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("jwt="))
-    ?.split("=")[1];
+  // const token = document.cookie
+  //   .split("; ")
+  //   .find((row) => row.startsWith("jwt="))
+  //   ?.split("=")[1];
 
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
+  // const fileHeaders = {
+  //   "Content-Type": "multipart/form-data",
+  // };
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await axios.get(`${baseURL}/reports/${reportId}`, {
-          headers: {
-            ...fileHeaders,
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
+        const response = await axios.get(`${baseURL}/reports/${reportId}`);
         setFormData((prevData) => {
           return {
             ...prevData,
@@ -99,11 +95,13 @@ const UpdateCaseReportForm = ({ reportId }) => {
 
   return (
     <>
-      <button
-        onClick={showModal}
-        className="bg-gray-500 hover:bg-gray-600 text-white rounded-md font-bold py-2 px-4 my-2 tracking-wider ">
-        Edit Report
-      </button>
+      <Tooltip title="Edit Report">
+        <Button
+          onClick={showModal}
+          icon={<EditOutlined />}
+          className="bg-yellow-500 text-white hover:bg-yellow-600"
+        />
+      </Tooltip>
       <Modal
         open={open}
         onOk={handleOk}

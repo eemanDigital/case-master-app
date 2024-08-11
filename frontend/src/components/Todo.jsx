@@ -1,11 +1,9 @@
-import TodoHeader from "./TodoList";
 import useModal from "../hooks/useModal";
 import { Modal, Button } from "antd";
 import TodoList from "./TodoList";
 
 const Todo = () => {
-  const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
-    useModal();
+  const { open, showModal, handleOk, handleCancel } = useModal();
 
   return (
     <div>

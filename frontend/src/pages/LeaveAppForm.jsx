@@ -72,7 +72,7 @@ const LeaveAppForm = () => {
     toast.error(dataError);
   }
 
-  console.log(data, "data");
+  // console.log(data, "data");
   return (
     <>
       <Button className="blue-btn" onClick={showModal}>

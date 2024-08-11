@@ -1,7 +1,7 @@
 import { useState, useEffect, createContext } from "react";
 import { Link } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { Button, Empty, Row, Col, Typography, Card, Divider } from "antd";
+import { Button, Typography } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
 import SingleCauseList from "./SingleCauseList";
@@ -13,18 +13,20 @@ import MonthlyPaymentsChart from "./MonthlyPaymentsChart";
 import PaymentsEachMonthChart from "./PaymentsEachMonthChart";
 import CaseCountsByClientChart from "./CaseCountsByClientChart";
 import CaseCountsByYearChart from "./CaseCountsByYearChart ";
-// import EventCalender from "./EventCalender";
 import googleCalender from "../assets/calender.svg";
 import ClientDashboard from "./ClientDashboard";
 import LeaveNotification from "./LeaveNotification";
 import { useSelector } from "react-redux";
 import Notification from "./Notification";
 import useUsersCount from "../hooks/useUsersCount";
-import CalenderEvent from "../pages/CalenderEvent";
+
 import DashBoardDataCount from "./DashBoardDataCount";
 import LatestCaseReports from "./LatestCaseReports";
 import LeaveAppForm from "../pages/LeaveAppForm";
 import TaskTimeTracker from "./TaskTimeTracker";
+
+import TodoList from "./TodoList";
+import EventForm from "./EventForm";
 
 // import { calender } from "../assets/calendar.svg";
 // import moment from "moment";
@@ -172,12 +174,11 @@ const Dashboard = () => {
             Dashboard
           </h1>
           {isAdminOrHr && <LeaveNotification />}
-
+          <EventForm />
           <LeaveAppForm />
         </div>
 
         <div className="flex items-center space-x-4">
-          <CalenderEvent />
           <div className="w-12 h-12">
             <a
               href="https://calendar.google.com/calendar"
@@ -214,9 +215,12 @@ const Dashboard = () => {
             {/* <div className=" flex flex-col gap-4 items-end"> */}
             {/* <div className="latest-case-reports-container"> */}
             <TaskTimeTracker tasks={tasks?.data} userId={userId} />
+
             {/* </div> */}
           </div>
           {/* </div> */}
+
+          <TodoList />
           <div
             className={`cause-list-container   ${
               causeList.data?.todayResult === 0

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { notification } from "antd";
+import { toast } from "react-toastify";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -14,6 +14,17 @@ const useDelete = (docData, storageName) => {
     }
   }, [docData, storageName]);
 
+  // const token = document.cookie
+  //   .split("; ")
+  //   .find((row) => row.startsWith("jwt="))
+  //   ?.split("=")[1];
+
+  // const fileHeaders = {
+  //   headers: {
+  //     "Content-Type": "multipart/form-data",
+  //   },
+  // };
+
   const handleDeleteDocument = async (event, url, documentId) => {
     event.preventDefault();
     const updatedDocuments = documents.filter((doc) => doc._id !== documentId);
@@ -21,10 +32,7 @@ const useDelete = (docData, storageName) => {
 
     try {
       await axios.delete(`${baseURL}/${url}`);
-      notification.success({
-        message: "Delete Successful",
-        description: "The document was deleted successfully.",
-      });
+      toast.success("Delete Successful");
     } catch (err) {
       setDocuments((prevDocs) => [
         ...prevDocs,
@@ -35,10 +43,7 @@ const useDelete = (docData, storageName) => {
         err.response?.data?.message ||
         err.message ||
         "There was an error deleting the document.";
-      notification.error({
-        message: "Delete Failed",
-        description: errorMessage,
-      });
+      toast.error(errorMessage);
       console.error(err);
     }
   };

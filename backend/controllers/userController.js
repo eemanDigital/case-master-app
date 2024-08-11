@@ -160,6 +160,35 @@ exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
 });
 
 // send other custom automated emails
+// exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
+//   console.log(req.body);
+//   const { send_from, send_to, reply_to, template, subject, url, context } =
+//     req.body;
+
+//   if (!send_from || !send_to || !reply_to || !template || !subject) {
+//     return next(new AppError("Missing email fields", 404));
+//   }
+
+//   const devEmail = process.env.DEVELOPER_EMAIL;
+//   // get user
+//   const user = await User.findOne({ email: send_to });
+//   if (!user || !devEmail) {
+//     return next(new AppError("No user found with that ID", 404));
+//   }
+
+//   // Prepare the context
+//   const fullContext = {
+//     ...context,
+//     name: user.firstName,
+//     link: `${process.env.FRONTEND_URL}/${url}`,
+//     year: new Date().getFullYear(),
+//     companyName: process.env.COMPANY_NAME || "A.T Lukman & Co",
+//   };
+
+//   await sendMail(subject, send_to, send_from, reply_to, template, fullContext);
+//   res.status(200).json({ message: "Email Sent" });
+// });
+
 exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
   console.log(req.body);
   const { send_from, send_to, reply_to, template, subject, url, context } =
@@ -169,21 +198,40 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
     return next(new AppError("Missing email fields", 404));
   }
 
-  // get user
-  const user = await User.findOne({ email: send_to });
-  if (!user) {
-    return next(new AppError("No user found with that ID", 404));
+  const devEmail = process.env.DEVELOPER_EMAIL;
+
+  // Initialize user variable
+  let user = null;
+
+  // Determine the recipient email
+  let recipientEmail = send_to;
+  if (send_to === devEmail) {
+    recipientEmail = devEmail;
+  } else {
+    // get user
+    user = await User.findOne({ email: send_to });
+    if (!user) {
+      return next(new AppError("No user found with that email", 404));
+    }
+    recipientEmail = user.email;
   }
 
   // Prepare the context
   const fullContext = {
     ...context,
-    name: user.firstName,
+    name: recipientEmail === devEmail ? "Developer" : user.firstName,
     link: `${process.env.FRONTEND_URL}/${url}`,
     year: new Date().getFullYear(),
     companyName: process.env.COMPANY_NAME || "A.T Lukman & Co",
   };
 
-  await sendMail(subject, send_to, send_from, reply_to, template, fullContext);
+  await sendMail(
+    subject,
+    recipientEmail,
+    send_from,
+    reply_to,
+    template,
+    fullContext
+  );
   res.status(200).json({ message: "Email Sent" });
 });

@@ -1,0 +1,33 @@
+<!-- templates/contactRequest.hbs -->
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact Request</title>
+    <style>
+      body { font-family: Arial, sans-serif; line-height: 1.6; } .container {
+      max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd;
+      border-radius: 5px; } .header { background-color: #f4f4f4; padding: 10px;
+      text-align: center; border-bottom: 1px solid #ddd; } .content { padding:
+      20px; } .footer { background-color: #f4f4f4; padding: 10px; text-align:
+      center; border-top: 1px solid #ddd; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h2>Contact Request - A.T. Lukman & Co.</h2>
+      </div>
+      <div class="content">
+        <p><strong>Name:</strong> {{name}}</p>
+        <p><strong>Email:</strong> {{email}}</p>
+        <p><strong>Message:</strong></p>
+        <p>{{message}}</p>
+      </div>
+      <div class="footer">
+        <p>&copy; {{year}} A.T. Lukman & Co. All rights reserved.</p>
+      </div>
+    </div>
+  </body>
+</html>

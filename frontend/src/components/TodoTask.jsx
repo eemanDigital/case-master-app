@@ -1,129 +1,170 @@
-import { useState } from "react";
-import { useDataFetch } from "../hooks/useDataFetch";
-import Input from "../components/Inputs";
-import { Button, Modal } from "antd";
-import useModal from "../hooks/useModal";
-import { toast } from "react-toastify";
-import { useDispatch, useSelector } from "react-redux";
-import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
+import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
+import { Table, Pagination, Modal, Tag, Space } from "antd";
+import { DeleteOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import useDelete from "../hooks/useDelete";
+import useUpdate from "../hooks/useUpdate";
+import { useSelector } from "react-redux";
 
-const TaskResponseForm = ({ taskId }) => {
-  const dispatch = useDispatch();
+const TodoTask = ({ tasks }) => {
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
   const { user } = useSelector((state) => state.auth);
-  const [formData, setFormData] = useState({
-    comment: "",
-    doc: null,
-    completed: false,
-  });
 
-  const { open, showModal, handleCancel } = useModal();
+  const { handleDeleteDocument, documents, setDocuments } = useDelete(
+    tasks,
+    "tasks"
+  );
+  const { handleUpdate } = useUpdate();
 
-  const { dataFetcher, loading, data, error: dataError } = useDataFetch();
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    const payload = new FormData();
-    payload.append("comment", formData.comment);
-    payload.append("doc", formData.doc);
-    payload.append("completed", formData.completed);
-
-    try {
-      const response = await dataFetcher(
-        `tasks/${taskId}/response`,
-        "post",
-        payload
-      );
-      console.log("API Response:", response);
-
-      if (response && response.message === "success") {
-        toast.success("Document uploaded successfully!");
-        console.log("Task response data:", response);
-
-        // Prepare email data
-        const emailData = {
-          subject: "Task Response Submitted - A.T. Lukman & Co.",
-          send_to: response.assignedBy?.email,
-          send_from: user?.data?.email,
-          reply_to: "noreply@gmail.com",
-          template: "taskResponse",
-          context: {
-            recipient: response.assignedBy?.firstName,
-            position: response.assignedBy?.position,
-            comment: formData.comment,
-            completed: formData.completed,
-            url: "dashboard/tasks",
-          },
-        };
-
-        console.log("Email data:", emailData);
-
-        // Send email if emailData is provided
-        try {
-          const emailResult = await dispatch(
-            sendAutomatedCustomEmail(emailData)
-          );
-          console.log("Email dispatch result:", emailResult);
-          if (emailResult.payload && emailResult.payload.success) {
-            toast.success("Email sent successfully!");
-          } else {
-            console.error("Email sending failed:", emailResult);
-            toast.error("Failed to send email. Please try again.");
-          }
-        } catch (emailError) {
-          console.error("Error sending email:", emailError);
-          toast.error("Error sending email. Please try again.");
-        }
-
-        handleCancel(); // Close the modal on successful upload
-      } else {
-        console.error("Unexpected API response:", response);
-        toast.error("Unexpected response from server. Please try again.");
-      }
-    } catch (err) {
-      console.error("Error uploading document:", err);
-      toast.error("Failed to upload document. Please try again.");
+  useEffect(() => {
+    if (tasks) {
+      setDocuments(tasks);
     }
+  }, [tasks, setDocuments]);
+
+  const handleDoubleClick = (record) => {
+    const updatedTask = { ...record, isCompleted: !record.isCompleted };
+    const updatedDocuments = documents.map((doc) =>
+      doc._id === record._id ? updatedTask : doc
+    );
+    setDocuments(updatedDocuments);
+    handleUpdate(`todos/${record._id}`, {
+      isCompleted: updatedTask.isCompleted,
+    });
   };
 
-  if (dataError) {
-    console.error("Data fetch error:", dataError);
-    toast.error(`Error: ${dataError}`);
-    return null;
-  }
+  const filteredDocuments = (currentUserId) =>
+    documents.filter((doc) => doc.userId === currentUserId);
 
-  console.log("DATA", data);
+  const getTimeLeft = (dueDate) => {
+    if (!dueDate) return "No due date";
+    const now = new Date();
+    const due = new Date(dueDate);
+    const diff = due - now;
+    if (diff < 0) return "Overdue";
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    return `${days}d ${hours}h ${minutes}m`;
+  };
+
+  const columns = [
+    {
+      title: "Description",
+      dataIndex: "description",
+      key: "description",
+      render: (text) => <span className="font-medium">{text}</span>,
+    },
+    {
+      title: "Priority",
+      dataIndex: "priority",
+      key: "priority",
+      render: (priority) => (
+        <Tag
+          color={
+            priority === "high"
+              ? "red"
+              : priority === "medium"
+              ? "orange"
+              : "green"
+          }
+          className="uppercase font-semibold">
+          {priority}
+        </Tag>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "isCompleted",
+      key: "isCompleted",
+      render: (isCompleted) => (
+        <Tag color={isCompleted ? "green" : "volcano"}>
+          {isCompleted ? "Completed" : "Pending"}
+        </Tag>
+      ),
+    },
+    {
+      title: "Due",
+      dataIndex: "dueDate",
+      key: "dueDate",
+      render: (dueDate) => (
+        <span className="text-sm font-medium">{getTimeLeft(dueDate)}</span>
+      ),
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, record) => (
+        <Space size="middle">
+          <DeleteOutlined
+            className="text-red-500 hover:text-red-700 cursor-pointer"
+            onClick={(event) =>
+              Modal.confirm({
+                title: "Delete Task",
+                icon: <ExclamationCircleOutlined />,
+                content: "Are you sure you want to delete this task?",
+                okText: "Yes",
+                okType: "danger",
+                cancelText: "No",
+                onOk: () =>
+                  handleDeleteDocument(
+                    event,
+                    `todos/${record._id}`,
+                    record._id
+                  ),
+              })
+            }
+          />
+        </Space>
+      ),
+    },
+  ];
+
+  const filteredData = filteredDocuments(user?.data?._id);
+  const showPagination = filteredData.length > 3;
+
   return (
-    <>
-      <Button
-        onClick={showModal}
-        className="bg-blue-500 hover:bg-blue-600 text-white">
-        Send Task Response
-      </Button>
-      <Modal
-        title="Task Report Form"
-        open={open}
-        onCancel={handleCancel}
-        footer={[
-          <Button key="cancel" onClick={handleCancel}>
-            Cancel
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            className="bg-blue-500 hover:bg-blue-600"
-            onClick={handleSubmit}>
-            Submit
-          </Button>,
-        ]}>
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col justify-center items-center space-y-4">
-          {/* Form fields remain the same */}
-        </form>
-      </Modal>
-    </>
+    <div className="max-w-7xl mx-auto px-1 sm:px-6 lg:px-8">
+      <h1 className=" font-bold text-center text-gray-700 my-4">
+        Your Personal Todos
+      </h1>
+      <Table
+        dataSource={
+          showPagination
+            ? filteredData.slice(
+                (currentPage - 1) * pageSize,
+                currentPage * pageSize
+              )
+            : filteredData
+        }
+        columns={columns}
+        pagination={false}
+        rowKey="_id"
+        onRow={(record) => ({
+          onDoubleClick: () => handleDoubleClick(record),
+          className: "hover:bg-gray-50 transition-colors duration-200",
+        })}
+        className="mt-8 shadow-sm rounded-lg overflow-hidden"
+        scroll={{ x: true }}
+      />
+      {showPagination && (
+        <div className="mt-4 flex justify-end">
+          <Pagination
+            current={currentPage}
+            onChange={setCurrentPage}
+            total={filteredData.length}
+            pageSize={pageSize}
+            showSizeChanger={false}
+          />
+        </div>
+      )}
+    </div>
   );
 };
 
-export default TaskResponseForm;
+TodoTask.propTypes = {
+  tasks: PropTypes.array.isRequired,
+};
+
+export default TodoTask;

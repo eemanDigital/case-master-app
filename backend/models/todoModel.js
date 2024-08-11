@@ -21,6 +21,13 @@ const todoSchema = new mongoose.Schema({
   },
   dueDate: {
     type: Date,
+
+    validate: {
+      validator: function (value) {
+        return value > this.createdAt;
+      },
+      message: "Due date must be after date todo is created",
+    },
   },
   userId: {
     type: mongoose.Schema.Types.ObjectId,

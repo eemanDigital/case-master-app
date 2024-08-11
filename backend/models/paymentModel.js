@@ -6,7 +6,7 @@ const paymentSchema = new Schema(
     invoiceId: {
       type: Schema.Types.ObjectId,
       ref: "Invoice",
-      // required: true,
+      required: true,
     },
 
     clientId: {
@@ -17,7 +17,7 @@ const paymentSchema = new Schema(
     caseId: {
       type: Schema.Types.ObjectId,
       ref: "Client",
-      // required: true,
+      required: true,
     },
 
     amountPaid: {

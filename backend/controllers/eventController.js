@@ -31,18 +31,11 @@ exports.getEventById = catchAsync(async (req, res, next) => {
 
 // Create a new event
 exports.createEvent = catchAsync(async (req, res, next) => {
-  const event = new Event({
-    title: req.body.title,
-    start: req.body.start,
-    end: req.body.end,
-  });
+  const newEvent = await Event.create(req.body);
 
-  const newEvent = await event.save();
   res.status(201).json({
-    status: "success",
-    data: {
-      event: newEvent,
-    },
+    message: "success",
+    data: newEvent,
   });
 });
 

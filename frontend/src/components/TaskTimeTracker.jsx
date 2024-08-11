@@ -55,6 +55,8 @@ const TaskTimeTracker = ({ tasks, userId }) => {
     currentPage * pageSize
   );
 
+  // console.log(tasks, "TASKS");
+
   return (
     <div className="w-full h-[300px] bg-white shadow-md rounded-md font-medium text-center text-gray-800 p-4">
       <h1>Current Tasks</h1>
@@ -67,7 +69,7 @@ const TaskTimeTracker = ({ tasks, userId }) => {
             <div className="flex items-center space-x-2">
               <ClockCircleOutlined className="text-blue-500" />
               <span className="font-medium text-gray-700 truncate max-w-[150px]">
-                <Link to={`tasks/${task?._id}/details`}>{task.title}</Link>
+                <Link to={`tasks/${task?._id}/details`}>{task?.title}</Link>
               </span>
             </div>
             <Tag
@@ -75,14 +77,14 @@ const TaskTimeTracker = ({ tasks, userId }) => {
               color={
                 task.taskResponse?.[0]?.completed
                   ? "green"
-                  : timeLeft[task?._id] === "Overdue"
+                  : timeLeft?.[task?._id] === "Overdue"
                   ? "red"
-                  : "black"
+                  : "purple"
               }>
               {task.taskResponse?.[0]?.completed
                 ? "Task Completed"
                 : task.dueDate
-                ? timeLeft[task._id] || "Calculating..."
+                ? `${timeLeft[task._id]} left` || "Calculating..."
                 : "No deadline"}
             </Tag>
           </List.Item>

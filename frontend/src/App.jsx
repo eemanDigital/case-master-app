@@ -65,6 +65,7 @@ import AppLayout from "./components/AppLayout.jsx";
 import LeaveBalanceList from "./pages/leaveBalanceList.jsx";
 import DocumentsList from "./components/DocumentsList.jsx";
 import DocumentForm from "./pages/DocumentsForm.jsx";
+import ContactForm from "./components/ContactForm.jsx";
 
 // enable axios to get credentials everywhere in the app
 axios.defaults.withCredentials = true;
@@ -185,6 +186,7 @@ function App() {
             element={<PaymentMadeOnCase />}
           />
           <Route path="cause-list" element={<CauseList />} />
+          <Route path="contact-dev" element={<ContactForm />} />
         </Route>
       </Route>
       // </Route>

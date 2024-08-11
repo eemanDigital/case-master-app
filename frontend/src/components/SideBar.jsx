@@ -102,7 +102,7 @@ const SideBar = () => {
     {
       key: "10",
       icon: <IoHelpCircleOutline />,
-      label: <Link to="help-center">Help Center</Link>,
+      label: <Link to="contact-dev">Contact</Link>,
     },
     {
       key: "11",

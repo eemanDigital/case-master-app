@@ -24,6 +24,7 @@ const todoRoutes = require("./routes/todoRoutes");
 const eventRoutes = require("./routes/eventRoutes");
 const notificationRouter = require("./routes/notificationRoutes");
 const googleApiRouter = require("./routes/googleApiRoutes");
+const contactRouter = require("./routes/contactRoutes");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 
@@ -138,6 +139,7 @@ app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/documents", fileRouter);
 app.use("/api/v1/todos", todoRoutes);
+app.use("/api/v1/contacts", contactRouter);
 app.use("/api/v1/events", eventRoutes);
 //handles non-existing route
 app.all("*", (req, res, next) => {
