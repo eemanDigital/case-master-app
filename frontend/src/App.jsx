@@ -66,6 +66,7 @@ import LeaveBalanceList from "./pages/leaveBalanceList.jsx";
 import DocumentsList from "./components/DocumentsList.jsx";
 import DocumentForm from "./pages/DocumentsForm.jsx";
 import ContactForm from "./components/ContactForm.jsx";
+import EventDetail from "./pages/EventDetail.jsx";
 
 // enable axios to get credentials everywhere in the app
 axios.defaults.withCredentials = true;
@@ -187,6 +188,7 @@ function App() {
           />
           <Route path="cause-list" element={<CauseList />} />
           <Route path="contact-dev" element={<ContactForm />} />
+          <Route path="events/:id/details" element={<EventDetail />} />
         </Route>
       </Route>
       // </Route>

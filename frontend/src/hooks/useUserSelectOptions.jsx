@@ -13,6 +13,7 @@ const useUserSelectOptions = () => {
     dispatch(getUsers());
   }, [dispatch]);
 
+  // list of staff users
   const userData = Array.isArray(users?.data)
     ? users?.data
         .filter((staff) => staff.role !== "client")
@@ -24,6 +25,21 @@ const useUserSelectOptions = () => {
         })
     : [];
 
+  // all users
+  const allUsers = Array.isArray(users?.data)
+    ? users?.data
+        .filter((staff) => staff)
+        .map((s) => {
+          return {
+            value: s?._id,
+            label: `${s.firstName} ${s.lastName || " "} (${
+              s.position || "Client"
+            })`,
+          };
+        })
+    : [];
+
+  // list of admins
   const adminOptions = Array.isArray(users?.data)
     ? users?.data
         .filter(
@@ -39,7 +55,7 @@ const useUserSelectOptions = () => {
           };
         })
     : [];
-  return { userData, adminOptions };
+  return { userData, allUsers, adminOptions };
 };
 
 export default useUserSelectOptions;

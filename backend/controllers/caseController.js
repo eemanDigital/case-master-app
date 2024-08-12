@@ -1,8 +1,47 @@
 const Case = require("../models/caseModel");
+const cron = require("node-cron"); //handle schedule for soft deleted data
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const setRedisCache = require("../utils/setRedisCache");
 
+// Schedule a job to run every day at midnight to clean-up deleted data
+// cron.schedule("0 0 * * *", async () => {
+//   // Calculate the threshold date (one month ago)
+//   const thresholdDate = new Date();
+//   thresholdDate.setMonth(thresholdDate.getMonth() - 1); // Adjust the threshold as needed
+
+//   try {
+//     // Delete cases that were soft deleted more than a month ago
+//     const result = await Case.deleteMany({
+//       deleted: true,
+//       deletedAt: { $lt: thresholdDate },
+//     });
+//     console.log(`Deleted ${result.deletedCount} cases`);
+//   } catch (error) {
+//     // Log any errors that occur during the cleanup process
+//     console.error("Error during cleanup:", error);
+//   }
+// });
+
+// testing
+cron.schedule("*/2 * * * *", async () => {
+  const thresholdDate = new Date();
+  thresholdDate.setMonth(thresholdDate.getMonth() - 1); // Adjust the threshold as needed
+
+  try {
+    // Delete cases that were soft deleted more than a month ago
+    const result = await Case.deleteMany({
+      deleted: true,
+      deletedAt: { $lt: thresholdDate },
+    });
+    console.log(`Deleted ${result.deletedCount} cases`);
+  } catch (error) {
+    // Log any errors that occur during the cleanup process
+    console.error("Error during cleanup:", error);
+  }
+});
+
+// create new case
 exports.createCase = catchAsync(async (req, res, next) => {
   const singleCase = await Case.create(req.body);
   res.status(201).json({
@@ -77,13 +116,31 @@ exports.updateCase = catchAsync(async (req, res, next) => {
   });
 });
 
-exports.deleteCase = catchAsync(async (req, res, next) => {
-  // const _id = req.params.caseId;
-  const data = await Case.findByIdAndDelete(req.params.caseId);
+// exports.deleteCase = catchAsync(async (req, res, next) => {
+//   // const _id = req.params.caseId;
+//   const data = await Case.findByIdAndDelete(req.params.caseId);
 
-  if (!data) {
-    return next(new AppError("case with that Id does not exist", 404));
+//   if (!data) {
+//     return next(new AppError("case with that Id does not exist", 404));
+//   }
+//   res.status(204).json({
+//     message: "Case deleted",
+//   });
+// });
+
+// Soft delete a case
+exports.deleteCase = catchAsync(async (req, res, next) => {
+  // Find the case by ID
+  const caseData = await Case.findById(req.params.caseId);
+
+  // If the case does not exist, return a 404 error
+  if (caseData) {
+    await caseData.softDelete();
+  } else {
+    return next(new AppError("Case with that Id does not exist", 404));
   }
+
+  // Respond with a 204 status and a message
   res.status(204).json({
     message: "Case deleted",
   });

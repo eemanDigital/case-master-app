@@ -19,19 +19,14 @@ import LeaveNotification from "./LeaveNotification";
 import { useSelector } from "react-redux";
 import Notification from "./Notification";
 import useUsersCount from "../hooks/useUsersCount";
-
 import DashBoardDataCount from "./DashBoardDataCount";
 import LatestCaseReports from "./LatestCaseReports";
 import LeaveAppForm from "../pages/LeaveAppForm";
 import TaskTimeTracker from "./TaskTimeTracker";
-
 import TodoList from "./TodoList";
 import EventForm from "./EventForm";
-
-// import { calender } from "../assets/calendar.svg";
-// import moment from "moment";
-
-const { Title, Text } = Typography;
+import EventList from "../pages/EventList";
+import ScrollingEvents from "./ScrollingEvents";
 
 // context for year for search filter
 export const PaymentFiltersContext = createContext();
@@ -72,6 +67,7 @@ const Dashboard = () => {
   } = useDataFetch();
 
   const {
+    fetchData,
     cases,
     users,
     tasks,
@@ -89,7 +85,6 @@ const Dashboard = () => {
     loading: getterLoading,
     error: getterError,
     causeList,
-    fetchData,
   } = useDataGetterHook();
 
   // end
@@ -163,6 +158,7 @@ const Dashboard = () => {
   return (
     <PaymentFiltersContext.Provider
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
+      <ScrollingEvents />
       <div className="flex justify-between items-center">
         {!isVerified && <Notification />}
       </div>
@@ -175,6 +171,7 @@ const Dashboard = () => {
           </h1>
           {isAdminOrHr && <LeaveNotification />}
           <EventForm />
+          <EventList />
           <LeaveAppForm />
         </div>
 

@@ -8,21 +8,27 @@ import {
   Select,
   DatePicker,
   Typography,
+  Tooltip,
 } from "antd";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import useModal from "../hooks/useModal";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { getUsers } from "../redux/features/auth/authSlice";
+import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
+import { formatDate } from "../utils/formatDate";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { FaCalendar } from "react-icons/fa";
 
 const { TextArea } = Input;
 const { Title } = Typography;
 
 const EventForm = () => {
-  const { userData } = useUserSelectOptions();
-  const { fetchData } = useDataFetch();
+  const { allUsers } = useUserSelectOptions();
   const dispatch = useDispatch();
   const { dataFetcher, data, error, loading } = useDataFetch();
+  const { users, user } = useSelector((state) => state.auth);
+  const { sendingEmail, emailSent, msg } = useSelector((state) => state.email);
   // const { users, user } = useSelector((state) => state.auth);
   // const { emailSent, msg } = useSelector((state) => state.email);
 
@@ -30,18 +36,20 @@ const EventForm = () => {
     useModal();
   const [form] = Form.useForm();
 
+  // const handleSubmit = useCallback(
   const handleSubmission = useCallback(
     (result) => {
       if (result?.error) {
         // Handle Error here
       } else {
         // Handle Success here
-        form.resetFields();
+        // form.resetFields();
       }
     },
     [form]
   );
 
+  // / fetch users
   useEffect(() => {
     dispatch(getUsers());
   }, [dispatch]);
@@ -49,15 +57,69 @@ const EventForm = () => {
   const handleSubmit = useCallback(
     async (values) => {
       try {
-        const result = await dataFetcher("events", "POST", values);
+        // Extract user IDs from values.assignedTo
+        const participantIds = values.participants || []; // Ensure it's an array
+
+        // Find corresponding user objects from the users state
+        const participants = users?.data?.filter((user) =>
+          participantIds.includes(user._id)
+        );
+
+        // Map user objects to their email addresses
+        const sendToEmails = participants?.map((user) => user.email);
+        const participantNames = participants?.map(
+          (user) =>
+            `${user.firstName} ${user.lastName} (${user.position || "client"})`
+        );
+
+        // console.log("PIN", participantNames);
+        // Prepare email data
+        const emailData = {
+          subject: "New Task Assigned - A.T. Lukman & Co.",
+          send_to: sendToEmails,
+          send_from: user?.data?.email,
+          reply_to: "noreply@gmail.com",
+          template: "events",
+          url: "dashboard/events",
+
+          context: {
+            sendersName: user?.data?.firstName,
+            sendersPosition: user?.data?.position,
+            title: values.title,
+            start: formatDate(values.start),
+            end: formatDate(values.end),
+            participants: participantNames,
+            description: values.description,
+            location: values.location,
+          },
+        };
+
+        // Post data
+        const result = await dataFetcher("events", "post", values);
+        // await fetchData("", "tasks");
         handleSubmission(result);
-        form.resetFields();
+
+        // Send email if emailData is provided
+        if (!result?.error && emailData) {
+          await dispatch(sendAutomatedCustomEmail(emailData));
+        }
+        // form.resetFields();
       } catch (err) {
         console.error(err);
       }
     },
-    [fetchData, form, handleSubmission]
+    [dataFetcher, handleSubmission, user, users, dispatch]
   );
+  async (values) => {
+    try {
+      const result = await dataFetcher("events", "post", values);
+      handleSubmission(result);
+      form.resetFields();
+    } catch (err) {
+      console.error(err);
+    }
+  },
+    [form, handleSubmission];
 
   const onSubmit = useCallback(async () => {
     let values;
@@ -69,6 +131,11 @@ const EventForm = () => {
     await handleSubmit(values);
   }, [form, handleSubmit]);
 
+  useEffect(() => {
+    if (emailSent) {
+      toast.success(msg);
+    }
+  }, [emailSent, msg]);
   // useEffect(() => {
   //   if (emailSent) {
   //     toast.success(msg);
@@ -77,11 +144,14 @@ const EventForm = () => {
 
   return (
     <>
-      <Button
-        onClick={showModal}
-        className="blue-btn text-white rounded-lg shadow-md transition duration-300">
-        Create Event
-      </Button>
+      <Tooltip title="Create Event">
+        <Button
+          onClick={showModal}
+          className="flex items-center space-x-2 bg-white text-blue-500 rounded-lg shadow-md transition duration-300">
+          <FaCalendar size={20} />
+          <span>+</span>
+        </Button>
+      </Tooltip>
       <Modal
         width="80%"
         title={<Title level={3}>Create Event</Title>}
@@ -140,7 +210,7 @@ const EventForm = () => {
             <Select
               mode="multiple"
               placeholder="Select participants"
-              options={userData}
+              options={allUsers}
               allowClear
               className="w-full"
             />
@@ -158,9 +228,8 @@ const EventForm = () => {
           <Form.Item>
             <Button
               onClick={onSubmit}
-              type="primary"
               htmlType="submit"
-              className="w-full">
+              className="w-full blue-btn">
               Save
             </Button>
           </Form.Item>

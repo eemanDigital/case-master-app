@@ -43,7 +43,21 @@ const eventSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+  },
+
+  {
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
+
+eventSchema.pre(/^find/, function (next) {
+  this.populate({
+    path: "participants",
+    select: "firstName lastName secondName",
+  });
+
+  next();
+});
 
 module.exports = mongoose.model("Event", eventSchema);

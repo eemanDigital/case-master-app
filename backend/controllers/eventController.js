@@ -7,11 +7,9 @@ const AppError = require("../utils/appError");
 exports.getAllEvents = catchAsync(async (req, res, next) => {
   const events = await Event.find();
   res.status(200).json({
-    status: "success",
+    message: "success",
     results: events.length,
-    data: {
-      events,
-    },
+    data: events,
   });
 });
 
@@ -22,10 +20,8 @@ exports.getEventById = catchAsync(async (req, res, next) => {
     return next(new AppError("No event found with that ID", 404));
   }
   res.status(200).json({
-    status: "success",
-    data: {
-      event,
-    },
+    message: "success",
+    data: event,
   });
 });
 
@@ -49,10 +45,8 @@ exports.updateEvent = catchAsync(async (req, res, next) => {
     return next(new AppError("No event found with that ID", 404));
   }
   res.status(200).json({
-    status: "success",
-    data: {
-      event,
-    },
+    message: "success",
+    data: event,
   });
 });
 
@@ -63,7 +57,7 @@ exports.deleteEvent = catchAsync(async (req, res, next) => {
     return next(new AppError("No event found with that ID", 404));
   }
   res.status(204).json({
-    status: "success",
+    message: "success",
     data: null,
   });
 });

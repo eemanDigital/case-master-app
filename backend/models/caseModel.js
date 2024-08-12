@@ -191,6 +191,14 @@ const caseSchema = new mongoose.Schema(
       default: true,
       select: false,
     },
+
+    deleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+    },
   },
 
   {
@@ -208,6 +216,19 @@ caseSchema.pre(/^find/, function (next) {
 
   next();
 });
+
+// // exclude deleted document from all find query
+// caseSchema.pre(/^find/, function () {
+//   this.where({ deleted: false });
+//   // next()
+// });
+
+// // method to soft delete
+// caseSchema.methods.softDelete = function () {
+//   this.deleted = true;
+//   this.deletedAt = new Date();
+//   return this.save();
+// };
 
 // middle to deactivate document upon delete
 caseSchema.pre(/^find/, function (next) {

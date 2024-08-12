@@ -18,6 +18,7 @@ const LeaveApplicationList = () => {
     error: errorLeaveApp,
     fetchData,
   } = useDataGetterHook();
+  const [searchResults, setSearchResults] = useState([]);
   const { Column, ColumnGroup } = Table;
   const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
     useSelector((state) => state.auth);

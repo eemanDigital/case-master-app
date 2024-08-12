@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
 import { Space, Table, Button, Modal } from "antd";
 import avatar from "../assets/avatar.png";
-import LeaveBalanceList from "./leaveBalanceList";
 import CreateLeaveBalanceForm from "../components/CreateLeaveBalanceForm";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBar from "../components/SearchBar";

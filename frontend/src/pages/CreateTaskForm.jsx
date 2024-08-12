@@ -76,6 +76,7 @@ const CreateTaskForm = () => {
           send_from: user?.data?.email,
           reply_to: "noreply@gmail.com",
           template: "taskAssignment",
+          url: "dashboard/tasks",
           context: {
             sendersName: user?.data?.firstName,
             sendersPosition: user?.data?.position,
@@ -83,7 +84,6 @@ const CreateTaskForm = () => {
             dueDate: formatDate(values.dueDate),
             instruction: values.instruction,
             taskPriority: values.taskPriority,
-            url: "dashboard/tasks",
           },
         };
 

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { Badge, Popover, List, Button, Spin, Alert } from "antd";
+import { Badge, Popover, List, Button, Spin, Alert, Tooltip } from "antd";
 import { BellOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
@@ -72,12 +72,14 @@ const LeaveNotification = () => {
       trigger="click"
       placement="bottomRight">
       <Badge count={pendingLeaves?.length} overflowCount={99}>
-        <Button
-          icon={<BellOutlined />}
-          shape="circle"
-          size="large"
-          className="bg-blue-600 text-white"
-        />
+        <Tooltip title="Leave Application Notification">
+          <Button
+            icon={<BellOutlined />}
+            shape="circle"
+            size="large"
+            className="bg-white text-blue-500 shadow-md"
+          />
+        </Tooltip>
       </Badge>
     </Popover>
   );
