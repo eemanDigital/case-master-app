@@ -24,22 +24,22 @@ const setRedisCache = require("../utils/setRedisCache");
 // });
 
 // testing
-cron.schedule("*/2 * * * *", async () => {
-  const thresholdDate = new Date();
-  thresholdDate.setMonth(thresholdDate.getMonth() - 1); // Adjust the threshold as needed
+// cron.schedule("*/2 * * * *", async () => {
+//   const thresholdDate = new Date();
+//   thresholdDate.setMonth(thresholdDate.getMonth() - 1); // Adjust the threshold as needed
 
-  try {
-    // Delete cases that were soft deleted more than a month ago
-    const result = await Case.deleteMany({
-      deleted: true,
-      deletedAt: { $lt: thresholdDate },
-    });
-    console.log(`Deleted ${result.deletedCount} cases`);
-  } catch (error) {
-    // Log any errors that occur during the cleanup process
-    console.error("Error during cleanup:", error);
-  }
-});
+//   try {
+//     // Delete cases that were soft deleted more than a month ago
+//     const result = await Case.deleteMany({
+//       deleted: true,
+//       deletedAt: { $lt: thresholdDate },
+//     });
+//     console.log(`Deleted ${result.deletedCount} cases`);
+//   } catch (error) {
+//     // Log any errors that occur during the cleanup process
+//     console.error("Error during cleanup:", error);
+//   }
+// });
 
 // create new case
 exports.createCase = catchAsync(async (req, res, next) => {
