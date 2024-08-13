@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import Marquee from "react-fast-marquee";
 import { FaRegCalendar, FaRegClock } from "react-icons/fa";
+import { Link } from "react-router-dom";
 // import { Calendar, Clock } from "lucide-react";
 
 const ScrollingEvents = () => {
@@ -69,7 +70,11 @@ const ScrollingEvents = () => {
                 <FaRegCalendar className="text-blue-500" size={24} />
               </div>
               <div>
-                <h3 className="font-medium text-gray-800">{event.title}</h3>
+                <Link
+                  to={`events/${event._id}/details`}
+                  className="font-medium text-gray-800 hover:text-gray-400">
+                  {event.title}
+                </Link>
                 <div className="flex items-center text-sm text-gray-600">
                   <FaRegClock className="mr-1" size={14} />
                   {formatDate(event.start)}
@@ -84,7 +89,7 @@ const ScrollingEvents = () => {
           ))}
         </Marquee>
       ) : (
-        <p className="text-gray-600 italic">No upcoming events to display.</p>
+        []
       )}
     </div>
   );

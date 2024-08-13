@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { Space, Table, Button, Spin, Alert, Modal } from "antd";
+import { Space, Table, Button, Modal } from "antd";
 import avatar from "../assets/avatar.png";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import { useAdminHook } from "../hooks/useAdminHook";
 import LoadingSpinner from "../components/LoadingSpinner";
+import SearchBar from "../components/SearchBar";
 
 const { Column, ColumnGroup } = Table;
 
 const LeaveBalanceList = () => {
   const { leaveBalance, loading, error, fetchData } = useDataGetterHook();
+  const [searchResults, setSearchResults] = useState([]);
+  const { user } = useSelector((state) => state.auth); //user from context
   const { isAdminOrHr } = useAdminHook();
   const dispatch = useDispatch();
 
@@ -20,7 +23,30 @@ const LeaveBalanceList = () => {
     fetchData("leaves/balances", "leaveBalance");
   }, []);
 
-  const { user } = useSelector((state) => state.auth); //user from context
+  // render all data initially before filter
+  useEffect(() => {
+    if (leaveBalance?.data) {
+      setSearchResults(leaveBalance?.data);
+    }
+  }, [leaveBalance?.data]); // Only depend on users.data to avoid unnecessary re-renders
+
+  // search filter handler
+  const handleSearchChange = (e) => {
+    const searchTerm = e.target.value.trim().toLowerCase();
+
+    if (!searchTerm) {
+      setSearchResults(leaveBalance?.data);
+      return;
+    }
+    const results = leaveBalance?.data.filter((d) => {
+      const fullName =
+        `${d.employee?.firstName}${d?.employee?.lastName}`.toLowerCase();
+
+      // console.log(fullName, "FN");
+      return fullName.includes(searchTerm);
+    });
+    setSearchResults(results);
+  };
 
   //  leading state
   if (loading.leaveBalance) {
@@ -33,8 +59,8 @@ const LeaveBalanceList = () => {
 
   // Filter the leave applications based on the user's role
   const filteredLeaveBalance = isAdminOrHr
-    ? leaveBalance?.data
-    : leaveBalance?.data?.filter(
+    ? searchResults
+    : searchResults?.filter(
         (balance) => balance?.employee?._id === user?.data?._id
       );
 
@@ -48,8 +74,15 @@ const LeaveBalanceList = () => {
     }
   };
 
+  // console.log(
+  //   leaveBalance?.data?.map((e) => e.employee?.firstName),
+  //   "LB"
+  // );
+
   return (
     <>
+      <SearchBar onSearch={handleSearchChange} />
+
       <Table dataSource={filteredLeaveBalance}>
         <ColumnGroup title="Employee's Name">
           <Column

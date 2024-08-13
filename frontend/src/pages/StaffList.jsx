@@ -50,6 +50,7 @@ const StaffList = () => {
     setSearchResults(results);
   };
 
+  // remove users
   const removeUser = async (id) => {
     await dispatch(deleteUser(id));
     await dispatch(getUsers());

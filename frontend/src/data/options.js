@@ -60,6 +60,7 @@ export const caseCategoryOptions = [
 ];
 
 export const natureOfCaseOptions = [
+  { label: "select area of law", value: "" },
   { label: "Contract Dispute", value: "contract dispute" },
   { label: "Personal Injury", value: "personal injury" },
   { label: "Real Estate", value: "real estate" },
@@ -76,6 +77,26 @@ export const natureOfCaseOptions = [
   { label: "Immigration", value: "immigration" },
   { label: "Maritime", value: "maritime" },
   { label: "Tax Law", value: "tax law" },
+  { label: "Constitutional Law", value: "constitutional law" },
+  { label: "Environmental Law", value: "environmental law" },
+  { label: "Human Rights", value: "human rights" },
+  { label: "Corporate Law", value: "corporate law" },
+  { label: "Commercial Law", value: "commercial law" },
+  { label: "Insurance Law", value: "insurance law" },
+  { label: "Consumer Protection", value: "consumer protection" },
+  { label: "Cyber Law", value: "cyber law" },
+  { label: "Energy Law", value: "energy law" },
+  { label: "Entertainment Law", value: "entertainment law" },
+  { label: "Healthcare Law", value: "healthcare law" },
+  { label: "Media Law", value: "media law" },
+  { label: "Military Law", value: "military law" },
+  { label: "Public International Law", value: "public international law" },
+  { label: "Private International Law", value: "private international law" },
+  { label: "Telecommunications Law", value: "telecommunications law" },
+  { label: "Transportation Law", value: "transportation law" },
+  { label: "Trusts and Estates", value: "trusts and estates" },
+  { label: "Urban Development Law", value: "urban development law" },
+  { label: "Water Law", value: "water law" },
   { label: "Other", value: "other" },
 ];
 
