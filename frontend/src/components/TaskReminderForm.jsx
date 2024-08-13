@@ -8,7 +8,9 @@ import {
   Modal,
   //   Space,
   Card,
+  Tooltip,
 } from "antd";
+import { RiRestTimeLine } from "react-icons/ri";
 
 const TaskReminderForm = ({ id }) => {
   //   const { id } = useParams();
@@ -73,9 +75,12 @@ const TaskReminderForm = ({ id }) => {
   // console.log("FORM", formData);
   return (
     <>
-      <Button onClick={showModal} className="bg-blue-500 text-white">
-        Send a reminder
-      </Button>
+      <Tooltip title="Send Reminder">
+        <Button
+          icon={RiRestTimeLine}
+          onClick={showModal}
+          className="bg-blue-500 text-white"></Button>
+      </Tooltip>
       <Modal
         title="Send Reminder on Task"
         open={open}

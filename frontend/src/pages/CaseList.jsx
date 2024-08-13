@@ -6,10 +6,10 @@ import {
   Pagination,
   Row,
   Modal,
-  message,
+  Tooltip,
 } from "antd";
+import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import Spinner from "../components/Spinner";
 import { useCallback, useEffect, useState } from "react";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -40,21 +40,10 @@ const CaseList = () => {
   const fetchCases = useCallback(() => {
     fetchData("cases", "cases");
   }, []);
+
   useEffect(() => {
     fetchCases();
   }, [fetchCases]);
-
-  useEffect(() => {
-    if (isSuccess) {
-      toast.success(message);
-      dispatch(RESET());
-      fetchCases(); //updatate cases
-    }
-    if (isError) {
-      toast.error(message);
-      dispatch(RESET());
-    }
-  }, [isSuccess, isError, message, dispatch, fetchCases]);
 
   ///////////////////////
 
@@ -96,18 +85,29 @@ const CaseList = () => {
     setSearchResults(results || cases?.data);
   };
 
+  // delete case
+  const deleteCase = async (id) => {
+    await dispatch(deleteData(`cases/${id}`));
+    await fetchData("cases", "cases");
+  };
+
+  // delete success
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success(message);
+      dispatch(RESET());
+    }
+    // delete error
+    if (isError) {
+      toast.error(message);
+      dispatch(RESET());
+    }
+  }, [isSuccess, isError, message, dispatch]);
+
+  // filter case for client - client only see it case(es)
   const filterCasesByClient = (caseIds) => {
     if (!cases?.data) return [];
     return cases?.data?.filter((caseItem) => caseIds?.includes(caseItem?._id));
-  };
-
-  // delete case
-  const deleteCase = async (id) => {
-    try {
-      await dispatch(deleteData(`cases/${id}`));
-    } catch (error) {
-      toast.error("Failed to delete invoice");
-    }
   };
 
   const columns = [
@@ -132,11 +132,13 @@ const CaseList = () => {
       title: "Status",
       dataIndex: "caseStatus",
       key: "caseStatus",
+      render: (text) => <p className=" capitalize">{text}</p>,
     },
     {
       title: "Nature of Case",
       dataIndex: "natureOfCase",
       key: "natureOfCase",
+      render: (text) => <p className="capitalize">{text}</p>,
     },
     {
       title: "Action",
@@ -145,23 +147,27 @@ const CaseList = () => {
         isStaff ? (
           <>
             <Link to={`${record._id}/update`}>
-              <Button>Update Case</Button>
+              <Tooltip title="Edit Case">
+                {" "}
+                <Button icon={<EditOutlined />}></Button>
+              </Tooltip>
             </Link>
-            <button
-              className="mx-6 text-red-500 hover:text-red-700"
-              onClick={(event) =>
-                Modal.confirm({
-                  title: "Are you sure you want to delete this case?",
-                  icon: <ExclamationCircleOutlined />,
-                  content: "This action cannot be undone",
-                  okText: "Yes",
-                  okType: "danger",
-                  cancelText: "No",
-                  onOk: () => deleteCase(record._id),
-                })
-              }>
-              Delete
-            </button>
+            <Tooltip title="Delete Case">
+              <Button
+                icon={<DeleteOutlined />}
+                className="mx-6 text-red-500 hover:text-red-700"
+                onClick={() =>
+                  Modal.confirm({
+                    title: "Are you sure you want to delete this case?",
+                    icon: <ExclamationCircleOutlined />,
+                    content: "This action cannot be undone",
+                    okText: "Yes",
+                    okType: "danger",
+                    cancelText: "No",
+                    onOk: () => deleteCase(record._id),
+                  })
+                }></Button>
+            </Tooltip>
           </>
         ) : null,
     },
@@ -173,7 +179,7 @@ const CaseList = () => {
   return (
     <section>
       <Title level={1}>Cases</Title>
-      {loading.cases && <Spinner />}
+      {loading.cases && <LoadingSpinner />}
       <div className="flex md:flex-row flex-col justify-between items-center mb-4">
         {isStaff && (
           <Link to="add-case">

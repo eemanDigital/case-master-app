@@ -161,8 +161,9 @@ const CreateCaseReportForm = () => {
         </Form.Item>
         <Form.Item>
           <Button
+            loading={hookLoading}
             onClick={onSubmit}
-            type="primary"
+            className="blue-btn"
             htmlType="submit"
             // loading={hookLoading}
           >

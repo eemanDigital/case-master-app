@@ -3,6 +3,8 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import TaskReminderForm from "./TaskReminderForm";
 import { Table, Modal, Space, Button } from "antd";
+import { DeleteOutlined } from "@ant-design/icons";
+
 import CreateTaskForm from "../pages/CreateTaskForm";
 import { RiDeleteBin6Line } from "react-icons/ri";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -11,7 +13,6 @@ import { useEffect } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import { toast } from "react-toastify";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
-import TaskTimeTracker from "./TaskTimeTracker";
 
 const TaskList = () => {
   const {
@@ -109,10 +110,14 @@ const TaskList = () => {
           <Button type="link">
             <Link to={`${record?.id}/details`}>Get Details</Link>
           </Button>
+          {/* reminder component */}
+          {user?.data?._id === record?.assignedBy?._id && (
+            <TaskReminderForm id={record.id} />
+          )}
           {/* only the person assigning assignment see the btn */}
           {user?.data?._id === record?.assignedBy?._id && (
-            <RiDeleteBin6Line
-              className="text-red-500 text-2xl cursor-pointer hover:text-red-700"
+            <DeleteOutlined
+              className="text-red-500 text-[20px] cursor-pointer hover:text-red-700"
               onClick={() => {
                 Modal.confirm({
                   title: "Are you sure you want to delete this task?",
@@ -120,9 +125,6 @@ const TaskList = () => {
                 });
               }}
             />
-          )}
-          {user?.data?._id === record?.assignedBy?._id && (
-            <TaskReminderForm id={record.id} />
           )}
         </Space>
       ),

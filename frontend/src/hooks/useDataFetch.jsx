@@ -5,16 +5,8 @@ const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
 
 export const useDataFetch = () => {
   const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Initialize to false
   const [error, setError] = useState(null);
-
-  // const getTokenFromCookies = () => {
-  //   const token = document.cookie
-  //     .split("; ")
-  //     .find((row) => row.startsWith("jwt="))
-  //     ?.split("=")[1];
-  //   return token;
-  // };
 
   const handleResponse = (response) => {
     setData(response.data);

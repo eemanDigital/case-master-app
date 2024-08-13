@@ -1,5 +1,6 @@
 // Case status options
 export const statusOptions = [
+  { label: "select status", value: " " },
   { label: "Pending", value: "pending" },
   { label: "Closed", value: "closed" },
   { label: "Decided", value: "decided" },
@@ -10,6 +11,7 @@ export const statusOptions = [
 
 // Court names options
 export const courtOptions = [
+  { label: "Select Court", value: " " },
   { label: "Supreme Court", value: "supreme court" },
   { label: "Court of Appeal", value: "court of appeal" },
   { label: "Federal High Court", value: "federal high court" },
@@ -21,33 +23,46 @@ export const courtOptions = [
   { label: "Customary Court", value: "customary court" },
   { label: "Sharia Court", value: "sharia court" },
   { label: "Area Court", value: "area court" },
-  { label: "Coroner", value: "coroner" },
+  { label: "Coroner's Court", value: "coroner" },
   { label: "Tribunal", value: "tribunal" },
+  { label: "Election Tribunal", value: "election tribunal" },
+  { label: "Code of Conduct Tribunal", value: "code of conduct tribunal" },
+  { label: "Tax Appeal Tribunal", value: "tax appeal tribunal" },
+  { label: "Rent Tribunal", value: "rent tribunal" },
   { label: "Others", value: "others" },
 ];
 
 // Modes of commencement of case options
 export const modesOptions = [
+  { label: "Select mode of commencement", value: " " },
   { label: "Writ of Summons", value: "writ of summons" },
   { label: "Originating Summons", value: "originating summons" },
   { label: "Originating Motion", value: "originating motion" },
   { label: "Petition", value: "petition" },
+  { label: "Information", value: "information" }, // For criminal cases
+  { label: "Charge", value: "charge" }, // For criminal cases
+  { label: "Application", value: "application" }, // General term for various applications
+  { label: "Notice of Appeal", value: "notice of appeal" },
+  { label: "Notice of Application", value: "notice of application" },
   { label: "Other", value: "other" },
 ];
 
 // Case priority options
 export const casePriorityOptions = [
+  { label: "Select case priority/rank", value: "" },
   { label: "Low", value: "low" },
   { label: "Medium", value: "medium" },
   { label: "High", value: "high" },
 ];
 export const todoPriority = [
+  { label: "Select todo priority", value: "" },
   { label: "Low", value: "low" },
   { label: "Medium", value: "medium" },
   { label: "High", value: "high" },
 ];
 
 export const taskPriorityOptions = [
+  { value: "Select task priority", label: "" },
   { value: "urgent", label: "Urgent" },
   { value: "high", label: "High" },
   { value: "medium", label: "Medium" },
@@ -55,6 +70,7 @@ export const taskPriorityOptions = [
 ];
 
 export const caseCategoryOptions = [
+  { value: "Select case category", label: "" },
   { value: "civil", label: "Civil" },
   { value: "criminal", label: "Criminal" },
 ];
@@ -101,16 +117,19 @@ export const natureOfCaseOptions = [
 ];
 
 export const invoiceOptions = [
+  { label: "Select Invoice status", value: "" },
   { label: "Paid", value: "paid" },
   { label: "Unpaid", value: "unpaid" },
   { label: "Overdue", value: "overdue" },
 ];
 
 export const methodOptions = [
+  { label: "Select payment method", value: "" },
   { label: "Credit Card", value: "credit_card" },
   { label: "Bank Transfer", value: "bank_transfer" },
   { label: "Cash", value: "cash" },
   { label: "Cheque", value: "cheque" },
+  { label: "Other", value: "" },
 ];
 
 export const positions = [

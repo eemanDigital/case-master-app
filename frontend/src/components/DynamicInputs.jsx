@@ -1,7 +1,7 @@
 import { DeleteOutlined } from "@ant-design/icons";
-
 import { Button, Input, Form, Space, Select } from "antd";
-import { isArray } from "sanity";
+import ReactQuill from "react-quill";
+import { formats } from "../utils/quillFormat";
 
 export const PartyDynamicInputs = ({
   parentKey,
@@ -13,6 +13,7 @@ export const PartyDynamicInputs = ({
   firstInitialValue,
   secondInitialValue,
   thirdInitialValue,
+  rules,
 }) => {
   return (
     <div className="flex flex-wrap justify-between ">
@@ -22,13 +23,12 @@ export const PartyDynamicInputs = ({
           //   name={[parentKey, "title"]}
           name={[parentKey, firstKeyVal]}
           label={label}
-          // rules={[
-          //   {
-          //     required: true,
-          //     message: "Please provide the party's title",
-          //   },
-          // ]}
-        >
+          rules={[
+            {
+              required: true,
+              message: "Please provide the party's title",
+            },
+          ]}>
           <Input placeholder={placeholderVal} />
         </Form.Item>
       </div>
@@ -134,6 +134,7 @@ export const SelectInputs = ({
   defaultValue,
   options,
   mode,
+  rules,
 }) => {
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
@@ -143,7 +144,7 @@ export const SelectInputs = ({
         name={fieldName}
         label={label}
         defaultValue={defaultValue}
-        // initialValue={formData?.modeOfCommencement}>
+        rules={rules}
         initialValue={initialValue}>
         <Select
           mode={mode}
@@ -214,7 +215,7 @@ export const TextAreaInput = ({ fieldName, label, initialValue }) => {
   return (
     <div>
       <Form.Item label={label} name={fieldName} initialValue={initialValue}>
-        <TextArea
+        {/* <TextArea
           autoSize={{
             minRows: 2,
             maxRows: 6,
@@ -222,7 +223,8 @@ export const TextAreaInput = ({ fieldName, label, initialValue }) => {
           rows={4}
           placeholder="Your text here..."
           // maxLength={300}
-        />
+        /> */}
+        <ReactQuill className="h-[200px] mb-7" theme="snow" formats={formats} />
       </Form.Item>
     </div>
   );

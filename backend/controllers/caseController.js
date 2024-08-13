@@ -45,6 +45,7 @@ const setRedisCache = require("../utils/setRedisCache");
 exports.createCase = catchAsync(async (req, res, next) => {
   const singleCase = await Case.create(req.body);
   res.status(201).json({
+    message: "success",
     data: singleCase,
   });
 });

@@ -11,10 +11,10 @@ const useTextShorten = () => {
     }));
   };
 
-  // shorten report update
+  // shorten text
   const shortenText = (htmlText, maxLength, id) => {
     const isFullTextShown = showFullText[id];
-    if (!isFullTextShown && htmlText.length > maxLength) {
+    if (!isFullTextShown && htmlText?.length > maxLength) {
       return (
         <span>
           <span
@@ -41,7 +41,7 @@ const useTextShorten = () => {
       return (
         <span>
           <span dangerouslySetInnerHTML={{ __html: htmlText }} />
-          {htmlText.length > maxLength && (
+          {htmlText?.length > maxLength && (
             <button
               onClick={() => toggleShowFullText(id)}
               style={{

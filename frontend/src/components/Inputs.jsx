@@ -3,7 +3,6 @@ const Input = ({
   text,
   textarea,
   type,
-  onPaste,
   disable,
   inputStyle,
   ...props

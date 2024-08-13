@@ -12,6 +12,8 @@ import {
   Empty,
   Table,
   Space,
+  Row,
+  Col,
 } from "antd";
 import { FaDownload } from "react-icons/fa6";
 import { RiDeleteBin2Line } from "react-icons/ri";
@@ -57,6 +59,8 @@ const CaseDetails = () => {
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
+
+  // parties name
 
   // Define columns for the document table
   const columns = [
@@ -110,18 +114,57 @@ const CaseDetails = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between mb-6">
-        <Link to="../..">
-          <Button onClick={() => navigate(-1)}>Go Back</Button>
-        </Link>
+        <Button onClick={() => navigate(-1)}>Go Back</Button>
+
         {isStaff && <CaseDocumentUpload caseId={id} />}
       </div>
-
+      <div className="m-4 bg-white  text-gray-800 p-6 rounded-lg shadow-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div>
+            <h1 className="text-xl font-bold mb-4">
+              {data?.data?.firstParty.description}
+            </h1>
+            {data?.data?.firstParty?.name?.map((singleName, index) => (
+              <div key={singleName?._id || index} className="mb-2">
+                <span className="font-semibold text-[20px]">{index + 1}. </span>
+                <span>{singleName.name}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            <h1 className="text-xl font-bold mb-4">
+              {data?.data?.secondParty.description}
+            </h1>
+            {data?.data?.secondParty?.name?.map((singleName, index) => (
+              <div key={singleName?._id || index} className="mb-2">
+                <span className="font-semibold">{index + 1}. </span>
+                <span>{singleName.name}</span>
+              </div>
+            ))}
+          </div>
+          <div>
+            {data?.data?.otherParty.map((singleParty, index) => (
+              <div key={singleParty.description || index} className="mb-6">
+                <h1 className="text-xl font-bold mb-4">
+                  {singleParty.description}
+                </h1>
+                {singleParty?.name?.map((n, idx) => (
+                  <div key={n?._id || idx} className="mb-2">
+                    <span className="font-semibold">{idx + 1}. </span>
+                    <span>{n.name}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-6">
           {/* Case details section */}
-          <Card title="Case Details" className="shadow-md">
+          <Card title="Case Details" className="shadow-md p-4">
             <List
-              itemLayout="horizontal"
+              itemLayout="vertical"
               dataSource={[
                 { label: "SUIT NO:", value: data?.data?.suitNo },
                 {
@@ -130,7 +173,14 @@ const CaseDetails = () => {
                     data?.data?.filingDate &&
                     formatDate(data?.data?.filingDate),
                 },
-                { label: "Case Summary:", value: data?.data?.caseSummary },
+                {
+                  label: "Case Summary:",
+                  value: shortenText(
+                    data?.data?.caseSummary,
+                    150,
+                    "caseSummary"
+                  ),
+                },
                 {
                   label: "Mode Of Commencement:",
                   value: data?.data?.modeOfCommencement,
@@ -156,11 +206,19 @@ const CaseDetails = () => {
                 },
               ]}
               renderItem={(item) => (
-                <List.Item>
+                <List.Item className="border-b border-gray-200 py-2">
                   <List.Item.Meta
-                    title={<Text strong>{item.label}</Text>}
+                    title={
+                      <Text className="text-gray-800  font-poppins font-medium">
+                        {item.label}
+                      </Text>
+                    }
                     description={
-                      item.value || (
+                      item.value ? (
+                        <span className="text-gray-800  font-poppins  capitalize">
+                          {item.value}
+                        </span>
+                      ) : (
                         <span className="text-red-500">Not provided</span>
                       )
                     }
@@ -168,6 +226,102 @@ const CaseDetails = () => {
                 </List.Item>
               )}
             />
+
+            <div className="p-6 rounded-lg ">
+              <div className="mb-4">
+                {data?.data?.judge.map((j, index) => (
+                  <p
+                    key={j?._id || index}
+                    className="font-semibold text-[20px] ">
+                    Judge:{" "}
+                    {j.name || (
+                      <span className="text-red-500 font-semibold text-[20px]">
+                        Not provided
+                      </span>
+                    )}
+                  </p>
+                ))}
+              </div>
+
+              <div className="mb-4">
+                <h1 className="text-xl  mb-2">Case Strength</h1>
+                <ul className="list-disc list-inside">
+                  {data?.data?.caseStrengths?.map((item, index) => (
+                    <li key={item?._id || index} className="mb-1">
+                      {item?.name || (
+                        <span className="text-red-500 font-semibold text-[20px]">
+                          Not provided
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="mb-4">
+                <h1 className="text-xl  mb-2">Case Weaknesses</h1>
+                <ul className="list-disc list-inside">
+                  {data?.data?.caseWeaknesses?.map((item, index) => (
+                    <li key={item?._id || index} className="mb-1">
+                      {item?.name || (
+                        <span className="text-red-500 font-semibold text-[20px]">
+                          Not provided
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="mb-4">
+                <h1 className="text-xl  mb-2">Steps to be Taken</h1>
+                {Array.isArray(data?.data?.stepToBeTaken) &&
+                data?.data?.stepToBeTaken.length > 0 ? (
+                  data?.data?.stepToBeTaken.map((step, index) => (
+                    <p
+                      key={step?._id || index}
+                      className="font-semibold text-[20px]">
+                      {step.name || (
+                        <span className="text-red-500 font-semibold text-[20px]">
+                          Not provided
+                        </span>
+                      )}
+                    </p>
+                  ))
+                ) : (
+                  <p className="font-semibold text-[20px]">
+                    <span className="text-red-500 font-semibold text-[20px]">
+                      No steps to be taken are provided.
+                    </span>
+                  </p>
+                )}
+              </div>
+
+              <div className="mb-4">
+                <h1 className="text-xl  mb-2">Account Officer(s)</h1>
+                <ul className="list-disc list-inside">
+                  {data?.data?.accountOfficer?.map((item, index) => (
+                    <li key={item?._id || index} className="mb-1">
+                      {`${item.firstName} ${item.lastName}` || (
+                        <span className="text-red-500 font-semibold text-[20px]">
+                          No Account Officer
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="mb-4">
+                <h1 className="text-xl  mb-2">Client</h1>
+                <p>{data?.data?.client?.fullName}</p>
+              </div>
+
+              <div className="mb-4">
+                <h1 className="text-xl  mb-2">General Comment</h1>
+                <p>{shortenText(data?.data?.generalComment)}</p>
+              </div>
+            </div>
           </Card>
 
           {/* Document table section */}

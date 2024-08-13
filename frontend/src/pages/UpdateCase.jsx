@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 
 import {
   DeleteOutlined,
@@ -31,12 +31,13 @@ import {
 } from "../data/options";
 import useClientSelectOptions from "../hooks/useClientSelectOptions";
 import useHandleSubmit from "../hooks/useHandleSubmit";
+import ReactQuill from "react-quill";
+import { formats } from "../utils/quillFormat";
+import { toast } from "react-toastify";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 const UpdateCase = () => {
-  const { TextArea } = Input;
   const { id } = useParams();
-
   // custom hook to handle form submission
   const {
     form,
@@ -45,35 +46,18 @@ const UpdateCase = () => {
     loading: loadingState,
     error,
   } = useHandleSubmit(`cases/${id}`, "patch");
-
+  const navigate = useNavigate();
   const { userData } = useUserSelectOptions();
   const { clientOptions } = useClientSelectOptions();
 
-  // console.log(id);
   // const { singleData, singleDataFetcher } = useSingleDataFetcher();
   const [formData, setFormData] = useState({});
-  const [loading, setLoading] = useState(true);
 
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("jwt="))
-    ?.split("=")[1];
-
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
-
+  // fetch data to populate form for update
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await axios.get(`${baseURL}/cases/${id}`, {
-          headers: {
-            ...fileHeaders,
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        // console.log("RES", response.data.data);
-
+        const response = await axios.get(`${baseURL}/cases/${id}`, "GET");
         setFormData((prevData) => {
           return {
             ...prevData,
@@ -82,8 +66,6 @@ const UpdateCase = () => {
         });
       } catch (error) {
         console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
       }
     }
     fetchData();
@@ -93,16 +75,21 @@ const UpdateCase = () => {
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
 
-  // loading state handler
-  if (loading) {
-    return <div>Loading...</div>;
-  }
+  // handle error and success
+  useEffect(() => {
+    if (error) {
+      toast.error(error || "An error occurred");
+    }
+    if (data) {
+      toast.success(data?.message || "Operation successful");
+    }
+  }, [error, data]);
 
   return (
     <>
-      <Link to="../.." relative="path">
+      <Button onClick={() => navigate(-1)} relative="path">
         Go Back
-      </Link>
+      </Button>
 
       <Form
         className="h-[100%] pt-3"
@@ -427,13 +414,13 @@ const UpdateCase = () => {
             </Form.Item>
           </div>
           {/* OTHER MODE OF COMMENCEMENT*/}
-          <div>
+          {/* <div>
             <Form.Item
               label="Specify other Mode"
               name="otherModeOfCommencement">
               <Input />
             </Form.Item>
-          </div>
+          </div> */}
 
           {/* COURTS */}
           {/* <TextDivider text="Court" /> */}
@@ -459,11 +446,11 @@ const UpdateCase = () => {
             </Form.Item>
           </div>
           {/* OTHER COURT*/}
-          <div>
+          {/* <div>
             <Form.Item label="Specify Court" name="otherCourt">
               <Input />
             </Form.Item>
-          </div>
+          </div> */}
 
           {/* COURT'S NO */}
           <div>
@@ -796,15 +783,10 @@ const UpdateCase = () => {
         <div>
           <div>
             <Form.Item label="Case Summary" name="caseSummary">
-              <TextArea
-                // autoSize={{
-                //   minRows: 2,
-                //   maxRows: 6,
-                // }}
-                rows={5}
-                placeholder="Your case summary here..."
-                maxLength={1000}
-                className="w-96"
+              <ReactQuill
+                className="h-[200px] mb-7"
+                theme="snow"
+                formats={formats}
               />
             </Form.Item>
           </div>
@@ -812,17 +794,21 @@ const UpdateCase = () => {
           {/* <TextDivider text="General Comments" /> */}
           <div>
             <Form.Item label="General Comment" name="generalComment">
-              <TextArea
-                rows={5}
-                placeholder="Your comment here..."
-                maxLength={1000}
-                className="w-96"
+              <ReactQuill
+                className="h-[200px] mb-7"
+                theme="snow"
+                formats={formats}
               />
             </Form.Item>
           </div>
         </div>
         <Form.Item>
-          <Button onClick={onSubmit} type="default" htmlType="submit">
+          <Button
+            loading={loadingState}
+            onClick={onSubmit}
+            type="primary"
+            htmlType="submit"
+            className="w-full bg-blue-500 hover:bg-blue-600">
             Submit
           </Button>
         </Form.Item>
