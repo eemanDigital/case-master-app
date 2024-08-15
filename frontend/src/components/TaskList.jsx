@@ -117,7 +117,8 @@ const TaskList = () => {
           {/* only the person assigning assignment see the btn */}
           {user?.data?._id === record?.assignedBy?._id && (
             <DeleteOutlined
-              className="text-red-500 text-[20px] cursor-pointer hover:text-red-700"
+              size={20}
+              className="bg-red-200 text-red-500  p-2 rounded-md cursor-pointer hover:text-red-700"
               onClick={() => {
                 Modal.confirm({
                   title: "Are you sure you want to delete this task?",

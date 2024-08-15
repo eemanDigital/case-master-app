@@ -31,22 +31,22 @@ router.use(protect);
 // Aggregate routes for various case groupings
 router.get(
   "/case-status",
-  cacheMiddleware(() => "$caseStatus"),
+  // cacheMiddleware(() => "$caseStatus"),
   getCasesByGroup("$caseStatus", Case)
 );
 router.get(
   "/cases-by-court",
-  cacheMiddleware(() => "$courtName"),
+  // cacheMiddleware(() => "$courtName"),
   getCasesByGroup("$courtName", Case)
 );
 router.get(
   "/cases-by-natureOfCase",
-  cacheMiddleware(() => "$natureOfCase"),
+  // cacheMiddleware(() => "$natureOfCase"),
   getCasesByGroup("$natureOfCase", Case)
 );
 router.get(
   "/cases-by-rating",
-  cacheMiddleware(() => "$casePriority"),
+  // cacheMiddleware(() => "$casePriority"),
   getCasesByGroup("$casePriority", Case)
 );
 router.get(
@@ -56,29 +56,29 @@ router.get(
 );
 router.get(
   "/cases-by-category",
-  cacheMiddleware(() => "$category"),
+  // cacheMiddleware(() => "$category"),
   getCasesByGroup("$category", Case)
 );
 
 // Specific case retrieval routes
 router.get(
   "/cases-by-client",
-  cacheMiddleware(() => "cbc"),
+  // cacheMiddleware(() => "cbc"),
   getCasesByClient
 );
 router.get(
   "/cases-by-accountOfficer",
-  cacheMiddleware(() => "casesao"),
+  // cacheMiddleware(() => "casesao"),
   getCasesByAccountOfficer
 );
 router.get(
   "/monthly-new-cases",
-  cacheMiddleware(() => "mnc"),
+  // cacheMiddleware(() => "mnc"),
   getMonthlyNewCases
 );
 router.get(
   "/yearly-new-cases",
-  cacheMiddleware(() => "ync"),
+  // cacheMiddleware(() => "ync"),
 
   getYearlyNewCases
 );
@@ -90,7 +90,7 @@ router.delete("/:parentId/documents/:documentId", deleteDocument(Case));
 // Basic CRUD routes for cases
 router.get(
   "/",
-  cacheMiddleware(() => "cases"),
+  // cacheMiddleware(() => "cases"),
   getCases
 );
 router.post("/", createCase);
@@ -106,7 +106,7 @@ router.post(
 // Single case manipulation routes
 router.get(
   "/:caseId",
-  cacheMiddleware((req) => `singleCase:${req.params.caseId}`),
+  // cacheMiddleware((req) => `singleCase:${req.params.caseId}`),
   getCase
 );
 router.patch("/:caseId", updateCase);

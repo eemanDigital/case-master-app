@@ -23,12 +23,7 @@ export const PartyDynamicInputs = ({
           //   name={[parentKey, "title"]}
           name={[parentKey, firstKeyVal]}
           label={label}
-          rules={[
-            {
-              required: true,
-              message: "Please provide the party's title",
-            },
-          ]}>
+          rules={rules}>
           <Input placeholder={placeholderVal} />
         </Form.Item>
       </div>
@@ -37,7 +32,8 @@ export const PartyDynamicInputs = ({
         {/* description field */}
         <Form.List
           name={[parentKey, secondKeyVal]}
-          initialValue={firstInitialValue}>
+          initialValue={firstInitialValue}
+          rules={rules}>
           {(nameFields, { add, remove }) => (
             <div>
               {nameFields.map(({ key, name, ...restField }) => (
@@ -47,12 +43,7 @@ export const PartyDynamicInputs = ({
                     {...restField}
                     name={[name, "name"]}
                     initialValue={secondInitialValue[name]?.name}
-                    rules={[
-                      {
-                        required: true,
-                        message: "Parties name(es) is required",
-                      },
-                    ]}
+                    rules={rules}
                     label={`${key + 1}- Party's Name`}>
                     <Space.Compact className="flex  justify-center item-center">
                       <Input
@@ -90,6 +81,7 @@ export const PartyDynamicInputs = ({
                 return (
                   <div key={key}>
                     <Form.Item
+                      rules={rules}
                       className="m-0 p-0"
                       {...restField}
                       name={[name, "name"]}
@@ -168,6 +160,7 @@ export const DynamicInputArrays = ({
   initialValue,
   label,
   placeholder,
+  rules,
 }) => {
   return (
     <div>
@@ -180,6 +173,7 @@ export const DynamicInputArrays = ({
                     return (
                       <div key={key}>
                         <Form.Item
+                          rules={rules}
                           className="m-0 p-0"
                           {...restField}
                           name={[name, "name"]}
@@ -209,21 +203,14 @@ export const DynamicInputArrays = ({
   );
 };
 
-export const TextAreaInput = ({ fieldName, label, initialValue }) => {
-  const { TextArea } = Input;
-
+export const TextAreaInput = ({ fieldName, label, initialValue, rules }) => {
   return (
     <div>
-      <Form.Item label={label} name={fieldName} initialValue={initialValue}>
-        {/* <TextArea
-          autoSize={{
-            minRows: 2,
-            maxRows: 6,
-          }}
-          rows={4}
-          placeholder="Your text here..."
-          // maxLength={300}
-        /> */}
+      <Form.Item
+        rules={rules}
+        label={label}
+        name={fieldName}
+        initialValue={initialValue}>
         <ReactQuill className="h-[200px] mb-7" theme="snow" formats={formats} />
       </Form.Item>
     </div>

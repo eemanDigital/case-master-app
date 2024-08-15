@@ -10,7 +10,7 @@ exports.getUsers = catchAsync(async (req, res, next) => {
   const users = await User.find({});
 
   // set redis cache
-  setRedisCache("users", users, 1200);
+  // setRedisCache("users", users, 100);
 
   res.status(200).json({
     results: users.length,
@@ -76,12 +76,12 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "email",
     "firstName",
     "lastName",
+    "secondName",
     "middleName",
     "photo",
     "address",
     "bio",
     "phone",
-    "annualLeaveEntitled",
     "yearOfCall",
     "otherPosition",
     "practiceArea",
@@ -108,14 +108,31 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 
 // UPDATE USER PROFILE BY ADMIN
 exports.upgradeUser = catchAsync(async (req, res, next) => {
-  const { role, id } = req.body;
+  const { role, position, isActive } = req.body;
+  const { id } = req.params; // Get the id from the URL parameters
 
+  // get if user exist
   const user = await User.findById(id);
+
   if (!user) {
     return next(new AppError("No user found with that ID", 404));
   }
-  user.role = role;
 
+  // update user if user exist
+  if (user.role !== "client") {
+    user.role = role;
+    user.position = position;
+    user.isActive = isActive;
+  } else {
+    if (role || position) {
+      return next(
+        new AppError("Clients can only have their active status updated.", 404)
+      );
+    }
+    user.isActive = isActive;
+  }
+
+  // save user to db
   await user.save({ validateBeforeSave: false });
   res.status(200).json({
     message: `User role updated to ${role}`,

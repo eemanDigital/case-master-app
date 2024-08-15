@@ -1,25 +1,32 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Col, Descriptions, Divider } from "antd";
+import { Alert, Col, Descriptions, Divider } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
-// import { formatDate } from "../utils/formatDate";
 import UpdateClientInfo from "./UpdateClientInfo";
-import PaymentMadeOnCase from "./PaymentMadeOnCase";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { useAdminHook } from "../hooks/useAdminHook";
 
 const ClientDetails = () => {
   const { id } = useParams();
-
   const { dataFetcher, data, loading, error } = useDataFetch();
+  const { isClient } = useAdminHook();
 
   useEffect(() => {
     dataFetcher(`users/${id}`, "GET");
   }, [id]);
 
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return <Alert message={error} />;
+  }
+
   return (
     <>
-      <Col>
-        <UpdateClientInfo />
-      </Col>
+      {isClient && <UpdateClientInfo />}
+
       <Divider />
       <Descriptions title="Client Details" bordered>
         <Descriptions.Item label="First Name">
@@ -30,9 +37,7 @@ const ClientDetails = () => {
         </Descriptions.Item>
         <Descriptions.Item label="Email">{data?.data?.email}</Descriptions.Item>
         <Descriptions.Item label="Phone">{data?.data?.phone}</Descriptions.Item>
-        {/* <Descriptions.Item label="Date of Birth">
-          {formatDate(data?.data?.dob ? data?.data?.dob : null)}
-        </Descriptions.Item> */}
+
         <Descriptions.Item label="Address">
           {data?.data?.address}
         </Descriptions.Item>

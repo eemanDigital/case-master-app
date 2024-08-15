@@ -69,7 +69,8 @@ const CaseCountsByClient = ({ data }) => {
         onCancel={handleCancel}
         width="90%"
         className="rounded-lg"
-        bodyStyle={{ padding: 0 }}>
+        // bodyStyle={{ padding: 0 }}
+      >
         <div className="p-4">
           <ResponsiveContainer width="100%" height={400}>
             <BarChart

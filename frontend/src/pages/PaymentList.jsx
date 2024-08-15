@@ -73,6 +73,8 @@ const PaymentList = () => {
     (item) => item.clientId === loggedInClientId
   );
 
+  // console.log("PAY", payments);
+
   const columns = [
     {
       title: "Invoice Reference",

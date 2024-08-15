@@ -149,13 +149,15 @@ const CaseList = () => {
             <Link to={`${record._id}/update`}>
               <Tooltip title="Edit Case">
                 {" "}
-                <Button icon={<EditOutlined />}></Button>
+                <Button
+                  className="bg-purple-200 text-purple-500"
+                  icon={<EditOutlined />}></Button>
               </Tooltip>
             </Link>
             <Tooltip title="Delete Case">
               <Button
                 icon={<DeleteOutlined />}
-                className="mx-6 text-red-500 hover:text-red-700"
+                className="mx-6 bg-red-200 text-red-500 hover:text-red-700"
                 onClick={() =>
                   Modal.confirm({
                     title: "Are you sure you want to delete this case?",

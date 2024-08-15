@@ -50,12 +50,16 @@ const StaffList = () => {
     setSearchResults(results);
   };
 
+  // filter user data to get staff alone
+  const staffList = searchResults?.filter((staff) => staff?.role !== "client");
+
   // remove users
   const removeUser = async (id) => {
     await dispatch(deleteUser(id));
     await dispatch(getUsers());
   };
 
+  console.log(users, "USERS");
   return (
     <>
       <div className="flex md:flex-row flex-col justify-between items-center gap-3 my-4">
@@ -78,7 +82,7 @@ const StaffList = () => {
         <SearchBar onSearch={handleSearchChange} />
       </div>
 
-      <Table dataSource={searchResults}>
+      <Table dataSource={staffList}>
         <ColumnGroup title="Employee's Name">
           <Column
             title="Photo"
@@ -99,9 +103,19 @@ const StaffList = () => {
           <Column title="Last Name" dataIndex="lastName" key="lastName" />
         </ColumnGroup>
 
-        <Column title="Email" dataIndex="email" key="email" />
+        {/* <Column title="Email" dataIndex="email" key="email" /> */}
         <Column title="Role" dataIndex="role" key="role" />
         <Column title="Position" dataIndex="position" key="position" />
+        <Column
+          title="Is Active"
+          dataIndex="isActive"
+          key="isActive"
+          render={(isActive) => (
+            <span style={{ color: isActive ? "green" : "red" }}>
+              {isActive ? "Active" : "Inactive"}
+            </span>
+          )}
+        />
 
         <Column
           title="Action"

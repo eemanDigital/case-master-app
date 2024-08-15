@@ -1,9 +1,10 @@
 import { useEffect } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
-import { Descriptions, Button, Card, Spin, Alert, Row, Col } from "antd";
+import { Descriptions, Button, Card, Alert, Row, Col } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import { handleDownload } from "../utils/downloadHandler";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
@@ -12,36 +13,17 @@ const InvoiceDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const navigate = useNavigate();
 
+  // fetch data
   useEffect(() => {
     dataFetcher(`invoices/${id}`, "GET");
   }, [id]);
 
-  if (loading)
-    return (
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          height: "100vh",
-        }}>
-        <Spin tip="Loading..." />
-      </div>
-    );
+  if (loading) return <LoadingSpinner />;
 
   if (error)
-    return (
-      <Alert
-        message="Error"
-        description={error.message}
-        type="error"
-        showIcon
-      />
-    );
+    return <Alert message="Error" description={error} type="error" showIcon />;
 
   const invoice = data?.data;
-
-  console.log("INVD", invoice.case);
 
   return (
     <>
@@ -211,7 +193,7 @@ const InvoiceDetails = () => {
           Download Invoice
         </Button>
 
-        <Link to={`../billings/invoices/${invoice._id}/update`}>
+        <Link to={`../billings/invoices/${invoice?._id}/update`}>
           <Button>Update Invoice</Button>
         </Link>
       </Card>

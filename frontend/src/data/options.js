@@ -129,7 +129,7 @@ export const methodOptions = [
   { label: "Bank Transfer", value: "bank_transfer" },
   { label: "Cash", value: "cash" },
   { label: "Cheque", value: "cheque" },
-  { label: "Other", value: "" },
+  // { label: "Other", value: "" },
 ];
 
 export const positions = [

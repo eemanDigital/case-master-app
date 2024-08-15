@@ -7,7 +7,6 @@ import avatar from "../assets/avatar.png";
 import { formatDate } from "../utils/formatDate";
 import UpdateUserPositionAndRole from "./UpdateUserPositionAndRole";
 import LeaveBalanceDisplay from "../components/LeaveBalanceDisplay";
-import LeaveApplicationDetails from "./LeaveApplicationDetails";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useSelector } from "react-redux";
 // import useErrorMessage from "../hooks/useErrorMessage";
@@ -27,7 +26,7 @@ const StaffDetails = () => {
     dataFetcher(`users/${id}`, "GET");
   }, [id]);
 
-  // console.log(data?.data.photo, "USERPH");
+  console.log(data?.data?._id, "USER ID");
 
   const isCurrentUser = loggedInClientId === id; //check if id is the same
 
@@ -122,7 +121,7 @@ const StaffDetails = () => {
               className="w-24 h-24 object-cover rounded-full"
             />
             {isAdminOrHr && (
-              <UpdateUserPositionAndRole userId={data?.data._id} />
+              <UpdateUserPositionAndRole userId={data?.data?._id} />
             )}
           </div>
           <Divider />

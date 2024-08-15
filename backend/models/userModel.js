@@ -166,15 +166,15 @@ const userSchema = new mongoose.Schema(
       max: Date.now,
     },
 
-    clientCase: [
-      {
-        type: mongoose.Schema.ObjectId,
-        ref: "Case",
-        // required:function() {
-        //   return this.role === "client"
-        // }
-      },
-    ],
+    // clientCase: [
+    //   {
+    //     type: mongoose.Schema.ObjectId,
+    //     ref: "Case",
+    //     // required:function() {
+    //     //   return this.role === "client"
+    //     // }
+    //   },
+    // ],
 
     isVerified: {
       type: Boolean,
@@ -194,7 +194,7 @@ const userSchema = new mongoose.Schema(
     // },
 
     //handles user's deletion of account
-    active: {
+    isActive: {
       type: Boolean,
       default: true,
       select: false,

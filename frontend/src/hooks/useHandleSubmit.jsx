@@ -1,27 +1,16 @@
 import { Form } from "antd";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useDataFetch } from "./useDataFetch";
 import { useDispatch } from "react-redux";
-
 import { toast } from "react-toastify";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
+import { useDataGetterHook } from "./useDataGetterHook";
 
-const useHandleSubmit = (endpoint, method, emailData, refreshDataCallback) => {
+const useHandleSubmit = (endpoint, method, refreshEndPoint, key, emailData) => {
   const [form] = Form.useForm();
-  const { dataFetcher, data, loading, error } = useDataFetch(); // General data fetcher
+  const { dataFetcher, loading, error, data } = useDataFetch(); // General data fetcher
   const dispatch = useDispatch();
-
-  const handleSubmission = useCallback(
-    (result) => {
-      if (result?.error) {
-        // Handle Error here
-      } else {
-        // Handle Success here
-        form.resetFields();
-      }
-    },
-    [form]
-  );
+  const { fetchData } = useDataGetterHook();
 
   // Submit data
   const onSubmit = useCallback(async () => {
@@ -29,46 +18,42 @@ const useHandleSubmit = (endpoint, method, emailData, refreshDataCallback) => {
     try {
       values = await form.validateFields(); // Validate the form fields
     } catch (errorInfo) {
+      toast.error("Validation failed");
       return;
     }
     try {
-      await dataFetcher(endpoint, method, values); // Submit the form data to the backend
+      const response = await dataFetcher(endpoint, method, values); // Submit the form data to the backend
 
-      if (emailData) {
-        await dispatch(sendAutomatedCustomEmail(emailData)); // Send email if emailData is provided
+      if (response?.error) {
+        toast.error(response?.error || "Error submitting data");
+      } else {
+        toast.success("Data submitted successfully");
+        form.resetFields();
+
+        if (emailData) {
+          await dispatch(sendAutomatedCustomEmail(emailData)); // Send email if emailData is provided
+        }
+
+        if (refreshEndPoint) {
+          await fetchData(refreshEndPoint, key); // Refresh data if callback is provided
+        }
       }
-
-      if (refreshDataCallback) {
-        await refreshDataCallback(); // Refresh data if callback is provided
-      }
-
-      handleSubmission(data); // Handle the submission after the API Call
     } catch (error) {
-      toast.error("Error submitting report:", error);
+      toast.error("Error submitting report");
     }
   }, [
     form,
-    handleSubmission,
     dataFetcher,
     endpoint,
     method,
     emailData,
     dispatch,
-    refreshDataCallback,
-    data,
+    fetchData,
+    refreshEndPoint,
+    key,
   ]);
 
-  // useEffect(() => {
-  //   if (data?.data.message === "success") {
-  //     toast.success("Report Created");
-
-  //     if (path) {
-  //       navigate(path); // Redirect to the case report list page
-  //     }
-  //   }
-  // }, [navigate, path, data?.data.message]);
-
-  return { onSubmit, form, data, loading, error };
+  return { onSubmit, form, loading, error, data };
 };
 
 export default useHandleSubmit;

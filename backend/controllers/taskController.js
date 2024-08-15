@@ -8,6 +8,7 @@ exports.createTask = catchAsync(async (req, res, next) => {
 
   const task = await Task.create({ assignedBy: req.user.id, ...rest });
   res.status(201).json({
+    message: "success",
     data: task,
   });
 });
@@ -25,12 +26,7 @@ exports.getTasks = catchAsync(async (req, res, next) => {
 
 exports.getTask = catchAsync(async (req, res, next) => {
   const task = await Task.findById(req.params.taskId).populate("documents");
-  // .populate({
-  //   path: "notice",
-  //   select: "-recipient -relatedTask",
-  // });
-  // .populate("assignedTo")
-  // .populate("caseToWorkOn");
+
   if (!task) {
     return next(new AppError("The task does not exist", 404));
   }
@@ -60,7 +56,7 @@ exports.updateTask = catchAsync(async (req, res, next) => {
   });
 
   res.status(200).json({
-    status: "success",
+    message: "success",
     data: updatedTask,
   });
 });

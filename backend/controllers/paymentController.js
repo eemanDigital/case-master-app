@@ -4,10 +4,71 @@ const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
 const setRedisCache = require("../utils/setRedisCache");
+const Case = require("../models/caseModel");
 
 // Create a new payment
 
+// exports.createPayment = catchAsync(async (req, res, next) => {
+//   console.log(req.body);
+
+//   const {
+//     caseId,
+//     clientId,
+//     invoiceId,
+//     amountPaid,
+//     method,
+//     date,
+//     totalAmountDue,
+//   } = req.body;
+
+//   // Find the corresponding invoice
+//   const invoice = await Invoice.findById(invoiceId);
+//   if (!invoice) {
+//     return next(new AppError("No invoice found", 404));
+//   }
+
+//   // Calculate the new balance
+//   const newPayment = new Payment({
+//     invoiceId: invoiceId,
+//     caseId,
+//     clientId,
+//     amountPaid,
+//     method,
+//     date,
+//     totalAmountDue,
+//     balance: totalAmountDue - amountPaid,
+//   });
+
+//   if (
+//     !invoiceId ||
+//     !clientId ||
+//     !amountPaid ||
+//     !method ||
+//     !date ||
+//     !totalAmountDue
+//   ) {
+//     return next(new AppError("Please fill all fields", 401));
+//   }
+//   // Save the payment
+//   await newPayment.save();
+
+//   // Update the invoice status if fully paid
+//   if (newPayment.balance <= 0) {
+//     invoice.status = "paid";
+//   }
+
+//   await invoice.save();
+
+//   res.status(201).json({
+//     message: "success",
+//     // fromCache: false,
+//     data: newPayment,
+//   });
+// });
+
 exports.createPayment = catchAsync(async (req, res, next) => {
+  console.log(req.body);
+
   const {
     caseId,
     clientId,
@@ -18,10 +79,43 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     totalAmountDue,
   } = req.body;
 
+  // Validate that all required fields are provided
+  if (
+    !clientId ||
+    !invoiceId ||
+    !amountPaid ||
+    !method ||
+    !date ||
+    !totalAmountDue
+  ) {
+    return next(new AppError("Please fill all fields", 401));
+  }
+
   // Find the corresponding invoice
   const invoice = await Invoice.findById(invoiceId);
   if (!invoice) {
     return next(new AppError("No invoice found", 404));
+  }
+
+  // Find the corresponding case
+  const caseData = await Case.findById(caseId).populate("client");
+  if (!caseData) {
+    return next(new AppError("No case found", 404));
+  }
+
+  // Check if the case has an associated client
+  if (!caseData.client) {
+    return next(new AppError("No client associated with this case", 400));
+  }
+
+  // Check if the client associated with the case is the same as the clientId provided
+  if (caseData.client._id.toString() !== clientId) {
+    return next(
+      new AppError(
+        "Client in the case does not match the provided client ID",
+        400
+      )
+    );
   }
 
   // Calculate the new balance
@@ -47,8 +141,7 @@ exports.createPayment = catchAsync(async (req, res, next) => {
   await invoice.save();
 
   res.status(201).json({
-    status: "success",
-    fromCache: false,
+    message: "success",
     data: newPayment,
   });
 });
@@ -61,7 +154,7 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
   setRedisCache("payments", payments, 1200);
 
   res.status(200).json({
-    status: "success",
+    message: "success",
     results: payments.length,
     data: {
       payments,

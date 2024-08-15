@@ -36,7 +36,7 @@ POST  {{baseUrl}}users/sendWithCode/admin2@gmail.com  HTTP/1.1
 content-type: application/json
 
 {
-  "loginCode":"552039"
+  "loginCode":"555768"
 }
 
   # "email":{"$gt":""},
@@ -60,7 +60,7 @@ POST  http://localhost:3000/api/v1/users/loginWithcode/asinmi4real@gmail.com  HT
 content-type: application/json
 
 {
-  "loginCode":"878062"
+  "loginCode":"555768"
 }
 
 

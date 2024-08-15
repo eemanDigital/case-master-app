@@ -1,7 +1,14 @@
+import { useEffect } from "react";
 import { useDataGetterHook } from "./useDataGetterHook";
 
+//hook to fetch invoice reference number
 const useInvoiceRefSelectOptions = () => {
-  const { invoices } = useDataGetterHook();
+  const { invoices, fetchData } = useDataGetterHook();
+
+  // fetch data
+  useEffect(() => {
+    fetchData("invoices", "invoices");
+  }, []);
 
   const invoiceRefOptions = Array.isArray(invoices?.data)
     ? invoices?.data.map((invoice) => {

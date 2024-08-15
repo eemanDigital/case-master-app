@@ -24,7 +24,6 @@ const SignUp = () => {
   const { togglePassword: togglePassword2, showPassword: showPassword2 } =
     useTogglePassword();
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

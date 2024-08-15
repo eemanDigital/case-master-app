@@ -2,33 +2,33 @@ import Input from "../components/Inputs";
 import Select from "../components/Select";
 import { useState, useEffect } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { Button, Modal } from "antd";
+import { Button, Modal, Checkbox } from "antd";
 import useModal from "../hooks/useModal";
 import { positions, roles } from "../data/options";
-import "react-toastify/dist/ReactToastify.css";
 import { useSelector } from "react-redux";
+import LoadingSpinner from "../components/LoadingSpinner";
+import { toast } from "react-toastify";
+import { useNavigate } from "react-router-dom";
+import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
 
 const UpdateUserPositionAndRole = ({ userId }) => {
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();
-  const { data, loading, error, dataFetcher } = useDataFetch();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { formData, loading: initalDataLoading } = useInitialDataFetcher(
+    "users",
+    userId
+  );
+
+  console.log(formData.active, "UPFD");
+
+  const { loading, error, dataFetcher } = useDataFetch();
+  const { user } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
 
   const [inputValue, setInputValue] = useState({
-    firstName: "",
-    lastName: "",
-    middleName: "",
-    address: "",
-    bio: "",
-    position: "",
-    phone: "",
-    yearOfCall: "",
-    annualLeaveEntitled: "",
-    otherPosition: "",
-    practiceArea: "",
-    universityAttended: "",
-    lawSchoolAttended: "",
+    role: formData.role,
+    position: formData.position,
+    isActive: formData.isActive,
   });
 
   const getOtherFieldSelected = inputValue.position === "Other";
@@ -38,6 +38,14 @@ const UpdateUserPositionAndRole = ({ userId }) => {
     setInputValue((prevData) => ({
       ...prevData,
       [name]: value,
+    }));
+  }
+
+  function handleCheckboxChange(e) {
+    const { name, checked } = e.target;
+    setInputValue((prevData) => ({
+      ...prevData,
+      [name]: checked,
     }));
   }
 
@@ -53,14 +61,23 @@ const UpdateUserPositionAndRole = ({ userId }) => {
   async function handleSubmit(e) {
     e.preventDefault();
     try {
-      await dataFetcher(
-        `users/update-user-by-admin/${userId}`,
+      const result = await dataFetcher(
+        `users/upgradeUser/${userId}`,
         "patch",
         inputValue
       );
+
+      if (!result?.error) {
+        return toast.success("User information updated");
+      }
+      navigate(0); // Refresh the page
     } catch (err) {
       console.log(err);
     }
+  }
+
+  if (error) {
+    return toast.error(error);
   }
 
   return (
@@ -94,14 +111,7 @@ const UpdateUserPositionAndRole = ({ userId }) => {
               name="role"
               onChange={handleChange}
             />
-            {/* <Input
-              type="number"
-              label="Leave Entitled"
-              placeholder="Enter leave entitled to"
-              value={inputValue.annualLeaveEntitled}
-              name="annualLeaveEntitled"
-              onChange={handleChange}
-            /> */}
+
             {getOtherFieldSelected && (
               <Input
                 type="text"
@@ -112,11 +122,20 @@ const UpdateUserPositionAndRole = ({ userId }) => {
                 onChange={handleChange}
               />
             )}
+
+            <div className="flex items-center">
+              <Checkbox
+                checked={inputValue.isActive}
+                name="isActive"
+                onChange={handleCheckboxChange}>
+                Active
+              </Checkbox>
+            </div>
           </div>
 
           <div className="flex justify-center">
-            <button className="bg-blue-500 text-white px-6 py-2 ">
-              Submit
+            <button className="blue-btn px-6 py-2">
+              {loading ? <LoadingSpinner /> : "Submit"}
             </button>
           </div>
         </form>

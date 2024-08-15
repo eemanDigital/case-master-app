@@ -27,6 +27,7 @@ import TodoList from "./TodoList";
 import EventForm from "./EventForm";
 import EventList from "../pages/EventList";
 import ScrollingEvents from "./ScrollingEvents";
+import CurrentDayCaseList from "./CurrentDayCauseList";
 
 // context for year for search filter
 export const PaymentFiltersContext = createContext();
@@ -218,31 +219,7 @@ const Dashboard = () => {
           {/* </div> */}
 
           <TodoList />
-          <div
-            className={`cause-list-container   ${
-              causeList.data?.todayResult === 0
-                ? "h-[180] w-full display-shadow-none bg-white"
-                : ""
-            }`}>
-            {!causeList.data?.todayResult > 0 ? (
-              <h3 className="bg-slate-800 text-white  p-5 font-medium text-center">
-                You have no matter today in Court
-              </h3>
-            ) : (
-              <div className="w-[370px] bg-slate-800">
-                <h4 className="text-center font-bold">Toady's Cause List</h4>
-
-                <SingleCauseList
-                  causeListData={causeList.data?.reportsToday}
-                  loadingCauseList={getterLoading.causeList}
-                  errorCauseList={getterError.causeList}
-                  title={causeListTitle}
-                  h1Style="text-center text-2xl text-gray-600 font-bold"
-                  hideButton={true}
-                />
-              </div>
-            )}
-          </div>
+          <CurrentDayCaseList />
           <LatestCaseReports />
 
           {/* <div className="flex justify-between shadow-md rounded-md my-6 gap-2 bg-white"> */}

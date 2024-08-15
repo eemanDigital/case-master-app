@@ -52,6 +52,7 @@ exports.deleteTaskResponse = catchAsync(async (req, res, next) => {
   res.status(204).json({ message: "success" });
 });
 
+// get task response
 exports.getTaskResponse = catchAsync(async (req, res, next) => {
   const { taskId, responseId } = req.params;
   const task = await Task.findById(taskId).populate({

@@ -1,8 +1,8 @@
-import { useState, useCallback, useEffect } from "react";
-import { useDataFetch } from "../hooks/useDataFetch";
+import { useEffect } from "react";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import { EditOutlined } from "@ant-design/icons";
+import PropTypes from "prop-types";
 import useModal from "../hooks/useModal";
 import {
   Button,
@@ -15,83 +15,41 @@ import {
   Modal,
   Tooltip,
 } from "antd";
-import axios from "axios";
 import ReactQuill from "react-quill";
 import { formats } from "../utils/quillFormat";
+import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
+import useHandleSubmit from "../hooks/useHandleSubmit";
+import { useNavigate } from "react-router-dom";
+import LoadingSpinner from "../components/LoadingSpinner";
 
-const baseURL = import.meta.env.VITE_BASE_URL;
+// const baseURL = import.meta.env.VITE_BASE_URL;
 
 const UpdateCaseReportForm = ({ reportId }) => {
-  // destructure textarea from input
-  const { TextArea } = Input;
-
-  const [form] = Form.useForm();
-  const [formData, setFormData] = useState({});
-  const [loading, setLoading] = useState(true);
-
-  // handle reports post and get report data
-  const { dataFetcher, data } = useDataFetch();
   const { casesOptions } = useCaseSelectOptions();
-
+  const { formData, loading } = useInitialDataFetcher("reports", reportId);
   const { userData } = useUserSelectOptions();
+  const { open, showModal, handleOk, handleCancel } = useModal(); //modal hook
+  const navigate = useNavigate();
 
-  const { open, confirmLoading, modalText, showModal, handleOk, handleCancel } =
-    useModal(); //modal hook
+  // custom hook to handle form submission
+  const {
+    form,
+    data,
+    onSubmit,
+    loading: submitLoading,
+  } = useHandleSubmit(`reports/${reportId}`, "patch", "reports", "reports");
 
-  // const token = document.cookie
-  //   .split("; ")
-  //   .find((row) => row.startsWith("jwt="))
-  //   ?.split("=")[1];
-
-  // const fileHeaders = {
-  //   "Content-Type": "multipart/form-data",
-  // };
-
+  // navigate after success
   useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await axios.get(`${baseURL}/reports/${reportId}`);
-        setFormData((prevData) => {
-          return {
-            ...prevData,
-            ...response?.data?.data,
-          };
-        });
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
+    if (data) {
+      navigate(-1);
     }
-    fetchData();
-  }, [reportId]);
+  }, [data, navigate]);
 
-  // form submit functionalities
-  const handleSubmission = useCallback(
-    (result) => {
-      if (result?.error) {
-        // Handle Error here
-      } else {
-        // Handle Success here
-        form.resetFields();
-      }
-    },
-    []
-    // [form]
-  );
-
-  // submit data
-  const onSubmit = useCallback(async () => {
-    let values;
-    try {
-      values = await form.validateFields(); // Validate the form fields
-    } catch (errorInfo) {
-      return;
-    }
-    const result = await dataFetcher(`reports/${reportId}`, "patch", values); // Submit the form data to the backend
-    // console.log(values);
-    handleSubmission(result); // Handle the submission after the API Call
-  }, [form, handleSubmission, dataFetcher]);
+  // loading initialData
+  if (loading) {
+    return <LoadingSpinner />;
+  }
 
   return (
     <>
@@ -183,8 +141,8 @@ const UpdateCaseReportForm = ({ reportId }) => {
                 }}
               />
             </Form.Item>
-            {/* REPORTER */}
 
+            {/* REPORTER */}
             <Form.Item
               name="reportedBy"
               label="Case Reporter"
@@ -208,13 +166,16 @@ const UpdateCaseReportForm = ({ reportId }) => {
             </Form.Item>
 
             {/* ADJOURNED DATE */}
-
             <Form.Item name="adjournedDate" label="Next Adjourned Date">
               <DatePicker />
             </Form.Item>
 
             <Form.Item>
-              <Button onClick={onSubmit} type="default" htmlType="submit">
+              <Button
+                loading={submitLoading}
+                onClick={onSubmit}
+                type="default"
+                htmlType="submit">
                 Submit
               </Button>
             </Form.Item>
@@ -223,6 +184,10 @@ const UpdateCaseReportForm = ({ reportId }) => {
       </Modal>
     </>
   );
+};
+
+UpdateCaseReportForm.propTypes = {
+  reportId: PropTypes.string.isRequired,
 };
 
 export default UpdateCaseReportForm;

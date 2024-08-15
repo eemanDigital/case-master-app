@@ -38,23 +38,23 @@ const CreateCaseForm = () => {
   const [formData, setFormData] = useState(caseInitialValue);
   const { userData } = useUserSelectOptions();
   const { clientOptions } = useClientSelectOptions();
-  const { form, onSubmit, data, loading, error } = useHandleSubmit(
-    "cases",
-    "post"
-  );
+  const { form, onSubmit, loading } = useHandleSubmit("cases", "post");
 
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
 
-  // handle error and success
-  useEffect(() => {
-    if (error) {
-      toast.error(error || "An error occurred");
-    }
-    if (data) {
-      toast.success(data?.message || "Operation successful");
-    }
-  }, [error, data]);
+  // // handle error and success
+  // useEffect(() => {
+  //   if (error) {
+  //     toast.error(error || "An error occurred");
+  //   }
+  //   if (data) {
+  //     toast.success(data?.message || "Operation successful");
+  //   }
+  // }, [error, data]);
+
+  // validation rule
+  const requiredRule = [{ required: true, message: "This field is required" }];
 
   return (
     <div className="max-w-4xl mx-auto p-4">
@@ -64,6 +64,7 @@ const CreateCaseForm = () => {
         name="dynamic_form_complex"
         className="space-y-6">
         {/* First Party */}
+
         <section className="bg-gray-50 p-4 rounded-lg shadow">
           <Divider orientation="left" orientationMargin="0">
             <Typography.Title level={4}>First Party</Typography.Title>
@@ -78,6 +79,7 @@ const CreateCaseForm = () => {
             secondInitialValue={formData?.firstParty?.name}
             thirdKeyVal="processesFiled"
             thirdInitialValue={formData?.firstParty?.processesFiled}
+            rules={requiredRule}
           />
         </section>
 
@@ -96,10 +98,10 @@ const CreateCaseForm = () => {
             secondInitialValue={formData?.secondParty?.name}
             thirdKeyVal="processesFiled"
             thirdInitialValue={formData?.secondParty?.processesFiled}
+            rules={requiredRule}
           />
         </section>
 
-        {/* Other Parties */}
         {/* Other Parties */}
         <section className="bg-gray-50 p-4 rounded-lg shadow">
           <Divider orientation="left" orientationMargin="0">
@@ -122,6 +124,7 @@ const CreateCaseForm = () => {
                     }>
                     <div className="space-y-4">
                       <Form.Item
+                        rules={requiredRule}
                         label="Description"
                         name={[field.name, "description"]}
                         initialValue={formData.otherParty.description}>
@@ -140,6 +143,7 @@ const CreateCaseForm = () => {
                                   key={subField.key}
                                   className="flex w-full">
                                   <Form.Item
+                                    rules={requiredRule}
                                     noStyle
                                     name={[subField.name, "name"]}
                                     initialValue={
@@ -181,6 +185,7 @@ const CreateCaseForm = () => {
                                   key={subField.key}
                                   className="flex w-full">
                                   <Form.Item
+                                    rules={requiredRule}
                                     noStyle
                                     name={[subField.name, "name"]}
                                     initialValue={
@@ -227,6 +232,7 @@ const CreateCaseForm = () => {
             <Form.Item
               name="modeOfCommencement"
               label="Mode of Commencement"
+              rules={requiredRule}
               initialValue={formData?.modeOfCommencement}>
               <Select
                 placeholder="Select mode"
@@ -256,6 +262,7 @@ const CreateCaseForm = () => {
             <Form.Item
               name="natureOfCase"
               label="Nature of Case"
+              rules={requiredRule}
               initialValue={formData?.natureOfCase}>
               <Select
                 placeholder="Select nature of case"
@@ -267,11 +274,15 @@ const CreateCaseForm = () => {
               />
             </Form.Item>
 
-            <Form.Item name="filingDate" label="Filing Date">
+            <Form.Item
+              rules={requiredRule}
+              name="filingDate"
+              label="Filing Date">
               <DatePicker className="w-full" />
             </Form.Item>
 
             <Form.Item
+              rules={requiredRule}
               name="suitNo"
               label="Suit No."
               tooltip="This is a required field"
@@ -285,6 +296,7 @@ const CreateCaseForm = () => {
         <section className="bg-gray-50 p-4 rounded-lg shadow">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Form.Item
+              rules={requiredRule}
               name="courtName"
               label="Court"
               initialValue={formData?.courtName}>
@@ -299,6 +311,7 @@ const CreateCaseForm = () => {
             </Form.Item>
 
             <Form.Item
+              rules={requiredRule}
               label="Court No"
               name="courtNo"
               initialValue={formData?.courtNo}>
@@ -314,6 +327,7 @@ const CreateCaseForm = () => {
             </Form.Item>
 
             <Form.Item
+              rules={requiredRule}
               label="State"
               name="state"
               placeholder="e.g. Lagos"
@@ -341,6 +355,7 @@ const CreateCaseForm = () => {
         <section className="bg-gray-50 p-4 rounded-lg shadow">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <Form.Item
+              rules={requiredRule}
               name="caseStatus"
               label="Case Status"
               initialValue={formData?.caseStatus}>
@@ -355,6 +370,7 @@ const CreateCaseForm = () => {
             </Form.Item>
 
             <Form.Item
+              rules={requiredRule}
               name="category"
               label="Case Category"
               initialValue={formData?.category}>
@@ -369,6 +385,7 @@ const CreateCaseForm = () => {
             </Form.Item>
 
             <Form.Item
+              rules={requiredRule}
               name="casePriority"
               label="Case Priority/Rating"
               initialValue={formData?.casePriority}>
@@ -387,6 +404,7 @@ const CreateCaseForm = () => {
         {/* Additional Information */}
         <section className="bg-gray-50 p-4 rounded-lg shadow space-y-4">
           <DynamicInputArrays
+            rules={requiredRule}
             parentKey="judge"
             initialValue={formData?.judge}
             label="Judge/Justices"
@@ -394,6 +412,7 @@ const CreateCaseForm = () => {
           />
 
           <DynamicInputArrays
+            rules={requiredRule}
             parentKey="caseStrengths"
             initialValue={formData?.caseStrengths}
             label="Case Strength"
@@ -401,6 +420,7 @@ const CreateCaseForm = () => {
           />
 
           <DynamicInputArrays
+            rules={requiredRule}
             parentKey="caseWeaknesses"
             initialValue={formData?.caseWeaknesses}
             label="Case Weaknesses"
@@ -408,6 +428,7 @@ const CreateCaseForm = () => {
           />
 
           <DynamicInputArrays
+            rules={requiredRule}
             parentKey="stepToBeTaken"
             initialValue={formData?.stepToBeTaken}
             label="Steps/Strategies"
@@ -418,6 +439,7 @@ const CreateCaseForm = () => {
         <section className="bg-gray-50 p-4 rounded-lg shadow">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Form.Item
+              rules={requiredRule}
               name="accountOfficer"
               label="Account Officer"
               initialValue={formData?.accountOfficer.name}>
@@ -431,11 +453,11 @@ const CreateCaseForm = () => {
             </Form.Item>
 
             <Form.Item
+              rules={requiredRule}
               name="client"
               label="Client"
               initialValue={formData?.client}>
               <Select
-                mode="multiple"
                 placeholder="Select client..."
                 options={clientOptions}
                 allowClear
@@ -448,6 +470,7 @@ const CreateCaseForm = () => {
         {/* Case Summary and General Comment */}
         <section className="bg-gray-50 p-4 rounded-lg shadow space-y-4">
           <TextAreaInput
+            rules={requiredRule}
             fieldName="caseSummary"
             initialValue={formData?.caseSummary}
             label="Case Summary"

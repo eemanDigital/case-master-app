@@ -101,31 +101,9 @@ body {
     transform: rotate(360deg);
   }
 }
-
+/* custom btn across components */
 .blue-btn {
   background-color: #3b82f6;
   color: #ffffff;
   border-radius: 0.375rem;
-}
-
-/* custom table style - cause-list and report*/
-.dashboard-container {
-  display: flex;
-  justify-content: space-between;
-  gap: 20px; /* Adjust the gap between the components as needed */
-  flex-wrap: wrap; /* Allow wrapping if the screen is too small */
-}
-
-.cause-list-container,
-.latest-case-reports-container {
-  flex: 1; /* Allow the containers to grow and shrink equally */
-  min-width: 300px; /* Set a minimum width to prevent them from getting too small */
-  max-width: 50%; /* Set a maximum width to prevent them from getting too big */
-  height: 200px;
-  border-radius: 10px;
-
-  overflow-y: scroll;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional: Add some shadow for better visual separation */
-  padding: 10px; /* Optional: Add some padding */
-  background-color: white; /* Ensure background is white */
 }

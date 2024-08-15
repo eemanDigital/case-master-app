@@ -4,12 +4,7 @@ import { getUsers } from "../redux/features/auth/authSlice";
 import { useDispatch, useSelector } from "react-redux";
 
 const useClientSelectOptions = () => {
-  const {
-    isSuccess,
-    isError,
-    isLoading,
-    users: clients,
-  } = useSelector((state) => state.auth);
+  const { users: clients } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
   // fetch users

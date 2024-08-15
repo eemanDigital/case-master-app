@@ -8,22 +8,6 @@ import "react-toastify/dist/ReactToastify.css";
 import { useSelector } from "react-redux";
 
 const EditUserProfile = () => {
-  const positions = [
-    "Select a position",
-    "Principal",
-    "Managing Partner",
-    "Head of Chambers",
-    "Associate",
-    "Senior Associate",
-    "Junior Associate",
-    "Counsel",
-    "Intern",
-    "Secretary",
-    "Para-legal",
-    "Client",
-    "Other",
-  ];
-  const roles = ["user", "admin", "secretary", "hr"];
   const gender = ["male", "female"];
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();

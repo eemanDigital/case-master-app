@@ -1,90 +1,63 @@
 import { useState, useCallback } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
+import { MdNotificationsNone } from "react-icons/md";
+import { Button, Input, Form, Modal, Card, Tooltip } from "antd";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-import {
-  Button,
-  Input,
-  Form,
-  Modal,
-  //   Space,
-  Card,
-  Tooltip,
-} from "antd";
-import { RiRestTimeLine } from "react-icons/ri";
+const { TextArea } = Input;
 
 const TaskReminderForm = ({ id }) => {
-  //   const { id } = useParams();
   const [open, setOpen] = useState(false);
-  //   const [confirmLoading, setConfirmLoading] = useState(false);
-  //   const [modalText, setModalText] = useState("Content of the modal");
+  const { dataFetcher, loading } = useDataFetch();
+
   const showModal = () => {
     setOpen(true);
   };
-  //   const handleOk = () => {
-  //     setModalText("The modal will be closed after two seconds");
-  //     setConfirmLoading(true);
-  //     setTimeout(() => {
-  //       setOpen(false);
-  //       setConfirmLoading(false);
-  //     }, 2000);
-  //   };
+
   const handleCancel = () => {
-    console.log("Clicked cancel button");
     setOpen(false);
   };
 
-  // destructure textarea from input
-  const { TextArea } = Input;
-
   const [form] = Form.useForm();
-  const [formData, setFormData] = useState({
-    reminder: {
-      message: "",
-    },
-  });
-  // destructor authenticate from useAuth
-  const { dataFetcher, data, loading, error } = useDataFetch();
 
-  // form submit functionalities
   const handleSubmission = useCallback(
     (result) => {
       if (result?.error) {
-        // Handle Error here
+        toast.error("Failed to send the reminder! Please try again.");
       } else {
-        // Handle Success here
-        // form.resetFields();
+        toast.success("Reminder sent successfully!");
+        form.resetFields();
+        setOpen(false);
       }
     },
-    []
-    // [form]
+    [form]
   );
 
-  // submit data
   const onSubmit = useCallback(async () => {
     let values;
     try {
-      values = await form.validateFields(); // Validate the form fields
+      values = await form.validateFields();
     } catch (errorInfo) {
+      toast.error("Please correct the form errors before submitting.");
       return;
     }
-    const result = await dataFetcher(`tasks/${id}`, "patch", values); // Submit the form data to the backend
-    console.log("VALUE", values);
-    handleSubmission(result); // Handle the submission after the API Call
+    const result = await dataFetcher(`tasks/${id}`, "patch", values);
+    handleSubmission(result);
   }, [form, handleSubmission, dataFetcher, id]);
 
-  // console.log("FORM", formData);
   return (
     <>
       <Tooltip title="Send Reminder">
         <Button
-          icon={RiRestTimeLine}
+          icon={<MdNotificationsNone size={20} />}
           onClick={showModal}
-          className="bg-blue-500 text-white"></Button>
+          className="bg-blue-200 text-blue-600"></Button>
       </Tooltip>
       <Modal
         title="Send Reminder on Task"
         open={open}
-        // onOk={handleOk}
+        footer={null}
         confirmLoading={loading}
         onCancel={handleCancel}>
         <section className="flex justify-between gap-8 ">
@@ -92,15 +65,12 @@ const TaskReminderForm = ({ id }) => {
             layout="vertical"
             form={form}
             name="dynamic_form_complex"
-            // autoComplete="off"
             className="flex  justify-center">
             <Card bordered={false} style={{ width: 400 }}>
-              {/* instruction */}
               <Form.Item
                 name={["reminder", "message"]}
                 label="Write your message here..."
-                //   tooltip="This is a required field"
-                initialValue={formData?.reminder.message}
+                initialValue=""
                 rules={[
                   {
                     required: true,
@@ -111,8 +81,12 @@ const TaskReminderForm = ({ id }) => {
               </Form.Item>
 
               <Form.Item>
-                <Button onClick={onSubmit} type="default" htmlType="submit">
-                  Submit
+                <Button
+                  loading={loading}
+                  onClick={onSubmit}
+                  className="blue-btn"
+                  htmlType="submit">
+                  Save
                 </Button>
               </Form.Item>
             </Card>
@@ -122,4 +96,5 @@ const TaskReminderForm = ({ id }) => {
     </>
   );
 };
+
 export default TaskReminderForm;

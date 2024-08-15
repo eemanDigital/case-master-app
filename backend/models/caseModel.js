@@ -5,29 +5,42 @@ const nameSchema = new mongoose.Schema({
   name: {
     type: String,
     trim: true,
+    minlength: [2, "field should be at least 2 characters long"],
+    maxlength: [100, "field should be less than 100 characters long"],
   },
 });
 
+// Sub-document for judge
 const judgeSchema = new mongoose.Schema({
   name: {
     type: String,
     trim: true,
+    required: [true, "Judge name is required"],
+    minlength: [2, "Judge name must be at least 2 characters long"],
+    maxlength: [100, "Judge name must be less than 100 characters long"],
   },
 });
 
 // Sub-document for processes
-const partyProcessSchema = new mongoose.Schema({ name: String });
+const partyProcessSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    trim: true,
+    required: [true, "Process name is required"],
+  },
+});
 
 // Sub-document for documents
 const documentSchema = new mongoose.Schema({
   fileName: {
     type: String,
-    required: [true, "Provide file name"],
+    required: [true, "File name is required"],
     trim: true,
+    maxlength: [200, "File name must be less than 200 characters long"],
   },
   file: {
     type: String,
-    required: [true, "Provide document to upload"],
+    required: [true, "Document file is required"],
   },
 });
 
@@ -35,18 +48,33 @@ const documentSchema = new mongoose.Schema({
 const caseSchema = new mongoose.Schema(
   {
     firstParty: {
-      description: String,
+      description: {
+        type: String,
+        trim: true,
+        maxlength: [1000, "Description must be less than 1000 characters long"],
+      },
       name: [nameSchema],
       processesFiled: [partyProcessSchema],
     },
     secondParty: {
-      description: String,
+      description: {
+        type: String,
+        trim: true,
+        maxlength: [1000, "Description must be less than 1000 characters long"],
+      },
       name: [nameSchema],
       processesFiled: [partyProcessSchema],
     },
     otherParty: [
       {
-        description: String,
+        description: {
+          type: String,
+          trim: true,
+          maxlength: [
+            1000,
+            "Description must be less than 1000 characters long",
+          ],
+        },
         name: [nameSchema],
         processesFiled: [partyProcessSchema],
       },
@@ -54,11 +82,18 @@ const caseSchema = new mongoose.Schema(
     suitNo: {
       type: String,
       trim: true,
+      required: [true, "Suit number is required"],
+      unique: true,
+      minlength: [3, "Suit number must be at least 3 characters long"],
     },
-    caseOfficeFileNo: String,
+    caseOfficeFileNo: {
+      type: String,
+      trim: true,
+    },
     courtName: {
       type: String,
       trim: true,
+      required: [true, "Court name is required"],
       enum: {
         values: [
           "supreme court",
@@ -84,7 +119,6 @@ const caseSchema = new mongoose.Schema(
         message: "Invalid court name",
       },
     },
-
     courtNo: {
       type: String,
       trim: true,
@@ -96,31 +130,30 @@ const caseSchema = new mongoose.Schema(
     state: {
       type: String,
       trim: true,
+      required: [true, "State is required"],
     },
     otherCourt: String,
     judge: [judgeSchema],
     caseSummary: {
       type: String,
       trim: true,
-      maxlength: [2000, "Case summary should not be more than 1000 characters"],
+      required: [true, "Provide a brief fact of the case"],
+
+      maxlength: [2000, "Case summary should not exceed 2000 characters"],
     },
     caseStatus: {
       type: String,
       trim: true,
+      required: [true, "Provide case status"],
       enum: {
         values: ["pending", "closed", "decided", "settled", "lost", "won"],
+        message: "Invalid case status",
       },
     },
-    // caseStatus: {
-    //   type: String,
-    //   trim: true,
-    //   enum: {
-    //     values: ["pending", "closed", "decided", "settled"],
-    //   },
-    // },
     natureOfCase: {
       type: String,
       trim: true,
+      required: [true, "specify nature of case filed"],
       enum: {
         values: [
           "contract dispute",
@@ -138,7 +171,6 @@ const caseSchema = new mongoose.Schema(
           "immigration",
           "maritime",
           "tax law",
-          "criminal law",
           "constitutional law",
           "environmental law",
           "human rights",
@@ -167,19 +199,26 @@ const caseSchema = new mongoose.Schema(
     category: {
       type: String,
       trim: true,
+      required: [true, "select case category"],
       enum: {
         values: ["civil", "criminal"],
-        message: "A case must have a category",
+        message: "Category must be either civil or criminal",
       },
+      required: [true, "Case category is required"],
     },
-    isFiledByTheOffice: Boolean,
+    isFiledByTheOffice: {
+      type: Boolean,
+      default: false,
+    },
     filingDate: {
       type: Date,
+      required: [true, "specify filing date"],
       default: Date.now,
     },
     modeOfCommencement: {
       type: String,
       trim: true,
+      required: [true, "Specify mode of commencement of the suit"],
       enum: {
         values: [
           "writ of summons",
@@ -196,12 +235,12 @@ const caseSchema = new mongoose.Schema(
         message: "Invalid mode of commencement",
       },
     },
-
     otherModeOfCommencement: String,
     caseStrengths: [nameSchema],
     caseWeaknesses: [nameSchema],
     casePriority: {
       type: String,
+      required: [true, "specify the rank/priority of the case"],
       enum: ["low", "medium", "high"],
     },
     stepToBeTaken: [nameSchema],
@@ -209,21 +248,28 @@ const caseSchema = new mongoose.Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
+        required: true,
       },
     ],
     client: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
     },
-
-    generalComment: String,
+    generalComment: {
+      type: String,
+      trim: true,
+      maxlength: [
+        2000,
+        "General comment must be less than 2000 characters long",
+      ],
+    },
     documents: [documentSchema],
     active: {
       type: Boolean,
       default: true,
       select: false,
     },
-
     deleted: {
       type: Boolean,
       default: false,
@@ -232,7 +278,6 @@ const caseSchema = new mongoose.Schema(
       type: Date,
     },
   },
-
   {
     toJSON: { virtuals: true },
     toObject: { virtuals: true },

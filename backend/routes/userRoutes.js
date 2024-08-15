@@ -72,11 +72,10 @@ router.get("/logout", logout);
 // // Change password for logged-in user
 router.patch("/changepassword", changePassword);
 // // Admin updates user by ID, restricted to super-admin
-router.post("/upgradeUser", restrictTo("super-admin"), upgradeUser);
-// // Get all users and specific user by userId
+
 router.get(
   "/",
-  cacheMiddleware(() => "users"),
+  // cacheMiddleware(() => "users"),
   getUsers
 );
 router.get(
@@ -87,6 +86,8 @@ router.get(
 
 // // Update user details, with photo upload and resize
 router.patch("/updateUser", uploadUserPhoto, resizeUserPhoto, updateUser);
+router.patch("/upgradeUser/:id", restrictTo("super-admin"), upgradeUser);
+
 router.get(
   "/:id",
   // cacheMiddleware((req) => `user:${req.params.userId}`),

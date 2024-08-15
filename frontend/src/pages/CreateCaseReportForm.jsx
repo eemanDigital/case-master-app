@@ -24,12 +24,13 @@ const CreateCaseReportForm = () => {
     clientEmail: "",
     caseReported: "",
   });
-  const { fetchData } = useDataGetterHook();
+
   const { casesOptions } = useCaseSelectOptions();
   const { userData } = useUserSelectOptions();
   const { clientEmailsOption } = useClientSelectOptions();
   const navigate = useNavigate();
 
+  // prepare email data
   const emailData = useMemo(
     () => ({
       subject: "Case Report - A.T. Lukman & Co.",
@@ -42,27 +43,20 @@ const CreateCaseReportForm = () => {
     [formData.clientEmail, user?.data?.email]
   );
 
-  const refreshDataCallback = useCallback(
-    () => fetchData("reports", "reports"),
-    [fetchData]
-  );
-
+  // for data submission
   const {
     onSubmit,
     form,
     data: hookData,
     loading: hookLoading,
-    error: hookError,
-  } = useHandleSubmit("reports", "POST", emailData, refreshDataCallback);
+  } = useHandleSubmit("reports", "POST", "reports", "report", emailData);
 
+  // navigate after success
   useEffect(() => {
     if (hookData) {
-      toast.success("Report Created");
       navigate(-1);
-    } else if (hookError) {
-      toast.error(hookError);
     }
-  }, [hookData, navigate, hookError]);
+  }, [hookData, navigate]);
 
   const handleFormChange = (changedValues, allValues) => {
     setFormData((prevData) => ({
@@ -108,6 +102,7 @@ const CreateCaseReportForm = () => {
           ]}>
           <Input placeholder="Your text here..." />
         </Form.Item>
+
         <Form.Item
           name="caseReported"
           label="Case Reported"
@@ -124,6 +119,7 @@ const CreateCaseReportForm = () => {
             style={{ width: "100%" }}
           />
         </Form.Item>
+
         <Form.Item
           name="clientEmail"
           label="Client's Name"
