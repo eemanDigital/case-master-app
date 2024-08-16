@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -8,7 +9,7 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Card } from "antd";
+import { Card, Modal } from "antd";
 import CustomTooltip from "./CustomToolTip";
 
 // Mapping from month numbers to month names
@@ -28,6 +29,20 @@ const monthNames = [
 ];
 
 const CaseCountsByPeriodChart = ({ data }) => {
+  const [isModalVisible, setIsModalVisible] = useState(false);
+
+  const showModal = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleOk = () => {
+    setIsModalVisible(false);
+  };
+
+  const handleCancel = () => {
+    setIsModalVisible(false);
+  };
+
   // Transform the data to fit the expected structure for recharts
   const transformedData = data.map((item) => ({
     month: monthNames[item.month - 1], // Adjust for 0-indexed array
@@ -36,41 +51,60 @@ const CaseCountsByPeriodChart = ({ data }) => {
   }));
 
   return (
-    <Card
-      title="New Briefs by Month"
-      style={{ width: "100%", marginBottom: 20 }}>
-      <ResponsiveContainer width="100%" height={400}>
-        <BarChart
-          width={600}
-          height={400}
-          data={transformedData}
-          margin={{
-            top: 20,
-            right: 30,
-            left: 20,
-            bottom: 5,
-          }}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="month" />
-          <YAxis />
-          <Tooltip content={CustomTooltip} />
-          <Legend />
-          <Bar dataKey="count" fill="#8884d8" />
-        </BarChart>
-      </ResponsiveContainer>
-      {/* <div className="case-list">
-        {transformedData.map((item, index) => (
-          <div key={index}>
-            <h3 className="font-bold">{`New Briefs in: ${item.month}`}</h3>
-            <ul>
-              {item.parties.map((party, idx) => (
-                <li key={idx}>{party}</li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div> */}
-    </Card>
+    <>
+      <Card
+        onClick={showModal}
+        title="New Briefs by Month"
+        style={{ width: "50%", marginBottom: 10 }}>
+        <ResponsiveContainer width={600} height={140}>
+          <BarChart
+            data={transformedData}
+            margin={{
+              top: 20,
+              right: 200,
+              left: 0,
+              bottom: 5,
+            }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="month" />
+            <YAxis />
+            <Tooltip content={CustomTooltip} />
+            <Legend />
+            <Bar dataKey="count" fill="#8884d8" />
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+
+      <Modal
+        title="New Briefs by Month"
+        open={isModalVisible}
+        onOk={handleOk}
+        onCancel={handleCancel}
+        footer={null}
+        width="80%" // Set the width of the modal
+        // bodyStyle={{ overflow: "hidden" }} // Hide the scroll
+      >
+        <div className="p-5 w-full overflow-hidden">
+          <ResponsiveContainer width="100%" height={400}>
+            <BarChart
+              data={transformedData}
+              margin={{
+                top: 20,
+                right: 30,
+                left: 20,
+                bottom: 5,
+              }}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip content={CustomTooltip} />
+              <Legend />
+              <Bar dataKey="count" fill="#8884d8" />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </Modal>
+    </>
   );
 };
 

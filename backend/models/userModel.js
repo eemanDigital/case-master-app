@@ -155,7 +155,7 @@ const userSchema = new mongoose.Schema(
     universityAttended: {
       type: String,
       required: function () {
-        return this.role === "client";
+        return this.role !== "client";
       },
     },
     yearOfCall: {

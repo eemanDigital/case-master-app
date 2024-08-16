@@ -111,7 +111,7 @@ const InvoiceList = () => {
       dataIndex: "client",
       key: "client",
       render: (client) =>
-        client ? `${client.firstName} ${client.secondName}` : "N/A",
+        client ? `${client.firstName} ${client.secondName || ""}` : "N/A",
       responsive: ["md"],
     },
     {

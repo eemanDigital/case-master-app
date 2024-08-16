@@ -1,6 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useDataFetch } from "../hooks/useDataFetch";
 import { DeleteOutlined } from "@ant-design/icons";
 
 import {
@@ -19,97 +17,35 @@ import {
 import { invoiceOptions } from "../data/options";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useClientSelectOptions from "../hooks/useClientSelectOptions";
-import axios from "axios";
 import moment from "moment";
+import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
+import useHandleSubmit from "../hooks/useHandleSubmit";
 
 const { TextArea } = Input;
 
-const baseURL = import.meta.env.VITE_BASE_URL;
 const UpdateInvoice = () => {
-  // destructure textarea from input
-  const [form] = Form.useForm();
-
   const { casesOptions } = useCaseSelectOptions();
   const { clientOptions } = useClientSelectOptions();
-
   const { id } = useParams();
-
-  const [formData, setFormData] = useState({});
-  const [loading, setLoading] = useState(true);
 
   // for navigation from page to page
   const navigate = useNavigate();
-
-  // get cookie
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("jwt="))
-    ?.split("=")[1];
-
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
-  // fetch initial data for the update state
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const response = await axios.get(`${baseURL}/invoices/${id}`, {
-          headers: {
-            ...fileHeaders,
-            Authorization: `Bearer ${token}`,
-          },
-        });
-        // console.log("RES", response.data.data);
-
-        setFormData((prevData) => {
-          return {
-            ...prevData,
-            ...response?.data?.data,
-          };
-        });
-      } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchData();
-  }, [id]);
-
-  const { dataFetcher, data } = useDataFetch(); //general data fetcher
-
-  // FORM SUBMISSION
-  // form submit functionalities
-  const handleSubmission = useCallback(
-    (result) => {
-      if (result?.error) {
-        // Handle Error here
-      } else {
-        // Handle Success here
-        // form.resetFields();
-      }
-    },
-    []
-    // [form]
-  );
-
-  // submit data
-  const onSubmit = useCallback(async () => {
-    let values;
-    try {
-      values = await form.validateFields(); // Validate the form fields
-    } catch (errorInfo) {
-      return;
-    }
-    const result = await dataFetcher(`invoices/${id}`, "patch", values); // Submit the form data to the backend
-    // console.log(values);
-
-    handleSubmission(result); // Handle the submission after the API Call
-  }, [form, handleSubmission, dataFetcher, id]);
+  // update the form
+  const { formData, loading, data } = useInitialDataFetcher("invoices", id); //initial data fetcher
+  // custom hook to handle form submission
+  const {
+    form,
+    onSubmit,
+    loading: loadingState,
+  } = useHandleSubmit(`invoices/${id}`, "patch");
 
   // filter options for the select field
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
+
+  if (data) {
+    return navigate("invoices");
+  }
 
   // loading state handler
   if (loading) {
@@ -460,7 +396,11 @@ const UpdateInvoice = () => {
 
         <Divider />
         <Form.Item>
-          <Button onClick={onSubmit} type="default" htmlType="submit">
+          <Button
+            loading={loadingState}
+            onClick={onSubmit}
+            className="blue-btn"
+            htmlType="submit">
             Submit
           </Button>
         </Form.Item>

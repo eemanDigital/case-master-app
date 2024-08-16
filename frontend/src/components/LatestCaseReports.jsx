@@ -47,7 +47,7 @@ const LatestCaseReports = () => {
   if (error.reports) return <div>Error: {error.reports}</div>; // Handle error state
 
   return (
-    <div className="bg-white shadow-md ">
+    <div className="bg-white w-full rounded-md shadow-md md:ml-14 ml-0 h-[290px] mt-0 overflow-auto">
       <Link
         className="text-blue-600 underline p-2 text-[12px] block hover:text-blue-800 hover:font-bold "
         to="case-reports">
@@ -56,7 +56,7 @@ const LatestCaseReports = () => {
 
       <CaseReportList
         showFilter={false}
-        title="Today's Reports on Cases"
+        // title="Today's Reports"
         reports={todayReports}
         hideButtons={true}
         titleStyle="text[20px] text-center font-medium"

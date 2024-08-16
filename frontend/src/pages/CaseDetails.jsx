@@ -38,6 +38,8 @@ const CaseDetails = () => {
     "caseData"
   );
 
+  console.log(data?.data?.client);
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
@@ -314,7 +316,10 @@ const CaseDetails = () => {
 
               <div className="mb-4">
                 <h1 className="text-xl  mb-2">Client</h1>
-                <p>{data?.data?.client?.fullName}</p>
+                <p>
+                  {data?.data?.client?.firstName}{" "}
+                  {data?.data?.client?.secondName || ""}
+                </p>
               </div>
 
               <div className="mb-4">

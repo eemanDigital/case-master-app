@@ -1,56 +1,107 @@
 import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-// import { Button } from "antd";
+import { Card, Typography, Empty, Modal } from "antd";
+import { UnorderedListOutlined, PlusOutlined } from "@ant-design/icons";
 import TodoTask from "./TodoTask";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import TodoForm from "../pages/TodoForm";
 import LoadingSpinner from "./LoadingSpinner";
 import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
+
+const { Title, Text } = Typography;
 
 const TodoList = ({ title }) => {
-  // Destructure the necessary properties from the custom hook
   const { todos, error, loading, fetchData } = useDataGetterHook();
-
-  // State to handle optimistic updates
   const [optimisticTodos, setOptimisticTodos] = useState([]);
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const { user } = useSelector((state) => state.auth);
 
-  // Fetch data when the component mounts
+  console.log(todos, "TODOS");
   useEffect(() => {
     fetchData("todos", "todos");
   }, []);
 
-  // Function to add a new todo optimistically
   const addOptimisticTodo = (todo) => {
     setOptimisticTodos((prev) => [...prev, todo]);
   };
 
-  // Function to remove a todo optimistically by its id
   const removeOptimisticTodo = (id) => {
     setOptimisticTodos((prev) => prev.filter((todo) => todo?._id !== id));
   };
 
-  // Combine fetched todos and optimistic todos
   const allTodos = [...(todos?.data?.todos || []), ...optimisticTodos];
 
-  // Display loading message if data is being fetched
   if (loading.todos) return <LoadingSpinner />;
-
-  // Display error message if there was an error fetching data
   if (error.todos) return toast.error(error.todos);
 
+  const showModal = () => {
+    setIsModalVisible(true);
+  };
+
+  const handleOk = () => {
+    setIsModalVisible(false);
+  };
+
+  const handleCancel = () => {
+    setIsModalVisible(false);
+  };
+
+  const userTodos = (userId) =>
+    todos?.data?.todos?.filter(
+      (doc) => doc.userId === userId && doc.isCompleted === false
+    );
+
+  // console.log(userTodos(user?.data?._id));
   return (
-    <section className="flex flex-col bg-white pt-2 p-2 rounded-md">
-      <div className="flex justify-between items-center">
-        <h3 className="text-2xl font-bold">{title}</h3>
-      </div>
-      <div className="mt-4">
-        <TodoTask tasks={allTodos || []} />
-        <TodoForm
-          addOptimisticTodo={addOptimisticTodo}
-          removeOptimisticTodo={removeOptimisticTodo}
-        />
-      </div>
-    </section>
+    <>
+      <Card
+        hoverable
+        className="bg-green-50 w-full sm:w-64 md:w-80 lg:w-96 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+        onClick={showModal}>
+        <div className="space-y-2">
+          <div className="text-blue-500 flex items-center ">
+            <UnorderedListOutlined className="mr-2 p-3 rounded-full text-green-700 bg-green-200 text-2xl" />
+            {title}
+          </div>
+          {allTodos.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <h1 className="text-sm text-green-700">No tasks for today</h1>
+              }
+            />
+          ) : (
+            <h1 className="text-lg  font-medium text-green-700">
+              {userTodos(user?.data?._id).length} task(s) pending
+            </h1>
+          )}
+        </div>
+      </Card>
+
+      <Modal
+        title={
+          <span className="text-xl text-blue-600 font-semibold">{title}</span>
+        }
+        open={isModalVisible}
+        onOk={handleOk}
+        onCancel={handleCancel}
+        footer={null}
+        width="90%"
+        className="p-0">
+        <div className="p-4 w-full max-h-[80vh] overflow-y-auto">
+          <section className="flex flex-col bg-white pt-2 p-2 rounded-md">
+            <div className="mt-4">
+              <TodoTask tasks={allTodos || []} />
+              <TodoForm
+                addOptimisticTodo={addOptimisticTodo}
+                removeOptimisticTodo={removeOptimisticTodo}
+              />
+            </div>
+          </section>
+        </div>
+      </Modal>
+    </>
   );
 };
 

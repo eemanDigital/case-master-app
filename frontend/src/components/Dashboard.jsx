@@ -85,7 +85,6 @@ const Dashboard = () => {
     yearlyNewCases,
     loading: getterLoading,
     error: getterError,
-    causeList,
   } = useDataGetterHook();
 
   // end
@@ -143,16 +142,16 @@ const Dashboard = () => {
   }, [yearEachMonth]);
 
   // console.log(reports, events, "AD");
-  const causeListTitle = (
-    <div className="flex justify-between items-center">
-      <h1 className="text-gray-700 text-[20px] font-bold">
-        {`Your Cases for today: ${causeList.data?.todayResult}`}
-      </h1>
-      <Link to="cause-list">
-        <Button className="bg-blue-500 text-white">See all List</Button>
-      </Link>
-    </div>
-  );
+  // const causeListTitle = (
+  //   <div className="flex justify-between items-center">
+  //     <h1 className="text-gray-700 text-[20px] font-bold">
+  //       {`Your Cases for today: ${causeList.data?.todayResult}`}
+  //     </h1>
+  //     <Link to="cause-list">
+  //       <Button className="bg-blue-500 text-white">See all List</Button>
+  //     </Link>
+  //   </div>
+  // );
 
   // console.log(fetchedMonthData, "AO");
 
@@ -216,17 +215,22 @@ const Dashboard = () => {
 
             {/* </div> */}
           </div>
-          {/* </div> */}
 
-          <TodoList />
-          <CurrentDayCaseList />
-          <LatestCaseReports />
+          <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:space-x-4">
+            <div className="flex flex-col space-y-4 w-full lg:w-1/3">
+              <TodoList />
+              <CurrentDayCaseList />
+            </div>
 
-          {/* <div className="flex justify-between shadow-md rounded-md my-6 gap-2 bg-white"> */}
-          {/* <div className="flex w-full"> */}
+            <div className="w-full  lg:w-2/3">
+              <LatestCaseReports />
+            </div>
+          </div>
+          <div className=" flex justify-between items-center">
+            <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
 
-          {/* </div> */}
-
+            <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
+          </div>
           {/* </div> */}
           <div className="flex  md:flex-col  justify-between gap-2 w-full">
             <MonthlyPaymentsChart data={fetchedMonthData?.data} />
@@ -236,11 +240,7 @@ const Dashboard = () => {
             />
             <PaymentsEachMonthChart data={fetchedEachMonthDataInYear?.data} />
           </div>
-          <div className=" bg-white flex  md:flex-row   justify-between  items-center p-4">
-            <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
 
-            <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
-          </div>
           <div className="flex justify-between flex-wrap w-full py-12 px-6 my-8 shadow-md rounded-md gap-2 bg-white">
             <CasesByCategoriesChart
               title="Case By Status"

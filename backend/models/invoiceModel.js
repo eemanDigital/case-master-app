@@ -109,7 +109,7 @@ invoiceSchema.pre(/^find/, function (next) {
     select: "-active -dob",
   }).populate({
     path: "case",
-    select: "firstParty.name.name secondParty.name.name",
+    select: "firstParty.name.name secondParty.name.name client",
   });
   next();
 });

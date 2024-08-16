@@ -115,7 +115,7 @@ const CaseReportList = ({
   );
 
   return (
-    <section className="w-full font-poppins mt-8 bg-gray-50 p-6 rounded-lg shadow-md">
+    <section className="w-full font-poppins  bg-gray-50 p-6 rounded-lg shadow-md">
       <Title
         level={2}
         className={`${titleStyle || "text-2xl text-gray-800 font-bold mb-6"} ${

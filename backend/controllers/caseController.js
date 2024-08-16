@@ -204,6 +204,7 @@ exports.getCasesByAccountOfficer = catchAsync(async (req, res, next) => {
     data: results,
   });
 });
+
 exports.getCasesByClient = catchAsync(async (req, res, next) => {
   const results = await Case.aggregate([
     {
@@ -211,7 +212,7 @@ exports.getCasesByClient = catchAsync(async (req, res, next) => {
     },
     {
       $lookup: {
-        from: "clients", // Ensure this matches the name of the Client collection
+        from: "users",
         localField: "client",
         foreignField: "_id",
         as: "clientDetails",

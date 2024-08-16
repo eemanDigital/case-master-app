@@ -19,7 +19,7 @@ router.use(protect);
 router
   .route("/")
   .get(
-    cacheMiddleware(() => "invoices"),
+    // cacheMiddleware(() => "invoices"),
     getAllInvoices
   )
   .post(createInvoice);
@@ -28,7 +28,7 @@ router.get("/total-amount-due-on-invoice", getTotalAmountDueOnInvoice);
 router
   .route("/:id")
   .get(
-    cacheMiddleware((req) => `invoice:${req.params.id}`),
+    // cacheMiddleware((req) => `invoice:${req.params.id}`),
     getInvoice
   )
   .patch(updateInvoice)

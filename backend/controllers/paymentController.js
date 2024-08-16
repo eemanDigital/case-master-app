@@ -97,6 +97,15 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     return next(new AppError("No invoice found", 404));
   }
 
+  console.log("INV CASEID", invoice.case.id, caseId);
+
+  // Check if the caseId in the invoice matches the provided caseId
+  if (invoice.case._id.toString() !== caseId) {
+    return next(
+      new AppError("Case does not match the case in the invoice", 400)
+    );
+  }
+
   // Find the corresponding case
   const caseData = await Case.findById(caseId).populate("client");
   if (!caseData) {
@@ -112,9 +121,16 @@ exports.createPayment = catchAsync(async (req, res, next) => {
   if (caseData.client._id.toString() !== clientId) {
     return next(
       new AppError(
-        "Client in the case does not match the provided client ID",
+        "Client in the case does not match the provided client name",
         400
       )
+    );
+  }
+
+  // Validate that amountPaid is less than or equal to totalAmountDue
+  if (amountPaid > totalAmountDue) {
+    return next(
+      new AppError("Amount paid cannot be greater than total amount due", 400)
     );
   }
 

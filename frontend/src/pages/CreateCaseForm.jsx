@@ -43,16 +43,6 @@ const CreateCaseForm = () => {
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
 
-  // // handle error and success
-  // useEffect(() => {
-  //   if (error) {
-  //     toast.error(error || "An error occurred");
-  //   }
-  //   if (data) {
-  //     toast.success(data?.message || "Operation successful");
-  //   }
-  // }, [error, data]);
-
   // validation rule
   const requiredRule = [{ required: true, message: "This field is required" }];
 

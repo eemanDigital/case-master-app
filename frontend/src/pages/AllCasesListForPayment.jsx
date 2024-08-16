@@ -7,14 +7,15 @@ import { useEffect } from "react";
 
 const AllCasesListForPayment = () => {
   const { cases, loading, error, fetchData } = useDataGetterHook();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
   const loggedInClientId = user?.data?.id;
 
   useEffect(() => {
     fetchData("cases", "cases");
   }, []);
+
+  console.log(cases);
 
   if (loading.cases) return <h1>Loading... </h1>;
   if (error.cases)

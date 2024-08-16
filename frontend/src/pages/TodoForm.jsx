@@ -87,8 +87,16 @@ const TodoForm = ({ addOptimisticTodo, removeOptimisticTodo }) => {
             />
           </Form.Item>
           <Form.Item
+            name="createAt"
+            label="Start Date/Time"
+            rules={[
+              { required: true, message: "Please select the due date!" },
+            ]}>
+            <DatePicker style={{ width: "100%" }} showTime />
+          </Form.Item>
+          <Form.Item
             name="dueDate"
-            label="Due Date"
+            label="End Date/Time"
             rules={[
               { required: true, message: "Please select the due date!" },
             ]}>

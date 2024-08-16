@@ -1,14 +1,12 @@
 const Invoice = require("../models/invoiceModel");
+const Case = require("../models/caseModel");
+const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
-const multer = require("multer");
-// const pdf = require("pdf-creator-node");
-// const path = require("path");
-// const pug = require("pug");
-// const pdfoptions = require("../utils/pdfoptions");
 const { generatePdf } = require("../utils/generatePdf");
 const setRedisCache = require("../utils/setRedisCache");
 
+// get all invoices
 exports.getAllInvoices = catchAsync(async (req, res, next) => {
   const invoices = await Invoice.find().sort({
     createdAt: -1,
@@ -42,7 +40,80 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
   });
 });
 
+// create invoice
+// exports.createInvoice = catchAsync(async (req, res, next) => {
+//   const { case: caseId, client: clientId } = req.body;
+
+//   // Check if the case exists
+//   const caseData = await Case.findById(caseId);
+//   if (!caseData) {
+//     return next(new AppError("No case found with that ID", 404));
+//   }
+
+//     // Find the corresponding case
+//     const caseData = await Case.findById(caseId).populate("client");
+//     if (!caseData) {
+//       return next(new AppError("No case found", 404));
+//     }
+
+//     // Check if the case has an associated client
+//     if (!caseData.client) {
+//       return next(new AppError("No client associated with this case", 400));
+//     }
+
+//     // Check if the client associated with the case is the same as the clientId provided
+//     if (caseData.client._id.toString() !== clientId) {
+//       return next(
+//         new AppError(
+//           "Client in the case does not match the provided client name",
+//           400
+//         )
+//       );
+//     }
+//   // Check if the client exists
+//   const clientData = await User.findById(clientId);
+//   if (!clientData) {
+//     return next(new AppError("No client found with that ID", 404));
+//   }
+
+//   const newInvoice = await Invoice.create(req.body);
+
+//   res.status(201).json({
+//     message: "success",
+//     data: newInvoice,
+//   });
+// });
+// create invoice
 exports.createInvoice = catchAsync(async (req, res, next) => {
+  const { case: caseId, client: clientId } = req.body;
+
+  // Check if the case exists and populate the client
+  const caseData = await Case.findById(caseId).populate("client");
+  if (!caseData) {
+    return next(new AppError("No case found with that ID", 404));
+  }
+
+  // Check if the case has an associated client
+  if (!caseData.client) {
+    return next(new AppError("No client associated with this case", 400));
+  }
+
+  // Check if the client associated with the case is the same as the clientId provided
+  if (caseData.client._id.toString() !== clientId) {
+    return next(
+      new AppError(
+        "Client in the case does not match the provided client ID",
+        400
+      )
+    );
+  }
+
+  // Check if the client exists
+  const clientData = await User.findById(clientId);
+  if (!clientData) {
+    return next(new AppError("No client found with that ID", 404));
+  }
+
   const newInvoice = await Invoice.create(req.body);
 
   res.status(201).json({
@@ -51,7 +122,39 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
   });
 });
 
+// update invoice data
+// update invoice data
 exports.updateInvoice = catchAsync(async (req, res, next) => {
+  const { case: caseId, client: clientId } = req.body;
+
+  // Check if the case exists and populate the client
+  const caseData = await Case.findById(caseId).populate("client");
+
+  if (!caseData) {
+    return next(new AppError("No case found with that ID", 404));
+  }
+
+  // Check if the case has an associated client
+  if (!caseData.client) {
+    return next(new AppError("No client associated with this case", 400));
+  }
+
+  // Check if the client associated with the case is the same as the clientId provided
+  if (caseData.client._id.toString() !== clientId) {
+    return next(
+      new AppError(
+        "Client in the case does not match the provided client ID",
+        400
+      )
+    );
+  }
+
+  // Check if the client exists
+  const clientData = await User.findById(clientId);
+  if (!clientData) {
+    return next(new AppError("No client found with that ID", 404));
+  }
+
   const invoice = await Invoice.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
@@ -66,7 +169,7 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
     data: invoice,
   });
 });
-
+// delete invoice handler
 exports.deleteInvoice = catchAsync(async (req, res, next) => {
   const invoice = await Invoice.findByIdAndDelete(req.params.id);
 
@@ -80,6 +183,7 @@ exports.deleteInvoice = catchAsync(async (req, res, next) => {
   });
 });
 
+// generate invoice in pdf format
 exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
   const invoice = await Invoice.findById(req.params.id);
   if (!invoice) {

@@ -22,45 +22,17 @@ import useClientSelectOptions from "../hooks/useClientSelectOptions";
 import { invoiceInitialValue } from "../utils/initialValues";
 import { toast } from "react-toastify";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import useHandleSubmit from "../hooks/useHandleSubmit";
 const { TextArea } = Input;
 
 const CreateInvoiceForm = () => {
-  const [form] = Form.useForm();
   const { fetchData } = useDataGetterHook();
   const [formData, setFormData] = useState(invoiceInitialValue);
-  const { dataFetcher, data, error, loading } = useDataFetch();
   const { casesOptions } = useCaseSelectOptions();
   const { clientOptions } = useClientSelectOptions();
   const navigate = useNavigate();
 
-  // Handle submission and show appropriate toast notifications
-  const handleSubmission = useCallback(
-    (result) => {
-      if (result?.error) {
-        toast.error(result.error); // Show error message
-      } else {
-        toast.success("Invoice created successfully"); // Show success message
-        form.resetFields(); // Reset the form fields
-      }
-    },
-    [form]
-  );
-
-  // Handle form submission
-  const onSubmit = useCallback(async () => {
-    try {
-      const values = await form.validateFields(); // Validate form fields
-      const result = await dataFetcher("invoices", "POST", values); // Submit the form data
-      await fetchData("invoices", "invoices"); // Refresh the invoices data
-      handleSubmission(result); // Handle success or error
-    } catch (errorInfo) {
-      // Handle validation errors or other exceptions
-      toast.error(
-        "Validation failed. Please correct the errors and try again."
-      );
-      console.log("Validation failed:", errorInfo);
-    }
-  }, [form, handleSubmission, dataFetcher, fetchData]);
+  const { form, onSubmit, loading, data } = useHandleSubmit("invoices", "post");
 
   // Filter options in select fields (case options and client options)
   const filterOption = (input, option) =>
@@ -69,15 +41,16 @@ const CreateInvoiceForm = () => {
   // Navigate to invoices dashboard on success
   useEffect(() => {
     if (data?.message === "success") {
-      navigate("/dashboard/invoices");
+      fetchData("invoices");
+      navigate(0);
     }
-  }, [data, navigate]);
+  }, [data, navigate, fetchData]);
 
-  // Handle global errors
-  if (error) {
-    toast.error(error); // Show a toast notification for global errors
-    return null; // Render nothing if there's a global error
-  }
+  // // Handle global errors
+  // if (error) {
+  //   toast.error(error); // Show a toast notification for global errors
+  //   return null; // Render nothing if there's a global error
+  // }
   // Validation rules
   const requiredRule = [{ required: true, message: "This field is required" }];
   return (
