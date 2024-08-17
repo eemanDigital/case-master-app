@@ -40,16 +40,17 @@ const CaseCountsByClient = ({ data }) => {
     <>
       <Card
         title="Case Counts by Client"
-        className="w-full max-w-xl mx-auto cursor-pointer hover:shadow-lg transition-shadow duration-300"
+        className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow h-[180px]  flex flex-col justify-center items-center"
         onClick={showModal}
         hoverable>
-        <ResponsiveContainer width="100%" height={200}>
+        <ResponsiveContainer width={300} height={100}>
           <BarChart
+            barSize={20}
             data={transformedData}
             margin={{
-              top: 20,
-              right: 20,
-              left: 0,
+              top: 10,
+              right: 60,
+              left: 15,
               bottom: 0,
             }}>
             <CartesianGrid strokeDasharray="3 3" />
@@ -57,7 +58,7 @@ const CaseCountsByClient = ({ data }) => {
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-            <Bar dataKey="count" fill="#8884d8" />
+            <Bar dataKey="count" fill="#1c4e80" />
           </BarChart>
         </ResponsiveContainer>
       </Card>
@@ -75,6 +76,7 @@ const CaseCountsByClient = ({ data }) => {
           <ResponsiveContainer width="100%" height={400}>
             <BarChart
               data={transformedData}
+              barSize={20}
               margin={{
                 top: 20,
                 right: 20,
@@ -86,7 +88,7 @@ const CaseCountsByClient = ({ data }) => {
               <YAxis tick={{ fontSize: 12 }} />
               <Tooltip content={<CustomTooltip />} />
               <Legend />
-              <Bar dataKey="count" fill="#8884d8" />
+              <Bar dataKey="count" fill="#1c4e80" />
             </BarChart>
           </ResponsiveContainer>
         </div>

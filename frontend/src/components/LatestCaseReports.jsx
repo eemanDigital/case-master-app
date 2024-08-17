@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import CaseReportList from "./CaseReportList";
+import LoadingSpinner from "./LoadingSpinner";
 import { Link } from "react-router-dom";
 
 const LatestCaseReports = () => {
@@ -43,7 +44,7 @@ const LatestCaseReports = () => {
     }
   }, [hasFetched, reports]); // Runs when fetch is complete and reports are updated
 
-  if (loading.reports) return <div>Loading...</div>; // Handle loading state
+  if (loading.reports) return <LoadingSpinner />; // Handle loading state
   if (error.reports) return <div>Error: {error.reports}</div>; // Handle error state
 
   return (
@@ -53,15 +54,32 @@ const LatestCaseReports = () => {
         to="case-reports">
         See all Reports
       </Link>
-
-      <CaseReportList
-        showFilter={false}
-        // title="Today's Reports"
-        reports={todayReports}
-        hideButtons={true}
-        titleStyle="text[20px] text-center font-medium"
-        nameStyle="text-1xl text-red-600"
-      />
+      {todayReports.length === 0 ? (
+        <div className="flex flex-col items-center justify-center text-gray-500 text-lg font-medium py-8 bg-gray-100 rounded-md">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-16 w-16 mb-4 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12h6m-6 4h6M9 8h.01M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"
+            />
+          </svg>
+          <p>No reports available today.</p>
+        </div>
+      ) : (
+        <CaseReportList
+          showFilter={false}
+          reports={todayReports}
+          hideButtons={true}
+          titleStyle="text-[20px] text-center font-medium"
+          nameStyle="text-xl text-red-600"
+        />
+      )}
     </div>
   );
 };

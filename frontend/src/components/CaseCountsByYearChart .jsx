@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -35,16 +35,24 @@ const CaseCountsByYearChart = ({ data }) => {
 
   return (
     <>
-      <Card onClick={showModal} style={{ width: 300, cursor: "pointer" }}>
+      <Card
+        onClick={showModal}
+        className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow h-[180px]  flex flex-col justify-center items-center">
         <h3>New Briefs by Year</h3>
-        <ResponsiveContainer width="100%" height={170}>
-          <BarChart data={transformedData}>
+        <ResponsiveContainer width={260} height={120}>
+          <BarChart
+            data={transformedData}
+            margin={{
+              top: 15,
+              right: 40,
+              left: 10,
+              bottom: 0,
+            }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="year" />
             <YAxis />
-            {/* <Tooltip content={<CustomTooltip />} /> */}
             <Legend />
-            <Bar dataKey="count" fill="#8884d8" />
+            <Bar dataKey="count" fill="#1c4e80" barSize={20} />
           </BarChart>
         </ResponsiveContainer>
       </Card>
@@ -59,6 +67,7 @@ const CaseCountsByYearChart = ({ data }) => {
         <ResponsiveContainer width="80%" height={300}>
           <BarChart
             data={transformedData}
+            barSize={20}
             margin={{
               top: 20,
               right: 30,
@@ -70,7 +79,7 @@ const CaseCountsByYearChart = ({ data }) => {
             <YAxis />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-            <Bar dataKey="count" fill="#8884d8" />
+            <Bar dataKey="count" fill="#1c4e80" />
           </BarChart>
         </ResponsiveContainer>
       </Modal>

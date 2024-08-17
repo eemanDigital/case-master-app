@@ -45,7 +45,7 @@ const CaseCountsByPeriodChart = ({ data }) => {
 
   // Transform the data to fit the expected structure for recharts
   const transformedData = data.map((item) => ({
-    month: monthNames[item.month - 1], // Adjust for 0-indexed array
+    month: monthNames[item.month - 1],
     count: item.count,
     parties: item.parties,
   }));
@@ -55,22 +55,23 @@ const CaseCountsByPeriodChart = ({ data }) => {
       <Card
         onClick={showModal}
         title="New Briefs by Month"
-        style={{ width: "50%", marginBottom: 10 }}>
-        <ResponsiveContainer width={600} height={140}>
+        className="bg-white pt-4 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow  h-[180px] flex flex-col justify-center items-center">
+        <ResponsiveContainer width={300} height={100}>
           <BarChart
             data={transformedData}
+            barSize={20}
             margin={{
-              top: 20,
-              right: 200,
+              top: 0,
+              right: 50,
               left: 0,
-              bottom: 5,
+              bottom: 0,
             }}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis dataKey="month" />
             <YAxis />
             <Tooltip content={CustomTooltip} />
             <Legend />
-            <Bar dataKey="count" fill="#8884d8" />
+            <Bar dataKey="count" fill="#1c4e80" />
           </BarChart>
         </ResponsiveContainer>
       </Card>
@@ -88,6 +89,7 @@ const CaseCountsByPeriodChart = ({ data }) => {
           <ResponsiveContainer width="100%" height={400}>
             <BarChart
               data={transformedData}
+              barSize={20}
               margin={{
                 top: 20,
                 right: 30,
@@ -99,7 +101,7 @@ const CaseCountsByPeriodChart = ({ data }) => {
               <YAxis />
               <Tooltip content={CustomTooltip} />
               <Legend />
-              <Bar dataKey="count" fill="#8884d8" />
+              <Bar dataKey="count" fill="#1c4e80" />
             </BarChart>
           </ResponsiveContainer>
         </div>

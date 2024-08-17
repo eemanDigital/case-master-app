@@ -13,7 +13,7 @@ const { Title, Text } = Typography;
 
 const AccountOfficerCharts = ({ data, title }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+  const COLORS = ["#7E909A", "#1C4E80", "#EA6A47", "#0091D5", "#A5D8DD"];
 
   const transformedData = data?.map((item) => ({
     name: item.accountOfficer,
@@ -53,20 +53,20 @@ const AccountOfficerCharts = ({ data, title }) => {
     <>
       <Card
         title={title}
-        className="  w-full md:w-1/2 lg:w-1/3 mx-auto cursor-pointer hover:shadow-lg transition-shadow duration-300"
+        className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow h-[180px]  flex flex-col justify-center items-center"
         onClick={showModal}
         hoverable>
-        <ResponsiveContainer width="100%" height={200}>
+        <ResponsiveContainer width={300} height={98}>
           <PieChart>
             <Pie
               data={transformedData}
               cx="50%"
-              cy="50%"
+              cy="42%"
               labelLine={false}
-              label={({ name, percent }) =>
-                `${name}: ${(percent * 100).toFixed(0)}%`
-              }
-              outerRadius={80}
+              // label={({ name, percent }) =>
+              //   `${name}: ${(percent * 100).toFixed(0)}%`
+              // }
+              outerRadius={42}
               fill="#8884d8"
               dataKey="value">
               {transformedData?.map((entry, index) => (

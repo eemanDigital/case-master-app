@@ -4,7 +4,7 @@ import { GoLaw } from "react-icons/go";
 
 const DashBoardDataCount = ({ cases, staff, lawyerCount, clientCount }) => {
   return (
-    <div className="container mx-auto py-4">
+    <div className="container mx-auto py-2">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-blue-100 p-4 rounded-lg shadow-md flex items-center">
           <FaBriefcase className="text-3xl text-blue-500 mr-2" />

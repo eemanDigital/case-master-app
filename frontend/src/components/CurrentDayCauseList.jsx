@@ -29,7 +29,7 @@ const CurrentDayCaseList = () => {
   return (
     <Card
       hoverable
-      className="w-full my-4 sm:w-64 md:w-80 lg:w-96 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+      className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow h-[180px]  flex flex-col justify-center items-center">
       {!causeList.data?.todayResult > 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}

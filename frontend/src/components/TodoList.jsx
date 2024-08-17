@@ -60,19 +60,19 @@ const TodoList = ({ title }) => {
         className="bg-green-50 w-full sm:w-64 md:w-80 lg:w-96 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer"
         onClick={showModal}>
         <div className="space-y-2">
-          <div className="text-blue-500 flex items-center ">
-            <UnorderedListOutlined className="mr-2 p-3 rounded-full text-green-700 bg-green-200 text-2xl" />
+          <div className="text-orange-700 flex items-center ">
+            <UnorderedListOutlined className="mr-2 p-3 rounded-full text-orange-700 bg-orange-200 text-2xl" />
             {title}
           </div>
           {allTodos.length === 0 ? (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
-                <h1 className="text-sm text-green-700">No tasks for today</h1>
+                <h1 className="text-sm text-orange-700">No tasks for today</h1>
               }
             />
           ) : (
-            <h1 className="text-lg  font-medium text-green-700">
+            <h1 className="text-lg  font-medium text-orange-700">
               {userTodos(user?.data?._id).length} task(s) pending
             </h1>
           )}

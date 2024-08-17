@@ -4,7 +4,7 @@ import { List, Tag, Pagination } from "antd";
 import { ClockCircleOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 
-const TaskTimeTracker = ({ tasks, userId }) => {
+const CurrentTasksTracker = ({ tasks, userId }) => {
   const [timeLeft, setTimeLeft] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
@@ -58,7 +58,7 @@ const TaskTimeTracker = ({ tasks, userId }) => {
   // console.log(tasks, "TASKS");
 
   return (
-    <div className="w-full h-[300px] bg-white shadow-md rounded-md font-medium text-center text-gray-800 p-4">
+    <div className="w-full h-[250px] bg-white shadow-md rounded-md font-medium text-center text-gray-800 p-4">
       <h1>Current Tasks</h1>
       <List
         dataSource={paginatedTasks}
@@ -104,4 +104,4 @@ const TaskTimeTracker = ({ tasks, userId }) => {
   );
 };
 
-export default TaskTimeTracker;
+export default CurrentTasksTracker;

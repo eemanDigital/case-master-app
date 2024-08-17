@@ -107,3 +107,37 @@ body {
   color: #ffffff;
   border-radius: 0.375rem;
 }
+
+/* my colors */
+.darkGray-color {
+  color: #7e909a;
+}
+.lightGray-color {
+  color: #f1f1f1;
+}
+
+.deep-blue {
+  color: #1c4e80;
+}
+
+.dark-orange {
+  color: #ea6a47;
+}
+
+.blue {
+  color: #0091d5;
+}
+
+.light-blue {
+  color: #a5d8dd;
+}
+
+/* bg color */
+
+.bg-blue {
+  background-color: #a5d8dd;
+}
+
+.text-blue {
+  color: #1c4e80;
+}

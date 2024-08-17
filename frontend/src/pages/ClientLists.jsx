@@ -26,7 +26,6 @@ const ClientLists = () => {
     isSuccess,
     isLoading,
     message,
-    isLoggedIn,
     user,
     users: clients,
   } = useSelector((state) => state.auth);
