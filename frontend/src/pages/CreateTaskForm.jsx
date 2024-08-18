@@ -22,6 +22,7 @@ import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { getUsers } from "../redux/features/auth/authSlice";
 import { formatDate } from "../utils/formatDate";
 import { toast } from "react-toastify";
+import ButtonWithIcon from "../components/ButtonWithIcon";
 
 const { TextArea } = Input;
 const { Title } = Typography;
@@ -135,12 +136,11 @@ const CreateTaskForm = () => {
 
   return (
     <>
-      <Button
-        icon={<PlusOutlined />}
+      <ButtonWithIcon
         onClick={showModal}
-        className="blue-btn mb-2 text-white rounded-lg shadow-md transition duration-300">
-        Create Task
-      </Button>
+        icon={<PlusOutlined className="mr-2" />}
+        text="Create Task"
+      />
       <Modal
         width="80%"
         title={<Title level={3}>Assign Task</Title>}
@@ -189,7 +189,7 @@ const CreateTaskForm = () => {
             <Button
               icon={<PlusOutlined />}
               onClick={showModal}
-              className="blue-btn mb-2 text-white rounded-lg shadow-md transition duration-300">
+              className=" mb-2 text-white rounded-lg shadow-md transition duration-300 w-full sm:w-auto">
               Create Task
             </Button>
             <Modal

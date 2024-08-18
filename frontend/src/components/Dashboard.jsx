@@ -168,12 +168,19 @@ const Dashboard = () => {
             Dashboard
           </h1>
           {isAdminOrHr && <LeaveNotification />}
-          <EventForm />
-          <EventList />
-          <LeaveAppForm />
         </div>
-
-        <div className="flex items-center space-x-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="p-4">
+            <EventForm />
+          </div>
+          <div className="p-4">
+            <EventList />
+          </div>
+          <div className="p-4">
+            <LeaveAppForm />
+          </div>
+        </div>
+        {/* <div className="flex items-center space-x-4">
           <div className="w-12 h-12">
             <a
               href="https://calendar.google.com/calendar"
@@ -186,7 +193,7 @@ const Dashboard = () => {
               />
             </a>
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* client's Dashboard */}
@@ -200,48 +207,39 @@ const Dashboard = () => {
             lawyerCount={lawyerCount}
             clientCount={clientCount}
           />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
+              <CurrentDayCaseList />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-            <CurrentDayCaseList />
+              <CurrentTasksTracker tasks={tasks?.data} userId={userId} />
 
-            <CurrentMonthIncomeCharts data={fetchedMonthData?.data} />
-            <TotalOutstandingBalanceCharts
-              paymentData={fetchedYearData?.data}
-              balanceData={totalBalanceOnPayments}
-            />
-            <MonthlyIncomeChart data={fetchedEachMonthDataInYear?.data} />
-            <CaseCountsByClientChart data={casesByClient?.data} />
-            <AccountOfficerCharts
-              title="Cases By Account Officer"
-              data={casesByAccountOfficer?.data || []}
-            />
-            <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
-            <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
-          </div>
+              <CurrentMonthIncomeCharts data={fetchedMonthData?.data} />
+              <TotalOutstandingBalanceCharts
+                paymentData={fetchedYearData?.data}
+                balanceData={totalBalanceOnPayments}
+              />
+              <MonthlyIncomeChart data={fetchedEachMonthDataInYear?.data} />
+              <CaseCountsByClientChart data={casesByClient?.data} />
+              <AccountOfficerCharts
+                title="Cases By Account Officer"
+                data={casesByAccountOfficer?.data || []}
+              />
+              <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
+              <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
+            </div>
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-1 grid grid-cols-1 gap-1">
+              <LatestCaseReports />
 
-          <div className="flex flex-col gap-4 m-4 md:flex-row items-start">
-            {/* <div className=" flex flex-col gap-4 items-end"> */}
-            {/* <div className="latest-case-reports-container"> */}
-            <CurrentTasksTracker tasks={tasks?.data} userId={userId} />
-
-            {/* </div> */}
-          </div>
-
-          <div className="flex flex-col gap-4 p-4 lg:flex-row lg:items-start lg:space-x-4">
-            <div className="flex flex-col space-y-4 w-full lg:w-1/3">
               <TodoList />
             </div>
-
-            <div className="w-full  lg:w-2/3">
-              <LatestCaseReports />
-            </div>
           </div>
 
-          <div className="flex justify-between flex-wrap w-full py-12 px-6 my-8 shadow-md rounded-md gap-2 bg-white">
+          <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1 mt-8">
             <CasesByCategoriesChart
               title="Case By Status"
               data={casesByStatus?.data || []}
             />
+
             <CasesByCategoriesChart
               title="Nature of Case"
               data={casesByNature?.data || []}
@@ -258,7 +256,6 @@ const Dashboard = () => {
               title="Cases By Mode"
               data={casesByMode?.data || []}
             />
-            {/* <CasesByCategoriesChart title="Cases By Client" data={casesByClient?.data || []} /> */}
             <CasesByCategoriesChart
               title="Cases By Category"
               data={casesByCategory?.data || []}

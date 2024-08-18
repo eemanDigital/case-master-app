@@ -147,9 +147,9 @@ const EventForm = () => {
       <Tooltip title="Create Event">
         <Button
           onClick={showModal}
-          className="flex items-center space-x-2 bg-white text-blue-500 rounded-lg shadow-md transition duration-300">
+          className="flex items-center xl:w-48  bg-white text-blue-500 rounded-lg shadow-md transition duration-300 p-2 sm:p-3 md:p-4 lg:px-6 text-sm sm:text-base md:text-lg lg:text-xl">
           <FaCalendar size={20} />
-          <span>+</span>
+          <span className="text-[15px]">+ Add Event</span>
         </Button>
       </Tooltip>
       <Modal

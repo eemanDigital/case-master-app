@@ -74,79 +74,76 @@ const LeaveBalanceList = () => {
     }
   };
 
-  // console.log(
-  //   leaveBalance?.data?.map((e) => e.employee?.firstName),
-  //   "LB"
-  // );
-
   return (
     <>
       <SearchBar onSearch={handleSearchChange} />
+      <div className=" overflow-x-auto mt-3 ">
+        <Table dataSource={filteredLeaveBalance} scroll={{ x: 100 }}>
+          <ColumnGroup title="Employee's Name">
+            <Column
+              title="Photo"
+              dataIndex={["employee", "photo"]}
+              key="photo"
+              render={(photo, record) => (
+                <div className="flex items-center justify-center">
+                  <img
+                    className="w-12 h-12 object-cover rounded-full"
+                    src={photo ? photo : avatar}
+                  />
+                </div>
+              )}
+            />
 
-      <Table dataSource={filteredLeaveBalance}>
-        <ColumnGroup title="Employee's Name">
+            <Column
+              title="First Name"
+              dataIndex={["employee", "firstName"]}
+              key="employee.firstName"
+            />
+            <Column
+              title="Last Name"
+              dataIndex={["employee", "lastName"]}
+              key="employee.lastName"
+            />
+          </ColumnGroup>
+
           <Column
-            title="Photo"
-            dataIndex={["employee", "photo"]}
-            key="photo"
-            render={(photo, record) => (
-              <div className="flex items-center justify-center">
-                <img
-                  className="w-12 h-12 object-cover rounded-full"
-                  src={photo ? photo : avatar}
-                />
-              </div>
-            )}
+            title="Annual Leave Balance"
+            dataIndex="annualLeaveBalance"
+            key="annualLeaveBalance"
+          />
+          <Column
+            title="Sick Leave Balance"
+            dataIndex="sickLeaveBalance"
+            key="sickLeaveBalance"
           />
 
           <Column
-            title="First Name"
-            dataIndex={["employee", "firstName"]}
-            key="employee.firstName"
-          />
-          <Column
-            title="Last Name"
-            dataIndex={["employee", "lastName"]}
-            key="employee.lastName"
-          />
-        </ColumnGroup>
-
-        <Column
-          title="Annual Leave Balance"
-          dataIndex="annualLeaveBalance"
-          key="annualLeaveBalance"
-        />
-        <Column
-          title="Sick Leave Balance"
-          dataIndex="sickLeaveBalance"
-          key="sickLeaveBalance"
-        />
-
-        <Column
-          title="Action"
-          key="action"
-          render={(text, record) => (
-            <Space size="middle">
-              {/* <Button type="link">
+            title="Action"
+            key="action"
+            render={(text, record) => (
+              <Space size="middle">
+                {/* <Button type="link">
               <Link to={`/dashboard/leave-application/${record?.id}/details`}>
                 Get Details
               </Link>
             </Button> */}
-              <Button
-                onClick={() => {
-                  Modal.confirm({
-                    title: "Are you sure you want to delete this application?",
-                    onOk: () => removeBalance(record?.id),
-                  });
-                }}
-                type="primary"
-                danger>
-                Delete
-              </Button>
-            </Space>
-          )}
-        />
-      </Table>
+                <Button
+                  onClick={() => {
+                    Modal.confirm({
+                      title:
+                        "Are you sure you want to delete this application?",
+                      onOk: () => removeBalance(record?.id),
+                    });
+                  }}
+                  type="primary"
+                  danger>
+                  Delete
+                </Button>
+              </Space>
+            )}
+          />
+        </Table>
+      </div>
     </>
   );
 };

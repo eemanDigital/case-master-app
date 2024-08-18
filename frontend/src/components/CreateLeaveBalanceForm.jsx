@@ -6,8 +6,10 @@ import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import { useDispatch, useSelector } from "react-redux";
 import { getUsers } from "../redux/features/auth/authSlice";
 import { toast } from "react-toastify";
+import { PlusOutlined } from "@ant-design/icons";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
+import ButtonWithIcon from "./ButtonWithIcon";
 // import LoadingSpinner from "./LoadingSpinner";
 
 const CreateLeaveBalanceForm = () => {
@@ -71,9 +73,11 @@ const CreateLeaveBalanceForm = () => {
 
   return (
     <>
-      <Button onClick={showModal} className="bg-blue-500 text-white">
-        Create Leave Balance
-      </Button>
+      <ButtonWithIcon
+        onClick={showModal}
+        icon={<PlusOutlined className="mr-2" />}
+        text="  Create Leave Balance"
+      />
       <Modal
         title="Leave Balance Form"
         open={open}

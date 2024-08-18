@@ -8,9 +8,9 @@ const SearchBar = ({ onSearch, style }) => {
 
   // Default styles
   const defaultStyles = {
-    form: "flex items-center border bg-gray-400 hover:bg-gray-500 rounded-lg overflow-hidden",
-    input: "px-2 py-2 w-full focus:outline-none",
-    button: "p-3 text-white focus:outline-none",
+    form: "flex  md:flex-row items-center border bg-gray-400 hover:bg-gray-500 rounded-lg overflow-hidden",
+    input: "px-2 py-2 w-full md:w-auto focus:outline-none",
+    button: "p-3 text-white  md:w-auto focus:outline-none",
   };
 
   return (

@@ -144,19 +144,23 @@ const PaymentList = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-gray-700 mb-7">Payments</h1>
+      <h1 className=" w-full md:w-auto text-3xl font-bold text-gray-700 mb-7">
+        Payments
+      </h1>
       <div className="flex flex-col md:flex-row justify-between items-center m-3">
         <CreatePaymentForm />
         <SearchBar onSearch={handleSearchChange} />
       </div>
-
-      <Table
-        columns={columns}
-        dataSource={isClient ? filteredPaymentForClient : searchResults}
-        rowKey="_id"
-        loading={loadingPayment.payments}
-        pagination={{ pageSize: 10 }}
-      />
+      <div className="overflow-x-auto">
+        <Table
+          columns={columns}
+          dataSource={isClient ? filteredPaymentForClient : searchResults}
+          rowKey="_id"
+          loading={loadingPayment.payments}
+          pagination={{ pageSize: 10 }}
+          scroll={{ x: 1000 }}
+        />
+      </div>
       {paymentError.payments && <p>Error: {paymentError.payments}</p>}
     </div>
   );

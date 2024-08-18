@@ -1,5 +1,5 @@
 const Report = require("../models/caseReportModel");
-// const User = require("../models/userModel");
+const Case = require("../models/caseModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const { generatePdf } = require("../utils/generatePdf");
@@ -7,9 +7,29 @@ const { generatePdf } = require("../utils/generatePdf");
 const moment = require("moment");
 const setRedisCache = require("../utils/setRedisCache");
 
+// create report
 exports.createReport = catchAsync(async (req, res, next) => {
-  // if (!req.body.case) req.body.case = req.params.tourId;
-  //   if (!req.body.reporter) req.body.reporter = req.user.id;
+  const { caseReported, clientEmail } = req.body;
+
+  // Check if the case exists and populate the client
+  const caseData = await Case.findById(caseReported).populate({
+    path: "client",
+    select: "email",
+  });
+
+  if (!caseData) {
+    return next(new AppError("No case found with that ID", 404));
+  }
+
+  // Check if the case has an associated client
+  if (!caseData.client) {
+    return next(new AppError("No client associated with this case", 400));
+  }
+
+  // Check if the name/clientId/clientEmail matches the email in the client case
+  if (caseData.client.email !== clientEmail) {
+    return next(new AppError("Selected client does not match the case", 400));
+  }
 
   // Create a new report associated with the found case
   const report = await Report.create(req.body);
@@ -44,11 +64,54 @@ exports.getReport = catchAsync(async (req, res, next) => {
   //   next();
 });
 
+// exports.updateCaseReport = catchAsync(async (req, res, next) => {
+//   const id = req.params.reportId;
+
+//   if (!id) {
+//     return next(new AppError("No report ID provided", 400));
+//   }
+
+//   const updatedReport = await Report.findByIdAndUpdate(id, req.body, {
+//     new: true,
+//     runValidators: true,
+//   });
+
+//   if (!updatedReport) {
+//     return next(new AppError("No report found with this ID", 404));
+//   }
+
+//   res.status(200).json({
+//     status: "success",
+//     data: updatedReport,
+//   });
+// });
+//update report
 exports.updateCaseReport = catchAsync(async (req, res, next) => {
   const id = req.params.reportId;
+  const { caseReported, clientEmail } = req.body;
 
   if (!id) {
     return next(new AppError("No report ID provided", 400));
+  }
+
+  // Check if the case exists and populate the client
+  const caseData = await Case.findById(caseReported).populate({
+    path: "client",
+    select: "email",
+  });
+
+  if (!caseData) {
+    return next(new AppError("No case found with that ID", 404));
+  }
+
+  // Check if the case has an associated client
+  if (!caseData.client) {
+    return next(new AppError("No client associated with this case", 400));
+  }
+
+  // Check if the clientEmail matches the email in the client case
+  if (caseData.client.email !== clientEmail) {
+    return next(new AppError("Selected client does not match the case", 400));
   }
 
   const updatedReport = await Report.findByIdAndUpdate(id, req.body, {

@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Table, Modal, Space, Button } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import { PlusOutlined } from "@ant-design/icons";
 import moment from "moment";
-
+import ButtonWithIcon from "../components/ButtonWithIcon";
 import { formatDate } from "../utils/formatDate";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -178,9 +179,12 @@ const InvoiceList = () => {
     <div>
       {loadingInvoices.invoices && <LoadingSpinner />}
       <div className="flex md:flex-row flex-col justify-between items-center mt-4">
-        <Link to="invoices/add-invoices">
-          <Button className="bg-blue-500 text-white">Create Invoice</Button>
-        </Link>
+        <ButtonWithIcon
+          onClick={() => {}}
+          icon={<PlusOutlined className="mr-2" />}
+          text="Create Invoice"
+        />
+
         <SearchBar onSearch={handleSearchChange} />
       </div>
       <h1 className="text-3xl font-bold text-gray-700 mb-7">Invoices</h1>
@@ -188,6 +192,7 @@ const InvoiceList = () => {
         columns={columns}
         dataSource={isClient ? filteredInvoiceForClient : searchResults}
         rowKey="_id"
+        scroll={{ x: 1000 }}
       />
     </div>
   );

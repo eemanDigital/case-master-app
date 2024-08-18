@@ -156,7 +156,7 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
 
 // send automated email to user
 exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
-  const { send_to, reply_to, template, subject, url } = req.body;
+  const { send_to, reply_to, template, subject, url, context } = req.body;
 
   if (!send_to || !reply_to || !template || !subject) {
     return next(new AppError("Missing email fields", 404));
@@ -169,10 +169,14 @@ exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
   }
 
   const send_from = process.env.EMAIL_USER_OUTLOOK;
-  const name = user.firstName;
-  // const link = ` ${process.env.FRONTEND_URL}/${url}`;
 
-  await sendMail(subject, send_to, send_from, reply_to, template, name, link);
+  const baseContext = {
+    ...context,
+    name: user.firstName,
+    link: ` ${process.env.FRONTEND_URL}/${url}`,
+  };
+
+  await sendMail(subject, send_to, send_from, reply_to, template, baseContext);
   res.status(200).json({ message: "Email Sent" });
 });
 

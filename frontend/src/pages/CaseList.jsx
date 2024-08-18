@@ -18,6 +18,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
+import ButtonWithIcon from "../components/ButtonWithIcon";
 
 const { Title } = Typography;
 
@@ -36,7 +37,6 @@ const CaseList = () => {
   const dispatch = useDispatch();
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  // fetch cases
   const fetchCases = useCallback(() => {
     fetchData("cases", "cases");
   }, []);
@@ -45,15 +45,12 @@ const CaseList = () => {
     fetchCases();
   }, [fetchCases]);
 
-  ///////////////////////
-
   useEffect(() => {
     if (cases?.data) {
       setSearchResults(cases.data);
     }
   }, [cases]);
 
-  // search handler
   const handleSearchChange = (e) => {
     const searchTerm = e.target.value.trim().toLowerCase();
     if (!searchTerm) {
@@ -85,26 +82,22 @@ const CaseList = () => {
     setSearchResults(results || cases?.data);
   };
 
-  // delete case
   const deleteCase = async (id) => {
     await dispatch(deleteData(`cases/${id}`));
     await fetchData("cases", "cases");
   };
 
-  // delete success
   useEffect(() => {
     if (isSuccess) {
       toast.success(message);
       dispatch(RESET());
     }
-    // delete error
     if (isError) {
       toast.error(message);
       dispatch(RESET());
     }
   }, [isSuccess, isError, message, dispatch]);
 
-  // filter case for client - client only see it case(es)
   const filterCasesByClient = (caseIds) => {
     if (!cases?.data) return [];
     return cases?.data?.filter((caseItem) => caseIds?.includes(caseItem?._id));
@@ -117,28 +110,32 @@ const CaseList = () => {
       key: "case",
       render: (_, record) => (
         <Link to={`${record._id}/casedetails`}>
-          <h1 className="font-bold hover:text-gray-600 w-52 ml-6">{`${
+          <h1 className="font-bold hover:text-gray-600">{`${
             record.firstParty?.name[0]?.name || ""
           } vs ${record.secondParty?.name[0]?.name || ""}`}</h1>
         </Link>
       ),
+      width: 250, // Set a fixed width
     },
     {
       title: "Suit No.",
       dataIndex: "suitNo",
       key: "suitNo",
+      width: 150,
     },
     {
       title: "Status",
       dataIndex: "caseStatus",
       key: "caseStatus",
       render: (text) => <p className=" capitalize">{text}</p>,
+      width: 150,
     },
     {
       title: "Nature of Case",
       dataIndex: "natureOfCase",
       key: "natureOfCase",
       render: (text) => <p className="capitalize">{text}</p>,
+      width: 200,
     },
     {
       title: "Action",
@@ -148,7 +145,6 @@ const CaseList = () => {
           <>
             <Link to={`${record._id}/update`}>
               <Tooltip title="Edit Case">
-                {" "}
                 <Button
                   className="bg-purple-200 text-purple-500"
                   icon={<EditOutlined />}></Button>
@@ -172,6 +168,7 @@ const CaseList = () => {
             </Tooltip>
           </>
         ) : null,
+      width: 200,
     },
   ];
 
@@ -181,22 +178,30 @@ const CaseList = () => {
   return (
     <section>
       <Title level={1}>Cases</Title>
-      {loading.cases && <LoadingSpinner />}
       <div className="flex md:flex-row flex-col justify-between items-center mb-4">
         {isStaff && (
-          <Link to="add-case">
-            <Button className="bg-blue-500 text-white">+ Add Case</Button>
-          </Link>
+          <div className="w-full md:w-auto mb-2 md:mb-0">
+            <Link to="add-case">
+              <ButtonWithIcon
+                onClick={() => {}}
+                icon={null}
+                text="+ Add Case"
+              />
+            </Link>
+          </div>
         )}
         <SearchBar data={cases?.data} onSearch={handleSearchChange} />
       </div>
-      <Table
-        columns={columns}
-        dataSource={isStaff ? currentCases : filterCasesByClient(caseIDs)}
-        pagination={false}
-        rowKey="_id"
-        loading={loading.cases}
-      />
+      <div className="overflow-x-auto">
+        <Table
+          columns={columns}
+          dataSource={isStaff ? currentCases : filterCasesByClient(caseIDs)}
+          pagination={false}
+          rowKey="_id"
+          loading={loading.cases}
+          scroll={{ x: 1000 }} // Enables horizontal scrolling when table content overflows
+        />
+      </div>
       <Row justify="center" style={{ marginTop: 12 }}>
         <Pagination
           current={currentPage}

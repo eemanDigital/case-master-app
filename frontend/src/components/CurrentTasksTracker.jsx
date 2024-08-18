@@ -58,22 +58,24 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
   // console.log(tasks, "TASKS");
 
   return (
-    <div className="w-full h-[250px] bg-white shadow-md rounded-md font-medium text-center text-gray-800 p-4">
-      <h1>Current Tasks</h1>
+    <div className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow h-[180px]  flex flex-col justify-center items-center">
+      <h3 className="text-[14px] font-medium text-gray-700">
+        Current Official Tasks
+      </h3>
       <List
         dataSource={paginatedTasks}
         renderItem={(task) => (
           <List.Item
             key={task._id}
-            className="flex items-center justify-between py-2">
-            <div className="flex items-center space-x-2">
+            className="flex items-center justify-between px-4 text-[12px] ">
+            <div className="flex items-center space-x-1">
               <ClockCircleOutlined className="text-blue-500" />
-              <span className="font-medium text-gray-700 truncate max-w-[150px]">
+              <span className="font-medium text-gray-700 truncate max-w-[130px]">
                 <Link to={`tasks/${task?._id}/details`}>{task?.title}</Link>
               </span>
             </div>
             <Tag
-              className="font-bold"
+              className="font-bold text-[10px] "
               color={
                 task.taskResponse?.[0]?.completed
                   ? "green"

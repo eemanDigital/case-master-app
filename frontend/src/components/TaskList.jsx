@@ -148,7 +148,7 @@ const TaskList = () => {
   };
 
   return (
-    <div className="mt-10">
+    <div className="mt-10 overflow-x-auto">
       {isStaff && <CreateTaskForm />}
       <Table
         columns={columns}
@@ -160,6 +160,7 @@ const TaskList = () => {
             : filterTaskByUser(loggedInClientId)
         }
         rowKey="_id"
+        scroll={{ x: 1000 }}
       />
 
       {/* <TaskTimeTracker tasks={tasks?.data} userId={loggedInClientId} /> */}

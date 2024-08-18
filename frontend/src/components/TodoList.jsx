@@ -57,7 +57,8 @@ const TodoList = ({ title }) => {
     <>
       <Card
         hoverable
-        className="bg-green-50 w-full sm:w-64 md:w-80 lg:w-96 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+        // className="bg-orange-50 w-full sm:w-64 md:w-80 lg:w-96 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+        className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow h-[180px]  flex flex-col justify-center items-center"
         onClick={showModal}>
         <div className="space-y-2">
           <div className="text-orange-700 flex items-center ">

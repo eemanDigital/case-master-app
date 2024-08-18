@@ -53,7 +53,7 @@ const AllCasesListForPayment = () => {
     <>
       <Card
         title="Total Payment on Each Case"
-        className="text-black mt-4 w-[50%]"
+        className="text-black mt-4 xl:w-[50%] md:[100%]"
         bordered={false}>
         <List
           itemLayout="horizontal"

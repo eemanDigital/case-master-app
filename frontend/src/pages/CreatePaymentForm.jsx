@@ -18,11 +18,13 @@ import { paymentInitialValue } from "../utils/initialValues";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useClientSelectOptions from "../hooks/useClientSelectOptions";
 import useInvoiceRefSelectOptions from "../hooks/useInvoiceRefSelectOptions";
+import { PlusOutlined } from "@ant-design/icons";
 import { methodOptions } from "../data/options";
 
 import useModal from "../hooks/useModal";
 import { toast } from "react-toastify";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import ButtonWithIcon from "../components/ButtonWithIcon";
 
 const CreatePaymentForm = () => {
   const [formData, setFormData] = useState(paymentInitialValue);
@@ -71,9 +73,12 @@ const CreatePaymentForm = () => {
 
   return (
     <>
-      <Button onClick={showModal} className="bg-blue-500 text-white m-1">
-        Add Payment
-      </Button>
+      <ButtonWithIcon
+        onClick={showModal}
+        icon={<PlusOutlined className="mr-2" />}
+        text="Add Payment"
+      />
+
       <Modal open={open} onOk={handleOk} onCancel={handleCancel} footer={null}>
         <Form layout="vertical" form={form} name="payment form">
           <Divider orientation="left" orientationMargin="0">

@@ -4,6 +4,8 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import DocumentsList from "../components/DocumentsList";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { toast } from "react-toastify";
+import ButtonWithIcon from "../components/ButtonWithIcon";
+import { FaUpload } from "react-icons/fa";
 
 const DocumentForm = () => {
   const [formData, setFormData] = useState({
@@ -60,13 +62,16 @@ const DocumentForm = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <Button className="blue-btn" onClick={showModal}>
-        Upload Document
-      </Button>
+    <div className=" container mx-auto xl:px-5 md:px-4 sm:px-0  ">
+      <ButtonWithIcon
+        icon={<FaUpload />}
+        onClick={showModal}
+        text="Upload Document"
+      />
+
       <Modal
         title="Upload Document"
-        visible={isModalVisible}
+        open={isModalVisible}
         onCancel={handleCancel}
         footer={null}>
         <div className="max-w-md mx-auto bg-white shadow-md rounded-lg overflow-hidden mb-8">

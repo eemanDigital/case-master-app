@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
 import {
   Card,
@@ -35,6 +36,7 @@ const CaseReportList = ({
   hideButtons,
   titleStyle,
   nameStyle,
+  cardStyle,
 }) => {
   const { isStaff } = useAdminHook();
   const { fetchData } = useDataGetterHook();
@@ -115,27 +117,27 @@ const CaseReportList = ({
   );
 
   return (
-    <section className="w-full font-poppins  bg-gray-50 p-6 rounded-lg shadow-md">
+    <section className="w-full font-poppins bg-gray-50 rounded-lg shadow-md sm:px-6 px-2 ">
       <Title
         level={2}
-        className={`${titleStyle || "text-2xl text-gray-800 font-bold mb-6"} ${
-          hideButtons ? "text-center" : ""
-        }`}>
+        className={`${
+          titleStyle || "text-2xl text-gray-800 font-bold p-5 mb-6"
+        } ${hideButtons ? "text-center" : ""}`}>
         {title}
       </Title>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-center mb-6">
         {!hideButtons && isStaff && (
           <Link to="add-report">
             <Button
               type="primary"
               icon={<PlusOutlined />}
-              className="bg-blue-500 hover:bg-blue-600">
+              className="bg-blue-500 hover:bg-blue-600 mb-4 md:mb-0">
               Add New Report
             </Button>
           </Link>
         )}
         {showFilter && (
-          <SearchBar onSearch={handleSearchChange} className="w-64" />
+          <SearchBar onSearch={handleSearchChange} className="w-full md:w-64" />
         )}
       </div>
       <Space direction="vertical" size="large" className="w-full">
@@ -143,7 +145,7 @@ const CaseReportList = ({
           (report) => (
             <Card
               key={report._id}
-              className="w-full bg-white shadow-sm hover:shadow-md transition-shadow duration-300"
+              className="w-full  shadow-sm hover:shadow-md transition-shadow duration-300"
               title={
                 <Title
                   level={4}
@@ -169,7 +171,7 @@ const CaseReportList = ({
                 <Space
                   direction="horizontal"
                   size="large"
-                  className="w-full justify-between">
+                  className="w-full justify-between flex-wrap">
                   <Text strong>
                     Adjourned For:{" "}
                     <span className="text-rose-600">
@@ -240,4 +242,19 @@ const CaseReportList = ({
   );
 };
 
+CaseReportList.propTypes = {
+  showFilter: PropTypes.bool,
+  reports: PropTypes.arrayOf(
+    PropTypes.shape({
+      name: PropTypes.string.isRequired,
+      description: PropTypes.string.isRequired,
+      date: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  hideButtons: PropTypes.bool,
+  titleStyle: PropTypes.string,
+  cardStyle: PropTypes.string,
+  nameStyle: PropTypes.string,
+  title: PropTypes.string,
+};
 export default CaseReportList;

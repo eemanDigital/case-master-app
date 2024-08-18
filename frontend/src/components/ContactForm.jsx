@@ -80,7 +80,9 @@ const ContactForm = () => {
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h2 className="text-2xl font-bold mb-4">Contact Developer</h2>
+      <h2 className="text-2xl text-center font-medium text-gray-700  mb-4">
+        Contact Developer
+      </h2>
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
           <label className="block text-gray-700">Name</label>

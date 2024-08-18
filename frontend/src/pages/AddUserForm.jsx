@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import Input from "../components/Inputs";
 import Select from "../components/Select";

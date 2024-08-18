@@ -48,14 +48,15 @@ const LatestCaseReports = () => {
   if (error.reports) return <div>Error: {error.reports}</div>; // Handle error state
 
   return (
-    <div className="bg-white w-full rounded-md shadow-md md:ml-14 ml-0 h-[290px] mt-0 overflow-auto">
+    <div className="bg-white  rounded-md shadow-md   h-[362px] m-2  overflow-auto">
       <Link
-        className="text-blue-600 underline p-2 text-[12px] block hover:text-blue-800 hover:font-bold "
+        className="text-blue-600 underline p-2 text-[12px] block hover:text-blue-800 hover:font-bold"
         to="case-reports">
         See all Reports
       </Link>
+      <h1 className=" text-center font-medium">Today's Case Report</h1>
       {todayReports.length === 0 ? (
-        <div className="flex flex-col items-center justify-center text-gray-500 text-lg font-medium py-8 bg-gray-100 rounded-md">
+        <div className="flex flex-col items-center justify-center text-gray-500 text-lg font-medium bg-gray-100 rounded-md p-4">
           <svg
             xmlns="http://www.w3.org/2000/svg"
             className="h-16 w-16 mb-4 text-gray-400"
@@ -76,8 +77,9 @@ const LatestCaseReports = () => {
           showFilter={false}
           reports={todayReports}
           hideButtons={true}
-          titleStyle="text-[20px] text-center font-medium"
-          nameStyle="text-xl text-red-600"
+          titleStyle="text-[20px]  text-center font-medium"
+          nameStyle=" w-80  text-red-600"
+          cardStyle=""
         />
       )}
     </div>

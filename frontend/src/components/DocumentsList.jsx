@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatDate } from "../utils/formatDate";
 import { FaFileAlt, FaTrash, FaDownload } from "react-icons/fa";
-
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { Table, Button, Popconfirm } from "antd";
@@ -25,7 +24,7 @@ const DocumentsList = () => {
   const [searchResults, setSearchResults] = useState([]);
 
   // Custom hook to handle data fetching
-  const { dataFetcher, loading, error: dataError } = useDataFetch();
+  const { dataFetcher } = useDataFetch();
 
   // State to manage the list of documents
   const [documentList, setDocumentList] = useState([]);
@@ -132,23 +131,22 @@ const DocumentsList = () => {
   ];
 
   return (
-    <div className="w-full p-4">
+    <div className="w-full m-2">
+      {/* Search bar component */}
+      <SearchBar onSearch={handleSearchChange} />
       {/* Show loading spinner if documents are being fetched */}
       {loadingDoc.documents && <LoadingSpinner />}
 
       {/* Show error message if there is an error fetching documents */}
       {errorDoc.documents && (
-        <div className="text-center py-8">
+        <div className="text-center py-2">
           <h3 className="text-xl font-semibold text-red-600">
             Failed to display documents
           </h3>
         </div>
       )}
 
-      {/* Search bar component */}
-      <SearchBar onSearch={handleSearchChange} />
-
-      <h2 className="text-2xl font-bold m-4">Documents</h2>
+      <h2 className="text-2xl font-bold m-1">Documents</h2>
 
       {/* Display documents table if there are documents, otherwise show a message */}
       {documentList.length > 0 ? (
@@ -158,10 +156,11 @@ const DocumentsList = () => {
           rowKey="_id"
           className="w-full"
           responsive
+          scroll={{ x: 400 }}
         />
       ) : (
         !loadingDoc && (
-          <div className="text-center py-8">
+          <div className="text-center ">
             <h3 className="text-xl font-semibold text-gray-600">
               No documents available
             </h3>

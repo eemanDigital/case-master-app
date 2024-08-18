@@ -83,7 +83,7 @@ exports.getCase = catchAsync(async (req, res, next) => {
       path: "reports",
       select: "-caseReported",
     })
-    .populate({ path: "client", select: "firstName secondName " });
+    .populate({ path: "client", select: "firstName secondName email " });
 
   if (!data) {
     return next(new AppError("No case found with that Id", 404));

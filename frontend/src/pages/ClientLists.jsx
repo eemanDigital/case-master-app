@@ -117,41 +117,51 @@ const ClientLists = () => {
       </div>
 
       <Divider />
-      <Table dataSource={searchResults}>
-        <ColumnGroup title="Client Lists">
-          <Column title="Client's Name" dataIndex="firstName" key="firstName" />
-          <Column title="Second Name" dataIndex="secondName" key="secondName" />
-        </ColumnGroup>
+      <div className=" overflow-x-auto">
+        <Table dataSource={searchResults} scroll={{ x: 400 }}>
+          <ColumnGroup title="Client Lists">
+            <Column
+              title="Client's Name"
+              dataIndex="firstName"
+              key="firstName"
+            />
+            <Column
+              title="Second Name"
+              dataIndex="secondName"
+              key="secondName"
+            />
+          </ColumnGroup>
 
-        <Column title="Client Email" dataIndex="email" key="email" />
-        <Column title="Phone" dataIndex="phone" key="phone" />
+          <Column title="Client Email" dataIndex="email" key="email" />
+          <Column title="Phone" dataIndex="phone" key="phone" />
 
-        <Column
-          title="Action"
-          key="action"
-          render={(text, record) => (
-            <Space size="middle">
-              <Button type="link">
-                <Link to={`${record?._id}/details`}>Get Details</Link>
-              </Button>
-              {isSuperOrAdmin && (
-                <Button
-                  onClick={() => {
-                    Modal.confirm({
-                      title:
-                        "Are you sure you want to delete this client information?",
-                      onOk: () => removeClient(record?.id),
-                    });
-                  }}
-                  type="primary"
-                  danger>
-                  Delete
+          <Column
+            title="Action"
+            key="action"
+            render={(text, record) => (
+              <Space size="middle">
+                <Button type="link">
+                  <Link to={`${record?._id}/details`}>Get Details</Link>
                 </Button>
-              )}
-            </Space>
-          )}
-        />
-      </Table>
+                {isSuperOrAdmin && (
+                  <Button
+                    onClick={() => {
+                      Modal.confirm({
+                        title:
+                          "Are you sure you want to delete this client information?",
+                        onOk: () => removeClient(record?.id),
+                      });
+                    }}
+                    type="primary"
+                    danger>
+                    Delete
+                  </Button>
+                )}
+              </Space>
+            )}
+          />
+        </Table>
+      </div>
     </>
   );
 };

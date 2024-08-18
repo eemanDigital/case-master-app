@@ -39,7 +39,6 @@ import PaymentDetails from "./pages/PaymentDetails.jsx";
 import StaffList from "./pages/StaffList.jsx";
 import StaffDetails from "./pages/StaffDetails.jsx";
 import StaffLogin from "./pages/StaffLogin.jsx";
-import ForgotPasswordClient from "./pages/ForgotPasswordClient.jsx";
 import MainCaseReportList from "./pages/MainCaseReportList.jsx";
 import PaymentMadeOnCase from "./pages/PaymentMadeOnCase.jsx";
 import VerifyAccount from "./components/VerifyAccount.jsx";
@@ -48,22 +47,13 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  getLoginStatus,
-  getUser,
-  selectIsLoggedIn,
-  selectUser,
-} from "./redux/features/auth/authSlice.js";
-import { ShowOnLoginAndRedirect } from "./components/protect/Protect.jsx";
+import { getLoginStatus, getUser } from "./redux/features/auth/authSlice.js";
 import { setLoading } from "./redux/features/loader/loadingSlice.js";
 import LoadingSpinner from "./components/LoadingSpinner.jsx";
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
-import SendLoginCode from "./components/LoginWithCode.jsx";
 import LoginWithCode from "./components/LoginWithCode.jsx";
-import AppLayout from "./components/AppLayout.jsx";
 import LeaveBalanceList from "./pages/leaveBalanceList.jsx";
-import DocumentsList from "./components/DocumentsList.jsx";
 import DocumentForm from "./pages/DocumentsForm.jsx";
 import ContactForm from "./components/ContactForm.jsx";
 import EventDetail from "./pages/EventDetail.jsx";
@@ -113,10 +103,10 @@ function App() {
         <Route path="/clients/login" element={<ClientLogin />} />
         <Route path="/resetpassword" element={<ResetPassword />} />
 
-        <Route
+        {/* <Route
           path="/forgotpassword/clients"
           element={<ForgotPasswordClient />}
-        />
+        /> */}
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/resetPassword/:token" element={<ForgotPasswordReset />} />
 
