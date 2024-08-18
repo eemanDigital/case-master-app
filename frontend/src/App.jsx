@@ -57,6 +57,7 @@ import LeaveBalanceList from "./pages/leaveBalanceList.jsx";
 import DocumentForm from "./pages/DocumentsForm.jsx";
 import ContactForm from "./components/ContactForm.jsx";
 import EventDetail from "./pages/EventDetail.jsx";
+import { BillingAndPaymentsRoute } from "./components/protect/Protect.jsx";
 
 // enable axios to get credentials everywhere in the app
 axios.defaults.withCredentials = true;
@@ -148,7 +149,6 @@ function App() {
             path="case-reports/add-report"
             element={<CreateCaseReportForm />}
           />
-          <Route path="billings" element={<InvoicePaymentHandler />} />
           <Route path="profile" element={<Profile />} />
           <Route path="tasks" element={<TaskList />} />
           <Route path="tasks/reminder/:id" element={<TaskReminderForm />} />
@@ -156,6 +156,16 @@ function App() {
           <Route path="tasks/:id/details" element={<TaskDetails />} />
           <Route path="clients" element={<ClientLists />} />
           <Route path="clients/:id/details" element={<ClientDetails />} />
+
+          {/* billing/payment/invoice */}
+          {/* <Route path="billings/invoices/:id/update" element={<BillingAndPaymentsRoute element={<UpdateInvoice />} />} /> */}
+          <Route
+            path="billings"
+            element={
+              <BillingAndPaymentsRoute element={<InvoicePaymentHandler />} />
+            }
+          />
+
           <Route
             path="billings/invoices/add-invoices"
             element={<CreateInvoiceForm />}
@@ -176,6 +186,7 @@ function App() {
             path="billings/payments/client/:clientId/case/:caseId"
             element={<PaymentMadeOnCase />}
           />
+          {/* /////////////////////////////////// */}
           <Route path="cause-list" element={<CauseList />} />
           <Route path="contact-dev" element={<ContactForm />} />
           <Route path="events/:id/details" element={<EventDetail />} />
@@ -188,7 +199,7 @@ function App() {
 
   return (
     <>
-      {isLoading && <LoadingSpinner />}
+      {/* {isLoading && <LoadingSpinner />} */}
       <RouterProvider router={router} />
       <ToastContainer />
     </>

@@ -26,6 +26,7 @@ import CurrentTasksTracker from "./CurrentTasksTracker";
 import CurrentMonthIncomeCharts from "./CurrentMonthIncomeChart";
 import MonthlyIncomeChart from "./MonthlyIncomeChart";
 import TotalOutstandingBalanceCharts from "./TotalOutstandingBalanceCharts";
+import { ShowAdminComponent } from "./protect/Protect";
 
 // context for year for search filter
 export const PaymentFiltersContext = createContext();
@@ -212,13 +213,15 @@ const Dashboard = () => {
               <CurrentDayCaseList />
 
               <CurrentTasksTracker tasks={tasks?.data} userId={userId} />
-
-              <CurrentMonthIncomeCharts data={fetchedMonthData?.data} />
-              <TotalOutstandingBalanceCharts
-                paymentData={fetchedYearData?.data}
-                balanceData={totalBalanceOnPayments}
-              />
-              <MonthlyIncomeChart data={fetchedEachMonthDataInYear?.data} />
+              {/* only admin component` */}
+              <ShowAdminComponent>
+                <CurrentMonthIncomeCharts data={fetchedMonthData?.data} />
+                <TotalOutstandingBalanceCharts
+                  paymentData={fetchedYearData?.data}
+                  balanceData={totalBalanceOnPayments}
+                />
+                <MonthlyIncomeChart data={fetchedEachMonthDataInYear?.data} />
+              </ShowAdminComponent>
               <CaseCountsByClientChart data={casesByClient?.data} />
               <AccountOfficerCharts
                 title="Cases By Account Officer"

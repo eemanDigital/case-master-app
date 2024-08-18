@@ -1,11 +1,12 @@
 const express = require("express");
 const paymentController = require("../controllers/paymentController");
-const { protect } = require("../controllers/authController");
+const { protect, restrictTo } = require("../controllers/authController");
 const cacheMiddleware = require("../utils/cacheMiddleware");
 
 const router = express.Router();
 
 router.use(protect);
+router.use(restrictTo("super-admin", "admin"));
 
 // Create a new payment
 router.post(

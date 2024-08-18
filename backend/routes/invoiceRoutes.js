@@ -9,12 +9,14 @@ const {
   generateInvoicePdf,
   getTotalAmountDueOnInvoice,
 } = require("../controllers/invoiceController");
-const { protect } = require("../controllers/authController");
+const { protect, restrictTo } = require("../controllers/authController");
 const cacheMiddleware = require("../utils/cacheMiddleware");
 
 const router = express.Router();
 
-router.use(protect);
+router.use(protect); //allow access to logged in user
+router.use(restrictTo("super-admin", "admin")); //restrict to admin & super-admin
+
 // Routes for invoices
 router
   .route("/")
