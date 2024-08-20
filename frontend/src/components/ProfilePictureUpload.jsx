@@ -1,13 +1,17 @@
 import { useState } from "react";
-import { Button, Modal, message } from "antd";
+import { Button, Modal } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import useModal from "../hooks/useModal";
 import { useDataFetch } from "../hooks/useDataFetch";
+import { useDispatch } from "react-redux";
+import { getUser } from "../redux/features/auth/authSlice";
+import { toast } from "react-toastify";
+import avatar from "../assets/avatar.png";
 
-const UpdateProfilePicture = () => {
+const ProfilePictureUpload = () => {
   const [formData, setFormData] = useState({ photo: null });
   const [preview, setPreview] = useState(null); // State for image preview
-  const [uploading, setUploading] = useState(false); // State to track if uploading
+  const dispatch = useDispatch();
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();
   const { dataFetcher, data, loading, error } = useDataFetch();
@@ -32,37 +36,32 @@ const UpdateProfilePicture = () => {
   // Handle file upload
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (
-      formData.photo !== null &&
-      (formData.photo.type === "image/jpeg" ||
-        formData.photo.type === "image/jpg" ||
-        formData.photo.type === "image/png")
-    ) {
-      setUploading(true); // Set uploading state
 
+    // check empty form upload
+    if (formData.photo === null) {
+      return toast.error("Please upload a photo");
+    }
+
+    // check image type
+    if (
+      formData.photo.type === "image/jpeg" ||
+      formData.photo.type === "image/jpg" ||
+      formData.photo.type === "image/png"
+    ) {
       const payload = new FormData();
       payload.append("photo", formData.photo);
-
-      try {
-        const response = await dataFetcher(
-          "users/updateUser",
-          "patch",
-          payload,
-          fileHeaders
-        );
-        if (response?.data?.status === "success") {
-          message.success("Profile picture updated successfully!");
-          handleCancel(); // Close the modal on successful upload
-        } else {
-          message.error("Failed to update profile picture. Please try again.");
-        }
-      } catch (err) {
-        message.error("Failed to update profile picture. Please try again.");
-      } finally {
-        setUploading(false); // Reset uploading state
-      }
+      await dataFetcher("users/updateUser", "patch", payload, fileHeaders);
+      dispatch(getUser());
     } else {
-      message.error("Invalid file type. Please upload a JPEG or PNG image.");
+      return toast.error("Image type is not acceptable");
+    }
+
+    if (data?.data?.message === "success") {
+      return toast.success("Image Uploaded Successfully");
+    }
+
+    if (error) {
+      return toast.error(error);
     }
   };
 
@@ -72,6 +71,8 @@ const UpdateProfilePicture = () => {
         Upload Profile Picture
       </Button>
       <Modal
+        width={450}
+        // style={{ height: "400px" }}
         title="Upload Profile Picture"
         open={open}
         onOk={handleOk}
@@ -84,7 +85,7 @@ const UpdateProfilePicture = () => {
             <label
               htmlFor="photo"
               className="block text-sm font-medium text-gray-700"></label>
-            <div className="flex items-center mt-1">
+            <div className="flex flex-col sm:flex-row items-center mt-1">
               <label className="cursor-pointer inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
                 <UploadOutlined className="mr-2" />
                 <span>Select File</span>
@@ -98,18 +99,18 @@ const UpdateProfilePicture = () => {
                 />
               </label>
               {formData.photo && (
-                <p className="ml-4 text-sm text-gray-500">
+                <p className="ml-4 text-sm text-gray-500 mt-2 sm:mt-0">
                   {formData.photo.name}
                 </p>
               )}
             </div>
           </div>
 
-          <div className="mt-4">
+          <div className="mt-4 ">
             <img
-              src={preview === null ? formData.photo : preview}
+              src={preview === null ? avatar : preview}
               alt="Preview"
-              className="w-full h-auto object-cover"
+              className="w-44 h-44 object-cover rounded-full"
             />
           </div>
 
@@ -117,10 +118,10 @@ const UpdateProfilePicture = () => {
             <button
               type="submit"
               className={`bg-blue-500 text-white hover:bg-blue-600 p-2 rounded-md ${
-                uploading ? "opacity-50 cursor-not-allowed" : ""
+                loading ? "opacity-50 cursor-not-allowed" : ""
               }`}
-              disabled={uploading}>
-              {uploading ? "Uploading..." : "Upload Photo"}
+              disabled={loading}>
+              {loading ? "Uploading..." : "Upload Photo"}
             </button>
           </div>
         </form>
@@ -129,4 +130,4 @@ const UpdateProfilePicture = () => {
   );
 };
 
-export default UpdateProfilePicture;
+export default ProfilePictureUpload;

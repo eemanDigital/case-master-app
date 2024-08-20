@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useEffect, useState } from "react";
 import { formatDate } from "../utils/formatDate";
@@ -12,8 +12,6 @@ import {
   Empty,
   Table,
   Space,
-  Row,
-  Col,
 } from "antd";
 import { FaDownload } from "react-icons/fa6";
 import { RiDeleteBin2Line } from "react-icons/ri";
@@ -23,6 +21,7 @@ import useDeleteDocument from "../hooks/useDeleteDocument";
 import { useAdminHook } from "../hooks/useAdminHook";
 import useTextShorten from "../hooks/useTextShorten";
 import LoadingSpinner from "../components/LoadingSpinner";
+import PageErrorAlert from "../components/PageErrorAlert";
 
 const { Text } = Typography;
 const baseURL = import.meta.env.VITE_BASE_URL;
@@ -38,8 +37,6 @@ const CaseDetails = () => {
     "caseData"
   );
 
-  console.log(data?.data?.client);
-
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
@@ -54,8 +51,9 @@ const CaseDetails = () => {
   };
 
   // loading and error state
-  if (loading) return <LoadingSpinner />;
-  if (error) return <p>Error loading data</p>;
+  if (loading) {
+    <LoadingSpinner />;
+  }
 
   const paginatedReports = data?.data?.reports?.slice(
     (currentPage - 1) * pageSize,
@@ -114,284 +112,295 @@ const CaseDetails = () => {
   ];
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between mb-6">
-        <Button onClick={() => navigate(-1)}>Go Back</Button>
+    <>
+      {error ? (
+        <PageErrorAlert errorCondition={error} errorMessage={error} />
+      ) : (
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex justify-between mb-6">
+            <Button onClick={() => navigate(-1)}>Go Back</Button>
 
-        {isStaff && <CaseDocumentUpload caseId={id} />}
-      </div>
-      <div className="m-4 bg-white  text-gray-800 p-6 rounded-lg shadow-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div>
-            <h1 className="text-xl font-bold mb-4">
-              {data?.data?.firstParty.description}
-            </h1>
-            {data?.data?.firstParty?.name?.map((singleName, index) => (
-              <div key={singleName?._id || index} className="mb-2">
-                <span className="font-semibold text-[20px]">{index + 1}. </span>
-                <span>{singleName.name}</span>
-              </div>
-            ))}
+            {isStaff && <CaseDocumentUpload caseId={id} />}
           </div>
-          <div>
-            <h1 className="text-xl font-bold mb-4">
-              {data?.data?.secondParty.description}
-            </h1>
-            {data?.data?.secondParty?.name?.map((singleName, index) => (
-              <div key={singleName?._id || index} className="mb-2">
-                <span className="font-semibold">{index + 1}. </span>
-                <span>{singleName.name}</span>
-              </div>
-            ))}
-          </div>
-          <div>
-            {data?.data?.otherParty.map((singleParty, index) => (
-              <div key={singleParty.description || index} className="mb-6">
+          <div className="m-4 bg-white  text-gray-800 p-6 rounded-lg shadow-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div>
                 <h1 className="text-xl font-bold mb-4">
-                  {singleParty.description}
+                  {data?.data?.firstParty.description}
                 </h1>
-                {singleParty?.name?.map((n, idx) => (
-                  <div key={n?._id || idx} className="mb-2">
-                    <span className="font-semibold">{idx + 1}. </span>
-                    <span>{n.name}</span>
+                {data?.data?.firstParty?.name?.map((singleName, index) => (
+                  <div key={singleName?._id || index} className="mb-2">
+                    <span className="font-semibold text-[20px]">
+                      {index + 1}.{" "}
+                    </span>
+                    <span>{singleName.name}</span>
                   </div>
                 ))}
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          {/* Case details section */}
-          <Card title="Case Details" className="shadow-md p-4">
-            <List
-              itemLayout="vertical"
-              dataSource={[
-                { label: "SUIT NO:", value: data?.data?.suitNo },
-                {
-                  label: "Filing Date:",
-                  value:
-                    data?.data?.filingDate &&
-                    formatDate(data?.data?.filingDate),
-                },
-                {
-                  label: "Case Summary:",
-                  value: shortenText(
-                    data?.data?.caseSummary,
-                    150,
-                    "caseSummary"
-                  ),
-                },
-                {
-                  label: "Mode Of Commencement:",
-                  value: data?.data?.modeOfCommencement,
-                },
-                {
-                  label: "Filed By the Office:",
-                  value: data?.data?.isFiledByTheOffice ? "Yes" : "No",
-                },
-                {
-                  label: "Office Case File No:",
-                  value: data?.data?.caseOfficeFileNo,
-                },
-                { label: "Nature of Case:", value: data?.data?.natureOfCase },
-                { label: "Court:", value: data?.data?.courtName },
-                { label: "Court No:", value: data?.data?.courtNo },
-                { label: "Court Location:", value: data?.data?.location },
-                { label: "State:", value: data?.data?.state },
-                { label: "Case Status:", value: data?.data?.caseStatus },
-                { label: "Case Category:", value: data?.data?.category },
-                {
-                  label: "Case Priority/Ratings:",
-                  value: data?.data?.casePriority,
-                },
-              ]}
-              renderItem={(item) => (
-                <List.Item className="border-b border-gray-200 py-2">
-                  <List.Item.Meta
-                    title={
-                      <Text className="text-gray-800  font-poppins font-medium">
-                        {item.label}
-                      </Text>
-                    }
-                    description={
-                      item.value ? (
-                        <span className="text-gray-800  font-poppins  capitalize">
-                          {item.value}
-                        </span>
-                      ) : (
-                        <span className="text-red-500">Not provided</span>
-                      )
-                    }
-                  />
-                </List.Item>
-              )}
-            />
-
-            <div className="p-6 rounded-lg ">
-              <div className="mb-4">
-                {data?.data?.judge.map((j, index) => (
-                  <p
-                    key={j?._id || index}
-                    className="font-semibold text-[20px] ">
-                    Judge:{" "}
-                    {j.name || (
-                      <span className="text-red-500 font-semibold text-[20px]">
-                        Not provided
-                      </span>
-                    )}
-                  </p>
+              <div>
+                <h1 className="text-xl font-bold mb-4">
+                  {data?.data?.secondParty.description}
+                </h1>
+                {data?.data?.secondParty?.name?.map((singleName, index) => (
+                  <div key={singleName?._id || index} className="mb-2">
+                    <span className="font-semibold">{index + 1}. </span>
+                    <span>{singleName.name}</span>
+                  </div>
                 ))}
               </div>
-
-              <div className="mb-4">
-                <h1 className="text-xl  mb-2">Case Strength</h1>
-                <ul className="list-disc list-inside">
-                  {data?.data?.caseStrengths?.map((item, index) => (
-                    <li key={item?._id || index} className="mb-1">
-                      {item?.name || (
-                        <span className="text-red-500 font-semibold text-[20px]">
-                          Not provided
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mb-4">
-                <h1 className="text-xl  mb-2">Case Weaknesses</h1>
-                <ul className="list-disc list-inside">
-                  {data?.data?.caseWeaknesses?.map((item, index) => (
-                    <li key={item?._id || index} className="mb-1">
-                      {item?.name || (
-                        <span className="text-red-500 font-semibold text-[20px]">
-                          Not provided
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mb-4">
-                <h1 className="text-xl  mb-2">Steps to be Taken</h1>
-                {Array.isArray(data?.data?.stepToBeTaken) &&
-                data?.data?.stepToBeTaken.length > 0 ? (
-                  data?.data?.stepToBeTaken.map((step, index) => (
-                    <p
-                      key={step?._id || index}
-                      className="font-semibold text-[20px]">
-                      {step.name || (
-                        <span className="text-red-500 font-semibold text-[20px]">
-                          Not provided
-                        </span>
-                      )}
-                    </p>
-                  ))
-                ) : (
-                  <p className="font-semibold text-[20px]">
-                    <span className="text-red-500 font-semibold text-[20px]">
-                      No steps to be taken are provided.
-                    </span>
-                  </p>
-                )}
-              </div>
-
-              <div className="mb-4">
-                <h1 className="text-xl  mb-2">Account Officer(s)</h1>
-                <ul className="list-disc list-inside">
-                  {data?.data?.accountOfficer?.map((item, index) => (
-                    <li key={item?._id || index} className="mb-1">
-                      {`${item.firstName} ${item.lastName}` || (
-                        <span className="text-red-500 font-semibold text-[20px]">
-                          No Account Officer
-                        </span>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="mb-4">
-                <h1 className="text-xl  mb-2">Client</h1>
-                <p>
-                  {data?.data?.client?.firstName}{" "}
-                  {data?.data?.client?.secondName || ""}
-                </p>
-              </div>
-
-              <div className="mb-4">
-                <h1 className="text-xl  mb-2">General Comment</h1>
-                <p>{shortenText(data?.data?.generalComment)}</p>
+              <div>
+                {data?.data?.otherParty.map((singleParty, index) => (
+                  <div key={singleParty.description || index} className="mb-6">
+                    <h1 className="text-xl font-bold mb-4">
+                      {singleParty.description}
+                    </h1>
+                    {singleParty?.name?.map((n, idx) => (
+                      <div key={n?._id || idx} className="mb-2">
+                        <span className="font-semibold">{idx + 1}. </span>
+                        <span>{n.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                ))}
               </div>
             </div>
-          </Card>
-
-          {/* Document table section */}
-          <Card title="Attached Documents" className="shadow-md">
-            <Table
-              columns={columns}
-              dataSource={documents}
-              rowKey={(record) => record._id}
-              pagination={false}
-              className="w-full"
-              scroll={{ x: true }}
-            />
-          </Card>
-        </div>
-
-        <div className="space-y-6">
-          {/* Case history section */}
-          <Card title="Case History" className="shadow-md">
-            {Array.isArray(data?.data?.reports) &&
-            data?.data?.reports.length > 0 ? (
-              <>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="space-y-6">
+              {/* Case details section */}
+              <Card title="Case Details" className="shadow-md p-4">
                 <List
                   itemLayout="vertical"
-                  dataSource={paginatedReports}
-                  renderItem={(u) => (
-                    <List.Item key={u._id}>
+                  dataSource={[
+                    { label: "SUIT NO:", value: data?.data?.suitNo },
+                    {
+                      label: "Filing Date:",
+                      value:
+                        data?.data?.filingDate &&
+                        formatDate(data?.data?.filingDate),
+                    },
+                    {
+                      label: "Case Summary:",
+                      value: shortenText(
+                        data?.data?.caseSummary,
+                        150,
+                        "caseSummary"
+                      ),
+                    },
+                    {
+                      label: "Mode Of Commencement:",
+                      value: data?.data?.modeOfCommencement,
+                    },
+                    {
+                      label: "Filed By the Office:",
+                      value: data?.data?.isFiledByTheOffice ? "Yes" : "No",
+                    },
+                    {
+                      label: "Office Case File No:",
+                      value: data?.data?.caseOfficeFileNo,
+                    },
+                    {
+                      label: "Nature of Case:",
+                      value: data?.data?.natureOfCase,
+                    },
+                    { label: "Court:", value: data?.data?.courtName },
+                    { label: "Court No:", value: data?.data?.courtNo },
+                    { label: "Court Location:", value: data?.data?.location },
+                    { label: "State:", value: data?.data?.state },
+                    { label: "Case Status:", value: data?.data?.caseStatus },
+                    { label: "Case Category:", value: data?.data?.category },
+                    {
+                      label: "Case Priority/Ratings:",
+                      value: data?.data?.casePriority,
+                    },
+                  ]}
+                  renderItem={(item) => (
+                    <List.Item className="border-b border-gray-200 py-2">
                       <List.Item.Meta
-                        title={<Text strong>{formatDate(u.date)}</Text>}
+                        title={
+                          <Text className="text-gray-800  font-poppins font-medium">
+                            {item.label}
+                          </Text>
+                        }
                         description={
-                          <>
-                            <p>
-                              <Text strong>Update:</Text>{" "}
-                              {shortenText(u.update, 150, u._id)}
-                            </p>
-                            <p>
-                              <Text strong>Next Adjourned Date:</Text>{" "}
-                              {u.adjournedDate ? (
-                                formatDate(u.adjournedDate)
-                              ) : (
-                                <span className="text-red-500">
-                                  Not provided
-                                </span>
-                              )}
-                            </p>
-                          </>
+                          item.value ? (
+                            <span className="text-gray-800  font-poppins  capitalize">
+                              {item.value}
+                            </span>
+                          ) : (
+                            <span className="text-red-500">Not provided</span>
+                          )
                         }
                       />
                     </List.Item>
                   )}
                 />
-                <Pagination
-                  current={currentPage}
-                  pageSize={pageSize}
-                  total={data?.data?.reports.length}
-                  onChange={handlePageChange}
-                  className="mt-4"
+
+                <div className="p-6 rounded-lg ">
+                  <div className="mb-4">
+                    {data?.data?.judge.map((j, index) => (
+                      <p
+                        key={j?._id || index}
+                        className="font-semibold text-[20px] ">
+                        Judge:{" "}
+                        {j.name || (
+                          <span className="text-red-500 font-semibold text-[20px]">
+                            Not provided
+                          </span>
+                        )}
+                      </p>
+                    ))}
+                  </div>
+
+                  <div className="mb-4">
+                    <h1 className="text-xl  mb-2">Case Strength</h1>
+                    <ul className="list-disc list-inside">
+                      {data?.data?.caseStrengths?.map((item, index) => (
+                        <li key={item?._id || index} className="mb-1">
+                          {item?.name || (
+                            <span className="text-red-500 font-semibold text-[20px]">
+                              Not provided
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mb-4">
+                    <h1 className="text-xl  mb-2">Case Weaknesses</h1>
+                    <ul className="list-disc list-inside">
+                      {data?.data?.caseWeaknesses?.map((item, index) => (
+                        <li key={item?._id || index} className="mb-1">
+                          {item?.name || (
+                            <span className="text-red-500 font-semibold text-[20px]">
+                              Not provided
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mb-4">
+                    <h1 className="text-xl  mb-2">Steps to be Taken</h1>
+                    {Array.isArray(data?.data?.stepToBeTaken) &&
+                    data?.data?.stepToBeTaken.length > 0 ? (
+                      data?.data?.stepToBeTaken.map((step, index) => (
+                        <p
+                          key={step?._id || index}
+                          className="font-semibold text-[20px]">
+                          {step.name || (
+                            <span className="text-red-500 font-semibold text-[20px]">
+                              Not provided
+                            </span>
+                          )}
+                        </p>
+                      ))
+                    ) : (
+                      <p className="font-semibold text-[20px]">
+                        <span className="text-red-500 font-semibold text-[20px]">
+                          No steps to be taken are provided.
+                        </span>
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <h1 className="text-xl  mb-2">Account Officer(s)</h1>
+                    <ul className="list-disc list-inside">
+                      {data?.data?.accountOfficer?.map((item, index) => (
+                        <li key={item?._id || index} className="mb-1">
+                          {`${item.firstName} ${item.lastName}` || (
+                            <span className="text-red-500 font-semibold text-[20px]">
+                              No Account Officer
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="mb-4">
+                    <h1 className="text-xl  mb-2">Client</h1>
+                    <p>
+                      {data?.data?.client?.firstName}{" "}
+                      {data?.data?.client?.secondName || ""}
+                    </p>
+                  </div>
+
+                  <div className="mb-4">
+                    <h1 className="text-xl  mb-2">General Comment</h1>
+                    <p>{shortenText(data?.data?.generalComment)}</p>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Document table section */}
+              <Card title="Attached Documents" className="shadow-md">
+                <Table
+                  columns={columns}
+                  dataSource={documents}
+                  rowKey={(record) => record._id}
+                  pagination={false}
+                  className="w-full"
+                  scroll={{ x: true }}
                 />
-              </>
-            ) : (
-              <Empty description="No case history available." />
-            )}
-          </Card>
+              </Card>
+            </div>
+
+            <div className="space-y-6">
+              {/* Case history section */}
+              <Card title="Case History" className="shadow-md">
+                {Array.isArray(data?.data?.reports) &&
+                data?.data?.reports.length > 0 ? (
+                  <>
+                    <List
+                      itemLayout="vertical"
+                      dataSource={paginatedReports}
+                      renderItem={(u) => (
+                        <List.Item key={u._id}>
+                          <List.Item.Meta
+                            title={<Text strong>{formatDate(u.date)}</Text>}
+                            description={
+                              <>
+                                <p>
+                                  <Text strong>Update:</Text>{" "}
+                                  {shortenText(u.update, 150, u._id)}
+                                </p>
+                                <p>
+                                  <Text strong>Next Adjourned Date:</Text>{" "}
+                                  {u.adjournedDate ? (
+                                    formatDate(u.adjournedDate)
+                                  ) : (
+                                    <span className="text-red-500">
+                                      Not provided
+                                    </span>
+                                  )}
+                                </p>
+                              </>
+                            }
+                          />
+                        </List.Item>
+                      )}
+                    />
+                    <Pagination
+                      current={currentPage}
+                      pageSize={pageSize}
+                      total={data?.data?.reports.length}
+                      onChange={handlePageChange}
+                      className="mt-4"
+                    />
+                  </>
+                ) : (
+                  <Empty description="No case history available." />
+                )}
+              </Card>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 };
 

@@ -9,12 +9,13 @@ import UpdateUserPositionAndRole from "./UpdateUserPositionAndRole";
 import LeaveBalanceDisplay from "../components/LeaveBalanceDisplay";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useSelector } from "react-redux";
+import PageErrorAlert from "../components/PageErrorAlert";
+import LoadingSpinner from "../components/LoadingSpinner";
 // import useErrorMessage from "../hooks/useErrorMessage";
 
 const StaffDetails = () => {
   const { id } = useParams();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
   const loggedInClientId = user?.data?.id;
   const { dataFetcher, data, loading, error } = useDataFetch();
   const navigate = useNavigate();
@@ -25,8 +26,6 @@ const StaffDetails = () => {
   useEffect(() => {
     dataFetcher(`users/${id}`, "GET");
   }, [id]);
-
-  console.log(data?.data?._id, "USER ID");
 
   const isCurrentUser = loggedInClientId === id; //check if id is the same
 
@@ -106,12 +105,9 @@ const StaffDetails = () => {
   return (
     <>
       {loading ? (
-        <Spin
-          size="large"
-          className="flex justify-center items-center h-full"
-        />
+        <LoadingSpinner />
       ) : error ? (
-        <Alert message="Error" description={error} type="error" showIcon />
+        <PageErrorAlert errorCondition={error} errorMessage={error} />
       ) : (
         <div>
           <div>

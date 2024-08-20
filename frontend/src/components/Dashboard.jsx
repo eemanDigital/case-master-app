@@ -5,10 +5,8 @@ import { useAdminHook } from "../hooks/useAdminHook";
 import CasesByCategoriesChart from "./CasesByCategoriesChart";
 import AccountOfficerCharts from "./AccountOfficerCharts";
 import CaseCountsByPeriodChart from "./CaseCountsByPeriodChart";
-import TotalPaymentCharts from "./TotalOutstandingBalanceCharts";
 import CaseCountsByClientChart from "./CaseCountsByClientChart";
 import CaseCountsByYearChart from "./CaseCountsByYearChart ";
-import googleCalender from "../assets/calender.svg";
 import ClientDashboard from "./ClientDashboard";
 import LeaveNotification from "./LeaveNotification";
 import { useSelector } from "react-redux";
@@ -27,25 +25,23 @@ import CurrentMonthIncomeCharts from "./CurrentMonthIncomeChart";
 import MonthlyIncomeChart from "./MonthlyIncomeChart";
 import TotalOutstandingBalanceCharts from "./TotalOutstandingBalanceCharts";
 import { ShowAdminComponent } from "./protect/Protect";
+import { Alert } from "antd";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 // context for year for search filter
 export const PaymentFiltersContext = createContext();
 
 const Dashboard = () => {
-  const { isError, isSuccess, isLoading, message, user } = useSelector(
-    (state) => state.auth
-  );
+  useRedirectLogoutUser("/login"); // redirect to login if not logged in
+
+  const { user } = useSelector((state) => state.auth);
   const userId = user?.data?._id;
-  const [year, setYear] = useState(new Date().getFullYear());
+  const year = new Date().getFullYear();
+  // const [year, setYear] = useState(new Date().getFullYear());
   const [yearMonth, setYearMonth] = useState(new Date().getFullYear());
   const [yearEachMonth, setYearEachMonth] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
-  const {
-    data: getUserData,
-    loading: loadUserData,
-    error: getError,
-    dataFetcher: dataFetcherUser,
-  } = useDataFetch();
+  const { error: userError, dataFetcher: dataFetcherUser } = useDataFetch();
   const {
     data: fetchedYearData,
     loading: fetchLoadingYear,
@@ -71,6 +67,7 @@ const Dashboard = () => {
     cases,
     users,
     tasks,
+    reports,
     totalBalanceOnPayments,
     casesByStatus,
     casesByCourt,
@@ -82,8 +79,8 @@ const Dashboard = () => {
     casesByAccountOfficer,
     monthlyNewCases,
     yearlyNewCases,
-    loading: getterLoading,
-    error: getterError,
+    error: dataError,
+    loading: dataLoading,
   } = useDataGetterHook();
 
   // end
@@ -91,6 +88,7 @@ const Dashboard = () => {
   // user count
   const { lawyerCount, clientCount, staff } = useUsersCount(users);
 
+  // fetch data
   useEffect(() => {
     fetchData("cases", "cases");
     fetchData("users", "users");
@@ -116,19 +114,19 @@ const Dashboard = () => {
     if (userId) {
       dataFetcherUser(`users/${userId}`, "GET");
     }
-  }, [userId]);
+  }, [userId, dataFetcherUser]);
 
   useEffect(() => {
     if (year) {
       dataFetcherYear(`payments/totalPayments/${year}`, "GET");
     }
-  }, [year]);
+  }, [year, dataFetcherYear]);
 
   useEffect(() => {
     if (month && yearMonth) {
       dataFetcherMonth(`payments/totalPayments/${yearMonth}/${month}`, "GET");
     }
-  }, [month, yearMonth]);
+  }, [month, yearMonth, dataFetcherMonth]);
 
   // get data each month in a year
   useEffect(() => {
@@ -138,21 +136,10 @@ const Dashboard = () => {
         "GET"
       );
     }
-  }, [yearEachMonth]);
+  }, [yearEachMonth, dataFetcherEachMonth]);
 
-  // console.log(reports, events, "AD");
-  // const causeListTitle = (
-  //   <div className="flex justify-between items-center">
-  //     <h1 className="text-gray-700 text-[20px] font-bold">
-  //       {`Your Cases for today: ${causeList.data?.todayResult}`}
-  //     </h1>
-  //     <Link to="cause-list">
-  //       <Button className="bg-blue-500 text-white">See all List</Button>
-  //     </Link>
-  //   </div>
-  // );
-
-  // console.log(fetchedMonthData, "AO");
+  // if error from fetch user
+  if (userError) return <Alert message={userError} />;
 
   return (
     <PaymentFiltersContext.Provider
@@ -215,12 +202,23 @@ const Dashboard = () => {
               <CurrentTasksTracker tasks={tasks?.data} userId={userId} />
               {/* only admin component` */}
               <ShowAdminComponent>
-                <CurrentMonthIncomeCharts data={fetchedMonthData?.data} />
+                <CurrentMonthIncomeCharts
+                  data={fetchedMonthData?.data}
+                  loading={fetchLoadingMonth}
+                  error={fetchErrorMonth}
+                />
+
                 <TotalOutstandingBalanceCharts
                   paymentData={fetchedYearData?.data}
                   balanceData={totalBalanceOnPayments}
+                  loading={fetchLoadingYear}
+                  error={fetchErrorYear}
                 />
-                <MonthlyIncomeChart data={fetchedEachMonthDataInYear?.data} />
+                <MonthlyIncomeChart
+                  data={fetchedEachMonthDataInYear?.data}
+                  loading={fetchLoadingEachMonth}
+                  error={fetchErrorEachMonth}
+                />
               </ShowAdminComponent>
               <CaseCountsByClientChart data={casesByClient?.data} />
               <AccountOfficerCharts
@@ -231,8 +229,12 @@ const Dashboard = () => {
               <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
             </div>
             <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-1 grid grid-cols-1 gap-1">
-              <LatestCaseReports />
-
+              <LatestCaseReports
+                reports={reports}
+                error={dataError}
+                loading={dataLoading}
+                fetchData={fetchData}
+              />
               <TodoList />
             </div>
           </div>

@@ -25,6 +25,7 @@ export const ShowOnLogout = ({ children }) => {
   return null;
 };
 
+// allow access to only admin and super-admin - to be used for route
 export const ShowAdminRoute = ({ children }) => {
   const isLoggedIn = useSelector(selectIsLoggedIn);
   const user = useSelector(selectUser);
@@ -44,10 +45,12 @@ export const ShowAdminRoute = ({ children }) => {
     />
   );
 };
+
 export const BillingAndPaymentsRoute = ({ element }) => {
   return <ShowAdminRoute>{element}</ShowAdminRoute>;
 };
 
+// allow access to only admin and super-admin - to be used for component
 export const ShowAdminComponent = ({ children }) => {
   const isLoggedIn = useSelector(selectIsLoggedIn);
   const user = useSelector(selectUser);

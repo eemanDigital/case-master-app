@@ -83,10 +83,30 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
                   ? "red"
                   : "purple"
               }>
-              {task.taskResponse?.[0]?.completed
+              {/* {task.taskResponse?.[0]?.completed
                 ? "Task Completed"
                 : task.dueDate
-                ? `${timeLeft[task._id]} left` || "Calculating..."
+                ? `${timeLeft[task?._id]} left` || "Calculating..."
+                : "No deadline"}
+            </Tag>
+          </List.Item>
+        )}
+      />
+      {userTasks.length > 5 && (
+        <Pagination
+          current={currentPage}
+          pageSize={pageSize}
+          total={userTasks.length}
+          onChange={handlePageChange}
+          showSizeChanger
+          pageSizeOptions={["5", "10", "20"]}
+        />
+      )} */}
+
+              {task?.taskResponse?.[0]?.completed
+                ? "Task Completed"
+                : task?.dueDate
+                ? `${timeLeft?.[task?._id]} left` || "Calculating..."
                 : "No deadline"}
             </Tag>
           </List.Item>

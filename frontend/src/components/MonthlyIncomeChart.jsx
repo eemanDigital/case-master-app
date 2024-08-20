@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { useContext, useState } from "react";
 import {
   LineChart,
@@ -12,6 +13,8 @@ import {
 import { Typography, Modal, Card } from "antd";
 import PaymentFilterForm from "./PaymentFilterForm";
 import { PaymentFiltersContext } from "./Dashboard";
+import LoadingSpinner from "./LoadingSpinner";
+import PageErrorAlert from "./PageErrorAlert";
 
 const { Title } = Typography;
 
@@ -30,7 +33,7 @@ const months = [
   "December",
 ];
 
-const MonthlyIncomeChart = ({ data }) => {
+const MonthlyIncomeChart = ({ data, loading, error }) => {
   const { setYearEachMonth } = useContext(PaymentFiltersContext);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -47,6 +50,10 @@ const MonthlyIncomeChart = ({ data }) => {
   const handleCloseModal = () => {
     setIsModalVisible(false);
   };
+
+  if (loading) return <LoadingSpinner />; //loading state
+  if (error)
+    return <PageErrorAlert errorCondition={error} errorMessage={error} />; //error state
 
   return (
     <>
@@ -125,4 +132,15 @@ const MonthlyIncomeChart = ({ data }) => {
   );
 };
 
+// prop validation
+MonthlyIncomeChart.propTypes = {
+  data: PropTypes.arrayOf(
+    PropTypes.shape({
+      month: PropTypes.number.isRequired,
+      totalAmount: PropTypes.number.isRequired,
+    })
+  ),
+  loading: PropTypes.bool.isRequired,
+  error: PropTypes.string,
+};
 export default MonthlyIncomeChart;

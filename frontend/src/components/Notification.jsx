@@ -1,9 +1,13 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { RESET, sendVerificationMail } from "../redux/features/auth/authSlice";
+import LoadingSpinner from "./LoadingSpinner";
+import { Alert } from "antd";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const Notification = () => {
-  const { isError, isSuccess, isLoading, message, user } = useSelector(
+  useRedirectLogoutUser("/login");
+  const { isError, isLoading, message, user } = useSelector(
     (state) => state.auth
   );
   const { isStaff } = useAdminHook();
@@ -12,11 +16,14 @@ const Notification = () => {
   const userRole = user?.data?.role;
   const userPosition = user?.data?.position;
 
-  //   send verifcation email handler
+  //   send verification email handler
   const sendVeriEmail = async () => {
     await dispatch(sendVerificationMail());
     await dispatch(RESET());
   };
+
+  if (isLoading) return <LoadingSpinner />;
+  if (isError) return <Alert message={message} />;
 
   return (
     <div className="border border-gray-300 rounded-lg bg-red-200 p-2 text-center">

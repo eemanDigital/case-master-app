@@ -4,15 +4,14 @@ import { formatDate } from "../utils/formatDate";
 import TaskReminderForm from "./TaskReminderForm";
 import { Table, Modal, Space, Button } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
-
 import CreateTaskForm from "../pages/CreateTaskForm";
-import { RiDeleteBin6Line } from "react-icons/ri";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import { toast } from "react-toastify";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
+import PageErrorAlert from "./PageErrorAlert";
 
 const TaskList = () => {
   const {
@@ -61,10 +60,7 @@ const TaskList = () => {
   // Display loading message if data is being fetched
   if (loadingTasks.tasks) return <LoadingSpinner />;
 
-  // Display error message if there was an error fetching data
   if (taskError.error) return toast.error(taskError.error);
-
-  // console.log("TASKS", tasks?.data);
 
   const columns = [
     {
@@ -148,23 +144,32 @@ const TaskList = () => {
   };
 
   return (
-    <div className="mt-10 overflow-x-auto">
-      {isStaff && <CreateTaskForm />}
-      <Table
-        columns={columns}
-        dataSource={
-          isSuperOrAdmin
-            ? tasks?.data
-            : isClient
-            ? filterTaskByClientUser(loggedInClientId)
-            : filterTaskByUser(loggedInClientId)
-        }
-        rowKey="_id"
-        scroll={{ x: 1000 }}
-      />
+    <>
+      {taskError.tasks ? (
+        <PageErrorAlert
+          errorCondition={taskError.tasks}
+          errorMessage={taskError.tasks}
+        />
+      ) : (
+        <div className="mt-10 overflow-x-auto">
+          {isStaff && <CreateTaskForm />}
+          <Table
+            columns={columns}
+            dataSource={
+              isSuperOrAdmin
+                ? tasks?.data
+                : isClient
+                ? filterTaskByClientUser(loggedInClientId)
+                : filterTaskByUser(loggedInClientId)
+            }
+            rowKey="_id"
+            scroll={{ x: 1000 }}
+          />
 
-      {/* <TaskTimeTracker tasks={tasks?.data} userId={loggedInClientId} /> */}
-    </div>
+          {/* <TaskTimeTracker tasks={tasks?.data} userId={loggedInClientId} /> */}
+        </div>
+      )}{" "}
+    </>
   );
 };
 

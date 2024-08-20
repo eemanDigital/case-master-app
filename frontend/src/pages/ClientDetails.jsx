@@ -5,6 +5,7 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import UpdateClientInfo from "./UpdateClientInfo";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useAdminHook } from "../hooks/useAdminHook";
+import PageErrorAlert from "../components/PageErrorAlert";
 
 const ClientDetails = () => {
   const { id } = useParams();
@@ -20,7 +21,7 @@ const ClientDetails = () => {
   }
 
   if (error) {
-    return <Alert message={error} />;
+    return <PageErrorAlert errorCondition={error} errorMessage={error} />;
   }
 
   return (

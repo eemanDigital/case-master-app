@@ -76,9 +76,9 @@ const Navbar = () => {
             <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
               <NavLink to="/login">Login</NavLink>
             </li>
-            <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
+            {/* <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
               <NavLink to="/clients/login">Client Login</NavLink>
-            </li>
+            </li> */}
           </ShowOnLogout>
           <ShowOnLogin>
             <li className="btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block ">

@@ -395,7 +395,7 @@ const authSlice = createSlice({
         state.isError = true;
         state.isLoading = false;
         state.message = action.payload;
-        toast.error(action.payload);
+        // toast.error(action.payload);
       })
 
       // send sendVerification email

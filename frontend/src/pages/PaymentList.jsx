@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useDispatch, useSelector } from "react-redux";
 import { deleteData } from "../redux/features/delete/deleteSlice";
+import PageErrorAlert from "../components/PageErrorAlert";
 
 const PaymentList = () => {
   const {
@@ -18,8 +19,7 @@ const PaymentList = () => {
     fetchData,
   } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
   const { isClient, isSuperOrAdmin } = useAdminHook();
   const dispatch = useDispatch();
   const loggedInClientId = user?.data?.id;
@@ -143,26 +143,34 @@ const PaymentList = () => {
   ];
 
   return (
-    <div>
-      <h1 className=" w-full md:w-auto text-3xl font-bold text-gray-700 mb-7">
-        Payments
-      </h1>
-      <div className="flex flex-col md:flex-row justify-between items-center m-3">
-        <CreatePaymentForm />
-        <SearchBar onSearch={handleSearchChange} />
-      </div>
-      <div className="overflow-x-auto">
-        <Table
-          columns={columns}
-          dataSource={isClient ? filteredPaymentForClient : searchResults}
-          rowKey="_id"
-          loading={loadingPayment.payments}
-          pagination={{ pageSize: 10 }}
-          scroll={{ x: 1000 }}
+    <>
+      {paymentError.payments ? (
+        <PageErrorAlert
+          errorCondition={paymentError.paymentError}
+          errorMessage={paymentError.payments}
         />
-      </div>
-      {paymentError.payments && <p>Error: {paymentError.payments}</p>}
-    </div>
+      ) : (
+        <div>
+          <h1 className=" w-full md:w-auto text-3xl font-bold text-gray-700 mb-7">
+            Payments
+          </h1>
+          <div className="flex flex-col md:flex-row justify-between items-center m-3">
+            <CreatePaymentForm />
+            <SearchBar onSearch={handleSearchChange} />
+          </div>
+          <div className="overflow-x-auto">
+            <Table
+              columns={columns}
+              dataSource={isClient ? filteredPaymentForClient : searchResults}
+              rowKey="_id"
+              loading={loadingPayment.payments}
+              pagination={{ pageSize: 10 }}
+              scroll={{ x: 1000 }}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 

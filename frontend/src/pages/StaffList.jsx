@@ -10,11 +10,14 @@ import SearchBar from "../components/SearchBar";
 import { deleteUser, getUsers } from "../redux/features/auth/authSlice";
 import { useAdminHook } from "../hooks/useAdminHook";
 import ButtonWithIcon from "../components/ButtonWithIcon";
+import PageErrorAlert from "../components/PageErrorAlert";
 
 const StaffList = () => {
   const [searchResults, setSearchResults] = useState([]);
   const dispatch = useDispatch();
-  const { users, isLoading } = useSelector((state) => state.auth);
+  const { isLoading, isError, users, message } = useSelector(
+    (state) => state.auth
+  );
 
   const { Column, ColumnGroup } = Table;
   const { isAdminOrHr, isSuperOrAdmin } = useAdminHook();
@@ -61,90 +64,101 @@ const StaffList = () => {
     await dispatch(getUsers());
   };
 
-  // if (isLoading) return <LoadingSpinner />;
+  // if (isLoading) return <div>Loading...</div>; this is causing infinite loop, requires fix
+
   return (
     <>
-      <div className="flex md:flex-row flex-col justify-start  gap-3 my-4">
-        {isAdminOrHr && (
-          <>
-            <Link to="add-user">
-              <ButtonWithIcon
-                onClick={() => {}}
-                icon={<PlusOutlined className="mr-2" />}
-                text="Add User"
-              />
-            </Link>
-
-            <CreateLeaveBalanceForm />
-          </>
-        )}
-
-        <SearchBar onSearch={handleSearchChange} />
-      </div>
-      <div className="overflow-x-auto">
-        <Table dataSource={staffList} scroll={{ x: 1000 }}>
-          <ColumnGroup title="Employee's Name">
-            <Column
-              title="Photo"
-              dataIndex="photo"
-              key="photo"
-              render={(photo) => (
-                <div className="flex items-center justify-center">
-                  <img
-                    className="w-12 h-12 object-cover rounded-full"
-                    src={photo ? photo : avatar}
-                    alt="staff"
+      {isError ? (
+        <PageErrorAlert errorCondition={isError} errorMessage={message} />
+      ) : (
+        <>
+          <div className="flex md:flex-row flex-col justify-start  gap-3 my-4">
+            {isAdminOrHr && (
+              <>
+                <Link to="add-user">
+                  <ButtonWithIcon
+                    onClick={() => {}}
+                    icon={<PlusOutlined className="mr-2" />}
+                    text="Add User"
                   />
-                </div>
-              )}
-            />
+                </Link>
 
-            <Column title="First Name" dataIndex="firstName" key="firstName" />
-            <Column title="Last Name" dataIndex="lastName" key="lastName" />
-          </ColumnGroup>
-
-          {/* <Column title="Email" dataIndex="email" key="email" /> */}
-          <Column title="Role" dataIndex="role" key="role" />
-          <Column title="Position" dataIndex="position" key="position" />
-          <Column
-            title="Is Active"
-            dataIndex="isActive"
-            key="isActive"
-            render={(isActive) => (
-              <span style={{ color: isActive ? "green" : "red" }}>
-                {isActive ? "Active" : "Inactive"}
-              </span>
+                <CreateLeaveBalanceForm />
+              </>
             )}
-          />
 
-          <Column
-            title="Action"
-            key="action"
-            render={(text, record) => (
-              <Space size="middle">
-                <Button type="link">
-                  <Link to={`/dashboard/staff/${record?._id}/details`}>
-                    Get Details
-                  </Link>
-                </Button>
-                {isSuperOrAdmin && (
-                  <Button
-                    onClick={() => {
-                      Modal.confirm({
-                        title: "Are you sure you want to delete this user?",
-                        onOk: () => removeUser(record._id),
-                      });
-                    }}
-                    type="primary"
-                    danger>
-                    Delete
-                  </Button>
+            <SearchBar onSearch={handleSearchChange} />
+          </div>
+          <div className="overflow-x-auto">
+            <Table dataSource={staffList} scroll={{ x: 1000 }}>
+              <ColumnGroup title="Employee's Name">
+                <Column
+                  title="Photo"
+                  dataIndex="photo"
+                  key="photo"
+                  render={(photo) => (
+                    <div className="flex items-center justify-center">
+                      <img
+                        className="w-12 h-12 object-cover rounded-full"
+                        src={photo ? photo : avatar}
+                        alt="staff"
+                      />
+                    </div>
+                  )}
+                />
+
+                <Column
+                  title="First Name"
+                  dataIndex="firstName"
+                  key="firstName"
+                />
+                <Column title="Last Name" dataIndex="lastName" key="lastName" />
+              </ColumnGroup>
+
+              {/* <Column title="Email" dataIndex="email" key="email" /> */}
+              <Column title="Role" dataIndex="role" key="role" />
+              <Column title="Position" dataIndex="position" key="position" />
+              <Column
+                title="Is Active"
+                dataIndex="isActive"
+                key="isActive"
+                render={(isActive) => (
+                  <span style={{ color: isActive ? "green" : "red" }}>
+                    {isActive ? "Active" : "Inactive"}
+                  </span>
                 )}
-              </Space>
-            )}
-          />
-        </Table>
-      </div>
+              />
+
+              <Column
+                title="Action"
+                key="action"
+                render={(text, record) => (
+                  <Space size="middle">
+                    <Button type="link">
+                      <Link to={`/dashboard/staff/${record?._id}/details`}>
+                        Get Details
+                      </Link>
+                    </Button>
+                    {isSuperOrAdmin && (
+                      <Button
+                        onClick={() => {
+                          Modal.confirm({
+                            title: "Are you sure you want to delete this user?",
+                            onOk: () => removeUser(record._id),
+                          });
+                        }}
+                        type="primary"
+                        danger>
+                        Delete
+                      </Button>
+                    )}
+                  </Space>
+                )}
+              />
+            </Table>
+          </div>
+        </>
+      )}
     </>
   );
 };

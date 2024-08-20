@@ -9,6 +9,7 @@ import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
 import SearchBar from "./SearchBar";
 import { toast } from "react-toastify";
 import LoadingSpinner from "./LoadingSpinner";
+import PageErrorAlert from "./PageErrorAlert";
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const DocumentsList = () => {
@@ -139,11 +140,10 @@ const DocumentsList = () => {
 
       {/* Show error message if there is an error fetching documents */}
       {errorDoc.documents && (
-        <div className="text-center py-2">
-          <h3 className="text-xl font-semibold text-red-600">
-            Failed to display documents
-          </h3>
-        </div>
+        <PageErrorAlert
+          errorCondition={errorDoc.documents}
+          errorMessage={errorDoc.documents}
+        />
       )}
 
       <h2 className="text-2xl font-bold m-1">Documents</h2>

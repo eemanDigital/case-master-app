@@ -5,9 +5,11 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const devEmail = import.meta.env.VITE_DEVELOPER_EMAIL;
 const ContactForm = () => {
+  useRedirectLogoutUser("/login");
   const [formData, setFormData] = useState({
     name: "",
     email: "",

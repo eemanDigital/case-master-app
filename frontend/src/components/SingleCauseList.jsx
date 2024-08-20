@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { useState } from "react";
 import { Table, Card, Button, Typography, Space } from "antd";
 import { DownloadOutlined, UserAddOutlined } from "@ant-design/icons";
@@ -5,6 +6,7 @@ import { formatDate } from "../utils/formatDate";
 import LawyersInCourtForm from "../pages/LawyersInCourtForm";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { toast } from "react-toastify";
+import PageErrorAlert from "./PageErrorAlert";
 
 const { Title, Text } = Typography;
 
@@ -23,7 +25,13 @@ const SingleCauseList = ({
   const [selectedReportId, setSelectedReportId] = useState(null);
   const { isSuperOrAdmin } = useAdminHook();
 
-  if (errorCauseList) return toast.error(errorCauseList);
+  if (errorCauseList)
+    return (
+      <PageErrorAlert
+        errorCondition={errorCauseList}
+        errorMessage={errorCauseList}
+      />
+    );
 
   const onRowClick = (record) => {
     if (isSuperOrAdmin) {
@@ -127,4 +135,41 @@ const SingleCauseList = ({
   );
 };
 
+// proptype validation
+SingleCauseList.propTypes = {
+  causeListData: PropTypes.arrayOf(
+    PropTypes.shape({
+      _id: PropTypes.string.isRequired,
+      caseReported: PropTypes.shape({
+        firstParty: PropTypes.arrayOf(
+          PropTypes.shape({
+            name: PropTypes.string.isRequired,
+          })
+        ),
+        secondParty: PropTypes.arrayOf(
+          PropTypes.shape({
+            name: PropTypes.string.isRequired,
+          })
+        ),
+      }),
+      adjournedFor: PropTypes.string,
+      adjournedDate: PropTypes.string,
+      lawyersInCourt: PropTypes.arrayOf(
+        PropTypes.shape({
+          firstName: PropTypes.string.isRequired,
+          lastName: PropTypes.string.isRequired,
+        })
+      ),
+    })
+  ).isRequired,
+  loadingCauseList: PropTypes.bool.isRequired,
+  errorCauseList: PropTypes.string,
+  addResultNumber: PropTypes.bool,
+  result: PropTypes.number,
+  onDownloadCauseList: PropTypes.func.isRequired,
+  title: PropTypes.string,
+  showDownloadBtn: PropTypes.bool,
+  hideButton: PropTypes.bool,
+  h1Style: PropTypes.object,
+};
 export default SingleCauseList;

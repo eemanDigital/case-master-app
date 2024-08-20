@@ -1,8 +1,10 @@
 import { useEffect, useMemo } from "react";
-import { Badge, Popover, List, Button, Spin, Alert, Tooltip } from "antd";
+import { Badge, Popover, List, Button, Tooltip } from "antd";
 import { BellOutlined } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import LoadingSpinner from "./LoadingSpinner";
+import PageErrorAlert from "./PageErrorAlert";
 
 const LeaveNotification = () => {
   const {
@@ -47,41 +49,43 @@ const LeaveNotification = () => {
   );
 
   return (
-    <Popover
-      content={
-        loadingLeaveApp.leaveApps ? (
-          <div className="text-center p-4">
-            <Spin tip="Loading leave applications..." />
-          </div>
-        ) : errorLeaveApp.leaveApps ? (
-          <Alert
-            message="Error"
-            description={
-              errorLeaveApp.leaveApps.message || "Something went wrong"
-            }
-            type="error"
-            showIcon
-          />
-        ) : pendingLeaves?.length ? (
-          content
-        ) : (
-          <div className="text-center p-4">No pending leave applications</div>
-        )
+    <>
+      {
+        <Popover
+          content={
+            loadingLeaveApp.leaveApps ? (
+              <div className="text-center p-4">
+                <LoadingSpinner />
+              </div>
+            ) : errorLeaveApp.leaveApps ? (
+              <PageErrorAlert
+                errorCondition={errorLeaveApp.leaveApps}
+                errorMessage={errorLeaveApp.leaveApps}
+              />
+            ) : pendingLeaves?.length ? (
+              content
+            ) : (
+              <div className="text-center p-4">
+                No pending leave applications
+              </div>
+            )
+          }
+          title={`Pending Leave Applications (${pendingLeaves?.length})`}
+          trigger="click"
+          placement="bottomRight">
+          <Badge count={pendingLeaves?.length} overflowCount={99}>
+            <Tooltip title="Leave Application Notification">
+              <Button
+                icon={<BellOutlined />}
+                shape="circle"
+                size="large"
+                className="bg-white text-blue-500 shadow-md"
+              />
+            </Tooltip>
+          </Badge>
+        </Popover>
       }
-      title={`Pending Leave Applications (${pendingLeaves?.length})`}
-      trigger="click"
-      placement="bottomRight">
-      <Badge count={pendingLeaves?.length} overflowCount={99}>
-        <Tooltip title="Leave Application Notification">
-          <Button
-            icon={<BellOutlined />}
-            shape="circle"
-            size="large"
-            className="bg-white text-blue-500 shadow-md"
-          />
-        </Tooltip>
-      </Badge>
-    </Popover>
+    </>
   );
 };
 

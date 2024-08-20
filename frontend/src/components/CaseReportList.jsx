@@ -36,7 +36,6 @@ const CaseReportList = ({
   hideButtons,
   titleStyle,
   nameStyle,
-  cardStyle,
 }) => {
   const { isStaff } = useAdminHook();
   const { fetchData } = useDataGetterHook();
@@ -243,18 +242,48 @@ const CaseReportList = ({
 };
 
 CaseReportList.propTypes = {
+  title: PropTypes.string,
   showFilter: PropTypes.bool,
   reports: PropTypes.arrayOf(
     PropTypes.shape({
-      name: PropTypes.string.isRequired,
-      description: PropTypes.string.isRequired,
+      _id: PropTypes.string.isRequired,
+      caseReported: PropTypes.shape({
+        firstParty: PropTypes.shape({
+          name: PropTypes.arrayOf(
+            PropTypes.shape({
+              name: PropTypes.string.isRequired,
+            })
+          ).isRequired,
+        }).isRequired,
+        secondParty: PropTypes.shape({
+          name: PropTypes.arrayOf(
+            PropTypes.shape({
+              name: PropTypes.string.isRequired,
+            })
+          ).isRequired,
+        }).isRequired,
+      }).isRequired,
       date: PropTypes.string.isRequired,
+      adjournedFor: PropTypes.string,
+      adjournedDate: PropTypes.string,
+      update: PropTypes.string,
+      reportedBy: PropTypes.shape({
+        fullName: PropTypes.string,
+      }),
     })
   ).isRequired,
   hideButtons: PropTypes.bool,
   titleStyle: PropTypes.string,
-  cardStyle: PropTypes.string,
   nameStyle: PropTypes.string,
-  title: PropTypes.string,
 };
+
+CaseReportList.defaultProps = {
+  reports: [],
+  hideButtons: false,
+  showFilter: false,
+  title: "Case Reports",
+  titleStyle: "",
+  nameStyle: "",
+};
+
 export default CaseReportList;

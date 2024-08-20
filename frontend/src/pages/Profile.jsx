@@ -3,23 +3,29 @@ import { formatYear } from "../utils/formatDate";
 import { FaAddressBook, FaPhone } from "react-icons/fa";
 import { MdMail } from "react-icons/md";
 import "react-toastify/dist/ReactToastify.css";
-import UpdateProfilePicture from "../components/UpdateProfilePicture";
+import ProfilePictureUpload from "../components/ProfilePictureUpload";
 import EditUserProfile from "./EditUserProfile";
 import ChangePassword from "./ChangePassword";
-import { useAdminHook } from "../hooks/useAdminHook";
 import { useSelector } from "react-redux";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import LoadingSpinner from "../components/LoadingSpinner";
+import PageErrorAlert from "../components/PageErrorAlert";
 
 const Profile = () => {
   useRedirectLogoutUser("/login"); // redirect to login if not logged in
-
-  const { user } = useSelector((state) => state.auth);
-  const { isClient } = useAdminHook();
+  const { user, isError, isLoading, message } = useSelector(
+    (state) => state.auth
+  );
 
   // Handle position field
   if (user?.data?.position === "Other") {
     user.data.position = null;
   }
+
+  if (isLoading) return <LoadingSpinner />; //loading state
+  if (isError)
+    //error state
+    return <PageErrorAlert errorCondition={isError} errorMessage={message} />;
 
   return (
     <section className="flex flex-col justify-center items-center ">
@@ -35,7 +41,7 @@ const Profile = () => {
           />
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             <EditUserProfile />
-            <UpdateProfilePicture />
+            <ProfilePictureUpload />
           </div>
         </div>
 

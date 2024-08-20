@@ -1,10 +1,10 @@
-import React, { useEffect } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import { Card, Spin, Empty, Typography, Row, Col, Divider, Button } from "antd";
+import { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Card, Empty, Typography, Row, Col, Divider, Button } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import LeaveResponseForm from "../components/LeaveResponseForm";
-// import useErrorMessage from "../hooks/useErrorMessage";
+import PropTypes from "prop-types";
 import { useAdminHook } from "../hooks/useAdminHook";
 import {
   CalendarOutlined,
@@ -13,27 +13,23 @@ import {
   FileTextOutlined,
 } from "@ant-design/icons";
 import LeaveBalanceDisplay from "../components/LeaveBalanceDisplay";
-import { useSelector } from "react-redux";
+import LoadingSpinner from "../components/LoadingSpinner";
+import PageErrorAlert from "../components/PageErrorAlert";
 
 const { Title, Text } = Typography;
 
-const LeaveApplicationDetails = ({ userId }) => {
+const LeaveApplicationDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { id } = useParams();
   const navigate = useNavigate();
   // useErrorMessage(error);
   const { isAdminOrHr } = useAdminHook();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
-  const loggedInClientId = user?.data?.id;
-
-  const isCurrentUser = loggedInClientId === id; //check if id is the same
 
   useEffect(() => {
-    if (id || userId) {
-      dataFetcher(`leaves/applications/${id || userId}`, "GET");
+    if (id) {
+      dataFetcher(`leaves/applications/${id}`, "GET");
     }
-  }, [id, userId]);
+  }, [id]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -47,6 +43,10 @@ const LeaveApplicationDetails = ({ userId }) => {
         return "text-gray-600 bg-gray-100";
     }
   };
+
+  if (loading) return <LoadingSpinner />;
+  if (error)
+    return <PageErrorAlert errorCondition={error} errorMessage={error} />;
 
   const renderLeaveDetails = () => (
     <div className="mt-10">
@@ -150,30 +150,26 @@ const LeaveApplicationDetails = ({ userId }) => {
   );
 
   return (
-    <Spin spinning={loading}>
-      {!loading && (
+    <>
+      {data ? (
         <>
-          {data ? (
+          {isAdminOrHr && (
             <>
-              {isAdminOrHr && (
-                <>
-                  <LeaveResponseForm appId={data?.data?.id} />
+              <LeaveResponseForm appId={data?.data?.id} />
 
-                  <Button onClick={() => navigate(-1)}>Go Back</Button>
+              <Button onClick={() => navigate(-1)}>Go Back</Button>
 
-                  <Divider />
-                </>
-              )}
-              {renderLeaveDetails()}
+              <Divider />
             </>
-          ) : (
-            <Empty description="No Leave Application" />
           )}
-          <Divider />
-          <LeaveBalanceDisplay userId={data?.data?.employee?._id} />
+          {renderLeaveDetails()}
         </>
+      ) : (
+        <Empty description="No Leave Application" />
       )}
-    </Spin>
+      <Divider />
+      <LeaveBalanceDisplay userId={data?.data?.employee?._id} />
+    </>
   );
 };
 

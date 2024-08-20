@@ -134,12 +134,14 @@ function App() {
           <Route path="cases/add-case" element={<CreateCaseForm />} />
           <Route path="cases/:id/casedetails" element={<CaseDetails />} />
           <Route path="case-reports" element={<MainCaseReportList />} />
+
           <Route path="leave-application" element={<LeaveAppForm />} />
           <Route
             path="staff/leave-application"
             element={<LeaveApplicationList />}
           />
           <Route path="staff/leave-balance" element={<LeaveBalanceList />} />
+
           <Route
             path="staff/leave-application/:id/details"
             element={<LeaveApplicationDetails />}
@@ -199,9 +201,14 @@ function App() {
 
   return (
     <>
-      {/* {isLoading && <LoadingSpinner />} */}
-      <RouterProvider router={router} />
-      <ToastContainer />
+      {isLoading ? (
+        <LoadingSpinner />
+      ) : (
+        <>
+          <RouterProvider router={router} />
+          <ToastContainer />
+        </>
+      )}
     </>
   );
 }

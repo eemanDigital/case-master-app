@@ -6,16 +6,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import useTogglePassword from "../hooks/useTogglePassword";
 import { toast } from "react-toastify";
-import { FaGoogle } from "react-icons/fa6";
 import PasswordInput from "./PasswordInput";
-import {
-  login,
-  loginWithGoogle,
-  RESET,
-  sendLoginCode,
-} from "../redux/features/auth/authSlice";
+import { login, RESET, sendLoginCode } from "../redux/features/auth/authSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { GoogleLogin } from "@react-oauth/google";
 import GoogleUserLogin from "../pages/GoogleUserLogin";
 
 const Login = () => {
@@ -129,7 +122,7 @@ const Login = () => {
               </div>
               <Button
                 type="submit"
-                buttonStyle="bg-slate-500 m-2 px-5 py-2 rounded w-full text-slate-200 hover:bg-slate-400">
+                buttonStyle="bg-blue-500 m-2 px-5 py-2 rounded w-full text-blue-200 hover:bg-blue-400">
                 {isLoading ? "Loading..." : "Login"}
               </Button>
             </div>

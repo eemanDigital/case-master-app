@@ -1,18 +1,17 @@
 import { useEffect, useState } from "react";
-import { Card, Alert, Table, Divider } from "antd";
+import { Card, Table } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { useAuthContext } from "../hooks/useAuthContext";
+
 import { useAdminHook } from "../hooks/useAdminHook";
 import AllCasesListForPayment from "./AllCasesListForPayment";
 import { useSelector } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { toast } from "react-toastify";
+import PageErrorAlert from "../components/PageErrorAlert";
 
 const PaymentByClient = () => {
-  const { clientPayments, cases, loading, error, fetchData } =
-    useDataGetterHook();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { clientPayments, loading, error, fetchData } = useDataGetterHook();
+  const { user } = useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
   const loggedInClientId = user?.data?.id;
 
@@ -24,7 +23,14 @@ const PaymentByClient = () => {
   }, []);
 
   if (loading.clientPayments) return <h1>Loading... </h1>;
-  if (error.clientPayments) return toast.error(error.clientPayments);
+
+  if (error.clientPayments)
+    return (
+      <PageErrorAlert
+        errorCondition={error.clientPayments}
+        errorMessage={error.clientPayments}
+      />
+    );
 
   const paymentData = clientPayments?.data || [];
 
@@ -36,8 +42,6 @@ const PaymentByClient = () => {
   const handleTableChange = (pagination) => {
     setPagination(pagination);
   };
-
-  console.log(clientPayments, "payment");
 
   const columns = [
     {

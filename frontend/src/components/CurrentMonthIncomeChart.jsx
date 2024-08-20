@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { useContext, useState } from "react";
 import {
   BarChart,
@@ -12,10 +13,12 @@ import {
 import { Typography, Modal, Card } from "antd";
 import PaymentFilterForm from "./PaymentFilterForm";
 import { PaymentFiltersContext } from "./Dashboard";
+import LoadingSpinner from "./LoadingSpinner";
+import PageErrorAlert from "./PageErrorAlert";
 
 const { Title } = Typography;
 
-const CurrentMonthIncomeCharts = ({ data }) => {
+const CurrentMonthIncomeCharts = ({ data, loading, error }) => {
   const { setYearMonth, setMonth } = useContext(PaymentFiltersContext);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -30,6 +33,10 @@ const CurrentMonthIncomeCharts = ({ data }) => {
   const handleCloseModal = () => {
     setIsModalVisible(false);
   };
+
+  if (loading) return <LoadingSpinner />; //loading state
+  if (error)
+    return <PageErrorAlert errorCondition={error} errorMessage={error} />; //error state
 
   return (
     <>
@@ -84,6 +91,16 @@ const CurrentMonthIncomeCharts = ({ data }) => {
       </Modal>
     </>
   );
+};
+
+CurrentMonthIncomeCharts.propTypes = {
+  data: PropTypes.shape({
+    month: PropTypes.string,
+    totalAmount: PropTypes.number,
+    year: PropTypes.number,
+  }),
+  loading: PropTypes.bool.isRequired,
+  error: PropTypes.string,
 };
 
 export default CurrentMonthIncomeCharts;

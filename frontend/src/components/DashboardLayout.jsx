@@ -1,19 +1,43 @@
-import DashboardNav from "./DashboardNav.jsx";
-
-import SideBar from "./SideBar.jsx";
+import { useState } from "react";
+import { Layout, Button } from "antd";
 import { Outlet } from "react-router-dom";
+import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
+import SideBar from "./SideBar.jsx";
+// import DashboardNav from "./DashboardNav.jsx";
+
+const { Header, Content } = Layout;
 
 const DashboardLayout = () => {
+  const [collapsed, setCollapsed] = useState(false);
+
+  const toggleSidebar = () => {
+    setCollapsed(!collapsed);
+  };
+
   return (
-    <>
-      <DashboardNav />
-      <div className="flex gap-5 justify-start md:mt-20 mt-24">
-        <SideBar />
-        <div className=" bg-gray-200 rounded-md  w-screen  shadow-inner p-5 md:h-screen h-[700px] overflow-y-auto">
+    <Layout className="min-h-screen">
+      <SideBar collapsed={collapsed} setCollapsed={setCollapsed} />
+      <Layout
+        className="site-layout"
+        style={{ marginLeft: collapsed ? 80 : 200 }}>
+        <Header className="bg-white p-0 flex items-center">
+          <Button
+            type="text"
+            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={toggleSidebar}
+            className="text-xl h-16 w-16"
+          />
+          {/* <DashboardNav /> */}
+        </Header>
+        <Content
+          className="m-4 p-6 bg-gray-300  rounded-lg overflow-auto"
+          style={{
+            minHeight: 280,
+          }}>
           <Outlet />
-        </div>
-      </div>
-    </>
+        </Content>
+      </Layout>
+    </Layout>
   );
 };
 

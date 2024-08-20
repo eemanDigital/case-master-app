@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { useState } from "react";
 import {
   PieChart,
@@ -10,10 +11,17 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Typography, Modal } from "antd";
+import LoadingSpinner from "./LoadingSpinner";
+import PageErrorAlert from "./PageErrorAlert";
 
 const { Title } = Typography;
 
-const TotalOutstandingBalanceCharts = ({ paymentData, balanceData }) => {
+const TotalOutstandingBalanceCharts = ({
+  paymentData,
+  balanceData,
+  error,
+  loading,
+}) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const value = paymentData?.totalAmount;
@@ -29,7 +37,7 @@ const TotalOutstandingBalanceCharts = ({ paymentData, balanceData }) => {
     { name: "Total Outstanding Balance", value: totalBalance },
   ];
 
-  const COLORS = ["#1c4e80", "#f0f0f0"];
+  const COLORS = ["#1c4e80", "#a5d8dd"];
 
   const handleCardClick = () => {
     setIsModalVisible(true);
@@ -39,6 +47,9 @@ const TotalOutstandingBalanceCharts = ({ paymentData, balanceData }) => {
     setIsModalVisible(false);
   };
 
+  if (loading) return <LoadingSpinner />; //loading state
+  if (error)
+    return <PageErrorAlert errorCondition={error} errorMessage={error} />; //error state
   return (
     <>
       {/* Small Card for Dashboard */}
@@ -129,6 +140,23 @@ const TotalOutstandingBalanceCharts = ({ paymentData, balanceData }) => {
       </Modal>
     </>
   );
+};
+
+// prop type validation
+TotalOutstandingBalanceCharts.propTypes = {
+  paymentData: PropTypes.shape({
+    totalAmount: PropTypes.number,
+    year: PropTypes.number,
+  }),
+  balanceData: PropTypes.shape({
+    data: PropTypes.arrayOf(
+      PropTypes.shape({
+        totalBalance: PropTypes.number,
+      })
+    ),
+  }),
+  error: PropTypes.string,
+  loading: PropTypes.bool.isRequired,
 };
 
 export default TotalOutstandingBalanceCharts;

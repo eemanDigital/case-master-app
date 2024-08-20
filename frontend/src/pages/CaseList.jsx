@@ -19,6 +19,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import ButtonWithIcon from "../components/ButtonWithIcon";
+import PageErrorAlert from "../components/PageErrorAlert";
+// import debounce from "lodash/debounce";
 
 const { Title } = Typography;
 
@@ -82,6 +84,7 @@ const CaseList = () => {
     setSearchResults(results || cases?.data);
   };
 
+  // delete handler
   const deleteCase = async (id) => {
     await dispatch(deleteData(`cases/${id}`));
     await fetchData("cases", "cases");
@@ -173,44 +176,52 @@ const CaseList = () => {
   ];
 
   if (loading.cases) return <LoadingSpinner />;
-  if (error.cases) return toast.error(error.cases);
 
   return (
-    <section>
-      <Title level={1}>Cases</Title>
-      <div className="flex md:flex-row flex-col justify-between items-center mb-4">
-        {isStaff && (
-          <div className="w-full md:w-auto mb-2 md:mb-0">
-            <Link to="add-case">
-              <ButtonWithIcon
-                onClick={() => {}}
-                icon={null}
-                text="+ Add Case"
-              />
-            </Link>
+    <>
+      {error.cases ? (
+        <PageErrorAlert
+          errorCondition={error.cases}
+          errorMessage={error.cases}
+        />
+      ) : (
+        <section>
+          <Title level={1}>Cases</Title>
+          <div className="flex md:flex-row flex-col justify-between items-center mb-4">
+            {isStaff && (
+              <div className="w-full md:w-auto mb-2 md:mb-0">
+                <Link to="add-case">
+                  <ButtonWithIcon
+                    onClick={() => {}}
+                    icon={null}
+                    text="+ Add Case"
+                  />
+                </Link>
+              </div>
+            )}
+            <SearchBar data={cases?.data} onSearch={handleSearchChange} />
           </div>
-        )}
-        <SearchBar data={cases?.data} onSearch={handleSearchChange} />
-      </div>
-      <div className="overflow-x-auto">
-        <Table
-          columns={columns}
-          dataSource={isStaff ? currentCases : filterCasesByClient(caseIDs)}
-          pagination={false}
-          rowKey="_id"
-          loading={loading.cases}
-          scroll={{ x: 1000 }} // Enables horizontal scrolling when table content overflows
-        />
-      </div>
-      <Row justify="center" style={{ marginTop: 12 }}>
-        <Pagination
-          current={currentPage}
-          total={cases?.data?.length}
-          pageSize={itemsPerPage}
-          onChange={paginate}
-        />
-      </Row>
-    </section>
+          <div className="overflow-x-auto">
+            <Table
+              columns={columns}
+              dataSource={isStaff ? currentCases : filterCasesByClient(caseIDs)}
+              pagination={false}
+              rowKey="_id"
+              loading={loading.cases}
+              scroll={{ x: 1000 }} // Enables horizontal scrolling when table content overflows
+            />
+          </div>
+          <Row justify="center" style={{ marginTop: 12 }}>
+            <Pagination
+              current={currentPage}
+              total={cases?.data?.length}
+              pageSize={itemsPerPage}
+              onChange={paginate}
+            />
+          </Row>
+        </section>
+      )}
+    </>
   );
 };
 

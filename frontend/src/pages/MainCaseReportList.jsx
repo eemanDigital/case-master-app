@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import CaseReportList from "../components/CaseReportList";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { toast } from "react-toastify";
+import PageErrorAlert from "../components/PageErrorAlert";
 
 const MainCaseReportList = () => {
   const { reports, error, loading, fetchData } = useDataGetterHook();
@@ -13,15 +13,21 @@ const MainCaseReportList = () => {
   }, []);
 
   if (loading.reports) return <LoadingSpinner />;
-  if (error.reports) return toast.error(error.reports);
 
   return (
     <div>
-      <CaseReportList
-        showFilter={true}
-        reports={reports?.data}
-        title="Case Report"
-      />
+      {error.reports ? (
+        <PageErrorAlert
+          errorCondition={error.reports}
+          errorMessage={error.reports}
+        />
+      ) : (
+        <CaseReportList
+          showFilter={true}
+          reports={reports?.data}
+          title="Case Report"
+        />
+      )}
     </div>
   );
 };

@@ -15,7 +15,9 @@ export const useDataFetch = () => {
 
   const handleError = useCallback((err) => {
     const { response } = err;
-    const errorMessage = response?.data?.message || "An error occurred";
+    const errorMessage =
+      (response && response.data && response.data.message) ||
+      "An error occurred";
     setError(errorMessage);
 
     return { error: errorMessage };

@@ -1,21 +1,15 @@
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { Link } from "react-router-dom";
-import { Space, Table, Button, Spin, Alert, Modal, Divider } from "antd";
-import { useDataFetch } from "../hooks/useDataFetch";
+import { Space, Table, Button, Modal, Divider } from "antd";
 import AddClientForm from "../components/AddClientForm";
 import { useEffect, useState } from "react";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useDispatch, useSelector } from "react-redux";
 import { deleteUser, getUsers } from "../redux/features/auth/authSlice";
-import { toast } from "react-toastify";
+import LoadingSpinner from "../components/LoadingSpinner";
+import PageErrorAlert from "../components/PageErrorAlert";
 
 const ClientLists = () => {
-  // const {
-  //   users: clients,
-  //   loading: loadingClients,
-  //   error: errorClients,
-  // } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
   const dispatch = useDispatch();
 
@@ -23,7 +17,6 @@ const ClientLists = () => {
   const { isStaff, isSuperOrAdmin, isClient } = useAdminHook();
   const {
     isError,
-    isSuccess,
     isLoading,
     message,
     user,
@@ -31,8 +24,6 @@ const ClientLists = () => {
   } = useSelector((state) => state.auth);
 
   const loggedInClient = user?.data?._id;
-
-  const { data, loading, error, dataFetcher } = useDataFetch();
 
   // fetch client
   useEffect(() => {
@@ -93,14 +84,12 @@ const ClientLists = () => {
   };
 
   if (isLoading) {
-    return (
-      <Spin size="large" className="flex justify-center items-center h-full" />
-    );
+    return <LoadingSpinner />;
   }
 
-  if (isError) {
-    return toast.error(message);
-  }
+  // if (isError) {
+  //   <PageErrorAlert errorCondition={isError} errorMessage={message} />;
+  // }
 
   // remove client handler
   const removeClient = async (id) => {
@@ -110,58 +99,63 @@ const ClientLists = () => {
 
   return (
     <>
-      <div
-        className={`flex md:flex-row flex-col justify-between items-center `}>
-        {isStaff && <AddClientForm />}
-        <SearchBar onSearch={handleSearchChange} />
-      </div>
+      {isError ? (
+        <PageErrorAlert errorCondition={isError} errorMessage={message} />
+      ) : (
+        <>
+          <div
+            className={`flex md:flex-row flex-col justify-between items-center `}>
+            {isStaff && <AddClientForm />}
+            <SearchBar onSearch={handleSearchChange} />
+          </div>
+          <Divider />
+          <div className=" overflow-x-auto">
+            <Table dataSource={searchResults} scroll={{ x: 400 }}>
+              <ColumnGroup title="Client Lists">
+                <Column
+                  title="Client's Name"
+                  dataIndex="firstName"
+                  key="firstName"
+                />
+                <Column
+                  title="Second Name"
+                  dataIndex="secondName"
+                  key="secondName"
+                />
+              </ColumnGroup>
 
-      <Divider />
-      <div className=" overflow-x-auto">
-        <Table dataSource={searchResults} scroll={{ x: 400 }}>
-          <ColumnGroup title="Client Lists">
-            <Column
-              title="Client's Name"
-              dataIndex="firstName"
-              key="firstName"
-            />
-            <Column
-              title="Second Name"
-              dataIndex="secondName"
-              key="secondName"
-            />
-          </ColumnGroup>
+              <Column title="Client Email" dataIndex="email" key="email" />
+              <Column title="Phone" dataIndex="phone" key="phone" />
 
-          <Column title="Client Email" dataIndex="email" key="email" />
-          <Column title="Phone" dataIndex="phone" key="phone" />
-
-          <Column
-            title="Action"
-            key="action"
-            render={(text, record) => (
-              <Space size="middle">
-                <Button type="link">
-                  <Link to={`${record?._id}/details`}>Get Details</Link>
-                </Button>
-                {isSuperOrAdmin && (
-                  <Button
-                    onClick={() => {
-                      Modal.confirm({
-                        title:
-                          "Are you sure you want to delete this client information?",
-                        onOk: () => removeClient(record?.id),
-                      });
-                    }}
-                    type="primary"
-                    danger>
-                    Delete
-                  </Button>
+              <Column
+                title="Action"
+                key="action"
+                render={(text, record) => (
+                  <Space size="middle">
+                    <Button type="link">
+                      <Link to={`${record?._id}/details`}>Get Details</Link>
+                    </Button>
+                    {isSuperOrAdmin && (
+                      <Button
+                        onClick={() => {
+                          Modal.confirm({
+                            title:
+                              "Are you sure you want to delete this client information?",
+                            onOk: () => removeClient(record?.id),
+                          });
+                        }}
+                        type="primary"
+                        danger>
+                        Delete
+                      </Button>
+                    )}
+                  </Space>
                 )}
-              </Space>
-            )}
-          />
-        </Table>
-      </div>
+              />
+            </Table>
+          </div>{" "}
+        </>
+      )}
     </>
   );
 };

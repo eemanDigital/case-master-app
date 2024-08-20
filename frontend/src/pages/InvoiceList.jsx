@@ -12,6 +12,7 @@ import { useAdminHook } from "../hooks/useAdminHook";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBar from "../components/SearchBar";
 import { deleteData } from "../redux/features/delete/deleteSlice";
+import PageErrorAlert from "../components/PageErrorAlert";
 
 const InvoiceList = () => {
   const {
@@ -96,11 +97,6 @@ const InvoiceList = () => {
     }
   }, [isError, isSuccess, message, fetchInvoices]);
 
-  if (errorInvoices.invoices) {
-    toast.error(errorInvoices.invoices);
-    return null;
-  }
-
   const columns = [
     {
       title: "Invoice Reference",
@@ -175,26 +171,36 @@ const InvoiceList = () => {
     },
   ];
 
+  // loading state
+  if (loadingInvoices.invoices) return <LoadingSpinner />;
   return (
-    <div>
-      {loadingInvoices.invoices && <LoadingSpinner />}
-      <div className="flex md:flex-row flex-col justify-between items-center mt-4">
-        <ButtonWithIcon
-          onClick={() => {}}
-          icon={<PlusOutlined className="mr-2" />}
-          text="Create Invoice"
+    <>
+      {errorInvoices ? (
+        <PageErrorAlert
+          errorCondition={errorInvoices.invoices}
+          errorMessage={errorInvoices.invoices}
         />
+      ) : (
+        <div>
+          <div className="flex md:flex-row flex-col justify-between items-center mt-4">
+            <ButtonWithIcon
+              onClick={() => {}}
+              icon={<PlusOutlined className="mr-2" />}
+              text="Create Invoice"
+            />
 
-        <SearchBar onSearch={handleSearchChange} />
-      </div>
-      <h1 className="text-3xl font-bold text-gray-700 mb-7">Invoices</h1>
-      <Table
-        columns={columns}
-        dataSource={isClient ? filteredInvoiceForClient : searchResults}
-        rowKey="_id"
-        scroll={{ x: 1000 }}
-      />
-    </div>
+            <SearchBar onSearch={handleSearchChange} />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-700 mb-7">Invoices</h1>
+          <Table
+            columns={columns}
+            dataSource={isClient ? filteredInvoiceForClient : searchResults}
+            rowKey="_id"
+            scroll={{ x: 1000 }}
+          />
+        </div>
+      )}
+    </>
   );
 };
 
