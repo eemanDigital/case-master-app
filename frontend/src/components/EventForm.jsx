@@ -17,7 +17,6 @@ import { toast } from "react-toastify";
 import { getUsers } from "../redux/features/auth/authSlice";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { formatDate } from "../utils/formatDate";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { FaCalendar } from "react-icons/fa";
 
 const { TextArea } = Input;
@@ -26,28 +25,23 @@ const { Title } = Typography;
 const EventForm = () => {
   const { allUsers } = useUserSelectOptions();
   const dispatch = useDispatch();
-  const { dataFetcher, data, error, loading } = useDataFetch();
+  const { dataFetcher, error, loading } = useDataFetch();
   const { users, user } = useSelector((state) => state.auth);
   const { sendingEmail, emailSent, msg } = useSelector((state) => state.email);
-  // const { users, user } = useSelector((state) => state.auth);
-  // const { emailSent, msg } = useSelector((state) => state.email);
 
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();
   const [form] = Form.useForm();
 
   // const handleSubmit = useCallback(
-  const handleSubmission = useCallback(
-    (result) => {
-      if (result?.error) {
-        // Handle Error here
-      } else {
-        // Handle Success here
-        // form.resetFields();
-      }
-    },
-    [form]
-  );
+  const handleSubmission = useCallback((result) => {
+    if (result?.error) {
+      // Handle Error here
+    } else {
+      // Handle Success here
+      // form.resetFields();
+    }
+  }, []);
 
   // / fetch users
   useEffect(() => {
@@ -72,7 +66,6 @@ const EventForm = () => {
             `${user.firstName} ${user.lastName} (${user.position || "client"})`
         );
 
-        // console.log("PIN", participantNames);
         // Prepare email data
         const emailData = {
           subject: "New Task Assigned - A.T. Lukman & Co.",
@@ -131,16 +124,17 @@ const EventForm = () => {
     await handleSubmit(values);
   }, [form, handleSubmit]);
 
+  // Show success message when email is sent
   useEffect(() => {
     if (emailSent) {
       toast.success(msg);
     }
   }, [emailSent, msg]);
-  // useEffect(() => {
-  //   if (emailSent) {
-  //     toast.success(msg);
-  //   }
-  // }, [emailSent, msg]);
+
+  // Show error message when an error occurs
+  if (error) {
+    toast.error("An error occurred. Please try again.");
+  }
 
   return (
     <>
@@ -227,6 +221,7 @@ const EventForm = () => {
 
           <Form.Item>
             <Button
+              loading={loading || sendingEmail}
               onClick={onSubmit}
               htmlType="submit"
               className="w-full blue-btn">

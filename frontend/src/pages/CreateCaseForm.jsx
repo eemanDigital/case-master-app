@@ -32,14 +32,14 @@ import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import { caseInitialValue } from "../utils/initialValues";
 import useHandleSubmit from "../hooks/useHandleSubmit";
 import "react-quill/dist/quill.snow.css";
-import { toast } from "react-toastify";
 
 const CreateCaseForm = () => {
   const [formData, setFormData] = useState(caseInitialValue);
   const { userData } = useUserSelectOptions();
   const { clientOptions } = useClientSelectOptions();
-  const { form, onSubmit, loading } = useHandleSubmit("cases", "post");
+  const { form, onSubmit, loading } = useHandleSubmit("cases", "post"); // custom hook to handle form submission
 
+  // filter options
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
 

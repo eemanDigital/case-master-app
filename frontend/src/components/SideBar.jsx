@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -30,9 +31,9 @@ const SideBar = ({ collapsed, setCollapsed }) => {
   const { isClient, isUser } = useAdminHook();
   const [selectedKeys, setSelectedKeys] = useState(["dashboard"]);
 
-  const {
-    token: { colorBgContainer },
-  } = theme.useToken();
+  // const {
+  //   token: { colorBgContainer, borderRadiusLG },
+  // } = theme.useToken();
 
   useEffect(() => {
     const pathArray = location.pathname.split("/");
@@ -169,9 +170,15 @@ const SideBar = ({ collapsed, setCollapsed }) => {
         selectedKeys={selectedKeys}
         items={filteredNavItems}
         onClick={handleMenuClick}
+        // defaultSelectedKeys={["dashboard"]}
       />
     </Sider>
   );
 };
 
+// Typechecking for props
+SideBar.propTypes = {
+  collapsed: PropTypes.bool.isRequired,
+  setCollapsed: PropTypes.func.isRequired,
+};
 export default SideBar;

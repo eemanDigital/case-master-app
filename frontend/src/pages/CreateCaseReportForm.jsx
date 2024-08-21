@@ -12,6 +12,7 @@ import useHandleSubmit from "../hooks/useHandleSubmit";
 
 const CreateCaseReportForm = () => {
   const { user } = useSelector((state) => state.auth);
+  // form data
   const [formData, setFormData] = useState({
     date: Date.now(),
     update: "",

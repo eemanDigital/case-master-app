@@ -20,7 +20,6 @@ import { invoiceOptions } from "../data/options";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useClientSelectOptions from "../hooks/useClientSelectOptions";
 import { invoiceInitialValue } from "../utils/initialValues";
-import { toast } from "react-toastify";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import useHandleSubmit from "../hooks/useHandleSubmit";
 const { TextArea } = Input;
@@ -46,11 +45,6 @@ const CreateInvoiceForm = () => {
     }
   }, [data, navigate, fetchData]);
 
-  // // Handle global errors
-  // if (error) {
-  //   toast.error(error); // Show a toast notification for global errors
-  //   return null; // Render nothing if there's a global error
-  // }
   // Validation rules
   const requiredRule = [{ required: true, message: "This field is required" }];
   return (

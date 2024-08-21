@@ -19,7 +19,6 @@ import TodoList from "./TodoList";
 import EventForm from "./EventForm";
 import EventList from "../pages/EventList";
 import ScrollingEvents from "./ScrollingEvents";
-import CurrentDayCaseList from "./CurrentDayCauseList";
 import CurrentTasksTracker from "./CurrentTasksTracker";
 import CurrentMonthIncomeCharts from "./CurrentMonthIncomeChart";
 import MonthlyIncomeChart from "./MonthlyIncomeChart";
@@ -27,6 +26,7 @@ import TotalOutstandingBalanceCharts from "./TotalOutstandingBalanceCharts";
 import { ShowAdminComponent } from "./protect/Protect";
 import { Alert } from "antd";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import CurrentDayCauseList from "./CurrentDayCauseList";
 
 // context for year for search filter
 export const PaymentFiltersContext = createContext();
@@ -197,13 +197,21 @@ const Dashboard = () => {
           />
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
             <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-              <CurrentDayCaseList />
+              <CurrentDayCauseList />
 
               <CurrentTasksTracker tasks={tasks?.data} userId={userId} />
               {/* only admin component` */}
               <ShowAdminComponent>
-                <CurrentMonthIncomeCharts
+                {/* <CurrentMonthIncomeCharts
                   data={fetchedMonthData?.data}
+                  loading={fetchLoadingMonth}
+                  error={fetchErrorMonth}
+                /> */}
+                <CurrentMonthIncomeCharts
+                  data={{
+                    ...fetchedMonthData?.data,
+                    month: String(fetchedMonthData?.data?.month), // Ensure month is a string
+                  }}
                   loading={fetchLoadingMonth}
                   error={fetchErrorMonth}
                 />
@@ -230,40 +238,63 @@ const Dashboard = () => {
             </div>
             <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-1 grid grid-cols-1 gap-1">
               <LatestCaseReports
-                reports={reports}
-                error={dataError}
-                loading={dataLoading}
+                reports={reports?.data}
+                error={dataError.reports}
+                loading={dataLoading.reports}
                 fetchData={fetchData}
               />
-              <TodoList />
+              <TodoList title="Your Todo List" />
             </div>
           </div>
 
           <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1 mt-8">
             <CasesByCategoriesChart
               title="Case By Status"
-              data={casesByStatus?.data || []}
+              data={
+                casesByStatus?.data?.filter(
+                  (item) => item?.groupName !== null
+                ) || []
+              }
             />
 
             <CasesByCategoriesChart
               title="Nature of Case"
-              data={casesByNature?.data || []}
+              data={
+                casesByNature?.data?.filter(
+                  (item) => item?.groupName !== null
+                ) || []
+              }
             />
             <CasesByCategoriesChart
               title="Cases By Court"
-              data={casesByCourt?.data || []}
+              data={
+                casesByCourt?.data?.filter(
+                  (item) => item?.groupName !== null
+                ) || []
+              }
             />
             <CasesByCategoriesChart
               title="Cases By Rating"
-              data={casesByRating?.data || []}
+              data={
+                casesByRating?.data?.filter(
+                  (item) => item?.groupName !== null
+                ) || []
+              }
             />
             <CasesByCategoriesChart
               title="Cases By Mode"
-              data={casesByMode?.data || []}
+              data={
+                casesByMode?.data?.filter((item) => item?.groupName !== null) ||
+                []
+              }
             />
             <CasesByCategoriesChart
               title="Cases By Category"
-              data={casesByCategory?.data || []}
+              data={
+                casesByCategory?.data?.filter(
+                  (item) => item?.groupName !== null
+                ) || []
+              }
             />
           </div>
         </>

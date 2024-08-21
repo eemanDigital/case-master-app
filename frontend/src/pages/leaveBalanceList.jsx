@@ -59,12 +59,8 @@ const LeaveBalanceList = () => {
 
   // remove leave balance
   const removeBalance = async (id) => {
-    try {
-      await dispatch(deleteData(`leaves/balances/${id}`)).unwrap();
-      await fetchData("leaves/balances", "leaveBalance");
-    } catch (error) {
-      // Error handling is done in the slice
-    }
+    await dispatch(deleteData(`leaves/balances/${id}`)).unwrap();
+    await fetchData("leaves/balances", "leaveBalance");
   };
 
   // Loading state for fetching data

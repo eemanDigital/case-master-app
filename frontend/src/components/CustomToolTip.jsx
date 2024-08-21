@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { Table } from "antd";
 
 const CustomTooltip = ({ active, payload, label }) => {
@@ -52,6 +53,19 @@ const CustomTooltip = ({ active, payload, label }) => {
   }
 
   return null;
+};
+
+CustomTooltip.propTypes = {
+  active: PropTypes.bool,
+  payload: PropTypes.arrayOf(
+    PropTypes.shape({
+      payload: PropTypes.shape({
+        count: PropTypes.number,
+        parties: PropTypes.arrayOf(PropTypes.string),
+      }),
+    })
+  ),
+  label: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 };
 
 export default CustomTooltip;

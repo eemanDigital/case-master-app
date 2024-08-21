@@ -1,8 +1,7 @@
 import { useSelector } from "react-redux";
 
 export const useAdminHook = () => {
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
 
   const isAdmin = user?.data?.role === "admin";
   const isUser = user?.data?.role === "user";

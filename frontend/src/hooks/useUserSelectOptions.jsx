@@ -4,9 +4,7 @@ import { useEffect } from "react";
 import { getUsers } from "../redux/features/auth/authSlice";
 
 const useUserSelectOptions = () => {
-  const { isSuccess, isError, isLoading, users } = useSelector(
-    (state) => state.auth
-  );
+  const { users } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   // fetch users
   useEffect(() => {

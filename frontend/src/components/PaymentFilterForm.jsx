@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { Input, Form, Button, DatePicker } from "antd";
 import moment from "moment"; // Assuming you're using moment.js for date parsing
 
@@ -49,6 +50,12 @@ const PaymentFilterForm = ({ setYear, setMonth, removeMonthInput }) => {
       </Form>
     </div>
   );
+};
+
+PaymentFilterForm.propTypes = {
+  setYear: PropTypes.func.isRequired,
+  setMonth: PropTypes.func.isRequired,
+  removeMonthInput: PropTypes.bool.isRequired,
 };
 
 export default PaymentFilterForm;

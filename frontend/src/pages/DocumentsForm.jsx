@@ -11,11 +11,13 @@ const DocumentForm = () => {
   const [formData, setFormData] = useState({
     fileName: "",
     file: null,
-  });
+  }); // form data state
+
   const [isModalVisible, setIsModalVisible] = useState(false);
   const { fetchData } = useDataGetterHook();
   const { dataFetcher } = useDataFetch();
 
+  // handle file change
   const handleFileChange = (e) => {
     const { name, value, files } = e.target;
     setFormData((prevData) => ({
@@ -24,10 +26,12 @@ const DocumentForm = () => {
     }));
   };
 
+  // file headers for file upload
   const fileHeaders = {
     "Content-Type": "multipart/form-data",
   };
 
+  // handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 

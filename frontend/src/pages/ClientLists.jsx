@@ -21,9 +21,9 @@ const ClientLists = () => {
     message,
     user,
     users: clients,
-  } = useSelector((state) => state.auth);
+  } = useSelector((state) => state.auth); // get all users
 
-  const loggedInClient = user?.data?._id;
+  const loggedInClient = user?.data?._id; // get current user id
 
   // fetch client
   useEffect(() => {
@@ -83,13 +83,10 @@ const ClientLists = () => {
     setSearchResults(results);
   };
 
+  // load spinner
   if (isLoading) {
     return <LoadingSpinner />;
   }
-
-  // if (isError) {
-  //   <PageErrorAlert errorCondition={isError} errorMessage={message} />;
-  // }
 
   // remove client handler
   const removeClient = async (id) => {

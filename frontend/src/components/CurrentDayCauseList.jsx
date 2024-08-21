@@ -6,7 +6,7 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
 const { Title, Text } = Typography;
 
-const CurrentDayCaseList = () => {
+const CurrentDayCauseList = () => {
   const {
     loading: getterLoading,
     error: getterError,
@@ -25,6 +25,45 @@ const CurrentDayCaseList = () => {
   const handleCancel = () => {
     setIsModalVisible(false);
   };
+
+  //transform causeList data to array of objects
+  const transformedCauseListData = causeList.data?.reportsToday.map((item) => ({
+    ...item,
+    caseReported: {
+      ...item.caseReported,
+      firstParty: {
+        ...item.caseReported.firstParty,
+        name: Array.isArray(item.caseReported.firstParty?.name)
+          ? item.caseReported.firstParty.name
+          : [{ name: item.caseReported.firstParty?.name }],
+      },
+      secondParty: {
+        ...item.caseReported.secondParty,
+        name: Array.isArray(item.caseReported.secondParty?.name)
+          ? item.caseReported.secondParty.name
+          : [{ name: item.caseReported.secondParty?.name }],
+      },
+      thirdParty: {
+        ...item.caseReported.thirdParty,
+        name: Array.isArray(item.caseReported.thirdParty?.name)
+          ? item.caseReported.thirdParty.name
+          : [{ name: item.caseReported.thirdParty?.name }],
+      },
+    },
+  }));
+
+  <div className="p-4 w-full max-h-[80vh] overflow-y-auto">
+    <SingleCauseList
+      causeListData={transformedCauseListData}
+      loadingCauseList={getterLoading.causeList}
+      errorCauseList={getterError.causeList}
+      title="Today's Cause List"
+      h1Style="text-center text-xl text-gray-600 font-bold mb-4"
+      hideButton={true}
+      onDownloadCauseList={() => {}}
+      showDownloadBtn={false}
+    />
+  </div>;
 
   return (
     <Card
@@ -64,7 +103,7 @@ const CurrentDayCaseList = () => {
       <Modal
         title={
           <span className="text-lg text-blue-600 font-semibold">
-            Today's Cause List
+            Today&rsquo;s Cause List
           </span>
         }
         open={isModalVisible}
@@ -75,12 +114,14 @@ const CurrentDayCaseList = () => {
         className="p-0">
         <div className="p-4 w-full max-h-[80vh] overflow-y-auto">
           <SingleCauseList
-            causeListData={causeList.data?.reportsToday}
+            causeListData={transformedCauseListData}
             loadingCauseList={getterLoading.causeList}
             errorCauseList={getterError.causeList}
             title="Today's Cause List"
             h1Style="text-center text-xl text-gray-600 font-bold mb-4"
             hideButton={true}
+            onDownloadCauseList={() => {}}
+            showDownloadBtn={false}
           />
         </div>
       </Modal>
@@ -88,4 +129,4 @@ const CurrentDayCaseList = () => {
   );
 };
 
-export default CurrentDayCaseList;
+export default CurrentDayCauseList;

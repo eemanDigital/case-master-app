@@ -9,7 +9,6 @@ import HomeLayout from "./components/HomeLayout";
 import Dashboard from "./components/Dashboard.jsx";
 import DashboardLayout from "./components/DashboardLayout.jsx";
 import CaseList from "./pages/CaseList.jsx";
-import ClientLogin from "./pages/ClientLogin.jsx";
 import AddUserForm from "./pages/AddUserForm.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
 import Profile from "./pages/Profile.jsx";
@@ -101,7 +100,7 @@ function App() {
         />
         {/* <Route element={<AppLayout />}> */}
         <Route path="/login" element={<StaffLogin />} />
-        <Route path="/clients/login" element={<ClientLogin />} />
+
         <Route path="/resetpassword" element={<ResetPassword />} />
 
         {/* <Route

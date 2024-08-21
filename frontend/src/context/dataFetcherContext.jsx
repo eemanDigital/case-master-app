@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { createContext, useCallback, useState } from "react";
 import axios from "axios";
 
@@ -134,4 +135,7 @@ const DataFetcherContext = ({ children }) => {
   );
 };
 
+DataFetcherContext.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 export { DataContext, DataFetcherContext };

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { Card, Typography, Empty, Modal } from "antd";
-import { UnorderedListOutlined, PlusOutlined } from "@ant-design/icons";
+import { Card, Empty, Modal } from "antd";
+import { UnorderedListOutlined } from "@ant-design/icons";
 import TodoTask from "./TodoTask";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import TodoForm from "../pages/TodoForm";
@@ -9,15 +9,12 @@ import LoadingSpinner from "./LoadingSpinner";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 
-const { Title, Text } = Typography;
-
 const TodoList = ({ title }) => {
   const { todos, error, loading, fetchData } = useDataGetterHook();
   const [optimisticTodos, setOptimisticTodos] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const { user } = useSelector((state) => state.auth);
 
-  console.log(todos, "TODOS");
   useEffect(() => {
     fetchData("todos", "todos");
   }, []);

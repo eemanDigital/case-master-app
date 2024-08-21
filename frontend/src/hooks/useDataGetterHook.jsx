@@ -10,5 +10,3 @@ export const useDataGetterHook = () => {
   }
   return context;
 };
-
-// export default useDataGetterHook;

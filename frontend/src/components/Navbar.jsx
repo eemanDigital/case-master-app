@@ -4,7 +4,6 @@ import { RiMenu3Fill } from "react-icons/ri";
 import { AiOutlineClose } from "react-icons/ai";
 import {} from "react-icons/ri";
 import { useState } from "react";
-import { useSelector } from "react-redux";
 import { ShowOnLogin, ShowOnLogout } from "./protect/Protect";
 
 const navItems = [
@@ -36,8 +35,6 @@ let mainNav = navItems.map((item, index) => {
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
 
   return (
     <nav className="md:px-10 px-8 md:py-0 py-2 md:flex items-center bg-white justify-between  z-50">

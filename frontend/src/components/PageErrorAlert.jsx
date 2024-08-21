@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { Alert, Button } from "antd";
 import { Link } from "react-router-dom";
 
@@ -30,5 +31,9 @@ const PageErrorAlert = ({ errorCondition, errorMessage }) => {
   }
   return null;
 };
-
+// Typechecking for props
+PageErrorAlert.propTypes = {
+  errorCondition: PropTypes.bool.isRequired,
+  errorMessage: PropTypes.string.isRequired,
+};
 export default PageErrorAlert;

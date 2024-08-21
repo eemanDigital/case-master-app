@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import Input from "../components/Inputs";
@@ -18,9 +19,9 @@ const TaskResponseForm = ({ taskId }) => {
     completed: false,
   });
 
-  const { open, showModal, handleCancel } = useModal();
+  const { open, showModal, handleCancel } = useModal(); //custom hook
 
-  const { dataFetcher, loading, error: dataError } = useDataFetch();
+  const { dataFetcher, error: dataError } = useDataFetch();
 
   function handleChange(e) {
     const { name, value, files, checked } = e.target;
@@ -177,4 +178,8 @@ const TaskResponseForm = ({ taskId }) => {
   );
 };
 
+// Prop types validation
+TaskResponseForm.propTypes = {
+  taskId: PropTypes.string.isRequired,
+};
 export default TaskResponseForm;

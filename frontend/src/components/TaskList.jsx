@@ -20,21 +20,18 @@ const TaskList = () => {
     error: taskError,
     fetchData,
   } = useDataGetterHook();
-  const { isError, isSuccess, message } = useSelector((state) => state.delete);
-  const { user } = useSelector((state) => state.auth);
-  const loggedInClientId = user?.data?._id;
+  const { isError, isSuccess, message } = useSelector((state) => state.delete); // fetch tasks data
+  const { user } = useSelector((state) => state.auth); // get logged in user
+  const loggedInClientId = user?.data?._id; // get logged in user id
 
-  const { isSuperOrAdmin, isStaff, isClient } = useAdminHook();
+  const { isSuperOrAdmin, isStaff, isClient } = useAdminHook(); // check user role
   const dispatch = useDispatch();
 
-  // // fetch tasks data
-  // const fetchTasks = useCallback(() => {
-  // }, []);
-
+  // fetch tasks data
   useEffect(() => {
     fetchData("tasks", "tasks");
   }, [fetchData]);
-
+  // display toast message
   useEffect(() => {
     if (isSuccess) {
       toast.success(message);
@@ -60,7 +57,14 @@ const TaskList = () => {
   // Display loading message if data is being fetched
   if (loadingTasks.tasks) return <LoadingSpinner />;
 
-  if (taskError.error) return toast.error(taskError.error);
+  // Display error message if there is an error fetching data
+  if (taskError.error)
+    return (
+      <PageErrorAlert
+        errorCondition={taskError.error}
+        errorMessage={taskError.error}
+      />
+    );
 
   const columns = [
     {

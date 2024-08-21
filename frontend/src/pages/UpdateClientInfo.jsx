@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Modal, Button, Form, Input, Checkbox, Select, Spin } from "antd";
+import { Modal, Button, Form, Input } from "antd";
 import "react-toastify/dist/ReactToastify.css";
 import { useNavigate, useParams } from "react-router-dom";
 import useModal from "../hooks/useModal";
@@ -64,13 +64,7 @@ const UpdateClientInfo = () => {
             ]}>
             <Input placeholder="First Name" />
           </Form.Item>
-          <Form.Item
-            label="Second Name"
-            name="secondName"
-            // rules={[
-            //   { required: true, message: "Please enter your last name" },
-            // ]}
-          >
+          <Form.Item label="Second Name" name="secondName">
             <Input placeholder="Last Name" />
           </Form.Item>
           <Form.Item

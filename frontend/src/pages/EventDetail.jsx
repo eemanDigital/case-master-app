@@ -1,25 +1,37 @@
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Button, Descriptions, Spin } from "antd";
+import { Button, Descriptions } from "antd";
 
 import { useDataFetch } from "../hooks/useDataFetch";
 import LoadingSpinner from "../components/LoadingSpinner";
+import PageErrorAlert from "../components/PageErrorAlert";
 
 const EventDetail = () => {
   const { id } = useParams();
   const { dataFetcher, error, loading, data } = useDataFetch();
   const navigate = useNavigate();
 
+  // fetch data
   useEffect(() => {
     const fetchEventDetail = async () => {
       await dataFetcher(`events/${id}`, "get");
     };
-
     fetchEventDetail();
-  }, [id]);
+  }, [id, dataFetcher]);
 
+  // loading spinner
   if (loading || !data) {
     return <LoadingSpinner />;
+  }
+
+  // error alert
+  if (error) {
+    return (
+      <PageErrorAlert
+        errorCondition={error}
+        errorMessage={error || "failed to fetch data"}
+      />
+    );
   }
 
   return (

@@ -1,17 +1,14 @@
-import { Spin, Alert } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-// import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import CaseReportList from "./CaseReportList";
 import SingleCauseList from "./SingleCauseList";
 import { useSelector } from "react-redux";
 import { useEffect } from "react";
-import { toast } from "react-toastify";
 import LoadingSpinner from "./LoadingSpinner";
+import PageErrorAlert from "./PageErrorAlert";
 
 const ClientCaseDetails = () => {
   const { causeList, reports, loading, error, fetchData } = useDataGetterHook();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
 
   const clientCase = user?.data?.clientCase;
   const clientCaseIds = clientCase?.map((item) => item?.id); //get caseIDs
@@ -35,7 +32,7 @@ const ClientCaseDetails = () => {
 
   // toast error if found
   if (error.reports || error.causeList) {
-    return toast.error(error.reports || error.causeList);
+    return <PageErrorAlert error={error.reports || error.causeList} />;
   }
 
   // Extract the first report for each unique case
@@ -47,9 +44,8 @@ const ClientCaseDetails = () => {
     return acc;
   }, {});
 
+  // Convert the object to an array
   const firstReportsArray = Object.values(firstReports || {});
-
-  //   console.log(firstReportsArray, "RE");
 
   return (
     <div className="flex justify-between   p-4 my-4 mx-2 gap-4 rounded-md">

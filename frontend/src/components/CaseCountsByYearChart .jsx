@@ -36,25 +36,25 @@ const CaseCountsByYearChart = ({ data }) => {
   return (
     <>
       <Card
+        title="New Briefs by Year"
         onClick={showModal}
         className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow h-[180px]  flex flex-col justify-center items-center">
-        <h3>New Briefs by Year</h3>
-        <ResponsiveContainer width={260} height={120}>
-          <BarChart
-            data={transformedData}
-            margin={{
-              top: 15,
-              right: 40,
-              left: 10,
-              bottom: 0,
-            }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="year" />
-            <YAxis />
-            <Legend />
-            <Bar dataKey="count" fill="#1c4e80" barSize={20} />
-          </BarChart>
-        </ResponsiveContainer>
+        <BarChart
+          width={260}
+          height={90}
+          data={transformedData}
+          margin={{
+            top: 0,
+            right: 30,
+            left: 10,
+            bottom: 0,
+          }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="year" />
+          <YAxis />
+          <Legend />
+          <Bar dataKey="count" fill="#1c4e80" barSize={20} />
+        </BarChart>
       </Card>
 
       <Modal

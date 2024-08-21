@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import PrpTypes from "prop-types";
+import { useState } from "react";
 import { Modal, Button, Form, Input, Select } from "antd";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
@@ -28,8 +29,10 @@ const LeaveResponseForm = ({ appId }) => {
     { label: "Rejected", value: "rejected" },
   ];
 
+  // Function to handle form submission
   const handleFinish = async (values) => {
     try {
+      // Email data
       const emailData = {
         subject: "Leave Application Response- A.T. Lukman & Co.",
         send_to: data?.data?.employee?.email,
@@ -48,12 +51,13 @@ const LeaveResponseForm = ({ appId }) => {
           approvedBy: user?.data?.firstName,
         },
       };
-
+      // Submit response
       await dataFetcher(`leaves/applications/${appId}`, "put", values);
 
       if (data?.message === "success") {
         toast.success("Response submitted successfully");
       }
+      // Send email
       await dispatch(sendAutomatedCustomEmail(emailData));
 
       form.resetFields();
@@ -122,8 +126,7 @@ const LeaveResponseForm = ({ appId }) => {
               type="primary"
               htmlType="submit"
               className="blue-btn"
-              // loading={loading}
-            >
+              loading={loading}>
               Submit
             </Button>
           </Form.Item>
@@ -132,5 +135,8 @@ const LeaveResponseForm = ({ appId }) => {
     </>
   );
 };
+
+// Typechecking for props
+LeaveResponseForm.propTypes = { appId: PrpTypes.string.isRequired };
 
 export default LeaveResponseForm;

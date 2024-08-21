@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import PropTypes from "prop-types";
+import { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -43,24 +44,24 @@ const CaseCountsByClient = ({ data }) => {
         className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow h-[180px]  flex flex-col justify-center items-center"
         onClick={showModal}
         hoverable>
-        <ResponsiveContainer width={300} height={100}>
-          <BarChart
-            barSize={20}
-            data={transformedData}
-            margin={{
-              top: 10,
-              right: 60,
-              left: 15,
-              bottom: 0,
-            }}>
-            <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="client" tick={{ fontSize: 12 }} />
-            <YAxis tick={{ fontSize: 12 }} />
-            <Tooltip content={<CustomTooltip />} />
-            <Legend />
-            <Bar dataKey="count" fill="#1c4e80" />
-          </BarChart>
-        </ResponsiveContainer>
+        <BarChart
+          width={300}
+          height={100}
+          barSize={20}
+          data={transformedData}
+          margin={{
+            top: 10,
+            right: 60,
+            left: 15,
+            bottom: 0,
+          }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="client" tick={{ fontSize: 12 }} />
+          <YAxis tick={{ fontSize: 12 }} />
+          <Tooltip content={<CustomTooltip />} />
+          <Legend />
+          <Bar dataKey="count" fill="#1c4e80" />
+        </BarChart>
       </Card>
 
       <Modal
@@ -70,8 +71,7 @@ const CaseCountsByClient = ({ data }) => {
         onCancel={handleCancel}
         width="90%"
         className="rounded-lg"
-        // bodyStyle={{ padding: 0 }}
-      >
+        style={{ body: { padding: 0 } }}>
         <div className="p-4">
           <ResponsiveContainer width="100%" height={400}>
             <BarChart
@@ -95,6 +95,17 @@ const CaseCountsByClient = ({ data }) => {
       </Modal>
     </>
   );
+};
+
+// Define the prop types
+CaseCountsByClient.propTypes = {
+  data: PropTypes.arrayOf(
+    PropTypes.shape({
+      count: PropTypes.number.isRequired,
+      parties: PropTypes.arrayOf(PropTypes.string).isRequired,
+      client: PropTypes.string.isRequired,
+    })
+  ).isRequired,
 };
 
 export default CaseCountsByClient;

@@ -1,7 +1,4 @@
-// components/LoadingSpinner.jsx
-
-// import "./LoadingSpinner.css"; // Assume you have some CSS for the spinner
-
+// Desc: Loading spinner component
 const LoadingSpinner = () => {
   return (
     <div className="loading-spinner">

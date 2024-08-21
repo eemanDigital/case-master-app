@@ -1,4 +1,4 @@
-import React from "react";
+import PropTypes from "prop-types";
 import { FaBriefcase, FaUsers, FaHandshake } from "react-icons/fa";
 import { GoLaw } from "react-icons/go";
 
@@ -37,6 +37,15 @@ const DashBoardDataCount = ({ cases, staff, lawyerCount, clientCount }) => {
       </div>
     </div>
   );
+};
+
+DashBoardDataCount.propTypes = {
+  cases: PropTypes.shape({
+    results: PropTypes.number,
+  }),
+  staff: PropTypes.number.isRequired,
+  lawyerCount: PropTypes.number.isRequired,
+  clientCount: PropTypes.number.isRequired,
 };
 
 export default DashBoardDataCount;

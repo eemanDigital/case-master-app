@@ -15,8 +15,10 @@ import { Modal } from "antd";
 const CasesByCategoriesChart = ({ data, title }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Transform the data
-  const transformedData = data.map((item) => ({
+  // there is a warning coming from this component about duplicate keys, which is not true because we are generating unique keys for each item in the data array using Math.random() function. This warning is a false positive and can be ignored.
+  // Transform the data and ensure unique IDs
+  const transformedData = data.map((item, index) => ({
+    id: `${item.groupName}-${index}-${Math.random().toString(36).substr(2, 9)}`, // Ensure unique ID
     name: item.groupName,
     Cases: item.count,
   }));
@@ -32,8 +34,7 @@ const CasesByCategoriesChart = ({ data, title }) => {
   return (
     <>
       <div
-        // className="bg-white w-full sm:w-1/2 lg:w-1/3 xl:w-1/4 shadow-md rounded-lg p-4 cursor-pointer"
-        className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow   flex flex-col justify-center items-center"
+        className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow flex flex-col justify-center items-center"
         onClick={handleCardClick}>
         <ResponsiveContainer width="100%" height={200} className="mt-6">
           <h1 className="text-center font-bold mt-2 text-gray-600">{title}</h1>
@@ -46,7 +47,12 @@ const CasesByCategoriesChart = ({ data, title }) => {
               bottom: 30,
             }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
+            <XAxis
+              dataKey="id"
+              tickFormatter={(id) =>
+                transformedData.find((d) => d.id === id)?.name
+              }
+            />
             <YAxis />
             <Tooltip />
             <Legend />
@@ -72,7 +78,12 @@ const CasesByCategoriesChart = ({ data, title }) => {
               bottom: 5,
             }}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
+            <XAxis
+              dataKey="id"
+              tickFormatter={(id) =>
+                transformedData.find((d) => d.id === id)?.name
+              }
+            />
             <YAxis />
             <Tooltip />
             <Legend />

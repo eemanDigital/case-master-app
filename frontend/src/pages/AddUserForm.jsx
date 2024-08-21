@@ -25,6 +25,7 @@ const SignUp = () => {
     useTogglePassword();
   const dispatch = useDispatch();
 
+  // handle input change
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setInputValue((prevData) => ({
@@ -33,6 +34,7 @@ const SignUp = () => {
     }));
   };
 
+  // handle register user
   const registerUser = async (e) => {
     e.preventDefault();
     validateRegister(
@@ -48,11 +50,12 @@ const SignUp = () => {
       inputValue.gender,
       inputValue.universityAttended
     );
-    await dispatch(register(inputValue));
-    await dispatch(sendVerificationMail());
+    await dispatch(register(inputValue)); // register user
+    await dispatch(sendVerificationMail()); // send verification mail
   };
 
-  const getOtherFieldSelected = inputValue.position === "Other";
+  const getOtherFieldSelected = inputValue.position === "Other"; // check if other field is selected
+
   const handleClick = () => setClick(!click);
 
   return (

@@ -8,8 +8,7 @@ import { forgotUserPassword, RESET } from "../redux/features/auth/authSlice";
 import LoadingSpinner from "../components/LoadingSpinner";
 
 const ForgotPassword = () => {
-  //getting data from our custom hooks for auth
-  // const { data, loading, error, authenticate } = useAuth();
+  //getting data from our custom hooks
   const dispatch = useDispatch();
   const { isLoading } = useSelector((state) => state.auth);
 
@@ -34,8 +33,6 @@ const ForgotPassword = () => {
     e.preventDefault();
 
     // Call fetchData with your endpoint, method, payload, and any additional arguments
-    console.log(inputValue);
-
     await dispatch(forgotUserPassword(inputValue));
     await dispatch(RESET(inputValue));
     // Handle successful response

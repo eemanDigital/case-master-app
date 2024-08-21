@@ -1,4 +1,4 @@
-import { Card } from "antd";
+import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import { FaCheck, FaTimes } from "react-icons/fa";
 
@@ -52,6 +52,10 @@ const PasswordCheckCard = ({ password }) => {
       </ul>
     </div>
   );
+};
+
+PasswordCheckCard.propTypes = {
+  password: PropTypes.string.isRequired,
 };
 
 export default PasswordCheckCard;

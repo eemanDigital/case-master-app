@@ -122,7 +122,7 @@ const LeaveAppForm = () => {
             />
           </Form.Item>
           <Form.Item>
-            <Button className="blue-btn" htmlType="submit">
+            <Button loading={loading} className="blue-btn" htmlType="submit">
               Submit
             </Button>
           </Form.Item>

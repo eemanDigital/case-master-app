@@ -1,6 +1,6 @@
-// import { useForm } from "react-hook-form";
+import PropTypes from "prop-types";
 
-const Select = ({ label, style, options, ...props }) => {
+const Select = ({ label, options, ...props }) => {
   // const { register } = useForm();
 
   return (
@@ -32,5 +32,9 @@ const Select = ({ label, style, options, ...props }) => {
     </div>
   );
 };
-
+// Typechecking for props
+Select.propTypes = {
+  label: PropTypes.string.isRequired,
+  options: PropTypes.arrayOf(PropTypes.string).isRequired,
+};
 export default Select;

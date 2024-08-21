@@ -56,27 +56,32 @@ const CaseReportList = ({
 
   useEffect(() => {
     if (deleteSuccess) {
+      // if delete is successful
       toast.success(deleteMsg);
-      dispatch(RESET());
+      dispatch(RESET()); // reset the delete state
     }
     if (deleteError) {
+      // if delete fails
       toast.error(deleteMsg);
       dispatch(RESET());
     }
   }, [deleteSuccess, deleteError, deleteMsg, dispatch]);
 
+  // Set search results to reports when reports are loaded
   useEffect(() => {
     if (reports) {
       setSearchResults(reports);
     }
   }, [reports]);
 
+  // Handle search change
   const handleSearchChange = (e) => {
     const searchTerm = e.target.value.trim().toLowerCase();
     if (!searchTerm) {
       setSearchResults(reports);
       return;
     }
+    // Filter reports by search term
     const results = reports?.filter((d) => {
       const firstPartyMatch = d.caseReported?.firstParty?.name?.some(
         (nameObj) => nameObj?.name?.toLowerCase().includes(searchTerm)
@@ -91,6 +96,7 @@ const CaseReportList = ({
     setSearchResults(results || []);
   };
 
+  // Delete report
   const deleteReport = async (id) => {
     try {
       await dispatch(deleteData(`reports/${id}`));
@@ -100,6 +106,7 @@ const CaseReportList = ({
     }
   };
 
+  // Filter reports by client
   const filterCaseByClient = (caseIds) => {
     return (
       reports?.filter((report) =>
@@ -108,6 +115,7 @@ const CaseReportList = ({
     );
   };
 
+  // Get current reports
   const indexOfLastReport = currentPage * itemsPerPage;
   const indexOfFirstReport = indexOfLastReport - itemsPerPage;
   const currentReports = searchResults.slice(

@@ -13,20 +13,21 @@ import {
 const LoginWithCode = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isSuccess, isLoading, isLoggedIn } = useSelector(
-    (state) => state.auth
-  );
+  const { isSuccess, isLoggedIn } = useSelector((state) => state.auth);
   const [click, setClick] = useState(false);
   const [userLoginCode, setUserLoginCode] = useState({ loginCode: "" });
   const { email } = useParams();
 
+  // Destructure loginCode from userLoginCode
   const { loginCode } = userLoginCode;
 
+  // Function to resend user login code
   const reSendUserLoginCode = async () => {
     await dispatch(sendLoginCode(email));
-    // await dispatch(RESET());
+    await dispatch(RESET());
   };
 
+  // Function to login user with code
   const loginUserWithCode = async (e) => {
     e.preventDefault();
     if (!loginCode || loginCode === "") {
@@ -43,6 +44,7 @@ const LoginWithCode = () => {
     await dispatch(RESET());
   };
 
+  // Redirect user to dashboard if login is successful
   useEffect(() => {
     if (isSuccess && isLoggedIn) {
       navigate("/dashboard");
@@ -53,6 +55,7 @@ const LoginWithCode = () => {
     setClick(() => !click);
   }
 
+  // Function to handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUserLoginCode((prevState) => ({
@@ -91,8 +94,8 @@ const LoginWithCode = () => {
             Proceed To Login
           </Button>
           <p className="text-center mb-6 text-gray-700">
-            We've sent a verification code to your email. Enter the code below
-            to confirm your account.
+            We&apos;ve sent a verification code to your email. Enter the code
+            below to confirm your account.
           </p>
           <div className="text-center w-full">
             <h2 className="text-2xl italic font-bold mb-4">Or</h2>

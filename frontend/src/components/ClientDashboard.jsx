@@ -4,8 +4,7 @@ import ClientCaseDetails from "./ClientCaseDetails";
 import { useSelector } from "react-redux";
 
 const ClientDashboard = () => {
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { user } = useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
 
   return (

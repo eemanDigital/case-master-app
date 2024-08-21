@@ -1,19 +1,22 @@
 import Input from "../components/Inputs";
 import Select from "../components/Select";
-import { useAuth } from "../hooks/useAuth";
 import { useState, useEffect } from "react";
 import { Button, Modal } from "antd";
 import useModal from "../hooks/useModal";
 import "react-toastify/dist/ReactToastify.css";
 import { useSelector } from "react-redux";
+import { useDataFetch } from "../hooks/useDataFetch";
+import { toast } from "react-toastify";
+import { getUser } from "../redux/features/auth/authSlice";
+import { useNavigate } from "react-router-dom";
 
 const EditUserProfile = () => {
   const gender = ["male", "female"];
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();
-  const { data, loading, error, authenticate } = useAuth();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
+  const { data, loading, error, dataFetcher } = useDataFetch();
+  const { user } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
 
   const [inputValue, setInputValue] = useState({
     firstName: "",
@@ -50,13 +53,26 @@ const EditUserProfile = () => {
     }
   }, [user?.data]);
 
+  // submit form
   async function handleSubmit(e) {
     e.preventDefault();
     try {
-      await authenticate("users/updateUser", "patch", inputValue);
+      await dataFetcher("users/updateUser", "patch", inputValue);
+      await getUser(); // refresh page to get updated user
     } catch (err) {
       console.log(err);
     }
+  }
+
+  // toast success message
+  if (data) {
+    toast.success("Profile updated successfully");
+    navigate(0);
+  }
+
+  // toast error message
+  if (error) {
+    toast.error(error || "Failed to update profile");
   }
 
   return (
@@ -224,7 +240,7 @@ const EditUserProfile = () => {
 
           <div className="flex justify-center">
             <button className="bg-blue-500 text-white px-6 py-2 ">
-              Submit
+              {loading ? "Saving..." : "Save"}
             </button>
           </div>
         </form>

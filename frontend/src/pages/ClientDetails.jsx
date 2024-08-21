@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Alert, Col, Descriptions, Divider } from "antd";
+import { Descriptions, Divider } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import UpdateClientInfo from "./UpdateClientInfo";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -12,14 +12,17 @@ const ClientDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { isClient } = useAdminHook();
 
+  // fetch client data
   useEffect(() => {
     dataFetcher(`users/${id}`, "GET");
   }, [id]);
 
+  // load spinner
   if (loading) {
     return <LoadingSpinner />;
   }
 
+  // error alert
   if (error) {
     return <PageErrorAlert errorCondition={error} errorMessage={error} />;
   }

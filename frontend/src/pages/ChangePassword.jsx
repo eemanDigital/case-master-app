@@ -15,7 +15,6 @@ import {
   RESET,
 } from "../redux/features/auth/authSlice";
 import { sendAutomatedEmail } from "../redux/features/emails/emailSlice";
-import Input from "../components/Inputs";
 
 const ChangePassword = () => {
   const dispatch = useDispatch();
@@ -23,12 +22,14 @@ const ChangePassword = () => {
   const { isLoading, user } = useSelector((state) => state.auth);
   const { open, showModal, handleCancel } = useModal();
 
+  // State to hold input values
   const [inputValue, setInputValue] = useState({
     passwordCurrent: "",
     password: "",
     passwordConfirm: "",
   });
 
+  // Custom hook to toggle password visibility
   const { togglePassword: togglePassword1, showPassword: showPassword1 } =
     useTogglePassword();
   const { togglePassword: togglePassword2, showPassword: showPassword2 } =
@@ -36,6 +37,7 @@ const ChangePassword = () => {
   const { togglePassword: togglePassword3, showPassword: showPassword3 } =
     useTogglePassword();
 
+  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setInputValue((prevValue) => ({
@@ -44,6 +46,7 @@ const ChangePassword = () => {
     }));
   };
 
+  // Validate form fields
   const validateForm = () => {
     const { passwordCurrent, password, passwordConfirm } = inputValue;
     if (!passwordCurrent || !password || !passwordConfirm) {
@@ -61,6 +64,7 @@ const ChangePassword = () => {
     return true;
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -74,6 +78,7 @@ const ChangePassword = () => {
       url: "/dashboard/profile",
     };
 
+    // Try to change password
     try {
       // Perform the password change
       await dispatch(changePassword(inputValue)).unwrap();
@@ -93,6 +98,8 @@ const ChangePassword = () => {
     }
   };
 
+  // Style for input fields
+
   let inputStyle = `appearance-none block sm:w-[344px] bg-gray-200 text-red border ${
     isLoading ? "border-red-500" : ""
   } rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`;
@@ -101,7 +108,7 @@ const ChangePassword = () => {
     <>
       <Button
         onClick={showModal}
-        className="bg-blue-500 hover:bg-blue-600 text-white">
+        className="bg-blue-500 hover:bg-blue-600 text-white mb-6">
         Change Password
       </Button>
       <Modal open={open} onCancel={handleCancel} footer={null}>
@@ -114,17 +121,6 @@ const ChangePassword = () => {
                 <h1 className="text-4xl font-bold mb-5 capitalize">
                   Change Password
                 </h1>
-
-                {/* <Input
-                  inputStyle={inputStyle}
-                  type="password"
-                  label="Current Password"
-                  placeholder="********"
-                  htmlFor="current password"
-                  value={inputValue.passwordCurrent}
-                  name="passwordCurrent"
-                  onChange={handleChange}
-                /> */}
 
                 <PasswordInput
                   style={inputStyle}

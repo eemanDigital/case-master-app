@@ -39,6 +39,7 @@ const CaseList = () => {
   const dispatch = useDispatch();
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  //  fetch cases
   const fetchCases = useCallback(() => {
     fetchData("cases", "cases");
   }, []);
@@ -47,12 +48,14 @@ const CaseList = () => {
     fetchCases();
   }, [fetchCases]);
 
+  // search handler
   useEffect(() => {
     if (cases?.data) {
       setSearchResults(cases.data);
     }
   }, [cases]);
 
+  // search handler
   const handleSearchChange = (e) => {
     const searchTerm = e.target.value.trim().toLowerCase();
     if (!searchTerm) {
@@ -90,17 +93,20 @@ const CaseList = () => {
     await fetchData("cases", "cases");
   };
 
+  // toast notification
   useEffect(() => {
     if (isSuccess) {
       toast.success(message);
       dispatch(RESET());
     }
+
     if (isError) {
       toast.error(message);
       dispatch(RESET());
     }
   }, [isSuccess, isError, message, dispatch]);
 
+  // filter cases by client
   const filterCasesByClient = (caseIds) => {
     if (!cases?.data) return [];
     return cases?.data?.filter((caseItem) => caseIds?.includes(caseItem?._id));

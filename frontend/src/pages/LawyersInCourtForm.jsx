@@ -1,11 +1,12 @@
+import PropTypes from "prop-types";
 import { useState, useCallback, useEffect } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
-import useModal from "../hooks/useModal";
 import { Button, Form, Select } from "antd";
 import axios from "axios";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -19,24 +20,11 @@ const LawyersInCourtForm = ({ reportId }) => {
 
   // handle reports post and get report data
   const { dataFetcher, data } = useDataFetch();
-  const token = document.cookie
-    .split("; ")
-    .find((row) => row.startsWith("jwt="))
-    ?.split("=")[1];
-
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await axios.get(`${baseURL}/reports/${reportId}`, {
-          headers: {
-            ...fileHeaders,
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await axios.get(`${baseURL}/reports/${reportId}`);
 
         setFormData((prevData) => {
           return {
@@ -86,6 +74,11 @@ const LawyersInCourtForm = ({ reportId }) => {
     handleSubmission(result); // Handle the submission after the API Call
   }, [form, handleSubmission, dataFetcher, fetchData, reportId]);
 
+  // success toast
+  if (data) {
+    return toast.success("Success");
+  }
+
   return (
     <>
       <Form
@@ -113,6 +106,7 @@ const LawyersInCourtForm = ({ reportId }) => {
         <Form.Item className="md:mb-0">
           <Button
             onClick={onSubmit}
+            loading={loading}
             type="default"
             htmlType="submit"
             className="w-full md:w-auto">
@@ -122,6 +116,11 @@ const LawyersInCourtForm = ({ reportId }) => {
       </Form>
     </>
   );
+};
+
+LawyersInCourtForm.propTypes = {
+  // Define prop types  LawyersInCourtForm
+  reportId: PropTypes.string.isRequired,
 };
 
 export default LawyersInCourtForm;

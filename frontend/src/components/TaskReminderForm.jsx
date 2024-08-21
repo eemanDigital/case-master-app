@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { useState, useCallback } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { MdNotificationsNone } from "react-icons/md";
@@ -96,5 +97,8 @@ const TaskReminderForm = ({ id }) => {
     </>
   );
 };
-
+// Prop types validation
+TaskReminderForm.propTypes = {
+  id: PropTypes.string.isRequired,
+};
 export default TaskReminderForm;

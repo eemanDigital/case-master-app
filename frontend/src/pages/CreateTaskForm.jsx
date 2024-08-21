@@ -36,6 +36,7 @@ const CreateTaskForm = () => {
   const { users, user } = useSelector((state) => state.auth);
   const { emailSent, msg } = useSelector((state) => state.email);
 
+  // Modal hooks
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();
   const [form] = Form.useForm();
@@ -45,6 +46,7 @@ const CreateTaskForm = () => {
     error: dataError,
   } = useDataFetch();
 
+  // Handle form submission
   const handleSubmission = useCallback(
     (result) => {
       if (result?.error) {
@@ -62,6 +64,7 @@ const CreateTaskForm = () => {
     dispatch(getUsers());
   }, [dispatch]);
 
+  // Handle form submission
   const handleSubmit = useCallback(
     async (values) => {
       try {
@@ -110,6 +113,7 @@ const CreateTaskForm = () => {
     [dataFetcher, fetchData, form, handleSubmission, user, users, dispatch]
   );
 
+  // Form submission
   const onSubmit = useCallback(async () => {
     let values;
     try {

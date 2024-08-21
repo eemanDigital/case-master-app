@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import moment from "moment";
 import { List, Tag, Pagination } from "antd";
@@ -9,6 +10,7 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
+  // Update the time left for each task every minute
   useEffect(() => {
     // Function to update the time left for each task
     const updateTimeLeft = () => {
@@ -32,7 +34,8 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
     };
 
     updateTimeLeft();
-    const timer = setInterval(updateTimeLeft, 60000); // Update every minute
+    // Update the time left every minute
+    const timer = setInterval(updateTimeLeft, 60000);
     return () => clearInterval(timer);
   }, [tasks]);
 
@@ -41,21 +44,22 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
     task?.assignedTo?.some((user) => user._id === userId)
   );
 
+  // Return null if there are no tasks assigned to the user
   if (!userTasks || userTasks.length === 0) {
     return null;
   }
 
+  // Handle page change
   const handlePageChange = (page, pageSize) => {
     setCurrentPage(page);
     setPageSize(pageSize);
   };
 
+  // Paginate the tasks
   const paginatedTasks = userTasks.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
-
-  // console.log(tasks, "TASKS");
 
   return (
     <div className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow h-[180px]  flex flex-col justify-center items-center">
@@ -83,26 +87,6 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
                   ? "red"
                   : "purple"
               }>
-              {/* {task.taskResponse?.[0]?.completed
-                ? "Task Completed"
-                : task.dueDate
-                ? `${timeLeft[task?._id]} left` || "Calculating..."
-                : "No deadline"}
-            </Tag>
-          </List.Item>
-        )}
-      />
-      {userTasks.length > 5 && (
-        <Pagination
-          current={currentPage}
-          pageSize={pageSize}
-          total={userTasks.length}
-          onChange={handlePageChange}
-          showSizeChanger
-          pageSizeOptions={["5", "10", "20"]}
-        />
-      )} */}
-
               {task?.taskResponse?.[0]?.completed
                 ? "Task Completed"
                 : task?.dueDate
@@ -124,6 +108,28 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
       )}
     </div>
   );
+};
+
+// Define prop types
+CurrentTasksTracker.propTypes = {
+  tasks: PropTypes.arrayOf(
+    PropTypes.shape({
+      _id: PropTypes.string.isRequired,
+      title: PropTypes.string.isRequired,
+      dueDate: PropTypes.string,
+      assignedTo: PropTypes.arrayOf(
+        PropTypes.shape({
+          _id: PropTypes.string.isRequired,
+        })
+      ),
+      taskResponse: PropTypes.arrayOf(
+        PropTypes.shape({
+          completed: PropTypes.bool,
+        })
+      ),
+    })
+  ).isRequired,
+  userId: PropTypes.string.isRequired,
 };
 
 export default CurrentTasksTracker;

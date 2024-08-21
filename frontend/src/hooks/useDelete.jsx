@@ -14,17 +14,6 @@ const useDelete = (docData, storageName) => {
     }
   }, [docData, storageName]);
 
-  // const token = document.cookie
-  //   .split("; ")
-  //   .find((row) => row.startsWith("jwt="))
-  //   ?.split("=")[1];
-
-  // const fileHeaders = {
-  //   headers: {
-  //     "Content-Type": "multipart/form-data",
-  //   },
-  // };
-
   const handleDeleteDocument = async (event, url, documentId) => {
     event.preventDefault();
     const updatedDocuments = documents.filter((doc) => doc._id !== documentId);

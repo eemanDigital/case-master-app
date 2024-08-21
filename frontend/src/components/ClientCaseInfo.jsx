@@ -1,4 +1,5 @@
-import { Button, Popover, Space } from "antd";
+import PropTypes from "prop-types";
+import { Button, Popover } from "antd";
 import avatar from "../assets/avatar.png";
 import { CheckCircleOutlined } from "@ant-design/icons";
 import { MdPendingActions } from "react-icons/md";
@@ -6,23 +7,18 @@ import { MdPendingActions } from "react-icons/md";
 function ClientCaseInfo({ cases }) {
   return (
     <div className="flex flex-col justify-center items-start flex-wrap">
-      {/* <h1 className="text-2xl text-gray-500 p-2 font-bold">
-        {`${cases.length > 1 ? "Cases" : "Case"} Account ${
-          cases.length > 1 ? "Officers" : "Officer"
-        } `}
-      </h1> */}
       <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-4">
         {cases?.map((singleCase, index) => (
           <div
             key={index}
             className="bg-white rounded-lg shadow-sm p-4 md:w-[80%] w-full h-[200px]">
-            <h4 className="text-lg font-medium mb-1 text-gray-600  text-justify">
+            <h4 className="text-lg font-medium mb-1 text-gray-600 text-justify">
               Case {index + 1}: {singleCase?.firstParty?.name[0]?.name} vs{" "}
               {singleCase?.secondParty?.name[0]?.name}
             </h4>
-            <p className=" capitalize ">
-              <div className="flex items-center justify-between  ">
-                <p className="font-medium ">Status: </p>
+            <p className="capitalize">
+              <div className="flex items-center justify-between">
+                <p className="font-medium">Status: </p>
                 {singleCase.caseStatus === "decided" ? (
                   <p>
                     <CheckCircleOutlined className="text-green-600 text-[40px]" />
@@ -67,7 +63,7 @@ function ClientCaseInfo({ cases }) {
                 trigger="hover">
                 <Button
                   type="link"
-                  className="flex bg-blue-500 text-white  justify-center my-2">
+                  className="flex bg-blue-500 text-white justify-center my-2">
                   See Case Account Officer
                 </Button>
               </Popover>
@@ -78,5 +74,36 @@ function ClientCaseInfo({ cases }) {
     </div>
   );
 }
+
+// Define PropTypes
+ClientCaseInfo.propTypes = {
+  cases: PropTypes.arrayOf(
+    PropTypes.shape({
+      firstParty: PropTypes.shape({
+        name: PropTypes.arrayOf(
+          PropTypes.shape({
+            name: PropTypes.string.isRequired,
+          })
+        ),
+      }),
+      secondParty: PropTypes.shape({
+        name: PropTypes.arrayOf(
+          PropTypes.shape({
+            name: PropTypes.string.isRequired,
+          })
+        ),
+      }),
+      caseStatus: PropTypes.string.isRequired,
+      accountOfficer: PropTypes.arrayOf(
+        PropTypes.shape({
+          photo: PropTypes.string,
+          fullName: PropTypes.string.isRequired,
+          email: PropTypes.string.isRequired,
+          phone: PropTypes.string.isRequired,
+        })
+      ),
+    })
+  ).isRequired,
+};
 
 export default ClientCaseInfo;

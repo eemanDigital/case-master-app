@@ -35,8 +35,6 @@ export const usePhoto = () => {
         ...customHeaders,
       };
 
-      // console.log("TOKEN", token);
-
       if (
         (method === "POST" || method === "PUT" || method === "PATCH") &&
         customHeaders["Content-Type"] === "multipart/form-data"

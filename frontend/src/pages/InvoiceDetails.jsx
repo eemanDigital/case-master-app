@@ -17,7 +17,7 @@ const InvoiceDetails = () => {
   // fetch data
   useEffect(() => {
     dataFetcher(`invoices/${id}`, "GET");
-  }, [id]);
+  }, [id, dataFetcher]);
 
   if (loading) return <LoadingSpinner />;
 

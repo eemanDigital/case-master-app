@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Table, Space, Button, Popconfirm, Modal } from "antd";
-import { EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { DeleteOutlined } from "@ant-design/icons";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { Link } from "react-router-dom";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { MdEventAvailable } from "react-icons/md";
+import PageErrorAlert from "../components/PageErrorAlert";
 
 const EventList = () => {
   const { events, fetchData, error, loading } = useDataGetterHook();
@@ -16,10 +17,10 @@ const EventList = () => {
     fetchData("events", "events");
   }, []);
 
-  const handleEdit = (record) => {
-    // Implement edit functionality
-    console.log("Edit:", record);
-  };
+  // const handleEdit = (record) => {
+  //   // Implement edit functionality
+  //   console.log("Edit:", record);
+  // };
 
   // handle delete
   const deleteEvent = async (id) => {
@@ -30,6 +31,16 @@ const EventList = () => {
       toast.error("Failed to delete task");
     }
   };
+
+  // error toast
+  if (error.events) {
+    return (
+      <PageErrorAlert
+        errorCondition={error.events}
+        errorMessage={error.event || "Failed to fetch  event data"}
+      />
+    );
+  }
 
   const columns = [
     {

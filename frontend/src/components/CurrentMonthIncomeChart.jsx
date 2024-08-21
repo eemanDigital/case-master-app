@@ -64,7 +64,7 @@ const CurrentMonthIncomeCharts = ({ data, loading, error }) => {
       {/* Modal for Larger Chart */}
       <Modal
         title="Monthly Payments"
-        visible={isModalVisible}
+        open={isModalVisible}
         footer={null}
         onCancel={handleCloseModal}
         width={800}>

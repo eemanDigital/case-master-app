@@ -2,26 +2,19 @@ import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { Descriptions, Button, Card, Spin, Alert } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
-// import { useAuthContext } from "../hooks/useAuthContext";
-import { useAdminHook } from "../hooks/useAdminHook";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { useSelector } from "react-redux";
 
 const PaymentMadeOnCase = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { invoices } = useDataGetterHook();
   const navigate = useNavigate();
   const { clientId, caseId } = useParams();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, user } =
-    useSelector((state) => state.auth);
-  const { isClient } = useAdminHook();
-  const loggedInClientId = user?.data?.id;
 
   useEffect(() => {
     if (clientId && caseId) {
       dataFetcher(`payments/client/${clientId}/case/${caseId}`, "GET");
     }
-  }, [clientId, caseId]);
+  }, [clientId, caseId, dataFetcher]);
 
   if (loading) {
     return (

@@ -6,7 +6,6 @@ import { useAdminHook } from "../hooks/useAdminHook";
 import AllCasesListForPayment from "./AllCasesListForPayment";
 import { useSelector } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { toast } from "react-toastify";
 import PageErrorAlert from "../components/PageErrorAlert";
 
 const PaymentByClient = () => {
@@ -22,8 +21,10 @@ const PaymentByClient = () => {
     fetchData("payments/paymentEachClient", "clientPayments");
   }, []);
 
+  // loading spinner
   if (loading.clientPayments) return <h1>Loading... </h1>;
 
+  //  error toast
   if (error.clientPayments)
     return (
       <PageErrorAlert
@@ -32,6 +33,7 @@ const PaymentByClient = () => {
       />
     );
 
+  //  get payment data
   const paymentData = clientPayments?.data || [];
 
   // filter payment base on clientId

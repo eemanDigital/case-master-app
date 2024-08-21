@@ -4,7 +4,6 @@ import { Card, Empty, Typography, Row, Col, Divider, Button } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import LeaveResponseForm from "../components/LeaveResponseForm";
-import PropTypes from "prop-types";
 import { useAdminHook } from "../hooks/useAdminHook";
 import {
   CalendarOutlined,
@@ -22,15 +21,16 @@ const LeaveApplicationDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { id } = useParams();
   const navigate = useNavigate();
-  // useErrorMessage(error);
   const { isAdminOrHr } = useAdminHook();
 
+  // fetch data
   useEffect(() => {
     if (id) {
       dataFetcher(`leaves/applications/${id}`, "GET");
     }
-  }, [id]);
+  }, [id, dataFetcher]);
 
+  // get status color
   const getStatusColor = (status) => {
     switch (status) {
       case "approved":
@@ -44,7 +44,10 @@ const LeaveApplicationDetails = () => {
     }
   };
 
+  // loading spinner
   if (loading) return <LoadingSpinner />;
+
+  // error toast
   if (error)
     return <PageErrorAlert errorCondition={error} errorMessage={error} />;
 

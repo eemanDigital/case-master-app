@@ -5,7 +5,6 @@ import { DownloadOutlined, UserAddOutlined } from "@ant-design/icons";
 import { formatDate } from "../utils/formatDate";
 import LawyersInCourtForm from "../pages/LawyersInCourtForm";
 import { useAdminHook } from "../hooks/useAdminHook";
-import { toast } from "react-toastify";
 import PageErrorAlert from "./PageErrorAlert";
 
 const { Title, Text } = Typography;
@@ -91,6 +90,7 @@ const SingleCauseList = ({
     },
   ].filter(Boolean);
 
+  // Transform causeListData into a structure compatible with the Table component
   const data = causeListData?.map((report) => ({
     key: report._id,
     case: `${report?.caseReported?.firstParty?.name[0]?.name} vs ${report?.caseReported?.secondParty?.name[0]?.name}`,
@@ -135,23 +135,34 @@ const SingleCauseList = ({
   );
 };
 
-// proptype validation
+// prop type validation
 SingleCauseList.propTypes = {
   causeListData: PropTypes.arrayOf(
     PropTypes.shape({
       _id: PropTypes.string.isRequired,
       caseReported: PropTypes.shape({
-        firstParty: PropTypes.arrayOf(
-          PropTypes.shape({
-            name: PropTypes.string.isRequired,
-          })
-        ),
-        secondParty: PropTypes.arrayOf(
-          PropTypes.shape({
-            name: PropTypes.string.isRequired,
-          })
-        ),
-      }),
+        firstParty: PropTypes.shape({
+          name: PropTypes.arrayOf(
+            PropTypes.shape({
+              name: PropTypes.string.isRequired,
+            })
+          ).isRequired,
+        }).isRequired,
+        secondParty: PropTypes.shape({
+          name: PropTypes.arrayOf(
+            PropTypes.shape({
+              name: PropTypes.string.isRequired,
+            })
+          ).isRequired,
+        }).isRequired,
+        thirdParty: PropTypes.shape({
+          name: PropTypes.arrayOf(
+            PropTypes.shape({
+              name: PropTypes.string, // Made optional to avoid warnings
+            })
+          ),
+        }),
+      }).isRequired,
       adjournedFor: PropTypes.string,
       adjournedDate: PropTypes.string,
       lawyersInCourt: PropTypes.arrayOf(
@@ -170,6 +181,7 @@ SingleCauseList.propTypes = {
   title: PropTypes.string,
   showDownloadBtn: PropTypes.bool,
   hideButton: PropTypes.bool,
-  h1Style: PropTypes.object,
+  h1Style: PropTypes.string,
 };
+
 export default SingleCauseList;

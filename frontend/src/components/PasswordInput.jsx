@@ -1,4 +1,4 @@
-import { useState } from "react";
+import PropTypes from "prop-types";
 import { AiOutlineEye, AiOutlineEyeInvisible } from "react-icons/ai";
 
 const PasswordInput = ({
@@ -12,12 +12,13 @@ const PasswordInput = ({
   showPassword,
   togglePassword,
   onPaste,
-  input,
   style,
 }) => {
+  // Default input style
   const defaultStyle = `appearance-none block w-full bg-gray-200 text-red border ${
     error ? "border-red-500" : ""
   } rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`;
+
   return (
     <div className="relative">
       <label
@@ -42,6 +43,20 @@ const PasswordInput = ({
       </div>
     </div>
   );
+};
+// Typechecking for props
+PasswordInput.propTypes = {
+  error: PropTypes.bool,
+  name: PropTypes.string.isRequired,
+  value: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  placeholder: PropTypes.string,
+  htmlFor: PropTypes.string,
+  handleChange: PropTypes.func.isRequired,
+  showPassword: PropTypes.bool.isRequired,
+  togglePassword: PropTypes.func.isRequired,
+  onPaste: PropTypes.func,
+  style: PropTypes.string,
 };
 
 export default PasswordInput;

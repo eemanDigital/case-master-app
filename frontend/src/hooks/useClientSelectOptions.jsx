@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { useDataGetterHook } from "./useDataGetterHook";
 import { getUsers } from "../redux/features/auth/authSlice";
 import { useDispatch, useSelector } from "react-redux";
 

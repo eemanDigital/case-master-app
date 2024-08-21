@@ -1,8 +1,10 @@
+import PropTypes from "prop-types";
 import { DeleteOutlined } from "@ant-design/icons";
 import { Button, Input, Form, Space, Select } from "antd";
 import ReactQuill from "react-quill";
 import { formats } from "../utils/quillFormat";
 
+// Dynamic Inputs
 export const PartyDynamicInputs = ({
   parentKey,
   firstKeyVal,
@@ -113,12 +115,20 @@ export const PartyDynamicInputs = ({
   );
 };
 
-// const onSearch = (value) => {
-//   console.log("search:", value);
-// };
+PartyDynamicInputs.propTypes = {
+  parentKey: PropTypes.string.isRequired,
+  firstKeyVal: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  secondKeyVal: PropTypes.string.isRequired,
+  thirdKeyVal: PropTypes.string.isRequired,
+  placeholderVal: PropTypes.string.isRequired,
+  firstInitialValue: PropTypes.array,
+  secondInitialValue: PropTypes.array,
+  thirdInitialValue: PropTypes.array,
+  rules: PropTypes.arrayOf(PropTypes.object),
+};
 
-// Filter `option.label` match the user type `input`
-
+// Select Inputs
 export const SelectInputs = ({
   fieldName,
   label,
@@ -155,9 +165,24 @@ export const SelectInputs = ({
   );
 };
 
+SelectInputs.propTypes = {
+  fieldName: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  initialValue: PropTypes.any,
+  defaultValue: PropTypes.any,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      value: PropTypes.any.isRequired,
+    })
+  ).isRequired,
+  mode: PropTypes.string,
+  rules: PropTypes.arrayOf(PropTypes.object),
+};
+
+// Dynamic Input Arrays
 export const DynamicInputArrays = ({
   parentKey,
-  initialValue,
   label,
   placeholder,
   rules,
@@ -203,6 +228,14 @@ export const DynamicInputArrays = ({
   );
 };
 
+DynamicInputArrays.propTypes = {
+  parentKey: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  placeholder: PropTypes.string.isRequired,
+  rules: PropTypes.arrayOf(PropTypes.object),
+};
+
+//  Text Area Input
 export const TextAreaInput = ({ fieldName, label, initialValue, rules }) => {
   return (
     <div>
@@ -215,4 +248,11 @@ export const TextAreaInput = ({ fieldName, label, initialValue, rules }) => {
       </Form.Item>
     </div>
   );
+};
+
+TextAreaInput.propTypes = {
+  fieldName: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  initialValue: PropTypes.any,
+  rules: PropTypes.arrayOf(PropTypes.object),
 };

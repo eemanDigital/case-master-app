@@ -40,6 +40,7 @@ const CaseDetails = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
+  // fetch case data
   useEffect(() => {
     dataFetcher(`cases/${id}`, "GET");
   }, [id]);
@@ -55,12 +56,11 @@ const CaseDetails = () => {
     <LoadingSpinner />;
   }
 
+  // Paginate the reports
   const paginatedReports = data?.data?.reports?.slice(
     (currentPage - 1) * pageSize,
     currentPage * pageSize
   );
-
-  // parties name
 
   // Define columns for the document table
   const columns = [

@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { useReducer, createContext, useEffect } from "react";
 
 // reducer function
@@ -41,6 +42,10 @@ const PhotoContextProvider = ({ children }) => {
       {children}
     </PhotoContext.Provider>
   );
+};
+
+PhotoContextProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export default PhotoContextProvider;
