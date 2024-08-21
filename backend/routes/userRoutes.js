@@ -40,10 +40,11 @@ const router = express.Router();
 // User signup with admin restriction, photo upload, and resize
 router.post(
   "/register",
-  // restrictTo("admin"),
-  uploadUserPhoto,
-  resizeUserPhoto,
-  register
+  protect, // Ensure the user is authenticated
+  restrictTo("admin", "super-admin"), // Ensure the user has the correct role
+  uploadUserPhoto, // Handle file uploads
+  resizeUserPhoto, // Resize the uploaded photo
+  register // Handle the registration logic
 );
 // User login
 router.post("/login", login);
