@@ -3,12 +3,14 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Descriptions, Button, Card, Spin, Alert } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const PaymentMadeOnCase = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { invoices } = useDataGetterHook();
   const navigate = useNavigate();
   const { clientId, caseId } = useParams();
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   useEffect(() => {
     if (clientId && caseId) {

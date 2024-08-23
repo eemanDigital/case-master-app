@@ -4,12 +4,14 @@ import { Link } from "react-router-dom";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useSelector } from "react-redux";
 import { useEffect } from "react";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const AllCasesListForPayment = () => {
   const { cases, loading, error, fetchData } = useDataGetterHook();
   const { user } = useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
   const loggedInClientId = user?.data?.id;
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   useEffect(() => {
     fetchData("cases", "cases");

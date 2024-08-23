@@ -1,15 +1,17 @@
 import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Button, Descriptions } from "antd";
+import { useParams } from "react-router-dom";
+import { Descriptions } from "antd";
 
 import { useDataFetch } from "../hooks/useDataFetch";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
+import GoBackButton from "../components/GoBackButton";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const EventDetail = () => {
   const { id } = useParams();
   const { dataFetcher, error, loading, data } = useDataFetch();
-  const navigate = useNavigate();
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   // fetch data
   useEffect(() => {
@@ -36,7 +38,8 @@ const EventDetail = () => {
 
   return (
     <>
-      <Button onClick={() => navigate(-1)}>Go Back</Button>
+      <GoBackButton />
+
       <Descriptions title="Event Details" bordered>
         <Descriptions.Item label="Title">{data?.data?.title}</Descriptions.Item>
         <Descriptions.Item label="Start">

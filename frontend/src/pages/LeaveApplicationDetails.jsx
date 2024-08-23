@@ -14,6 +14,8 @@ import {
 import LeaveBalanceDisplay from "../components/LeaveBalanceDisplay";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import GoBackButton from "../components/GoBackButton";
 
 const { Title, Text } = Typography;
 
@@ -22,6 +24,7 @@ const LeaveApplicationDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAdminOrHr } = useAdminHook();
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   // fetch data
   useEffect(() => {
@@ -154,6 +157,7 @@ const LeaveApplicationDetails = () => {
 
   return (
     <>
+      <GoBackButton />
       {data ? (
         <>
           {isAdminOrHr && (

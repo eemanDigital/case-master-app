@@ -29,7 +29,9 @@ const useClientSelectOptions = () => {
     ? clients?.data
         .filter((client) => client.role === "client")
         .map((client) => {
-          const label = client.firstName;
+          const label = client.secondName
+            ? `${client.firstName} ${client.secondName}`
+            : client.firstName;
 
           return {
             value: client?.email,

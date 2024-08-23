@@ -124,7 +124,7 @@ const CaseReportList = ({
   );
 
   return (
-    <section className="w-full font-poppins bg-gray-50 rounded-lg shadow-md sm:px-6 px-2 ">
+    <section className="w-full  bg-gray-50 rounded-lg shadow-md sm:px-6 px-2 ">
       <Title
         level={2}
         className={`${
@@ -152,7 +152,7 @@ const CaseReportList = ({
           (report) => (
             <Card
               key={report._id}
-              className="w-full  shadow-sm hover:shadow-md transition-shadow duration-300"
+              className="w-full font-poppins  shadow-sm hover:shadow-md transition-shadow duration-300"
               title={
                 <Title
                   level={4}
@@ -165,33 +165,33 @@ const CaseReportList = ({
               }>
               <Space direction="vertical" size="small" className="w-full">
                 {!hideButtons && (
-                  <Text strong className="text-gray-600">
+                  <Text strong className="text-gray-600 font-poppins  ">
                     Reported on:{" "}
-                    <span className="text-blue-500">
+                    <span className="text-blue-500 ">
                       {formatDate(report?.date)}
                     </span>
                   </Text>
                 )}
-                <Text className="text-gray-700 text-justify">
+                <Text className="text-gray-700 text-justify font-poppins  ">
                   {shortenText(report?.update, 300, report._id)}
                 </Text>
                 <Space
                   direction="horizontal"
                   size="large"
                   className="w-full justify-between flex-wrap">
-                  <Text strong>
+                  <Text strong className="font-poppins ">
                     Adjourned For:{" "}
-                    <span className="text-rose-600">
+                    <span className="text-rose-600 font-poppins ">
                       {report?.adjournedFor}
                     </span>
                   </Text>
-                  <Text strong>
+                  <Text strong className="font-poppins ">
                     Adjourned Date:{" "}
-                    <span className="text-blue-500">
+                    <span className="text-blue-500 ">
                       {formatDate(report?.adjournedDate)}
                     </span>
                   </Text>
-                  <Text strong>
+                  <Text strong className="font-poppins ">
                     Reported By:{" "}
                     <span className="text-gray-700">
                       {report?.reportedBy?.fullName}

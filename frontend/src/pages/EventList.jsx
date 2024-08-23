@@ -8,19 +8,17 @@ import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { MdEventAvailable } from "react-icons/md";
 import PageErrorAlert from "../components/PageErrorAlert";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const EventList = () => {
   const { events, fetchData, error, loading } = useDataGetterHook();
   const [isModalVisible, setIsModalVisible] = useState(false);
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+
   const dispatch = useDispatch();
   useEffect(() => {
     fetchData("events", "events");
   }, []);
-
-  // const handleEdit = (record) => {
-  //   // Implement edit functionality
-  //   console.log("Edit:", record);
-  // };
 
   // handle delete
   const deleteEvent = async (id) => {

@@ -1,20 +1,22 @@
+import PropTypes from "prop-types";
 import { useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { Button, Modal, message } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
-
 import useModal from "../hooks/useModal";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const TaskDocUpload = ({ taskId }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fileName: "",
     file: null,
   });
-  const [click, setClick] = useState(false);
 
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal(); // modal hook
-  const { dataFetcher } = useDataFetch();
+  const { dataFetcher, loading, error, data } = useDataFetch();
 
   const handleFileChange = (e) => {
     const { name, value, files } = e.target;
@@ -36,23 +38,18 @@ const TaskDocUpload = ({ taskId }) => {
     payload.append("fileName", formData.fileName);
     payload.append("file", formData.file);
 
-    try {
-      await dataFetcher(
-        `tasks/${taskId}/documents`,
-        "post",
-        payload,
-        fileHeaders
-      );
-      message.success("Document uploaded successfully!");
-      handleCancel(); // Close the modal on successful upload
-    } catch (err) {
-      console.log(err);
-      message.error("Failed to upload document. Please try again.");
-    }
-  };
+    const response = await dataFetcher(
+      `tasks/${taskId}/documents`,
+      "post",
+      payload,
+      fileHeaders
+    );
 
-  const handleClick = () => {
-    setClick(() => !click);
+    if (response.message === "success") {
+      toast.success("Document uploaded successfully");
+    } else {
+      toast.error(response.error || "failed to upload document");
+    }
   };
 
   return (
@@ -68,8 +65,8 @@ const TaskDocUpload = ({ taskId }) => {
         onCancel={handleCancel}
         footer={null} // Remove default footer buttons
       >
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4 p-4">
+          <div className="flex flex-col">
             <label
               htmlFor="fileName"
               className="block text-sm font-medium text-gray-700">
@@ -85,13 +82,13 @@ const TaskDocUpload = ({ taskId }) => {
               className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
             />
           </div>
-          <div>
+          <div className="flex flex-col">
             <label
               htmlFor="file"
               className="block text-sm font-medium text-gray-700">
               Upload Document
             </label>
-            <div className="flex items-center mt-1">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center mt-1">
               <label className="cursor-pointer inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
                 <UploadOutlined className="mr-2" />
                 <span>Select File</span>
@@ -105,7 +102,7 @@ const TaskDocUpload = ({ taskId }) => {
                 />
               </label>
               {formData.file && (
-                <p className="ml-4 text-sm text-gray-500">
+                <p className="mt-2 sm:mt-0 sm:ml-4 text-sm text-gray-500">
                   {formData.file.name}
                 </p>
               )}
@@ -113,9 +110,9 @@ const TaskDocUpload = ({ taskId }) => {
           </div>
           <div className="flex justify-end">
             <button
-              onClick={handleClick}
               type="submit"
-              className="bg-blue-500 text-white hover:bg-blue-600 p-2 rounded-md ">
+              disabled={loading}
+              className="bg-blue-500 text-white hover:bg-blue-600 p-2 rounded-md">
               Upload Document
             </button>
           </div>
@@ -123,6 +120,10 @@ const TaskDocUpload = ({ taskId }) => {
       </Modal>
     </>
   );
+};
+
+TaskDocUpload.propTypes = {
+  taskId: PropTypes.string.isRequired,
 };
 
 export default TaskDocUpload;

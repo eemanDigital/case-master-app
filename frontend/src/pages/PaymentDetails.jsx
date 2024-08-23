@@ -7,17 +7,17 @@ import { formatDate } from "../utils/formatDate";
 
 const PaymentDetails = () => {
   const { id } = useParams();
-
   const { dataFetcher, data, loading, error } = useDataFetch();
   const navigate = useNavigate();
 
-  //   console.log(data);
-
+  // fetch data
   useEffect(() => {
     dataFetcher(`payments/${id}`, "GET");
-  }, [id]);
-
+  }, [id, dataFetcher]);
+  // load spinner
   if (loading) return <Spin tip="Loading..." />;
+
+  // error toast
   if (error)
     return (
       <Alert
@@ -29,6 +29,7 @@ const PaymentDetails = () => {
     );
 
   const payment = data?.data;
+
   const invoice = payment?.invoiceId;
 
   return (

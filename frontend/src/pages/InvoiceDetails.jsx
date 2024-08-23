@@ -6,6 +6,8 @@ import { formatDate } from "../utils/formatDate";
 import { handleDownload } from "../utils/downloadHandler";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
+import GoBackButton from "../components/GoBackButton";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
@@ -13,6 +15,7 @@ const InvoiceDetails = () => {
   const { id } = useParams();
   const { dataFetcher, data, loading, error } = useDataFetch();
   const navigate = useNavigate();
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   // fetch data
   useEffect(() => {
@@ -25,6 +28,7 @@ const InvoiceDetails = () => {
 
   return (
     <>
+      <GoBackButton />
       {error ? (
         <PageErrorAlert errorCondition={error} errorMessage={error} />
       ) : (

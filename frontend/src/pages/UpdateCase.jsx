@@ -668,7 +668,9 @@ const UpdateCase = () => {
                 rules={requiredRule}
                 name="accountOfficer"
                 label="Account Officer"
-                initialValue={formData?.accountOfficer?.name}>
+                initialValue={formData?.accountOfficer?.map(
+                  (officer) => officer._id
+                )}>
                 <Select
                   mode="multiple"
                   placeholder="Select account officer"
@@ -682,7 +684,7 @@ const UpdateCase = () => {
                 rules={requiredRule}
                 name="client"
                 label="Client"
-                initialValue={formData?.client}>
+                initialValue={formData?.client?._id}>
                 <Select
                   // noStyle
                   mode="multiple"

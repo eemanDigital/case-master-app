@@ -134,6 +134,7 @@ const CreateCaseReportForm = () => {
             style={{ width: "100%" }}
           />
         </Form.Item>
+
         <Form.Item
           name="reportedBy"
           label="Case Reporter"

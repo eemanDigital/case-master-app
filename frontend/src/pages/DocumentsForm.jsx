@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Modal, Button } from "antd";
+import { Modal } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import DocumentsList from "../components/DocumentsList";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { toast } from "react-toastify";
 import ButtonWithIcon from "../components/ButtonWithIcon";
 import { FaUpload } from "react-icons/fa";
+import GoBackButton from "../components/GoBackButton";
 
 const DocumentForm = () => {
   const [formData, setFormData] = useState({
@@ -67,6 +68,7 @@ const DocumentForm = () => {
 
   return (
     <div className=" container mx-auto xl:px-5 md:px-4 sm:px-0  ">
+      <GoBackButton />
       <ButtonWithIcon
         icon={<FaUpload />}
         onClick={showModal}

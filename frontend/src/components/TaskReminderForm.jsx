@@ -53,7 +53,8 @@ const TaskReminderForm = ({ id }) => {
         <Button
           icon={<MdNotificationsNone size={20} />}
           onClick={showModal}
-          className="bg-blue-200 text-blue-600"></Button>
+          className="bg-blue-200 text-blue-600"
+        />
       </Tooltip>
       <Modal
         title="Send Reminder on Task"
@@ -61,13 +62,14 @@ const TaskReminderForm = ({ id }) => {
         footer={null}
         confirmLoading={loading}
         onCancel={handleCancel}>
-        <section className="flex justify-between gap-8 ">
+        <section className="flex justify-center sm:justify-between gap-8">
           <Form
             layout="vertical"
             form={form}
             name="dynamic_form_complex"
-            className="flex  justify-center">
-            <Card bordered={false} style={{ width: 400 }}>
+            className="w-full max-w-lg"
+            onFinish={onSubmit}>
+            <Card bordered={false} className="w-full">
               <Form.Item
                 name={["reminder", "message"]}
                 label="Write your message here..."
@@ -84,7 +86,6 @@ const TaskReminderForm = ({ id }) => {
               <Form.Item>
                 <Button
                   loading={loading}
-                  onClick={onSubmit}
                   className="blue-btn"
                   htmlType="submit">
                   Save

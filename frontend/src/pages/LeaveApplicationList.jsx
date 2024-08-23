@@ -1,7 +1,7 @@
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { Link } from "react-router-dom";
 import { useAdminHook } from "../hooks/useAdminHook";
-import { Space, Table, Button, Spin, Alert, Modal } from "antd";
+import { Space, Table, Button, Modal } from "antd";
 import { formatDate } from "../utils/formatDate";
 import avatar from "../assets/avatar.png";
 import { useDispatch, useSelector } from "react-redux";
@@ -11,6 +11,7 @@ import { toast } from "react-toastify";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import SearchBar from "../components/SearchBar";
 import PageErrorAlert from "../components/PageErrorAlert";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const LeaveApplicationList = () => {
   const {
@@ -24,6 +25,7 @@ const LeaveApplicationList = () => {
   const { user } = useSelector((state) => state.auth);
   const { isAdminOrHr } = useAdminHook();
   const dispatch = useDispatch();
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   // render all cases initially before filter
   useEffect(() => {

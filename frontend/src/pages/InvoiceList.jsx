@@ -13,6 +13,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBar from "../components/SearchBar";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "../components/PageErrorAlert";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const InvoiceList = () => {
   const {
@@ -20,24 +21,25 @@ const InvoiceList = () => {
     loading: loadingInvoices,
     error: errorInvoices,
     fetchData,
-  } = useDataGetterHook();
+  } = useDataGetterHook(); //custom hook to fetch data
+
   const [searchResults, setSearchResults] = useState([]);
   const { isLoading, isError, isSuccess, message } = useSelector(
     (state) => state.delete
   );
+
   const dispatch = useDispatch();
   const { isClient, isSuperOrAdmin } = useAdminHook();
   const { user } = useSelector((state) => state.auth);
   const loggedInClientId = user?.data?.id;
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
-  const fetchInvoices = useCallback(() => {
+  // fetch data
+  useEffect(() => {
     fetchData("invoices", "invoices");
   }, []);
 
-  useEffect(() => {
-    fetchInvoices();
-  }, [fetchInvoices]);
-
+  // handle search handler
   useEffect(() => {
     if (invoices?.data) {
       setSearchResults(invoices.data);
@@ -93,9 +95,9 @@ const InvoiceList = () => {
     if (isSuccess) {
       toast.success(message);
       // Refetch the data after any successful operation
-      fetchInvoices();
+      fetchData();
     }
-  }, [isError, isSuccess, message, fetchInvoices]);
+  }, [isError, isSuccess, message, fetchData]);
 
   const columns = [
     {
@@ -175,7 +177,7 @@ const InvoiceList = () => {
   if (loadingInvoices.invoices) return <LoadingSpinner />;
   return (
     <>
-      {errorInvoices ? (
+      {errorInvoices.invoices ? (
         <PageErrorAlert
           errorCondition={errorInvoices.invoices}
           errorMessage={errorInvoices.invoices}
@@ -183,11 +185,13 @@ const InvoiceList = () => {
       ) : (
         <div>
           <div className="flex md:flex-row flex-col justify-between items-center mt-4">
-            <ButtonWithIcon
-              onClick={() => {}}
-              icon={<PlusOutlined className="mr-2" />}
-              text="Create Invoice"
-            />
+            <Link to="invoices/add-invoices">
+              <ButtonWithIcon
+                onClick={() => {}}
+                icon={<PlusOutlined className="mr-2" />}
+                text="Create Invoice"
+              />
+            </Link>
 
             <SearchBar onSearch={handleSearchChange} />
           </div>
@@ -196,7 +200,7 @@ const InvoiceList = () => {
             columns={columns}
             dataSource={isClient ? filteredInvoiceForClient : searchResults}
             rowKey="_id"
-            scroll={{ x: 1000 }}
+            scroll={{ x: 750 }}
           />
         </div>
       )}

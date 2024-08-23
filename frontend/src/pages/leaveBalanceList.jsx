@@ -9,6 +9,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBar from "../components/SearchBar";
 import debounce from "lodash/debounce";
 import PageErrorAlert from "../components/PageErrorAlert";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const { Column, ColumnGroup } = Table;
 
@@ -19,6 +20,7 @@ const LeaveBalanceList = () => {
   const { isAdminOrHr } = useAdminHook();
   const dispatch = useDispatch();
   const deleteState = useSelector((state) => state.delete); // select delete state
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   // fetch data
   const fetchLeaveBalance = async () => {

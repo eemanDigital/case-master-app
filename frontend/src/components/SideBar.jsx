@@ -77,7 +77,7 @@ const SideBar = ({ collapsed, setCollapsed }) => {
     {
       key: "staff",
       icon: <FaUsers />,
-      label: "Staff",
+      label: <Link to="staff">Staff</Link>,
       children: [
         {
           key: "leave-application",

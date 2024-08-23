@@ -10,6 +10,7 @@ import SearchBar from "./SearchBar";
 import { toast } from "react-toastify";
 import LoadingSpinner from "./LoadingSpinner";
 import PageErrorAlert from "./PageErrorAlert";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const DocumentsList = () => {
@@ -20,6 +21,7 @@ const DocumentsList = () => {
     error: errorDoc,
     loading: loadingDoc,
   } = useDataGetterHook();
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   // State to manage search results
   const [searchResults, setSearchResults] = useState([]);

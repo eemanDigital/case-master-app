@@ -88,24 +88,26 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
   const { case: caseId, client: clientId } = req.body;
 
   // Check if the case exists and populate the client
-  const caseData = await Case.findById(caseId).populate("client");
-  if (!caseData) {
-    return next(new AppError("No case found with that ID", 404));
-  }
+  if (caseId) {
+    const caseData = await Case.findById(caseId).populate("client");
+    if (!caseData) {
+      return next(new AppError("No case found with that ID", 404));
+    }
 
-  // Check if the case has an associated client
-  if (!caseData.client) {
-    return next(new AppError("No client associated with this case", 400));
-  }
+    // Check if the case has an associated client
+    if (!caseData.client) {
+      return next(new AppError("No client associated with this case", 400));
+    }
 
-  // Check if the client associated with the case is the same as the clientId provided
-  if (caseData.client._id.toString() !== clientId) {
-    return next(
-      new AppError(
-        "Client in the case does not match the provided client ID",
-        400
-      )
-    );
+    // Check if the client associated with the case is the same as the clientId provided
+    if (caseData.client._id.toString() !== clientId) {
+      return next(
+        new AppError(
+          "Client in the case does not match the provided client ID",
+          400
+        )
+      );
+    }
   }
 
   // Check if the client exists

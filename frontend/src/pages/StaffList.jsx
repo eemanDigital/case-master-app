@@ -11,6 +11,7 @@ import { deleteUser, getUsers } from "../redux/features/auth/authSlice";
 import { useAdminHook } from "../hooks/useAdminHook";
 import ButtonWithIcon from "../components/ButtonWithIcon";
 import PageErrorAlert from "../components/PageErrorAlert";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const StaffList = () => {
   const [searchResults, setSearchResults] = useState([]);
@@ -21,6 +22,7 @@ const StaffList = () => {
 
   const { Column, ColumnGroup } = Table;
   const { isAdminOrHr, isSuperOrAdmin } = useAdminHook();
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   // fetch users
   useEffect(() => {
@@ -82,7 +84,7 @@ const StaffList = () => {
                     text="Add User"
                   />
                 </Link>
-
+                {/* leave balance form */}
                 <CreateLeaveBalanceForm />
               </>
             )}
@@ -122,11 +124,14 @@ const StaffList = () => {
                 title="Is Active"
                 dataIndex="isActive"
                 key="isActive"
-                render={(isActive) => (
-                  <span style={{ color: isActive ? "green" : "red" }}>
-                    {isActive ? "Active" : "Inactive"}
-                  </span>
-                )}
+                render={(isActive) => {
+                  console.log("isActive:", isActive);
+                  return (
+                    <span style={{ color: isActive ? "green" : "red" }}>
+                      {isActive ? "Active" : "Inactive"}
+                    </span>
+                  );
+                }}
               />
 
               <Column

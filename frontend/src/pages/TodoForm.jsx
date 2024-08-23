@@ -1,4 +1,5 @@
-import { useState, useCallback } from "react";
+import PropTypes from "prop-types";
+import { useCallback } from "react";
 import { todoPriority } from "./../data/options";
 import { Button, Input, Form, Modal, Spin, Select, DatePicker } from "antd";
 import useModal from "../hooks/useModal";
@@ -11,6 +12,7 @@ const TodoForm = ({ addOptimisticTodo, removeOptimisticTodo }) => {
   const [form] = Form.useForm();
   const { dataFetcher, loading } = useDataFetch();
 
+  // form submission handler
   const onSubmit = useCallback(async () => {
     let values;
     try {
@@ -107,5 +109,9 @@ const TodoForm = ({ addOptimisticTodo, removeOptimisticTodo }) => {
     </>
   );
 };
-
+// prop type definition
+TodoForm.propTypes = {
+  addOptimisticTodo: PropTypes.func.isRequired,
+  removeOptimisticTodo: PropTypes.func.isRequired,
+};
 export default TodoForm;

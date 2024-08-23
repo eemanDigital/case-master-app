@@ -32,7 +32,7 @@ import CurrentDayCauseList from "./CurrentDayCauseList";
 export const PaymentFiltersContext = createContext();
 
 const Dashboard = () => {
-  useRedirectLogoutUser("/login"); // redirect to login if not logged in
+  useRedirectLogoutUser("users/login"); // redirect to login if not logged in
 
   const { user } = useSelector((state) => state.auth);
   const userId = user?.data?._id;
@@ -168,20 +168,6 @@ const Dashboard = () => {
             <LeaveAppForm />
           </div>
         </div>
-        {/* <div className="flex items-center space-x-4">
-          <div className="w-12 h-12">
-            <a
-              href="https://calendar.google.com/calendar"
-              target="_blank"
-              rel="noopener noreferrer">
-              <img
-                className="h-12 w-12"
-                src={googleCalender}
-                alt="google calendar logo"
-              />
-            </a>
-          </div>
-        </div> */}
       </div>
 
       {/* client's Dashboard */}

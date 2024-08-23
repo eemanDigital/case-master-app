@@ -1,5 +1,4 @@
 const Task = require("../models/taskModel");
-
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 
@@ -34,18 +33,6 @@ exports.getTask = catchAsync(async (req, res, next) => {
     data: task,
   });
 });
-
-// exports.downloadFile = catchAsync(async (req, res, next) => {
-//   const { id } = req.params;
-//   console.log(id);
-//   const doc = await File.findById(id);
-//   if (!doc) {
-//     return next(new AppError("No Document found", 404));
-//   }
-//   const file = doc.file;
-//   const filePath = path.join(__dirname, `../public/taskDoc/${file}`); // Assuming the files are in the uploads folder
-//   res.download(filePath);
-// });
 
 exports.updateTask = catchAsync(async (req, res, next) => {
   // const filename = req.file ? req.file.filename : null;

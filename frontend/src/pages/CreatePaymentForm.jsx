@@ -25,6 +25,7 @@ import useModal from "../hooks/useModal";
 import { toast } from "react-toastify";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import ButtonWithIcon from "../components/ButtonWithIcon";
+import GoBackButton from "../components/GoBackButton";
 
 const CreatePaymentForm = () => {
   const [formData, setFormData] = useState(paymentInitialValue);
@@ -73,6 +74,8 @@ const CreatePaymentForm = () => {
 
   return (
     <>
+      <GoBackButton />
+
       <ButtonWithIcon
         onClick={showModal}
         icon={<PlusOutlined className="mr-2" />}

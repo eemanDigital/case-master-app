@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from "react";
-import { useDataFetch } from "../hooks/useDataFetch";
+import { useState, useEffect } from "react";
+
 import { DeleteOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import {
@@ -41,7 +41,7 @@ const CreateInvoiceForm = () => {
   useEffect(() => {
     if (data?.message === "success") {
       fetchData("invoices");
-      navigate(0);
+      navigate("/dashboard/billings/?type=invoice");
     }
   }, [data, navigate, fetchData]);
 
@@ -58,11 +58,7 @@ const CreateInvoiceForm = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24} md={12}>
               {/* Case */}
-              <Form.Item
-                name="case"
-                label="Case"
-                initialValue={formData?.case}
-                rules={requiredRule}>
+              <Form.Item name="case" label="Case" initialValue={formData?.case}>
                 <Select
                   placeholder="Select case"
                   showSearch
@@ -178,43 +174,51 @@ const CreateInvoiceForm = () => {
                       </Col>
 
                       {/* Amount Charged */}
-                      <Col xs={24}>
-                        <Form.Item
-                          label="Amount Charged"
-                          name={[field.name, "amount"]}
-                          dependencies={[
-                            [field.name, "hours"],
-                            [field.name, "feeRatePerHour"],
-                          ]}
-                          rules={[
-                            ({ getFieldValue }) => ({
-                              validator(_, value) {
-                                const hours = getFieldValue([
-                                  field.name,
-                                  "hours",
-                                ]);
-                                const feeRatePerHour = getFieldValue([
-                                  field.name,
-                                  "feeRatePerHour",
-                                ]);
-                                if ((!hours || !feeRatePerHour) && !value) {
-                                  return Promise.reject(
-                                    new Error("Please enter the amount charged")
-                                  );
-                                }
-                                return Promise.resolve();
-                              },
-                            }),
-                          ]}
-                          initialValue={formData.services.amount}>
-                          <InputNumber
-                            formatter={(value) =>
-                              `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                            }
-                            parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                          />
-                        </Form.Item>
-                      </Col>
+                      <Form.Item
+                        label="Amount Charged"
+                        name={[field.name, "amount"]}
+                        dependencies={[
+                          [field.name, "hours"],
+                          [field.name, "feeRatePerHour"],
+                        ]}
+                        rules={[
+                          ({ getFieldValue }) => ({
+                            validator(_, value) {
+                              const hours = getFieldValue([
+                                field.name,
+                                "hours",
+                              ]);
+                              const feeRatePerHour = getFieldValue([
+                                field.name,
+                                "feeRatePerHour",
+                              ]);
+
+                              if (hours && feeRatePerHour && value) {
+                                return Promise.reject(
+                                  new Error(
+                                    "You can only fill in two of the three fields."
+                                  )
+                                );
+                              }
+
+                              if ((!hours || !feeRatePerHour) && !value) {
+                                return Promise.reject(
+                                  new Error("Please enter the amount charged")
+                                );
+                              }
+
+                              return Promise.resolve();
+                            },
+                          }),
+                        ]}
+                        initialValue={formData.services.amount}>
+                        <InputNumber
+                          formatter={(value) =>
+                            `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                          }
+                          parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
+                        />
+                      </Form.Item>
                     </Row>
 
                     <Row gutter={[16, 16]}>

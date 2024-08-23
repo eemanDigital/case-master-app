@@ -1,14 +1,11 @@
 import PropTypes from "prop-types";
-import { useDataFetch } from "../hooks/useDataFetch";
 import { FaFile, FaTrash, FaCheck, FaTimes } from "react-icons/fa";
-import { Button, Card, Popconfirm } from "antd";
+import { Button, Card, Popconfirm, Tooltip } from "antd";
 import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
 import { formatDate } from "../utils/formatDate";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import { toast } from "react-toastify";
-
-const baseURL = import.meta.env.VITE_BASE_URL;
 
 const TaskResponse = ({
   task,
@@ -16,21 +13,31 @@ const TaskResponse = ({
   isAssignedToCurrentUser,
   onRefresh, // New prop for refreshing data
 }) => {
-  const dispatch = useDispatch();
-  // const { dataFetcher } = useDataFetch();
+  const baseURL = import.meta.env.VITE_BASE_URL;
+  const { isError, isSuccess, message } = useSelector((state) => state.delete);
 
+  const dispatch = useDispatch();
+
+  // remove/delete response
+  // remove/delete response
   const removeResponse = async (taskId, responseId) => {
     try {
       await dispatch(deleteData(`tasks/${taskId}/response/${responseId}`));
-      // await dataFetcher(`tasks/${taskId}/response/${responseId}`);
-      toast.success("Response deleted successfully");
 
-      // Trigger refresh after successful deletion
-      if (onRefresh) {
-        onRefresh();
-      } else {
-        // Fallback to page refresh if onRefresh is not provided
-        window.location.reload();
+      if (isSuccess) {
+        toast.success("Response deleted successfully");
+
+        // Trigger refresh after successful deletion
+        if (onRefresh) {
+          onRefresh();
+        } else {
+          // Fallback to page refresh if onRefresh is not provided
+          window.location.reload();
+        }
+      }
+
+      if (isError) {
+        toast.error(message || "Failed to delete response");
       }
     } catch (error) {
       console.error("Error deleting response:", error);
@@ -39,13 +46,12 @@ const TaskResponse = ({
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="text-2xl font-bold mb-4">Task Response</h2>
+    <Card
+      title="Task Response"
+      className="shadow-md space-y-4 p-4 sm:p-0 md:p-8 lg:p-1 w-full mt-3">
       {task?.taskResponse?.length > 0 ? (
         task.taskResponse.map((res) => (
-          <Card
-            key={res._id}
-            className="shadow-md hover:shadow-lg transition-shadow duration-300">
+          <div key={res._id} className=" ">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
               <div className="flex items-center mb-2 md:mb-0">
                 <span className="font-semibold mr-2">Task Completed:</span>
@@ -62,7 +68,7 @@ const TaskResponse = ({
             <p className="mb-4">
               <span className="font-semibold">Comment:</span> {res?.comment}
             </p>
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <div
                 onClick={(event) =>
                   handleGeneralDownload(
@@ -71,7 +77,7 @@ const TaskResponse = ({
                     "response"
                   )
                 }
-                className="cursor-pointer flex items-center">
+                className="cursor-pointer flex items-center mb-2 md:mb-0">
                 <span className="mr-2">Document:</span>
                 {res?.doc ? (
                   <FaFile className="text-blue-500 hover:text-blue-600 text-xl" />
@@ -85,24 +91,26 @@ const TaskResponse = ({
                   onConfirm={() => removeResponse(task?._id, res?._id)}
                   okText="Yes"
                   cancelText="No">
-                  <Button
-                    type="default"
-                    danger
-                    icon={<FaTrash />}
-                    className="flex items-center">
-                    Delete
-                  </Button>
+                  <Tooltip title="Delete Response">
+                    <Button
+                      type="default"
+                      danger
+                      icon={<FaTrash />}
+                      className="flex items-center"></Button>
+                  </Tooltip>
                 </Popconfirm>
               )}
             </div>
-          </Card>
+          </div>
         ))
       ) : (
-        <Card className="text-center py-8">
-          <h3 className="text-xl text-gray-500">No Response Yet</h3>
+        <Card className="text-center w-full">
+          <h3 className="text-lg sm:text-xl md:text-2xl text-gray-500">
+            No Response Yet
+          </h3>
         </Card>
       )}
-    </div>
+    </Card>
   );
 };
 

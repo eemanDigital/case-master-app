@@ -1,16 +1,17 @@
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-import Input from "../components/Inputs";
-import { Button, Modal } from "antd";
+import { Modal, Button, Form, Input, Checkbox, Upload } from "antd";
 import useModal from "../hooks/useModal";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { FaCheck, FaTimes } from "react-icons/fa";
+import { UploadOutlined } from "@ant-design/icons";
 
 const TaskResponseForm = ({ taskId }) => {
   const dispatch = useDispatch();
+  const [form] = Form.useForm();
   const { user } = useSelector((state) => state.auth);
   const { sendingEmail, emailSent, msg } = useSelector((state) => state.email);
   const [formData, setFormData] = useState({
@@ -106,75 +107,92 @@ const TaskResponseForm = ({ taskId }) => {
   }
 
   return (
-    <>
+    <div className="max-w-md mx-auto">
       <Button
         onClick={showModal}
-        className="bg-blue-500 hover:bg-blue-600 text-white"
+        className="w-full sm:w-auto px-6 py-2 text-sm sm:text-base font-medium text-white bg-blue-500 hover:bg-blue-600 rounded-md shadow-md transition duration-300 ease-in-out flex items-center justify-center"
         disabled={sendingEmail}>
         {sendingEmail ? "Sending..." : "Send Task Response"}
       </Button>
+
       <Modal
-        title="Task Report Form"
+        title={
+          <h2 className="text-lg sm:text-xl font-semibold">
+            Task Response Form
+          </h2>
+        }
         open={open}
         onCancel={handleCancel}
         footer={[
-          <Button key="cancel" onClick={handleCancel}>
+          <Button
+            key="cancel"
+            onClick={handleCancel}
+            className="px-4 py-1 text-sm sm:text-base">
             Cancel
           </Button>,
           <Button
             key="submit"
             type="primary"
-            className="bg-blue-500 hover:bg-blue-600"
-            onClick={handleSubmit}
-            disabled={sendingEmail}>
+            onClick={() => form.submit()}
+            disabled={sendingEmail}
+            className="px-4 py-1 text-sm sm:text-base bg-blue-500 hover:bg-blue-600 border-blue-500 hover:border-blue-600">
             {sendingEmail ? "Sending..." : "Submit"}
           </Button>,
-        ]}>
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col justify-center items-center space-y-4">
-          <div className="flex flex-col items-start w-full">
-            <label htmlFor="doc" className="mb-1 font-semibold">
-              Upload Document (optional)
-            </label>
-            <input
-              type="file"
+        ]}
+        className="sm:min-w-[500px]">
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          className="mt-4">
+          <Form.Item
+            name="doc"
+            label={
+              <span className="text-sm sm:text-base">
+                Upload Document (optional)
+              </span>
+            }
+            valuePropName="fileList"
+            getValueFromEvent={(e) => (Array.isArray(e) ? e : e && e.fileList)}>
+            <Upload
               name="doc"
               accept=".pdf,.docx,.jpg,.jpeg,.png"
-              onChange={handleChange}
-              className="border p-2 rounded w-full"
-            />
-            {formData.doc && (
-              <p className="mt-1 text-sm text-gray-500">
-                File selected: {formData.doc.name}
-              </p>
-            )}
-          </div>
-          <div className="flex items-center w-full">
-            <label htmlFor="completed" className="mr-2 font-semibold">
+              beforeUpload={() => false}
+              onChange={handleChange}>
+              <Button
+                icon={<UploadOutlined />}
+                className="text-sm sm:text-base">
+                Click to Upload
+              </Button>
+            </Upload>
+          </Form.Item>
+
+          <Form.Item
+            name="completed"
+            valuePropName="checked"
+            initialValue={formData.completed}>
+            <Checkbox onChange={handleChange} className="text-sm sm:text-base">
               Task Completed
-            </label>
-            <input
-              type="checkbox"
-              onChange={handleChange}
-              checked={formData.completed}
-              name="completed"
-              className="w-5 h-5"
-            />
-          </div>
-          <div className="w-full">
-            <Input
-              className="w-full p-2 border rounded"
-              textarea
+            </Checkbox>
+          </Form.Item>
+
+          <Form.Item
+            name="comment"
+            label={
+              <span className="text-sm sm:text-base">Your comment here...</span>
+            }
+            rules={[{ required: true, message: "Please provide a comment!" }]}>
+            <Input.TextArea
+              rows={4}
               placeholder="Your comment here..."
               value={formData.comment}
-              name="comment"
               onChange={handleChange}
+              className="text-sm sm:text-base"
             />
-          </div>
-        </form>
+          </Form.Item>
+        </Form>
       </Modal>
-    </>
+    </div>
   );
 };
 

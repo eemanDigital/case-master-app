@@ -33,7 +33,7 @@ const PageErrorAlert = ({ errorCondition, errorMessage }) => {
 };
 // Typechecking for props
 PageErrorAlert.propTypes = {
-  errorCondition: PropTypes.bool.isRequired,
+  errorCondition: PropTypes.string.isRequired,
   errorMessage: PropTypes.string.isRequired,
 };
 export default PageErrorAlert;

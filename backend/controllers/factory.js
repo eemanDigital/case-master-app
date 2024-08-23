@@ -26,8 +26,6 @@ exports.downloadDocument = (model) => {
     const fileUrl = document.file;
     const fileName = document.fileName;
 
-    // console.log(fileUrl, fileName);
-
     res.status(200).json({
       status: "success",
       data: {
@@ -66,7 +64,6 @@ exports.createDocument = (model) => {
       fileName,
       file: filePath,
     };
-    console.log(filePath, "PATHURL");
 
     const updatedDoc = await model.findByIdAndUpdate(
       id,
@@ -86,8 +83,7 @@ exports.createDocument = (model) => {
 };
 
 // for documents alone
-
-// general delete handler
+// general delete handler -
 exports.deleteOne = (Model) =>
   catchAsync(async (req, res, next) => {
     const doc = await Model.findByIdAndDelete(req.params.id);

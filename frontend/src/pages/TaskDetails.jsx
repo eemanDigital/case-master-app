@@ -1,12 +1,11 @@
+import PropTypes from "prop-types";
 import { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { Divider, Modal, Card, Button, Alert, Spin } from "antd";
+import { useParams } from "react-router-dom";
+import { Card, Alert, Divider } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import TaskDocUpload from "./TaskDocUpload";
-import { FaDownload, FaFile } from "react-icons/fa6";
 import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
-import { RiDeleteBin2Line } from "react-icons/ri";
 import useDeleteDocument from "../hooks/useDeleteDocument";
 import TaskResponseForm from "../components/TaskResponseForm";
 import moment from "moment";
@@ -14,6 +13,9 @@ import TaskResponse from "../components/TaskResponse";
 import { useSelector } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
+import TaskAttachmentsCard from "../components/TaskAttachmentsCard ";
+import GoBackButton from "../components/GoBackButton";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -29,23 +31,22 @@ const TaskDetails = () => {
   const currentUser = user?.data?._id;
   const assignedById = task?.assignedBy?._id;
   const isAssignedBy = currentUser === assignedById;
-  const navigate = useNavigate();
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
+  // get if assigned to current user
   const isAssignedToCurrentUser = task?.assignedTo?.some(
     (staff) => staff._id === currentUser
   );
   const isAssignedToCurrentClientUser =
     task?.assignedToClient?._id === currentUser;
 
+  // fetch data
   useEffect(() => {
     dataFetcher(`tasks/${id}`, "GET");
-  }, [id]);
+  }, [id, dataFetcher]);
 
+  // load spinner
   if (loading) return <LoadingSpinner />;
-  // if (dataError)
-  //   return (
-  //     <Alert message={`Error: ${dataError}`} type="error" className="mt-4" />
-  //   );
 
   const DetailItem = ({ label, value }) => (
     <div className="mb-4">
@@ -53,140 +54,121 @@ const TaskDetails = () => {
     </div>
   );
 
+  // prop type definition
+  DetailItem.propTypes = {
+    label: PropTypes.string.isRequired,
+    value: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.number,
+      PropTypes.node,
+    ]).isRequired,
+  };
+
+  // toast error message
+  if (dataError) {
+    <PageErrorAlert errorCondition={dataError} errorMessage={dataError} />;
+  }
+
   return (
     <>
-      {dataError ? (
-        <PageErrorAlert errorCondition={dataError} errorMessage={dataError} />
-      ) : (
-        <div className="container mx-auto px-4 py-8">
-          <Button onClick={() => navigate(-1)} className="mb-6">
-            Go Back
-          </Button>
+      <div className="container mx-auto  py-4">
+        <GoBackButton />
 
-          <Card title="Task Details" className="mb-8 shadow-md">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <DetailItem label="Task Title" value={task?.title} />
-              <DetailItem
-                label="Assigned By"
-                value={
-                  task?.assignedBy
-                    ? `${task.assignedBy?.firstName} ${task.assignedBy?.lastName} (${task.assignedBy?.position})`
-                    : "N/A"
-                }
-              />
-              <DetailItem
-                label="Assigned to Client"
-                value={
-                  task?.assignedToClient
-                    ? task.assignedToClient?.fullName
-                    : "N/A"
-                }
-              />
-              <DetailItem
-                label="Assigned To Staff"
-                value={
-                  task?.assignedTo
-                    ? task.assignedTo
-                        .map((staff) => `${staff.firstName} ${staff.lastName}`)
-                        .join(", ")
-                    : "N/A"
-                }
-              />
-              <DetailItem
-                label="Case to Work On"
-                value={
-                  task?.caseToWorkOn
-                    ? task.caseToWorkOn
-                        .map((taskCase) => {
-                          const firstName = taskCase.firstParty?.name[0]?.name;
-                          const secondName =
-                            taskCase.secondParty?.name[0]?.name;
-                          return `${firstName} vs ${secondName}`;
-                        })
-                        .join(", ")
-                    : "N/A"
-                }
-              />
-              <DetailItem label="Instruction" value={task?.instruction} />
-              <DetailItem label="Task Priority" value={task?.taskPriority} />
-              <DetailItem
-                label="Time Assigned"
-                value={formatDate(task?.dateAssigned)}
-              />
-              <DetailItem label="Due Date" value={formatDate(task?.dueDate)} />
-            </div>
-          </Card>
+        {/* task details */}
 
+        <Card title="Task Details" className="mb-8 shadow-md bg-rose-300 ">
+          {/* task document upload */}
           <TaskDocUpload taskId={task?._id} />
 
-          <Card title="Task Attachments" className="mb-8 shadow-md">
-            <div className="flex flex-wrap gap-4">
-              {documents.map((document) => (
-                <div
-                  key={document._id}
-                  className="relative bg-blue-500 p-4 w-[140px] text-white rounded-md flex items-center">
-                  <div className="absolute top-1 right-1">
-                    <RiDeleteBin2Line
-                      className="text-red-700 hover:text-red-500 cursor-pointer text-[13px]"
-                      onClick={() =>
-                        Modal.confirm({
-                          title:
-                            "Are you sure you want to delete this document?",
-                          onOk: () =>
-                            handleDeleteDocument(
-                              `tasks/${task._id}/documents/${document._id}`,
-                              document._id
-                            ),
-                        })
-                      }
-                    />
-                  </div>
-                  <div className="flex-grow">
-                    <p className="text-[12px] truncate">{document?.fileName}</p>
-                  </div>
-                  <FaDownload
-                    className="text-white text-[12px] hover:text-gray-300 cursor-pointer ml-2"
-                    onClick={(event) =>
-                      handleGeneralDownload(
-                        event,
-                        `${baseURL}/tasks/${task._id}/documents/${document._id}/download`,
-                        document.fileName
-                      )
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          </Card>
+          <Divider />
 
-          {task?.reminder && (
-            <Alert
-              message={`Reminder: ${task.reminder.message}`}
-              description={`Time: ${moment(task.reminder?.timestamp)
-                .startOf()
-                .fromNow()}`}
-              type="warning"
-              showIcon
-              className="mb-8"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <DetailItem label="Task Title" value={task?.title} />
+            <DetailItem
+              label="Assigned By"
+              value={
+                task?.assignedBy
+                  ? `${task.assignedBy?.firstName} ${task.assignedBy?.lastName} (${task.assignedBy?.position})`
+                  : "N/A"
+              }
             />
-          )}
+            <DetailItem
+              label="Assigned to Client"
+              value={
+                task?.assignedToClient ? task.assignedToClient?.fullName : "N/A"
+              }
+            />
+            <DetailItem
+              label="Assigned To Staff"
+              value={
+                task?.assignedTo
+                  ? task.assignedTo
+                      .map((staff) => `${staff.firstName} ${staff.lastName}`)
+                      .join(", ")
+                  : "N/A"
+              }
+            />
+            <DetailItem
+              label="Case to Work On"
+              value={
+                task?.caseToWorkOn
+                  ? task.caseToWorkOn
+                      .map((taskCase) => {
+                        const firstName = taskCase.firstParty?.name[0]?.name;
+                        const secondName = taskCase.secondParty?.name[0]?.name;
+                        return `${firstName} vs ${secondName}`;
+                      })
+                      .join(", ")
+                  : "N/A"
+              }
+            />
+            <DetailItem label="Instruction" value={task?.instruction} />
+            <DetailItem label="Task Priority" value={task?.taskPriority} />
+            <DetailItem
+              label="Time Assigned"
+              value={formatDate(task?.dateAssigned)}
+            />
+            <DetailItem label="Due Date" value={formatDate(task?.dueDate)} />
+          </div>
+          <Divider />
+          {/* task attachment */}
+          <TaskAttachmentsCard
+            documents={documents}
+            task={task}
+            baseURL={baseURL}
+            handleDeleteDocument={handleDeleteDocument}
+            handleGeneralDownload={handleGeneralDownload}
+          />
+        </Card>
 
+        {/* task reminder details */}
+        {task?.reminder && (
+          <Alert
+            message={`Reminder: ${task.reminder.message}`}
+            description={`Time: ${moment(task.reminder?.timestamp)
+              .startOf()
+              .fromNow()}`}
+            type="warning"
+            showIcon
+            className="mb-8"
+          />
+        )}
+
+        <div className="flex flex-col  justify-end bg-white pt-3">
+          {/* task response form */}
           {!isAssignedBy &&
             (isAssignedToCurrentUser || isAssignedToCurrentClientUser) && (
-              <Card className="mb-8 shadow-md">
-                <TaskResponseForm taskId={task?._id} />
-              </Card>
+              <TaskResponseForm taskId={task?._id} />
             )}
 
-          <Card title="Task Responses" className="shadow-md">
-            <TaskResponse
-              task={task}
-              isAssignedToCurrentUser={isAssignedToCurrentUser}
-              isAssignedToCurrentClientUser={isAssignedToCurrentClientUser}
-            />
-          </Card>
+          {/* task response */}
+          <TaskResponse
+            task={task}
+            isAssignedToCurrentUser={isAssignedToCurrentUser}
+            isAssignedToCurrentClientUser={isAssignedToCurrentClientUser}
+          />
         </div>
-      )}
+      </div>
     </>
   );
 };

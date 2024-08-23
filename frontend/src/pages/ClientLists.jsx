@@ -101,12 +101,12 @@ const ClientLists = () => {
       ) : (
         <>
           <div
-            className={`flex md:flex-row flex-col justify-between items-center `}>
+            className={`flex md:flex-row flex-col justify-between items-center  `}>
             {isStaff && <AddClientForm />}
             <SearchBar onSearch={handleSearchChange} />
           </div>
           <Divider />
-          <div className=" overflow-x-auto">
+          <div className=" overflow-x-auto font-medium font-poppins">
             <Table dataSource={searchResults} scroll={{ x: 400 }}>
               <ColumnGroup title="Client Lists">
                 <Column
@@ -123,6 +123,19 @@ const ClientLists = () => {
 
               <Column title="Client Email" dataIndex="email" key="email" />
               <Column title="Phone" dataIndex="phone" key="phone" />
+              <Column
+                title="Is Active"
+                dataIndex="isActive"
+                key="isActive"
+                render={(isActive) => {
+                  console.log("isActive:", isActive);
+                  return (
+                    <span style={{ color: isActive ? "green" : "red" }}>
+                      {isActive ? "Active" : "Inactive"}
+                    </span>
+                  );
+                }}
+              />
 
               <Column
                 title="Action"

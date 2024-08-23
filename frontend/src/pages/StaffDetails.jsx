@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Button, Descriptions, Divider, Spin, Alert, Card } from "antd";
-import { useNavigate } from "react-router-dom";
+import { Descriptions, Divider, Card } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import avatar from "../assets/avatar.png";
 import { formatDate } from "../utils/formatDate";
@@ -11,24 +10,24 @@ import { useAdminHook } from "../hooks/useAdminHook";
 import { useSelector } from "react-redux";
 import PageErrorAlert from "../components/PageErrorAlert";
 import LoadingSpinner from "../components/LoadingSpinner";
-// import useErrorMessage from "../hooks/useErrorMessage";
+import GoBackButton from "../components/GoBackButton";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const StaffDetails = () => {
   const { id } = useParams();
   const { user } = useSelector((state) => state.auth);
   const loggedInClientId = user?.data?.id;
   const { dataFetcher, data, loading, error } = useDataFetch();
-  const navigate = useNavigate();
   const { isAdminOrHr } = useAdminHook();
-
-  // useErrorMessage(error);
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   useEffect(() => {
     dataFetcher(`users/${id}`, "GET");
-  }, [id]);
+  }, [id, dataFetcher]);
 
   const isCurrentUser = loggedInClientId === id; //check if id is the same
 
+  // full data detail for current user
   const renderFullDetails = () => (
     <Card title="Staff Details">
       <Descriptions bordered>
@@ -64,6 +63,7 @@ const StaffDetails = () => {
     </Card>
   );
 
+  // limited details for non-admin users
   const renderLimitedDetails = () => (
     <Card title="Staff Details">
       <Descriptions bordered>
@@ -116,15 +116,13 @@ const StaffDetails = () => {
               alt={`${data?.data?.firstName}'s profile image`}
               className="w-24 h-24 object-cover rounded-full"
             />
+
+            <GoBackButton />
             {isAdminOrHr && (
               <UpdateUserPositionAndRole userId={data?.data?._id} />
             )}
           </div>
           <Divider />
-          <Button onClick={() => navigate(-1)} className="m-2">
-            Go Back
-          </Button>
-
           {renderStaffDetails()}
 
           <Divider />

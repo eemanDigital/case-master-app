@@ -20,6 +20,7 @@ import { toast } from "react-toastify";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import ButtonWithIcon from "../components/ButtonWithIcon";
 import PageErrorAlert from "../components/PageErrorAlert";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 // import debounce from "lodash/debounce";
 
 const { Title } = Typography;
@@ -38,6 +39,8 @@ const CaseList = () => {
   const currentCases = searchResults?.slice(indexOfFirstCase, indexOfLastCase);
   const dispatch = useDispatch();
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
+
+  useRedirectLogoutUser("users/login"); // redirect to login if not logged in
 
   //  fetch cases
   const fetchCases = useCallback(() => {

@@ -9,7 +9,6 @@ import {
   Input,
   Form,
   Card,
-  Spin,
   Select,
   DatePicker,
   Modal,
@@ -21,11 +20,12 @@ import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
 import useHandleSubmit from "../hooks/useHandleSubmit";
 import { useNavigate } from "react-router-dom";
 import LoadingSpinner from "../components/LoadingSpinner";
-
-// const baseURL = import.meta.env.VITE_BASE_URL;
+import useClientSelectOptions from "../hooks/useClientSelectOptions";
+import moment from "moment";
 
 const UpdateCaseReportForm = ({ reportId }) => {
   const { casesOptions } = useCaseSelectOptions();
+  const { clientEmailsOption } = useClientSelectOptions();
   const { formData, loading } = useInitialDataFetcher("reports", reportId);
   const { userData } = useUserSelectOptions();
   const { open, showModal, handleOk, handleCancel } = useModal(); //modal hook
@@ -45,6 +45,10 @@ const UpdateCaseReportForm = ({ reportId }) => {
       navigate(-1);
     }
   }, [data, navigate]);
+
+  // Extract necessary data for caseReported and reportedBy
+  const caseReported = formData?.caseReported?._id || "";
+  const reportedBy = formData?.reportedBy?._id || "";
 
   // loading initialData
   if (loading) {
@@ -70,9 +74,18 @@ const UpdateCaseReportForm = ({ reportId }) => {
           layout="vertical"
           form={form}
           name="dynamic_form_complex"
-          // autoComplete="off"
-          className="flex  justify-center">
-          {/* <h1 className="text-4xl">Case Report</h1> */}
+          initialValues={{
+            date: formData?.date ? moment(formData.date) : null,
+            update: formData?.update,
+            adjournedFor: formData?.adjournedFor,
+            caseReported: caseReported,
+            clientEmail: formData?.clientEmail,
+            reportedBy: reportedBy,
+            adjournedDate: formData?.adjournedDate
+              ? moment(formData.adjournedDate)
+              : null,
+          }}
+          className="flex justify-center">
           <Card
             title="Update Case Report"
             bordered={false}
@@ -80,35 +93,27 @@ const UpdateCaseReportForm = ({ reportId }) => {
             <Form.Item name="date" label="Report Date">
               <DatePicker />
             </Form.Item>
-            {/* UPDATE */}
 
             <Form.Item
               name="update"
               label="Write update here..."
-              //   tooltip="This is a required field"
-              initialValue={formData?.update}
               rules={[
                 {
                   required: true,
                   message: "Please write your update!",
                 },
               ]}>
-              {/* <TextArea rows={8} placeholder="Your text here..." /> */}
               <ReactQuill
                 className="h-[200px] mb-7"
                 theme="snow"
                 formats={formats}
-                // value={formData.body}
-                dangerouslySetInnerHTML={{ __html: formData?.update }}
+                value={formData?.update}
               />
             </Form.Item>
 
-            {/* MATTER ADJOURNED FOR */}
             <Form.Item
               name="adjournedFor"
               label="Matter adjourned for"
-              //   tooltip="This is a required field"
-              initialValue={formData?.adjournedFor}
               rules={[
                 {
                   required: true,
@@ -118,12 +123,9 @@ const UpdateCaseReportForm = ({ reportId }) => {
               <Input placeholder="Your text here..." />
             </Form.Item>
 
-            {/* CASE REPORTED */}
-
             <Form.Item
               name="caseReported"
               label="Case Reported"
-              initialValue={formData?.caseReported}
               rules={[
                 {
                   required: true,
@@ -131,8 +133,6 @@ const UpdateCaseReportForm = ({ reportId }) => {
                 },
               ]}>
               <Select
-                noStyle
-                notFoundContent={data ? <Spin size="small" /> : null}
                 placeholder="Select a case here"
                 options={casesOptions}
                 allowClear
@@ -142,11 +142,26 @@ const UpdateCaseReportForm = ({ reportId }) => {
               />
             </Form.Item>
 
-            {/* REPORTER */}
+            <Form.Item
+              name="clientEmail"
+              label="Client's Name"
+              rules={[
+                {
+                  required: true,
+                  message: "Please select client to send report",
+                },
+              ]}>
+              <Select
+                placeholder="Select a client here"
+                options={clientEmailsOption}
+                allowClear
+                style={{ width: "100%" }}
+              />
+            </Form.Item>
+
             <Form.Item
               name="reportedBy"
               label="Case Reporter"
-              initialValue={formData?.reportedBy}
               rules={[
                 {
                   required: true,
@@ -154,8 +169,6 @@ const UpdateCaseReportForm = ({ reportId }) => {
                 },
               ]}>
               <Select
-                noStyle
-                notFoundContent={data ? <Spin size="small" /> : null}
                 placeholder="Select a reporter"
                 options={userData}
                 allowClear
@@ -165,7 +178,6 @@ const UpdateCaseReportForm = ({ reportId }) => {
               />
             </Form.Item>
 
-            {/* ADJOURNED DATE */}
             <Form.Item name="adjournedDate" label="Next Adjourned Date">
               <DatePicker />
             </Form.Item>

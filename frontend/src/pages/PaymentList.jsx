@@ -10,6 +10,7 @@ import { useAdminHook } from "../hooks/useAdminHook";
 import { useDispatch, useSelector } from "react-redux";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "../components/PageErrorAlert";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const PaymentList = () => {
   const {
@@ -23,6 +24,7 @@ const PaymentList = () => {
   const { isClient, isSuperOrAdmin } = useAdminHook();
   const dispatch = useDispatch();
   const loggedInClientId = user?.data?.id;
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   // fetch data
   useEffect(() => {

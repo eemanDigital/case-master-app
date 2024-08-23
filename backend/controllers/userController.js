@@ -86,7 +86,8 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     "otherPosition",
     "practiceArea",
     "universityAttended",
-    "lawSchoolAttended"
+    "lawSchoolAttended",
+    "isActive"
   );
 
   // If there's a file, save its Cloudinary URL in the filtered body
@@ -180,143 +181,7 @@ exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
   res.status(200).json({ message: "Email Sent" });
 });
 
-// send other custom automated emails
-// exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
-//   console.log(req.body);
-//   const { send_from, send_to, reply_to, template, subject, url, context } =
-//     req.body;
-
-//   if (!send_from || !send_to || !reply_to || !template || !subject) {
-//     return next(new AppError("Missing email fields", 404));
-//   }
-
-//   // get user
-//   const user = await User.findOne({ email: send_to });
-//   if (!user) {
-//     return next(new AppError("No user found with that ID", 404));
-//   }
-
-//   // Prepare the context
-//   const fullContext = {
-//     ...context,
-//     name: user.firstName,
-//     link: `${process.env.FRONTEND_URL}/${url}`,
-//     year: new Date().getFullYear(),
-//     companyName: process.env.COMPANY_NAME || "A.T Lukman & Co",
-//   };
-
-//   await sendMail(subject, send_to, send_from, reply_to, template, fullContext);
-//   res.status(200).json({ message: "Email Sent" });
-// });
-
-// exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
-//   console.log(req.body);
-//   const { send_from, send_to, reply_to, template, subject, url, context } =
-//     req.body;
-
-//   if (!send_from || !send_to || !reply_to || !template || !subject) {
-//     return next(new AppError("Missing email fields", 404));
-//   }
-
-//   const devEmail = process.env.DEVELOPER_EMAIL;
-
-//   // Initialize user variable
-//   let user = null;
-
-//   // Determine the recipient email
-//   let recipientEmail = send_to;
-//   if (send_to === devEmail) {
-//     recipientEmail = devEmail;
-//   } else {
-//     // get user
-//     user = await User.findOne({ email: send_to });
-//     if (!user) {
-//       return next(new AppError("No user found with that email", 404));
-//     }
-//     recipientEmail = user.email;
-//   }
-
-//   // Prepare the context
-//   const fullContext = {
-//     ...context,
-//     name: recipientEmail === devEmail ? "Developer" : user.firstName,
-//     link: `${process.env.FRONTEND_URL}/${url}`,
-//     year: new Date().getFullYear(),
-//     companyName: process.env.COMPANY_NAME || "A.T Lukman & Co",
-//   };
-
-//   await sendMail(
-//     subject,
-//     recipientEmail,
-//     send_from,
-//     reply_to,
-//     template,
-//     fullContext
-//   );
-//   res.status(200).json({ message: "Email Sent" });
-// });
-
-// exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
-//   console.log(req.body);
-//   const { send_from, send_to, reply_to, template, subject, url, context } =
-//     req.body;
-
-//   if (
-//     !send_from ||
-//     !Array.isArray(send_to) ||
-//     send_to.length === 0 ||
-//     !reply_to ||
-//     !template ||
-//     !subject
-//   ) {
-//     return next(
-//       new AppError("Missing email fields or invalid send_to format", 400)
-//     );
-//   }
-
-//   const devEmail = process.env.DEVELOPER_EMAIL;
-
-//   // Prepare the base context
-//   const baseContext = {
-//     ...context,
-//     link: `${process.env.FRONTEND_URL}/${url}`,
-//     year: new Date().getFullYear(),
-//     companyName: process.env.COMPANY_NAME || "A.T Lukman & Co",
-//   };
-
-//   // Function to send email to a single recipient
-//   const sendEmailToRecipient = async (recipientEmail) => {
-//     let user = null;
-//     let fullContext = { ...baseContext };
-
-//     if (recipientEmail === devEmail) {
-//       fullContext.name = "Developer";
-//     } else {
-//       user = await User.findOne({ email: recipientEmail });
-//       if (!user) {
-//         throw new AppError(`No user found with email: ${recipientEmail}`, 404);
-//       }
-//       fullContext.name = user.firstName;
-//     }
-
-//     await sendMail(
-//       subject,
-//       recipientEmail,
-//       send_from,
-//       reply_to,
-//       template,
-//       fullContext
-//     );
-//   };
-
-//   try {
-//     // Send emails to all recipients in parallel
-//     await Promise.all(send_to.map(sendEmailToRecipient));
-//     res.status(200).json({ message: "Emails Sent" });
-//   } catch (error) {
-//     return next(error);
-//   }
-// });
+// send automated custom/dynamic email handler
 exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
   console.log(req.body);
   const { send_from, send_to, reply_to, template, subject, url, context } =

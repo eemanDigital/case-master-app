@@ -20,6 +20,7 @@ import useClientSelectOptions from "../hooks/useClientSelectOptions";
 import moment from "moment";
 import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
 import useHandleSubmit from "../hooks/useHandleSubmit";
+import GoBackButton from "../components/GoBackButton";
 
 const { TextArea } = Input;
 
@@ -52,11 +53,9 @@ const UpdateInvoice = () => {
     return <div>Loading...</div>;
   }
 
-  console.log(clientOptions, casesOptions, formData);
-
   return (
     <>
-      <Button onClick={() => navigate(-1)}>Go Back</Button>
+      <GoBackButton />
 
       <Form
         className="h-[100%] pt-3"

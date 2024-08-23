@@ -186,18 +186,10 @@ const userSchema = new mongoose.Schema(
       required: true,
       default: [],
     },
-    // passwordResetToken: String,
-    // passwordResetExpires: Date,
-    // passwordChangedAt: {
-    //   type: Date,
-    //   // required: true,
-    // },
 
-    //handles user's deletion of account
     isActive: {
       type: Boolean,
       default: true,
-      select: false,
     },
   },
   {

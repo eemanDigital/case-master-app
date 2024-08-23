@@ -10,17 +10,15 @@ import Dashboard from "./components/Dashboard.jsx";
 import DashboardLayout from "./components/DashboardLayout.jsx";
 import CaseList from "./pages/CaseList.jsx";
 import AddUserForm from "./pages/AddUserForm.jsx";
-import ResetPassword from "./pages/ResetPassword.jsx";
 import Profile from "./pages/Profile.jsx";
 import CreateCaseForm from "./pages/CreateCaseForm.jsx";
 import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
-import TaskReminderForm from "./components/TaskReminderForm.jsx";
+// import TaskReminderForm from "./components/TaskReminderForm.jsx";
 import CaseDetails from "./pages/CaseDetails.jsx";
 import Error from "./components/Error.jsx";
 import { Result, Button } from "antd";
 import { Link } from "react-router-dom";
-import TaskAttachment from "./pages/TaskAttachment.jsx";
 import LeaveAppForm from "./pages/LeaveAppForm.jsx";
 import LeaveApplicationList from "./pages/LeaveApplicationList.jsx";
 import LeaveApplicationDetails from "./pages/LeaveApplicationDetails.jsx";
@@ -37,7 +35,6 @@ import { CauseList } from "./components/CauseList.jsx";
 import PaymentDetails from "./pages/PaymentDetails.jsx";
 import StaffList from "./pages/StaffList.jsx";
 import StaffDetails from "./pages/StaffDetails.jsx";
-import StaffLogin from "./pages/StaffLogin.jsx";
 import MainCaseReportList from "./pages/MainCaseReportList.jsx";
 import PaymentMadeOnCase from "./pages/PaymentMadeOnCase.jsx";
 import VerifyAccount from "./components/VerifyAccount.jsx";
@@ -57,6 +54,7 @@ import DocumentForm from "./pages/DocumentsForm.jsx";
 import ContactForm from "./components/ContactForm.jsx";
 import EventDetail from "./pages/EventDetail.jsx";
 import { BillingAndPaymentsRoute } from "./components/protect/Protect.jsx";
+import Login from "./components/Login.jsx";
 
 // enable axios to get credentials everywhere in the app
 axios.defaults.withCredentials = true;
@@ -99,14 +97,8 @@ function App() {
           }
         />
         {/* <Route element={<AppLayout />}> */}
-        <Route path="/login" element={<StaffLogin />} />
 
-        <Route path="/resetpassword" element={<ResetPassword />} />
-
-        {/* <Route
-          path="/forgotpassword/clients"
-          element={<ForgotPasswordClient />}
-        /> */}
+        <Route path="/users/login" element={<Login />} />
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/resetPassword/:token" element={<ForgotPasswordReset />} />
 
@@ -152,8 +144,7 @@ function App() {
           />
           <Route path="profile" element={<Profile />} />
           <Route path="tasks" element={<TaskList />} />
-          <Route path="tasks/reminder/:id" element={<TaskReminderForm />} />
-          <Route path="tasks/upload" element={<TaskAttachment />} />
+          {/* <Route path="tasks/reminder/:id" element={<TaskReminderForm />} /> */}
           <Route path="tasks/:id/details" element={<TaskDetails />} />
           <Route path="clients" element={<ClientLists />} />
           <Route path="clients/:id/details" element={<ClientDetails />} />

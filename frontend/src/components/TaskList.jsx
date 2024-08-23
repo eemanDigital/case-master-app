@@ -12,6 +12,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import { toast } from "react-toastify";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "./PageErrorAlert";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const TaskList = () => {
   const {
@@ -26,6 +27,8 @@ const TaskList = () => {
 
   const { isSuperOrAdmin, isStaff, isClient } = useAdminHook(); // check user role
   const dispatch = useDispatch();
+
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   // fetch tasks data
   useEffect(() => {

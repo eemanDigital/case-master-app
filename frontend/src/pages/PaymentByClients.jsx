@@ -7,12 +7,14 @@ import AllCasesListForPayment from "./AllCasesListForPayment";
 import { useSelector } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const PaymentByClient = () => {
   const { clientPayments, loading, error, fetchData } = useDataGetterHook();
   const { user } = useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
   const loggedInClientId = user?.data?.id;
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   const [pagination, setPagination] = useState({ pageSize: 8, current: 1 });
 
