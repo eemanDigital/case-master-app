@@ -22,7 +22,7 @@ exports.getUsers = catchAsync(async (req, res, next) => {
 // GET A USER
 exports.getUser = catchAsync(async (req, res, next) => {
   // const _id = req.params.userId; //he used req.user._id
-  console.log(req.user.id);
+
   const data = await User.findById(req.user._id).populate({
     path: "task",
     select: "-assignedTo",

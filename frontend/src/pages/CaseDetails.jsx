@@ -129,7 +129,7 @@ const CaseDetails = () => {
           {isStaff && <CaseDocumentUpload caseId={id} />}
         </div>
 
-        <Card className="mb-8 shadow-lg rounded-xl overflow-hidden">
+        <Card className="mb-8 shadow-lg rounded-xl overflow-hidden ">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
             {[
               {
@@ -145,15 +145,15 @@ const CaseDetails = () => {
                 names: party.name,
               })),
             ].map((party, partyIndex) => (
-              <div key={partyIndex} className="space-y-4">
+              <div key={partyIndex} className="space-y-4 ">
                 <MajorHeading title={party.title} />
 
                 {party.names?.map((name, nameIndex) => (
                   <div
                     key={name?._id || nameIndex}
-                    className="flex items-center space-x-2">
+                    className="flex items-center text-[18px]  space-x-2">
                     <p className="text-gray-700 s">{nameIndex + 1}.</p>
-                    <p className="text-gray-600 text-2xl font-medium font-poppins">
+                    <p className="text-gray-600  font-bold  font-poppins">
                       {name.name}
                     </p>
                   </div>
@@ -221,7 +221,7 @@ const CaseDetails = () => {
                       }
                       description={
                         item.value ? (
-                          <p className="text-gray-800 font-poppins font-medium capitalize">
+                          <p className="text-gray-800 font-poppins font-medium text-justify capitalize">
                             {item.value}
                           </p>
                         ) : (
@@ -323,10 +323,10 @@ const CaseDetails = () => {
             </Card>
           </div>
 
-          <div className="space-y-8">
+          <div className="space-y-8 ">
             <Card
               title={<Title level={3}>Case History</Title>}
-              className="shadow-lg rounded-xl overflow-hidden">
+              className="shadow-lg rounded-xl overflow-hidden ">
               {Array.isArray(data?.data?.reports) &&
               data?.data?.reports.length > 0 ? (
                 <>
@@ -336,7 +336,7 @@ const CaseDetails = () => {
                     renderItem={(u) => (
                       <List.Item
                         key={u._id}
-                        className="hover:bg-gray-50 transition-colors">
+                        className="hover:bg-gray-50 transition-colors font-poppins">
                         <List.Item.Meta
                           title={
                             <Text strong className="text-lg">
@@ -345,16 +345,20 @@ const CaseDetails = () => {
                           }
                           description={
                             <div className="space-y-2">
-                              <Text>
+                              <Text className="font-poppins text-justify">
                                 <Text strong>Update:</Text>{" "}
                                 {shortenText(u.update, 150, u._id)}
                               </Text>
                               <Text>
-                                <Text strong>Next Adjourned Date:</Text>{" "}
+                                <Text strong className="font-poppins p-3">
+                                  Next Adjourned Date:
+                                </Text>
                                 {u.adjournedDate ? (
                                   formatDate(u.adjournedDate)
                                 ) : (
-                                  <Text type="danger">Not provided</Text>
+                                  <Text className="font-poppins" type="danger">
+                                    Not provided
+                                  </Text>
                                 )}
                               </Text>
                             </div>

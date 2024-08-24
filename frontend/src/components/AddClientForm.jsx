@@ -10,7 +10,7 @@ import {
 const AddClientForm = () => {
   const [open, setOpen] = useState(false);
   // Extracting necessary state values from the Redux store
-  const { isLoading } = useSelector((state) => state.auth);
+  const { isLoading, isError, isSuccess } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
 
   // Initializing the form instance from Ant Design
@@ -38,7 +38,9 @@ const AddClientForm = () => {
       await dispatch(register(values));
 
       // Dispatching the sendVerificationMail action
-      await dispatch(sendVerificationMail());
+      if (!isError && isSuccess) {
+        await dispatch(sendVerificationMail(values.email));
+      }
 
       // Closing the modal
       setOpen(false);
@@ -150,7 +152,7 @@ const AddClientForm = () => {
 
           <Form.Item>
             <Button type="default" htmlType="submit">
-              {isLoading ? "Submitting..." : "Submit"}
+              {isLoading ? "Loading..." : "Add Client"}
             </Button>
           </Form.Item>
         </Form>

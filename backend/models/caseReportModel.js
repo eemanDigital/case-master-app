@@ -10,13 +10,12 @@ const reportSchema = new mongoose.Schema(
     date: {
       type: Date,
       default: Date.now,
-      // required: [true, "A case must have a name"],
     },
 
     update: {
       type: "string",
       trim: true,
-      // required: [true, "A case must have a name"],
+      required: [true, "A case must have a name"],
     },
 
     adjournedFor: {
@@ -27,12 +26,13 @@ const reportSchema = new mongoose.Schema(
     adjournedDate: {
       type: Date,
       default: Date.now,
-      // required: [true, "A case must have a name"],
+      required: [true, "A case must have a name"],
     },
 
     reportedBy: {
       type: mongoose.Schema.ObjectId,
       ref: "User",
+      required: [true, "A case must have a reporter"],
     },
 
     clientEmail: {

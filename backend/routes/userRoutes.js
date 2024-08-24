@@ -66,11 +66,11 @@ router.use(protect);
 // // User logout
 router.post("/sendAutomatedEmail", sendAutomatedEmail);
 router.post("/sendAutomatedCustomEmail", sendAutomatedCustomEmail);
-router.post("/sendVerificationEmail", sendVerificationEmail);
+router.post("/sendVerificationEmail/:email", sendVerificationEmail);
 
 router.get("/logout", logout);
 
-// // Change password for logged-in user
+// Change password for logged-in user
 router.patch("/changepassword", changePassword);
 // // Admin updates user by ID, restricted to super-admin
 

@@ -45,7 +45,7 @@ const SideBar = ({ collapsed, setCollapsed }) => {
     dispatch(RESET());
     await dispatch(logout());
     remove();
-    navigate("/login");
+    navigate("/users/login");
   };
 
   const navItems = [

@@ -22,8 +22,12 @@ const StaffDetails = () => {
   useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   useEffect(() => {
-    dataFetcher(`users/${id}`, "GET");
+    if (id) {
+      dataFetcher(`users/${id}`, "GET");
+    }
   }, [id, dataFetcher]);
+
+  console.log(id, "ID");
 
   const isCurrentUser = loggedInClientId === id; //check if id is the same
 
@@ -118,9 +122,7 @@ const StaffDetails = () => {
             />
 
             <GoBackButton />
-            {isAdminOrHr && (
-              <UpdateUserPositionAndRole userId={data?.data?._id} />
-            )}
+            {isAdminOrHr && <UpdateUserPositionAndRole userId={id} />}
           </div>
           <Divider />
           {renderStaffDetails()}
@@ -129,7 +131,7 @@ const StaffDetails = () => {
 
           {(isAdminOrHr || isCurrentUser) && (
             <>
-              <LeaveBalanceDisplay userId={data?.data?._id} />
+              <LeaveBalanceDisplay userId={id} />
             </>
           )}
         </div>

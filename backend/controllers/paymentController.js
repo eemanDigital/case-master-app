@@ -7,68 +7,7 @@ const setRedisCache = require("../utils/setRedisCache");
 const Case = require("../models/caseModel");
 
 // Create a new payment
-
-// exports.createPayment = catchAsync(async (req, res, next) => {
-//   console.log(req.body);
-
-//   const {
-//     caseId,
-//     clientId,
-//     invoiceId,
-//     amountPaid,
-//     method,
-//     date,
-//     totalAmountDue,
-//   } = req.body;
-
-//   // Find the corresponding invoice
-//   const invoice = await Invoice.findById(invoiceId);
-//   if (!invoice) {
-//     return next(new AppError("No invoice found", 404));
-//   }
-
-//   // Calculate the new balance
-//   const newPayment = new Payment({
-//     invoiceId: invoiceId,
-//     caseId,
-//     clientId,
-//     amountPaid,
-//     method,
-//     date,
-//     totalAmountDue,
-//     balance: totalAmountDue - amountPaid,
-//   });
-
-//   if (
-//     !invoiceId ||
-//     !clientId ||
-//     !amountPaid ||
-//     !method ||
-//     !date ||
-//     !totalAmountDue
-//   ) {
-//     return next(new AppError("Please fill all fields", 401));
-//   }
-//   // Save the payment
-//   await newPayment.save();
-
-//   // Update the invoice status if fully paid
-//   if (newPayment.balance <= 0) {
-//     invoice.status = "paid";
-//   }
-
-//   await invoice.save();
-
-//   res.status(201).json({
-//     message: "success",
-//     // fromCache: false,
-//     data: newPayment,
-//   });
-// });
-
 exports.createPayment = catchAsync(async (req, res, next) => {
-  console.log(req.body);
-
   const {
     caseId,
     clientId,
@@ -221,26 +160,6 @@ exports.deletePayment = catchAsync(async (req, res, next) => {
   res.status(200).json({ message: "Payment deleted" });
 });
 
-// Get all payments for a specific client and case
-// exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
-//   const { clientId, caseId } = req.params;
-//   const payments = await Payment.find({
-//     clientId: clientId,
-//     caseId: caseId,
-//   }).sort({ createAt: -1 });
-
-//   if (!payments) {
-//     return next(
-//       new AppError("No payments found for this client and case", 404)
-//     );
-//   }
-
-//   res.status(200).json({
-//     message: "success",
-//     result: payments.length,
-//     data: payments,
-//   });
-// });
 // get total payment base on case and client
 exports.totalPaymentOnCase = catchAsync(async (req, res, next) => {
   const clientId = req.params.clientId;

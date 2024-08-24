@@ -5,11 +5,20 @@ import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { useDataGetterHook } from "./useDataGetterHook";
+import { useNavigate } from "react-router-dom";
 
-const useHandleSubmit = (endpoint, method, refreshEndPoint, key, emailData) => {
+const useHandleSubmit = (
+  endpoint,
+  method,
+  refreshEndPoint,
+  key,
+  emailData,
+  path
+) => {
   const [form] = Form.useForm();
   const { dataFetcher, loading, error, data } = useDataFetch(); // General data fetcher
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { fetchData } = useDataGetterHook();
 
   // Submit data
@@ -28,6 +37,9 @@ const useHandleSubmit = (endpoint, method, refreshEndPoint, key, emailData) => {
         toast.error(response?.error || "Error submitting data");
       } else {
         toast.success("Data submitted successfully");
+        if (path) {
+          navigate(path);
+        }
         form.resetFields();
 
         if (emailData) {
@@ -51,6 +63,8 @@ const useHandleSubmit = (endpoint, method, refreshEndPoint, key, emailData) => {
     fetchData,
     refreshEndPoint,
     key,
+    navigate,
+    path,
   ]);
 
   return { onSubmit, form, loading, error, data };

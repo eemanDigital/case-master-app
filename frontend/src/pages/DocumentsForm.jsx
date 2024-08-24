@@ -16,7 +16,7 @@ const DocumentForm = () => {
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const { fetchData } = useDataGetterHook();
-  const { dataFetcher } = useDataFetch();
+  const { dataFetcher, loading } = useDataFetch();
 
   // handle file change
   const handleFileChange = (e) => {
@@ -50,6 +50,10 @@ const DocumentForm = () => {
       await fetchData("documents", "documents");
       if (response?.message === "success") {
         toast.success("Document uploaded successfully!");
+      } else {
+        toast.error(
+          response.error || "Failed to upload document. Please try again."
+        );
       }
       setIsModalVisible(false);
     } catch (err) {
@@ -68,7 +72,7 @@ const DocumentForm = () => {
 
   return (
     <div className=" container mx-auto xl:px-5 md:px-4 sm:px-0  ">
-      <GoBackButton />
+      {/* <GoBackButton /> */}
       <ButtonWithIcon
         icon={<FaUpload />}
         onClick={showModal}
@@ -151,7 +155,7 @@ const DocumentForm = () => {
                 <button
                   type="submit"
                   className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white blue-btn focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                  Save
+                  {loading ? "saving..." : "Save"}
                 </button>
               </div>
             </form>

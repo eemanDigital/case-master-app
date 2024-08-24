@@ -1,6 +1,6 @@
 const redisClient = require("./redisClient");
 
-const setRedisCache = async (key, data, expire = 600) => {
+const setRedisCache = async (key, data, expire = 300) => {
   try {
     // Store the fetched data in Redis with a 10-minute default expiration
 

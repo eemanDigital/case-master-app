@@ -6,10 +6,7 @@ const parser = require("ua-parser-js");
 const { promisify } = require("util");
 const catchAsync = require("../utils/catchAsync");
 const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
 const User = require("../models/userModel");
-const Client = require("../models/clientModel");
-// const Token = require("../models/tokenModel");
 const { createSendToken, hashToken } = require("../utils/handleSendToken");
 const Token = require("../models/tokenModel");
 const sendMail = require("../utils/email");
@@ -22,11 +19,9 @@ const cryptr = new Cryptr(process.env.CRYPTR_SECRET_KEY);
 // create new instance of google oauth2
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// ///// function to implement user signup
+// function to implement user signup
 exports.register = catchAsync(async (req, res, next) => {
   const { email, password, passwordConfirm } = req.body;
-  // console.log(req.originalUrl);
-  // console.log(req.baseUrl);
 
   if (!email || !password || !passwordConfirm) {
     return next(
@@ -56,9 +51,8 @@ exports.register = catchAsync(async (req, res, next) => {
 
   // extract file for photo
   const filename = req.file ? req.file.filename : null;
-  // console.log("FILENAME", filename);
 
-  const user = await User.create({
+  await User.create({
     firstName: req.body.firstName,
     lastName: req.body.lastName,
     secondName: req.body.secondName, //for client
@@ -81,17 +75,12 @@ exports.register = catchAsync(async (req, res, next) => {
     lawSchoolAttended: req.body.lawSchoolAttended,
     isVerified: req.body.isVerified,
     isLawyer: req.body.isLawyer,
+    isActive: req.body.isActive,
     userAgent: userAgent,
   });
 
   // createSendToken(user, 201, res);
   res.status(201).json({ message: "User Registered Successfully" });
-
-  // url for to navigate
-  // const url = `${req.protocol}://${req.get('host')/login}`
-  // const url = "http://localhost:5173/login/staff";
-  // send welcome message to user
-  // await new Email(user, url).sendWelcome();
 });
 
 ///// function to handle login
@@ -151,99 +140,6 @@ exports.login = catchAsync(async (req, res, next) => {
 });
 
 // send login code handler
-// exports.sendLoginCode = catchAsync(async (req, res, next) => {
-//   const { email } = req.params;
-//   const user = await User.findOne({ email });
-//   // if user not found
-//   if (!user) {
-//     return next(new AppError("There is no user with email address.", 404));
-//   }
-
-//   // find login code for user
-//   let userToken = await Token.findOne({
-//     userId: user._id,
-//     expiresAt: { $gt: Date.now() },
-//   });
-
-//   if (!userToken) {
-//     return next(new AppError("Invalid or expired token. Please re-login", 404));
-//   }
-
-//   // get the loginCode and decrypt
-//   const loginCode = userToken.loginToken;
-//   // decrypt
-//   const decryptedLoginCode = cryptr.decrypt(loginCode);
-
-//   console.log("CODE", decryptedLoginCode);
-//   // // Prepare email details
-//   const subject = "Login Access Code - CaseMaster";
-//   const send_to = email;
-//   const send_from = process.env.EMAIL_USER_OUTLOOK;
-//   const reply_to = "noreply@gmail.com";
-//   const template = "loginCode";
-//   const name = user.firstName;
-//   const link = decryptedLoginCode;
-//   try {
-//     await sendMail(subject, send_to, send_from, reply_to, template, name, link);
-//     res.status(200).json({ message: `Access Code sent to your ${email}` });
-//   } catch (error) {
-//     // Send the verification email
-//     return next(new AppError("Email sending failed", 400));
-//   }
-// });
-
-// exports.sendLoginCode = catchAsync(async (req, res, next) => {
-//   const { email } = req.params;
-//   const user = await User.findOne({ email });
-
-//   console.log(user, "USER");
-
-//   // if user not found
-//   if (!user) {
-//     return next(new AppError("There is no user with email address.", 404));
-//   }
-
-//   // find login code for user
-//   let userToken = await Token.findOne({
-//     userId: user._id,
-//     expiresAt: { $gt: Date.now() },
-//   });
-
-//   if (!userToken) {
-//     return next(new AppError("Invalid or expired token. Please re-login", 404));
-//   }
-
-//   // get the loginCode and decrypt
-//   const loginCode = userToken.loginToken;
-//   // Check if loginCode is valid
-//   if (!loginCode) {
-//     return next(new AppError("Login code is missing or invalid.", 400));
-//   }
-
-//   // decrypt
-//   let decryptedLoginCode;
-//   try {
-//     decryptedLoginCode = cryptr.decrypt(loginCode);
-//   } catch (error) {
-//     return next(new AppError("Failed to decrypt login code.", 400));
-//   }
-
-//   // Prepare email details
-//   const subject = "Login Access Code - CaseMaster";
-//   const send_to = email;
-//   const send_from = process.env.EMAIL_USER_OUTLOOK;
-//   const reply_to = "noreply@gmail.com";
-//   const template = "loginCode";
-//   const name = user.firstName;
-//   const link = decryptedLoginCode;
-
-//   try {
-//     await sendMail(subject, send_to, send_from, reply_to, template, name, link);
-//     res.status(200).json({ message: `Access Code sent to your ${email}` });
-//   } catch (error) {
-//     return next(new AppError("Email sending failed", 400));
-//   }
-// });
 exports.sendLoginCode = catchAsync(async (req, res, next) => {
   const { email } = req.params;
   const user = await User.findOne({ email });
@@ -351,7 +247,6 @@ exports.protect = catchAsync(async (req, res, next) => {
   if (req.cookies.jwt) {
     token = req.cookies.jwt;
   }
-  // console.log(token);
   if (!token) {
     return next(
       new AppError("You are not logged in! Please log in to get access.", 401)
@@ -471,8 +366,6 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   const rToken = crypto.randomBytes(32).toString("hex") + user._id;
   const hashedToken = hashToken(rToken);
 
-  // console.log(rToken);
-
   // Save the new token to the database
   await new Token({
     userId: user._id,
@@ -569,7 +462,9 @@ exports.changePassword = catchAsync(async (req, res, next) => {
 
 // send verification email
 exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.user._id);
+  const { email } = req.body; // Assuming the new user's email is passed in the request body
+
+  const user = await User.findOne({ email });
   if (!user) {
     return next(new AppError("User does not exist", 404));
   }
@@ -584,7 +479,6 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
   }
 
   const vToken = crypto.randomBytes(32).toString("hex") + user._id;
-  console.log("VT", vToken);
   const hashedToken = hashToken(vToken);
 
   await new Token({

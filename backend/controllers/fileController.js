@@ -4,77 +4,6 @@ const catchAsync = require("../utils/catchAsync");
 const multer = require("multer");
 const path = require("path");
 
-// const multerStorage = multer.diskStorage({
-//   destination: (req, file, cb) => {
-//     cb(null, "public/cases/docs");
-//   },
-//   filename: (req, file, cb) => {
-//     // const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-//     cb(
-//       null,
-//       file.fieldname + "_" + Date.now() + path.extname(file.originalname)
-//     );
-
-//     // console.log(req.file);
-//   },
-// });
-
-// const fileFilter = (req, file, cb) => {
-//   // filter out file if not specified here
-//   if (
-//     file.mimetype === "image/jpeg" ||
-//     file.mimetype === "image/jpg" ||
-//     file.mimetype === "image/png" ||
-//     file.mimetype === "application/pdf" ||
-//     file.mimetype ===
-//       "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || // For .docx files
-//     file.mimetype === "text/plain" // For plain text files
-//   ) {
-//     cb(null, true);
-//   } else {
-//     cb(
-//       new AppError(
-//         "Not a valid document! Please upload only valid document.",
-//         400
-//       ),
-//       false
-//     );
-//   }
-// };
-
-// exports.upload = multer({
-//   storage: multerStorage,
-//   limits: {
-//     fileSize: 1024 * 1024 * 5,
-//   },
-//   fileFilter: fileFilter,
-// });
-
-// exports.createFile = catchAsync(async (req, res, next) => {
-
-//   if (req.file) {
-//     const filePath = req.file.cloudinaryUrl;
-//     // response.doc = filePath;
-//   }
-//   const { file, body } = req;
-//   if (!file || !body) {
-//     return next(new AppError("Please provide a file and request body", 400));
-//   }
-//   const { filename } = file;
-//   const { fileName, ...rest } = body;
-//   if (!fileName) {
-//     return next(
-//       new AppError("Please provide a fileName in the request body", 400)
-//     );
-//   }
-//   const document = {
-//     name: fileName,
-//     file: filename,
-//   };
-//   const singleFile = await Case.create({ documents: [document], ...rest });
-//   res.status(201).json({ data: singleFile });
-// });
-
 exports.createFile = catchAsync(async (req, res, next) => {
   const { fileName } = req.body;
   let filePath = null;
@@ -141,18 +70,7 @@ exports.deleteFile = catchAsync(async (req, res, next) => {
   });
 });
 
-// exports.downloadFile = catchAsync(async (req, res, next) => {
-//   const { id } = req.params;
-//   console.log(id);
-//   const doc = await File.findById(id);
-//   if (!doc) {
-//     return next(new AppError("No Document found", 404));
-//   }
-//   const file = doc.file;
-//   const filePath = path.join(__dirname, `../public/caseDoc/${file}`); // Assuming the files are in the uploads folder
-//   res.download(filePath);
-// });
-
+// hnaldle file download
 exports.downloadFile = catchAsync(async (req, res, next) => {
   // Fetch the case by ID
   const doc = await File.findById(req.params.id);

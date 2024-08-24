@@ -14,7 +14,6 @@ const cookieParser = require("cookie-parser");
 const userRouter = require("./routes/userRoutes");
 const caseRouter = require("./routes/caseRoutes");
 const taskRouter = require("./routes/taskRoutes");
-const clientRouter = require("./routes/clientRoutes");
 const reportRouter = require("./routes/caseReportRoute");
 const leaveRouter = require("./routes/leaveRoutes");
 const invoiceRouter = require("./routes/invoiceRoutes");
@@ -90,19 +89,31 @@ app.use(
     credentials: true,
   })
 );
-// app.use(express.static("public"));
 
 app.use(cookieParser());
 // connection to mongoose - MONGODB ATLAS
-const DB = process.env.DATABASE.replace(
+// Determine the environment
+const isProduction = process.env.NODE_ENV === "production";
+
+// Connection string for MongoDB Atlas (production)
+const DB_PROD = process.env.DATABASE.replace(
   "<PASSWORD>",
   process.env.DATABASE_PASSWORD
 );
-// connection to mongoose - MONGODB LOCAL DATABASE
+
+// Connection string for local MongoDB (development)
+const DB_DEV = process.env.DATABASE_LOCAL;
+
+// Choose the appropriate database connection string
+const DB = isProduction ? DB_PROD : DB_DEV;
+
+// Connect to the chosen database
 mongoose
-  .connect(process.env.DATABASE_LOCAL, {})
+  .connect(DB, {})
   .then(() => {
-    console.log("Database connected");
+    console.log(
+      `Database connected (${isProduction ? "production" : "development"})`
+    );
   })
   .catch((err) => {
     console.error("Error connecting to database:", err);
@@ -131,7 +142,6 @@ app.use("/api/v1/google", googleApiRouter);
 // app.use("/api/v1/photos", photoRouter);
 app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
-app.use("/api/v1/clients", clientRouter);
 app.use("/api/v1/reports", reportRouter);
 app.use("/api/v1/leaves", leaveRouter);
 app.use("/api/v1/invoices", invoiceRouter);
@@ -144,12 +154,6 @@ app.use("/api/v1/events", eventRoutes);
 //handles non-existing route
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
-
-  // res.status(404).json({
-  //   message: `Can't find ${req.originalUrl} on this server`,
-  // });
-  // console.log(req.originalUrl);
-
   next(`Can't find ${req.originalUrl} on this server`);
 });
 

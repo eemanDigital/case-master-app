@@ -4,15 +4,13 @@ const catchAsync = require("../utils/catchAsync");
 
 exports.createLeaveBalance = catchAsync(async (req, res, next) => {
   const leaveBalance = await LeaveBalance.create(req.body);
-
-  // console.log("USER", req.user);
-
   res.status(201).json({
     message: "success",
     data: leaveBalance,
   });
 });
 
+// get leave balance
 exports.getLeaveBalance = catchAsync(async (req, res, next) => {
   const leaveBalance = await LeaveBalance.findOne({
     employee: req.params.employeeId,
@@ -38,6 +36,7 @@ exports.getLeaveBalances = catchAsync(async (req, res, next) => {
   });
 });
 
+// update leave balance
 exports.updateLeaveBalance = catchAsync(async (req, res, next) => {
   const leaveBalance = await LeaveBalance.findOneAndUpdate(
     { employee: req.params.employeeId },
@@ -56,6 +55,7 @@ exports.updateLeaveBalance = catchAsync(async (req, res, next) => {
   });
 });
 
+// delete leave balance
 exports.deleteLeaveBalance = catchAsync(async (req, res, next) => {
   let leaveBalance = await LeaveBalance.findByIdAndDelete(req.params.id);
 

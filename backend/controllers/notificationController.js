@@ -10,14 +10,6 @@ exports.createNotification = catchAsync(async (req, res, next) => {
   });
 });
 
-// exports.createNotifications = catchAsync(async (req, res, next) => {
-//   const cases = await Notice.find();
-//   res.status(200).json({
-//     results: cases.length,
-//     data: cases,
-//   });
-// });
-
 // get one notification
 exports.getNotification = catchAsync(async (req, res, next) => {
   //if id/caseId provided does not exist

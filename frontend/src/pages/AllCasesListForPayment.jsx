@@ -17,8 +17,6 @@ const AllCasesListForPayment = () => {
     fetchData("cases", "cases");
   }, []);
 
-  console.log(cases);
-
   if (loading.cases) return <h1>Loading... </h1>;
   if (error.cases)
     return (

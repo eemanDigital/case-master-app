@@ -139,7 +139,7 @@ const caseSchema = new mongoose.Schema(
       trim: true,
       required: [true, "Provide a brief fact of the case"],
 
-      maxlength: [2000, "Case summary should not exceed 2000 characters"],
+      maxlength: [4000, "Case summary should not exceed 2000 characters"],
     },
     caseStatus: {
       type: String,

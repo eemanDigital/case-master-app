@@ -53,6 +53,8 @@ exports.getReports = catchAsync(async (req, res, next) => {
     data: reports,
   });
 });
+
+// get single report
 exports.getReport = catchAsync(async (req, res, next) => {
   const _id = req.params.reportId;
   const report = await Report.findById({ _id });
@@ -64,27 +66,6 @@ exports.getReport = catchAsync(async (req, res, next) => {
   //   next();
 });
 
-// exports.updateCaseReport = catchAsync(async (req, res, next) => {
-//   const id = req.params.reportId;
-
-//   if (!id) {
-//     return next(new AppError("No report ID provided", 400));
-//   }
-
-//   const updatedReport = await Report.findByIdAndUpdate(id, req.body, {
-//     new: true,
-//     runValidators: true,
-//   });
-
-//   if (!updatedReport) {
-//     return next(new AppError("No report found with this ID", 404));
-//   }
-
-//   res.status(200).json({
-//     status: "success",
-//     data: updatedReport,
-//   });
-// });
 //update report
 exports.updateCaseReport = catchAsync(async (req, res, next) => {
   const id = req.params.reportId;

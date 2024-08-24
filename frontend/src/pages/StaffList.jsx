@@ -91,8 +91,8 @@ const StaffList = () => {
 
             <SearchBar onSearch={handleSearchChange} />
           </div>
-          <div className="overflow-x-auto">
-            <Table dataSource={staffList} scroll={{ x: 1000 }}>
+          <div className="overflow-x-auto font-medium font-poppins">
+            <Table dataSource={staffList} scroll={{ x: 700 }}>
               <ColumnGroup title="Employee's Name">
                 <Column
                   title="Photo"
@@ -108,13 +108,18 @@ const StaffList = () => {
                     </div>
                   )}
                 />
-
                 <Column
-                  title="First Name"
-                  dataIndex="firstName"
-                  key="firstName"
+                  title="Name"
+                  key="name"
+                  render={(text, record) => (
+                    <Link
+                      className="capitalize text-gray-700  hover:text-gray-800 cursor-pointer font-medium"
+                      to={`/dashboard/staff/${record?._id}/details`}
+                      title="Click for details">
+                      {`${record.firstName} ${record.lastName}`}
+                    </Link>
+                  )}
                 />
-                <Column title="Last Name" dataIndex="lastName" key="lastName" />
               </ColumnGroup>
 
               {/* <Column title="Email" dataIndex="email" key="email" /> */}
@@ -139,11 +144,6 @@ const StaffList = () => {
                 key="action"
                 render={(text, record) => (
                   <Space size="middle">
-                    <Button type="link">
-                      <Link to={`/dashboard/staff/${record?._id}/details`}>
-                        Get Details
-                      </Link>
-                    </Button>
                     {isSuperOrAdmin && (
                       <Button
                         onClick={() => {

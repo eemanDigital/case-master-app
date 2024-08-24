@@ -54,7 +54,7 @@ import DocumentForm from "./pages/DocumentsForm.jsx";
 import ContactForm from "./components/ContactForm.jsx";
 import EventDetail from "./pages/EventDetail.jsx";
 import { BillingAndPaymentsRoute } from "./components/protect/Protect.jsx";
-import Login from "./components/Login.jsx";
+import Login from "./pages/Login.jsx";
 
 // enable axios to get credentials everywhere in the app
 axios.defaults.withCredentials = true;

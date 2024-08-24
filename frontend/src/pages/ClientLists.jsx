@@ -110,14 +110,16 @@ const ClientLists = () => {
             <Table dataSource={searchResults} scroll={{ x: 400 }}>
               <ColumnGroup title="Client Lists">
                 <Column
-                  title="Client's Name"
-                  dataIndex="firstName"
-                  key="firstName"
-                />
-                <Column
-                  title="Second Name"
-                  dataIndex="secondName"
-                  key="secondName"
+                  title="Name"
+                  key="name"
+                  render={(text, record) => (
+                    <Link
+                      className="capitalize text-gray-700  hover:text-gray-800 cursor-pointer font-medium"
+                      to={`${record?._id}/details`}
+                      title="Click for details">
+                      {`${record.firstName} ${record.secondName || ""}`}
+                    </Link>
+                  )}
                 />
               </ColumnGroup>
 
@@ -128,7 +130,6 @@ const ClientLists = () => {
                 dataIndex="isActive"
                 key="isActive"
                 render={(isActive) => {
-                  console.log("isActive:", isActive);
                   return (
                     <span style={{ color: isActive ? "green" : "red" }}>
                       {isActive ? "Active" : "Inactive"}
@@ -142,9 +143,9 @@ const ClientLists = () => {
                 key="action"
                 render={(text, record) => (
                   <Space size="middle">
-                    <Button type="link">
+                    {/* <Button type="link">
                       <Link to={`${record?._id}/details`}>Get Details</Link>
-                    </Button>
+                    </Button> */}
                     {isSuperOrAdmin && (
                       <Button
                         onClick={() => {

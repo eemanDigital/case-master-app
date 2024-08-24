@@ -46,6 +46,7 @@ exports.createLeaveApplication = catchAsync(async (req, res, next) => {
   });
 });
 
+// get single leave application
 exports.getLeaveApplication = catchAsync(async (req, res, next) => {
   const leaveApplication = await LeaveApplication.findById(req.params.id);
 
@@ -68,6 +69,7 @@ exports.getLeaveApplications = catchAsync(async (req, res, next) => {
   });
 });
 
+// update leave application
 exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
   const leaveApplication = await LeaveApplication.findById(req.params.id);
   if (!leaveApplication) {

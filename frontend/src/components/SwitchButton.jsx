@@ -12,7 +12,7 @@ const SwitchButton = ({
       className={`px-4 py-2 m-2 w-full md:w-auto ${
         currentState === stateText
           ? "bg-blue-500 text-white"
-          : "bg-white text-black"
+          : "bg-white text-black font-medium font-poppins"
       }`}
       onClick={() => {
         updatedState(stateText);

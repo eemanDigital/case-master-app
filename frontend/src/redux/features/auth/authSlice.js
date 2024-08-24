@@ -111,9 +111,9 @@ export const getUsers = createAsyncThunk(
 // send verification email
 export const sendVerificationMail = createAsyncThunk(
   "auth/sendVerificationMail",
-  async (_, thunkAPI) => {
+  async (email, thunkAPI) => {
     try {
-      return await authService.sendVerificationMail();
+      return await authService.sendVerificationMail(email);
     } catch (error) {
       const message =
         (error.response &&
@@ -282,6 +282,7 @@ const authSlice = createSlice({
       state.message = "";
     },
   },
+
   extraReducers: (builder) => {
     builder
       // register user
@@ -291,19 +292,17 @@ const authSlice = createSlice({
       .addCase(register.fulfilled, (state, action) => {
         state.isSuccess = true;
         state.isLoading = false;
-        state.message = true;
-        state.user = action.payload;
-        state.isLoggedIn = true; // Update isLoggedIn state
-        toast.success("Registration Successful");
+        state.message = "User added successfully";
+        toast.success("User added successfully");
       })
       .addCase(register.rejected, (state, action) => {
         state.isError = true;
         state.isLoading = false;
         state.message = action.payload;
-        state.user = null;
-        state.isLoggedIn = false; // Update isLoggedIn state
+        // No need to update state.user or state.isLoggedIn
         toast.error(action.payload);
       })
+
       // login user
       .addCase(login.pending, (state) => {
         state.isLoading = true;
@@ -313,7 +312,6 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.message = true;
         state.user = action.payload;
-        // console.log(action.payload);
         state.isLoggedIn = true;
         toast.success("Login Successful");
       })
@@ -345,7 +343,7 @@ const authSlice = createSlice({
         state.isError = true;
         state.isLoading = false;
         state.message = action.payload;
-        console.log("LO", action.payload);
+
         toast.error(action.payload);
       })
 

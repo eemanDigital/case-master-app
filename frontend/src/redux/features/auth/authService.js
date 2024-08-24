@@ -40,8 +40,8 @@ const getUsers = async () => {
 };
 
 ///send verification email
-const sendVerificationMail = async () => {
-  const response = await axios.post(API_URL + "sendVerificationEmail");
+const sendVerificationMail = async (email) => {
+  const response = await axios.post(API_URL + `sendVerificationEmail/${email}`);
   return response.data.message;
 };
 

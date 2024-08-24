@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { DeleteOutlined } from "@ant-design/icons";
 import {
   PartyDynamicInputs,
@@ -32,12 +32,20 @@ import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import { caseInitialValue } from "../utils/initialValues";
 import useHandleSubmit from "../hooks/useHandleSubmit";
 import "react-quill/dist/quill.snow.css";
+import createMaxLengthRule from "../utils/createMaxLengthRule";
 
 const CreateCaseForm = () => {
   const [formData, setFormData] = useState(caseInitialValue);
   const { userData } = useUserSelectOptions();
   const { clientOptions } = useClientSelectOptions();
-  const { form, onSubmit, loading } = useHandleSubmit("cases", "post"); // custom hook to handle form submission
+  const { form, onSubmit, loading } = useHandleSubmit(
+    "cases",
+    "post",
+    undefined,
+    undefined,
+    undefined,
+    "/dashboard/cases"
+  ); // custom hook to handle form submission
 
   // filter options
   const filterOption = (input, option) =>
@@ -45,6 +53,10 @@ const CreateCaseForm = () => {
 
   // validation rule
   const requiredRule = [{ required: true, message: "This field is required" }];
+
+  // text area max length
+  const caseSummaryMaxLengthRule = createMaxLengthRule(10000);
+  const generalCommentMaxLengthRule = createMaxLengthRule(2000);
 
   return (
     <div className="max-w-4xl mx-auto p-4">
@@ -460,12 +472,13 @@ const CreateCaseForm = () => {
         {/* Case Summary and General Comment */}
         <section className="bg-gray-50 p-4 rounded-lg shadow space-y-4">
           <TextAreaInput
-            rules={requiredRule}
+            rules={[requiredRule, caseSummaryMaxLengthRule]}
             fieldName="caseSummary"
             initialValue={formData?.caseSummary}
             label="Case Summary"
           />
           <TextAreaInput
+            rules={[generalCommentMaxLengthRule]}
             fieldName="generalComment"
             initialValue={formData?.generalComment}
             label="General Comment"
@@ -479,7 +492,7 @@ const CreateCaseForm = () => {
             type="primary"
             htmlType="submit"
             className="w-full bg-blue-500 hover:bg-blue-600">
-            Submit
+            Save
           </Button>
         </Form.Item>
       </Form>

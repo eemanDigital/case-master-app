@@ -4,43 +4,6 @@ const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const setRedisCache = require("../utils/setRedisCache");
 
-// Schedule a job to run every day at midnight to clean-up deleted data
-// cron.schedule("0 0 * * *", async () => {
-//   // Calculate the threshold date (one month ago)
-//   const thresholdDate = new Date();
-//   thresholdDate.setMonth(thresholdDate.getMonth() - 1); // Adjust the threshold as needed
-
-//   try {
-//     // Delete cases that were soft deleted more than a month ago
-//     const result = await Case.deleteMany({
-//       deleted: true,
-//       deletedAt: { $lt: thresholdDate },
-//     });
-//     console.log(`Deleted ${result.deletedCount} cases`);
-//   } catch (error) {
-//     // Log any errors that occur during the cleanup process
-//     console.error("Error during cleanup:", error);
-//   }
-// });
-
-// testing
-// cron.schedule("*/2 * * * *", async () => {
-//   const thresholdDate = new Date();
-//   thresholdDate.setMonth(thresholdDate.getMonth() - 1); // Adjust the threshold as needed
-
-//   try {
-//     // Delete cases that were soft deleted more than a month ago
-//     const result = await Case.deleteMany({
-//       deleted: true,
-//       deletedAt: { $lt: thresholdDate },
-//     });
-//     console.log(`Deleted ${result.deletedCount} cases`);
-//   } catch (error) {
-//     // Log any errors that occur during the cleanup process
-//     console.error("Error during cleanup:", error);
-//   }
-// });
-
 // create new case
 exports.createCase = catchAsync(async (req, res, next) => {
   const singleCase = await Case.create(req.body);
@@ -116,18 +79,6 @@ exports.updateCase = catchAsync(async (req, res, next) => {
     updatedCase,
   });
 });
-
-// exports.deleteCase = catchAsync(async (req, res, next) => {
-//   // const _id = req.params.caseId;
-//   const data = await Case.findByIdAndDelete(req.params.caseId);
-
-//   if (!data) {
-//     return next(new AppError("case with that Id does not exist", 404));
-//   }
-//   res.status(204).json({
-//     message: "Case deleted",
-//   });
-// });
 
 // Soft delete a case
 exports.deleteCase = catchAsync(async (req, res, next) => {
@@ -305,6 +256,7 @@ exports.getMonthlyNewCases = catchAsync(async (req, res, next) => {
   });
 });
 
+// get all new cases within year handler
 exports.getYearlyNewCases = catchAsync(async (req, res, next) => {
   const result = await Case.aggregate([
     {

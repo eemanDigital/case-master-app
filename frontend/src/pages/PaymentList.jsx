@@ -11,6 +11,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 const PaymentList = () => {
   const {
@@ -75,7 +76,8 @@ const PaymentList = () => {
     (item) => item.clientId === loggedInClientId
   );
 
-  // console.log("PAY", payments);
+  // Custom loader
+  const customLoader = <LoadingSpinner />;
 
   const columns = [
     {
@@ -165,9 +167,12 @@ const PaymentList = () => {
               columns={columns}
               dataSource={isClient ? filteredPaymentForClient : searchResults}
               rowKey="_id"
-              loading={loadingPayment.payments}
+              loading={{
+                spinning: loadingPayment.payments,
+                indicator: customLoader,
+              }}
               pagination={{ pageSize: 10 }}
-              scroll={{ x: 1000 }}
+              scroll={{ x: 750 }}
             />
           </div>
         </div>

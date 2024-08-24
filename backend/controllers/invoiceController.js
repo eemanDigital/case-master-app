@@ -41,49 +41,6 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
 });
 
 // create invoice
-// exports.createInvoice = catchAsync(async (req, res, next) => {
-//   const { case: caseId, client: clientId } = req.body;
-
-//   // Check if the case exists
-//   const caseData = await Case.findById(caseId);
-//   if (!caseData) {
-//     return next(new AppError("No case found with that ID", 404));
-//   }
-
-//     // Find the corresponding case
-//     const caseData = await Case.findById(caseId).populate("client");
-//     if (!caseData) {
-//       return next(new AppError("No case found", 404));
-//     }
-
-//     // Check if the case has an associated client
-//     if (!caseData.client) {
-//       return next(new AppError("No client associated with this case", 400));
-//     }
-
-//     // Check if the client associated with the case is the same as the clientId provided
-//     if (caseData.client._id.toString() !== clientId) {
-//       return next(
-//         new AppError(
-//           "Client in the case does not match the provided client name",
-//           400
-//         )
-//       );
-//     }
-//   // Check if the client exists
-//   const clientData = await User.findById(clientId);
-//   if (!clientData) {
-//     return next(new AppError("No client found with that ID", 404));
-//   }
-
-//   const newInvoice = await Invoice.create(req.body);
-
-//   res.status(201).json({
-//     message: "success",
-//     data: newInvoice,
-//   });
-// });
-// create invoice
 exports.createInvoice = catchAsync(async (req, res, next) => {
   const { case: caseId, client: clientId } = req.body;
 
@@ -124,7 +81,6 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
   });
 });
 
-// update invoice data
 // update invoice data
 exports.updateInvoice = catchAsync(async (req, res, next) => {
   const { case: caseId, client: clientId } = req.body;

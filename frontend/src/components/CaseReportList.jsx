@@ -25,6 +25,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import { toast } from "react-toastify";
+import AddEventToCalender from "./AddEventToCalender";
 
 const { Title, Text } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
@@ -53,6 +54,16 @@ const CaseReportList = ({
   const [itemsPerPage] = useState(5);
 
   const caseIDs = user?.data?.clientCase?.map((caseItem) => caseItem?._id);
+
+  // prepare event title for calendar
+  const createEventTitle = (report) => {
+    return `Case: ${report.caseReported.firstParty.name[0].name} vs ${report.caseReported.secondParty.name[0].name}`;
+  };
+
+  // prepare event description for calendar
+  const createEventDescription = (report) => {
+    return `Adjourned For: ${report.adjournedFor}`;
+  };
 
   useEffect(() => {
     if (deleteSuccess) {
@@ -232,6 +243,12 @@ const CaseReportList = ({
                   )}
                 </div>
               )}
+              <AddEventToCalender
+                title={createEventTitle(report)}
+                description={createEventDescription(report)}
+                startDate={report.date}
+                endDate={report.adjournedDate}
+              />
             </Card>
           )
         )}

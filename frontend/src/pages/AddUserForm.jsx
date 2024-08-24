@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import Input from "../components/Inputs";
 import Select from "../components/Select";
 import Button from "../components/Button";
@@ -17,13 +17,14 @@ import { toast } from "react-toastify";
 import { gender, positions, roles } from "../data/options";
 
 const SignUp = () => {
-  const [click, setClick] = useState(false);
   const [inputValue, setInputValue] = useState(addUserInitValue);
+  const { isLoading, isSuccess } = useSelector((state) => state.auth);
   const { togglePassword: togglePassword1, showPassword: showPassword1 } =
     useTogglePassword();
   const { togglePassword: togglePassword2, showPassword: showPassword2 } =
     useTogglePassword();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   // handle input change
   const handleChange = (e) => {
@@ -51,12 +52,12 @@ const SignUp = () => {
       inputValue.universityAttended
     );
     await dispatch(register(inputValue)); // register user
-    await dispatch(sendVerificationMail()); // send verification mail
+    await dispatch(sendVerificationMail(inputValue.email)); // send verification email
+    navigate("/dashboard/staff"); // redirect to staff page
   };
 
+  // check if other field is selected
   const getOtherFieldSelected = inputValue.position === "Other"; // check if other field is selected
-
-  const handleClick = () => setClick(!click);
 
   return (
     <>
@@ -232,8 +233,10 @@ const SignUp = () => {
                 Login here
               </Link>
             </p>
-            <Button onClick={handleClick} className="w-full md:w-auto">
-              Add User
+            <Button
+              type="submit"
+              buttonStyle="w-full md:w-auto px-4 py-2  blue-btn">
+              {isLoading ? "Loading..." : "Add Staff"}
             </Button>
           </div>
         </form>

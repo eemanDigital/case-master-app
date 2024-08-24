@@ -1,4 +1,4 @@
-// SUBDOCUMENT CONTROLLER
+// SUB-DOCUMENT CONTROLLER
 const Task = require("../models/taskModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
@@ -39,8 +39,6 @@ exports.deleteTaskResponse = catchAsync(async (req, res, next) => {
   const { taskId, responseId } = req.params; //parentTask id
 
   const task = await Task.findById(taskId);
-  // const resId = await task.taskResponse.id(responseId).findOne();
-  // console.log(resId);
 
   if (!task) {
     next(new AppError("task/response does not response"));

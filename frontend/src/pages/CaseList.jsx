@@ -194,7 +194,7 @@ const CaseList = () => {
           errorMessage={error.cases}
         />
       ) : (
-        <section>
+        <section className=" font-medium font-poppins">
           <Title level={1}>Cases</Title>
           <div className="flex md:flex-row flex-col justify-between items-center mb-4">
             {isStaff && (

@@ -4,7 +4,6 @@ const AppError = require("../utils/appError");
 
 exports.createTodo = catchAsync(async (req, res, next) => {
   const { userId, ...rest } = req.body;
-  //   console.log(req.user);
   const newTodo = await Todo.create({ userId: req.user.id, ...rest });
   res.status(201).json({
     status: "success",

@@ -102,14 +102,17 @@ const LeaveApplicationList = () => {
                 />
 
                 <Column
-                  title="First Name"
+                  title="Employee Name"
                   dataIndex={["employee", "firstName"]}
-                  key="employee.firstName"
-                />
-                <Column
-                  title="Last Name"
-                  dataIndex={["employee", "lastName"]}
-                  key="employee.lastName"
+                  key="employee.name"
+                  render={(text, record) => (
+                    <Link
+                      className="capitalize text-gray-700 hover:text-gray-800 cursor-pointer font-medium"
+                      to={`${record?.id}/details`}
+                      title="Click for details">
+                      {`${record.employee.firstName} ${record.employee.lastName}`}
+                    </Link>
+                  )}
                 />
               </ColumnGroup>
 
@@ -153,9 +156,9 @@ const LeaveApplicationList = () => {
                 key="action"
                 render={(text, record) => (
                   <Space size="middle">
-                    <Button type="link">
+                    {/* <Button type="link">
                       <Link to={`${record?.id}/details`}>Get Details</Link>
-                    </Button>
+                    </Button> */}
 
                     <Button
                       onClick={() => {

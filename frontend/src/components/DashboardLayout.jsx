@@ -3,11 +3,13 @@ import { Layout, Button } from "antd";
 import { Outlet } from "react-router-dom";
 import { MenuFoldOutlined, MenuUnfoldOutlined } from "@ant-design/icons";
 import SideBar from "./SideBar.jsx";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser.jsx";
 // import DashboardNav from "./DashboardNav.jsx";
 
 const { Header, Content } = Layout;
 
 const DashboardLayout = () => {
+  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
   const [collapsed, setCollapsed] = useState(false);
 
   const toggleSidebar = () => {

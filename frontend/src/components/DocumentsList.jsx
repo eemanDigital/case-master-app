@@ -135,8 +135,6 @@ const DocumentsList = () => {
 
   return (
     <div className="w-full m-2">
-      {/* Search bar component */}
-      <SearchBar onSearch={handleSearchChange} />
       {/* Show loading spinner if documents are being fetched */}
       {loadingDoc.documents && <LoadingSpinner />}
 
@@ -149,14 +147,15 @@ const DocumentsList = () => {
       )}
 
       <h2 className="text-2xl font-bold m-1">Documents</h2>
-
+      {/* Search bar component */}
+      <SearchBar onSearch={handleSearchChange} />
       {/* Display documents table if there are documents, otherwise show a message */}
       {documentList.length > 0 ? (
         <Table
           dataSource={searchResults}
           columns={columns}
           rowKey="_id"
-          className="w-full"
+          className="w-full mt-3"
           responsive
           scroll={{ x: 400 }}
         />

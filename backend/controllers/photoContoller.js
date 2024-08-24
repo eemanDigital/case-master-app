@@ -23,6 +23,7 @@ const multerFilter = (req, file, cb) => {
   }
 };
 
+// multer method to upload file
 const upload = multer({
   storage: multerStorage,
   fileFilter: multerFilter,
@@ -37,6 +38,7 @@ async function handleUpload(file) {
   return res;
 }
 
+// resize photo handler
 exports.resizeUserPhoto = catchAsync(async (req, res, next) => {
   if (!req.file) {
     return next(); // If no file is uploaded, proceed to the next middleware

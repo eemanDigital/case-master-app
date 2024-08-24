@@ -1,4 +1,4 @@
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link } from "react-router-dom";
 import moment from "moment";
 import {
   DeleteOutlined,
@@ -33,18 +33,25 @@ import useHandleSubmit from "../hooks/useHandleSubmit";
 import ReactQuill from "react-quill";
 import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
 import LoadingSpinner from "../components/LoadingSpinner";
+import createMaxLengthRule from "../utils/createMaxLengthRule";
 
 const UpdateCase = () => {
   const { id } = useParams();
-  const { formData, loading, data } = useInitialDataFetcher("cases", id); //initial data fetcher
-  const navigate = useNavigate();
+  const { formData, loading } = useInitialDataFetcher("cases", id); //initial data fetcher
 
   // custom hook to handle form submission
   const {
     form,
     onSubmit,
     loading: loadingState,
-  } = useHandleSubmit(`cases/${id}`, "patch");
+  } = useHandleSubmit(
+    `cases/${id}`,
+    "patch",
+    undefined,
+    undefined,
+    undefined,
+    "/dashboard/cases"
+  );
 
   const { userData } = useUserSelectOptions();
   const { clientOptions } = useClientSelectOptions();
@@ -53,10 +60,6 @@ const UpdateCase = () => {
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
 
-  if (data) {
-    return navigate("cases");
-  }
-
   // loading state handler
   if (loading) {
     return <LoadingSpinner />;
@@ -64,6 +67,10 @@ const UpdateCase = () => {
 
   // validation rules
   const requiredRule = [{ required: true, message: "This field is required" }];
+
+  // text area max length
+  const caseSummaryMaxLengthRule = createMaxLengthRule(10000);
+  const generalCommentMaxLengthRule = createMaxLengthRule(2000);
 
   return (
     <div>
@@ -681,7 +688,7 @@ const UpdateCase = () => {
 
               {/* CLIENT */}
               <Form.Item
-                rules={requiredRule}
+                // rules={requiredRule}
                 name="client"
                 label="Client"
                 initialValue={formData?.client?._id}>
@@ -699,25 +706,29 @@ const UpdateCase = () => {
           {/* Case Summary and General Comment */}
           <section className="bg-gray-50 p-4 rounded-lg shadow space-y-4">
             <Form.Item
-              rules={requiredRule}
+              rules={[requiredRule, caseSummaryMaxLengthRule]}
               label="Case Summary"
+              placeholder="Your fact of the case here"
               name="caseSummary">
               <ReactQuill />
             </Form.Item>
 
             {/* GENERAL COMMENT */}
-            <Form.Item label="General Comment" name="generalComment">
+            <Form.Item
+              label="General Comment"
+              rules={[generalCommentMaxLengthRule]}
+              name="generalComment">
               <ReactQuill />
             </Form.Item>
           </section>
 
           <Form.Item>
             <Button
+              className="blue-btn"
               loading={loadingState}
               onClick={onSubmit}
-              type="default"
               htmlType="submit">
-              Submit
+              Save
             </Button>
           </Form.Item>
         </Form>

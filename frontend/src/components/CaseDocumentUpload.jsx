@@ -1,20 +1,26 @@
+import PropTypes from "prop-types";
 import { useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { Button, Modal, message } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 
 import useModal from "../hooks/useModal";
+import { toast } from "react-toastify";
 
 const CaseDocumentUpload = ({ caseId }) => {
   const [formData, setFormData] = useState({
     fileName: "",
     file: null,
   });
-  const [click, setClick] = useState(false);
 
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal(); // modal hook
-  const { dataFetcher, data, loading, error } = useDataFetch();
+  const {
+    dataFetcher,
+    data: docData,
+    loading,
+    error: docError,
+  } = useDataFetch();
 
   const handleFileChange = (e) => {
     const { name, value, files } = e.target;
@@ -42,21 +48,17 @@ const CaseDocumentUpload = ({ caseId }) => {
       payload,
       fileHeaders
     );
-    if (data?.data?.message === "success") {
-      message.success("Document uploaded successfully!");
+    // success toast
+    if (!docError) {
+      toast.success("Document uploaded successfully!");
       handleCancel(); // Close the modal on successful upload
+      window.location.reload();
     }
 
-    if (error) {
-      message.error(
-        error.message || "Failed to upload document. Please try again."
-      );
+    // error toast
+    if (docError) {
+      toast.error(docError || "Failed to upload document. Please try again.");
     }
-  };
-
-  // console.log("DATA", data, error);
-  const handleClick = () => {
-    setClick(() => !click);
   };
 
   return (
@@ -117,7 +119,6 @@ const CaseDocumentUpload = ({ caseId }) => {
           </div>
           <div className="flex justify-end">
             <button
-              onClick={handleClick}
               type="submit"
               className="bg-blue-500 text-white hover:bg-blue-600 p-2 rounded-md ">
               {loading ? "uploading file..." : "Upload Document"}
@@ -129,4 +130,7 @@ const CaseDocumentUpload = ({ caseId }) => {
   );
 };
 
+CaseDocumentUpload.PropTypes = {
+  caseId: PropTypes.string.isRequired,
+};
 export default CaseDocumentUpload;

@@ -3,6 +3,7 @@ const path = require("path");
 const pug = require("pug");
 const pdfoptions = require("./pdfoptions");
 
+// pdf generator
 exports.generatePdf = (dataValue, res, templateFile, fileOutPath) => {
   pug.renderFile(
     // path.join(__dirname, "../views/invoice.pug"),

@@ -74,6 +74,11 @@ const TaskList = () => {
       title: "Task Title",
       dataIndex: "title",
       key: "title",
+      render: (text, record) => (
+        <Link className="pl-5" to={`${record?.id}/details`}>
+          {text}
+        </Link>
+      ),
     },
     {
       title: "Assigned To",
@@ -89,16 +94,16 @@ const TaskList = () => {
           : "N/A",
     },
     {
-      title: "Assigned To Client",
+      title: "Client",
       dataIndex: "assignedToClient",
       key: "assignedToClient",
       render: (client) => client?.firstName,
     },
-    {
-      title: "Task Priority",
-      dataIndex: "taskPriority",
-      key: "taskPriority",
-    },
+    // {
+    //   title: "Task Priority",
+    //   dataIndex: "taskPriority",
+    //   key: "taskPriority",
+    // },
     {
       title: "Date Assigned",
       dataIndex: "dateAssigned",
@@ -110,9 +115,9 @@ const TaskList = () => {
       key: "action",
       render: (text, record) => (
         <Space size="middle">
-          <Button type="link">
+          {/* <Button type="link">
             <Link to={`${record?.id}/details`}>Get Details</Link>
-          </Button>
+          </Button> */}
           {/* reminder component */}
           {user?.data?._id === record?.assignedBy?._id && (
             <TaskReminderForm id={record.id} />
@@ -158,7 +163,7 @@ const TaskList = () => {
           errorMessage={taskError.tasks}
         />
       ) : (
-        <div className="mt-10 overflow-x-auto">
+        <div className=" mt-10 overflow-x-auto font-medium font-poppins">
           {isStaff && <CreateTaskForm />}
           <Table
             columns={columns}
@@ -170,7 +175,7 @@ const TaskList = () => {
                 : filterTaskByUser(loggedInClientId)
             }
             rowKey="_id"
-            scroll={{ x: 1000 }}
+            scroll={{ x: 700 }}
           />
 
           {/* <TaskTimeTracker tasks={tasks?.data} userId={loggedInClientId} /> */}
