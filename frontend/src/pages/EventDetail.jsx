@@ -1,8 +1,7 @@
 import PropTypes from "prop-types";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Card, Typography, Spin, Alert, Button } from "antd";
-import { ArrowLeftOutlined } from "@ant-design/icons";
+import { Card, Typography, Spin, Alert } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import GoBackButton from "../components/GoBackButton";

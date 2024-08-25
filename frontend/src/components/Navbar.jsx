@@ -1,97 +1,172 @@
+import PropTypes from "prop-types";
+import { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
 import caseMasterLogo from "../assets/case-master-logo.svg";
 import { RiMenu3Fill } from "react-icons/ri";
 import { AiOutlineClose } from "react-icons/ai";
-import {} from "react-icons/ri";
-import { useState } from "react";
 import { ShowOnLogin, ShowOnLogout } from "./protect/Protect";
 
 const navItems = [
-  {
-    name: "Features",
-    path: "feature",
-  },
-  {
-    name: "Testimonials",
-    path: "testimonials",
-  },
-  {
-    name: "Pricing",
-    path: "pricing",
-  },
+  { name: "Features", path: "#feature" },
+  { name: "Testimonials", path: "#testimonials" },
+  { name: "Pricing", path: "#pricing" },
 ];
 
-let mainNav = navItems.map((item, index) => {
-  return (
-    <>
-      <li className="my-5">
-        <NavLink className="hover:scale-110 tracking-wider" key={index}>
-          {item.name}
-        </NavLink>
-      </li>
-    </>
-  );
-});
+const NavItem = ({ item, mobile, scrolled }) => (
+  <li className={`my-2 list-none ${mobile ? "text-lg" : "md:my-0"}`}>
+    <NavLink
+      to={item.path}
+      className={({ isActive }) =>
+        `transition duration-300 block font-medium ${
+          mobile
+            ? "text-gray-800 hover:text-gray-600"
+            : scrolled
+            ? "text-gray-700 hover:text-gray-900"
+            : "text-gray-300 hover:text-white"
+        } ${isActive ? "font-bold" : ""}`
+      }>
+      {item.name}
+    </NavLink>
+  </li>
+);
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // scroll side effect
+  useEffect(() => {
+    const handleScroll = () => {
+      const isScrolled = window.scrollY > 10;
+      if (isScrolled !== scrolled) {
+        setScrolled(isScrolled);
+      }
+    };
+
+    document.addEventListener("scroll", handleScroll);
+    return () => {
+      document.removeEventListener("scroll", handleScroll);
+    };
+  }, [scrolled]);
 
   return (
-    <nav className="md:px-10 px-8 md:py-0 py-2 md:flex items-center bg-white justify-between  z-50">
-      {/* logo */}
-      <div className=" gap-2 ">
-        <Link className="md:flex items-center gap-1 ">
-          <img
-            src={caseMasterLogo}
-            alt="case master logo"
-            className="w-12 h-12"
-          />
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled ? "bg-white shadow-md text-gray-800" : "bg-transparent"
+      }`}>
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <Link to="/" className="flex items-center gap-2">
+            <img
+              src={caseMasterLogo}
+              alt="case master logo"
+              className="w-10 h-10"
+            />
+            <span
+              className={`text-2xl font-bold tracking-wider ${
+                scrolled ? "text-gray-800" : "text-white"
+              }`}>
+              case<span className="text-blue-400">m</span>aster
+            </span>
+          </Link>
 
-          <span className=" text-2xl text-gray-600 font-bold tracking-wider ">
-            case<span className="text-slate-400  font-bold ml-0 p-0">m</span>
-            aster
-          </span>
-        </Link>
+          <div className="hidden md:block">
+            <div className="ml-10 flex items-baseline space-x-4">
+              {navItems.map((item, index) => (
+                <NavItem key={index} item={item} scrolled={scrolled} />
+              ))}
+            </div>
+          </div>
+
+          <div className="hidden md:block">
+            <div className="ml-4 flex items-center md:ml-6">
+              <ShowOnLogout>
+                <NavLink
+                  to="/users/login"
+                  className="btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium mr-2 transition duration-300">
+                  Login
+                </NavLink>
+              </ShowOnLogout>
+              <ShowOnLogin>
+                <NavLink
+                  to="/dashboard"
+                  className="btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium mr-2 transition duration-300">
+                  Dashboard
+                </NavLink>
+              </ShowOnLogin>
+              <NavLink
+                to="/get-started"
+                className="btn bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium transition duration-300">
+                Get Started
+              </NavLink>
+            </div>
+          </div>
+
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className={`inline-flex items-center justify-center p-2 rounded-md ${
+                scrolled
+                  ? "text-gray-800 hover:text-gray-600"
+                  : "text-white hover:text-gray-300"
+              } focus:outline-none transition duration-300`}>
+              {isOpen ? (
+                <AiOutlineClose size={24} />
+              ) : (
+                <RiMenu3Fill size={24} />
+              )}
+            </button>
+          </div>
+        </div>
       </div>
 
-      {/* menu icon */}
+      {/* Mobile menu, show/hide based on menu state */}
       <div
-        onClick={() => setIsOpen(!isOpen)}
-        className="   absolute right-6 top-8 cursor-pointer md:hidden">
-        {isOpen ? <AiOutlineClose /> : <RiMenu3Fill />}
-      </div>
-
-      {/* menu */}
-      <div
-        className={`md:flex justify-between gap-4 shadow-md md:shadow-none items-center  text-gray-600 absolute md:static  md:p-0 pt-20 pl-7  md:z-auto z-[-1] w-full left-0 md:transition-all md:w-auto bg-white duration-700 md:ease-out ${
-          isOpen ? "top-12" : "top-[-490px]"
-        } `}>
-        <ul className=" md:flex gap-4 pr-10 items-center justify-between ">
-          {mainNav.slice(0, 3)}
-
-          <ShowOnLogout>
-            <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
-              <NavLink to="/users/login">Login</NavLink>
-            </li>
-            {/* <li className="md:ml-10 btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block">
-              <NavLink to="/clients/login">Client Login</NavLink>
-            </li> */}
-          </ShowOnLogout>
-          <ShowOnLogin>
-            <li className="btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block ">
-              <NavLink to="dashboard">Dashboard</NavLink>
-            </li>
-          </ShowOnLogin>
-          <li className="my-4">
-            <NavLink className=" btn bg-gray-600 px-3 py-2 text-slate-100  rounded-md block w-32 hover:bg-gray-500 md:static">
+        className={`md:hidden transition-all duration-300 ease-in-out ${
+          isOpen ? "max-h-screen" : "max-h-0"
+        } overflow-hidden`}>
+        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
+          {navItems.map((item, index) => (
+            <NavItem
+              key={index}
+              item={item}
+              mobile={true}
+              scrolled={scrolled}
+            />
+          ))}
+          <div className="mt-4 space-y-2">
+            <ShowOnLogout>
+              <NavLink
+                to="/users/login"
+                className="btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium block text-center transition duration-300">
+                Login
+              </NavLink>
+            </ShowOnLogout>
+            <ShowOnLogin>
+              <NavLink
+                to="/dashboard"
+                className="btn bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium block text-center transition duration-300">
+                Dashboard
+              </NavLink>
+            </ShowOnLogin>
+            <NavLink
+              to="#get-started"
+              className="btn bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm font-medium block text-center transition duration-300">
               Get Started
             </NavLink>
-          </li>
-        </ul>
+          </div>
+        </div>
       </div>
-      {/* <ul className=" ">{mainNav.slice(3, 4)}</ul> */}
     </nav>
   );
 };
 
+NavItem.propTypes = {
+  item: PropTypes.shape({
+    name: PropTypes.string.isRequired,
+    path: PropTypes.string.isRequired,
+  }).isRequired,
+  mobile: PropTypes.bool,
+  scrolled: PropTypes.bool,
+};
 export default Navbar;

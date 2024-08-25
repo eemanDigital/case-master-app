@@ -60,10 +60,11 @@ const CreatePaymentForm = () => {
     } else {
       // Display success message if submission succeeded
       toast.success("Submission Successful");
+      handleCancel();
       // Reset form fields
       form.resetFields();
     }
-  }, [form, dataFetcher, fetchData]);
+  }, [form, dataFetcher, fetchData, handleCancel]);
 
   // Function to filter options in select inputs
   const filterOption = (input, option) =>

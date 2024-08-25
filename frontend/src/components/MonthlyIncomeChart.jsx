@@ -13,7 +13,6 @@ import {
 import { Typography, Modal, Card } from "antd";
 import PaymentFilterForm from "./PaymentFilterForm";
 import { PaymentFiltersContext } from "./Dashboard";
-import LoadingSpinner from "./LoadingSpinner";
 import PageErrorAlert from "./PageErrorAlert";
 
 const { Title } = Typography;
@@ -33,7 +32,7 @@ const months = [
   "December",
 ];
 
-const MonthlyIncomeChart = ({ data, loading, error }) => {
+const MonthlyIncomeChart = ({ data, error }) => {
   const { setYearEachMonth } = useContext(PaymentFiltersContext);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -51,7 +50,7 @@ const MonthlyIncomeChart = ({ data, loading, error }) => {
     setIsModalVisible(false);
   };
 
-  if (loading) return <LoadingSpinner />; //loading state
+  // if (loading) return <LoadingSpinner />; //loading state
   if (error)
     return <PageErrorAlert errorCondition={error} errorMessage={error} />; //error state
 

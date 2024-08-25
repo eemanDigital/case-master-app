@@ -13,12 +13,11 @@ import {
 import { Typography, Modal, Card } from "antd";
 import PaymentFilterForm from "./PaymentFilterForm";
 import { PaymentFiltersContext } from "./Dashboard";
-import LoadingSpinner from "./LoadingSpinner";
 import PageErrorAlert from "./PageErrorAlert";
 
 const { Title } = Typography;
 
-const CurrentMonthIncomeCharts = ({ data, loading, error }) => {
+const CurrentMonthIncomeCharts = ({ data, error }) => {
   const { setYearMonth, setMonth } = useContext(PaymentFiltersContext);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -34,7 +33,7 @@ const CurrentMonthIncomeCharts = ({ data, loading, error }) => {
     setIsModalVisible(false);
   };
 
-  if (loading) return <LoadingSpinner />; //loading state
+  // if (loading) return <LoadingSpinner />; //loading state
   if (error)
     return <PageErrorAlert errorCondition={error} errorMessage={error} />; //error state
 

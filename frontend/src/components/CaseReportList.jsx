@@ -17,7 +17,6 @@ import {
 } from "@ant-design/icons";
 import { formatDate } from "../utils/formatDate";
 import UpdateCaseReportForm from "../pages/UpdateCaseReportForm";
-import { handleDownload } from "../utils/downloadHandler";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
 import useTextShorten from "../hooks/useTextShorten";
@@ -26,6 +25,7 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import { toast } from "react-toastify";
 import AddEventToCalender from "./AddEventToCalender";
+import { useDownloadPdfHandler } from "../hooks/useDownloadPdfHandler";
 
 const { Title, Text } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
@@ -48,6 +48,11 @@ const CaseReportList = ({
   } = useSelector((state) => state.delete);
   const { shortenText } = useTextShorten();
   const dispatch = useDispatch();
+  const {
+    loading: loadingPdf,
+    error: pdfError,
+    handleDownloadPdf,
+  } = useDownloadPdfHandler();
 
   const [searchResults, setSearchResults] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -134,6 +139,10 @@ const CaseReportList = ({
     indexOfLastReport
   );
 
+  if (pdfError) {
+    return toast.error(pdfError || "Failed to download document"); //pdf error toast
+  }
+
   return (
     <section className="w-full  bg-gray-50 rounded-lg shadow-md sm:px-6 px-2 ">
       <Title
@@ -215,10 +224,11 @@ const CaseReportList = ({
                   {isStaff && <UpdateCaseReportForm reportId={report._id} />}
                   <Tooltip title="Download Report">
                     <Button
+                      loading={loadingPdf}
                       icon={<DownloadOutlined />}
                       className="bg-green-500 text-white hover:bg-green-600"
                       onClick={(event) =>
-                        handleDownload(
+                        handleDownloadPdf(
                           event,
                           `${downloadURL}/reports/pdf/${report?._id}`,
                           "report.pdf"

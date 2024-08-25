@@ -1,27 +1,13 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-} from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Typography, Modal } from "antd";
-import LoadingSpinner from "./LoadingSpinner";
+
 import PageErrorAlert from "./PageErrorAlert";
 
 const { Title } = Typography;
 
-const TotalOutstandingBalanceCharts = ({
-  paymentData,
-  balanceData,
-  error,
-  loading,
-}) => {
+const TotalOutstandingBalanceCharts = ({ paymentData, balanceData, error }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const value = paymentData?.totalAmount;
@@ -29,12 +15,8 @@ const TotalOutstandingBalanceCharts = ({
   const totalBalance = balanceData?.data?.[0]?.totalBalance;
 
   const gaugeData = [
-    { name: "value", value },
-    { name: "remainder", value: 100000000 - value }, // Assuming 100M as max value for the gauge
-  ];
-
-  const balanceChartData = [
-    { name: "Total Outstanding Balance", value: totalBalance },
+    { name: "Total Income", value },
+    { name: "Outstanding Balance", value: totalBalance }, // Using totalBalance as the remainder
   ];
 
   const COLORS = ["#1c4e80", "#a5d8dd"];
@@ -47,9 +29,32 @@ const TotalOutstandingBalanceCharts = ({
     setIsModalVisible(false);
   };
 
-  if (loading) return <LoadingSpinner />; //loading state
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="custom-tooltip bg-white p-4 shadow-md">
+          <p className="label font-medium font-poppins text-2xl">{`${
+            payload[0].name
+          }: ₦${payload[0].value.toLocaleString()}`}</p>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  CustomTooltip.propTypes = {
+    active: PropTypes.bool,
+    payload: PropTypes.arrayOf(
+      PropTypes.shape({
+        name: PropTypes.string,
+        value: PropTypes.number,
+      })
+    ),
+  };
+
   if (error)
     return <PageErrorAlert errorCondition={error} errorMessage={error} />; //error state
+
   return (
     <>
       {/* Small Card for Dashboard */}
@@ -77,6 +82,7 @@ const TotalOutstandingBalanceCharts = ({
                 />
               ))}
             </Pie>
+            <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </ResponsiveContainer>
         <div className="text-center mt-[-30px]">
@@ -95,7 +101,6 @@ const TotalOutstandingBalanceCharts = ({
         width={800}>
         <div className="flex flex-col">
           <div>
-            {/* <Title level={4}>{`Total Income for the Year: ${year}`}</Title> */}
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -114,26 +119,11 @@ const TotalOutstandingBalanceCharts = ({
                     />
                   ))}
                 </Pie>
+                <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
             <div style={{ textAlign: "center", marginTop: "-100px" }}>
               <Title level={3}>₦{value?.toLocaleString()}</Title>
-            </div>
-          </div>
-
-          <div className="mt-8">
-            <Title level={4}>Total Outstanding Balance</Title>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={balanceChartData}
-                margin={{ top: 10, right: 10, left: 10, bottom: 5 }}>
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Bar dataKey="value" fill="#ea6a47" barSize={50} />
-              </BarChart>
-            </ResponsiveContainer>
-            <div style={{ textAlign: "center" }}>
-              <Title level={3}>₦{totalBalance?.toLocaleString()}</Title>
             </div>
           </div>
         </div>

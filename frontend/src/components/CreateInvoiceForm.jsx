@@ -133,7 +133,7 @@ const CreateInvoiceForm = () => {
                           label="Hours of Work"
                           name={[field.name, "hours"]}
                           initialValue={formData.services.hours}>
-                          <InputNumber />
+                          <InputNumber className="w-full" />
                         </Form.Item>
                       </Col>
                     </Row>
@@ -165,6 +165,7 @@ const CreateInvoiceForm = () => {
                           ]}
                           initialValue={formData.services.feeRatePerHour}>
                           <InputNumber
+                            className="w-full"
                             formatter={(value) =>
                               `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                             }
@@ -213,6 +214,7 @@ const CreateInvoiceForm = () => {
                         ]}
                         initialValue={formData.services.amount}>
                         <InputNumber
+                          className="w-full"
                           formatter={(value) =>
                             `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                           }
@@ -329,6 +331,7 @@ const CreateInvoiceForm = () => {
                           ]}
                           initialValue={formData.expenses.amount}>
                           <InputNumber
+                            className="w-full"
                             formatter={(value) =>
                               `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                             }
@@ -489,6 +492,7 @@ const CreateInvoiceForm = () => {
                 name="previousBalance"
                 initialValue={formData?.previousBalance}>
                 <InputNumber
+                  className="w-full"
                   formatter={(value) =>
                     `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
@@ -503,6 +507,7 @@ const CreateInvoiceForm = () => {
                 name="amountPaid"
                 initialValue={formData?.amountPaid}>
                 <InputNumber
+                  className="w-full"
                   formatter={(value) =>
                     `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }

@@ -70,7 +70,7 @@ html
           | #{new Date(report.date).toLocaleDateString()}
         .field
           span Update:
-          | #{report.update}
+          != report.update
         .field
           span Adjourned For:
           | #{report.adjournedFor}

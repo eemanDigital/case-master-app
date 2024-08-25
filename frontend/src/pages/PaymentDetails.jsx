@@ -3,12 +3,12 @@ import { Link, useParams, useNavigate } from "react-router-dom";
 import { Descriptions, Button, Card, Spin, Alert, Row, Col } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
+import GoBackButton from "../components/GoBackButton";
 // import CreatePaymentForm from "./CreatePaymentForm";
 
 const PaymentDetails = () => {
   const { id } = useParams();
   const { dataFetcher, data, loading, error } = useDataFetch();
-  const navigate = useNavigate();
 
   // fetch data
   useEffect(() => {
@@ -34,7 +34,7 @@ const PaymentDetails = () => {
 
   return (
     <>
-      <Button onClick={() => navigate(-1)}>Go Back</Button>
+      <GoBackButton />
       <Card
         className="text-black w-[100%] mt-4"
         title="Payment Details"
@@ -178,28 +178,28 @@ const PaymentDetails = () => {
             {invoice?.totalHours}
           </Descriptions.Item>
           <Descriptions.Item label="Total Professional Fees">
-            ₦{invoice?.totalProfessionalFees.toFixed(2).toLocaleString()}
+            ₦{invoice?.totalProfessionalFees?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Total Expenses">
             ₦{invoice?.totalExpenses.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Previous Balance">
-            ₦{invoice?.previousBalance.toFixed(2).toLocaleString()}
+            ₦{invoice?.previousBalance?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Tax Amount">
-            ₦{invoice?.taxAmount.toFixed(2).toLocaleString()}
+            ₦{invoice?.taxAmount?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Total Amount With Tax">
-            ₦{invoice?.totalAmountWithTax.toFixed(2).toLocaleString()}
+            ₦{invoice?.totalAmountWithTax?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Total Invoice Amount">
-            ₦{invoice?.totalInvoiceAmount.toFixed(2).toLocaleString()}
+            ₦{invoice?.totalInvoiceAmount?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Total Amount Due">
-            ₦{invoice?.totalAmountDue.toFixed(2).toLocaleString()}
+            ₦{invoice?.totalAmountDue?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Amount Paid">
-            ₦{invoice?.amountPaid.toFixed(2).toLocaleString()}
+            ₦{invoice?.amountPaid?.toFixed(2).toLocaleString()}
           </Descriptions.Item>
           <Descriptions.Item label="Account Name">
             {invoice?.accountDetails?.accountName}

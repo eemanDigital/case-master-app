@@ -155,7 +155,7 @@ const DocumentsList = () => {
           dataSource={searchResults}
           columns={columns}
           rowKey="_id"
-          className="w-full mt-3"
+          className="w-full mt-3 font-medium font-poppins"
           responsive
           scroll={{ x: 400 }}
         />

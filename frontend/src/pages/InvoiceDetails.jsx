@@ -1,20 +1,25 @@
 import { useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { Descriptions, Button, Card, Row, Col } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
-import { handleDownload } from "../utils/downloadHandler";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
 import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import { useDownloadPdfHandler } from "../hooks/useDownloadPdfHandler";
+import { toast } from "react-toastify";
 
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
 const InvoiceDetails = () => {
   const { id } = useParams();
   const { dataFetcher, data, loading, error } = useDataFetch();
-  const navigate = useNavigate();
+  const {
+    handleDownloadPdf,
+    loading: loadingPdf,
+    error: pdfError,
+  } = useDownloadPdfHandler();
   useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
   // fetch data
@@ -22,7 +27,11 @@ const InvoiceDetails = () => {
     dataFetcher(`invoices/${id}`, "GET");
   }, [id, dataFetcher]);
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) return <LoadingSpinner />; // loader for page
+
+  if (pdfError) {
+    return toast.error(pdfError || "Failed to download document"); //pdf error toast
+  }
 
   const invoice = data?.data;
 
@@ -33,7 +42,6 @@ const InvoiceDetails = () => {
         <PageErrorAlert errorCondition={error} errorMessage={error} />
       ) : (
         <>
-          <Button onClick={() => navigate(-1)}>Go Back</Button>
           <Card
             className="text-black w-[100%] mt-4"
             title="Invoice Details"
@@ -163,7 +171,9 @@ const InvoiceDetails = () => {
                 ₦{invoice?.totalInvoiceAmount?.toFixed(2).toLocaleString()}
               </Descriptions.Item>
               <Descriptions.Item label="Total Amount Due">
-                ₦{invoice?.totalAmountDue?.toFixed(2).toLocaleString()}
+                <span className="text-1xl font-bold text-rose-600">
+                  ₦{invoice?.totalAmountDue?.toFixed(2).toLocaleString()}
+                </span>
               </Descriptions.Item>
               <Descriptions.Item label="Amount Paid">
                 ₦{invoice?.amountPaid?.toFixed(2).toLocaleString()}
@@ -188,8 +198,9 @@ const InvoiceDetails = () => {
             </Descriptions>
 
             <Button
+              loading={loadingPdf}
               onClick={(event) =>
-                handleDownload(
+                handleDownloadPdf(
                   event,
                   `${downloadURL}/invoices/pdf/${invoice?._id}`,
                   "invoice.pdf"

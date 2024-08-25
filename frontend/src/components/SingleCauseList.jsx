@@ -6,6 +6,7 @@ import { formatDate } from "../utils/formatDate";
 import LawyersInCourtForm from "../pages/LawyersInCourtForm";
 import { useAdminHook } from "../hooks/useAdminHook";
 import PageErrorAlert from "./PageErrorAlert";
+import { toast } from "react-toastify";
 
 const { Title, Text } = Typography;
 
@@ -20,10 +21,17 @@ const SingleCauseList = ({
   showDownloadBtn,
   hideButton,
   h1Style,
+  loadingPdf,
+  pdfError,
 }) => {
   const [selectedReportId, setSelectedReportId] = useState(null);
   const { isSuperOrAdmin } = useAdminHook();
 
+  if (pdfError) {
+    return toast.error(pdfError || "Failed to download document"); //pdf error toast
+  }
+
+  // cause list data error toast
   if (errorCauseList)
     return (
       <PageErrorAlert
@@ -123,6 +131,7 @@ const SingleCauseList = ({
         />
         {showDownloadBtn && (
           <Button
+            loading={loadingPdf}
             className="blue-btn"
             icon={<DownloadOutlined />}
             onClick={onDownloadCauseList}
@@ -182,6 +191,8 @@ SingleCauseList.propTypes = {
   showDownloadBtn: PropTypes.bool,
   hideButton: PropTypes.bool,
   h1Style: PropTypes.string,
+  loadingPdf: PropTypes.bool.isRequired,
+  pdfError: PropTypes.string,
 };
 
 export default SingleCauseList;

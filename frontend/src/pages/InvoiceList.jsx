@@ -195,8 +195,9 @@ const InvoiceList = () => {
 
             <SearchBar onSearch={handleSearchChange} />
           </div>
-          <h1 className="text-3xl font-bold text-gray-700 mb-7">Invoices</h1>
+          <h1 className="text-3xl font-bold text-gray-800 mb-7">Invoices</h1>
           <Table
+            className="font-medium font-poppins"
             columns={columns}
             dataSource={isClient ? filteredInvoiceForClient : searchResults}
             rowKey="_id"

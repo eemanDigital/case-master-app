@@ -145,28 +145,27 @@ const Dashboard = () => {
     <PaymentFiltersContext.Provider
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
       <ScrollingEvents />
-      <div className="flex justify-between items-center">
+      <div className="flex flex-wrap items-center justify-between px-3 rounded-lg md:flex-nowrap md:justify-start md:space-x-4">
         {!isVerified && <Notification />}
-      </div>
 
-      <div className="flex flex-wrap items-center justify-between px-3 rounded-lg">
         <div className="flex items-center space-x-4">
           <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
-            {" "}
             Dashboard
           </h1>
-          {isAdminOrHr && <LeaveNotification />}
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="p-4">
-            <EventForm />
-          </div>
-          <div className="p-4">
-            <EventList />
-          </div>
-          <div className="p-4">
-            <LeaveAppForm />
-          </div>
+
+        {isAdminOrHr && <LeaveNotification />}
+
+        <div className="w-full md:w-auto">
+          <EventForm />
+        </div>
+
+        <div className="w-full md:w-auto">
+          <EventList />
+        </div>
+
+        <div className="w-full md:w-auto">
+          <LeaveAppForm />
         </div>
       </div>
 

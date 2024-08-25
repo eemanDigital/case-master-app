@@ -1,34 +1,46 @@
-// import { CiFileOn } from "react-icons/ci";
-import { GrTask } from "react-icons/gr";
-import { FaRegFolderOpen, FaRegFileAlt } from "react-icons/fa";
+import {
+  FaBriefcase,
+  FaCalendarAlt,
+  FaChartLine,
+  FaLock,
+} from "react-icons/fa";
+import { HiDocumentText } from "react-icons/hi";
+import FeatureCard from "./FeatureCard";
 
 const SummaryFeatures = () => {
-  let divStyle = "flex flex-col mb-6 items-center justify-center gap-5 ";
-  let svgStyle = " text-4xl text-slate-300 ";
-  let svgDivStyle = "rounded-full p-5 bg-slate-500 ";
-  let textStyle = "text-slate-300 text-[14px] tracking-wider ";
-
   return (
-    <div className="sm:flex gap-6 items-center justify-center p-3">
-      <div className={divStyle}>
-        <div className={svgDivStyle}>
-          <FaRegFileAlt className={svgStyle} />
+    <section className="py-20">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center mb-12">Key Features</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <FeatureCard
+            icon={<FaBriefcase />}
+            title="Case Organization"
+            description="Easily organize and access all your case files in one place."
+          />
+          <FeatureCard
+            icon={<FaCalendarAlt />}
+            title="Scheduling"
+            description="Manage appointments, court dates, and deadlines efficiently."
+          />
+          <FeatureCard
+            icon={<HiDocumentText />}
+            title="Document Management"
+            description="Create, edit, and share legal documents seamlessly."
+          />
+          <FeatureCard
+            icon={<FaChartLine />}
+            title="Performance Tracking"
+            description="Monitor case progress and firm performance with insightful analytics."
+          />
+          <FeatureCard
+            icon={<FaLock />}
+            title="Secure Data"
+            description="Keep your client information safe with advanced security measures."
+          />
         </div>
-        <p className={textStyle}> Organize your file seamlessly</p>
       </div>
-      <div className={divStyle}>
-        <div className={svgDivStyle}>
-          <GrTask className={svgStyle} />
-        </div>
-        <p className={textStyle}>Assign Task easily</p>
-      </div>
-      <div className={divStyle}>
-        <div className={svgDivStyle}>
-          <FaRegFolderOpen className={svgStyle} />
-        </div>
-        <p className={textStyle}> Store file effortlessly</p>
-      </div>
-    </div>
+    </section>
   );
 };
 

@@ -12,7 +12,7 @@ import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import AddEventToCalender from "../components/AddEventToCalender"; // Import the component
 
 const EventList = () => {
-  const { events, fetchData, error, loading } = useDataGetterHook();
+  const { events, fetchData, error } = useDataGetterHook();
   const [isModalVisible, setIsModalVisible] = useState(false);
   useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
 
@@ -94,7 +94,7 @@ const EventList = () => {
     <div className="w-full p-4">
       <Button
         onClick={() => setIsModalVisible(true)}
-        className="flex items-center space-x-2 bg-white text-blue-500 mb-4">
+        className="flex items-center space-x-2 bg-white text-blue-500 ">
         <MdEventAvailable size={20} />
         <span>Show Events</span>
       </Button>
@@ -108,7 +108,6 @@ const EventList = () => {
           columns={columns}
           dataSource={events?.data}
           rowKey="_id"
-          loading={loading.events}
           pagination={{ pageSize: 5 }} // Add pagination for better UX
           scroll={{ x: 700 }}
         />

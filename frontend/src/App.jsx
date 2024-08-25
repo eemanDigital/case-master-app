@@ -4,7 +4,6 @@ import {
   Route,
   RouterProvider,
 } from "react-router-dom";
-import Hero from "./components/Hero";
 import HomeLayout from "./components/HomeLayout";
 import Dashboard from "./components/Dashboard.jsx";
 import DashboardLayout from "./components/DashboardLayout.jsx";
@@ -55,6 +54,7 @@ import ContactForm from "./components/ContactForm.jsx";
 import EventDetail from "./pages/EventDetail.jsx";
 import { BillingAndPaymentsRoute } from "./components/protect/Protect.jsx";
 import Login from "./pages/Login.jsx";
+import HomePage from "./components/HomePage.jsx";
 
 // enable axios to get credentials everywhere in the app
 axios.defaults.withCredentials = true;
@@ -79,7 +79,7 @@ function App() {
   const router = createBrowserRouter(
     createRoutesFromElements(
       <Route path="/" element={<HomeLayout />} errorElement={<Error />}>
-        <Route index element={<Hero />} />
+        <Route index element={<HomePage />} />
 
         <Route
           path="*"

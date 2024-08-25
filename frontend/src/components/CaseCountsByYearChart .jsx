@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import { useState } from "react";
 import {
   BarChart,
@@ -85,6 +86,16 @@ const CaseCountsByYearChart = ({ data }) => {
       </Modal>
     </>
   );
+};
+
+CaseCountsByYearChart.propTypes = {
+  data: PropTypes.arrayOf(
+    PropTypes.shape({
+      year: PropTypes.number.isRequired,
+      count: PropTypes.number.isRequired,
+      parties: PropTypes.arrayOf(PropTypes.string).isRequired,
+    })
+  ).isRequired,
 };
 
 export default CaseCountsByYearChart;

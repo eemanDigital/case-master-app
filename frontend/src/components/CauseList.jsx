@@ -3,16 +3,19 @@ import { useSearchParams } from "react-router-dom";
 import SingleCauseList from "./SingleCauseList";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import SwitchButton from "./SwitchButton";
-import { handleDownload } from "../utils/downloadHandler";
+import { useDownloadPdfHandler } from "../hooks/useDownloadPdfHandler";
 
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
 export const CauseList = () => {
   const [selectedReport, setSelectedReport] = useState("currentWeek");
   const { causeList, loading, error, fetchData } = useDataGetterHook();
-
   const [searchParams, setSearchParams] = useSearchParams();
-
+  const {
+    handleDownloadPdf,
+    loading: loadingPdf,
+    error: pdfError,
+  } = useDownloadPdfHandler();
   // Update selectedReport based on searchParams
   useEffect(() => {
     const reportType = searchParams.get("type");
@@ -37,8 +40,10 @@ export const CauseList = () => {
             result={causeList.data?.weekResults}
             showDownloadBtn={true}
             addResultNumber={true}
+            loadingPdf={loadingPdf}
+            pdfError={pdfError}
             onDownloadCauseList={(event) =>
-              handleDownload(
+              handleDownloadPdf(
                 event,
                 `${downloadURL}/reports/pdf/causeList/week`,
                 "causeList.pdf"
@@ -55,8 +60,10 @@ export const CauseList = () => {
             result={causeList.data?.nextWeekResults}
             showDownloadBtn={true}
             addResultNumber={true}
+            loadingPdf={loadingPdf}
+            pdfError={pdfError}
             onDownloadCauseList={(event) =>
-              handleDownload(
+              handleDownloadPdf(
                 event,
                 `${downloadURL}/reports/pdf/causeList/next-week`,
                 "causeList.pdf"
@@ -73,8 +80,10 @@ export const CauseList = () => {
             result={causeList.data?.monthResults}
             showDownloadBtn={true}
             addResultNumber={true}
+            loadingPdf={loadingPdf}
+            pdfError={pdfError}
             onDownloadCauseList={(event) =>
-              handleDownload(
+              handleDownloadPdf(
                 event,
                 `${downloadURL}/reports/pdf/causeList/month`,
                 "causeList.pdf"
