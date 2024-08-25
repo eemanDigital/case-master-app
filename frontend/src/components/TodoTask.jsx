@@ -5,6 +5,7 @@ import { DeleteOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import useDelete from "../hooks/useDelete";
 import useUpdate from "../hooks/useUpdate";
 import { useSelector } from "react-redux";
+import AddEventToCalender from "./AddEventToCalender";
 
 const TodoTask = ({ tasks }) => {
   const [currentPage, setCurrentPage] = useState(1);
@@ -47,6 +48,16 @@ const TodoTask = ({ tasks }) => {
     const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
     return `${days}d ${hours}h ${minutes}m`;
+  };
+
+  // prepare event title for calendar
+  const createEventTitle = (task) => {
+    return `Personal Todo Task: ${task.description}`;
+  };
+
+  // prepare event description for calendar
+  const createEventDescription = (task) => {
+    return `Priority: ${task.priority}`;
   };
 
   const columns = [
@@ -115,6 +126,13 @@ const TodoTask = ({ tasks }) => {
                   ),
               })
             }
+          />
+
+          <AddEventToCalender
+            title={createEventTitle(record)}
+            description={createEventDescription(record)}
+            startDate={record.dateAssigned}
+            endDate={record.dueDate}
           />
         </Space>
       ),

@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import TaskReminderForm from "./TaskReminderForm";
-import { Table, Modal, Space, Button } from "antd";
+import { Table, Modal, Space } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import CreateTaskForm from "../pages/CreateTaskForm";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -99,11 +99,7 @@ const TaskList = () => {
       key: "assignedToClient",
       render: (client) => client?.firstName,
     },
-    // {
-    //   title: "Task Priority",
-    //   dataIndex: "taskPriority",
-    //   key: "taskPriority",
-    // },
+
     {
       title: "Date Assigned",
       dataIndex: "dateAssigned",
@@ -177,8 +173,6 @@ const TaskList = () => {
             rowKey="_id"
             scroll={{ x: 700 }}
           />
-
-          {/* <TaskTimeTracker tasks={tasks?.data} userId={loggedInClientId} /> */}
         </div>
       )}{" "}
     </>

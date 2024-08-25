@@ -9,6 +9,7 @@ import { useDispatch } from "react-redux";
 import { MdEventAvailable } from "react-icons/md";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import AddEventToCalender from "../components/AddEventToCalender"; // Import the component
 
 const EventList = () => {
   const { events, fetchData, error, loading } = useDataGetterHook();
@@ -35,7 +36,7 @@ const EventList = () => {
     return (
       <PageErrorAlert
         errorCondition={error.events}
-        errorMessage={error.event || "Failed to fetch  event data"}
+        errorMessage={error.event || "Failed to fetch event data"}
       />
     );
   }
@@ -45,6 +46,9 @@ const EventList = () => {
       title: "Title",
       dataIndex: "title",
       key: "title",
+      render: (text, record) => (
+        <Link to={`events/${record?._id}/details`}>{text}</Link>
+      ),
     },
     {
       title: "Start",
@@ -58,17 +62,6 @@ const EventList = () => {
       key: "end",
       render: (end) => new Date(end).toLocaleString(),
     },
-    // {
-    //   title: "Description",
-    //   dataIndex: "description",
-    //   key: "description",
-    // },
-    // {
-    //   title: "Participants",
-    //   dataIndex: "participants",
-    //   key: "participants",
-    //   render: (participants) => participants?.length,
-    // },
     {
       title: "Location",
       dataIndex: "location",
@@ -79,20 +72,18 @@ const EventList = () => {
       key: "actions",
       render: (_, record) => (
         <Space size="middle">
-          {/* <Button icon={<EditOutlined />} onClick={() => handleEdit(record)}>
-            Edit
-          </Button> */}
-          <Button type="link">
-            <Link to={`events/${record?._id}/details`}>See Details</Link>
-          </Button>
+          <AddEventToCalender
+            title={`Office Event:  ${record.title}`}
+            description={`Event Description: ${record.description}`}
+            startDate={record.start}
+            endDate={record.end}
+          />
           <Popconfirm
             title="Are you sure you want to delete this event?"
             onConfirm={() => deleteEvent(record?._id)}
             okText="Yes"
             cancelText="No">
-            <Button icon={<DeleteOutlined />} danger>
-              Delete
-            </Button>
+            <Button icon={<DeleteOutlined />} danger></Button>
           </Popconfirm>
         </Space>
       ),
@@ -100,10 +91,10 @@ const EventList = () => {
   ];
 
   return (
-    <div className="w-full">
+    <div className="w-full p-4">
       <Button
         onClick={() => setIsModalVisible(true)}
-        className="flex items-center space-x-2 bg-white text-blue-500">
+        className="flex items-center space-x-2 bg-white text-blue-500 mb-4">
         <MdEventAvailable size={20} />
         <span>Show Events</span>
       </Button>
@@ -118,6 +109,8 @@ const EventList = () => {
           dataSource={events?.data}
           rowKey="_id"
           loading={loading.events}
+          pagination={{ pageSize: 5 }} // Add pagination for better UX
+          scroll={{ x: 700 }}
         />
       </Modal>
     </div>

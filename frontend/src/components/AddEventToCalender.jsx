@@ -8,6 +8,11 @@ import PropTypes from "prop-types";
 const AddEventToCalender = ({ title, description, startDate, endDate }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
+  // check if date string is valid
+  const isValidDate = (date) => {
+    return !isNaN(Date.parse(date));
+  };
+
   // Calculate duration of event
   const calculateDuration = () => {
     const start = new Date(startDate);
@@ -17,20 +22,34 @@ const AddEventToCalender = ({ title, description, startDate, endDate }) => {
   };
 
   // Event object for calendar
+  // const event = {
+  //   title: title,
+  //   description: description,
+  //   start: new Date(startDate).toISOString(),
+  //   end: new Date(endDate).toISOString(),
+  //   duration: calculateDuration(),
+  // };
   const event = {
     title: title,
     description: description,
-    start: new Date(startDate).toISOString(),
-    end: new Date(endDate).toISOString(),
+    start: isValidDate(startDate)
+      ? new Date(startDate).toISOString()
+      : new Date().toISOString(),
+    end: isValidDate(endDate)
+      ? new Date(endDate).toISOString()
+      : new Date().toISOString(),
     duration: calculateDuration(),
   };
 
+  console.log(event, "EVENT");
+  // Calendar links for different services
   const googleUrl = google(event);
   const outlookUrl = outlook(event);
   const officeUrl = office365(event);
   const yahooUrl = yahoo(event);
   const appleUrl = ics(event);
 
+  // Modal functions
   const showModal = () => setIsModalVisible(true);
   const handleOk = () => setIsModalVisible(false);
   const handleCancel = () => setIsModalVisible(false);

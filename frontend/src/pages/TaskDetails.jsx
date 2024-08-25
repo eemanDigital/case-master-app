@@ -16,6 +16,7 @@ import PageErrorAlert from "../components/PageErrorAlert";
 import TaskAttachmentsCard from "../components/TaskAttachmentsCard ";
 import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import AddEventToCalender from "../components/AddEventToCalender";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -69,6 +70,12 @@ const TaskDetails = () => {
     <PageErrorAlert errorCondition={dataError} errorMessage={dataError} />;
   }
 
+  // prepare event title for calendar
+  const createEventTitle = `Official Task: ${task?.title}`;
+
+  // prepare event description for calendar
+  const createEventDescription = `Task Description: ${task?.instruction}`;
+
   return (
     <>
       <div className="container mx-auto  py-4">
@@ -77,8 +84,18 @@ const TaskDetails = () => {
         {/* task details */}
 
         <Card title="Task Details" className="mb-8 shadow-md bg-rose-300 ">
-          {/* task document upload */}
-          <TaskDocUpload taskId={task?._id} />
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between space-y-4 md:space-y-0 md:space-x-4">
+            {/* task document upload */}
+
+            <TaskDocUpload taskId={task?._id} />
+            {/* add task to calendar component */}
+            <AddEventToCalender
+              title={createEventTitle}
+              description={createEventDescription}
+              startDate={task?.dateAssigned}
+              endDate={task?.dueDate}
+            />
+          </div>
 
           <Divider />
 
