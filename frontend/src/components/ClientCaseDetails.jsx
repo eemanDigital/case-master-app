@@ -9,9 +9,7 @@ import PageErrorAlert from "./PageErrorAlert";
 const ClientCaseDetails = () => {
   const { causeList, reports, loading, error, fetchData } = useDataGetterHook();
   const { user } = useSelector((state) => state.auth);
-
-  const clientCase = user?.data?.clientCase;
-  const clientCaseIds = clientCase?.map((item) => item?.id); //get caseIDs
+  const clientId = user?.data?._id; // get client id
   const causeListData = causeList?.data?.reportsThisMonth || []; //cause list data for the month
 
   // fetch data
@@ -21,9 +19,12 @@ const ClientCaseDetails = () => {
   }, []);
 
   // filter out clients cases
-  const filteredCauseList = causeListData.filter((items) =>
-    clientCaseIds.includes(items?.caseReported?.id)
-  );
+  // Filter reports for client
+  const filteredCauseListForClient = (id) => {
+    return causeListData?.filter(
+      (causeListItem) => causeListItem?.caseReported?.client === id
+    );
+  };
 
   // Ensure reports are loaded
   if (loading.reports || loading.causeList) {
@@ -48,29 +49,27 @@ const ClientCaseDetails = () => {
   const firstReportsArray = Object.values(firstReports || {});
 
   return (
-    <div className="flex justify-between   p-4 my-4 mx-2 gap-4 rounded-md">
-      <div className=" flex justify-evenly items-center md:items-center md:flex-row flex-col gap-3">
-        <div className="w-[480px] h-[340px]  p-4 shadow-inner bg-gray-300 overflow-scroll hide-scrollbar">
-          <CaseReportList
-            showFilter={false}
-            title="Latest Case Report"
-            reports={firstReportsArray}
-          />
-        </div>
-
-        <div className=" w-[50%] pt-5">
-          <h1 className="  text-2xl text-center font-medium  text-gray-700">
-            Case Schedule
-          </h1>
-          <SingleCauseList
-            causeListData={filteredCauseList}
-            loadingCauseList={loading.causeList}
-            errorCauseList={error.causeList}
-            addResultNumber={false}
-            showDownloadBtn={false}
-          />
-        </div>
+    <div className="flex justify-between  mt-4 gap-4 rounded-md">
+      <div className="w-full h-96 overflow-y-scroll p-4 bg-white shadow-md rounded-md">
+        <CaseReportList
+          showFilter={false}
+          title="Latest Case Reports"
+          shortenForClient={true}
+          nameStyle="w-50px] text-gray-800 break-words font-semibold"
+          reports={firstReportsArray}
+        />
       </div>
+
+      <SingleCauseList
+        causeListData={filteredCauseListForClient(clientId)}
+        loadingCauseList={loading.causeList}
+        errorCauseList={error.causeList}
+        addResultNumber={false}
+        showDownloadBtn={false}
+        hideButton={true}
+        cardWidth="50%"
+        title="Your Case Schedule"
+      />
     </div>
   );
 };

@@ -9,7 +9,7 @@ import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser.jsx";
 const { Header, Content } = Layout;
 
 const DashboardLayout = () => {
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
   const [collapsed, setCollapsed] = useState(false);
 
   const toggleSidebar = () => {

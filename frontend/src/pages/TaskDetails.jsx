@@ -32,7 +32,7 @@ const TaskDetails = () => {
   const currentUser = user?.data?._id;
   const assignedById = task?.assignedBy?._id;
   const isAssignedBy = currentUser === assignedById;
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   // get if assigned to current user
   const isAssignedToCurrentUser = task?.assignedTo?.some(

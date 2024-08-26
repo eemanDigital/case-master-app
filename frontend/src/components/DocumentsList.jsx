@@ -21,7 +21,7 @@ const DocumentsList = () => {
     error: errorDoc,
     loading: loadingDoc,
   } = useDataGetterHook();
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   // State to manage search results
   const [searchResults, setSearchResults] = useState([]);

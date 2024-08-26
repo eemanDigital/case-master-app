@@ -462,9 +462,11 @@ exports.changePassword = catchAsync(async (req, res, next) => {
 
 // send verification email
 exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
-  const { email } = req.body; // Assuming the new user's email is passed in the request body
+  const { email } = req.params; // Assuming the new user's email is passed in the request body
+  //
+  const user = await User.findOne({ email }); // Find the user in the database
 
-  const user = await User.findOne({ email });
+  //
   if (!user) {
     return next(new AppError("User does not exist", 404));
   }
@@ -489,7 +491,7 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
   }).save();
 
   const verificationURL = `${process.env.FRONTEND_URL}/dashboard/verify-account/${vToken}`;
-
+  console.log(verificationURL);
   const subject = "Verify Your Account - CaseMaster";
   const send_to = user.email;
   const send_from = process.env.EMAIL_USER_OUTLOOK;

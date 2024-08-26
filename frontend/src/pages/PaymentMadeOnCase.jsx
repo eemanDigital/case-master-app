@@ -10,7 +10,7 @@ const PaymentMadeOnCase = () => {
   const { invoices } = useDataGetterHook();
   const navigate = useNavigate();
   const { clientId, caseId } = useParams();
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   useEffect(() => {
     if (clientId && caseId) {

@@ -7,7 +7,7 @@ import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const MainCaseReportList = () => {
   const { reports, error, loading, fetchData } = useDataGetterHook();
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   // fetch data
   useEffect(() => {

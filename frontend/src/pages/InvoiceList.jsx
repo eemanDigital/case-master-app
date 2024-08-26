@@ -32,7 +32,7 @@ const InvoiceList = () => {
   const { isClient, isSuperOrAdmin } = useAdminHook();
   const { user } = useSelector((state) => state.auth);
   const loggedInClientId = user?.data?.id;
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   // fetch data
   useEffect(() => {

@@ -23,6 +23,7 @@ const SingleCauseList = ({
   h1Style,
   loadingPdf,
   pdfError,
+  cardWidth,
 }) => {
   const [selectedReportId, setSelectedReportId] = useState(null);
   const { isSuperOrAdmin } = useAdminHook();
@@ -108,17 +109,22 @@ const SingleCauseList = ({
   }));
 
   return (
-    <Space direction="vertical" size="large" style={{ width: "100%" }}>
+    <Space
+      direction="vertical"
+      size="large"
+      style={{ width: cardWidth || "100%" }}>
       {addResultNumber && (
         <Card>
-          <Title
-            level={2}
-            style={h1Style || { textAlign: "center", color: "#1890ff" }}>
-            {title || `Number of Cases: ${result}`}
-          </Title>
+          {
+            <Title
+              level={2}
+              style={h1Style || { textAlign: "center", color: "#1890ff" }}>
+              {title || `Number of Cases: ${result}`}
+            </Title>
+          }
         </Card>
       )}
-      <Card>
+      <Card title={title || "Cause List"}>
         <Table
           onRow={(record) => ({
             onClick: () => onRowClick(record),
@@ -193,6 +199,7 @@ SingleCauseList.propTypes = {
   h1Style: PropTypes.string,
   loadingPdf: PropTypes.bool.isRequired,
   pdfError: PropTypes.string,
+  cardWidth: PropTypes.string,
 };
 
 export default SingleCauseList;

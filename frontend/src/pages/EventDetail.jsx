@@ -11,7 +11,7 @@ const { Title, Text } = Typography;
 const EventDetail = () => {
   const { id } = useParams();
   const { dataFetcher, error, loading, data } = useDataFetch();
-  useRedirectLogoutUser("users/login");
+  useRedirectLogoutUser("/users/login");
 
   useEffect(() => {
     const fetchEventDetail = async () => {

@@ -25,7 +25,7 @@ const LeaveApplicationList = () => {
   const { user } = useSelector((state) => state.auth);
   const { isAdminOrHr } = useAdminHook();
   const dispatch = useDispatch();
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   // render all cases initially before filter
   useEffect(() => {

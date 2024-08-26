@@ -1,9 +1,12 @@
-import { useDispatch, useSelector } from "react-redux";
+import PropTypes from "prop-types";
+import { useSelector } from "react-redux";
 import {
   selectIsLoggedIn,
   selectUser,
+  selectIsLoading,
 } from "../../redux/features/auth/authSlice";
 import { Alert } from "antd";
+import LoadingSpinner from "../LoadingSpinner";
 
 // for login
 export const ShowOnLogin = ({ children }) => {
@@ -14,6 +17,10 @@ export const ShowOnLogin = ({ children }) => {
   }
   return null;
 };
+// Prop types for ShowOnLogin
+ShowOnLogin.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 // for logout
 export const ShowOnLogout = ({ children }) => {
@@ -23,6 +30,11 @@ export const ShowOnLogout = ({ children }) => {
     return <>{children}</>;
   }
   return null;
+};
+
+// Prop types for ShowOnLogout
+ShowOnLogout.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 // allow access to only admin and super-admin - to be used for route
@@ -46,8 +58,17 @@ export const ShowAdminRoute = ({ children }) => {
   );
 };
 
+// Prop types for ShowAdminRoute
+ShowAdminRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+
 export const BillingAndPaymentsRoute = ({ element }) => {
   return <ShowAdminRoute>{element}</ShowAdminRoute>;
+};
+
+BillingAndPaymentsRoute.propTypes = {
+  element: PropTypes.node.isRequired,
 };
 
 // allow access to only admin and super-admin - to be used for component
@@ -63,31 +84,49 @@ export const ShowAdminComponent = ({ children }) => {
   }
   return null;
 };
-// export const ShowOnLoginAndRedirect = () => {
-//   const dispatch = useDispatch();
-//   const navigate = useNavigate();
-//   const { isLoggedIn, isLoading } = useSelector((state) => state.auth);
-//   const [checkedLogin, setCheckedLogin] = useState(false);
 
-//   useEffect(() => {
-//     if (!isLoggedIn) {
-//       dispatch(getUser()); // Dispatch the action to get the user
-//     } else {
-//       setCheckedLogin(true);
-//     }
-//   }, [isLoggedIn, dispatch]);
+ShowAdminComponent.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
-//   useEffect(() => {
-//     if (!isLoggedIn && !isLoading) {
-//       // toast.error("You need to login to access your dashboard");
-//       navigate("/login"); // Redirect to login page
-//     }
-//   }, [isLoggedIn, isLoading, navigate]);
+// Allow access to only verified users
+export const ShowOnlyVerifiedUser = ({ children }) => {
+  const isLoggedIn = useSelector(selectIsLoggedIn);
+  const user = useSelector(selectUser);
+  const isLoading = useSelector(selectIsLoading); // Assuming you have a loading state in your auth slice
 
-//   if (!checkedLogin) {
-//     return null; // Render nothing until login status is checked
-//   }
+  // While loading, show a spinner or some loading indication
+  // if (isLoading) {
+  //   return (
+  //     <div className="flex items-center justify-center min-h-[50vh] bg-gray-100 mt-4">
+  //       {/* <LoadingSpinner />
+  //        */}
+  //       loading...
+  //     </div>
+  //   );
+  // }
 
-//   // If logged in and checked, render the child routes
-//   return <Outlet />;
-// };
+  // Check if user is logged in and verified
+  if (user?.data?.isVerified) {
+    return <>{children}</>;
+  }
+
+  // If not verified or not logged in, show alert
+  return (
+    <div className="flex items-center justify-center min-h-[50vh] bg-gray-100 mt-4">
+      <div className="max-w-md w-full p-4">
+        <Alert
+          message="Access Denied for Now"
+          description="Verify your account to gain access."
+          type="info"
+          showIcon
+          className="w-full"
+        />
+      </div>
+    </div>
+  );
+};
+// Prop types for ShowOnlyVerifiedUser
+ShowOnlyVerifiedUser.propTypes = {
+  children: PropTypes.node.isRequired,
+};

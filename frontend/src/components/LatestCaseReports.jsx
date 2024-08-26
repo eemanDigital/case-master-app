@@ -6,10 +6,14 @@ import { Link } from "react-router-dom";
 import PageErrorAlert from "./PageErrorAlert";
 
 const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
-  // const { reports, loading, error, fetchData } = useDataGetterHook();
   const [todayReports, setTodayReports] = useState([]);
   const [hasFetched, setHasFetched] = useState(false);
 
+  // const title = (
+  //   <h2 className="bg-gradient-to-r from-blue-600 to-blue-800 text-white text-lg sm:text-xl md:text-2xl font-semibold py-3 px-4 text-center">
+  //     Today's Case Report
+  //   </h2>
+  // );
   // Helper function to check if a date is today
   const isToday = (dateString) => {
     const today = new Date();
@@ -37,8 +41,8 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
   }, [fetchData]); // Only depends on fetchData
 
   useEffect(() => {
-    if (hasFetched && Array.isArray(reports?.data)) {
-      const filteredReports = reports.data.filter((report) =>
+    if (hasFetched && Array.isArray(reports)) {
+      const filteredReports = reports?.filter((report) =>
         isToday(report?.date)
       );
       setTodayReports(filteredReports);
@@ -47,51 +51,35 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
 
   if (loading.reports) return <LoadingSpinner />; // Handle loading state
 
+  if (error.reports) {
+    return (
+      <PageErrorAlert
+        errorCondition={error.reports}
+        errorMessage={error.reports}
+      />
+    );
+  }
+
+  if (todayReports.length === 0) {
+    return null; // Return nothing if no reports are available today
+  }
+
   return (
-    <>
-      {error.reports ? (
-        <PageErrorAlert
-          errorCondition={error.reports}
-          errorMessage={error.reports}
-        />
-      ) : (
-        <div className="bg-white  rounded-md shadow-md   h-[362px] m-2  overflow-auto">
-          <Link
-            className="text-blue-600 underline p-2 text-[12px] block hover:text-blue-800 hover:font-bold"
-            to="case-reports">
-            See all Reports
-          </Link>
-          <h1 className=" text-center font-medium">Today&apos;s Case Report</h1>
-          {todayReports.length === 0 ? (
-            <div className="flex flex-col items-center justify-center text-gray-500 text-lg font-medium bg-gray-100 rounded-md p-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-16 w-16 mb-4 text-gray-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 12h6m-6 4h6M9 8h.01M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"
-                />
-              </svg>
-              <p>No reports available today.</p>
-            </div>
-          ) : (
-            <CaseReportList
-              showFilter={false}
-              reports={todayReports}
-              hideButtons={true}
-              titleStyle="text-[20px]  text-center font-medium"
-              nameStyle=" w-80  text-red-600"
-              cardStyle=""
-            />
-          )}
-        </div>
-      )}
-    </>
+    <div className="bg-white rounded-md shadow-md h-[408px]  overflow-auto">
+      <Link
+        className="text-blue-600 underline p-2 text-[12px] block hover:text-blue-800 hover:font-bold"
+        to="case-reports">
+        See all Reports
+      </Link>
+      <CaseReportList
+        showFilter={false}
+        reports={todayReports}
+        hideButtons={true}
+        titleStyle="text-[20px] text-center font-medium"
+        nameStyle="w-80 text-red-600"
+        title=""
+      />
+    </div>
   );
 };
 

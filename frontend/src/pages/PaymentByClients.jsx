@@ -14,7 +14,7 @@ const PaymentByClient = () => {
   const { user } = useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
   const loggedInClientId = user?.data?.id;
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   const [pagination, setPagination] = useState({ pageSize: 8, current: 1 });
 

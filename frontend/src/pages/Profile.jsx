@@ -12,7 +12,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
 
 const Profile = () => {
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   const { user, isError, isLoading, message } = useSelector(
     (state) => state.auth

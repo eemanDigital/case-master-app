@@ -67,6 +67,7 @@ const CurrentDayCauseList = () => {
 
   return (
     <Card
+      title="CauseList"
       hoverable
       className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow h-[180px]  flex flex-col justify-center items-center">
       {!causeList.data?.todayResult > 0 ? (

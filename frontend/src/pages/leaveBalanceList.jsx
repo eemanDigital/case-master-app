@@ -20,7 +20,7 @@ const LeaveBalanceList = () => {
   const { isAdminOrHr } = useAdminHook();
   const dispatch = useDispatch();
   const deleteState = useSelector((state) => state.delete); // select delete state
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   // fetch data
   const fetchLeaveBalance = async () => {

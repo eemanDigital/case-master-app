@@ -20,7 +20,7 @@ const InvoiceDetails = () => {
     loading: loadingPdf,
     error: pdfError,
   } = useDownloadPdfHandler();
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   // fetch data
   useEffect(() => {

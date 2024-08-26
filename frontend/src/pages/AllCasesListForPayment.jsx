@@ -11,7 +11,7 @@ const AllCasesListForPayment = () => {
   const { user } = useSelector((state) => state.auth);
   const { isClient } = useAdminHook();
   const loggedInClientId = user?.data?.id;
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   useEffect(() => {
     fetchData("cases", "cases");

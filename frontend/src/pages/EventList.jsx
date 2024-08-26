@@ -14,7 +14,7 @@ import AddEventToCalender from "../components/AddEventToCalender"; // Import the
 const EventList = () => {
   const { events, fetchData, error } = useDataGetterHook();
   const [isModalVisible, setIsModalVisible] = useState(false);
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   const dispatch = useDispatch();
   useEffect(() => {

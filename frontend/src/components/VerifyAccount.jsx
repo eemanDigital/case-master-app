@@ -1,42 +1,58 @@
 import { Button, Card } from "antd";
 import { useDispatch, useSelector } from "react-redux";
-import { useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { RESET, verifyUser } from "../redux/features/auth/authSlice";
-import LoadingSpinner from "./LoadingSpinner";
+import { useEffect } from "react";
 
 const VerifyAccount = () => {
   const dispatch = useDispatch();
   const { token } = useParams();
-  const { isLoading } = useSelector((state) => state.auth);
+  const { isLoading, isSuccess } = useSelector((state) => state.auth);
+  const navigate = useNavigate();
+
+  // Reset success state on component mount
+  useEffect(() => {
+    dispatch(RESET());
+  }, [dispatch]);
 
   // verify user handler
   const verifyUserAccount = async () => {
     await dispatch(verifyUser(token));
-    await dispatch(RESET());
   };
 
-  return (
-    <div>
-      {isLoading && <LoadingSpinner />}
-      <section>
-        <div>
-          <Card>
-            <h1 className="text-2xl font-bold text-center">
-              Verify Your Account
-            </h1>
-            <p className="text-center mb-6">
-              Click the button below to verify your account.
-            </p>
+  // Redirect to dashboard if verification is successful - this is not working as expected due to the way the success state is being handled, will fix this later
+  // useEffect(() => {
+  //   if (isSuccess) {
+  //     navigate("/dashboard");
+  //     dispatch(RESET()); // Reset the success state after navigation
+  //   }
+  // }, [isSuccess, navigate, dispatch]);
 
-            <div className=" text-center space-y-4">
-              <Button
-                onClick={verifyUserAccount}
-                className="bg-blue-500 text-white">
-                Verify Account
-              </Button>
-            </div>
-          </Card>
-        </div>
+  return (
+    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+      <section className="w-full max-w-md p-4">
+        <Card className="shadow-lg">
+          <h1 className="text-2xl font-bold text-center mb-4">
+            Verify Your Account
+          </h1>
+          <p className="text-center mb-6">
+            Click the button below to verify your account.
+          </p>
+
+          <div className="flex flex-col items-center text-center space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4">
+            <Button
+              loading={isLoading}
+              onClick={verifyUserAccount}
+              className="bg-blue-500 text-white w-full sm:w-auto">
+              Verify Account
+            </Button>
+            <Button className="w-full sm:w-auto">
+              <Link to="/dashboard" className="text-blue-500">
+                Go Back To Dashboard
+              </Link>
+            </Button>
+          </div>
+        </Card>
       </section>
     </div>
   );

@@ -28,7 +28,7 @@ const TaskList = () => {
   const { isSuperOrAdmin, isStaff, isClient } = useAdminHook(); // check user role
   const dispatch = useDispatch();
 
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   // fetch tasks data
   useEffect(() => {

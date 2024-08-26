@@ -31,7 +31,7 @@ const CaseList = () => {
   const { isStaff } = useAdminHook();
   const { user } = useSelector((state) => state.auth);
   const { isError, isSuccess, message } = useSelector((state) => state.delete);
-  const caseIDs = user?.data?.case?.map((caseItem) => caseItem?._id);
+  const clientId = user?.data?._id;
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const indexOfLastCase = currentPage * itemsPerPage;
@@ -40,7 +40,7 @@ const CaseList = () => {
   const dispatch = useDispatch();
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
-  useRedirectLogoutUser("users/login"); // redirect to login if not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if not logged in
 
   //  fetch cases
   const fetchCases = useCallback(() => {
@@ -109,10 +109,9 @@ const CaseList = () => {
     }
   }, [isSuccess, isError, message, dispatch]);
 
-  // filter cases by client
-  const filterCasesByClient = (caseIds) => {
-    if (!cases?.data) return [];
-    return cases?.data?.filter((caseItem) => caseIds?.includes(caseItem?._id));
+  // filter cases for client
+  const filterCasesByClient = (id) => {
+    return cases?.data?.filter((caseItem) => caseItem.client === id);
   };
 
   const columns = [
@@ -213,11 +212,13 @@ const CaseList = () => {
           <div className="overflow-x-auto">
             <Table
               columns={columns}
-              dataSource={isStaff ? currentCases : filterCasesByClient(caseIDs)}
+              dataSource={
+                isStaff ? currentCases : filterCasesByClient(clientId)
+              }
               pagination={false}
               rowKey="_id"
               loading={loading.cases}
-              scroll={{ x: 1000 }} // Enables horizontal scrolling when table content overflows
+              scroll={{ x: 700 }} // Enables horizontal scrolling when table content overflows
             />
           </div>
           <Row justify="center" style={{ marginTop: 12 }}>

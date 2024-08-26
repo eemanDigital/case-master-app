@@ -12,23 +12,25 @@ exports.createReport = catchAsync(async (req, res, next) => {
   const { caseReported, clientEmail } = req.body;
 
   // Check if the case exists and populate the client
-  const caseData = await Case.findById(caseReported).populate({
-    path: "client",
-    select: "email",
-  });
+  if (caseReported && clientEmail) {
+    const caseData = await Case.findById(caseReported).populate({
+      path: "client",
+      select: "email",
+    });
 
-  if (!caseData) {
-    return next(new AppError("No case found with that ID", 404));
-  }
+    if (!caseData) {
+      return next(new AppError("No case found with that ID", 404));
+    }
 
-  // Check if the case has an associated client
-  if (!caseData.client) {
-    return next(new AppError("No client associated with this case", 400));
-  }
+    // Check if the case has an associated client
+    if (!caseData.client) {
+      return next(new AppError("No client associated with this case", 400));
+    }
 
-  // Check if the name/clientId/clientEmail matches the email in the client case
-  if (caseData.client.email !== clientEmail) {
-    return next(new AppError("Selected client does not match the case", 400));
+    // Check if the name/clientId/clientEmail matches the email in the client case
+    if (caseData.client.email !== clientEmail) {
+      return next(new AppError("Selected client does not match the case", 400));
+    }
   }
 
   // Create a new report associated with the found case
@@ -76,23 +78,25 @@ exports.updateCaseReport = catchAsync(async (req, res, next) => {
   }
 
   // Check if the case exists and populate the client
-  const caseData = await Case.findById(caseReported).populate({
-    path: "client",
-    select: "email",
-  });
+  if (caseReported && clientEmail) {
+    const caseData = await Case.findById(caseReported).populate({
+      path: "client",
+      select: "email",
+    });
 
-  if (!caseData) {
-    return next(new AppError("No case found with that ID", 404));
-  }
+    if (!caseData) {
+      return next(new AppError("No case found with that ID", 404));
+    }
 
-  // Check if the case has an associated client
-  if (!caseData.client) {
-    return next(new AppError("No client associated with this case", 400));
-  }
+    // Check if the case has an associated client
+    if (!caseData.client) {
+      return next(new AppError("No client associated with this case", 400));
+    }
 
-  // Check if the clientEmail matches the email in the client case
-  if (caseData.client.email !== clientEmail) {
-    return next(new AppError("Selected client does not match the case", 400));
+    // Check if the clientEmail matches the email in the client case
+    if (caseData.client.email !== clientEmail) {
+      return next(new AppError("Selected client does not match the case", 400));
+    }
   }
 
   const updatedReport = await Report.findByIdAndUpdate(id, req.body, {
@@ -103,7 +107,6 @@ exports.updateCaseReport = catchAsync(async (req, res, next) => {
   if (!updatedReport) {
     return next(new AppError("No report found with this ID", 404));
   }
-
   res.status(200).json({
     status: "success",
     data: updatedReport,

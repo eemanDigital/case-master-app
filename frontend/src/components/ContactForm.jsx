@@ -9,7 +9,7 @@ import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
 const devEmail = import.meta.env.VITE_DEVELOPER_EMAIL;
 const ContactForm = () => {
-  useRedirectLogoutUser("/login");
+  useRedirectLogoutUser("/users/login");
   const [formData, setFormData] = useState({
     name: "",
     email: "",

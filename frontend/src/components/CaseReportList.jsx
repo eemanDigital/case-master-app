@@ -37,15 +37,18 @@ const CaseReportList = ({
   hideButtons,
   titleStyle,
   nameStyle,
+  shortenForClient,
 }) => {
   const { isStaff } = useAdminHook();
   const { fetchData } = useDataGetterHook();
   const { user } = useSelector((state) => state.auth);
+  const clientId = user?.data?._id; // get client id
+
   const {
     isError: deleteError,
     isSuccess: deleteSuccess,
     message: deleteMsg,
-  } = useSelector((state) => state.delete);
+  } = useSelector((state) => state.delete); // get delete state
   const { shortenText } = useTextShorten();
   const dispatch = useDispatch();
   const {
@@ -57,8 +60,6 @@ const CaseReportList = ({
   const [searchResults, setSearchResults] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
-
-  const caseIDs = user?.data?.clientCase?.map((caseItem) => caseItem?._id);
 
   // prepare event title for calendar
   const createEventTitle = (report) => {
@@ -122,12 +123,10 @@ const CaseReportList = ({
     }
   };
 
-  // Filter reports by client
-  const filterCaseByClient = (caseIds) => {
-    return (
-      reports?.filter((report) =>
-        caseIds?.includes(report?.caseReported?._id)
-      ) || []
+  // Filter reports for client
+  const filterReportForClient = (id) => {
+    return reports?.filter(
+      (reportItem) => reportItem?.caseReported?.client === id
     );
   };
 
@@ -168,20 +167,19 @@ const CaseReportList = ({
         )}
       </div>
       <Space direction="vertical" size="large" className="w-full">
-        {(isStaff ? currentReports : filterCaseByClient(caseIDs))?.map(
+        {(isStaff ? currentReports : filterReportForClient(clientId))?.map(
           (report) => (
             <Card
               key={report._id}
               className="w-full font-poppins  shadow-sm hover:shadow-md transition-shadow duration-300"
               title={
-                <Title
-                  level={4}
+                <h2
                   className={
                     nameStyle || "text-lg text-gray-700 font-semibold"
                   }>
                   {report?.caseReported?.firstParty?.name[0]?.name} vs{" "}
                   {report?.caseReported?.secondParty?.name[0]?.name}
-                </Title>
+                </h2>
               }>
               <Space direction="vertical" size="small" className="w-full">
                 {!hideButtons && (
@@ -214,7 +212,7 @@ const CaseReportList = ({
                   <Text strong className="font-poppins ">
                     Reported By:{" "}
                     <span className="text-gray-700">
-                      {report?.reportedBy?.fullName}
+                      {`${report?.reportedBy?.firstName} ${report?.reportedBy?.lastName}`}
                     </span>
                   </Text>
                 </Space>
@@ -253,12 +251,14 @@ const CaseReportList = ({
                   )}
                 </div>
               )}
-              <AddEventToCalender
-                title={createEventTitle(report)}
-                description={createEventDescription(report)}
-                startDate={report.date}
-                endDate={report.adjournedDate}
-              />
+              {!hideButtons && (
+                <AddEventToCalender
+                  title={createEventTitle(report)}
+                  description={createEventDescription(report)}
+                  startDate={report.date}
+                  endDate={report.adjournedDate}
+                />
+              )}
             </Card>
           )
         )}

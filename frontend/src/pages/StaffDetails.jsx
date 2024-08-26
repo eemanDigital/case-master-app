@@ -19,7 +19,7 @@ const StaffDetails = () => {
   const loggedInClientId = user?.data?.id;
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { isAdminOrHr } = useAdminHook();
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   useEffect(() => {
     if (id) {

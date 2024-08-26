@@ -25,7 +25,7 @@ const PaymentList = () => {
   const { isClient, isSuperOrAdmin } = useAdminHook();
   const dispatch = useDispatch();
   const loggedInClientId = user?.data?.id;
-  useRedirectLogoutUser("users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   // fetch data
   useEffect(() => {

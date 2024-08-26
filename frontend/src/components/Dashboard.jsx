@@ -10,7 +10,6 @@ import CaseCountsByYearChart from "./CaseCountsByYearChart ";
 import ClientDashboard from "./ClientDashboard";
 import LeaveNotification from "./LeaveNotification";
 import { useSelector } from "react-redux";
-import Notification from "./Notification";
 import useUsersCount from "../hooks/useUsersCount";
 import DashBoardDataCount from "./DashBoardDataCount";
 import LatestCaseReports from "./LatestCaseReports";
@@ -23,16 +22,17 @@ import CurrentTasksTracker from "./CurrentTasksTracker";
 import CurrentMonthIncomeCharts from "./CurrentMonthIncomeChart";
 import MonthlyIncomeChart from "./MonthlyIncomeChart";
 import TotalOutstandingBalanceCharts from "./TotalOutstandingBalanceCharts";
-import { ShowAdminComponent } from "./protect/Protect";
+import { ShowAdminComponent, ShowOnlyVerifiedUser } from "./protect/Protect";
 import { Alert } from "antd";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import CurrentDayCauseList from "./CurrentDayCauseList";
+import VerifyAccountNotice from "./VerifyAccountNotice";
 
 // context for year for search filter
 export const PaymentFiltersContext = createContext();
 
 const Dashboard = () => {
-  useRedirectLogoutUser("users/login"); // redirect to login if not logged in
+  useRedirectLogoutUser("/users/login"); // redirect to login if not logged in
 
   const { user } = useSelector((state) => state.auth);
   const userId = user?.data?._id;
@@ -144,146 +144,158 @@ const Dashboard = () => {
   return (
     <PaymentFiltersContext.Provider
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
-      <ScrollingEvents />
-      <div className="flex flex-wrap items-center justify-between px-3 rounded-lg md:flex-nowrap md:justify-start md:space-x-4">
-        {!isVerified && <Notification />}
-
-        <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
-            Dashboard
-          </h1>
-        </div>
-
-        {isAdminOrHr && <LeaveNotification />}
-
-        <div className="w-full md:w-auto">
-          <EventForm />
-        </div>
-
-        <div className="w-full md:w-auto">
-          <EventList />
-        </div>
-
-        <div className="w-full md:w-auto">
-          <LeaveAppForm />
-        </div>
-      </div>
-
-      {/* client's Dashboard */}
-      {isClient && <ClientDashboard />}
-      {isStaff && (
-        <>
-          {/* data count cards */}
-          <DashBoardDataCount
-            cases={cases}
-            staff={staff}
-            lawyerCount={lawyerCount}
-            clientCount={clientCount}
-          />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-1">
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1">
-              <CurrentDayCauseList />
-
-              <CurrentTasksTracker tasks={tasks?.data} userId={userId} />
-              {/* only admin component` */}
-              <ShowAdminComponent>
-                {/* <CurrentMonthIncomeCharts
-                  data={fetchedMonthData?.data}
-                  loading={fetchLoadingMonth}
-                  error={fetchErrorMonth}
-                /> */}
-                <CurrentMonthIncomeCharts
-                  data={{
-                    ...fetchedMonthData?.data,
-                    month: String(fetchedMonthData?.data?.month), // Ensure month is a string
-                  }}
-                  loading={fetchLoadingMonth}
-                  error={fetchErrorMonth}
-                />
-
-                <TotalOutstandingBalanceCharts
-                  paymentData={fetchedYearData?.data}
-                  balanceData={totalBalanceOnPayments}
-                  loading={fetchLoadingYear}
-                  error={fetchErrorYear}
-                />
-                <MonthlyIncomeChart
-                  data={fetchedEachMonthDataInYear?.data}
-                  loading={fetchLoadingEachMonth}
-                  error={fetchErrorEachMonth}
-                />
-              </ShowAdminComponent>
-              <CaseCountsByClientChart data={casesByClient?.data} />
-              <AccountOfficerCharts
-                title="Cases By Account Officer"
-                data={casesByAccountOfficer?.data || []}
-              />
-              <CaseCountsByPeriodChart data={monthlyNewCases?.data || []} />
-              <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
-            </div>
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-1 grid grid-cols-1 gap-1">
-              <LatestCaseReports
-                reports={reports?.data}
-                error={dataError.reports}
-                loading={dataLoading.reports}
-                fetchData={fetchData}
-              />
-              <TodoList title="Your Todo List" />
-            </div>
+      {!isVerified && <VerifyAccountNotice />}
+      <ShowOnlyVerifiedUser>
+        <ScrollingEvents />
+        <div className="flex flex-wrap items-center justify-between px-3 rounded-lg md:flex-nowrap md:justify-start md:space-x-4">
+          <div className="flex items-center space-x-4">
+            <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
+              Dashboard
+            </h1>
           </div>
 
-          <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1 mt-8">
-            <CasesByCategoriesChart
-              title="Case By Status"
-              data={
-                casesByStatus?.data?.filter(
-                  (item) => item?.groupName !== null
-                ) || []
-              }
-            />
+          {isAdminOrHr && <LeaveNotification />}
 
-            <CasesByCategoriesChart
-              title="Nature of Case"
-              data={
-                casesByNature?.data?.filter(
-                  (item) => item?.groupName !== null
-                ) || []
-              }
-            />
-            <CasesByCategoriesChart
-              title="Cases By Court"
-              data={
-                casesByCourt?.data?.filter(
-                  (item) => item?.groupName !== null
-                ) || []
-              }
-            />
-            <CasesByCategoriesChart
-              title="Cases By Rating"
-              data={
-                casesByRating?.data?.filter(
-                  (item) => item?.groupName !== null
-                ) || []
-              }
-            />
-            <CasesByCategoriesChart
-              title="Cases By Mode"
-              data={
-                casesByMode?.data?.filter((item) => item?.groupName !== null) ||
-                []
-              }
-            />
-            <CasesByCategoriesChart
-              title="Cases By Category"
-              data={
-                casesByCategory?.data?.filter(
-                  (item) => item?.groupName !== null
-                ) || []
-              }
-            />
+          <div className="w-full md:w-auto">
+            <EventForm />
           </div>
-        </>
-      )}
+
+          <div className="w-full md:w-auto">
+            <EventList />
+          </div>
+
+          <div className="w-full md:w-auto">
+            <LeaveAppForm />
+          </div>
+        </div>
+
+        {/* client's Dashboard */}
+        {isClient && <ClientDashboard />}
+        {isStaff && (
+          <>
+            {/* data count cards */}
+            <DashBoardDataCount
+              cases={cases}
+              staff={staff}
+              lawyerCount={lawyerCount}
+              clientCount={clientCount}
+            />
+            <div className="container mx-auto px-4 mt-2">
+              <div className="flex flex-wrap -mx-4">
+                {/* LatestCaseReports - 50% width */}
+                <div className="w-full lg:w-1/2 px-4 mb-8">
+                  <div className="bg-white rounded-lg shadow-md overflow-hidden">
+                    <h2 className="bg-gradient-to-r from-blue-600 to-blue-800 text-white text-lg sm:text-xl md:text-2xl font-semibold py-3 px-4 text-center">
+                      Today's Case Report
+                    </h2>
+                    <div className="p-4">
+                      <LatestCaseReports
+                        reports={reports?.data}
+                        error={dataError.reports}
+                        loading={dataLoading.reports}
+                        fetchData={fetchData}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main content area */}
+                <div className="w-full lg:w-1/2 px-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <CurrentDayCauseList />
+                    <CurrentTasksTracker tasks={tasks?.data} userId={userId} />
+                    <CaseCountsByClientChart data={casesByClient?.data} />
+                    <AccountOfficerCharts
+                      title="Cases By Account Officer"
+                      data={casesByAccountOfficer?.data || []}
+                    />
+                    <CaseCountsByPeriodChart
+                      data={monthlyNewCases?.data || []}
+                    />
+                    <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
+
+                    {/* Admin components */}
+                    <ShowAdminComponent>
+                      <CurrentMonthIncomeCharts
+                        data={{
+                          ...fetchedMonthData?.data,
+                          month: String(fetchedMonthData?.data?.month),
+                        }}
+                        loading={fetchLoadingMonth}
+                        error={fetchErrorMonth}
+                      />
+                      <TotalOutstandingBalanceCharts
+                        paymentData={fetchedYearData?.data}
+                        balanceData={totalBalanceOnPayments}
+                        loading={fetchLoadingYear}
+                        error={fetchErrorYear}
+                      />
+                      <MonthlyIncomeChart
+                        data={fetchedEachMonthDataInYear?.data}
+                        loading={fetchLoadingEachMonth}
+                        error={fetchErrorEachMonth}
+                      />
+                    </ShowAdminComponent>
+                    <TodoList title="Your Todo List" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1 mt-8">
+              <CasesByCategoriesChart
+                title="Case By Status"
+                data={
+                  casesByStatus?.data?.filter(
+                    (item) => item?.groupName !== null
+                  ) || []
+                }
+              />
+
+              <CasesByCategoriesChart
+                title="Nature of Case"
+                data={
+                  casesByNature?.data?.filter(
+                    (item) => item?.groupName !== null
+                  ) || []
+                }
+              />
+              <CasesByCategoriesChart
+                title="Cases By Court"
+                data={
+                  casesByCourt?.data?.filter(
+                    (item) => item?.groupName !== null
+                  ) || []
+                }
+              />
+              <CasesByCategoriesChart
+                title="Cases By Rating"
+                data={
+                  casesByRating?.data?.filter(
+                    (item) => item?.groupName !== null
+                  ) || []
+                }
+              />
+              <CasesByCategoriesChart
+                title="Cases By Mode"
+                data={
+                  casesByMode?.data?.filter(
+                    (item) => item?.groupName !== null
+                  ) || []
+                }
+              />
+              <CasesByCategoriesChart
+                title="Cases By Category"
+                data={
+                  casesByCategory?.data?.filter(
+                    (item) => item?.groupName !== null
+                  ) || []
+                }
+              />
+            </div>
+          </>
+        )}
+      </ShowOnlyVerifiedUser>
     </PaymentFiltersContext.Provider>
   );
 };

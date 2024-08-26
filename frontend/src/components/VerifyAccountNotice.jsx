@@ -5,8 +5,8 @@ import LoadingSpinner from "./LoadingSpinner";
 import { Alert } from "antd";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
-const Notification = () => {
-  useRedirectLogoutUser("/login");
+const VerifyAccountNotice = () => {
+  useRedirectLogoutUser("/users/login");
   const { isError, isLoading, message, user } = useSelector(
     (state) => state.auth
   );
@@ -14,11 +14,12 @@ const Notification = () => {
   const dispatch = useDispatch();
   const username = user?.data?.firstName;
   const userRole = user?.data?.role;
+  const userEmail = user?.data?.email;
   const userPosition = user?.data?.position;
 
   //   send verification email handler
   const sendVeriEmail = async () => {
-    await dispatch(sendVerificationMail());
+    await dispatch(sendVerificationMail(userEmail));
     await dispatch(RESET());
   };
 
@@ -26,7 +27,7 @@ const Notification = () => {
   if (isError) return <Alert message={message} />;
 
   return (
-    <div className="border border-gray-300 rounded-lg bg-red-200 p-2 text-center">
+    <div className=" border-gray-300 rounded-lg bg-red-200 p-2 text-center">
       <h2 className="text-xl font-semibold mb-4">Account Verification</h2>
       <p className="mb-4">
         Hi, <span className="font-semibold">{username}</span>. You have just
@@ -49,4 +50,4 @@ const Notification = () => {
   );
 };
 
-export default Notification;
+export default VerifyAccountNotice;
