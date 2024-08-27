@@ -42,6 +42,7 @@ dotenv.config({ path: "./config.env" });
 // MIDDLEWARES
 const app = express();
 
+// trust proxy  for secure connection
 app.set("trust proxy", true);
 
 // Security middlewares
@@ -104,11 +105,20 @@ app.use("/api/v1/todos", todoRoutes);
 app.use("/api/v1/contacts", contactRouter);
 app.use("/api/v1/events", eventRoutes);
 
+// Handle root URL
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "Welcome to the API",
+  });
+});
+
 // Handle 404 errors
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
 });
 
+// Error handling middleware
 app.use(errorController);
 
 // Determine the environment
