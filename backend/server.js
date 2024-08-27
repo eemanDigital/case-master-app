@@ -46,7 +46,7 @@ const app = express();
 app.use(helmet());
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://case-master-app.vercel.app/"],
+    origin: ["http://localhost:5173", "https://case-master-app.vercel.app"],
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
     credentials: true,
   })
