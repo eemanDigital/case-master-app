@@ -1,15 +1,6 @@
-import {
-  FaGavel,
-  FaMapMarkerAlt,
-  FaCalendarAlt,
-  FaUserTie,
-} from "react-icons/fa";
+import { FaGavel, FaMapMarkerAlt, FaCalendarAlt } from "react-icons/fa";
 import { Typography, Button, Empty, Card, List, Avatar } from "antd";
-import {
-  CalendarOutlined,
-  InboxOutlined,
-  UserOutlined,
-} from "@ant-design/icons";
+import { InboxOutlined, UserOutlined } from "@ant-design/icons";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 
 const { Text } = Typography;
@@ -19,22 +10,15 @@ const CurrentDayCauseList = () => {
     loading: getterLoading,
     error: getterError,
     causeList,
-  } = useDataGetterHook();
+  } = useDataGetterHook(); // Fetch cause list data
 
+  // Format date
   const formatDate = (dateString) => {
     const options = { year: "numeric", month: "long", day: "numeric" };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  // lawyers in court
-  // const renderLawyers = (lawyers) => {
-  //   if (!lawyers || lawyers.length === 0) {
-  //     return (
-  //       <Text className="text-xs text-gray-500 italic">
-  //         No lawyers assigned yet
-  //       </Text>
-  //     );
-
+  // transform cause list data
   const transformedCauseListData = causeList.data?.reportsToday.map(
     (report) => ({
       case: `${report?.caseReported?.firstParty?.name[0]?.name} vs ${report?.caseReported?.secondParty?.name[0]?.name}`,
@@ -49,6 +33,7 @@ const CurrentDayCauseList = () => {
     })
   );
 
+  // Render lawyers in court
   const renderLawyers = (lawyers) => (
     <div className="flex flex-wrap gap-2 mt-2">
       {lawyers.length > 0 ? (

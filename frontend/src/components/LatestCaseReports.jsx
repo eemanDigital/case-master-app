@@ -9,6 +9,7 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
   const [todayReports, setTodayReports] = useState([]);
   const [hasFetched, setHasFetched] = useState(false);
 
+  // Check if a date is today
   const isToday = (dateString) => {
     const today = new Date();
     const date = new Date(dateString);
@@ -19,6 +20,7 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
     );
   };
 
+  //  Fetch reports
   useEffect(() => {
     const fetchReports = async () => {
       try {
@@ -33,6 +35,7 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
     fetchReports();
   }, [fetchData]);
 
+  //  Filter reports for today
   useEffect(() => {
     if (hasFetched && Array.isArray(reports)) {
       const filteredReports = reports?.filter((report) =>
@@ -53,6 +56,7 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
     );
   }
 
+  // If there are no reports for today  display a message
   if (todayReports.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px] rounded-md  py-6">
