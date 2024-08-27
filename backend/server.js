@@ -43,7 +43,7 @@ dotenv.config({ path: "./config.env" });
 const app = express();
 
 // trust proxy  for secure connection
-app.set("trust proxy", true);
+// app.set("trust proxy", true);
 
 // Security middlewares
 app.use(helmet());

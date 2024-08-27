@@ -356,7 +356,7 @@ exports.totalPaymentsByMonthInYear = catchAsync(async (req, res, next) => {
     },
   ]);
   // set redis cache
-  setRedisCache(`paymentMonthInYear:${year}`, totalPayments, 1200);
+  // setRedisCache(`paymentMonthInYear:${year}`, totalPayments, 1200);
 
   res.status(200).json({
     message: "success",
