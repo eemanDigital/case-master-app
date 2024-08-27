@@ -42,8 +42,8 @@ dotenv.config({ path: "./config.env" });
 // MIDDLEWARES
 const app = express();
 
-// trust proxy  for secure connection
-// app.set("trust proxy", true);
+// Enable trust proxy
+app.set("trust proxy", 1);
 
 // Security middlewares
 app.use(helmet());
@@ -84,6 +84,9 @@ const limiter = rateLimit({
   max: 200, // allows 200 req from same IP in 1hr
   windowMs: 60 * 60 * 1000,
   message: "Too many requests from this IP, please try again in an hour",
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  trustProxy: true, // Enable if you're behind a reverse proxy (Heroku, Bluemix, AWS ELB, Nginx, etc)
 });
 app.use("/api", limiter);
 
