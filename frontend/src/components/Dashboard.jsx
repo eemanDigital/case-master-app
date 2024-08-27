@@ -180,12 +180,12 @@ const Dashboard = () => {
               lawyerCount={lawyerCount}
               clientCount={clientCount}
             />
-            <div className="container mx-auto px-4 mt-2">
+            <div className="container mx-auto mt-2">
               <div className="flex flex-wrap -mx-4">
-                {/* LatestCaseReports - 50% width */}
+                {/* LatestCaseReports - 50% width on large screens, full width on smaller screens */}
                 <div className="w-full lg:w-1/2 px-4 mb-8">
                   <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <h2 className="bg-gradient-to-r from-blue-600 to-blue-800 text-white text-lg sm:text-xl md:text-2xl font-semibold py-3 px-4 text-center">
+                    <h2 className="bg-gradient-to-r from-gray-600 to-gray-800 text-white text-lg sm:text-xl md:text-2xl font-semibold py-3 px-4 text-center">
                       Today's Case Report
                     </h2>
                     <div className="p-4">
@@ -199,20 +199,30 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Main content area */}
-                <div className="w-full lg:w-1/2 px-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <CurrentDayCauseList />
-                    <CurrentTasksTracker tasks={tasks?.data} userId={userId} />
-                    <CaseCountsByClientChart data={casesByClient?.data} />
+                {/* Right side components */}
+                {/* <div className="w-full lg:w-1/2 px-4"> */}
+                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"> */}
+                <CurrentDayCauseList />
+                {/* </div> */}
+                {/* </div> */}
+
+                {/* Components below LatestCaseReports */}
+                <div className="w-full px-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <CaseCountsByClientChart data={casesByClient?.data || []} />
                     <AccountOfficerCharts
                       title="Cases By Account Officer"
                       data={casesByAccountOfficer?.data || []}
+                    />
+                    <CurrentTasksTracker
+                      tasks={tasks?.data || []}
+                      userId={userId}
                     />
                     <CaseCountsByPeriodChart
                       data={monthlyNewCases?.data || []}
                     />
                     <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
+                    <TodoList title="Your Todo List" />
 
                     {/* Admin components */}
                     <ShowAdminComponent>
@@ -236,12 +246,10 @@ const Dashboard = () => {
                         error={fetchErrorEachMonth}
                       />
                     </ShowAdminComponent>
-                    <TodoList title="Your Todo List" />
                   </div>
                 </div>
               </div>
             </div>
-
             <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1 mt-8">
               <CasesByCategoriesChart
                 title="Case By Status"

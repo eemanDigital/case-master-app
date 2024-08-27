@@ -9,12 +9,6 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
   const [todayReports, setTodayReports] = useState([]);
   const [hasFetched, setHasFetched] = useState(false);
 
-  // const title = (
-  //   <h2 className="bg-gradient-to-r from-blue-600 to-blue-800 text-white text-lg sm:text-xl md:text-2xl font-semibold py-3 px-4 text-center">
-  //     Today's Case Report
-  //   </h2>
-  // );
-  // Helper function to check if a date is today
   const isToday = (dateString) => {
     const today = new Date();
     const date = new Date(dateString);
@@ -25,7 +19,6 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
     );
   };
 
-  // Fetch data
   useEffect(() => {
     const fetchReports = async () => {
       try {
@@ -38,7 +31,7 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
     };
 
     fetchReports();
-  }, [fetchData]); // Only depends on fetchData
+  }, [fetchData]);
 
   useEffect(() => {
     if (hasFetched && Array.isArray(reports)) {
@@ -47,9 +40,9 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
       );
       setTodayReports(filteredReports);
     }
-  }, [hasFetched, reports]); // Runs when fetch is complete and reports are updated
+  }, [hasFetched, reports]);
 
-  if (loading.reports) return <LoadingSpinner />; // Handle loading state
+  if (loading.reports) return <LoadingSpinner />;
 
   if (error.reports) {
     return (
@@ -61,11 +54,40 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
   }
 
   if (todayReports.length === 0) {
-    return null; // Return nothing if no reports are available today
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px] rounded-md  py-6">
+        <svg
+          className="w-16 h-16 text-gray-400 mb-4"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M3 15a4 4 0 01-4-4V7a4 4 0 014-4h18a4 4 0 014 4v4a4 4 0 01-4 4H3z"></path>
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M8 21h8M12 17v4"></path>
+        </svg>
+        <p className="text-lg font-semibold text-gray-600 text-center">
+          No Case Reports Available Today
+        </p>
+        <p className="text-sm text-gray-500 text-center mt-2">
+          Please check back later for updates or{" "}
+          <Link to="case-reports" className="text-blue-500 underline">
+            view all case reports.
+          </Link>
+        </p>
+      </div>
+    );
   }
 
   return (
-    <div className="bg-white rounded-md shadow-md h-[408px]  overflow-auto">
+    <div className="rounded-md  h-[300px] overflow-y-scroll custom-scrollbar">
       <Link
         className="text-blue-600 underline p-2 text-[12px] block hover:text-blue-800 hover:font-bold"
         to="case-reports">

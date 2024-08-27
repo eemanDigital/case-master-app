@@ -10,6 +10,7 @@ const { Title } = Typography;
 const TotalOutstandingBalanceCharts = ({ paymentData, balanceData, error }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
+  console.log(balanceData);
   const value = paymentData?.totalAmount;
   const year = paymentData?.year;
   const totalBalance = balanceData?.data?.[0]?.totalBalance;
@@ -139,9 +140,11 @@ TotalOutstandingBalanceCharts.propTypes = {
     year: PropTypes.number,
   }),
   balanceData: PropTypes.shape({
+    message: PropTypes.string,
     data: PropTypes.arrayOf(
       PropTypes.shape({
         totalBalance: PropTypes.number,
+        _id: PropTypes.any,
       })
     ),
   }),

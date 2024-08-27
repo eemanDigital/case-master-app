@@ -72,6 +72,25 @@ body {
   box-shadow: none;
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  display: none; /* For Chrome, Safari, and Opera */
+}
+
+.custom-scrollbar {
+  -ms-overflow-style: none; /* For Internet Explorer and Edge */
+  scrollbar-width: none; /* For Firefox */
+}
+
+.scroll-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(to bottom, transparent, rgba(0, 0, 0, 0.2));
+  pointer-events: none;
+}
+
 /* loading spinner */
 /* components/LoadingSpinner.css */
 .loading-spinner {

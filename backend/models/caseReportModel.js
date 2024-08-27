@@ -61,7 +61,8 @@ reportSchema.pre(/^find/, function (next) {
   })
     .populate({
       path: "caseReported",
-      select: "firstParty.name.name  secondParty.name.name client ",
+      select:
+        "firstParty.name.name  secondParty.name.name client courtName suitNo courtNo location state",
     })
     .populate({
       path: "lawyersInCourt",

@@ -197,9 +197,12 @@ SingleCauseList.propTypes = {
   showDownloadBtn: PropTypes.bool,
   hideButton: PropTypes.bool,
   h1Style: PropTypes.string,
-  loadingPdf: PropTypes.bool.isRequired,
+  loadingPdf: PropTypes.bool,
   pdfError: PropTypes.string,
   cardWidth: PropTypes.string,
 };
 
+SingleCauseList.defaultProps = {
+  causeListData: [], // Provide a default empty array
+};
 export default SingleCauseList;

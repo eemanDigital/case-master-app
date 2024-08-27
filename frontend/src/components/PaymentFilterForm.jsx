@@ -54,8 +54,8 @@ const PaymentFilterForm = ({ setYear, setMonth, removeMonthInput }) => {
 
 PaymentFilterForm.propTypes = {
   setYear: PropTypes.func.isRequired,
-  setMonth: PropTypes.func.isRequired,
-  removeMonthInput: PropTypes.bool.isRequired,
+  setMonth: PropTypes.func,
+  removeMonthInput: PropTypes.bool,
 };
 
 export default PaymentFilterForm;
