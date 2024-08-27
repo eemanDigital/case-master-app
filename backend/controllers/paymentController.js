@@ -3,7 +3,7 @@ const Invoice = require("../models/invoiceModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
-const setRedisCache = require("../utils/setRedisCache");
+// const setRedisCache = require("../utils/setRedisCache");
 const Case = require("../models/caseModel");
 
 // Create a new payment
@@ -106,7 +106,7 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
   const payments = await Payment.find().sort("-date");
 
   // set redis cache
-  setRedisCache("payments", payments, 1200);
+  // setRedisCache("payments", payments, 1200);
 
   res.status(200).json({
     message: "success",
@@ -190,11 +190,11 @@ exports.totalPaymentOnCase = catchAsync(async (req, res, next) => {
   ]);
 
   // set redis cache
-  setRedisCache(
-    `paymentOnCase:${req.params.clientId}${req.params.caseId}`,
-    totalPaymentSum,
-    1200
-  );
+  // setRedisCache(
+  //   `paymentOnCase:${req.params.clientId}${req.params.caseId}`,
+  //   totalPaymentSum,
+  //   1200
+  // );
 
   res.status(200).json({
     message: "success",
@@ -225,7 +225,7 @@ exports.totalPaymentClient = catchAsync(async (req, res, next) => {
     },
   ]);
 
-  setRedisCache(`paymentByClient:${clientId}`, totalPaymentSum, 1200);
+  // setRedisCache(`paymentByClient:${clientId}`, totalPaymentSum, 1200);
 
   res.status(200).json({
     message: "success",
@@ -266,7 +266,7 @@ exports.paymentEachClient = catchAsync(async (req, res, next) => {
   ]);
 
   // set redis cache
-  setRedisCache("paymentByEachClient", totalPaymentSumByClient, 1200);
+  // setRedisCache("paymentByEachClient", totalPaymentSumByClient, 1200);
 
   res.status(200).json({
     message: "success",
@@ -391,7 +391,7 @@ exports.totalPaymentsByYear = catchAsync(async (req, res, next) => {
   ]);
 
   // set redis cache
-  setRedisCache(`paymentByYear:${year}`, totalPayments, 1200);
+  // setRedisCache(`paymentByYear:${year}`, totalPayments, 1200);
 
   res.status(200).json({
     message: "success",
@@ -412,7 +412,7 @@ exports.getTotalBalance = catchAsync(async (req, res, next) => {
   ]);
 
   // set redis cache
-  setRedisCache("totalBalance", results, 1200);
+  // setRedisCache("totalBalance", results, 1200);
   res.status(200).json({
     message: "success",
     data: results,
@@ -507,7 +507,7 @@ exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
   }
 
   // set redis cache
-  setRedisCache(`paymentByClientAndCase:${clientId}${caseId}`, payments, 1200);
+  // setRedisCache(`paymentByClientAndCase:${clientId}${caseId}`, payments, 1200);
   res.status(200).json({
     message: "success",
     result: payments[0].payments.length,

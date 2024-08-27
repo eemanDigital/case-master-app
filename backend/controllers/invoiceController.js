@@ -4,7 +4,7 @@ const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const { generatePdf } = require("../utils/generatePdf");
-const setRedisCache = require("../utils/setRedisCache");
+// const setRedisCache = require("../utils/setRedisCache");
 
 // get all invoices
 exports.getAllInvoices = catchAsync(async (req, res, next) => {
@@ -31,7 +31,7 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
   }
 
   // set redis cache
-  setRedisCache(`invoice:${req.params.id}`, invoice, 5000);
+  // setRedisCache(`invoice:${req.params.id}`, invoice, 5000);
 
   res.status(200).json({
     fromCache: false,

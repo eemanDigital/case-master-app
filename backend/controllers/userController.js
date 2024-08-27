@@ -2,7 +2,7 @@ const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const filterObj = require("../utils/filterObj");
-const setRedisCache = require("../utils/setRedisCache");
+// const setRedisCache = require("../utils/setRedisCache");
 const sendMail = require("../utils/email");
 
 // GET ALL USERS

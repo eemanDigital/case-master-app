@@ -2,7 +2,7 @@ const Case = require("../models/caseModel");
 const cron = require("node-cron"); //handle schedule for soft deleted data
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
-const setRedisCache = require("../utils/setRedisCache");
+// const setRedisCache = require("../utils/setRedisCache");
 
 // create new case
 exports.createCase = catchAsync(async (req, res, next) => {
@@ -28,7 +28,7 @@ exports.getCases = catchAsync(async (req, res, next) => {
   }
 
   // set redis key for caching
-  setRedisCache("cases", cases);
+  // setRedisCache("cases", cases);
 
   // Send the response with the fetched cases
   res.status(200).json({
@@ -53,7 +53,7 @@ exports.getCase = catchAsync(async (req, res, next) => {
   }
 
   // set redis key for caching
-  setRedisCache(`singleCase:${req.params.caseId}`, data);
+  // setRedisCache(`singleCase:${req.params.caseId}`, data);
 
   res.status(200).json({
     fromCache: false,
@@ -147,7 +147,7 @@ exports.getCasesByAccountOfficer = catchAsync(async (req, res, next) => {
   ]);
 
   // set redis key for caching
-  setRedisCache("casesao", results, 1200);
+  // setRedisCache("casesao", results, 1200);
 
   res.status(200).json({
     message: "success",
@@ -205,7 +205,7 @@ exports.getCasesByClient = catchAsync(async (req, res, next) => {
   ]);
 
   // set redis key for caching
-  setRedisCache("cbc", results, 1200);
+  // setRedisCache("cbc", results, 1200);
 
   res.status(200).json({
     message: "success",
@@ -247,7 +247,7 @@ exports.getMonthlyNewCases = catchAsync(async (req, res, next) => {
   ]);
 
   // set redis key for caching
-  setRedisCache("mnc", result, 1200);
+  // setRedisCache("mnc", result, 1200);
 
   res.status(200).json({
     message: "success",
@@ -289,7 +289,7 @@ exports.getYearlyNewCases = catchAsync(async (req, res, next) => {
   ]);
 
   // set redis key for caching
-  setRedisCache("ync", result, 1200);
+  // setRedisCache("ync", result, 1200);
 
   res.status(200).json({
     message: "success",

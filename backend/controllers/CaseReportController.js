@@ -5,7 +5,7 @@ const catchAsync = require("../utils/catchAsync");
 const { generatePdf } = require("../utils/generatePdf");
 
 const moment = require("moment");
-const setRedisCache = require("../utils/setRedisCache");
+// const setRedisCache = require("../utils/setRedisCache");
 
 // create report
 exports.createReport = catchAsync(async (req, res, next) => {

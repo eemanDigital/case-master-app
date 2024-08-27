@@ -22,7 +22,7 @@ const {
   deleteDocument,
   getCasesByGroup,
 } = require("../controllers/factory.js");
-const cacheMiddleware = require("../utils/cacheMiddleware.js");
+// const cacheMiddleware = require("../utils/cacheMiddleware.js");
 
 const router = express.Router();
 
@@ -51,7 +51,7 @@ router.get(
 );
 router.get(
   "/cases-by-mode",
-  cacheMiddleware(() => "$modeOfCommencement"),
+  // cacheMiddleware(() => "$modeOfCommencement"),
   getCasesByGroup("$modeOfCommencement", Case)
 );
 router.get(
