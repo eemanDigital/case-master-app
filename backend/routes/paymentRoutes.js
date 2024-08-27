@@ -1,7 +1,7 @@
 const express = require("express");
 const paymentController = require("../controllers/paymentController");
 const { protect, restrictTo } = require("../controllers/authController");
-const cacheMiddleware = require("../utils/cacheMiddleware");
+// const cacheMiddleware = require("../utils/cacheMiddleware");
 
 const router = express.Router();
 
