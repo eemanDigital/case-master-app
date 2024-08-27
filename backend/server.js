@@ -42,6 +42,8 @@ dotenv.config({ path: "./config.env" });
 // MIDDLEWARES
 const app = express();
 
+app.set("trust proxy", true);
+
 // Security middlewares
 app.use(helmet());
 app.use(
