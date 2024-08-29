@@ -99,8 +99,13 @@ const DataFetcherContext = ({ children }) => {
       }));
       const response = await axios.get(
         `http://localhost:3000/api/v1/${endpoint}`,
+
         {
-          withCredentials: true,
+          withCredentials: true, // Ensure cookies are sent with the request
+          headers: {
+            "Content-Type": "application/json",
+            // Add any other headers you need here
+          },
         }
       );
       setState((prevState) => ({
