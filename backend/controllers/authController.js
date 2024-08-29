@@ -165,6 +165,8 @@ exports.login = catchAsync(async (req, res, next) => {
 
   if (!isAllowedAgent) {
     const loginCode = Math.floor(100000 + Math.random() * 900000);
+    console.log(loginCode);
+
     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
 
     await Token.findOneAndDelete({ userId: user._id });
