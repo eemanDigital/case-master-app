@@ -143,7 +143,7 @@ const CaseReportList = ({
   }
 
   return (
-    <section className="w-full  bg-gray-50 rounded-lg shadow-md sm:px-6 px-2 ">
+    <section className="w-full   rounded-lg sm:px-6 px-2 ">
       <Title
         level={2}
         className={`${

@@ -45,15 +45,15 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
     }
   }, [hasFetched, reports]);
 
-  if (loading.reports) return <LoadingSpinner />;
-
-  if (error.reports) {
+  if (loading)
     return (
-      <PageErrorAlert
-        errorCondition={error.reports}
-        errorMessage={error.reports}
-      />
+      <div>
+        <p>Loading...</p>
+      </div>
     );
+
+  if (error) {
+    return <div>{error || "Unable to fetch report"}</div>;
   }
 
   // If there are no reports for today  display a message

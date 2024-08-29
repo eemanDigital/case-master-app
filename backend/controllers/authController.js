@@ -206,6 +206,7 @@ exports.loginWithCode = catchAsync(async (req, res, next) => {
 
   const decryptedLoginCode = cryptr.decrypt(userToken.loginToken);
   // if login code entered by user is not the same as token in db
+  // console.log(loginCode, decryptedLoginCode);
   if (loginCode !== decryptedLoginCode) {
     return next(new AppError("Incorrect access code, please try again", 404));
   } else {
@@ -246,6 +247,8 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   if (req.cookies.jwt) {
     token = req.cookies.jwt;
+
+    // console.log("TOKEN", token);
   }
   if (!token) {
     return next(
@@ -277,6 +280,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // GRANT ACCESS TO PROTECTED ROUTE
   req.user = currentUser;
+  // console.log(req.user);
   next();
 });
 

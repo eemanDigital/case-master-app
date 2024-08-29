@@ -32,7 +32,7 @@ const DashboardLayout = () => {
           {/* <DashboardNav /> */}
         </Header>
         <Content
-          className="m-4 p-6 bg-gray-300  rounded-lg overflow-auto"
+          className="m-4  sm:p-6 md:2 p-1 bg-gray-300 rounded-lg overflow-auto"
           style={{
             minHeight: 280,
           }}>

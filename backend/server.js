@@ -75,9 +75,21 @@ app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
 // Development logging
-if (process.env.NODE_ENV === "development") {
+if (process.env.NODE_ENV === "production") {
   app.use(morgan("dev"));
 }
+
+// Rate limiter
+// const limiter = rateLimit({
+//   max: 200, // allows 200 req from same IP in 1hr
+//   windowMs: 60 * 60 * 1000,
+//   message: "Too many requests from this IP, please try again in an hour",
+//   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+//   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+//   trustProxy: true, // Enable if you're behind a reverse proxy (Heroku, Bluemix, AWS ELB, Nginx, etc)
+// });
+
+let rateLimitCount = 0; // Variable to keep track of rate-limited requests
 
 // Rate limiter
 const limiter = rateLimit({
@@ -87,8 +99,16 @@ const limiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   trustProxy: true, // Enable if you're behind a reverse proxy (Heroku, Bluemix, AWS ELB, Nginx, etc)
+  handler: (req, res, next, options) => {
+    rateLimitCount++;
+    console.log(
+      `Rate limit reached. Total rate-limited requests: ${rateLimitCount}`
+    );
+    res.status(options.statusCode).send(options.message);
+  },
 });
-app.use("/api", limiter);
+
+// app.use("/api", limiter);
 
 // Cookie parser
 app.use(cookieParser());
