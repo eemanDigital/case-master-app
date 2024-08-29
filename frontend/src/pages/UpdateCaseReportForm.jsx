@@ -19,14 +19,13 @@ import { formats } from "../utils/quillFormat";
 import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
 import useHandleSubmit from "../hooks/useHandleSubmit";
 import { useNavigate } from "react-router-dom";
-import LoadingSpinner from "../components/LoadingSpinner";
 import useClientSelectOptions from "../hooks/useClientSelectOptions";
 import moment from "moment";
 
 const UpdateCaseReportForm = ({ reportId }) => {
   const { casesOptions } = useCaseSelectOptions();
   const { clientEmailsOption } = useClientSelectOptions();
-  const { formData, loading } = useInitialDataFetcher("reports", reportId);
+  const { formData } = useInitialDataFetcher("reports", reportId);
   const { userData } = useUserSelectOptions();
   const { open, showModal, handleOk, handleCancel } = useModal(); //modal hook
   const navigate = useNavigate();
@@ -49,11 +48,6 @@ const UpdateCaseReportForm = ({ reportId }) => {
   // Extract necessary data for caseReported and reportedBy
   const caseReported = formData?.caseReported?._id || "";
   const reportedBy = formData?.reportedBy?._id || "";
-
-  // loading initialData
-  if (loading) {
-    return <LoadingSpinner />;
-  }
 
   return (
     <>

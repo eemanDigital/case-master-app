@@ -7,7 +7,6 @@ import { deleteData } from "../redux/features/delete/deleteSlice";
 import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { MdEventAvailable } from "react-icons/md";
-import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import AddEventToCalender from "../components/AddEventToCalender"; // Import the component
 
@@ -31,14 +30,9 @@ const EventList = () => {
     }
   };
 
-  // error toast
+  // display error
   if (error.events) {
-    return (
-      <PageErrorAlert
-        errorCondition={error.events}
-        errorMessage={error.event || "Failed to fetch event data"}
-      />
-    );
+    return <p>{error.event || ""}</p>;
   }
 
   const columns = [

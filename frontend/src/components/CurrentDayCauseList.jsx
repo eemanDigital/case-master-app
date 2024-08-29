@@ -34,6 +34,7 @@ const CurrentDayCauseList = () => {
   );
 
   // Render lawyers in court
+  // / Render lawyers in court
   const renderLawyers = (lawyers) => (
     <div className="flex flex-wrap gap-2 mt-2">
       {lawyers.length > 0 ? (
@@ -52,10 +53,9 @@ const CurrentDayCauseList = () => {
       )}
     </div>
   );
-
   return (
     <Card
-      className="bg-white rounded-lg shadow-md w-full lg:w-[48%] m-4 lg:m-0 h-[386px] overflow-y-scroll custom-scrollbar"
+      className="bg-white rounded-lg shadow-lg w-full lg:w-[48%] m-4 lg:m-0 h-[386px] overflow-y-scroll custom-scrollbar"
       bodyStyle={{ padding: 0 }}>
       <h2 className="bg-gradient-to-r from-rose-600 to-rose-800 text-white text-lg sm:text-xl md:text-2xl font-semibold py-3 px-4 text-center">
         Today's Cause List
@@ -107,9 +107,9 @@ const CurrentDayCauseList = () => {
             <List
               dataSource={transformedCauseListData}
               renderItem={(item) => (
-                <List.Item className=" border-b last:border-b-0  py-4 font-medium font-poppins">
-                  <div className="w-full p-4 bg-gray-100 rounded-md ">
-                    <p className="text-blue-600 text-lg flex items-center">
+                <List.Item className="border-b last:border-b-0 py-4 font-medium font-poppins">
+                  <div className="w-full p-4 bg-gray-200 shadow-sm rounded-lg border border-gray-200">
+                    <p className="text-blue-600 text-md font-bold flex items-center">
                       <FaGavel className="mr-2 text-blue-500" /> {item.suitNo}
                     </p>
                     <p className="text-sm text-gray-600 font-medium mt-1">

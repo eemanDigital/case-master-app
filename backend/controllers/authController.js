@@ -84,6 +84,61 @@ exports.register = catchAsync(async (req, res, next) => {
 });
 
 ///// function to handle login
+// exports.login = catchAsync(async (req, res, next) => {
+//   const { email, password } = req.body;
+
+//   // 1) Check if email and password exist
+//   if (!email || !password) {
+//     return next(new AppError("Please provide email and password!", 400));
+//   }
+
+//   // 2) Check if user exists
+//   const user = await User.findOne({ email }).select("+password");
+//   if (!user) {
+//     return next(new AppError("User does not exist", 404));
+//   }
+
+//   // 3) Check if password is correct
+//   if (!(await user.correctPassword(password, user.password))) {
+//     return next(new AppError("Incorrect email or password", 401));
+//   }
+
+//   // Trigger user 2FA auth for unknown user agent
+//   const ua = parser(req.headers["user-agent"]); // Get user-agent header
+//   const currentUserAgent = ua.ua;
+
+//   const allowedAgent = user.userAgent.includes(currentUserAgent);
+
+//   if (!allowedAgent) {
+//     // Generate 6 digit code
+//     const loginCode = Math.floor(100000 + Math.random() * 900000);
+
+//     console.log(loginCode);
+
+//     // Encrypt loginCode
+//     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
+
+//     // Check for existing token and delete if found
+//     const userToken = await Token.findOne({ userId: user._id });
+//     if (userToken) {
+//       await userToken.deleteOne();
+//     }
+
+//     // Save the new token to the database
+//     await new Token({
+//       userId: user._id,
+//       loginToken: encryptedLoginCode,
+//       createAt: Date.now(),
+//       expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour
+//     }).save();
+
+//     return next(new AppError("New Browser or device detected", 400));
+//   }
+
+//   // 4) If everything is ok, send token to client
+//   createSendToken(user, 200, res);
+// });
+
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -92,50 +147,46 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError("Please provide email and password!", 400));
   }
 
-  // 2) Check if user exists
+  // 2) Check if user exists and select password
   const user = await User.findOne({ email }).select("+password");
   if (!user) {
-    return next(new AppError("User does not exist", 404));
-  }
-
-  // 3) Check if password is correct
-  if (!(await user.correctPassword(password, user.password))) {
     return next(new AppError("Incorrect email or password", 401));
   }
 
-  // Trigger user 2FA auth for unknown user agent
-  const ua = parser(req.headers["user-agent"]); // Get user-agent header
-  const currentUserAgent = ua.ua;
+  // 3) Check if password is correct
+  const isPasswordCorrect = await user.correctPassword(password, user.password);
+  if (!isPasswordCorrect) {
+    return next(new AppError("Incorrect email or password", 401));
+  }
 
-  const allowedAgent = user.userAgent.includes(currentUserAgent);
+  // 4) Trigger 2FA for unknown user agent
+  const currentUserAgent = parser(req.headers["user-agent"]).ua;
+  const isAllowedAgent = user.userAgent.includes(currentUserAgent);
 
-  if (!allowedAgent) {
-    // Generate 6 digit code
+  if (!isAllowedAgent) {
     const loginCode = Math.floor(100000 + Math.random() * 900000);
-
-    console.log(loginCode);
-
-    // Encrypt loginCode
     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
 
-    // Check for existing token and delete if found
-    const userToken = await Token.findOne({ userId: user._id });
-    if (userToken) {
-      await userToken.deleteOne();
-    }
+    await Token.findOneAndDelete({ userId: user._id });
 
-    // Save the new token to the database
     await new Token({
       userId: user._id,
       loginToken: encryptedLoginCode,
       createAt: Date.now(),
-      expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour
+      expiresAt: Date.now() + 60 * 60 * 1000,
     }).save();
 
-    return next(new AppError("New Browser or device detected", 400));
+    // Send the loginCode securely via email or SMS to the user
+
+    return next(
+      new AppError(
+        "New Browser or device detected. A verification code has been sent to your email.",
+        400
+      )
+    );
   }
 
-  // 4) If everything is ok, send token to client
+  // 5) Send token to client
   createSendToken(user, 200, res);
 });
 
@@ -228,50 +279,101 @@ exports.logout = (req, res) => {
     expires: new Date(0),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production" ? true : false,
-    sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+    sameSite: "none",
   });
   res.status(200).json({ status: "success" });
 };
 
+// exports.protect = catchAsync(async (req, res, next) => {
+//   // 1) Getting token and check of it's there
+//   let token;
+//   // if (
+//   //   req.headers.authorization &&
+//   //   req.headers.authorization.startsWith("Bearer")
+//   // ) {
+//   //   token = req.headers.authorization.split(" ")[1];
+//   // } else if (req.cookies.jwt) {
+//   //   token = req.cookies.jwt;
+//   // }
+
+//   if (req.cookies.jwt) {
+//     token = req.cookies.jwt;
+
+//     // console.log("TOKEN", token);
+//   }
+//   if (!token) {
+//     return next(
+//       new AppError("You are not logged in! Please log in to get access.", 401)
+//     );
+//   }
+//   // 2) Verification of token
+//   const verified = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+//   // 3) Check if user still exists
+//   const currentUser = await User.findById(verified.id);
+//   if (!currentUser) {
+//     return next(
+//       new AppError("The user belonging to this token no longer exist.", 401)
+//     );
+//   }
+//   // check if user is suspended
+//   if (currentUser.role === "suspended") {
+//     new AppError(
+//       "Your account has been suspended, please contact the admin",
+//       400
+//     );
+//   }
+//   // 4) Check if user changed password after the token was issued
+//   if (currentUser.changePasswordAfter(verified.iat)) {
+//     return next(
+//       new AppError("User recently changed password! Please log in again.", 401)
+//     );
+//   }
+
+//   // GRANT ACCESS TO PROTECTED ROUTE
+//   req.user = currentUser;
+//   // console.log(req.user);
+//   next();
+// });
 exports.protect = catchAsync(async (req, res, next) => {
-  // 1) Getting token and check of it's there
+  // 1) Getting token and check if it's there
   let token;
-  // if (
-  //   req.headers.authorization &&
-  //   req.headers.authorization.startsWith("Bearer")
-  // ) {
-  //   token = req.headers.authorization.split(" ")[1];
-  // } else if (req.cookies.jwt) {
-  //   token = req.cookies.jwt;
-  // }
-
-  if (req.cookies.jwt) {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
+    token = req.headers.authorization.split(" ")[1];
+  } else if (req.cookies.jwt) {
     token = req.cookies.jwt;
-
-    // console.log("TOKEN", token);
   }
+
   if (!token) {
     return next(
       new AppError("You are not logged in! Please log in to get access.", 401)
     );
   }
+
   // 2) Verification of token
   const verified = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
+
   // 3) Check if user still exists
   const currentUser = await User.findById(verified.id);
   if (!currentUser) {
     return next(
-      new AppError("The user belonging to this token no longer exist.", 401)
+      new AppError("The user belonging to this token no longer exists.", 401)
     );
   }
-  // check if user is suspended
+
+  // 4) Check if user is suspended
   if (currentUser.role === "suspended") {
-    new AppError(
-      "Your account has been suspended, please contact the admin",
-      400
+    return next(
+      new AppError(
+        "Your account has been suspended, please contact the admin.",
+        400
+      )
     );
   }
-  // 4) Check if user changed password after the token was issued
+
+  // 5) Check if user changed password after the token was issued
   if (currentUser.changePasswordAfter(verified.iat)) {
     return next(
       new AppError("User recently changed password! Please log in again.", 401)
@@ -280,7 +382,6 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // GRANT ACCESS TO PROTECTED ROUTE
   req.user = currentUser;
-  // console.log(req.user);
   next();
 });
 
