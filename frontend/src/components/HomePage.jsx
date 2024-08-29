@@ -31,8 +31,8 @@ const HomePage = () => {
               </p>
               <div className="space-x-4">
                 <Button primary>Get Started</Button>
-                <Button>
-                  Watch Demo <FaPlay className="inline ml-2" />
+                <Button className="sm:mt-2">
+                  Watch Demo <FaPlay className="inline ml-2 " />
                 </Button>
               </div>
             </div>

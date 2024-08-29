@@ -98,11 +98,10 @@ const DataFetcherContext = ({ children }) => {
         loading: { ...prevState.loading, [key]: true },
       }));
       const response = await axios.get(
-        `http://localhost:3000/api/v1/${endpoint}`
-        // {
-        //   headers,
-        //   withCredentials: true,
-        // }
+        `http://localhost:3000/api/v1/${endpoint}`,
+        {
+          withCredentials: true,
+        }
       );
       setState((prevState) => ({
         ...prevState,

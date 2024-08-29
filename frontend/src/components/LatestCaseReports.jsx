@@ -1,15 +1,17 @@
 import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
-import CaseReportList from "./CaseReportList";
-import LoadingSpinner from "./LoadingSpinner";
+import { Card, Space, Typography, Spin, Empty } from "antd";
 import { Link } from "react-router-dom";
-import PageErrorAlert from "./PageErrorAlert";
+import { formatDate } from "../utils/formatDate";
+import useTextShorten from "../hooks/useTextShorten";
+
+const { Text } = Typography;
 
 const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
   const [todayReports, setTodayReports] = useState([]);
   const [hasFetched, setHasFetched] = useState(false);
+  const { shortenText } = useTextShorten();
 
-  // Check if a date is today
   const isToday = (dateString) => {
     const today = new Date();
     const date = new Date(dateString);
@@ -20,7 +22,6 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
     );
   };
 
-  //  Fetch reports
   useEffect(() => {
     const fetchReports = async () => {
       try {
@@ -35,7 +36,6 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
     fetchReports();
   }, [fetchData]);
 
-  //  Filter reports for today
   useEffect(() => {
     if (hasFetched && Array.isArray(reports)) {
       const filteredReports = reports?.filter((report) =>
@@ -45,66 +45,89 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
     }
   }, [hasFetched, reports]);
 
-  if (loading)
+  if (loading) {
     return (
-      <div>
-        <p>Loading...</p>
+      <div className="flex justify-center items-center min-h-[300px]">
+        Loading report...
       </div>
     );
-
-  if (error) {
-    return <div>{error || "Unable to fetch report"}</div>;
   }
 
-  // If there are no reports for today  display a message
+  if (error) {
+    return (
+      <div className="flex justify-center items-center min-h-[300px]">
+        <Text type="danger">{error || "Unable to fetch reports"}</Text>
+      </div>
+    );
+  }
+
   if (todayReports.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] rounded-md  py-6">
-        <svg
-          className="w-16 h-16 text-gray-400 mb-4"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M3 15a4 4 0 01-4-4V7a4 4 0 014-4h18a4 4 0 014 4v4a4 4 0 01-4 4H3z"></path>
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M8 21h8M12 17v4"></path>
-        </svg>
-        <p className="text-lg font-semibold text-gray-600 text-center">
-          No Case Reports Available Today
-        </p>
-        <p className="text-sm text-gray-500 text-center mt-2">
-          Please check back later for updates or{" "}
-          <Link to="case-reports" className="text-blue-500 underline">
-            view all case reports.
-          </Link>
-        </p>
+      <div className="flex flex-col items-center justify-center min-h-[300px] rounded-md py-6">
+        <Empty
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+          description={
+            <Text className="text-lg font-semibold text-gray-600 text-center">
+              No Case Reports Available Today
+            </Text>
+          }
+        />
+        <Link to="case-reports" className="text-blue-500 underline mt-4">
+          View all case reports
+        </Link>
       </div>
     );
   }
 
   return (
-    <div className="rounded-md  h-[300px] overflow-y-scroll custom-scrollbar">
+    <div className="rounded-md h-[300px] overflow-y-auto custom-scrollbar p-4 bg-gray-50">
+      {todayReports.map((report) => (
+        <Card
+          key={report._id}
+          className="w-full font-poppins shadow-md hover:shadow-lg transition-shadow duration-300 mb-4"
+          title={
+            <h2 className="text-lg text-gray-800 font-semibold">
+              {report?.caseReported?.firstParty?.name[0]?.name} vs{" "}
+              {report?.caseReported?.secondParty?.name[0]?.name}
+            </h2>
+          }>
+          <Space direction="vertical" size="middle" className="w-full">
+            {/* <Text strong className="text-gray-700">
+              Reported on:{" "}
+              <span className="text-blue-500">{formatDate(report?.date)}</span>
+            </Text> */}
+            <Text className="text-gray-700 text-justify">
+              {shortenText(report?.update, 300, report._id)}
+            </Text>
+            <Space
+              direction="horizontal"
+              size="large"
+              className="w-full justify-between flex-wrap">
+              <Text strong>
+                Adjourned For:{" "}
+                <span className="text-rose-600">{report?.adjournedFor}</span>
+              </Text>
+              <Text strong>
+                Adjourned Date:{" "}
+                <span className="text-blue-500">
+                  {formatDate(report?.adjournedDate)}
+                </span>
+              </Text>
+              <Text strong>
+                Reported By:{" "}
+                <span className="text-gray-800">
+                  {`${report?.reportedBy?.firstName} ${report?.reportedBy?.lastName}`}
+                </span>
+              </Text>
+            </Space>
+          </Space>
+        </Card>
+      ))}
       <Link
-        className="text-blue-600 underline p-2 text-[12px] block hover:text-blue-800 hover:font-bold"
+        className="text-blue-600 underline p-2 text-sm block hover:text-blue-800 font-semibold text-center"
         to="case-reports">
         See all Reports
       </Link>
-      <CaseReportList
-        showFilter={false}
-        reports={todayReports}
-        hideButtons={true}
-        titleStyle="text-[20px] text-center font-medium"
-        nameStyle="w-80 text-red-600"
-        title=""
-      />
     </div>
   );
 };
