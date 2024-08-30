@@ -7,8 +7,8 @@ const { Text } = Typography;
 
 const CurrentDayCauseList = () => {
   const {
-    loading: getterLoading,
-    error: getterError,
+    loading: loadingCauseList,
+    error: causeListError,
     causeList,
   } = useDataGetterHook(); // Fetch cause list data
 
@@ -61,18 +61,19 @@ const CurrentDayCauseList = () => {
         Today's Cause List
       </h2>
       <div className="p-4 h-full overflow-y-auto custom-scrollbar">
-        {getterLoading.causeList ? (
-          <div className="flex justify-center items-center h-full">
+        {loadingCauseList.causeList ? (
+          <div className="flex justify-center items-center min-h-[300px]">
             <Text className="text-gray-500">Loading...</Text>
           </div>
-        ) : getterError.causeList ? (
-          <div className="flex justify-center items-center h-full">
+        ) : causeListError.causeList ? (
+          <div className="flex justify-center items-center min-h-[300px]">
             <Text className="text-red-500">
-              Error loading data. Please try again.
+              {causeListError.causeList ||
+                "Error loading data. Please try again."}
             </Text>
           </div>
         ) : !(causeList.data?.todayResult > 0) ? (
-          <div className="flex flex-col items-center justify-center h-full bg-gray-50 rounded-lg p-6">
+          <div className="flex flex-col items-center justify-center min-h-[300px] bg-gray-50 rounded-lg p-6">
             <Empty
               image={
                 <InboxOutlined style={{ fontSize: 64, color: "#1890ff" }} />

@@ -5,6 +5,19 @@ import axios from "axios";
 // Create a context
 const DataContext = createContext();
 
+// Retrieve token from browser cookies
+// const token = document.cookie
+//   .split("; ")
+//   .find((row) => row.startsWith("jwt="))
+//   ?.split("=")[1];
+
+// console.log(token);
+// // Merge custom headers with default headers
+// const headers = {
+//   "Content-Type": "application/json",
+//   Authorization: `Bearer ${token}`,
+// };
+
 const DataFetcherContext = ({ children }) => {
   const [state, setState] = useState({
     cases: [],
@@ -101,11 +114,8 @@ const DataFetcherContext = ({ children }) => {
         `http://localhost:3000/api/v1/${endpoint}`,
 
         {
-          withCredentials: true, // Ensure cookies are sent with the request
-          headers: {
-            "Content-Type": "application/json",
-            // Add any other headers you need here
-          },
+          // headers,
+          withCredentials: true,
         }
       );
       setState((prevState) => ({

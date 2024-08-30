@@ -91,7 +91,7 @@ const UpdateUserPositionAndRole = ({ userId }) => {
   return (
     <section>
       <Button onClick={showModal} className="bg-blue-500 text-white">
-        Update User&apos;s Role or Position
+        Update User&apos;s Status
       </Button>
       <Modal
         title="Update Staff Role or Position"

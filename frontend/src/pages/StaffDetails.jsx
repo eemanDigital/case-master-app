@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Descriptions, Divider, Card } from "antd";
+import { Card, Divider, Row, Col, Typography } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import avatar from "../assets/avatar.png";
 import { formatDate } from "../utils/formatDate";
@@ -13,10 +13,12 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
+const { Title, Text } = Typography;
+
 const StaffDetails = () => {
   const { id } = useParams();
   const { user } = useSelector((state) => state.auth);
-  const loggedInClientId = user?.data?.id;
+  const loggedInClientId = user?.data?._id;
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { isAdminOrHr } = useAdminHook();
   useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
@@ -27,84 +29,75 @@ const StaffDetails = () => {
     }
   }, [id, dataFetcher]);
 
-  console.log(id, "ID");
-
   const isCurrentUser = loggedInClientId === id; //check if id is the same
 
-  // full data detail for current user
-  const renderFullDetails = () => (
-    <Card title="Staff Details">
-      <Descriptions bordered>
-        <Descriptions.Item label="First Name">
-          {data?.data?.firstName}
-        </Descriptions.Item>
-        <Descriptions.Item label="Last Name">
-          {data?.data?.lastName}
-        </Descriptions.Item>
-        <Descriptions.Item label="Year of Call">
-          {formatDate(data?.data?.yearOfCall)}
-        </Descriptions.Item>
-        <Descriptions.Item label="Role">{data?.data?.role}</Descriptions.Item>
-        <Descriptions.Item label="Position">
-          {data?.data?.position}
-        </Descriptions.Item>
-        <Descriptions.Item label="Practice Area">
-          {data?.data?.practiceArea}
-        </Descriptions.Item>
-        <Descriptions.Item label="University Attended">
-          {data?.data?.universityAttended}
-        </Descriptions.Item>
-        <Descriptions.Item label="Law School Attended">
-          {data?.data?.lawSchoolAttended}
-        </Descriptions.Item>
-        <Descriptions.Item label="Email">{data?.data?.email}</Descriptions.Item>
-        <Descriptions.Item label="Phone">{data?.data?.phone}</Descriptions.Item>
-        <Descriptions.Item label="Address">
-          {data?.data?.address}
-        </Descriptions.Item>
-        <Descriptions.Item label="Bio">{data?.data?.bio}</Descriptions.Item>
-      </Descriptions>
+  const renderProfileSection = () => (
+    <Card className="mb-6 shadow-lg">
+      <GoBackButton />
+
+      <Row gutter={[16, 16]} className="items-center">
+        <Col xs={24} sm={8} md={6} className="flex justify-center">
+          <img
+            src={data?.data?.photo ? data?.data?.photo : avatar}
+            alt={`${data?.data?.firstName}'s profile image`}
+            className="w-32 h-32 object-cover rounded-full shadow-md"
+          />
+        </Col>
+        <Col xs={24} sm={16} md={18}>
+          <Title level={3}>
+            {`${data?.data?.firstName} ${data?.data?.lastName}`} (
+            <Text type="secondary">{data?.data?.role}</Text>)
+          </Title>
+
+          <Text type="secondary">{data?.data?.position}</Text>
+          <Divider />
+          <div className="flex gap-4">
+            {isAdminOrHr && <UpdateUserPositionAndRole userId={id} />}
+          </div>
+        </Col>
+      </Row>
     </Card>
   );
 
-  // limited details for non-admin users
-  const renderLimitedDetails = () => (
-    <Card title="Staff Details">
-      <Descriptions bordered>
-        <Descriptions.Item label="First Name">
-          {data?.data?.firstName}
-        </Descriptions.Item>
-        <Descriptions.Item label="Last Name">
-          {data?.data?.lastName}
-        </Descriptions.Item>
-        <Descriptions.Item label="Year of Call">
-          {formatDate(data?.data?.yearOfCall)}
-        </Descriptions.Item>
-        <Descriptions.Item label="Role">{data?.data?.role}</Descriptions.Item>
-        <Descriptions.Item label="Position">
-          {data?.data?.position}
-        </Descriptions.Item>
-        <Descriptions.Item label="Practice Area">
-          {data?.data?.practiceArea}
-        </Descriptions.Item>
-        <Descriptions.Item label="University Attended">
+  const renderPersonalInformation = () => (
+    <Card title="Personal Information" className="mb-6 shadow-lg">
+      <Row gutter={[16, 16]}>
+        <Col span={12}>
+          <Text strong>Year of Call:</Text> {formatDate(data?.data?.yearOfCall)}
+        </Col>
+        <Col span={12}>
+          <Text strong>University Attended:</Text>{" "}
           {data?.data?.universityAttended}
-        </Descriptions.Item>
-        <Descriptions.Item label="Law School Attended">
+        </Col>
+        <Col span={12}>
+          <Text strong>Law School Attended:</Text>{" "}
           {data?.data?.lawSchoolAttended}
-        </Descriptions.Item>
-      </Descriptions>
+        </Col>
+        <Col span={12}>
+          <Text strong>Practice Area:</Text> {data?.data?.practiceArea}
+        </Col>
+      </Row>
     </Card>
   );
 
-  // render either full detail or limited detail
-  const renderStaffDetails = () => {
-    if (isAdminOrHr || isCurrentUser) {
-      return renderFullDetails();
-    } else {
-      return renderLimitedDetails();
-    }
-  };
+  const renderContactDetails = () => (
+    <Card title="Contact Details" className="mb-6 shadow-lg">
+      <Row gutter={[16, 16]}>
+        <Col span={12}>
+          <Text strong>Email:</Text> {data?.data?.email}
+        </Col>
+        <Col span={12}>
+          <Text strong>Phone:</Text> {data?.data?.phone}
+        </Col>
+        <Col span={24}>
+          <Text strong>Address:</Text> {data?.data?.address}
+        </Col>
+        <Col span={24}>
+          <Text strong>Bio:</Text> {data?.data?.bio}
+        </Col>
+      </Row>
+    </Card>
+  );
 
   return (
     <>
@@ -113,26 +106,16 @@ const StaffDetails = () => {
       ) : error ? (
         <PageErrorAlert errorCondition={error} errorMessage={error} />
       ) : (
-        <div>
-          <div>
-            <img
-              src={data?.data?.photo ? data?.data?.photo : avatar}
-              alt={`${data?.data?.firstName}'s profile image`}
-              className="w-24 h-24 object-cover rounded-full"
-            />
-
-            <GoBackButton />
-            {isAdminOrHr && <UpdateUserPositionAndRole userId={id} />}
-          </div>
-          <Divider />
-          {renderStaffDetails()}
-
-          <Divider />
-
-          {(isAdminOrHr || isCurrentUser) && (
+        <div className="p-4">
+          {renderProfileSection()}
+          {isAdminOrHr || isCurrentUser ? (
             <>
+              {renderPersonalInformation()}
+              {renderContactDetails()}
               <LeaveBalanceDisplay userId={id} />
             </>
+          ) : (
+            renderPersonalInformation()
           )}
         </div>
       )}

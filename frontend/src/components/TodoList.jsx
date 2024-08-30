@@ -5,7 +5,7 @@ import { UnorderedListOutlined } from "@ant-design/icons";
 import TodoTask from "./TodoTask";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import TodoForm from "../pages/TodoForm";
-import LoadingSpinner from "./LoadingSpinner";
+// import LoadingSpinner from "./LoadingSpinner";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 
@@ -29,7 +29,8 @@ const TodoList = ({ title }) => {
 
   const allTodos = [...(todos?.data?.todos || []), ...optimisticTodos];
 
-  if (loading.todos) return <LoadingSpinner />;
+  if (loading.todos)
+    return <div className="min-h-max-[200px]"> loading...</div>;
   if (error.todos) return toast.error(error.todos);
 
   const showModal = () => {
