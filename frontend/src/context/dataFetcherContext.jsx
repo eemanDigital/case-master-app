@@ -6,17 +6,17 @@ import axios from "axios";
 const DataContext = createContext();
 
 // Retrieve token from browser cookies
-// const token = document.cookie
-//   .split("; ")
-//   .find((row) => row.startsWith("jwt="))
-//   ?.split("=")[1];
+const token = document.cookie
+  .split("; ")
+  .find((row) => row.startsWith("jwt="))
+  ?.split("=")[1];
 
-// console.log(token);
-// // Merge custom headers with default headers
-// const headers = {
-//   "Content-Type": "application/json",
-//   Authorization: `Bearer ${token}`,
-// };
+console.log(token);
+// Merge custom headers with default headers
+const headers = {
+  "Content-Type": "application/json",
+  Authorization: `Bearer ${token}`,
+};
 
 const DataFetcherContext = ({ children }) => {
   const [state, setState] = useState({
@@ -114,7 +114,7 @@ const DataFetcherContext = ({ children }) => {
         `http://localhost:3000/api/v1/${endpoint}`,
 
         {
-          // headers,
+          headers,
           withCredentials: true,
         }
       );
