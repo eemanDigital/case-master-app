@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Layout, Menu, theme } from "antd";
+import { Menu } from "antd";
 import { RxDashboard } from "react-icons/rx";
 import { IoBriefcaseSharp, IoHelpCircleOutline } from "react-icons/io5";
 import { TbLogout2, TbReport } from "react-icons/tb";
@@ -20,9 +20,7 @@ import { useAdminHook } from "../hooks/useAdminHook";
 import { logout, RESET } from "../redux/features/auth/authSlice";
 import { shortenText } from "../utils/shortenText";
 
-const { Sider } = Layout;
-
-const SideBar = ({ collapsed, setCollapsed }) => {
+const SideBar = ({ isMobile, closeDrawer }) => {
   const { remove } = useRemovePhoto();
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -31,15 +29,11 @@ const SideBar = ({ collapsed, setCollapsed }) => {
   const { isClient, isUser } = useAdminHook();
   const [selectedKeys, setSelectedKeys] = useState(["dashboard"]);
 
-  // const {
-  //   token: { colorBgContainer, borderRadiusLG },
-  // } = theme.useToken();
-
-  useEffect(() => {
-    const pathArray = location.pathname.split("/");
-    const key = pathArray.length > 1 ? pathArray[1] : "dashboard";
-    setSelectedKeys([key]);
-  }, [location]);
+  // useEffect(() => {
+  //   const pathArray = location.pathname.split("/");
+  //   const key = pathArray.length > 1 ? pathArray[1] : "dashboard";
+  //   setSelectedKeys([key]);
+  // }, [location]);
 
   const handleLogout = async () => {
     dispatch(RESET());
@@ -125,30 +119,17 @@ const SideBar = ({ collapsed, setCollapsed }) => {
 
   const handleMenuClick = (e) => {
     setSelectedKeys([e.key]);
+    if (isMobile && closeDrawer) {
+      closeDrawer();
+    }
   };
 
   return (
-    <Sider
-      trigger={null}
-      collapsible
-      collapsed={collapsed}
-      breakpoint="lg"
-      collapsedWidth="80"
-      onBreakpoint={(broken) => {
-        setCollapsed(broken);
-      }}
-      className="min-h-screen fixed left-0 top-0 bottom-0"
-      style={{
-        overflow: "auto",
-        height: "100vh",
-        position: "fixed",
-        left: 0,
-        zIndex: 1,
-      }}>
+    <div className="h-full flex flex-col">
       <div className="logo-vertical py-4 px-2">
         {!isClient ? (
           <div className="flex justify-center items-center">
-            <Link to="profile">
+            <Link to="/profile" onClick={isMobile ? closeDrawer : undefined}>
               <img
                 src={user?.data?.photo ? user.data.photo : avatar}
                 alt={`${user?.data?.firstName}'s profile image`}
@@ -157,7 +138,7 @@ const SideBar = ({ collapsed, setCollapsed }) => {
             </Link>
           </div>
         ) : (
-          <Link to="/profile">
+          <Link to="/profile" onClick={isMobile ? closeDrawer : undefined}>
             <h1 className="text-gray-300 hover:text-gray-500 font-bold text-center">
               {shortenText(user?.data?.firstName, 10)}
             </h1>
@@ -170,15 +151,15 @@ const SideBar = ({ collapsed, setCollapsed }) => {
         selectedKeys={selectedKeys}
         items={filteredNavItems}
         onClick={handleMenuClick}
-        // defaultSelectedKeys={["dashboard"]}
+        className="flex-grow"
       />
-    </Sider>
+    </div>
   );
 };
 
-// Typechecking for props
 SideBar.propTypes = {
-  collapsed: PropTypes.bool.isRequired,
-  setCollapsed: PropTypes.func.isRequired,
+  isMobile: PropTypes.bool.isRequired,
+  closeDrawer: PropTypes.func,
 };
+
 export default SideBar;
