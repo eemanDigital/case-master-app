@@ -132,12 +132,12 @@ app.use("/api/v1/events", eventRouter);
 app.use("/api/v1/notes", noteRouter);
 
 // // Handle root URL
-// app.get("/", (req, res) => {
-//   res.status(200).json({
-//     status: "success",
-//     message: "Welcome to the API",
-//   });
-// });
+app.get("/", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "Welcome to the API",
+  });
+});
 
 // Handle 404 errors
 app.all("*", (req, res, next) => {
