@@ -44,11 +44,22 @@ const EditUserProfile = () => {
     }));
   }
 
+  function formatDate(date) {
+    const d = new Date(date);
+    const month = `0${d.getMonth() + 1}`.slice(-2);
+    const day = `0${d.getDate()}`.slice(-2);
+    const year = d.getFullYear();
+    return `${year}-${month}-${day}`;
+  }
+
   useEffect(() => {
     if (user?.data) {
       setInputValue((prevData) => ({
         ...prevData,
         ...user?.data,
+        yearOfCall: user?.data.yearOfCall
+          ? formatDate(user.data.yearOfCall)
+          : "",
       }));
     }
   }, [user?.data]);
@@ -172,13 +183,6 @@ const EditUserProfile = () => {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            {/* <Select
-              label="Position"
-              options={positions}
-              value={inputValue.position}
-              name="position"
-              onChange={handleChange}
-            /> */}
             <Select
               label="Gender"
               options={gender}
@@ -186,21 +190,6 @@ const EditUserProfile = () => {
               name="gender"
               onChange={handleChange}
             />
-            {/* <Select
-              label="Role"
-              options={roles}
-              value={inputValue.role}
-              name="role"
-              onChange={handleChange}
-            /> */}
-            {/* <Input
-              type="number"
-              label="Leave Entitled"
-              placeholder="Enter leave entitled to"
-              value={inputValue.annualLeaveEntitled}
-              name="annualLeaveEntitled"
-              onChange={handleChange}
-            /> */}
             {getOtherFieldSelected && (
               <Input
                 type="text"

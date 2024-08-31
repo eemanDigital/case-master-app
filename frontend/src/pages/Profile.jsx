@@ -29,7 +29,7 @@ const Profile = () => {
     return <PageErrorAlert errorCondition={isError} errorMessage={message} />;
 
   return (
-    <section className="flex flex-col justify-center items-center ">
+    <section className="flex flex-col justify-center items-center font-poppins font-medium ">
       <div className="flex flex-col md:flex-row md:gap-12 bg-white shadow-md rounded-lg p-6 md:p-10 w-full max-w-5xl">
         {/* CHANGE PASSWORD FORM */}
         <ChangePassword endpoint="/changepassword" />

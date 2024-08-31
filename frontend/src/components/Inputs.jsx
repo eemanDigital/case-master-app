@@ -7,39 +7,50 @@ const Input = ({
   type,
   disable,
   inputStyle,
+  error,
   ...props
 }) => {
+  const baseInputClass = `
+    block w-full px-4 py-2 mt-2 text-gray-700 bg-white border rounded-md
+    focus:border-blue-400 focus:ring-blue-300 focus:outline-none focus:ring focus:ring-opacity-40
+    transition duration-150 ease-in-out
+  `;
+
+  const inputClass = `
+    ${baseInputClass}
+    ${error ? "border-red-500" : "border-gray-300"}
+    ${disable ? "bg-gray-100 cursor-not-allowed" : ""}
+    ${inputStyle || ""}
+  `;
+
   return (
-    <p>
+    <div className="mb-4">
       <label
         htmlFor={props.id}
-        className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2 ">
+        className="block text-sm font-medium text-gray-700 mb-1">
         {label}
       </label>
       {textarea ? (
         <textarea
           {...props}
-          placeholder={props.placeholder}
-          className="appearance-none block w-full bg-gray-200 text-gray-700 border  rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white"
+          disabled={disable}
+          className={inputClass}
+          rows={4}
         />
       ) : (
         <input
-          placeholder={props.placeholder}
           type={type}
-          {...props}
           disabled={disable}
-          className={
-            inputStyle ||
-            `appearance-none block w-full bg-gray-200 text-gray-700 border border-gray-900 rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`
-          }
+          className={inputClass}
+          {...props}
         />
       )}
-      <p className="text-gray-600 text-xs italic">{text}</p>
-    </p>
+      {text && <p className="mt-1 text-sm text-gray-500">{text}</p>}
+      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
+    </div>
   );
 };
 
-// Typechecking for props
 Input.propTypes = {
   label: PropTypes.string.isRequired,
   text: PropTypes.string,
@@ -47,7 +58,7 @@ Input.propTypes = {
   type: PropTypes.string,
   disable: PropTypes.bool,
   inputStyle: PropTypes.string,
-  placeholder: PropTypes.string,
+  error: PropTypes.string,
   id: PropTypes.string,
 };
 

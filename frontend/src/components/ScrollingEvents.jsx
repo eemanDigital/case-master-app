@@ -54,7 +54,11 @@ const ScrollingEvents = () => {
 
   // Display loading if data is being fetched
   if (loading.events) {
-    return <LoadingSpinner />;
+    return (
+      <div className="font-medium text-center">
+        checking if there is an event...
+      </div>
+    );
   }
 
   return (

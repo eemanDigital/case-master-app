@@ -86,8 +86,13 @@ const LeaveBalanceList = () => {
         />
       ) : (
         <div className="overflow-x-auto mt-3">
-          <SearchBar onSearch={handleSearchChange} />
+          <div className="flex flex-col md:flex-row justify-between items-center  mb-3">
+            <h1 className="text-2xl font-bold text-gray-800 mb-3">
+              Staff Leave Balance/Award
+            </h1>
 
+            <SearchBar onSearch={handleSearchChange} />
+          </div>
           <Table dataSource={filteredLeaveBalance} scroll={{ x: 100 }}>
             <ColumnGroup title="Employee's Name">
               <Column

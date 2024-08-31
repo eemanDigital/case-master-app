@@ -1,24 +1,32 @@
 import PropTypes from "prop-types";
 
-const Select = ({ label, options, ...props }) => {
-  // const { register } = useForm();
+const Select = ({ label, options, error, ...props }) => {
+  const baseSelectClass = `
+    block w-full px-4 py-2 mt-2 text-gray-700 bg-white border rounded-md
+    focus:border-blue-400 focus:ring-blue-300 focus:outline-none focus:ring focus:ring-opacity-40
+    transition duration-150 ease-in-out appearance-none
+  `;
+
+  const selectClass = `
+    ${baseSelectClass}
+    ${error ? "border-red-500" : "border-gray-300"}
+    ${props.disabled ? "bg-gray-100 cursor-not-allowed" : ""}
+  `;
 
   return (
-    <div className="w-full  px-3 mb-6 md:mb-0">
-      <label className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2">
+    <div className="mb-4">
+      <label
+        htmlFor={props.id || props.name}
+        className="block text-sm font-medium text-gray-700 mb-1">
         {label}
       </label>
       <div className="relative">
-        <select
-          {...props}
-          // disabled
-          // {...register(selectFieldName)}
-          className="appearance-none block w-full bg-gray-200 text-gray-700 border   rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white"
-          // className="block appearance-none w-full bg-gray-200 border border-gray-200 text-gray-700 py-3 px-4 pr-8 rounded leading-tight focus:outline-none focus:bg-white focus:border-gray-500"
-          id="grid-state">
-          {options.map((el, index) => {
-            return <option key={index}>{el}</option>;
-          })}
+        <select {...props} className={selectClass}>
+          {options.map((option, index) => (
+            <option key={index} value={option.value || option}>
+              {option.label || option}
+            </option>
+          ))}
         </select>
         <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
           <svg
@@ -29,12 +37,26 @@ const Select = ({ label, options, ...props }) => {
           </svg>
         </div>
       </div>
+      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
     </div>
   );
 };
-// Typechecking for props
+
 Select.propTypes = {
   label: PropTypes.string.isRequired,
-  options: PropTypes.arrayOf(PropTypes.string).isRequired,
+  options: PropTypes.arrayOf(
+    PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.shape({
+        value: PropTypes.string.isRequired,
+        label: PropTypes.string.isRequired,
+      }),
+    ])
+  ).isRequired,
+  error: PropTypes.string,
+  id: PropTypes.string,
+  name: PropTypes.string,
+  disabled: PropTypes.bool,
 };
+
 export default Select;

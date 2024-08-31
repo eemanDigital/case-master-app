@@ -80,11 +80,11 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
   }
 
   return (
-    <div className="rounded-md h-[300px] overflow-y-auto custom-scrollbar p-4 bg-gray-50">
+    <div className="rounded-md h-[300px] overflow-y-auto custom-scrollbar  bg-gray-50">
       {todayReports.map((report) => (
         <Card
           key={report._id}
-          className="w-full font-poppins shadow-md hover:shadow-lg transition-shadow duration-300 mb-4"
+          className="w-full font-poppins shadow-md hover:shadow-lg transition-shadow duration-300 mb-4 "
           title={
             <h2 className="text-lg text-gray-800 font-semibold">
               {report?.caseReported?.firstParty?.name[0]?.name} vs{" "}

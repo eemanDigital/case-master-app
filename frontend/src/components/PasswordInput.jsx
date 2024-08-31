@@ -7,56 +7,69 @@ const PasswordInput = ({
   value,
   label,
   placeholder,
-  htmlFor,
   handleChange,
   showPassword,
   togglePassword,
   onPaste,
-  style,
+  ...props
 }) => {
-  // Default input style
-  const defaultStyle = `appearance-none block w-full bg-gray-200 text-red border ${
-    error ? "border-red-500" : ""
-  } rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`;
+  const baseInputClass = `
+    block w-full px-4 py-2 mt-2 text-gray-700 bg-white border rounded-md
+    focus:border-blue-400 focus:ring-blue-300 focus:outline-none focus:ring focus:ring-opacity-40
+    transition duration-150 ease-in-out pr-10
+  `;
+
+  const inputClass = `
+    ${baseInputClass}
+    ${error ? "border-red-500" : "border-gray-300"}
+    ${props.disabled ? "bg-gray-100 cursor-not-allowed" : ""}
+  `;
 
   return (
-    <div className="relative">
+    <div className="mb-4">
       <label
-        htmlFor={htmlFor}
-        className="block uppercase tracking-wide text-gray-700 text-xs font-bold mb-2 ">
+        htmlFor={name}
+        className="block text-sm font-medium text-gray-700 mb-1">
         {label}
       </label>
-      <input
-        className={style || defaultStyle}
-        type={showPassword ? "text" : "password"}
-        required
-        placeholder={placeholder}
-        value={value}
-        name={name}
-        onChange={handleChange}
-        onPaste={onPaste}
-      />
-      <div
-        className="absolute inset-y-0 right-0 pt-5  pr-3 flex items-center cursor-pointer"
-        onClick={togglePassword}>
-        {showPassword ? <AiOutlineEyeInvisible /> : <AiOutlineEye />}
+      <div className="relative">
+        <input
+          className={inputClass}
+          type={showPassword ? "text" : "password"}
+          required
+          placeholder={placeholder}
+          value={value}
+          name={name}
+          onChange={handleChange}
+          onPaste={onPaste}
+          {...props}
+        />
+        <div
+          className="absolute inset-y-0 right-0 flex items-center pr-3 cursor-pointer"
+          onClick={togglePassword}>
+          {showPassword ? (
+            <AiOutlineEyeInvisible className="text-gray-500 hover:text-gray-700" />
+          ) : (
+            <AiOutlineEye className="text-gray-500 hover:text-gray-700" />
+          )}
+        </div>
       </div>
+      {error && <p className="mt-1 text-sm text-red-500">{error}</p>}
     </div>
   );
 };
-// Typechecking for props
+
 PasswordInput.propTypes = {
-  error: PropTypes.bool,
+  error: PropTypes.string,
   name: PropTypes.string.isRequired,
   value: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
   placeholder: PropTypes.string,
-  htmlFor: PropTypes.string,
   handleChange: PropTypes.func.isRequired,
   showPassword: PropTypes.bool.isRequired,
   togglePassword: PropTypes.func.isRequired,
   onPaste: PropTypes.func,
-  style: PropTypes.string,
+  disabled: PropTypes.bool,
 };
 
 export default PasswordInput;

@@ -145,7 +145,7 @@ const NoteList = () => {
                       {new Date(note.createdAt).toLocaleDateString()}
                     </p>
                     <p className="text-gray-700 text-base">
-                      {shortenText(note?.content, 100)}
+                      {shortenText(note?.content, 100, note._id)}
                     </p>
                   </div>
                 }
