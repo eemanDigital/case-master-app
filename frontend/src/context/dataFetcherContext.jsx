@@ -35,6 +35,7 @@ const DataFetcherContext = ({ children }) => {
     monthlyNewCases: [],
     yearlyNewCases: [],
     events: [],
+    notes: [],
     loading: {
       cases: false,
       users: false,
@@ -62,6 +63,7 @@ const DataFetcherContext = ({ children }) => {
       monthlyNewCases: false,
       yearlyNewCases: false,
       events: false,
+      notes: false,
     },
     error: {
       cases: "",
@@ -90,6 +92,7 @@ const DataFetcherContext = ({ children }) => {
       monthlyNewCases: "",
       yearlyNewCases: "",
       events: "",
+      notes: "",
     },
   });
 

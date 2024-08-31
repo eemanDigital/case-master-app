@@ -34,7 +34,7 @@ const CasesByCategoriesChart = ({ data, title }) => {
   return (
     <>
       <div
-        className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow flex flex-col justify-center items-center"
+        className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow flex flex-col justify-center items-center m-1 sm:m-2"
         onClick={handleCardClick}>
         <ResponsiveContainer width="100%" height={200} className="mt-6">
           <h1 className="text-center font-bold mt-2 text-gray-600">{title}</h1>
@@ -56,7 +56,7 @@ const CasesByCategoriesChart = ({ data, title }) => {
             <YAxis />
             <Tooltip />
             <Legend />
-            <Bar dataKey="Cases" fill="#ea6a47" barSize={10} />
+            <Bar dataKey="Cases" fill="#1c4e80" barSize={10} />
           </BarChart>
         </ResponsiveContainer>
       </div>

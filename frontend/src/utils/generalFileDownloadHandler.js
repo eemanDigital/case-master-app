@@ -16,7 +16,7 @@ export async function handleGeneralDownload(event, URL, fileName) {
     }
 
     const data = await response.json();
-    if (data.status === "success") {
+    if (data.message === "success") {
       const downloadUrl = `${data.data.fileUrl}?attachment=true`;
       const originalFileName = data.data.fileName || fileName;
       const fileExtension = downloadUrl.split(".").pop();

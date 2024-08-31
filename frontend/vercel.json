@@ -5,8 +5,143 @@
       "dest": "/"
     },
     {
+      "src": "/users/login",
+      "dest": "/"
+    },
+    {
+      "src": "/forgotpassword",
+      "dest": "/"
+    },
+    {
+      "src": "/resetPassword/:token",
+      "dest": "/"
+    },
+    {
+      "src": "/loginWithCode/:email",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/verify-account/:token",
+      "dest": "/"
+    },
+    {
       "src": "/dashboard",
       "dest": "/"
-    }
+    },
+    {
+      "src": "/dashboard/staff/add-user",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/staff",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/staff/:id/details",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/cases",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/cases/:id/update",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/cases/add-case",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/cases/:id/casedetails",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/case-reports",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/leave-application",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/staff/leave-application",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/staff/leave-balance",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/staff/leave-application/:id/details",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/documents",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/case-reports/add-report",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/profile",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/tasks",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/tasks/:id/details",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/clients",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/clients/:id/details",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/billings",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/billings/invoices/add-invoices",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/billings/invoices/:id/details",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/billings/invoices/:id/update",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/billings/payments/:id/details",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/billings/payments/client/:clientId/case/:caseId",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/cause-list",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/contact-dev",
+      "dest": "/"
+    },
+    {
+      "src": "/dashboard/events/:id/details",
+      "dest": "/"
+    },
+    { "src": "/add-notes", "dest": "/" },
+    { "src": "/note-list", "dest": "/" },
+    { "src": "/update-note/:id", "dest": "/" }
   ]
 }

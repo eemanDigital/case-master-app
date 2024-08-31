@@ -384,26 +384,6 @@ exports.isLoggedIn = async (req, res) => {
   }
 };
 
-// exports.isLoggedIn = async (req, res) => {
-//   try {
-//     const token = req.cookies.jwt;
-
-//     if (!token) {
-//       return res.json(false);
-//     }
-
-//     const verified = await promisify(jwt.verify)(token, process.env.JWT_SECRET);
-
-//     if (verified) {
-//       return res.json(true);
-//     } else {
-//       return res.json(false);
-//     }
-//   } catch (error) {
-//     console.error("Error verifying token:", error);
-//     return res.json(false);
-//   }
-// };
 // forgot password handler
 exports.forgotPassword = catchAsync(async (req, res, next) => {
   const { email } = req.body;

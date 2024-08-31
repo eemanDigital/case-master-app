@@ -1,30 +1,24 @@
 import PropTypes from "prop-types";
-import { useEffect, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Menu } from "antd";
 import { RxDashboard } from "react-icons/rx";
 import { IoBriefcaseSharp, IoHelpCircleOutline } from "react-icons/io5";
 import { TbLogout2, TbReport } from "react-icons/tb";
-import {
-  FaFile,
-  FaMoneyBill,
-  FaTasks,
-  FaUsers,
-  FaListUl,
-} from "react-icons/fa";
-import { RiCustomerService2Line } from "react-icons/ri";
+import { FaFile, FaMoneyBill, FaTasks, FaUsers } from "react-icons/fa";
+import { AiOutlineSchedule } from "react-icons/ai";
 import avatar from "../assets/avatar.png";
 import { useRemovePhoto } from "../hooks/useRemovePhoto";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { logout, RESET } from "../redux/features/auth/authSlice";
 import { shortenText } from "../utils/shortenText";
+import { FaHandshake } from "react-icons/fa6";
 
 const SideBar = ({ isMobile, closeDrawer }) => {
   const { remove } = useRemovePhoto();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const location = useLocation();
   const { user } = useSelector((state) => state.auth);
   const { isClient, isUser } = useAdminHook();
   const [selectedKeys, setSelectedKeys] = useState(["dashboard"]);
@@ -85,12 +79,12 @@ const SideBar = ({ isMobile, closeDrawer }) => {
     },
     {
       key: "cause-list",
-      icon: <FaListUl />,
+      icon: <AiOutlineSchedule />,
       label: <Link to="cause-list">Cause List</Link>,
     },
     {
       key: "clients",
-      icon: <RiCustomerService2Line />,
+      icon: <FaHandshake />,
       label: <Link to="clients">Clients</Link>,
     },
     {
@@ -129,7 +123,7 @@ const SideBar = ({ isMobile, closeDrawer }) => {
       <div className="logo-vertical py-4 px-2">
         {!isClient ? (
           <div className="flex justify-center items-center">
-            <Link to="/profile" onClick={isMobile ? closeDrawer : undefined}>
+            <Link to="profile" onClick={isMobile ? closeDrawer : undefined}>
               <img
                 src={user?.data?.photo ? user.data.photo : avatar}
                 alt={`${user?.data?.firstName}'s profile image`}

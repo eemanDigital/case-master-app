@@ -59,7 +59,7 @@ const CreateTaskForm = () => {
     [form]
   );
 
-  // / fetch users
+  // Fetch users
   useEffect(() => {
     dispatch(getUsers());
   }, [dispatch]);
@@ -124,14 +124,14 @@ const CreateTaskForm = () => {
     await handleSubmit(values);
   }, [form, handleSubmit]);
 
-  // email success
+  // Email success
   useEffect(() => {
     if (emailSent) {
       toast.success(msg);
     }
   }, [emailSent, msg]);
 
-  //dataFetcher error
+  // DataFetcher error
   useEffect(() => {
     if (dataError) {
       toast.error(dataError || "An error occurred");
@@ -153,12 +153,12 @@ const CreateTaskForm = () => {
         footer={null}
         onCancel={handleCancel}
         confirmLoading={confirmLoading}
-        className="modal-container">
+        className="modal-container ">
         <Form
           layout="vertical"
           form={form}
           name="create_task_form"
-          className="flex flex-col gap-6">
+          className="flex flex-col gap-6 ">
           <Form.Item
             label="Task Title"
             name="title"
@@ -189,158 +189,64 @@ const CreateTaskForm = () => {
               className="w-full"
             />
           </Form.Item>
-          <>
-            <Button
-              icon={<PlusOutlined />}
-              onClick={showModal}
-              className=" mb-2 text-white rounded-lg shadow-md transition duration-300 w-full sm:w-auto">
-              Create Task
-            </Button>
-            <Modal
-              width="80%"
-              title={<Title level={3}>Assign Task</Title>}
-              open={open}
-              onOk={handleOk}
-              footer={null}
-              onCancel={handleCancel}
-              confirmLoading={confirmLoading}
-              className="modal-container">
-              <Form
-                layout="vertical"
-                form={form}
-                name="create_task_form"
-                className="flex flex-col gap-6">
-                <Form.Item
-                  label="Task Title"
-                  name="title"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please provide title for the task!",
+          <div className="flex w-full justify-center items-center space-x-4">
+            <div className="flex-1">
+              <Form.Item
+                name="assignedTo"
+                label="Staff"
+                dependencies={["assignedToClient"]}
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (value || getFieldValue("assignedToClient")) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(
+                        new Error(
+                          'Task must be assigned to "Staff" or "Client".'
+                        )
+                      );
                     },
-                  ]}>
-                  <Input placeholder="Enter task title" />
-                </Form.Item>
-
-                <Form.Item
-                  name="instruction"
-                  label="Instruction"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Please provide instructions for the task!",
-                    },
-                  ]}>
-                  <TextArea
-                    rows={4}
-                    placeholder="Enter detailed instructions"
-                  />
-                </Form.Item>
-
-                <Form.Item name="caseToWorkOn" label="Case To Work On">
-                  <Select
-                    placeholder="Select a case"
-                    options={casesOptions}
-                    allowClear
-                    className="w-full"
-                  />
-                </Form.Item>
-                <div className="flex w-full justify-center items-center space-x-4">
-                  <div className="flex-1">
-                    <Form.Item
-                      name="assignedTo"
-                      label="Staff"
-                      dependencies={["assignedToClient"]}
-                      rules={[
-                        ({ getFieldValue }) => ({
-                          validator(_, value) {
-                            if (value || getFieldValue("assignedToClient")) {
-                              return Promise.resolve();
-                            }
-                            return Promise.reject(
-                              new Error(
-                                'Task must be assigned to "Staff" or "Client".'
-                              )
-                            );
-                          },
-                        }),
-                      ]}>
-                      <Select
-                        mode="multiple"
-                        placeholder="Select staff members"
-                        options={userData}
-                        allowClear
-                        className="w-full"
-                      />
-                    </Form.Item>
-                  </div>
-
-                  <div className="flex-1">
-                    <Form.Item
-                      name="assignedToClient"
-                      label="Client"
-                      dependencies={["assignedTo"]}
-                      rules={[
-                        ({ getFieldValue }) => ({
-                          validator(_, value) {
-                            if (value || getFieldValue("assignedTo")) {
-                              return Promise.resolve();
-                            }
-                            return Promise.reject(
-                              new Error(
-                                'Task must be assigned to "Staff" or "Client".'
-                              )
-                            );
-                          },
-                        }),
-                      ]}>
-                      <Select
-                        placeholder="Select a client"
-                        options={clientOptions}
-                        allowClear
-                        className="w-full"
-                      />
-                    </Form.Item>
-                  </div>
-                </div>
-                <Form.Item
-                  name="dueDate"
-                  label="Due Date"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Specify the due date for the task",
-                    },
-                  ]}>
-                  <DatePicker className="w-full" />
-                </Form.Item>
-
-                <SelectInputs
-                  defaultValue="high"
-                  fieldName="taskPriority"
-                  label="Task Priority"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Specify task priority",
-                    },
-                  ]}
-                  options={taskPriorityOptions}
+                  }),
+                ]}>
+                <Select
+                  mode="multiple"
+                  placeholder="Select staff members"
+                  options={userData}
+                  allowClear
+                  className="w-full"
                 />
+              </Form.Item>
+            </div>
 
-                <Form.Item>
-                  <Button
-                    onClick={onSubmit}
-                    loading={loadingData}
-                    htmlType="submit"
-                    className="w-full blue-btn">
-                    Save
-                  </Button>
-                </Form.Item>
-              </Form>
-            </Modal>
-          </>
-          );
+            <div className="flex-1">
+              <Form.Item
+                name="assignedToClient"
+                label="Client"
+                dependencies={["assignedTo"]}
+                rules={[
+                  ({ getFieldValue }) => ({
+                    validator(_, value) {
+                      if (value || getFieldValue("assignedTo")) {
+                        return Promise.resolve();
+                      }
+                      return Promise.reject(
+                        new Error(
+                          'Task must be assigned to "Staff" or "Client".'
+                        )
+                      );
+                    },
+                  }),
+                ]}>
+                <Select
+                  placeholder="Select a client"
+                  options={clientOptions}
+                  allowClear
+                  className="w-full"
+                />
+              </Form.Item>
+            </div>
+          </div>
           <Form.Item
             name="dueDate"
             label="Due Date"

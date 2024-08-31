@@ -12,6 +12,7 @@ import { useAdminHook } from "../hooks/useAdminHook";
 import ButtonWithIcon from "../components/ButtonWithIcon";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import EventList from "./EventList";
 
 const StaffList = () => {
   const [searchResults, setSearchResults] = useState([]);
@@ -74,7 +75,7 @@ const StaffList = () => {
         <PageErrorAlert errorCondition={isError} errorMessage={message} />
       ) : (
         <>
-          <div className="flex md:flex-row flex-col justify-start  gap-3 my-4">
+          <div className="flex md:flex-row flex-col justify-evenly  gap-3 my-4">
             {isAdminOrHr && (
               <>
                 <Link to="add-user">
@@ -86,9 +87,11 @@ const StaffList = () => {
                 </Link>
                 {/* leave balance form */}
                 <CreateLeaveBalanceForm />
+
+                {/* <div className="w-full md:w-auto"></div> */}
               </>
             )}
-
+            <EventList />
             <SearchBar onSearch={handleSearchChange} />
           </div>
           <div className="overflow-x-auto font-medium font-poppins">

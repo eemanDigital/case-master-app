@@ -18,10 +18,11 @@ const invoiceRouter = require("./routes/invoiceRoutes");
 const paymentRouter = require("./routes/paymentRoutes");
 const fileRouter = require("./routes/fileRoutes");
 const todoRoutes = require("./routes/todoRoutes");
-const eventRoutes = require("./routes/eventRoutes");
+const eventRouter = require("./routes/eventRoutes");
 const notificationRouter = require("./routes/notificationRoutes");
 const googleApiRouter = require("./routes/googleApiRoutes");
 const contactRouter = require("./routes/contactRoutes");
+const noteRouter = require("./routes/noteRoutes");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 
@@ -127,7 +128,8 @@ app.use("/api/v1/notifications", notificationRouter);
 app.use("/api/v1/documents", fileRouter);
 app.use("/api/v1/todos", todoRoutes);
 app.use("/api/v1/contacts", contactRouter);
-app.use("/api/v1/events", eventRoutes);
+app.use("/api/v1/events", eventRouter);
+app.use("/api/v1/notes", noteRouter);
 
 // // Handle root URL
 // app.get("/", (req, res) => {

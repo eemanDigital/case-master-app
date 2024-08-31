@@ -27,7 +27,7 @@ exports.downloadDocument = (model) => {
     const fileName = document.fileName;
 
     res.status(200).json({
-      status: "success",
+      message: "success",
       data: {
         fileUrl,
         fileName,

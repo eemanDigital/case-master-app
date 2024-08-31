@@ -58,6 +58,10 @@ import {
 } from "./components/protect/Protect.jsx";
 import Login from "./pages/Login.jsx";
 import HomePage from "./components/HomePage.jsx";
+import NoteForm from "./pages/NoteForm.jsx";
+import UpdateNote from "./pages/UpdateNote.jsx";
+import NoteList from "./pages/NoteList.jsx";
+// import EditTaskForm from "./pages/EditTaskForm.jsx";
 
 // enable axios to get credentials everywhere in the app
 axios.defaults.withCredentials = true;
@@ -114,6 +118,9 @@ function App() {
         <Route path="dashboard" element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="staff/add-user" element={<AddUserForm />} />
+          <Route path="add-notes" element={<NoteForm />} />
+          <Route path="note-list" element={<NoteList />} />
+          <Route path="update-note/:id" element={<UpdateNote />} />
 
           <Route
             path="staff"
@@ -191,8 +198,11 @@ function App() {
               </ShowOnlyVerifiedUser>
             }
           />
+
           {/* <Route path="tasks/reminder/:id" element={<TaskReminderForm />} /> */}
           <Route path="tasks/:id/details" element={<TaskDetails />} />
+          {/* <Route path="tasks/:id/update" element={<EditTaskForm />} /> */}
+
           <Route
             path="clients"
             element={

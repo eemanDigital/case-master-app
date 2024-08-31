@@ -85,7 +85,7 @@ const EventList = () => {
   ];
 
   return (
-    <div className="w-full p-4">
+    <div className="w-full">
       <Button
         onClick={() => setIsModalVisible(true)}
         className="flex items-center space-x-2 bg-white text-blue-500 ">

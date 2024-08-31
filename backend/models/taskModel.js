@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-// const User = require("./userModel");
 
 const reminderSchema = new mongoose.Schema({
   message: {
@@ -90,12 +89,17 @@ const taskSchema = new mongoose.Schema(
       required: [true, "A task must have a due date"],
       validate: {
         validator: function (value) {
+          // Ensure dateAssigned is defined and available
+          if (!this.dateAssigned) {
+            return true; // Skip validation if dateAssigned is not set
+          }
           return value > this.dateAssigned;
         },
         message: "Due date must be after date task is assigned",
       },
       default: Date.now,
     },
+
     instruction: {
       type: String,
       trim: true,
@@ -134,26 +138,6 @@ taskSchema.pre(/^find/, function (next) {
     .populate({ path: "assignedToClient", select: "firstName secondName" });
   next();
 });
-
-// implement embedding sender
-// taskSchema.pre("save", async function (next) {
-//   const userSender = await User.findById(id);
-//   this.sender = userSender;
-//   next;
-// });
-
-// virtual populate for file attachment
-// taskSchema.virtual("documents", {
-//   ref: "File",
-//   foreignField: "task",
-//   localField: "_id",
-// });
-// virtual populate notification or reminder
-// taskSchema.virtual("notice", {
-//   ref: "Notice",
-//   foreignField: "relatedTask",
-//   localField: "_id",
-// });
 
 const Task = mongoose.model("Task", taskSchema);
 

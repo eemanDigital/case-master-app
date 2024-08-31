@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import TaskReminderForm from "./TaskReminderForm";
-import { Table, Modal, Space } from "antd";
+import { Table, Modal, Space, Tooltip, Button } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import CreateTaskForm from "../pages/CreateTaskForm";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useEffect } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import { toast } from "react-toastify";
+import { EditOutlined } from "@ant-design/icons";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "./PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
@@ -111,9 +112,13 @@ const TaskList = () => {
       key: "action",
       render: (text, record) => (
         <Space size="middle">
-          {/* <Button type="link">
-            <Link to={`${record?.id}/details`}>Get Details</Link>
-          </Button> */}
+          <Link to={`#${record.id}/update`}>
+            <Tooltip title="Edit Task">
+              <Button
+                className="bg-purple-200 text-purple-500"
+                icon={<EditOutlined />}></Button>
+            </Tooltip>
+          </Link>
           {/* reminder component */}
           {user?.data?._id === record?.assignedBy?._id && (
             <TaskReminderForm id={record.id} />

@@ -2,133 +2,149 @@ doctype html
 html(lang="en")
   head
     meta(charset="UTF-8")
-    meta(name="viewport", content="width=device-width, initial-scale=1.0")
-    title Invoice
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title Professional Invoice
     style.
       body {
-        font-family: "Roboto Condensed", sans-serif;
+        font-family: 'monospace', sans-serif;
+        line-height: 1.6;
+        color: #333;
+        padding: 0;
+        margin: 20mm; 
+        padding-bottom: 20mm;
         font-size: 18px;
-        font-style: normal;
-        line-height: 1.2;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      h3, p, span {
-        margin: 0;
-        padding: 0;
-      }
-    
-      h3 {
-        color: #4b5563;
-        margin-bottom: 0.25rem;
       }
       .container {
-        width: 80%;
-        margin: 3rem auto;
-        padding: 1rem 0;
+        max-width: 800px;
+        margin: 20px auto;
+        padding: 30px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      }
+      .header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+      }
+      .logo img {
+        max-width: 150px;
+      }
+      h1, h2, h3 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+      }
+      .invoice-details {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+      }
+      .invoice-details > div {
+        flex-basis: 48%;
       }
       table {
         width: 100%;
         border-collapse: collapse;
-       
-      }
-      .header td, .header-invoice td, .addresses td {
-        border: none;
+        margin-bottom: 20px;
       }
       th, td {
-        border: 1px solid #ddd;
-        padding: 0.5rem;
+        padding: 12px;
         text-align: left;
+        border-bottom: 1px solid #ddd;
       }
       th {
-        background-color: #d4d4d8;
-      }
-      .header, .addresses, .invoice-details {
-        width: 100%;
-       
-      }
-      .header img {
-        width: 50px;
-      }
-      .header-invoice, .logo, .from, .to, .status, .work-title, .case-reference, .payment-instructions {
-        width: 50%;
-      }
-      .tax-type{
-        margin-left:1rem;
-      }
-      .additional-info {
-        margin: 20px 0;
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      .additional-info h2 {
-        margin: 0 0 10px 0;
-        color: #333;
-      }
-      .additional-info p {
-        margin: 0 0 20px 0;
-        color: #555;
-      }
-      .additional-info .case-reference p {
-        margin-bottom: 0;
-      }
-      .important {
+        background-color: #f2f2f2;
         font-weight: bold;
       }
-      span:{
-        margin:.5rem;
+      .total-row {
+        font-weight: bold;
+        background-color: #f8f8f8;
       }
+      .additional-info {
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 5px;
+        margin-top: 30px;
+      }
+      .payment-instructions {
+        margin-top: 30px;
+        padding: 20px;
+        background-color: #e8f4fd;
+        border-radius: 5px;
+      }
+      @media (max-width: 600px) {
+        .container {
+          padding: 15px;
+        }
+        .header, .invoice-details {
+          flex-direction: column;
+        }
+        .invoice-details > div {
+          flex-basis: 100%;
+          margin-bottom: 20px;
+        }
+      }
+
   body
     .container
-      table.header
-        tr
-          td.header-invoice
-            h1 Invoice
-            p Invoice No: #{invoice.invoiceReference}
-          td.logo
-            img(src="/path/to/logo.png", alt="Company Logo")
-      table.addresses
-        tr
-          td.from
-            h3 Invoice To:
-            h3 #{invoice.client.firstName} #{invoice.client.lastName}
-            p Address: #{invoice.client.address}
-            p Phone: #{invoice.client.phone}
-            p Email: #{invoice.client.email}
-          td.to
-            h3 Invoice From:
-            h3 A.T Lukman & Co.
-            p No 32, Allen Street Maitama, Abuja
-            p Phone: +234 123 456 7890
-            p Email: info@atlukman.com
-      table.invoice-details
-        tr
-          td
-            h3 Payment Info
-            p Account No: #{invoice.accountDetails.accountNumber}
-            p Account Name: #{invoice.accountDetails.accountName}
-            p Bank: #{invoice.accountDetails.bank}
-            p Reference: #{invoice.accountDetails.reference}
-          td
-            h3 Date
-            p Invoice Date: #{new Date(invoice.createdAt).toLocaleDateString()}
-            p Due Date: #{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}
+      .header
+        div
+          h1 Invoice
+          p Invoice No: #{invoice.invoiceReference}
+        .logo
+          img(src="/path/to/logo.png" alt="A.T Lukman & Co. Logo")
+        
+      .invoice-details
+        div
+          h3 Invoice To:
+          p
+            strong #{invoice.client.firstName} #{invoice.client.lastName}
+            br
+            | #{invoice.client.address}
+            br
+            | Phone: #{invoice.client.phone}
+            br
+            | Email: #{invoice.client.email}
+        div
+          h3 Invoice From:
+          p
+            strong A.T Lukman & Co.
+            br
+            | No 32, Allen Street Maitama, Abuja
+            br
+            | Phone: +234 123 456 7890
+            br
+            | Email: info@atlukman.com
+
+      .invoice-details
+        div
+          h3 Payment Info
+          p
+            | Account No: #{invoice.accountDetails.accountNumber}
+            br
+            | Account Name: #{invoice.accountDetails.accountName}
+            br
+            | Bank: #{invoice.accountDetails.bank}
+            br
+            | Reference: #{invoice.accountDetails.reference}
+        div
+          h3 Date
+          p
+            | Invoice Date: #{new Date(invoice.createdAt).toLocaleDateString()}
+            br
+            | Due Date: #{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}
+
       .additional-info
-        table
-          tr
-            td.status
-              h3 Status:
-              span #{invoice.status}
-            td.work-title
-              h3 Work Title:
-              span #{invoice.workTitle}
-          tr
-            td.case-reference
-              h3 Case:
-              p #{invoice.case.firstParty.name[0].name || 'Unknown'} vs #{invoice.case.secondParty.name[0].name || 'Unknown'}
+        p
+          strong Status: 
+          | #{invoice.status}
+        p
+          strong Work Title:
+          | #{invoice.workTitle}
+        p
+          strong Case:
+          | #{invoice.case.firstParty.name[0].name || 'Unknown'} vs #{invoice.case.secondParty.name[0].name || 'Unknown'}
+
+      h2 Services
       table
         thead
           tr
@@ -145,6 +161,8 @@ html(lang="en")
               td #{new Date(service.date).toLocaleDateString()}
               td ₦#{service.feeRatePerHour ? service.feeRatePerHour.toFixed(2) : '0.00'}
               td ₦#{service.amount.toFixed(2)}
+
+      h2 Expenses
       table
         thead
           tr
@@ -157,38 +175,38 @@ html(lang="en")
               td #{expense.description}
               td ₦#{expense.amount.toFixed(2)}
               td #{new Date(expense.date).toLocaleDateString()}
+
       .additional-info
-        h3 Financial Summary
-        .field
-          span.label Amount Already Paid:
-          span.value ₦#{invoice.amountPaid.toFixed(2)}
-        .field
-          span.label Total Hours:
-          span.value #{invoice.totalHours}
-        .field
-          span.label Total Professional Fees:
-          span.value ₦#{invoice.totalProfessionalFees.toFixed(2)}
-        .field
-          span.label Total Expenses:
-          span.value ₦#{invoice.totalExpenses.toFixed(2)}
-        .field
-          span.label Tax Amount:
-          span.value ₦#{invoice.taxAmount.toFixed(2)}
-          span.tax-type #{invoice.taxType}
-        .field
-          span.label Total Amount With Tax:
-          span.value ₦#{invoice.totalAmountWithTax.toFixed(2)}
-        .field
-          span.label Previous Balance:
-          span.value ₦#{invoice.previousBalance.toFixed(2)}
-        
-        .field
-          span.label Total Invoice Amount:
-          span.value ₦#{invoice.totalInvoiceAmount.toFixed(2)}
-        .field
-          span.label Total Amount Due:
-          span.value.important ₦#{invoice.totalAmountDue.toFixed(2)}
-      .additional-info
-        .payment-instructions
-          h3 Payment Instructions/Terms and Conditions:
-          p #{invoice.paymentInstructionTAndC}
+        h2 Financial Summary
+        table
+          tr
+            td Amount Already Paid:
+            td ₦#{invoice.amountPaid.toFixed(2)}
+          tr
+            td Total Hours:
+            td #{invoice.totalHours}
+          tr
+            td Total Professional Fees:
+            td ₦#{invoice.totalProfessionalFees.toFixed(2)}
+          tr
+            td Total Expenses:
+            td ₦#{invoice.totalExpenses.toFixed(2)}
+          tr
+            td Tax Amount (#{invoice.taxType}):
+            td ₦#{invoice.taxAmount.toFixed(2)}
+          tr
+            td Total Amount With Tax:
+            td ₦#{invoice.totalAmountWithTax.toFixed(2)}
+          tr
+            td Previous Balance:
+            td ₦#{invoice.previousBalance.toFixed(2)}
+          tr.total-row
+            td Total Invoice Amount:
+            td ₦#{invoice.totalInvoiceAmount.toFixed(2)}
+          tr.total-row
+            td Total Amount Due:
+            td ₦#{invoice.totalAmountDue.toFixed(2)}
+
+      .payment-instructions
+        h3 Payment Instructions/Terms and Conditions:
+        p #{invoice.paymentInstructionTAndC}

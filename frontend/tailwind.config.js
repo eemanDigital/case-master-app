@@ -6,11 +6,14 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        poppins: ['"Poppins"', "sans-serif"],
+        poppins: ["Poppins", "sans-serif"],
       },
       colors: {
         secondary: {
           DEFAULT: "#e11d48", // This is the hex value for text-rose-600
+        },
+        deepBlue: {
+          DEFAULT: "#1c4e80", // This is the hex value for text-rose-600
         },
       },
     },

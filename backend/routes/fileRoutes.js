@@ -21,17 +21,19 @@ const router = express.Router();
 router.use(protect);
 
 // File routes
-router.post("/", multerFileUploader("file"), uploadToCloudinary, createFile);
-router.get("/:id/download", downloadFile);
-
 router.get("/", getFiles);
 router.get("/file/:id", getFile);
+router.get("/:id/download", downloadFile);
+
+router.post("/", multerFileUploader("file"), uploadToCloudinary, createFile);
+
 router.patch(
   "/:id",
   multerFileUploader("file"),
   uploadToCloudinary,
   updateFile
 );
+
 router.delete("/:id", deleteFile);
 
 module.exports = router;

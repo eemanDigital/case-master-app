@@ -65,6 +65,13 @@ const AccountOfficerCharts = ({ data, title }) => {
     setIsModalVisible(false);
   };
 
+  //
+  const getOuterRadius = () => {
+    if (window.innerWidth < 640) return 80; // Small screens
+    if (window.innerWidth < 768) return 100; // Medium screens
+    return 150; // Large screens
+  };
+
   return (
     <>
       <Card
@@ -90,7 +97,6 @@ const AccountOfficerCharts = ({ data, title }) => {
           </Pie>
         </PieChart>
       </Card>
-
       <Modal
         title={title}
         open={isModalVisible}
@@ -100,7 +106,15 @@ const AccountOfficerCharts = ({ data, title }) => {
         className="rounded-lg"
         style={{ body: { padding: 0 } }}>
         <div className="p-4">
-          <ResponsiveContainer width="100%" height={500}>
+          <ResponsiveContainer
+            width="100%"
+            height={
+              window.innerWidth < 640
+                ? 300
+                : window.innerWidth < 768
+                ? 400
+                : 500
+            }>
             <PieChart>
               <Pie
                 data={transformedData}
@@ -110,7 +124,7 @@ const AccountOfficerCharts = ({ data, title }) => {
                 label={({ name, percent }) =>
                   `${name}: ${(percent * 100).toFixed(0)}%`
                 }
-                outerRadius={150}
+                outerRadius={getOuterRadius()}
                 fill="#8884d8"
                 dataKey="value">
                 {transformedData?.map((entry, index) => (

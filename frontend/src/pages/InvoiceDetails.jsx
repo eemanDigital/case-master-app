@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
-import { Descriptions, Button, Card, Row, Col } from "antd";
+import { Button, Card, Row, Col, Typography, Alert } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -8,8 +8,8 @@ import PageErrorAlert from "../components/PageErrorAlert";
 import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import { useDownloadPdfHandler } from "../hooks/useDownloadPdfHandler";
-import { toast } from "react-toastify";
 
+const { Text } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
 const InvoiceDetails = () => {
@@ -30,7 +30,11 @@ const InvoiceDetails = () => {
   if (loading) return <LoadingSpinner />; // loader for page
 
   if (pdfError) {
-    return toast.error(pdfError || "Failed to download document"); //pdf error toast
+    return (
+      <div>
+        <Alert message={pdfError || "Failed to download document"} />
+      </div>
+    ); //pdf error toast
   }
 
   const invoice = data?.data;
@@ -41,162 +45,154 @@ const InvoiceDetails = () => {
       {error ? (
         <PageErrorAlert errorCondition={error} errorMessage={error} />
       ) : (
-        <>
-          <Card
-            className="text-black w-[100%] mt-4"
-            title="Invoice Details"
-            bordered={false}>
-            <Descriptions bordered column={1} size="middle">
-              <Descriptions.Item label="Invoice Reference">
+        <div className="p-4 w-full overflow-x-scroll">
+          <Card className="mb-4" title="Invoice Overview">
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Invoice Reference:</Text>{" "}
                 {invoice?.invoiceReference}
-              </Descriptions.Item>
-              <Descriptions.Item label="Client">
-                {invoice?.client?.firstName} {invoice?.client?.secondName}
-              </Descriptions.Item>
-              <Descriptions.Item label="Work Title">
-                {invoice?.workTitle}
-              </Descriptions.Item>
-              <Descriptions.Item label="Case">
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Client:</Text> {invoice?.client?.firstName}{" "}
+                {invoice?.client?.secondName}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Work Title:</Text> {invoice?.workTitle}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Case:</Text>{" "}
                 {invoice?.case?.firstParty?.name[0].name} Vs{" "}
                 {invoice?.case?.secondParty?.name[0].name}
-              </Descriptions.Item>
-              <Descriptions.Item label="Services" span={1}>
-                {invoice?.services.map((service, index) => (
-                  <Card
-                    key={index}
-                    type="inner"
-                    title={`Service ${index + 1}`}
-                    bordered={false}
-                    style={{ marginBottom: 16 }}>
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} sm={24} md={12} lg={8} xl={8}>
-                        <Descriptions column={1} size="small" bordered={false}>
-                          <Descriptions.Item label="Service Descriptions">
-                            {service?.serviceDescriptions}
-                          </Descriptions.Item>
-                        </Descriptions>
-                      </Col>
-                      <Col xs={24} sm={24} md={12} lg={8} xl={8}>
-                        <Descriptions column={1} size="small" bordered={false}>
-                          <Descriptions.Item label="Hours">
-                            {service?.hours}
-                          </Descriptions.Item>
-                        </Descriptions>
-                      </Col>
-                      <Col xs={24} sm={24} md={12} lg={8} xl={8}>
-                        <Descriptions column={1} size="small" bordered={false}>
-                          <Descriptions.Item label="Date">
-                            {formatDate(service?.date)}
-                          </Descriptions.Item>
-                        </Descriptions>
-                      </Col>
-                      <Col xs={24} sm={24} md={12} lg={8} xl={8}>
-                        <Descriptions column={1} size="small" bordered={false}>
-                          <Descriptions.Item label="Fee Rate per Hour">
-                            ₦{service?.feeRatePerHour?.toFixed(2)}
-                          </Descriptions.Item>
-                        </Descriptions>
-                      </Col>
-                      <Col xs={24} sm={24} md={12} lg={8} xl={8}>
-                        <Descriptions column={1} size="small" bordered={false}>
-                          <Descriptions.Item label="Amount">
-                            ₦{service?.amount.toFixed(2)}
-                          </Descriptions.Item>
-                        </Descriptions>
-                      </Col>
-                    </Row>
-                  </Card>
-                ))}
-              </Descriptions.Item>
-              <Descriptions.Item label="Expenses" span={1}>
-                {invoice?.expenses.map((expense, index) => (
-                  <Card
-                    key={index}
-                    type="inner"
-                    title={`Expense ${index + 1}`}
-                    bordered={false}
-                    style={{ marginBottom: 16 }}>
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} sm={24} md={12} lg={8} xl={8}>
-                        <Descriptions column={1} size="small" bordered={false}>
-                          <Descriptions.Item label="Description">
-                            {expense?.description}
-                          </Descriptions.Item>
-                        </Descriptions>
-                      </Col>
-                      <Col xs={24} sm={24} md={12} lg={8} xl={8}>
-                        <Descriptions column={1} size="small" bordered={false}>
-                          <Descriptions.Item label="Amount">
-                            ₦{expense?.amount.toFixed(2)}
-                          </Descriptions.Item>
-                        </Descriptions>
-                      </Col>
-                      <Col xs={24} sm={24} md={12} lg={8} xl={8}>
-                        <Descriptions column={1} size="small" bordered={false}>
-                          <Descriptions.Item label="Date">
-                            {formatDate(expense?.date)}
-                          </Descriptions.Item>
-                        </Descriptions>
-                      </Col>
-                    </Row>
-                  </Card>
-                ))}
-              </Descriptions.Item>
-              <Descriptions.Item label="Due Date">
-                {formatDate(invoice?.dueDate)}
-              </Descriptions.Item>
-              <Descriptions.Item label="Status">
-                {invoice?.status}
-              </Descriptions.Item>
-              <Descriptions.Item label="Total Hours">
-                {invoice?.totalHours}
-              </Descriptions.Item>
-              <Descriptions.Item label="Total Professional Fees">
-                ₦{invoice?.totalProfessionalFees?.toFixed(2).toLocaleString()}
-              </Descriptions.Item>
-              <Descriptions.Item label="Total Expenses">
-                ₦{invoice?.totalExpenses?.toFixed(2).toLocaleString()}
-              </Descriptions.Item>
-              <Descriptions.Item label="Previous Balance">
-                ₦{invoice?.previousBalance?.toFixed(2).toLocaleString()}
-              </Descriptions.Item>
-              <Descriptions.Item label="Tax Amount">
-                ₦{invoice?.taxAmount?.toFixed(2).toLocaleString()}{" "}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Due Date:</Text> {formatDate(invoice?.dueDate)}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Status:</Text> {invoice?.status}
+              </Col>
+            </Row>
+          </Card>
+
+          <Card className="mb-4" title="Services">
+            {invoice?.services.map((service, index) => (
+              <Card
+                key={index}
+                type="inner"
+                title={`Service ${index + 1}`}
+                className="mb-4">
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong>Service Descriptions:</Text>{" "}
+                    {service?.serviceDescriptions}
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong>Hours:</Text> {service?.hours}
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong>Date:</Text> {formatDate(service?.date)}
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong>Fee Rate per Hour:</Text> ₦
+                    {service?.feeRatePerHour?.toFixed(2)}
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong>Amount:</Text> ₦{service?.amount.toFixed(2)}
+                  </Col>
+                </Row>
+              </Card>
+            ))}
+          </Card>
+
+          <Card className="mb-4" title="Expenses">
+            {invoice?.expenses.map((expense, index) => (
+              <Card
+                key={index}
+                type="inner"
+                title={`Expense ${index + 1}`}
+                className="mb-4">
+                <Row gutter={[16, 16]}>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong>Description:</Text> {expense?.description}
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong>Amount:</Text> ₦{expense?.amount.toFixed(2)}
+                  </Col>
+                  <Col xs={24} sm={12} md={8}>
+                    <Text strong>Date:</Text> {formatDate(expense?.date)}
+                  </Col>
+                </Row>
+              </Card>
+            ))}
+          </Card>
+
+          <Card className="mb-4" title="Financial Details">
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Total Hours:</Text> {invoice?.totalHours}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Total Professional Fees:</Text> ₦
+                {invoice?.totalProfessionalFees?.toFixed(2).toLocaleString()}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Total Expenses:</Text> ₦
+                {invoice?.totalExpenses?.toFixed(2).toLocaleString()}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Previous Balance:</Text> ₦
+                {invoice?.previousBalance?.toFixed(2).toLocaleString()}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Tax Amount:</Text> ₦
+                {invoice?.taxAmount?.toFixed(2).toLocaleString()}{" "}
                 {invoice?.taxType}
-              </Descriptions.Item>
-              <Descriptions.Item label="Total Amount With Tax">
-                ₦{invoice?.totalAmountWithTax?.toFixed(2).toLocaleString()}
-              </Descriptions.Item>
-              <Descriptions.Item label="Total Invoice Amount">
-                ₦{invoice?.totalInvoiceAmount?.toFixed(2).toLocaleString()}
-              </Descriptions.Item>
-              <Descriptions.Item label="Total Amount Due">
-                <span className="text-1xl font-bold text-rose-600">
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Total Amount With Tax:</Text> ₦
+                {invoice?.totalAmountWithTax?.toFixed(2).toLocaleString()}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Total Invoice Amount:</Text> ₦
+                {invoice?.totalInvoiceAmount?.toFixed(2).toLocaleString()}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Total Amount Due:</Text>
+                <span className="text-rose-600 font-bold">
                   ₦{invoice?.totalAmountDue?.toFixed(2).toLocaleString()}
                 </span>
-              </Descriptions.Item>
-              <Descriptions.Item label="Amount Paid">
-                ₦{invoice?.amountPaid?.toFixed(2).toLocaleString()}
-              </Descriptions.Item>
-              <Descriptions.Item label="Account Name">
-                {invoice?.accountDetails?.accountName}
-              </Descriptions.Item>
-              <Descriptions.Item label="Account Number">
-                {invoice?.accountDetails?.accountNumber}
-              </Descriptions.Item>
-              <Descriptions.Item label="Bank">
-                {invoice?.accountDetails?.bank}
-              </Descriptions.Item>
-              <Descriptions.Item label="Reference">
-                {invoice?.accountDetails?.reference}
-              </Descriptions.Item>
-              <Descriptions.Item
-                label="Payment Instructions/Terms and Conditions"
-                span={3}>
-                {invoice?.paymentInstructionTAndC}
-              </Descriptions.Item>
-            </Descriptions>
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Amount Paid:</Text> ₦
+                {invoice?.amountPaid?.toFixed(2).toLocaleString()}
+              </Col>
+            </Row>
+          </Card>
 
+          <Card className="mb-4" title="Payment Details">
+            <Row gutter={[16, 16]}>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Account Name:</Text>{" "}
+                {invoice?.accountDetails?.accountName}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Account Number:</Text>{" "}
+                {invoice?.accountDetails?.accountNumber}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Bank:</Text> {invoice?.accountDetails?.bank}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Reference:</Text>{" "}
+                {invoice?.accountDetails?.reference}
+              </Col>
+              <Col xs={24} sm={12} md={8}>
+                <Text strong>Payment Instructions:</Text>{" "}
+                {invoice?.paymentInstructionTAndC}
+              </Col>
+            </Row>
+          </Card>
+
+          <div className="flex flex-wrap gap-4">
             <Button
               loading={loadingPdf}
               onClick={(event) =>
@@ -205,15 +201,16 @@ const InvoiceDetails = () => {
                   `${downloadURL}/invoices/pdf/${invoice?._id}`,
                   "invoice.pdf"
                 )
-              }>
+              }
+              className="bg-blue-500 text-white">
               Download Invoice
             </Button>
 
             <Link to={`../billings/invoices/${invoice?._id}/update`}>
-              <Button>Update Invoice</Button>
+              <Button className="bg-blue-500 text-white">Update Invoice</Button>
             </Link>
-          </Card>
-        </>
+          </div>
+        </div>
       )}
     </>
   );

@@ -1,12 +1,11 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
-import { Table, Card, Button, Typography, Space } from "antd";
+import { Table, Card, Button, Typography, Space, Alert } from "antd";
 import { DownloadOutlined, UserAddOutlined } from "@ant-design/icons";
 import { formatDate } from "../utils/formatDate";
 import LawyersInCourtForm from "../pages/LawyersInCourtForm";
 import { useAdminHook } from "../hooks/useAdminHook";
 import PageErrorAlert from "./PageErrorAlert";
-import { toast } from "react-toastify";
 
 const { Title, Text } = Typography;
 
@@ -29,7 +28,25 @@ const SingleCauseList = ({
   const { isSuperOrAdmin } = useAdminHook();
 
   if (pdfError) {
-    return toast.error(pdfError || "Failed to download document"); //pdf error toast
+    return (
+      <Alert
+        message="Error"
+        description={pdfError || "Failed to download document"}
+        type="error"
+        showIcon
+        action={
+          <Button
+            size="small"
+            type="primary"
+            onClick={() => window.location.reload()}
+            style={{ marginTop: "8px" }} // Add margin for better spacing on small screens
+          >
+            Reload
+          </Button>
+        }
+        style={{ marginBottom: "16px" }} // Add margin for better spacing on small screens
+      />
+    );
   }
 
   // cause list data error toast

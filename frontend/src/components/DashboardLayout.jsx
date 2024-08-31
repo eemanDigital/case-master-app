@@ -80,7 +80,7 @@ const DashboardLayout = () => {
           />
         </Header>
         <Content
-          className="m-4 p-4 bg-gray-100 rounded-lg overflow-auto"
+          className="m-4 p-4 bg-blue-50 rounded-lg overflow-auto"
           style={{ height: "calc(100vh - 64px)" }}>
           <Outlet />
         </Content>

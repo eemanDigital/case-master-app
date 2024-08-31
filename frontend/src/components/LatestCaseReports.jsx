@@ -48,7 +48,7 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-[300px]">
-        Loading report...
+        Loading Today's Case Report...
       </div>
     );
   }

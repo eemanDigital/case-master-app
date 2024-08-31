@@ -63,7 +63,7 @@ const CurrentDayCauseList = () => {
       <div className="p-4 h-full overflow-y-auto custom-scrollbar">
         {loadingCauseList.causeList ? (
           <div className="flex justify-center items-center min-h-[300px]">
-            <Text className="text-gray-500">Loading...</Text>
+            <Text className="text-gray-500">Loading Today's Cause List...</Text>
           </div>
         ) : causeListError.causeList ? (
           <div className="flex justify-center items-center min-h-[300px]">

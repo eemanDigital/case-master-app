@@ -4,7 +4,6 @@ import { FaFileAlt, FaTrash, FaDownload } from "react-icons/fa";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { Table, Button, Popconfirm } from "antd";
-
 import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
 import SearchBar from "./SearchBar";
 import { toast } from "react-toastify";

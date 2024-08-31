@@ -16,17 +16,20 @@ import LatestCaseReports from "./LatestCaseReports";
 import LeaveAppForm from "../pages/LeaveAppForm";
 import TodoList from "./TodoList";
 import EventForm from "./EventForm";
-import EventList from "../pages/EventList";
 import ScrollingEvents from "./ScrollingEvents";
 import CurrentTasksTracker from "./CurrentTasksTracker";
 import CurrentMonthIncomeCharts from "./CurrentMonthIncomeChart";
 import MonthlyIncomeChart from "./MonthlyIncomeChart";
 import TotalOutstandingBalanceCharts from "./TotalOutstandingBalanceCharts";
 import { ShowAdminComponent, ShowOnlyVerifiedUser } from "./protect/Protect";
-import { Alert } from "antd";
+import { Alert, Button } from "antd";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import CurrentDayCauseList from "./CurrentDayCauseList";
 import VerifyAccountNotice from "./VerifyAccountNotice";
+import ButtonWithIcon from "./ButtonWithIcon";
+import { Link } from "react-router-dom";
+import NoteList from "../pages/NoteList";
+import { PlusOutlined } from "@ant-design/icons";
 
 // context for year for search filter
 export const PaymentFiltersContext = createContext();
@@ -156,17 +159,20 @@ const Dashboard = () => {
 
           {isAdminOrHr && <LeaveNotification />}
 
-          <div className="w-full md:w-auto">
+          <div className="w-full md:w-auto my-3">
             <EventForm />
           </div>
 
-          <div className="w-full md:w-auto">
-            <EventList />
-          </div>
+          {/* <div className="w-full md:w-auto"> */}
+          <LeaveAppForm />
 
-          <div className="w-full md:w-auto">
-            <LeaveAppForm />
-          </div>
+          <Link to="note-list">
+            <Button type="primary" className="bg-green-500 hover:bg-green-600">
+              Show Notes
+            </Button>
+          </Link>
+
+          {/* </div> */}
         </div>
 
         {/* client's Dashboard */}
@@ -250,6 +256,7 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
+
             <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1 mt-8">
               <CasesByCategoriesChart
                 title="Case By Status"

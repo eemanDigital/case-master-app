@@ -4,11 +4,11 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import { Button, Modal, message } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import useModal from "../hooks/useModal";
-import { useNavigate } from "react-router-dom";
+// import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const TaskDocUpload = ({ taskId }) => {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [formData, setFormData] = useState({
     fileName: "",
     file: null,
@@ -16,7 +16,7 @@ const TaskDocUpload = ({ taskId }) => {
 
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal(); // modal hook
-  const { dataFetcher, loading, error, data } = useDataFetch();
+  const { dataFetcher, loading } = useDataFetch();
 
   const handleFileChange = (e) => {
     const { name, value, files } = e.target;
