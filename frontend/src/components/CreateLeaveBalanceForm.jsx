@@ -82,13 +82,15 @@ const CreateLeaveBalanceForm = () => {
         title="Leave Balance Form"
         open={open}
         onCancel={handleCancel}
-        footer={null}>
+        footer={null}
+        className="w-full max-w-lg mx-auto">
         <Form
           form={form}
           layout="vertical"
           name="leave application form"
-          onFinish={onFinish}>
-          <Card title="" bordered={false} style={{ width: 400, height: 350 }}>
+          onFinish={onFinish}
+          className="w-full">
+          <Card title="" bordered={false} className="w-full">
             <Form.Item
               label="Date"
               name="daysAwarded"
@@ -105,7 +107,7 @@ const CreateLeaveBalanceForm = () => {
                 placeholder="Select a staff"
                 options={userData}
                 allowClear
-                style={{ width: "100%" }}
+                className="w-full"
               />
             </Form.Item>
             <Form.Item
@@ -129,7 +131,10 @@ const CreateLeaveBalanceForm = () => {
             </Form.Item>
 
             <Form.Item>
-              <Button className="blue-btn" htmlType="submit">
+              <Button
+                loading={loading}
+                className="blue-btn w-full"
+                htmlType="submit">
                 Save
               </Button>
             </Form.Item>

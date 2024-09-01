@@ -6,7 +6,6 @@ import {
   selectIsLoading,
 } from "../../redux/features/auth/authSlice";
 import { Alert } from "antd";
-import LoadingSpinner from "../LoadingSpinner";
 
 // for login
 export const ShowOnLogin = ({ children }) => {
@@ -85,15 +84,28 @@ export const ShowAdminComponent = ({ children }) => {
   return null;
 };
 
+export const ShowStaff = ({ children }) => {
+  const isLoggedIn = useSelector(selectIsLoggedIn);
+  const user = useSelector(selectUser);
+
+  if (isLoggedIn && user?.data?.role !== "client") {
+    return <>{children}</>;
+  }
+  return null;
+};
+
 ShowAdminComponent.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+ShowStaff.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
 // Allow access to only verified users
 export const ShowOnlyVerifiedUser = ({ children }) => {
-  const isLoggedIn = useSelector(selectIsLoggedIn);
+  // const isLoggedIn = useSelector(selectIsLoggedIn);
   const user = useSelector(selectUser);
-  const isLoading = useSelector(selectIsLoading); // Assuming you have a loading state in your auth slice
+  // const isLoading = useSelector(selectIsLoading); // Assuming you have a loading state in your auth slice
 
   // While loading, show a spinner or some loading indication
   // if (isLoading) {

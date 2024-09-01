@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import { useEffect } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import PageErrorAlert from "./PageErrorAlert";
+import CurrentDayCauseList from "./CurrentDayCauseList";
 
 const ClientCaseDetails = () => {
   const { causeList, reports, loading, error, fetchData } = useDataGetterHook();
@@ -49,25 +50,25 @@ const ClientCaseDetails = () => {
   const firstReportsArray = Object.values(firstReports || {});
 
   return (
-    <div className="flex justify-between  mt-4 gap-4 rounded-md">
-      <div className="w-full h-96 overflow-y-scroll p-4 bg-white shadow-md rounded-md">
+    <div className="flex flex-col md:flex-row justify-between mt-4 gap-4 overflow-hidden rounded-md">
+      <div className="w-full h-96 overflow-y-auto custom-scrollbar p-4 bg-white shadow-md rounded-md">
         <CaseReportList
           showFilter={false}
           title="Latest Case Reports"
           shortenForClient={true}
-          nameStyle="w-50px] text-gray-800 break-words font-semibold"
+          nameStyle="w-[50px] text-gray-800 break-words font-semibold"
           reports={firstReportsArray}
         />
       </div>
 
-      <SingleCauseList
+      <CurrentDayCauseList
         causeListData={filteredCauseListForClient(clientId)}
         loadingCauseList={loading.causeList}
         errorCauseList={error.causeList}
         addResultNumber={false}
         showDownloadBtn={false}
         hideButton={true}
-        cardWidth="50%"
+        // cardWidth="50%"
         title="Your Case Schedule"
       />
     </div>

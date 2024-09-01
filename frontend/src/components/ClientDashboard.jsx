@@ -28,7 +28,7 @@ const ClientDashboard = () => {
   }, [cases, clientId]);
 
   return (
-    <div>
+    <div className="overflow-hidden ">
       {/* account officer for client */}
       {isClient && <ClientCaseInfo cases={clientCases} />}
       {/* case details */}

@@ -11,8 +11,8 @@ function ClientCaseInfo({ cases }) {
         {cases?.map((singleCase, index) => (
           <div
             key={index}
-            className="bg-white rounded-lg shadow-sm p-4 md:w-[80%] w-full h-[200px]">
-            <h4 className="text-lg font-medium mb-1 text-gray-600 text-justify">
+            className="bg-gradient-to-r from-rose-400 to-rose-600 rounded-lg shadow-sm p-4 md:w-[80%] w-full h-[200px]">
+            <h4 className="text-lg font-medium mb-1 text-white text-justify">
               Case {index + 1}: {singleCase?.firstParty?.name[0]?.name} vs{" "}
               {singleCase?.secondParty?.name[0]?.name}
             </h4>

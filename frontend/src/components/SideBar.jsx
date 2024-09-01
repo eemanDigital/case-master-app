@@ -104,13 +104,21 @@ const SideBar = ({ isMobile, closeDrawer }) => {
     },
   ];
 
+  // Filter out nav items based on user type
   const filteredNavItems = navItems.filter((item) => {
-    if (isClient && (item.key === "staff" || item.key === "cause-list"))
+    if (
+      isClient &&
+      (item.key === "staff" ||
+        item.key === "cause-list" ||
+        item.key === "billings" ||
+        item.key === "documents")
+    )
       return false;
     if (isUser && item.key === "billings") return false;
     return true;
   });
 
+  // Handle menu click
   const handleMenuClick = (e) => {
     setSelectedKeys([e.key]);
     if (isMobile && closeDrawer) {

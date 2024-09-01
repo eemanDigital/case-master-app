@@ -55,6 +55,7 @@ import EventDetail from "./pages/EventDetail.jsx";
 import {
   BillingAndPaymentsRoute,
   ShowOnlyVerifiedUser,
+  ShowStaff,
 } from "./components/protect/Protect.jsx";
 import Login from "./pages/Login.jsx";
 import HomePage from "./components/HomePage.jsx";
@@ -181,7 +182,9 @@ function App() {
             path="documents"
             element={
               <ShowOnlyVerifiedUser>
-                <DocumentForm />
+                <ShowStaff>
+                  <DocumentForm />
+                </ShowStaff>
               </ShowOnlyVerifiedUser>
             }
           />

@@ -21,7 +21,11 @@ import CurrentTasksTracker from "./CurrentTasksTracker";
 import CurrentMonthIncomeCharts from "./CurrentMonthIncomeChart";
 import MonthlyIncomeChart from "./MonthlyIncomeChart";
 import TotalOutstandingBalanceCharts from "./TotalOutstandingBalanceCharts";
-import { ShowAdminComponent, ShowOnlyVerifiedUser } from "./protect/Protect";
+import {
+  ShowAdminComponent,
+  ShowOnlyVerifiedUser,
+  ShowStaff,
+} from "./protect/Protect";
 import { Alert, Button } from "antd";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import CurrentDayCauseList from "./CurrentDayCauseList";
@@ -149,31 +153,36 @@ const Dashboard = () => {
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
       {!isVerified && <VerifyAccountNotice />}
       <ShowOnlyVerifiedUser>
-        <ScrollingEvents />
-        <div className="flex flex-wrap items-center justify-between px-3 rounded-lg md:flex-nowrap md:justify-start md:space-x-4">
-          <div className="flex items-center space-x-4">
-            <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
-              Dashboard
-            </h1>
+        <ShowStaff>
+          <ScrollingEvents />
+
+          <div className="flex flex-wrap items-center justify-between px-3 rounded-lg md:flex-nowrap md:justify-start md:space-x-4">
+            <div className="flex items-center space-x-4">
+              <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
+                Dashboard
+              </h1>
+            </div>
+
+            {isAdminOrHr && <LeaveNotification />}
+
+            <div className="w-full md:w-auto my-3">
+              <EventForm />
+            </div>
+
+            {/* <div className="w-full md:w-auto"> */}
+            <LeaveAppForm />
+
+            <Link to="note-list">
+              <Button
+                type="primary"
+                className="bg-green-500 hover:bg-green-600">
+                Show Notes
+              </Button>
+            </Link>
+
+            {/* </div> */}
           </div>
-
-          {isAdminOrHr && <LeaveNotification />}
-
-          <div className="w-full md:w-auto my-3">
-            <EventForm />
-          </div>
-
-          {/* <div className="w-full md:w-auto"> */}
-          <LeaveAppForm />
-
-          <Link to="note-list">
-            <Button type="primary" className="bg-green-500 hover:bg-green-600">
-              Show Notes
-            </Button>
-          </Link>
-
-          {/* </div> */}
-        </div>
+        </ShowStaff>
 
         {/* client's Dashboard */}
         {isClient && <ClientDashboard />}
