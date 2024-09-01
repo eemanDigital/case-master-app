@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import authService from "../redux/features/auth/authService";
-import { toast } from "react-toastify";
+// import { toast } from "react-toastify";
 
 const useRedirectLogoutUser = (path) => {
   const navigate = useNavigate();
@@ -13,7 +13,7 @@ const useRedirectLogoutUser = (path) => {
         const isLoggedIn = await authService.getLoginStatus();
         // Notify user if session expires and navigate to specified path
         if (!isLoggedIn) {
-          toast.info("Login session expired. Please, log in again");
+          // toast.info("Login session expired. Please, log in again");
           navigate(path);
         }
       } catch (error) {
