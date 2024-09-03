@@ -11,6 +11,7 @@ const PasswordInput = ({
   showPassword,
   togglePassword,
   onPaste,
+
   ...props
 }) => {
   const baseInputClass = `
@@ -64,6 +65,7 @@ PasswordInput.propTypes = {
   name: PropTypes.string.isRequired,
   value: PropTypes.string.isRequired,
   label: PropTypes.string.isRequired,
+
   placeholder: PropTypes.string,
   handleChange: PropTypes.func.isRequired,
   showPassword: PropTypes.bool.isRequired,

@@ -91,6 +91,10 @@ body {
   pointer-events: none;
 }
 
+/* custom gradient bg */
+.bg-gradient {
+  background: linear-gradient(165deg, #001099 0, #3ad9ff 100%);
+}
 /* loading spinner */
 /* components/LoadingSpinner.css */
 .loading-spinner {

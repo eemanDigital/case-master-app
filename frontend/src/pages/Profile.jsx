@@ -38,7 +38,7 @@ const Profile = () => {
         <div className="bg-white bg-opacity-80 backdrop-filter backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden">
           <div className="md:flex">
             {/* Left column - Profile Image and Actions */}
-            <div className="md:w-1/3 bg-gradient-to-b from-blue-800 to-blue-600 p-8 text-white">
+            <div className="md:w-1/3 bg-gradient  p-8 text-white">
               <div className="text-center">
                 <img
                   src={user?.data?.photo || avatar}
@@ -101,7 +101,7 @@ const Profile = () => {
                 <p className="text-gray-700 italic">{user?.data?.bio}</p>
               </div>
               <div className="mt-8">
-                <ChangePassword endpoint="/changepassword" />
+                <ChangePassword />
               </div>
             </div>
           </div>

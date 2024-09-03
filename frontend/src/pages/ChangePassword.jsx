@@ -8,7 +8,6 @@ import PasswordCheckCard from "../components/PasswordCheckCard";
 import useTogglePassword from "../hooks/useTogglePassword";
 import PasswordInput from "../components/PasswordInput";
 import useModal from "../hooks/useModal";
-import LoadingSpinner from "../components/LoadingSpinner";
 import {
   changePassword,
   logout,
@@ -19,7 +18,7 @@ import { sendAutomatedEmail } from "../redux/features/emails/emailSlice";
 const ChangePassword = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isLoading, user } = useSelector((state) => state.auth);
+  const { isLoading, user, isError } = useSelector((state) => state.auth);
   const { open, showModal, handleCancel } = useModal();
 
   // State to hold input values
@@ -89,18 +88,17 @@ const ChangePassword = () => {
       // Reset state
       await dispatch(RESET());
       // Redirect to login
-      toast.success("Password changed successfully! Please log in again.");
-      setTimeout(() => {
-        navigate("/login");
-      }, 1000); // Add a delay to ensure state is reset
+      if (!isError) {
+        toast.success("Password changed successfully! Please log in again.");
+        navigate("/users/login");
+      }
     } catch (error) {
       toast.error("Failed to change password. Please try again.");
     }
   };
 
   // Style for input fields
-
-  let inputStyle = `appearance-none block sm:w-[344px] bg-gray-200 text-red border ${
+  const inputStyle = `appearance-none block w-full max-w-lg bg-gray-200 text-red border ${
     isLoading ? "border-red-500" : ""
   } rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`;
 
@@ -112,20 +110,20 @@ const ChangePassword = () => {
         Change Password
       </Button>
       <Modal open={open} onCancel={handleCancel} footer={null}>
-        <section className="flex flex-col justify-center items-center">
+        <section className="flex flex-col justify-center items-center w-full">
           <div>
             <form
               onSubmit={handleSubmit}
-              className="flex flex-col justify-center items-center bg-white sm:basis-2/5 shadow-md rounded-md px-8 pt-6 pb-8 m-4">
-              <div className="flex flex-col items-center -mx-3 mb-6 gap-2">
+              className="flex flex-col justify-center items-center bg-white shadow-md rounded-md px-8 pt-6 pb-8 m-4 w-full max-w-lg">
+              <div className="flex flex-col items-center mb-6 gap-2 w-full">
                 <h1 className="text-4xl font-bold mb-5 capitalize">
                   Change Password
                 </h1>
 
                 <PasswordInput
-                  style={inputStyle}
+                  inputStyle={inputStyle}
                   type="password"
-                  label="New Password"
+                  label="Current Password"
                   placeholder="*******"
                   htmlFor="Password"
                   value={inputValue.passwordCurrent}
@@ -136,7 +134,7 @@ const ChangePassword = () => {
                   onPaste={() => {}}
                 />
                 <PasswordInput
-                  style={inputStyle}
+                  inputStyle={inputStyle}
                   type="password"
                   label="New Password"
                   placeholder="*******"
@@ -150,7 +148,7 @@ const ChangePassword = () => {
                 />
 
                 <PasswordInput
-                  style={inputStyle}
+                  inputStyle={inputStyle}
                   type="password"
                   label="Confirm Password"
                   placeholder="*******"
@@ -166,11 +164,10 @@ const ChangePassword = () => {
                 <PasswordCheckCard password={inputValue.password} />
               </div>
 
-              {isLoading && <LoadingSpinner />}
               <button
                 type="submit"
                 className="bg-blue-500 px-5 py-2 rounded w-full text-slate-200 hover:bg-blue-400">
-                Submit
+                {isLoading ? "Submitting..." : "Submit"}
               </button>
             </form>
           </div>

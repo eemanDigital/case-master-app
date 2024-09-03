@@ -35,11 +35,6 @@ const Login = () => {
 
   // handle success and error toast
   useEffect(() => {
-    console.log("isSuccess:", isSuccess);
-    console.log("isLoggedIn:", isLoggedIn);
-    console.log("isError:", isError);
-    console.log("message:", message);
-    console.log("twoFactor:", twoFactor);
     if (isSuccess && isLoggedIn) {
       navigate("/dashboard");
     }

@@ -15,11 +15,11 @@ const {
   isLoggedIn,
   logout,
   protect,
-  updatePassword,
+
   forgotPassword,
   resetPassword,
   restrictTo,
-  refreshToken,
+
   sendLoginCode,
   register,
   sendVerificationEmail,

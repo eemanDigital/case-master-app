@@ -388,7 +388,7 @@ exports.isLoggedIn = async (req, res) => {
 exports.forgotPassword = catchAsync(async (req, res, next) => {
   const { email } = req.body;
   // 1) Get user based on POSTed email
-  console.log(`Searching for user with email: ${email}`);
+  // console.log(`Searching for user with email: ${email}`);
   const user = await User.findOne({ email });
   if (!user) {
     return next(new AppError("There is no user with email address.", 404));
@@ -422,12 +422,11 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   const send_from = process.env.EMAIL_USER_OUTLOOK;
   const reply_to = "noreply@gmail.com";
   const template = "forgotPassword";
-  const name = user.firstName;
-  const link = resetURL;
+  const context = { name: user.firstName, link: resetURL };
 
   try {
     // Send the verification email
-    await sendMail(subject, send_to, send_from, reply_to, template, name, link);
+    await sendMail(subject, send_to, send_from, reply_to, template, context);
 
     // Proceed to the next middleware
     res.status(200).json({ message: "Reset Email Sent" });
