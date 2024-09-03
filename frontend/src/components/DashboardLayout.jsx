@@ -9,6 +9,7 @@ const { Header, Content, Sider } = Layout;
 
 const DashboardLayout = () => {
   useRedirectLogoutUser("/users/login");
+  
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [drawerVisible, setDrawerVisible] = useState(false);

@@ -200,7 +200,7 @@ const Dashboard = () => {
                 {/* LatestCaseReports - 50% width on large screens, full width on smaller screens */}
                 <div className="w-full lg:w-1/2 px-4 mb-8">
                   <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    <h2 className="bg-gradient-to-r from-gray-600 to-gray-800 text-white text-lg sm:text-xl md:text-2xl font-semibold py-3 px-4 text-center">
+                    <h2 className="bg-gradient-to-r from-blue-500 to-blue-700 text-gray-200 text-lg sm:text-xl md:text-2xl font-bold py-3 px-4 text-center">
                       Today's Case Report
                     </h2>
                     <div className="p-4">

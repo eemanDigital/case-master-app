@@ -50,7 +50,7 @@ const ClientCaseDetails = () => {
   const firstReportsArray = Object.values(firstReports || {});
 
   return (
-    <div className="flex flex-col md:flex-row justify-between mt-4 gap-4 overflow-hidden rounded-md">
+    <div className="flex flex-col md:flex-row justify-between overflow-y-auto custom-scrollbar mt-4 gap-4 rounded-md">
       <div className="w-full h-96 overflow-y-auto custom-scrollbar p-4 bg-white shadow-md rounded-md">
         <CaseReportList
           showFilter={false}

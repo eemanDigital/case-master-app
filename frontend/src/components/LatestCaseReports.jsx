@@ -80,22 +80,17 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
   }
 
   return (
-    <div className="rounded-md h-[300px] overflow-y-auto custom-scrollbar  bg-gray-50">
+    <div className="rounded-md h-[300px] overflow-y-auto custom-scrollbar bg-gradient-to-r from-gray-100 to-gray-200 p-4">
       {todayReports.map((report) => (
         <Card
           key={report._id}
-          className="w-full font-poppins shadow-md hover:shadow-lg transition-shadow duration-300 mb-4 "
+          className="w-full font-poppins shadow-md hover:shadow-lg transition-shadow duration-300 mb-4 bg-gradient-to-r from-blue-100 to-blue-200 rounded-lg border border-gray-300"
           title={
-            <h2 className="text-lg text-gray-800 font-semibold">
-              {report?.caseReported?.firstParty?.name[0]?.name} vs{" "}
-              {report?.caseReported?.secondParty?.name[0]?.name}
+            <h2 className="text-lg font-semibold text-gray-700 truncate sm:text-base md:text-lg lg:text-xl w-full">
+              {`${report?.caseReported?.firstParty?.name[0]?.name} vs ${report?.caseReported?.secondParty?.name[0]?.name}`}
             </h2>
           }>
           <Space direction="vertical" size="middle" className="w-full">
-            {/* <Text strong className="text-gray-700">
-              Reported on:{" "}
-              <span className="text-blue-500">{formatDate(report?.date)}</span>
-            </Text> */}
             <Text className="text-gray-700 text-justify">
               {shortenText(report?.update, 300, report._id)}
             </Text>

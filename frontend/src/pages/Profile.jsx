@@ -1,100 +1,124 @@
+import { useSelector } from "react-redux";
+import {
+  FaAddressBook,
+  FaPhone,
+  FaUniversity,
+  FaGavel,
+  FaBriefcase,
+} from "react-icons/fa";
+import { MdMail, MdSchool } from "react-icons/md";
 import avatar from "../assets/avatar.png";
 import { formatYear } from "../utils/formatDate";
-import { FaAddressBook, FaPhone } from "react-icons/fa";
-import { MdMail } from "react-icons/md";
-import "react-toastify/dist/ReactToastify.css";
 import ProfilePictureUpload from "../components/ProfilePictureUpload";
 import EditUserProfile from "./EditUserProfile";
 import ChangePassword from "./ChangePassword";
-import { useSelector } from "react-redux";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
 
 const Profile = () => {
-  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
+  useRedirectLogoutUser("/users/login");
 
   const { user, isError, isLoading, message } = useSelector(
     (state) => state.auth
   );
 
-  // Handle position field
-  if (user?.data?.position === "Other") {
-    user.data.position = null;
-  }
-
-  if (isLoading) return <LoadingSpinner />; //loading state
+  if (isLoading) return <LoadingSpinner />;
   if (isError)
-    //error state
     return <PageErrorAlert errorCondition={isError} errorMessage={message} />;
 
+  const position =
+    user?.data?.position === "Other"
+      ? user?.data?.otherPosition
+      : user?.data?.position;
+
   return (
-    <section className="flex flex-col justify-center items-center font-poppins font-medium ">
-      <div className="flex flex-col md:flex-row md:gap-12 bg-white shadow-md rounded-lg p-6 md:p-10 w-full max-w-5xl">
-        {/* CHANGE PASSWORD FORM */}
-        <ChangePassword endpoint="/changepassword" />
-        {/* Profile Image */}
-        <div className="flex flex-col items-center mb-8 md:mb-0">
-          <img
-            src={user?.data?.photo ? user.data.photo : avatar}
-            alt={`${user?.data?.firstName}'s profile image`}
-            className="object-cover object-right-top h-36 w-36 sm:h-48 sm:w-48 rounded-full border-4 border-blue-500"
-          />
-          <div className="mt-4 flex flex-wrap justify-center gap-3">
-            <EditUserProfile />
-            <ProfilePictureUpload />
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-white to-blue-100 py-12 px-4 sm:px-6 lg:px-8 ">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white bg-opacity-80 backdrop-filter backdrop-blur-lg rounded-3xl shadow-xl overflow-hidden">
+          <div className="md:flex">
+            {/* Left column - Profile Image and Actions */}
+            <div className="md:w-1/3 bg-gradient-to-b from-blue-800 to-blue-600 p-8 text-white">
+              <div className="text-center">
+                <img
+                  src={user?.data?.photo || avatar}
+                  alt={`${user?.data?.firstName}'s profile`}
+                  className="w-48 h-48 rounded-full mx-auto border-4 border-white shadow-lg"
+                />
+                <h1 className="mt-4 text-3xl font-bold">
+                  {user?.data?.firstName} {user?.data?.lastName}
+                </h1>
+                <p className="mt-2 text-xl">{position}</p>
+              </div>
+              <div className="mt-8 space-y-4">
+                <EditUserProfile />
+                <ProfilePictureUpload />
+              </div>
+            </div>
 
-        {/* Profile Details */}
-        <div className="flex-1">
-          <h1 className="xl:text-2xl sm:text-1xl font-bold text-rose-700 text-center md:text-left">
-            {user?.data?.firstName} {user?.data?.lastName}{" "}
-            {user?.data?.middleName}
-          </h1>
-          <hr className="my-4" />
-          <div className="space-y-2 text-center md:text-left">
-            <small className="block text-gray-600">
-              {user?.data?.position ?? user?.data?.otherPosition}
-            </small>
-            <small className="block">
-              <strong>Practice Area:</strong> {user?.data?.practiceArea}
-            </small>
-            <small className="block">
-              <strong>Year of Call:</strong>{" "}
-              {formatYear(user?.data?.yearOfCall)}
-            </small>
-            <small className="block">
-              <strong>University Attended:</strong>{" "}
-              {user?.data?.universityAttended}
-            </small>
-            <small className="block">
-              <strong>Law School Attended:</strong>{" "}
-              {user?.data?.lawSchoolAttended}
-            </small>
-          </div>
-          <hr className="my-4" />
-
-          {/* Contact Details */}
-          <div className="space-y-2">
-            <small className="flex items-center gap-2">
-              <MdMail className="text-rose-700" /> {user?.data?.email}
-            </small>
-            <small className="flex items-center gap-2">
-              <FaPhone className="text-rose-700" /> {user?.data?.phone}
-            </small>
-            <small className="flex items-center gap-2">
-              <FaAddressBook className="text-rose-700" /> {user?.data?.address}
-            </small>
-            <hr />
-            <small className="mt-4">
-              <strong>Bio:</strong> <i>{user?.data?.bio}</i>
-            </small>
+            {/* Right column - User Details */}
+            <div className="md:w-2/3 p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <InfoCard
+                  icon={<FaBriefcase />}
+                  title="Practice Area"
+                  content={user?.data?.practiceArea}
+                />
+                <InfoCard
+                  icon={<FaGavel />}
+                  title="Year of Call"
+                  content={formatYear(user?.data?.yearOfCall)}
+                />
+                <InfoCard
+                  icon={<FaUniversity />}
+                  title="University"
+                  content={user?.data?.universityAttended}
+                />
+                <InfoCard
+                  icon={<MdSchool />}
+                  title="Law School"
+                  content={user?.data?.lawSchoolAttended}
+                />
+                <InfoCard
+                  icon={<MdMail />}
+                  title="Email"
+                  content={user?.data?.email}
+                />
+                <InfoCard
+                  icon={<FaPhone />}
+                  title="Phone"
+                  content={user?.data?.phone}
+                />
+                <InfoCard
+                  icon={<FaAddressBook />}
+                  title="Address"
+                  content={user?.data?.address}
+                  className="md:col-span-2"
+                />
+              </div>
+              <div className="mt-8">
+                <h2 className="text-2xl font-semibold mb-4">Bio</h2>
+                <p className="text-gray-700 italic">{user?.data?.bio}</p>
+              </div>
+              <div className="mt-8">
+                <ChangePassword endpoint="/changepassword" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 };
+
+const InfoCard = ({ icon, title, content, className = "" }) => (
+  <div className={`bg-white rounded-lg shadow p-4 ${className} `}>
+    <div className="flex items-center text-blue-600 mb-2">
+      {icon}
+      <h3 className="ml-2 font-semibold">{title}</h3>
+    </div>
+    <p className="text-gray-700">{content}</p>
+  </div>
+);
 
 export default Profile;

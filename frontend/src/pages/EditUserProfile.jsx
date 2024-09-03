@@ -89,7 +89,7 @@ const EditUserProfile = () => {
   return (
     <section>
       <Button onClick={showModal} className="bg-blue-500 text-white">
-        Edit Your Profile
+        Edit Profile
       </Button>
       <Modal
         title="Edit Profile"

@@ -1,10 +1,9 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { Button, Modal, message } from "antd";
+import { Button, Modal } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import useModal from "../hooks/useModal";
-// import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const TaskDocUpload = ({ taskId }) => {
@@ -112,6 +111,7 @@ const TaskDocUpload = ({ taskId }) => {
             <button
               type="submit"
               disabled={loading}
+              loading={loading}
               className="bg-blue-500 text-white hover:bg-blue-600 p-2 rounded-md">
               Upload Document
             </button>

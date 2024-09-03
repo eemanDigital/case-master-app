@@ -57,7 +57,7 @@ const CurrentDayCauseList = () => {
     <Card
       className="bg-white rounded-lg shadow-lg w-full lg:w-[48%] m-4 lg:m-0 h-[386px] overflow-y-scroll custom-scrollbar"
       bodyStyle={{ padding: 0 }}>
-      <h2 className="bg-gradient-to-r from-rose-600 to-rose-800 text-white text-lg sm:text-xl md:text-2xl font-semibold py-3 px-4 text-center">
+      <h2 className="bg-gradient-to-r from-rose-600 to-rose-800  text-gray-200 text-lg sm:text-xl md:text-2xl font-bold py-3 px-4 text-center">
         Today's Cause List
       </h2>
       <div className="p-4 h-full overflow-y-auto custom-scrollbar">
@@ -109,25 +109,25 @@ const CurrentDayCauseList = () => {
               dataSource={transformedCauseListData}
               renderItem={(item) => (
                 <List.Item className="border-b last:border-b-0 py-4 font-medium font-poppins">
-                  <div className="w-full p-4 bg-gray-200 shadow-sm rounded-lg border border-gray-200">
+                  <div className="w-full p-4 bg-gradient-to-r from-blue-100 to-blue-200 shadow-lg rounded-lg border border-gray-300">
                     <p className="text-blue-600 text-md font-bold flex items-center">
                       <FaGavel className="mr-2 text-blue-500" /> {item.suitNo}
                     </p>
-                    <p className="text-sm text-gray-600 font-medium mt-1">
+                    <p className="text-sm text-gray-700 font-medium mt-1">
                       {item.case}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1 capitalize flex items-center">
+                    <p className="text-xs text-gray-600 mt-1 capitalize flex items-center">
                       <FaMapMarkerAlt className="mr-2 text-blue-500" />{" "}
                       {item.court}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1 flex items-center">
+                    <p className="text-xs text-gray-600 mt-1 flex items-center">
                       <FaMapMarkerAlt className="mr-2 text-blue-500" />{" "}
                       {item.courtLocation}, {item.state}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-600 mt-1">
                       Court No: {item.courtNo}
                     </p>
-                    <div className="mt-2 flex flex-wrap gap-x-4 text-xs text-gray-500">
+                    <div className="mt-2 flex flex-wrap gap-x-4 text-xs text-gray-600">
                       <p className="flex items-center">
                         <FaCalendarAlt className="mr-1 text-blue-500" />{" "}
                         Adjourned for:{" "}
@@ -142,7 +142,7 @@ const CurrentDayCauseList = () => {
                         </span>
                       </p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-2 mb-1">
+                    <p className="text-xs text-gray-600 mt-2 mb-1">
                       Lawyers in court:
                     </p>
                     {renderLawyers(item.lawyersInCourt)}

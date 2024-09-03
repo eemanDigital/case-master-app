@@ -174,11 +174,10 @@ const CaseReportList = ({
               className="w-full font-poppins  shadow-sm hover:shadow-md transition-shadow duration-300"
               title={
                 <h2
-                  className={
-                    nameStyle || "text-lg text-gray-700 font-semibold"
-                  }>
-                  {report?.caseReported?.firstParty?.name[0]?.name} vs{" "}
-                  {report?.caseReported?.secondParty?.name[0]?.name}
+                  className={`${
+                    nameStyle || "text-lg font-semibold text-gray-700 truncate"
+                  } sm:text-base md:text-lg lg:text-xl w-full`}>
+                  {`${report?.caseReported?.firstParty?.name[0]?.name} vs ${report?.caseReported?.secondParty?.name[0]?.name}`}
                 </h2>
               }>
               <Space direction="vertical" size="small" className="w-full">
