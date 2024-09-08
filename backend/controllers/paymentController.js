@@ -407,18 +407,35 @@ exports.totalPaymentsByYear = catchAsync(async (req, res, next) => {
 exports.getTotalBalance = catchAsync(async (req, res, next) => {
   const results = await Payment.aggregate([
     {
-      $group: { _id: null, totalBalance: { $sum: "$balance" } },
+      // Sort payments by invoiceId and date in descending order
+      $sort: { invoiceId: 1, date: -1 },
+    },
+    {
+      // Group by invoiceId and get the latest payment for each invoice
+      $group: {
+        _id: "$invoiceId",
+        latestBalance: { $first: "$balance" },
+      },
+    },
+    {
+      // Sum the latest balances
+      $group: {
+        _id: null,
+        totalBalance: { $sum: "$latestBalance" },
+      },
     },
   ]);
 
   // set redis cache
   // setRedisCache("totalBalance", results, 1200);
+
   res.status(200).json({
     message: "success",
     data: results,
   });
 });
 
+//get payment by client in respect of a case
 exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
   const { clientId, caseId } = req.params;
 

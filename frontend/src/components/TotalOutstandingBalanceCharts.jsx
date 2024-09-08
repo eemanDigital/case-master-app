@@ -10,7 +10,8 @@ const { Title } = Typography;
 const TotalOutstandingBalanceCharts = ({ paymentData, balanceData, error }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  console.log(balanceData);
+  console.log(paymentData, "PD");
+
   const value = paymentData?.totalAmount;
   const year = paymentData?.year;
   const totalBalance = balanceData?.data?.[0]?.totalBalance;
