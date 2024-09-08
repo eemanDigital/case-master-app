@@ -60,6 +60,7 @@ const TodoForm = ({ addOptimisticTodo, removeOptimisticTodo }) => {
             Return
           </Button>,
           <Button
+            loading={loading}
             key="submit"
             className="bg-blue-500 text-white"
             onClick={onSubmit}>
@@ -83,7 +84,7 @@ const TodoForm = ({ addOptimisticTodo, removeOptimisticTodo }) => {
             ]}>
             <Select
               placeholder="Select a priority"
-              notFoundContent={loading ? <Spin size="small" /> : null}
+              // notFoundContent={loading ? <Spin size="small" /> : null}
               options={todoPriority}
               allowClear
             />

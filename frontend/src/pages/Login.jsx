@@ -42,9 +42,9 @@ const Login = () => {
       dispatch(sendLoginCode(inputValue.email));
       navigate(`/loginWithCode/${inputValue.email}`);
     }
-    if (isSuccess && !isLoggedIn) {
-      toast.success(message);
-    }
+    // if (isSuccess && !isLoggedIn) {
+    //   // toast.success(message);
+    // }
     dispatch(RESET());
   }, [
     isSuccess,

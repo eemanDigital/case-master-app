@@ -237,7 +237,7 @@ const Dashboard = () => {
                       data={monthlyNewCases?.data || []}
                     />
                     <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
-                    <TodoList title="Your Todo List" />
+                    <TodoList />
 
                     {/* Admin components */}
                     <ShowAdminComponent>

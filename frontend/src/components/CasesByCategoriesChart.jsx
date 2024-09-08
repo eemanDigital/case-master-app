@@ -34,7 +34,7 @@ const CasesByCategoriesChart = ({ data, title }) => {
   return (
     <>
       <div
-        className="bg-gradient-to-r from-red-300 to-red-500 p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow flex flex-col justify-center items-center m-1 sm:m-2"
+        className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow flex flex-col justify-center items-center m-1 sm:m-2"
         onClick={handleCardClick}>
         <ResponsiveContainer width="100%" height={200} className="mt-6">
           <h1 className=" text-center font-medium mt-2 text-white">{title}</h1>

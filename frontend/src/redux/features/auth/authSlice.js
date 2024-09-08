@@ -299,7 +299,6 @@ const authSlice = createSlice({
         state.isError = true;
         state.isLoading = false;
         state.message = action.payload;
-        // No need to update state.user or state.isLoggedIn
         toast.error(action.payload);
       })
 
@@ -393,7 +392,7 @@ const authSlice = createSlice({
         state.isError = true;
         state.isLoading = false;
         state.message = action.payload;
-        // toast.error(action.payload);
+        toast.error(action.payload);
       })
 
       // send sendVerification email

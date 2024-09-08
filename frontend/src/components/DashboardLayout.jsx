@@ -9,7 +9,7 @@ const { Header, Content, Sider } = Layout;
 
 const DashboardLayout = () => {
   useRedirectLogoutUser("/users/login");
-  
+
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -81,7 +81,7 @@ const DashboardLayout = () => {
           />
         </Header>
         <Content
-          className="m-4 p-4 bg-blue-200 rounded-lg overflow-auto"
+          className="m-4 p-4 bg-gray-200 rounded-lg overflow-auto"
           style={{ height: "calc(100vh - 64px)" }}>
           <Outlet />
         </Content>

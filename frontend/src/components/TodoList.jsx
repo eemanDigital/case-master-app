@@ -9,7 +9,7 @@ import TodoForm from "../pages/TodoForm";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 
-const TodoList = ({ title }) => {
+const TodoList = () => {
   const { todos, error, loading, fetchData } = useDataGetterHook();
   const [optimisticTodos, setOptimisticTodos] = useState([]);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -61,7 +61,7 @@ const TodoList = ({ title }) => {
         <div className="space-y-2">
           <div className="text-orange-700 flex items-center ">
             <UnorderedListOutlined className="mr-2 p-3 rounded-full text-orange-700 bg-orange-200 text-2xl" />
-            {title}
+            Your Personal Todos
           </div>
           {allTodos.length === 0 ? (
             <Empty
@@ -79,14 +79,11 @@ const TodoList = ({ title }) => {
       </Card>
 
       <Modal
-        title={
-          <span className="text-xl text-blue-600 font-semibold">{title}</span>
-        }
         open={isModalVisible}
         onOk={handleOk}
         onCancel={handleCancel}
         footer={null}
-        width="90%"
+        width="70%"
         className="p-0">
         <div className="p-4 w-full max-h-[80vh] overflow-y-auto">
           <section className="flex flex-col bg-white pt-2 p-2 rounded-md">
@@ -104,8 +101,8 @@ const TodoList = ({ title }) => {
   );
 };
 
-TodoList.propTypes = {
-  title: PropTypes.string.isRequired,
-};
+// TodoList.propTypes = {
+//   title: PropTypes.string.isRequired,
+// };
 
 export default TodoList;

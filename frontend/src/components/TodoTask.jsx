@@ -143,7 +143,7 @@ const TodoTask = ({ tasks }) => {
   const showPagination = filteredData.length > 3;
 
   return (
-    <div className="max-w-7xl mx-auto px-1 sm:px-6 lg:px-8">
+    <div className="max-w-7xl mx-auto px-1 sm:px-2 lg:px-4">
       <h1 className=" font-bold text-center text-gray-700 my-4">
         Your Personal Todos
       </h1>
@@ -164,7 +164,7 @@ const TodoTask = ({ tasks }) => {
           className: "hover:bg-gray-50 transition-colors duration-200",
         })}
         className="mt-8 shadow-sm rounded-lg overflow-hidden"
-        scroll={{ x: true }}
+        scroll={{ x: 750 }}
       />
       {showPagination && (
         <div className="mt-4 flex justify-end">
