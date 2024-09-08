@@ -10,7 +10,7 @@ const { Title } = Typography;
 const TotalOutstandingBalanceCharts = ({ paymentData, balanceData, error }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  console.log(paymentData, "PD");
+  // console.log(paymentData, "PD");
 
   const value = paymentData?.totalAmount;
   const year = paymentData?.year;
@@ -125,7 +125,7 @@ const TotalOutstandingBalanceCharts = ({ paymentData, balanceData, error }) => {
               </PieChart>
             </ResponsiveContainer>
             <div style={{ textAlign: "center", marginTop: "-100px" }}>
-              <Title level={3}>₦{value?.toLocaleString()}</Title>
+              <Title level={3}>Total Income: ₦{value?.toLocaleString()}</Title>
             </div>
           </div>
         </div>

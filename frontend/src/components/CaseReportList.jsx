@@ -182,7 +182,7 @@ const CaseReportList = ({
               }>
               <Space direction="vertical" size="small" className="w-full">
                 {!hideButtons && (
-                  <Text strong className="text-gray-600 font-poppins  ">
+                  <Text className="text-gray-600 font-poppins font-medium  ">
                     Reported on:{" "}
                     <span className="text-blue-500 ">
                       {formatDate(report?.date)}
@@ -196,19 +196,19 @@ const CaseReportList = ({
                   direction="horizontal"
                   size="large"
                   className="w-full justify-between flex-wrap">
-                  <Text strong className="font-poppins ">
+                  <Text className="font-poppins   font-medium">
                     Adjourned For:{" "}
                     <span className="text-rose-600 font-poppins ">
                       {report?.adjournedFor}
                     </span>
                   </Text>
-                  <Text strong className="font-poppins ">
+                  <Text className="font-poppins font-medium ">
                     Adjourned Date:{" "}
                     <span className="text-blue-500 ">
                       {formatDate(report?.adjournedDate)}
                     </span>
                   </Text>
-                  <Text strong className="font-poppins ">
+                  <Text className="font-poppins  font-medium">
                     Reported By:{" "}
                     <span className="text-gray-700">
                       {`${report?.reportedBy?.firstName} ${report?.reportedBy?.lastName}`}

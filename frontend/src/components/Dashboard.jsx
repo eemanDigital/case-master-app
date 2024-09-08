@@ -224,20 +224,22 @@ const Dashboard = () => {
                 {/* Components below LatestCaseReports */}
                 <div className="w-full px-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <CurrentTasksTracker
+                      tasks={tasks?.data || []}
+                      userId={userId}
+                    />
+                    <TodoList />
+
                     <CaseCountsByClientChart data={casesByClient?.data || []} />
                     <AccountOfficerCharts
                       title="Cases By Account Officer"
                       data={casesByAccountOfficer?.data || []}
                     />
-                    <CurrentTasksTracker
-                      tasks={tasks?.data || []}
-                      userId={userId}
-                    />
+
                     <CaseCountsByPeriodChart
                       data={monthlyNewCases?.data || []}
                     />
                     <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
-                    <TodoList />
 
                     {/* Admin components */}
                     <ShowAdminComponent>
