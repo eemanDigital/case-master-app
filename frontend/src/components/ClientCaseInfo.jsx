@@ -38,16 +38,12 @@ function ClientCaseInfo({ cases }) {
                   <div className="space-y-2">
                     <img
                       className="w-16 h-16 rounded-full"
-                      src={
-                        officer?.photo
-                          ? `http://localhost:3000/images/users/${officer?.photo}`
-                          : avatar
-                      }
+                      src={officer?.photo || avatar}
                       alt="Avatar"
                     />
                     <p>
                       <span className="font-medium">Full Name: </span>
-                      {officer?.fullName}
+                      {officer.firstName} {officer.lastName}
                     </p>
                     <p>
                       <span className="font-medium">Email: </span>

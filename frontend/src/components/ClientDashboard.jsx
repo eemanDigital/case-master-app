@@ -27,6 +27,8 @@ const ClientDashboard = () => {
     }
   }, [cases, clientId]);
 
+  console.log(cases, "CASES");
+
   return (
     <div className="overflow-hidden ">
       {/* account officer for client */}

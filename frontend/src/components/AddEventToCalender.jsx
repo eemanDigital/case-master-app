@@ -41,7 +41,6 @@ const AddEventToCalender = ({ title, description, startDate, endDate }) => {
     duration: calculateDuration(),
   };
 
-  console.log(event, "EVENT");
   // Calendar links for different services
   const googleUrl = google(event);
   const outlookUrl = outlook(event);
