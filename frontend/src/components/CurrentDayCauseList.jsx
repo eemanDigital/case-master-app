@@ -56,11 +56,11 @@ const CurrentDayCauseList = () => {
   );
   return (
     <Card
-      className="bg-white rounded-lg shadow-lg w-full lg:w-[48%] m-4 lg:m-0 h-[386px] overflow-y-scroll custom-scrollbar"
+      className="bg-white rounded-lg shadow-lg w-full lg:w-[48%] m-4 lg:m-0 h-[334px] overflow-y-scroll custom-scrollbar"
       bodyStyle={{ padding: 0 }}>
-      <h2 className="bg-gradient-to-r from-rose-600 to-rose-800  text-gray-200 text-lg sm:text-xl md:text-2xl font-bold py-3 px-4 text-center">
+      {/* <h2 className="bg-gradient-to-r from-rose-600 to-rose-800  text-gray-200 text-lg sm:text-xl md:text-2xl font-bold py-3 px-4 text-center">
         Today's Cause List
-      </h2>
+      </h2> */}
       <div className="p-4 h-full overflow-y-auto custom-scrollbar">
         {loadingCauseList.causeList ? (
           <div className="flex justify-center items-center min-h-[300px]">
@@ -100,11 +100,11 @@ const CurrentDayCauseList = () => {
           </div>
         ) : (
           <div>
-            <Text className="text-lg text-gray-700 block mb-4">
+            <Text className="text-lg bg-blue-100 text-blue-700 font-bold mb-4 p-1 rounded-md">
               <span className="font-bold text-blue-600 text-2xl">
                 {causeList.data?.todayResult}
               </span>{" "}
-              matter(s) in court today
+              Court Case Today
             </Text>
             <List
               dataSource={transformedCauseListData}
@@ -154,7 +154,7 @@ const CurrentDayCauseList = () => {
           </div>
         )}
       </div>
-      <div className="scroll-indicator"></div>
+      {/* <div className="scroll-indicator"></div> */}
     </Card>
   );
 };
