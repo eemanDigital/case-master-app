@@ -3,8 +3,9 @@ const Case = require("../models/caseModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const { generatePdf } = require("../utils/generatePdf");
+const moment = require("moment-timezone");
 
-const moment = require("moment");
+// const moment = require("moment");
 // const setRedisCache = require("../utils/setRedisCache");
 
 // create report
@@ -129,94 +130,198 @@ exports.deleteReport = catchAsync(async (req, res, next) => {
 
 // get Reports for week and month
 
+// exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
+//   // get causeList fot the current date
+//   const startOfToday = moment().startOf("day");
+//   const endOfToday = moment().endOf("day");
+
+//   // Get the start and end of the current week
+//   const startOfWeek = moment().startOf("isoWeek"); // Start of the current ISO week
+//   const endOfWeek = moment().endOf("isoWeek"); // End of the current ISO week
+
+//   // Get the start and end of the next week
+//   const startOfNextWeek = moment().add(1, "weeks").startOf("isoWeek"); // Start of next ISO week
+//   const endOfNextWeek = moment().add(1, "weeks").endOf("isoWeek"); // End of next ISO week
+
+//   // Get the start and end of the current month
+//   const startOfMonth = moment().startOf("month");
+//   const endOfMonth = moment().endOf("month");
+
+//   // Get the start and end of the current year
+//   const startOfYear = moment().startOf("year");
+//   const endOfYear = moment().endOf("year");
+
+//   // Query for reports coming up today
+//   const reportsToday = await Report.find({
+//     adjournedDate: {
+//       $gte: startOfToday.toDate(),
+//       $lte: endOfToday.toDate(),
+//     },
+//   })
+//     .sort("adjournedDate")
+//     .select("caseReported adjournedFor adjournedDate");
+
+//   // Get reports for the current week
+//   const reportsThisWeek = await Report.find({
+//     adjournedDate: {
+//       $gte: startOfWeek.toDate(),
+//       $lt: endOfWeek.toDate(),
+//     },
+//   })
+//     .sort("adjournedDate")
+//     .select("caseReported adjournedFor adjournedDate");
+
+//   // Get reports for the next week
+//   const reportsNextWeek = await Report.find({
+//     adjournedDate: {
+//       $gte: startOfNextWeek.toDate(),
+//       $lt: endOfNextWeek.toDate(),
+//     },
+//   })
+//     .sort("adjournedDate")
+//     .select("caseReported adjournedFor adjournedDate");
+
+//   // Get reports for the current month
+//   const reportsThisMonth = await Report.find({
+//     adjournedDate: {
+//       $gte: startOfMonth.toDate(),
+//       $lt: endOfMonth.toDate(),
+//     },
+//   })
+//     .sort("adjournedDate")
+//     .select("caseReported adjournedFor adjournedDate");
+
+//   // Get reports for the current year
+//   const reportsThisYear = await Report.find({
+//     adjournedDate: {
+//       $gte: startOfYear.toDate(),
+//       $lt: endOfYear.toDate(),
+//     },
+//   })
+//     .sort("adjournedDate")
+//     .select("caseReported adjournedFor adjournedDate");
+
+//   // setRedisCache("causeListToday", reportsToday, 1200);
+
+//   res.status(200).json({
+//     message: "success",
+//     data: {
+//       reportsToday,
+//       todayResult: reportsToday.length,
+//       weekResults: reportsThisWeek.length,
+//       nextWeekResults: reportsNextWeek.length,
+//       monthResults: reportsThisMonth.length,
+//       yearResults: reportsThisYear.length,
+//       reportsThisWeek,
+//       reportsNextWeek,
+//       reportsThisMonth,
+//       reportsThisYear,
+//     },
+//   });
+// });
+
 exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
-  // get causeList fot the current date
-  const startOfToday = moment().startOf("day");
-  const endOfToday = moment().endOf("day");
+  try {
+    // Set the timezone to Nigeria
+    const timezone = "Africa/Lagos";
 
-  // Get the start and end of the current week
-  const startOfWeek = moment().startOf("isoWeek"); // Start of the current ISO week
-  const endOfWeek = moment().endOf("isoWeek"); // End of the current ISO week
+    // get causeList for the current date
+    const startOfToday = moment.tz(timezone).startOf("day");
+    const endOfToday = moment.tz(timezone).endOf("day");
 
-  // Get the start and end of the next week
-  const startOfNextWeek = moment().add(1, "weeks").startOf("isoWeek"); // Start of next ISO week
-  const endOfNextWeek = moment().add(1, "weeks").endOf("isoWeek"); // End of next ISO week
+    // Get the start and end of the current week
+    const startOfWeek = moment.tz(timezone).startOf("isoWeek"); // Start of the current ISO week
+    const endOfWeek = moment.tz(timezone).endOf("isoWeek"); // End of the current ISO week
 
-  // Get the start and end of the current month
-  const startOfMonth = moment().startOf("month");
-  const endOfMonth = moment().endOf("month");
+    // Get the start and end of the next week
+    const startOfNextWeek = moment
+      .tz(timezone)
+      .add(1, "weeks")
+      .startOf("isoWeek"); // Start of next ISO week
+    const endOfNextWeek = moment.tz(timezone).add(1, "weeks").endOf("isoWeek"); // End of next ISO week
 
-  // Get the start and end of the current year
-  const startOfYear = moment().startOf("year");
-  const endOfYear = moment().endOf("year");
+    // Get the start and end of the current month
+    const startOfMonth = moment.tz(timezone).startOf("month");
+    const endOfMonth = moment.tz(timezone).endOf("month");
 
-  // Query for reports coming up today
-  const reportsToday = await Report.find({
-    adjournedDate: {
-      $gte: startOfToday.toDate(),
-      $lte: endOfToday.toDate(),
-    },
-  })
-    .sort("adjournedDate")
-    .select("caseReported adjournedFor adjournedDate");
+    // Get the start and end of the current year
+    const startOfYear = moment.tz(timezone).startOf("year");
+    const endOfYear = moment.tz(timezone).endOf("year");
 
-  // Get reports for the current week
-  const reportsThisWeek = await Report.find({
-    adjournedDate: {
-      $gte: startOfWeek.toDate(),
-      $lt: endOfWeek.toDate(),
-    },
-  })
-    .sort("adjournedDate")
-    .select("caseReported adjournedFor adjournedDate");
+    // Query for reports coming up today
+    const reportsToday = await Report.find({
+      adjournedDate: {
+        $gte: startOfToday.toDate(),
+        $lte: endOfToday.toDate(),
+      },
+    })
+      .sort("adjournedDate")
+      .select("caseReported adjournedFor adjournedDate");
 
-  // Get reports for the next week
-  const reportsNextWeek = await Report.find({
-    adjournedDate: {
-      $gte: startOfNextWeek.toDate(),
-      $lt: endOfNextWeek.toDate(),
-    },
-  })
-    .sort("adjournedDate")
-    .select("caseReported adjournedFor adjournedDate");
+    // Get reports for the current week
+    const reportsThisWeek = await Report.find({
+      adjournedDate: {
+        $gte: startOfWeek.toDate(),
+        $lt: endOfWeek.toDate(),
+      },
+    })
+      .sort("adjournedDate")
+      .select("caseReported adjournedFor adjournedDate");
 
-  // Get reports for the current month
-  const reportsThisMonth = await Report.find({
-    adjournedDate: {
-      $gte: startOfMonth.toDate(),
-      $lt: endOfMonth.toDate(),
-    },
-  })
-    .sort("adjournedDate")
-    .select("caseReported adjournedFor adjournedDate");
+    // Get reports for the next week
+    const reportsNextWeek = await Report.find({
+      adjournedDate: {
+        $gte: startOfNextWeek.toDate(),
+        $lt: endOfNextWeek.toDate(),
+      },
+    })
+      .sort("adjournedDate")
+      .select("caseReported adjournedFor adjournedDate");
 
-  // Get reports for the current year
-  const reportsThisYear = await Report.find({
-    adjournedDate: {
-      $gte: startOfYear.toDate(),
-      $lt: endOfYear.toDate(),
-    },
-  })
-    .sort("adjournedDate")
-    .select("caseReported adjournedFor adjournedDate");
+    // Get reports for the current month
+    const reportsThisMonth = await Report.find({
+      adjournedDate: {
+        $gte: startOfMonth.toDate(),
+        $lt: endOfMonth.toDate(),
+      },
+    })
+      .sort("adjournedDate")
+      .select("caseReported adjournedFor adjournedDate");
 
-  // setRedisCache("causeListToday", reportsToday, 1200);
+    // Get reports for the current year
+    const reportsThisYear = await Report.find({
+      adjournedDate: {
+        $gte: startOfYear.toDate(),
+        $lt: endOfYear.toDate(),
+      },
+    })
+      .sort("adjournedDate")
+      .select("caseReported adjournedFor adjournedDate");
 
-  res.status(200).json({
-    message: "success",
-    data: {
-      reportsToday,
-      todayResult: reportsToday.length,
-      weekResults: reportsThisWeek.length,
-      nextWeekResults: reportsNextWeek.length,
-      monthResults: reportsThisMonth.length,
-      yearResults: reportsThisYear.length,
-      reportsThisWeek,
-      reportsNextWeek,
-      reportsThisMonth,
-      reportsThisYear,
-    },
-  });
+    // setRedisCache('causeListToday', reportsToday, 1200);
+
+    res.status(200).json({
+      message: "success",
+      data: {
+        reportsToday,
+        todayResult: reportsToday.length,
+        weekResults: reportsThisWeek.length,
+        nextWeekResults: reportsNextWeek.length,
+        monthResults: reportsThisMonth.length,
+        yearResults: reportsThisYear.length,
+        reportsThisWeek,
+        reportsNextWeek,
+        reportsThisMonth,
+        reportsThisYear,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching upcoming matters:", error);
+    res.status(500).json({
+      message: "error",
+      error: error.message,
+    });
+  }
 });
 
 // generate reports in pdf format
