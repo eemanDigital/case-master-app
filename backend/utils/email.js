@@ -56,7 +56,7 @@ const sendMail = async (
     replyTo: reply_to,
     template,
     subject,
-    context, // This now includes all dynamic data
+    context, // contains all dynamic data
   };
 
   await transporter.sendMail(mailOptions, function (err, info) {

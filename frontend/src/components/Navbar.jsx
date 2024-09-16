@@ -6,29 +6,29 @@ import { RiMenu3Fill } from "react-icons/ri";
 import { AiOutlineClose } from "react-icons/ai";
 import { ShowOnLogin, ShowOnLogout } from "./protect/Protect";
 
-const navItems = [
-  { name: "Features", path: "#feature" },
-  { name: "Testimonials", path: "#testimonials" },
-  { name: "Pricing", path: "#pricing" },
-];
+// const navItems = [
+//   { name: "Features", path: "#feature" },
+//   { name: "Testimonials", path: "#testimonials" },
+//   { name: "Pricing", path: "#pricing" },
+// ];
 
-const NavItem = ({ item, mobile, scrolled }) => (
-  <li className={`my-2 list-none ${mobile ? "text-lg" : "md:my-0"}`}>
-    <NavLink
-      to={item.path}
-      className={({ isActive }) =>
-        `transition duration-300 block font-medium ${
-          mobile
-            ? "text-gray-800 hover:text-gray-600"
-            : scrolled
-            ? "text-gray-700 hover:text-gray-900"
-            : "text-gray-300 hover:text-white"
-        } ${isActive ? "font-bold" : ""}`
-      }>
-      {item.name}
-    </NavLink>
-  </li>
-);
+// const NavItem = ({ item, mobile, scrolled }) => (
+//   <li className={`my-2 list-none ${mobile ? "text-lg" : "md:my-0"}`}>
+//     <NavLink
+//       to={item.path}
+//       className={({ isActive }) =>
+//         `transition duration-300 block font-medium ${
+//           mobile
+//             ? "text-gray-800 hover:text-gray-600"
+//             : scrolled
+//             ? "text-gray-700 hover:text-gray-900"
+//             : "text-gray-300 hover:text-white"
+//         } ${isActive ? "font-bold" : ""}`
+//       }>
+//       {item.name}
+//     </NavLink>
+//   </li>
+// );
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -70,13 +70,13 @@ const Navbar = () => {
             </span>
           </Link>
 
-          <div className="hidden md:block">
+          {/* <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-4">
               {navItems.map((item, index) => (
                 <NavItem key={index} item={item} scrolled={scrolled} />
               ))}
             </div>
-          </div>
+          </div> */}
 
           <div className="hidden md:block">
             <div className="ml-4 flex items-center md:ml-6">
@@ -126,14 +126,14 @@ const Navbar = () => {
           isOpen ? "max-h-screen" : "max-h-0"
         } overflow-hidden`}>
         <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-white shadow-lg">
-          {navItems.map((item, index) => (
+          {/* {navItems.map((item, index) => (
             <NavItem
               key={index}
               item={item}
               mobile={true}
               scrolled={scrolled}
             />
-          ))}
+          ))} */}
           <div className="mt-4 space-y-2">
             <ShowOnLogout>
               <NavLink
@@ -161,12 +161,12 @@ const Navbar = () => {
   );
 };
 
-NavItem.propTypes = {
-  item: PropTypes.shape({
-    name: PropTypes.string.isRequired,
-    path: PropTypes.string.isRequired,
-  }).isRequired,
-  mobile: PropTypes.bool,
-  scrolled: PropTypes.bool,
-};
+// NavItem.propTypes = {
+//   item: PropTypes.shape({
+//     name: PropTypes.string.isRequired,
+//     path: PropTypes.string.isRequired,
+//   }).isRequired,
+//   mobile: PropTypes.bool,
+//   scrolled: PropTypes.bool,
+// };
 export default Navbar;
