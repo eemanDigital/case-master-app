@@ -1,11 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { Space, Table, Button, Modal } from "antd";
+import { Space, Table, Button, Modal, Tooltip } from "antd";
 import avatar from "../assets/avatar.png";
 import { useDispatch, useSelector } from "react-redux";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import { useAdminHook } from "../hooks/useAdminHook";
 import LoadingSpinner from "../components/LoadingSpinner";
+import { DeleteOutlined } from "@ant-design/icons";
 import SearchBar from "../components/SearchBar";
 import debounce from "lodash/debounce";
 import PageErrorAlert from "../components/PageErrorAlert";
@@ -138,19 +139,20 @@ const LeaveBalanceList = () => {
               key="action"
               render={(text, record) => (
                 <Space size="middle">
-                  <Button
-                    onClick={() => {
-                      Modal.confirm({
-                        title:
-                          "Are you sure you want to delete this application?",
-                        onOk: () => removeBalance(record?.id),
-                      });
-                    }}
-                    type="primary"
-                    danger
-                    loading={deleteState.isLoading}>
-                    Delete
-                  </Button>
+                  <Tooltip title="Delete Balance">
+                    <Button
+                      icon={<DeleteOutlined />}
+                      className="mx-6 bg-red-200 text-red-500 hover:text-red-700"
+                      onClick={() => {
+                        Modal.confirm({
+                          title:
+                            "Are you sure you want to delete this application?",
+                          onOk: () => removeBalance(record?.id),
+                        });
+                      }}
+                      type="primary"
+                      loading={deleteState.isLoading}></Button>
+                  </Tooltip>
                 </Space>
               )}
             />

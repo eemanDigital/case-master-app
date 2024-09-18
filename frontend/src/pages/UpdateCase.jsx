@@ -486,40 +486,6 @@ const UpdateCase = () => {
           {/* JUDGE FIELD */}
           <section className="bg-gray-50 p-4 rounded-lg shadow">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Form.List name="judge">
-                {(fields, { add, remove }) => (
-                  <>
-                    {fields.map(({ key, name, ...restField }) => (
-                      <Space
-                        key={key}
-                        style={{
-                          display: "flex",
-                          marginBottom: 8,
-                        }}
-                        align="baseline">
-                        <Form.Item
-                          label="Judges Name"
-                          rules={requiredRule}
-                          {...restField}
-                          name={[name, "name"]}>
-                          <Input placeholder="Last Name" />
-                        </Form.Item>
-                        <MinusCircleOutlined onClick={() => remove(name)} />
-                      </Space>
-                    ))}
-                    <Form.Item>
-                      <Button
-                        type="dashed"
-                        onClick={() => add()}
-                        block
-                        icon={<PlusOutlined />}>
-                        Add Judge
-                      </Button>
-                    </Form.Item>
-                  </>
-                )}
-              </Form.List>
-
               {/* CASE STATUS */}
               <Form.Item
                 rules={requiredRule}
@@ -561,111 +527,160 @@ const UpdateCase = () => {
             </div>
           </section>
 
-          {/* CASE STRENGTH */}
-          <section className="bg-gray-50 p-4 rounded-lg shadow">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Form.List name="caseStrengths">
-                {(fields, { add, remove }) => (
-                  <>
-                    {fields.map(({ key, name, ...restField }) => (
-                      <div key={key} className="flex items-center space-x-2">
-                        <Form.Item
-                          label="Case Strengths"
-                          rules={requiredRule}
-                          {...restField}
-                          name={[name, "name"]}
-                          className="flex-grow">
-                          <Input placeholder="Case Strength" />
-                        </Form.Item>
-                        <MinusCircleOutlined
-                          onClick={() => remove(name)}
-                          className="text-red-500 cursor-pointer"
-                        />
-                      </div>
-                    ))}
-                    <Form.Item>
-                      <Button
-                        type="dashed"
-                        onClick={() => add()}
-                        block
-                        icon={<PlusOutlined />}
-                        className="w-full sm:w-4/5 md:w-3/5 lg:w-2/5 xl:w-1/3">
-                        Add Case Strength
-                      </Button>
-                    </Form.Item>
-                  </>
-                )}
-              </Form.List>
-              <Divider />
-              {/* CASE WEAKNESS */}
-              <Form.List name="caseWeaknesses">
-                {(fields, { add, remove }) => (
-                  <>
-                    {fields.map(({ key, name, ...restField }) => (
-                      <div key={key} className="flex items-center space-x-2">
-                        <Form.Item
-                          label="Case Weaknesses"
-                          rules={requiredRule}
-                          {...restField}
-                          name={[name, "name"]}
-                          className="flex-grow">
-                          <Input placeholder="Case Weakness" />
-                        </Form.Item>
-                        <MinusCircleOutlined
-                          onClick={() => remove(name)}
-                          className="text-red-500 cursor-pointer"
-                        />
-                      </div>
-                    ))}
-                    <Form.Item>
-                      <Button
-                        type="dashed"
-                        onClick={() => add()}
-                        block
-                        icon={<PlusOutlined />}
-                        className="w-full sm:w-4/5 md:w-3/5 lg:w-2/5 xl:w-1/3">
-                        Add Case Weakness
-                      </Button>
-                    </Form.Item>
-                  </>
-                )}
-              </Form.List>
-              <Divider />
+          <section className="bg-gray-50 p-6 rounded-lg shadow space-y-4 flex flex-col  md:items-start sm:items-start items-center justify-center">
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> */}
+            {/* judges */}
+            <Divider orientation="middle" orientationMargin="0">
+              <h1 className="text-1xl">Judges/Justices</h1>
+            </Divider>
+            <Form.List name="judge">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <Space
+                      key={key}
+                      style={{
+                        display: "flex",
+                        marginBottom: 8,
+                      }}
+                      align="baseline">
+                      <Form.Item
+                        label="Judges Name"
+                        rules={requiredRule}
+                        {...restField}
+                        name={[name, "name"]}>
+                        <Input placeholder="Last Name" />
+                      </Form.Item>
+                      <MinusCircleOutlined onClick={() => remove(name)} />
+                    </Space>
+                  ))}
+                  <Form.Item>
+                    <Button
+                      type="dashed"
+                      onClick={() => add()}
+                      block
+                      icon={<PlusOutlined />}>
+                      Add Judge
+                    </Button>
+                  </Form.Item>
+                </>
+              )}
+            </Form.List>
 
-              {/* STEPS TO BE TAKEN FIELD */}
-              <Form.List name="stepToBeTaken">
-                {(fields, { add, remove }) => (
-                  <>
-                    {fields.map(({ key, name, ...restField }) => (
-                      <div key={key} className="flex items-center space-x-2">
-                        <Form.Item
-                          label="Strategy/Steps to be Taken"
-                          rules={requiredRule}
-                          {...restField}
-                          name={[name, "name"]}
-                          className="flex-grow">
-                          <Input placeholder="Strategy/Steps" />
-                        </Form.Item>
-                        <MinusCircleOutlined
-                          onClick={() => remove(name)}
-                          className="text-red-500 cursor-pointer"
+            {/* case strengths */}
+            <Divider orientation="middle" orientationMargin="0">
+              <h1 className="text-1xl">Case Strength(es)</h1>
+            </Divider>
+            <Form.List name="caseStrengths">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <div key={key} className="flex items-center space-x-2">
+                      <Form.Item
+                        label="Case Strengths"
+                        rules={requiredRule}
+                        {...restField}
+                        name={[name, "name"]}
+                        className="flex-grow">
+                        <Input placeholder="Case Strength" />
+                      </Form.Item>
+                      <MinusCircleOutlined
+                        onClick={() => remove(name)}
+                        className="text-red-500 cursor-pointer"
+                      />
+                    </div>
+                  ))}
+                  <Form.Item>
+                    <Button
+                      type="dashed"
+                      onClick={() => add()}
+                      block
+                      icon={<PlusOutlined />}
+                      className="w-full sm:w-4/5 md:w-3/5 lg:w-2/5 xl:w-1/3">
+                      Add Case Strength
+                    </Button>
+                  </Form.Item>
+                </>
+              )}
+            </Form.List>
+            <Divider />
+            {/* CASE WEAKNESS */}
+            <Divider orientation="middle" orientationMargin="0">
+              <h1 className="text-1xl">Case Weakness(es)</h1>
+            </Divider>
+            <Form.List name="caseWeaknesses">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <div key={key} className="flex items-center space-x-2">
+                      <Form.Item
+                        label="Case Weaknesses"
+                        rules={requiredRule}
+                        {...restField}
+                        name={[name, "name"]}
+                        className="flex-grow">
+                        <Input placeholder="Case Weakness" />
+                      </Form.Item>
+                      <MinusCircleOutlined
+                        onClick={() => remove(name)}
+                        className="text-red-500 cursor-pointer"
+                      />
+                    </div>
+                  ))}
+                  <Form.Item>
+                    <Button
+                      type="dashed"
+                      onClick={() => add()}
+                      block
+                      icon={<PlusOutlined />}
+                      className="w-full sm:w-4/5 md:w-3/5 lg:w-2/5 xl:w-1/3">
+                      Add Case Weakness
+                    </Button>
+                  </Form.Item>
+                </>
+              )}
+            </Form.List>
+
+            {/* STEPS TO BE TAKEN FIELD */}
+            <Divider orientation="middle" orientationMargin="0">
+              <h1 className="text-1xl">Steps to be taken</h1>
+            </Divider>
+            <Form.List name="stepToBeTaken">
+              {(fields, { add, remove }) => (
+                <>
+                  {fields.map(({ key, name, ...restField }) => (
+                    <div key={key} className="flex items-center space-x-2">
+                      <Form.Item
+                        label="Steps/Strategies"
+                        rules={requiredRule}
+                        {...restField}
+                        name={[name, "name"]}
+                        className="flex-grow ">
+                        <Input
+                          className="w-full max-w-2xl"
+                          placeholder="Strategy/Steps"
                         />
-                      </div>
-                    ))}
-                    <Form.Item>
-                      <Button
-                        type="dashed"
-                        onClick={() => add()}
-                        block
-                        icon={<PlusOutlined />}
-                        className="w-full sm:w-4/5 md:w-3/5 lg:w-2/5 xl:w-1/3">
-                        Add Steps
-                      </Button>
-                    </Form.Item>
-                  </>
-                )}
-              </Form.List>
-            </div>
+                      </Form.Item>
+                      <MinusCircleOutlined
+                        onClick={() => remove(name)}
+                        className="text-red-500 cursor-pointer"
+                      />
+                    </div>
+                  ))}
+                  <Form.Item>
+                    <Button
+                      type="dashed"
+                      onClick={() => add()}
+                      block
+                      icon={<PlusOutlined />}
+                      className="w-full sm:w-4/5 md:w-3/5 lg:w-2/5 xl:w-1/3">
+                      Add Steps
+                    </Button>
+                  </Form.Item>
+                </>
+              )}
+            </Form.List>
+            {/* </div> */}
           </section>
 
           {/* Account Officer and Client */}

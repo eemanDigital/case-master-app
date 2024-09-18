@@ -1,9 +1,10 @@
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { Link } from "react-router-dom";
 import { useAdminHook } from "../hooks/useAdminHook";
-import { Space, Table, Button, Modal } from "antd";
+import { Space, Table, Button, Modal, Tooltip } from "antd";
 import { formatDate } from "../utils/formatDate";
 import avatar from "../assets/avatar.png";
+import { DeleteOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useEffect, useState } from "react";
@@ -113,7 +114,7 @@ const LeaveApplicationList = () => {
                   key="employee.name"
                   render={(text, record) => (
                     <Link
-                      className="capitalize text-gray-700 hover:text-gray-800 cursor-pointer font-medium"
+                      className="capitalize text-gray-700 hover:text-gray-400 cursor-pointer font-medium"
                       to={`${record?.id}/details`}
                       title="Click for details">
                       {`${record.employee.firstName} ${record.employee.lastName}`}
@@ -166,18 +167,19 @@ const LeaveApplicationList = () => {
                       <Link to={`${record?.id}/details`}>Get Details</Link>
                     </Button> */}
 
-                    <Button
-                      onClick={() => {
-                        Modal.confirm({
-                          title:
-                            "Are you sure you want to delete this application?",
-                          onOk: () => removeApplication(record?._id),
-                        });
-                      }}
-                      type="primary"
-                      danger>
-                      Delete
-                    </Button>
+                    <Tooltip title="Delete Application">
+                      <Button
+                        icon={<DeleteOutlined />}
+                        className="mx-6 bg-red-200 text-red-500 hover:text-red-700"
+                        onClick={() => {
+                          Modal.confirm({
+                            title:
+                              "Are you sure you want to delete this application?",
+                            onOk: () => removeApplication(record?._id),
+                          });
+                        }}
+                        type="primary"></Button>
+                    </Tooltip>
                   </Space>
                 )}
               />

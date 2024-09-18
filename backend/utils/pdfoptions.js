@@ -1,44 +1,79 @@
-// module.exports.options = {
+// module.exports = {
 //   format: "A4",
 //   orientation: "portrait",
-//   border: "8mm",
+//   border: {
+//     top: "15mm",
+//     right: "8mm",
+//     bottom: "15mm",
+//     left: "8mm",
+//   },
 //   header: {
-//     height: "40mm",
-//     contents: `<div style="text-align: center;"> A.T Lukman & Co.
-//                   <p>Address:  In a server-side rendering context, the relative paths to CSS files can sometimes be problematic, especially when generating </p>
-//               </div>`,
+//     height: "30mm",
+//     contents: `
+//       <div style="text-align: center; font-size: 5pt; color: #fff;">
+//         <h1 style="margin: 0;">A.T Lukman & Co.</h1>
+//         <p style="margin: 5px 0;">Address: 123 Business Street, City, Country</p>
+//       </div>
+//     `,
 //   },
 //   footer: {
-//     height: "25mm",
+//     height: "15mm",
 //     contents: {
-//       first: "Invoice",
-//       2: "Second page",
 //       default:
-//         '<span style="color: #444;">{{page}}</span>/<span>{{pages}}</span>', // fallback value
-//       last: "Last Page",
+//         '<div style="text-align: center; font-size: 9pt; color: #777;">Page {{page}} of {{pages}}</div>',
+//       first:
+//         '<div style="text-align: center; font-size: 9pt; color: #777;">Page {{page}} of {{pages}} - A.T Lukman & Co.</div>',
+//       last: '<div style="text-align: center; font-size: 9pt; color: #777;">Page {{page}} of {{pages}} - Thank you for your business</div>',
+//     },
+//   },
+//   childProcessOptions: {
+//     env: {
+//       OPENSSL_CONF: "/dev/null",
 //     },
 //   },
 // };
 
 module.exports = {
-  format: "A4", // Paper size
-  orientation: "portrait", // Portrait or landscape
-  border: "10mm",
-  margin: {
-    top: "20mm",
-    right: "5mm",
-    bottom: "10mm",
-    left: "5mm",
+  format: "A4",
+  orientation: "portrait",
+  border: {
+    top: "15mm",
+    right: "8mm",
+    bottom: "15mm",
+    left: "8mm",
   },
   header: {
-    height: "10mm",
-    contents: '<div style="text-align: center;">Author: A.T Lukman & Co.</div>',
+    height: "30mm",
+    contents: `
+      <div style="text-align: center; font-size: 10pt; color: #555;">
+        <h1 style="margin: 0;">A.T Lukman & Co.</h1>
+        <p style="margin: 5px 0;">Address: 123 Business Street, City, Country</p>
+      </div>
+    `,
   },
   footer: {
-    height: "10mm",
+    height: "15mm",
     contents: {
       default:
-        '<span style="color: #444;">Page {{page}}</span>/<span>{{pages}}</span>', // Place your footer content here
+        '<div style="text-align: center; font-size: 9pt; color: #777;">Page {{page}} of {{pages}}</div>',
+      first:
+        '<div style="text-align: center; font-size: 9pt; color: #777;">Page {{page}} of {{pages}} - A.T Lukman & Co.</div>',
+      last: '<div style="text-align: center; font-size: 9pt; color: #777;">Page {{page}} of {{pages}} - Thank you for your business</div>',
     },
   },
+  childProcessOptions: {
+    env: {
+      OPENSSL_CONF: "/dev/null",
+    },
+  },
+  //  set global styles
+  content: `
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        font-size: 12pt;
+      }
+      /* You can add more global styles here */
+    </style>
+  `,
 };

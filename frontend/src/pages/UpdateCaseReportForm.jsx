@@ -89,6 +89,7 @@ const UpdateCaseReportForm = ({ reportId }) => {
             </Form.Item>
 
             <Form.Item
+              className="mb-10 "
               name="update"
               label="Write update here..."
               rules={[
@@ -106,6 +107,7 @@ const UpdateCaseReportForm = ({ reportId }) => {
             </Form.Item>
 
             <Form.Item
+              className="mt-5 p-2"
               name="adjournedFor"
               label="Matter adjourned for"
               rules={[

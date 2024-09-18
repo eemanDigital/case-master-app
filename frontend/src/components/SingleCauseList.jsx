@@ -150,7 +150,7 @@ const SingleCauseList = ({
           dataSource={data}
           loading={loadingCauseList}
           pagination={!hideButton && { pageSize: 10 }}
-          scroll={{ x: "max-content" }}
+          scroll={{ x: 750 }}
         />
         {showDownloadBtn && (
           <Button

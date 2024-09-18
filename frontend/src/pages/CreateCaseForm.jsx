@@ -404,7 +404,10 @@ const CreateCaseForm = () => {
         </section>
 
         {/* Additional Information */}
-        <section className="bg-gray-50 p-4 rounded-lg shadow space-y-4">
+        <section className="bg-gray-50 p-6 rounded-lg shadow space-y-4 flex flex-col  md:items-start sm:items-start items-center justify-center ">
+          <Divider orientation="middle" orientationMargin="0">
+            <h1 className="text-1xl">Judges/Justices</h1>
+          </Divider>
           <DynamicInputArrays
             rules={requiredRule}
             parentKey="judge"
@@ -412,6 +415,9 @@ const CreateCaseForm = () => {
             label="Judge/Justices"
             placeholder="Enter judges name"
           />
+          <Divider orientation="middle" orientationMargin="0">
+            <h1 className="text-1xl">Case Strength(es)</h1>
+          </Divider>
 
           <DynamicInputArrays
             rules={requiredRule}
@@ -420,6 +426,9 @@ const CreateCaseForm = () => {
             label="Case Strength"
             placeholder="Enter case's Strength"
           />
+          <Divider orientation="middle" orientationMargin="0">
+            <h1 className="text-1xl">Case Weakness(es)</h1>
+          </Divider>
 
           <DynamicInputArrays
             rules={requiredRule}
@@ -428,6 +437,9 @@ const CreateCaseForm = () => {
             label="Case Weaknesses"
             placeholder="Enter case's Weaknesses"
           />
+          <Divider orientation="middle" orientationMargin="0">
+            <h1 className="text-1xl">Steps to be taken</h1>
+          </Divider>
 
           <DynamicInputArrays
             rules={requiredRule}
@@ -470,13 +482,14 @@ const CreateCaseForm = () => {
         </section>
 
         {/* Case Summary and General Comment */}
-        <section className="bg-gray-50 p-4 rounded-lg shadow space-y-4">
+        <section className=" ">
           <TextAreaInput
             rules={[requiredRule, caseSummaryMaxLengthRule]}
             fieldName="caseSummary"
             initialValue={formData?.caseSummary}
             label="Case Summary"
           />
+
           <TextAreaInput
             rules={[generalCommentMaxLengthRule]}
             fieldName="generalComment"

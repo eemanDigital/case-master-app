@@ -115,19 +115,6 @@ export const PartyDynamicInputs = ({
   );
 };
 
-PartyDynamicInputs.propTypes = {
-  parentKey: PropTypes.string.isRequired,
-  firstKeyVal: PropTypes.string.isRequired,
-  label: PropTypes.string.isRequired,
-  secondKeyVal: PropTypes.string.isRequired,
-  thirdKeyVal: PropTypes.string.isRequired,
-  placeholderVal: PropTypes.string.isRequired,
-  firstInitialValue: PropTypes.array,
-  secondInitialValue: PropTypes.array,
-  thirdInitialValue: PropTypes.array,
-  rules: PropTypes.arrayOf(PropTypes.object),
-};
-
 // Select Inputs
 export const SelectInputs = ({
   fieldName,
@@ -163,21 +150,6 @@ export const SelectInputs = ({
       </Form.Item>
     </div>
   );
-};
-
-SelectInputs.propTypes = {
-  fieldName: PropTypes.string.isRequired,
-  label: PropTypes.string.isRequired,
-  initialValue: PropTypes.any,
-  defaultValue: PropTypes.any,
-  options: PropTypes.arrayOf(
-    PropTypes.shape({
-      label: PropTypes.string.isRequired,
-      value: PropTypes.any.isRequired,
-    })
-  ).isRequired,
-  mode: PropTypes.string,
-  rules: PropTypes.arrayOf(PropTypes.object),
 };
 
 // Dynamic Input Arrays
@@ -228,17 +200,10 @@ export const DynamicInputArrays = ({
   );
 };
 
-DynamicInputArrays.propTypes = {
-  parentKey: PropTypes.string.isRequired,
-  label: PropTypes.string.isRequired,
-  placeholder: PropTypes.string.isRequired,
-  rules: PropTypes.arrayOf(PropTypes.object),
-};
-
 //  Text Area Input
 export const TextAreaInput = ({ fieldName, label, initialValue, rules }) => {
   return (
-    <div>
+    <div className=" bg-gray-50 mb-12 p-5 rounded-lg shadow space-y-8">
       <Form.Item
         rules={rules}
         label={label}
@@ -248,6 +213,41 @@ export const TextAreaInput = ({ fieldName, label, initialValue, rules }) => {
       </Form.Item>
     </div>
   );
+};
+
+PartyDynamicInputs.propTypes = {
+  parentKey: PropTypes.string.isRequired,
+  firstKeyVal: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  secondKeyVal: PropTypes.string.isRequired,
+  thirdKeyVal: PropTypes.string.isRequired,
+  placeholderVal: PropTypes.string.isRequired,
+  firstInitialValue: PropTypes.array,
+  secondInitialValue: PropTypes.array,
+  thirdInitialValue: PropTypes.array,
+  rules: PropTypes.arrayOf(PropTypes.object),
+};
+
+SelectInputs.propTypes = {
+  fieldName: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  initialValue: PropTypes.any,
+  defaultValue: PropTypes.any,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      label: PropTypes.string.isRequired,
+      value: PropTypes.any.isRequired,
+    })
+  ).isRequired,
+  mode: PropTypes.string,
+  rules: PropTypes.arrayOf(PropTypes.object),
+};
+
+DynamicInputArrays.propTypes = {
+  parentKey: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  placeholder: PropTypes.string.isRequired,
+  rules: PropTypes.arrayOf(PropTypes.object),
 };
 
 TextAreaInput.propTypes = {

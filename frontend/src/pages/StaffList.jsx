@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link } from "react-router-dom";
-import { Space, Table, Button, Modal } from "antd";
+import { Space, Table, Button, Modal, Tooltip } from "antd";
 import avatar from "../assets/avatar.png";
 import CreateLeaveBalanceForm from "../components/CreateLeaveBalanceForm";
-import LoadingSpinner from "../components/LoadingSpinner";
+import { DeleteOutlined } from "@ant-design/icons";
 import { PlusOutlined } from "@ant-design/icons";
 import SearchBar from "../components/SearchBar";
 import { deleteUser, getUsers } from "../redux/features/auth/authSlice";
@@ -115,12 +115,13 @@ const StaffList = () => {
                   title="Name"
                   key="name"
                   render={(text, record) => (
-                    <Link
-                      className="capitalize text-gray-700  hover:text-gray-800 cursor-pointer font-medium"
-                      to={`/dashboard/staff/${record?._id}/details`}
-                      title="Click for details">
-                      {`${record.firstName} ${record.lastName}`}
-                    </Link>
+                    <Tooltip title="Click for details">
+                      <Link
+                        className="text-md font-bold capitalize text-gray-700 hover:text-gray-400 cursor-pointer  flex items-center"
+                        to={`/dashboard/staff/${record?._id}/details`}>
+                        {`${record.firstName} ${record.lastName}`}
+                      </Link>
+                    </Tooltip>
                   )}
                 />
               </ColumnGroup>
@@ -148,17 +149,19 @@ const StaffList = () => {
                 render={(text, record) => (
                   <Space size="middle">
                     {isSuperOrAdmin && (
-                      <Button
-                        onClick={() => {
-                          Modal.confirm({
-                            title: "Are you sure you want to delete this user?",
-                            onOk: () => removeUser(record._id),
-                          });
-                        }}
-                        type="primary"
-                        danger>
-                        Delete
-                      </Button>
+                      <Tooltip title="Delete Staff">
+                        <Button
+                          icon={<DeleteOutlined />}
+                          className="mx-6 bg-red-200 text-red-500 hover:text-red-700"
+                          onClick={() => {
+                            Modal.confirm({
+                              title:
+                                "Are you sure you want to delete this user?",
+                              onOk: () => removeUser(record._id),
+                            });
+                          }}
+                          type="primary"></Button>
+                      </Tooltip>
                     )}
                   </Space>
                 )}

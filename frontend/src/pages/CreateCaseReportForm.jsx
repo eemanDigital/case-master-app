@@ -75,6 +75,7 @@ const CreateCaseReportForm = () => {
           <DatePicker />
         </Form.Item>
         <Form.Item
+          className="mt-10 mb-10"
           name="update"
           label="Write update here..."
           rules={[
@@ -89,7 +90,9 @@ const CreateCaseReportForm = () => {
             formats={formats}
           />
         </Form.Item>
+
         <Form.Item
+          className="mt-5"
           name="adjournedFor"
           label="Matter adjourned for"
           rules={[

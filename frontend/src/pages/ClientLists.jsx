@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { Space, Table, Button, Modal, Divider } from "antd";
+import { Space, Table, Button, Modal, Divider, Tooltip } from "antd";
 import AddClientForm from "../components/AddClientForm";
+import { DeleteOutlined } from "@ant-design/icons";
 import { useEffect, useState } from "react";
 import SearchBar from "../components/SearchBar";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -113,12 +114,14 @@ const ClientLists = () => {
                   title="Name"
                   key="name"
                   render={(text, record) => (
-                    <Link
-                      className="capitalize text-gray-700  hover:text-gray-800 cursor-pointer font-medium"
-                      to={`${record?._id}/details`}
-                      title="Click for details">
-                      {`${record.firstName} ${record.secondName || ""}`}
-                    </Link>
+                    <Tooltip title="Click for Details">
+                      <Link
+                        className="capitalize text-gray-700  hover:text-gray-400 cursor-pointer font-bold"
+                        to={`${record?._id}/details`}
+                        title="Click for details">
+                        {`${record.firstName} ${record.secondName || ""}`}
+                      </Link>
+                    </Tooltip>
                   )}
                 />
               </ColumnGroup>
@@ -143,22 +146,20 @@ const ClientLists = () => {
                 key="action"
                 render={(text, record) => (
                   <Space size="middle">
-                    {/* <Button type="link">
-                      <Link to={`${record?._id}/details`}>Get Details</Link>
-                    </Button> */}
                     {isSuperOrAdmin && (
-                      <Button
-                        onClick={() => {
-                          Modal.confirm({
-                            title:
-                              "Are you sure you want to delete this client information?",
-                            onOk: () => removeClient(record?.id),
-                          });
-                        }}
-                        type="primary"
-                        danger>
-                        Delete
-                      </Button>
+                      <Tooltip title="Delete Client">
+                        <Button
+                          icon={<DeleteOutlined />}
+                          className="mx-6 bg-red-200 text-red-500 hover:text-red-700"
+                          onClick={() => {
+                            Modal.confirm({
+                              title:
+                                "Are you sure you want to delete this client information?",
+                              onOk: () => removeClient(record?.id),
+                            });
+                          }}
+                          type="primary"></Button>
+                      </Tooltip>
                     )}
                   </Space>
                 )}

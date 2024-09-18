@@ -120,11 +120,13 @@ const CaseList = () => {
       dataIndex: "case",
       key: "case",
       render: (_, record) => (
-        <Link to={`${record._id}/casedetails`}>
-          <h1 className="font-bold hover:text-gray-600">{`${
-            record.firstParty?.name[0]?.name || ""
-          } vs ${record.secondParty?.name[0]?.name || ""}`}</h1>
-        </Link>
+        <Tooltip title="Click for Details">
+          <Link to={`${record._id}/casedetails`}>
+            <h1 className="font-bold text-gray-700 hover:text-gray-400">{`${
+              record.firstParty?.name[0]?.name || ""
+            } vs ${record.secondParty?.name[0]?.name || ""}`}</h1>
+          </Link>
+        </Tooltip>
       ),
       width: 250, // Set a fixed width
     },

@@ -5,12 +5,15 @@ html
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title Report
     style.
+      html {
+        font-size: 16px; /* Base font size */
+      }
       body {
         font-family: Arial, sans-serif;
-        font-size: 16px;
+        font-size: 1rem; !important;
         line-height: 1.6;
         padding: 20px;
-        background-color: #f4f4f4;
+        //- background-color: #f4f4f4;
         color: #333;
         margin: 0;
       }
@@ -32,7 +35,7 @@ html
       }
       .header h1 {
         margin: 0;
-        font-size: 28px;
+        font-size: 1.75rem; /* Equivalent to 28px */
         color: #2c3e50;
       }
       .section {
@@ -41,7 +44,7 @@ html
       }
       .section h2 {
         margin: 0 0 10px 0;
-        font-size: 20px;
+        font-size: 1.25rem; /* Equivalent to 20px */
         border-bottom: 2px solid #2c3e50;
         color: #2c3e50;
         padding-bottom: 5px;
@@ -66,15 +69,18 @@ html
         border-bottom: 1px solid #ddd;
       }
       @media (max-width: 768px) {
+        html {
+          font-size: 14px; /* Reduces the base font size for smaller screens */
+        }
         body {
-          font-size: 14px;
+          font-size: 1rem; /* Equivalent to 14px */
           padding: 10px;
         }
         .header h1 {
-          font-size: 24px;
+          font-size: 1.5rem; /* Equivalent to 24px */
         }
         .section h2 {
-          font-size: 18px;
+          font-size: 1.125rem; /* Equivalent to 18px */
         }
         .field span {
           width: 100%;
@@ -92,14 +98,15 @@ html
       .section
         h2 Case Reported
         .field
-          span Case ID:
-          | #{report.caseReported ? report.caseReported._id : 'N/A'}
+          span Suit No:
+          | #{report.caseReported ? report.caseReported.suitNo : 'N/A'}
         .field
-          span First Party:
-          | #{report.caseReported ? report.caseReported.firstParty.name[0].name : 'N/A'}
-        .field
-          span Second Party:
-          | #{report.caseReported ? report.caseReported.secondParty.name[0].name : 'N/A'}
+          span Case:
+          | #{report.caseReported ? report.caseReported.firstParty.name[0].name : 'N/A'} Vs. #{report.caseReported ? report.caseReported.secondParty.name[0].name : 'N/A'}
+        .field 
+          span Court
+          | #{report.caseReported ? report.caseReported.courtName.charAt(0).toUpperCase() + report.caseReported.courtName.slice(1) + ', ' + report.caseReported.courtNo + ', ' + report.caseReported.location + ', ' + report.caseReported.state : 'N/A'}
+      
       .section
         h2 Report Details
         .field

@@ -52,21 +52,16 @@ const SideBar = ({ isMobile, closeDrawer }) => {
       icon: <TbReport />,
       label: <Link to="case-reports">Case Reports</Link>,
     },
+
     {
-      key: "tasks",
-      icon: <FaTasks />,
-      label: <Link to="tasks">{isClient ? "Message" : "Tasks"}</Link>,
-    },
-    {
-      key: "billings",
-      icon: <FaMoneyBill />,
-      label: <Link to="billings">Billings</Link>,
-    },
-    {
-      key: "staff",
+      key: "staff-management",
       icon: <FaUsers />,
-      label: <Link to="staff">Staff</Link>,
+      label: <Link to="#">Staff Management</Link>,
       children: [
+        {
+          key: "staff-list",
+          label: <Link to="staff">Staff List</Link>,
+        },
         {
           key: "leave-application",
           label: <Link to="staff/leave-application">Leave Applications</Link>,
@@ -83,14 +78,25 @@ const SideBar = ({ isMobile, closeDrawer }) => {
       label: <Link to="cause-list">Cause List</Link>,
     },
     {
+      key: "tasks",
+      icon: <FaTasks />,
+      label: <Link to="tasks">{isClient ? "Message" : "Tasks"}</Link>,
+    },
+    {
       key: "clients",
       icon: <FaHandshake />,
       label: <Link to="clients">Clients</Link>,
     },
+
     {
       key: "documents",
       icon: <FaFile />,
       label: <Link to="documents">Documents</Link>,
+    },
+    {
+      key: "billings",
+      icon: <FaMoneyBill />,
+      label: <Link to="billings">Billings</Link>,
     },
     {
       key: "contact-dev",
