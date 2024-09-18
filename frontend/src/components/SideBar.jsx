@@ -56,7 +56,7 @@ const SideBar = ({ isMobile, closeDrawer }) => {
     {
       key: "staff-management",
       icon: <FaUsers />,
-      label: <Link to="#">Staff Management</Link>,
+      label: <p>Staff Management</p>,
       children: [
         {
           key: "staff-list",
