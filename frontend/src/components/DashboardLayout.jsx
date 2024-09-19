@@ -81,7 +81,7 @@ const DashboardLayout = () => {
           />
         </Header>
         <Content
-          className="m-4 p-4 bg-gray-200 rounded-lg overflow-auto"
+          className=" w-[100%] sm:m-4 sm:p-4 m-0 p-2 bg-gray-200 rounded-lg overflow-auto"
           style={{ height: "calc(100vh - 64px)" }}>
           <Outlet />
         </Content>

@@ -203,7 +203,7 @@ export const DynamicInputArrays = ({
 //  Text Area Input
 export const TextAreaInput = ({ fieldName, label, initialValue, rules }) => {
   return (
-    <div className=" bg-gray-50 mb-12 p-5 rounded-lg shadow space-y-8">
+    <div className=" bg-gray-50 mb-12 p-5  pb-10 rounded-lg shadow space-y-8">
       <Form.Item
         rules={rules}
         label={label}

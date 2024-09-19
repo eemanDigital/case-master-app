@@ -6,32 +6,24 @@ html(lang="en")
     title Professional Invoice
     style.
       body {
-        font-family: 'monospace', sans-serif;
+        font-family: Arial, sans-serif;
         line-height: 1.6;
         color: #333;
+        margin: 0;
         padding: 0;
-        margin: 20mm; 
-        padding-bottom: 20mm;
-        font-size: 18px;
+        font-size: 12pt;
       }
       .container {
         max-width: 800px;
-        margin: 20px auto;
-        padding: 30px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        margin: 0 auto;
+        padding: 20px;
       }
       .header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 30px;
+        text-align: center;
+        margin-bottom: 20px;
       }
       .logo img {
         max-width: 150px;
-      }
-      h1, h2, h3 {
-        color: #2c3e50;
-        margin-bottom: 10px;
       }
       .invoice-details {
         display: flex;
@@ -47,7 +39,7 @@ html(lang="en")
         margin-bottom: 20px;
       }
       th, td {
-        padding: 12px;
+        padding: 10px;
         text-align: left;
         border-bottom: 1px solid #ddd;
       }
@@ -61,41 +53,45 @@ html(lang="en")
       }
       .additional-info {
         background-color: #f9f9f9;
-        padding: 20px;
+        padding: 15px;
         border-radius: 5px;
-        margin-top: 30px;
+        margin-top: 20px;
       }
       .payment-instructions {
-        margin-top: 30px;
-        padding: 20px;
+        margin-top: 20px;
+        padding: 15px;
         background-color: #e8f4fd;
         border-radius: 5px;
       }
       @media (max-width: 600px) {
-        .container {
-          padding: 15px;
-        }
-        .header, .invoice-details {
+        .invoice-details {
           flex-direction: column;
         }
         .invoice-details > div {
           flex-basis: 100%;
           margin-bottom: 20px;
         }
+        table {
+          font-size: 10pt;
+        }
       }
 
   body
     .container
       .header
-        div
-          h1 Invoice
-          p Invoice No: #{invoice.invoiceReference}
-        .logo
-          img(src="/path/to/logo.png" alt="A.T Lukman & Co. Logo")
-        
+        //- .logo
+        //-   img(src="/api/placeholder/150/100" alt="A.T Lukman & Co. Logo")
+        //- h1 A.T Lukman & Co.
+        //- p
+        //-   | No 32, Allen Street Maitama, Abuja
+        //-   br
+        //-   | Phone: +234 123 456 7890
+        //-   br
+        //-   | Email: info@atlukman.com
+
       .invoice-details
         div
-          h3 Invoice To:
+          h2 Invoice To:
           p
             strong #{invoice.client.firstName} #{invoice.client.lastName}
             br
@@ -105,30 +101,10 @@ html(lang="en")
             br
             | Email: #{invoice.client.email}
         div
-          h3 Invoice From:
+          h2 Invoice Details:
           p
-            strong A.T Lukman & Co.
+            | Invoice No: #{invoice.invoiceReference}
             br
-            | No 32, Allen Street Maitama, Abuja
-            br
-            | Phone: +234 123 456 7890
-            br
-            | Email: info@atlukman.com
-
-      .invoice-details
-        div
-          h3 Payment Info
-          p
-            | Account No: #{invoice.accountDetails.accountNumber}
-            br
-            | Account Name: #{invoice.accountDetails.accountName}
-            br
-            | Bank: #{invoice.accountDetails.bank}
-            br
-            | Reference: #{invoice.accountDetails.reference}
-        div
-          h3 Date
-          p
             | Invoice Date: #{new Date(invoice.createdAt).toLocaleDateString()}
             br
             | Due Date: #{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString() : 'N/A'}
@@ -138,10 +114,10 @@ html(lang="en")
           strong Status: 
           | #{invoice.status}
         p
-          strong Work Title:
+          strong Work Title: 
           | #{invoice.workTitle}
         p
-          strong Case:
+          strong Case: 
           | #{invoice.case.firstParty.name[0].name || 'Unknown'} vs #{invoice.case.secondParty.name[0].name || 'Unknown'}
 
       h2 Services
@@ -156,9 +132,9 @@ html(lang="en")
         tbody
           each service in invoice.services
             tr
-              td #{service.serviceDescriptions}
-              td #{service.hours}
-              td #{new Date(service.date).toLocaleDateString()}
+              td= service.serviceDescriptions
+              td= service.hours
+              td= new Date(service.date).toLocaleDateString()
               td ₦#{service.feeRatePerHour ? service.feeRatePerHour.toFixed(2) : '0.00'}
               td ₦#{service.amount.toFixed(2)}
 
@@ -172,9 +148,9 @@ html(lang="en")
         tbody
           each expense in invoice.expenses
             tr
-              td #{expense.description}
+              td= expense.description
               td ₦#{expense.amount.toFixed(2)}
-              td #{new Date(expense.date).toLocaleDateString()}
+              td= new Date(expense.date).toLocaleDateString()
 
       .additional-info
         h2 Financial Summary
@@ -184,7 +160,7 @@ html(lang="en")
             td ₦#{invoice.amountPaid.toFixed(2)}
           tr
             td Total Hours:
-            td #{invoice.totalHours}
+            td= invoice.totalHours
           tr
             td Total Professional Fees:
             td ₦#{invoice.totalProfessionalFees.toFixed(2)}
@@ -208,5 +184,14 @@ html(lang="en")
             td ₦#{invoice.totalAmountDue.toFixed(2)}
 
       .payment-instructions
-        h3 Payment Instructions/Terms and Conditions:
-        p #{invoice.paymentInstructionTAndC}
+        h3 Payment Instructions:
+        p
+          | Account No: #{invoice.accountDetails.accountNumber}
+          br
+          | Account Name: #{invoice.accountDetails.accountName}
+          br
+          | Bank: #{invoice.accountDetails.bank}
+          br
+          | Reference: #{invoice.accountDetails.reference}
+        h3 Terms and Conditions:
+        p= invoice.paymentInstructionTAndC
