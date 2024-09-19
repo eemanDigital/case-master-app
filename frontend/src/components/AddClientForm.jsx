@@ -151,8 +151,8 @@ const AddClientForm = () => {
           </Form.Item>
 
           <Form.Item>
-            <Button type="default" htmlType="submit">
-              {isLoading ? "Loading..." : "Add Client"}
+            <Button type="default" loading={isLoading} htmlType="submit">
+              Add Client
             </Button>
           </Form.Item>
         </Form>
