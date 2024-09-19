@@ -12,20 +12,18 @@ const sendMail = async (
 ) => {
   function createNewTransport() {
     if (process.env.NODE_ENV === "production") {
+      // Use SendInBlue API for production
       return nodemailer.createTransport({
-        service: "outlook",
-        host: process.env.EMAIL_HOST_OUTLOOK,
+        host: "smtp-relay.sendinblue.com",
         port: 587,
         auth: {
-          user: process.env.EMAIL_USER_OUTLOOK,
-          pass: process.env.OUTLOOK_PASSWORD,
-        },
-        tls: {
-          rejectUnauthorized: false,
+          user: process.env.SENDINBLUE_USERNAME,
+          pass: process.env.SENDINBLUE_PASSWORD,
         },
       });
     }
 
+    // Use your existing setup for development
     return nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: process.env.EMAIL_PORT,
@@ -59,13 +57,14 @@ const sendMail = async (
     context, // contains all dynamic data
   };
 
-  await transporter.sendMail(mailOptions, function (err, info) {
-    if (err) {
-      console.error("Error sending email:", err);
-    } else {
-      console.log("Email sent:", info.response);
-    }
-  });
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent:", info.response);
+    return info;
+  } catch (err) {
+    console.error("Error sending email:", err);
+    throw err;
+  }
 };
 
 module.exports = sendMail;

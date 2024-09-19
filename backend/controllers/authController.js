@@ -225,7 +225,7 @@ exports.sendLoginCode = catchAsync(async (req, res, next) => {
 
   const subject = "Login Access Code - CaseMaster";
   const send_to = email;
-  const send_from = process.env.EMAIL_USER_OUTLOOK;
+  const send_from = process.env.SENDINBLUE_EMAIL;
   const reply_to = "noreply@gmail.com";
   const template = "loginCode";
   const context = { name: user.firstName, link: decryptedLoginCode };
@@ -419,7 +419,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   // Prepare email details
   const subject = "Password Reset - CaseMaster";
   const send_to = user.email;
-  const send_from = process.env.EMAIL_USER_OUTLOOK;
+  const send_from = process.env.SENDINBLUE_EMAIL;
   const reply_to = "noreply@gmail.com";
   const template = "forgotPassword";
   const context = { name: user.firstName, link: resetURL };
@@ -532,7 +532,7 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
   console.log(verificationURL);
   const subject = "Verify Your Account - CaseMaster";
   const send_to = user.email;
-  const send_from = process.env.EMAIL_USER_OUTLOOK;
+  const send_from = process.env.SENDINBLUE_EMAIL;
   const reply_to = "noreply@gmail.com";
   const template = "verifyEmail";
   const context = { name: user.firstName, link: verificationURL };

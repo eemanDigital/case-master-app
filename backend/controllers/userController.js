@@ -169,7 +169,7 @@ exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
     return next(new AppError("No user found with that ID", 404));
   }
 
-  const send_from = process.env.EMAIL_USER_OUTLOOK;
+  const send_from = process.env.SENDINBLUE_EMAIL;
 
   const baseContext = {
     ...context,
@@ -183,7 +183,7 @@ exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
 
 // send automated custom/dynamic email handler
 exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
-  console.log(req.body);
+  // console.log(req.body);
   const { send_from, send_to, reply_to, template, subject, url, context } =
     req.body;
 
