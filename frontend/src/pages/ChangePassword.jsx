@@ -1,13 +1,10 @@
-import { useState } from "react";
+import React from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { Modal, Button } from "antd";
+import { Modal, Button, Form, Input, Typography } from "antd";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import PasswordCheckCard from "../components/PasswordCheckCard";
-import useTogglePassword from "../hooks/useTogglePassword";
-import PasswordInput from "../components/PasswordInput";
-import useModal from "../hooks/useModal";
+import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import {
   changePassword,
   logout,
@@ -15,60 +12,20 @@ import {
 } from "../redux/features/auth/authSlice";
 import { sendAutomatedEmail } from "../redux/features/emails/emailSlice";
 
+const { Title } = Typography;
+
 const ChangePassword = () => {
+  const [form] = Form.useForm();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isLoading, user, isError } = useSelector((state) => state.auth);
-  const { open, showModal, handleCancel } = useModal();
+  const { isLoading, user } = useSelector((state) => state.auth);
+  const [isModalVisible, setIsModalVisible] = React.useState(false);
 
-  // State to hold input values
-  const [inputValue, setInputValue] = useState({
-    passwordCurrent: "",
-    password: "",
-    passwordConfirm: "",
-  });
+  const showModal = () => setIsModalVisible(true);
+  const handleCancel = () => setIsModalVisible(false);
 
-  // Custom hook to toggle password visibility
-  const { togglePassword: togglePassword1, showPassword: showPassword1 } =
-    useTogglePassword();
-  const { togglePassword: togglePassword2, showPassword: showPassword2 } =
-    useTogglePassword();
-  const { togglePassword: togglePassword3, showPassword: showPassword3 } =
-    useTogglePassword();
-
-  // Handle input change
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setInputValue((prevValue) => ({
-      ...prevValue,
-      [name]: value,
-    }));
-  };
-
-  // Validate form fields
-  const validateForm = () => {
-    const { passwordCurrent, password, passwordConfirm } = inputValue;
-    if (!passwordCurrent || !password || !passwordConfirm) {
-      toast.error("Please fill in all fields.");
-      return false;
-    }
-    if (password !== passwordConfirm) {
-      toast.error("Passwords do not match.");
-      return false;
-    }
-    if (password.length < 8) {
-      toast.error("Password must be at least 8 characters long.");
-      return false;
-    }
-    return true;
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
+  //
+  const handleSubmit = async (values) => {
     const emailData = {
       subject: "Password Changed - CaseMaster",
       send_to: user?.data?.email,
@@ -77,101 +34,109 @@ const ChangePassword = () => {
       url: "/dashboard/profile",
     };
 
-    // Try to change password
     try {
-      // Perform the password change
-      await dispatch(changePassword(inputValue)).unwrap();
-      // Send email notification
+      await dispatch(changePassword(values)).unwrap();
       await dispatch(sendAutomatedEmail(emailData));
-      // Perform logout
       await dispatch(logout()).unwrap();
-      // Reset state
       await dispatch(RESET());
-      // Redirect to login
-      if (!isError) {
-        toast.success("Password changed successfully! Please log in again.");
-        navigate("/users/login");
-      }
+      toast.success("Password changed successfully! Please log in again.");
+      navigate("/users/login");
     } catch (error) {
       toast.error("Failed to change password. Please try again.");
     }
   };
 
-  // Style for input fields
-  const inputStyle = `appearance-none block w-full max-w-lg bg-gray-200 text-red border ${
-    isLoading ? "border-red-500" : ""
-  } rounded py-3 px-4 mb-3 leading-tight focus:outline-none focus:bg-white`;
+  const validatePassword = (_, value) => {
+    const regex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!value) {
+      return Promise.reject("Please input your password!");
+    }
+    if (value.length < 8) {
+      return Promise.reject("Password must be at least 8 characters long!");
+    }
+    if (!regex.test(value)) {
+      return Promise.reject(
+        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character!"
+      );
+    }
+    return Promise.resolve();
+  };
 
   return (
     <>
-      <Button
-        onClick={showModal}
-        className="bg-blue-500 hover:bg-blue-600 text-white mb-6">
+      <Button onClick={showModal} type="primary" className="mb-6">
         Change Password
       </Button>
-      <Modal open={open} onCancel={handleCancel} footer={null}>
-        <section className="flex flex-col justify-center items-center w-full">
-          <div>
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col justify-center items-center bg-white shadow-md rounded-md px-8 pt-6 pb-8 m-4 w-full max-w-lg">
-              <div className="flex flex-col items-center mb-6 gap-2 w-full">
-                <h1 className="text-4xl font-bold mb-5 capitalize">
-                  Change Password
-                </h1>
+      <Modal
+        title={<Title level={3}>Change Password</Title>}
+        open={isModalVisible}
+        onCancel={handleCancel}
+        footer={null}>
+        <Form form={form} onFinish={handleSubmit} layout="vertical">
+          <Form.Item
+            name="passwordCurrent"
+            label="Current Password"
+            rules={[
+              {
+                required: true,
+                message: "Please input your current password!",
+              },
+            ]}>
+            <Input.Password
+              placeholder="Current Password"
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+              }
+            />
+          </Form.Item>
 
-                <PasswordInput
-                  inputStyle={inputStyle}
-                  type="password"
-                  label="Current Password"
-                  placeholder="*******"
-                  htmlFor="Password"
-                  value={inputValue.passwordCurrent}
-                  name="passwordCurrent"
-                  handleChange={handleChange}
-                  showPassword={showPassword1}
-                  togglePassword={togglePassword1}
-                  onPaste={() => {}}
-                />
-                <PasswordInput
-                  inputStyle={inputStyle}
-                  type="password"
-                  label="New Password"
-                  placeholder="*******"
-                  htmlFor="Password"
-                  value={inputValue.password}
-                  name="password"
-                  handleChange={handleChange}
-                  showPassword={showPassword2}
-                  togglePassword={togglePassword2}
-                  onPaste={() => {}}
-                />
+          <Form.Item
+            name="password"
+            label="New Password"
+            rules={[
+              { required: true, message: "Please input your new password!" },
+              { validator: validatePassword },
+            ]}>
+            <Input.Password
+              placeholder="New Password"
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+              }
+            />
+          </Form.Item>
 
-                <PasswordInput
-                  inputStyle={inputStyle}
-                  type="password"
-                  label="Confirm Password"
-                  placeholder="*******"
-                  htmlFor="confirm password"
-                  value={inputValue.passwordConfirm}
-                  name="passwordConfirm"
-                  handleChange={handleChange}
-                  showPassword={showPassword3}
-                  togglePassword={togglePassword3}
-                  onPaste={() => {}}
-                />
+          <Form.Item
+            name="passwordConfirm"
+            label="Confirm New Password"
+            dependencies={["password"]}
+            rules={[
+              { required: true, message: "Please confirm your new password!" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("password") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error("The two passwords do not match!")
+                  );
+                },
+              }),
+            ]}>
+            <Input.Password
+              placeholder="Confirm New Password"
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+              }
+            />
+          </Form.Item>
 
-                <PasswordCheckCard password={inputValue.password} />
-              </div>
-
-              <button
-                type="submit"
-                className="bg-blue-500 px-5 py-2 rounded w-full text-slate-200 hover:bg-blue-400">
-                {isLoading ? "Submitting..." : "Submit"}
-              </button>
-            </form>
-          </div>
-        </section>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={isLoading} block>
+              {isLoading ? "Submitting..." : "Submit"}
+            </Button>
+          </Form.Item>
+        </Form>
       </Modal>
     </>
   );

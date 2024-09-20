@@ -480,22 +480,6 @@ exports.changePassword = catchAsync(async (req, res, next) => {
   // User.findByIdAndUpdate will NOT work as intended!
 
   res.status(200).json({ message: "Password Changed" });
-  // Prepare email details
-  // const subject = "Password Change - CaseMaster";
-  // const send_to = user.email;
-  // const send_from = process.env.EMAIL_USER_OUTLOOK;
-  // const reply_to = "noreply@gmail.com";
-  // const template = "changePassword";
-  // const name = user.firstName;
-  // const link = "";
-  // try {
-  //   await sendMail(subject, send_to, send_from, reply_to, template, name, link);
-  //   // 4) Log user in, send JWT
-  //   // createSendToken(user, 200, res);
-  //   res.status(200).json({ message: "Password Changed Successfully" });
-  // } catch (error) {
-  //   return next(new AppError("Email sending failed", 400));
-  // }
 });
 
 // send verification email

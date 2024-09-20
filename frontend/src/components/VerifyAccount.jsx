@@ -1,14 +1,13 @@
 import { Button, Card } from "antd";
 import { useDispatch, useSelector } from "react-redux";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { RESET, verifyUser } from "../redux/features/auth/authSlice";
 import { useEffect } from "react";
 
 const VerifyAccount = () => {
   const dispatch = useDispatch();
   const { token } = useParams();
-  const { isLoading, isSuccess } = useSelector((state) => state.auth);
-  const navigate = useNavigate();
+  const { isLoading } = useSelector((state) => state.auth);
 
   // Reset success state on component mount
   useEffect(() => {

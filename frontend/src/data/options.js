@@ -133,29 +133,33 @@ export const methodOptions = [
 ];
 
 export const positions = [
-  "select user's position",
-  "Principal",
-  "Managing Partner",
-  "Head of Chambers",
-  "Associate",
-  "Senior Associate",
-  "Junior Associate",
-  "Counsel",
-  "Intern",
-  "Secretary",
-  "Para-legal",
-  "Client",
-  "other",
+  { value: "", label: "Select user's position", disabled: true },
+  { value: "Principal", label: "Principal" },
+  { value: "Managing Partner", label: "Managing Partner" },
+  { value: "Head of Chambers", label: "Head of Chambers" },
+  { value: "Associate", label: "Associate" },
+  { value: "Senior Associate", label: "Senior Associate" },
+  { value: "Junior Associate", label: "Junior Associate" },
+  { value: "Counsel", label: "Counsel" },
+  { value: "Intern", label: "Intern" },
+  { value: "Secretary", label: "Secretary" },
+  { value: "Para-legal", label: "Para-legal" },
+  // { value: "Client", label: "Client" },
+  { value: "Other", label: "Other" },
 ];
 
 export const roles = [
-  "select user's role",
-  "user",
-  "admin",
-  "secretary",
-  "hr",
-  "super-admin",
-  "client",
+  { value: "", label: "Select user's role", disabled: true },
+  { value: "user", label: "User" },
+  { value: "admin", label: "Admin" },
+  { value: "secretary", label: "Secretary" },
+  { value: "hr", label: "HR" },
+  { value: "super-admin", label: "Super Admin" },
+  { value: "client", label: "Client" },
 ];
 
-export const gender = ["select user's gender", "male", "female"];
+export const gender = [
+  { value: "", label: "Select user's gender", disabled: true },
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+];

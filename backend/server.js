@@ -20,7 +20,6 @@ const fileRouter = require("./routes/fileRoutes");
 const todoRoutes = require("./routes/todoRoutes");
 const eventRouter = require("./routes/eventRoutes");
 const notificationRouter = require("./routes/notificationRoutes");
-const googleApiRouter = require("./routes/googleApiRoutes");
 const contactRouter = require("./routes/contactRoutes");
 const noteRouter = require("./routes/noteRoutes");
 const AppError = require("./utils/appError");
@@ -117,7 +116,6 @@ app.use(cookieParser());
 
 // Routes
 app.use("/api/v1/users", userRouter);
-app.use("/api/v1/google", googleApiRouter);
 app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/reports", reportRouter);

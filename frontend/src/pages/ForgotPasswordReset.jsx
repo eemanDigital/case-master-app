@@ -1,96 +1,107 @@
-import { useState } from "react";
-import Input from "../components/Inputs";
-import Button from "../components/Button";
+import { Form, Input, Button, Typography, Card } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { RESET, resetPassword } from "../redux/features/auth/authSlice";
-import PasswordCheckCard from "../components/PasswordCheckCard";
 import { toast } from "react-toastify";
+import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
+
+const { Title, Paragraph } = Typography;
 
 const ForgotPasswordReset = () => {
-  const { token } = useParams(); // Get the token from URL params
+  const { token } = useParams();
   const dispatch = useDispatch();
-  const { isLoading } = useSelector((state) => state.auth); // Loading state from Redux
+  const { isLoading } = useSelector((state) => state.auth);
   const navigate = useNavigate();
+  const [form] = Form.useForm();
 
-  const [inputValue, setInputValue] = useState({
-    password: "",
-    passwordConfirm: "",
-  });
-
-  // Handle input change
-  function handleChange(e) {
-    const inputText = e.target.value;
-    const inputName = e.target.name;
-
-    setInputValue((prevValue) => ({
-      ...prevValue,
-      [inputName]: inputText,
-    }));
-  }
-
-  // Handle form submission
-  async function handleSubmit(e) {
-    e.preventDefault();
-
-    // Show error if passwords do not match
-    if (inputValue.password !== inputValue.passwordConfirm) {
-      return toast.error("Passwords do not match.");
+  const handleSubmit = async (values) => {
+    try {
+      await dispatch(
+        resetPassword({ resetToken: token, userData: values })
+      ).unwrap();
+      await dispatch(RESET());
+      toast.success("Password reset successfully!");
+      navigate("/users/login");
+    } catch (error) {
+      toast.error("Failed to reset password. Please try again.");
     }
+  };
 
-    // Dispatch reset password action
-    await dispatch(resetPassword({ resetToken: token, userData: inputValue }));
-    await dispatch(RESET());
-    navigate("/users/login"); // Redirect to login page
-  }
-
-  // Input styling
-  const inputStyle =
-    "appearance-none block w-full bg-gray-100 text-gray-700 border border-gray-300 rounded py-2 px-4 mb-4 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white";
+  const validatePassword = (_, value) => {
+    const regex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!value) {
+      return Promise.reject("Please input your password!");
+    }
+    if (value.length < 8) {
+      return Promise.reject("Password must be at least 8 characters long!");
+    }
+    if (!regex.test(value)) {
+      return Promise.reject(
+        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character!"
+      );
+    }
+    return Promise.resolve();
+  };
 
   return (
-    <section className="flex items-center justify-center bg-gradient-to-r from-gray-100 to-gray-300 min-h-screen p-6">
-      <div className="w-full max-w-lg bg-white shadow-lg rounded-lg p-8 space-y-6">
-        <h1 className="text-3xl font-bold text-center text-gray-800 mb-4">
+    <div className="flex items-center justify-center bg-gradient-to-r from-gray-100 to-gray-300 min-h-screen p-6">
+      <Card className="w-full max-w-lg">
+        <Title level={2} className="text-center mb-4">
           Reset Your Password
-        </h1>
-        <p className="text-sm text-center text-gray-500 mb-6">
+        </Title>
+        <Paragraph className="text-center text-gray-500 mb-6">
           Enter your new password below to reset your account password.
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            inputStyle={inputStyle}
-            type="password"
-            label="New Password"
-            placeholder="Enter new password"
-            htmlFor="password"
+        </Paragraph>
+        <Form form={form} onFinish={handleSubmit} layout="vertical">
+          <Form.Item
             name="password"
-            value={inputValue.password}
-            onChange={handleChange}
-          />
+            label="New Password"
+            rules={[
+              { required: true, message: "Please input your new password!" },
+              { validator: validatePassword },
+            ]}>
+            <Input.Password
+              placeholder="Enter new password"
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+              }
+            />
+          </Form.Item>
 
-          {/* Password strength checker */}
-          <PasswordCheckCard password={inputValue.password} />
-
-          <Input
-            inputStyle={inputStyle}
-            type="password"
-            label="Confirm New Password"
-            placeholder="Confirm your new password"
-            htmlFor="passwordConfirm"
+          <Form.Item
             name="passwordConfirm"
-            value={inputValue.passwordConfirm}
-            onChange={handleChange}
-          />
+            label="Confirm New Password"
+            dependencies={["password"]}
+            rules={[
+              { required: true, message: "Please confirm your new password!" },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue("password") === value) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error("The two passwords do not match!")
+                  );
+                },
+              }),
+            ]}>
+            <Input.Password
+              placeholder="Confirm your new password"
+              iconRender={(visible) =>
+                visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+              }
+            />
+          </Form.Item>
 
-          <Button
-            type="submit"
-            buttonStyle="bg-blue-500 hover:bg-blue-600 transition duration-200 text-white font-semibold py-2 rounded w-full text-center flex items-center justify-center">
-            {isLoading ? "Submitting..." : "Submit"}
-          </Button>
-        </form>
-      </div>
-    </section>
+          <Form.Item>
+            <Button type="primary" htmlType="submit" loading={isLoading} block>
+              {isLoading ? "Submitting..." : "Submit"}
+            </Button>
+          </Form.Item>
+        </Form>
+      </Card>
+    </div>
   );
 };
 
