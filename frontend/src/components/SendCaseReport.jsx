@@ -17,7 +17,8 @@ const SendCaseReport = ({ report }) => {
     const emailData = {
       subject: "Case Report - A.T. Lukman & Co.",
       send_to: report.clientEmail,
-      send_from: user?.data?.email,
+      // send_from: user?.data?.email,
+      send_from: "eemandigitalconcept@gmail.com",
       reply_to: "noreply@gmail.com",
       template: "caseReport",
       url: `dashboard/case-reports/${report._id}`,
