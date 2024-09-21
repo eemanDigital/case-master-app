@@ -29,17 +29,17 @@ const CreateCaseReportForm = () => {
   const navigate = useNavigate();
 
   // prepare email data
-  const emailData = useMemo(
-    () => ({
-      subject: "Case Report - A.T. Lukman & Co.",
-      send_to: formData.clientEmail,
-      send_from: user?.data?.email,
-      reply_to: "noreply@gmail.com",
-      template: "caseReport",
-      url: "dashboard/case-reports",
-    }),
-    [formData.clientEmail, user?.data?.email]
-  );
+  // const emailData = useMemo(
+  //   () => ({
+  //     subject: "Case Report - A.T. Lukman & Co.",
+  //     send_to: formData.clientEmail,
+  //     send_from: user?.data?.email,
+  //     reply_to: "noreply@gmail.com",
+  //     template: "caseReport",
+  //     url: "dashboard/case-reports",
+  //   }),
+  //   [formData.clientEmail, user?.data?.email]
+  // );
 
   // for data submission
   const {
@@ -47,7 +47,7 @@ const CreateCaseReportForm = () => {
     form,
     data: hookData,
     loading: hookLoading,
-  } = useHandleSubmit("reports", "POST", "reports", "report", emailData);
+  } = useHandleSubmit("reports", "POST", "reports", "report", undefined);
 
   // navigate after success
   useEffect(() => {

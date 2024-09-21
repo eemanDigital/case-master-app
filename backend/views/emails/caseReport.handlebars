@@ -1,5 +1,7 @@
-<html>
+<html lang="en">
   <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Case Report Notification</title>
     <style>
       body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin:
@@ -17,6 +19,16 @@
       <p>Dear {{name}},</p>
       <p>We are pleased to inform you that a report on your case has been
         provided.</p>
+      <p>Case Details:</p>
+      <ul>
+        <li><strong>Case Name:</strong> {{caseName}}</li>
+        <li><strong>Suit No:</strong> {{suitNo}}</li>
+        <li><strong>Case Reported:</strong> {{caseReported}}</li>
+        <li><strong>Update:</strong> {{update}}</li>
+        <li><strong>Adjourned For:</strong> {{adjournedFor}}</li>
+        <li><strong>Adjourned Date:</strong> {{adjournedDate}}</li>
+        <li><strong>Reported By:</strong> {{reportedBy}}</li>
+      </ul>
       <p>You can check the report on your dashboard by clicking the link below:</p>
       <p><a href="{{link}}">View Report</a></p>
       <p>Thank you for your attention.</p>

@@ -26,6 +26,7 @@ import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import { toast } from "react-toastify";
 import AddEventToCalender from "./AddEventToCalender";
 import { useDownloadPdfHandler } from "../hooks/useDownloadPdfHandler";
+import SendCaseReport from "./SendCaseReport";
 
 const { Title, Text } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
@@ -37,7 +38,6 @@ const CaseReportList = ({
   hideButtons,
   titleStyle,
   nameStyle,
-  shortenForClient,
 }) => {
   const { isStaff } = useAdminHook();
   const { fetchData } = useDataGetterHook();
@@ -250,14 +250,18 @@ const CaseReportList = ({
                   )}
                 </div>
               )}
-              {!hideButtons && (
-                <AddEventToCalender
-                  title={createEventTitle(report)}
-                  description={createEventDescription(report)}
-                  startDate={report.date}
-                  endDate={report.adjournedDate}
-                />
-              )}
+              <div className="flex gap-4 sm:flex-row flex-col justify-between sm:items-center items-start mt-2">
+                {!hideButtons && (
+                  <AddEventToCalender
+                    title={createEventTitle(report)}
+                    description={createEventDescription(report)}
+                    startDate={report.date}
+                    endDate={report.adjournedDate}
+                  />
+                )}
+
+                <SendCaseReport report={report} />
+              </div>
             </Card>
           )
         )}
