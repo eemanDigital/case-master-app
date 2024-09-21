@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { FaFile, FaTrash, FaCheck, FaTimes } from "react-icons/fa";
 import { Button, Card, Popconfirm, Tooltip } from "antd";
-import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
+import { handleTaskResponseDownload } from "../utils/generalFileDownloadHandler";
 import { formatDate } from "../utils/formatDate";
 import { useDispatch, useSelector } from "react-redux";
 import { deleteData } from "../redux/features/delete/deleteSlice";
@@ -71,9 +71,10 @@ const TaskResponse = ({
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
               <div
                 onClick={(event) =>
-                  handleGeneralDownload(
+                  handleTaskResponseDownload(
                     event,
-                    `${baseURL}/tasks/${task._id}/response/${res._id}/download`,
+                    res?.doc ||
+                      `${baseURL}/tasks/${task._id}/response/${res._id}/download`,
                     "response"
                   )
                 }
@@ -85,6 +86,7 @@ const TaskResponse = ({
                   <span className="text-gray-500">None Attached</span>
                 )}
               </div>
+
               {(isAssignedToCurrentUser || isAssignedToCurrentClientUser) && (
                 <Popconfirm
                   title="Are you sure you want to delete this response?"

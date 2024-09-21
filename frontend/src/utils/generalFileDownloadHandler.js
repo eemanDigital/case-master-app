@@ -36,3 +36,22 @@ export async function handleGeneralDownload(event, URL, fileName) {
     console.error("Error fetching file:", error);
   }
 }
+
+// task response download handler
+export const handleTaskResponseDownload = (
+  event,
+  fileUrl,
+  fileName = "download"
+) => {
+  event.preventDefault();
+  try {
+    const link = document.createElement("a");
+    link.href = fileUrl;
+    link.setAttribute("download", fileName); // Set the download attribute
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link); // Clean up after download
+  } catch (error) {
+    console.error("Error downloading file:", error);
+  }
+};

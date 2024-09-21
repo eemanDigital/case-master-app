@@ -14,9 +14,9 @@ const TaskAttachmentsCard = ({
     <div className="rounded-lg mb-8 mt-3">
       <h2 className="text-xl font-semibold mb-4">Task Attachments</h2>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {documents.map((document) => (
+        {documents?.map((document) => (
           <div
-            key={document._id}
+            key={document?._id}
             className="relative shadow-md bg-gray-200 p-2 rounded-md flex flex-col items-center">
             <button
               className="absolute top-1 right-1 text-red-700 hover:text-red-500"
@@ -26,8 +26,8 @@ const TaskAttachmentsCard = ({
                   onOk: () =>
                     handleDeleteDocument(
                       event,
-                      `tasks/${task._id}/documents/${document._id}`,
-                      document._id
+                      `tasks/${task?._id}/documents/${document?._id}`,
+                      document?._id
                     ),
                 })
               }>

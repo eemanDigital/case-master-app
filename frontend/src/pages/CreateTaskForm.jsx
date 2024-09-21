@@ -158,7 +158,7 @@ const CreateTaskForm = () => {
           layout="vertical"
           form={form}
           name="create_task_form"
-          className="flex flex-col gap-6 ">
+          className="flex flex-col gap-3 ">
           <Form.Item
             label="Task Title"
             name="title"

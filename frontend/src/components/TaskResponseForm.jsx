@@ -14,42 +14,30 @@ const TaskResponseForm = ({ taskId }) => {
   const [form] = Form.useForm();
   const { user } = useSelector((state) => state.auth);
   const { sendingEmail, emailSent, msg } = useSelector((state) => state.email);
-  const [formData, setFormData] = useState({
-    comment: "",
-    doc: null,
-    completed: false,
-  });
+  const [fileList, setFileList] = useState([]);
 
-  const { open, showModal, handleCancel } = useModal(); //custom hook
+  const { open, showModal, handleCancel } = useModal(); // Custom hook for modal state
 
-  const { dataFetcher, error: dataError } = useDataFetch();
+  const { dataFetcher, error: dataError } = useDataFetch(); // Custom hook for data fetching
 
-  function handleChange(e) {
-    const { name, value, files, checked } = e.target;
-    setFormData((prevData) => ({
-      ...prevData,
-      [name]:
-        name === "doc"
-          ? files.length > 0
-            ? files[0]
-            : null
-          : name === "completed"
-          ? checked
-          : value,
-    }));
-  }
+  // Handle file upload changes
+  const handleFileChange = ({ fileList }) => {
+    setFileList(fileList);
+  };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
+  // Handle form submission
+  const handleSubmit = async (values) => {
     const payload = new FormData();
-    payload.append("comment", formData.comment);
-    if (formData.doc) {
-      payload.append("doc", formData.doc);
+    payload.append("comment", values.comment);
+    if (fileList.length > 0) {
+      payload.append("doc", fileList[0].originFileObj);
     }
-    payload.append("completed", formData.completed);
+    payload.append("completed", values.completed);
+
+    console.log(payload);
 
     try {
+      // Send task response to the backend
       const response = await dataFetcher(
         `tasks/${taskId}/response`,
         "post",
@@ -59,6 +47,7 @@ const TaskResponseForm = ({ taskId }) => {
         toast.success("Task response submitted successfully!");
       }
 
+      // Prepare email data
       const emailData = {
         subject: "Task Response Submitted - A.T. Lukman & Co.",
         send_to: response?.data?.assignedBy?.email,
@@ -66,15 +55,15 @@ const TaskResponseForm = ({ taskId }) => {
         reply_to: "noreply@atlukman.com",
         template: "taskResponse",
         url: "dashboard/tasks",
-
         context: {
           recipient: response?.data?.assignedBy?.firstName,
           position: response?.data?.assignedBy?.position,
-          comment: formData?.comment,
-          completed: formData?.completed ? <FaCheck /> : <FaTimes />,
+          comment: values.comment,
+          completed: values.completed ? <FaCheck /> : <FaTimes />,
         },
       };
 
+      // Send email notification
       try {
         if (response?.message === "success") {
           await dispatch(sendAutomatedCustomEmail(emailData));
@@ -95,12 +84,14 @@ const TaskResponseForm = ({ taskId }) => {
     }
   };
 
+  // Show success message when email is sent
   useEffect(() => {
     if (emailSent) {
       toast.success(msg);
     }
   }, [emailSent, msg]);
 
+  // Show error message if data fetching fails
   if (dataError) {
     toast.error(dataError);
     return null;
@@ -158,7 +149,7 @@ const TaskResponseForm = ({ taskId }) => {
               name="doc"
               accept=".pdf,.docx,.jpg,.jpeg,.png"
               beforeUpload={() => false}
-              onChange={handleChange}>
+              onChange={handleFileChange}>
               <Button
                 icon={<UploadOutlined />}
                 className="text-sm sm:text-base">
@@ -170,10 +161,8 @@ const TaskResponseForm = ({ taskId }) => {
           <Form.Item
             name="completed"
             valuePropName="checked"
-            initialValue={formData.completed}>
-            <Checkbox onChange={handleChange} className="text-sm sm:text-base">
-              Task Completed
-            </Checkbox>
+            initialValue={false}>
+            <Checkbox className="text-sm sm:text-base">Task Completed</Checkbox>
           </Form.Item>
 
           <Form.Item
@@ -185,8 +174,6 @@ const TaskResponseForm = ({ taskId }) => {
             <Input.TextArea
               rows={4}
               placeholder="Your comment here..."
-              value={formData.comment}
-              onChange={handleChange}
               className="text-sm sm:text-base"
             />
           </Form.Item>
@@ -200,4 +187,5 @@ const TaskResponseForm = ({ taskId }) => {
 TaskResponseForm.propTypes = {
   taskId: PropTypes.string.isRequired,
 };
+
 export default TaskResponseForm;
