@@ -189,8 +189,8 @@ const CreateTaskForm = () => {
               className="w-full"
             />
           </Form.Item>
-          <div className="flex w-full justify-center items-center space-x-4">
-            <div className="flex-1">
+          <div className="flex sm:flex-row flex-col w-full justify-center items-center space-x-4">
+            <div className="sm:flex-1 w-full">
               <Form.Item
                 name="assignedTo"
                 label="Staff"
@@ -219,7 +219,7 @@ const CreateTaskForm = () => {
               </Form.Item>
             </div>
 
-            <div className="flex-1">
+            <div className="sm:flex-1 w-full">
               <Form.Item
                 name="assignedToClient"
                 label="Client"

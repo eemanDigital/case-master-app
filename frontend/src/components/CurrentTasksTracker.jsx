@@ -62,7 +62,7 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
   );
 
   return (
-    <div className="bg-white p-3 rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow h-[180px]  flex flex-col justify-center items-center">
+    <div className="bg-white rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow h-[180px] py-4  flex flex-col   items-center">
       <h3 className="text-[14px] font-medium text-gray-700">
         Current Official Tasks
       </h3>
@@ -71,9 +71,10 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
         renderItem={(task) => (
           <List.Item
             key={task._id}
-            className="flex items-center justify-between px-4 text-[12px] ">
+            className="flex gap-10  items-center justify-between m-0 text-[12px] ">
             <div className="flex items-center space-x-1">
               <ClockCircleOutlined className="text-blue-500" />
+
               <span className="font-medium text-gray-700 truncate max-w-[130px]">
                 <Link to={`tasks/${task?._id}/details`}>{task?.title}</Link>
               </span>
