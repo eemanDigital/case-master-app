@@ -20,7 +20,7 @@ const LoadingSpinner = ({
   );
 
   return (
-    <div className="flex flex-col justify-center items-center min-h-screen bg-gray-200 p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12">
+    <div className="flex flex-col justify-center items-center min-h-screen bg-white p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12">
       <Spin size={size} indicator={customIndicator} />
       <p className="mt-4 text-lg font-semibold">{tip}</p>
       <p className="mt-2 text-sm text-gray-500">

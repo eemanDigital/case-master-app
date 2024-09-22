@@ -114,7 +114,7 @@ const SideBar = ({ isMobile, closeDrawer }) => {
   const filteredNavItems = navItems.filter((item) => {
     if (
       isClient &&
-      (item.key === "staff" ||
+      (item.key === "staff-management" ||
         item.key === "cause-list" ||
         item.key === "billings" ||
         item.key === "documents")

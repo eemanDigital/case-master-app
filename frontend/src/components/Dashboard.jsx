@@ -153,16 +153,15 @@ const Dashboard = () => {
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
       {!isVerified && <VerifyAccountNotice />}
       <ShowOnlyVerifiedUser>
+        <div className="flex items-center space-x-4 mb-2">
+          <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
+            {user?.data?.firstName}'s Dashboard
+          </h1>
+        </div>
         <ShowStaff>
           <ScrollingEvents />
 
-          <div className="flex flex-wrap items-center justify-between px-3 rounded-lg md:flex-nowrap md:justify-start md:space-x-4">
-            <div className="flex items-center space-x-4">
-              <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
-                Dashboard
-              </h1>
-            </div>
-
+          <div className="flex flex-wrap items-center justify-between  rounded-lg md:flex-nowrap md:justify-start md:space-x-4">
             {isAdminOrHr && <LeaveNotification />}
 
             <div className="w-full md:w-auto my-3">

@@ -10,17 +10,23 @@
       0, 0.1); max-width: 600px; } h1 { color: #333333; } p { color: #555555;
       line-height: 1.6; } a { display: inline-block; margin-top: 20px; padding:
       10px 20px; color: #ffffff; background-color: #007bff; text-decoration:
-      none; border-radius: 5px; } a:hover { background-color: #0056b3; }
+      none; border-radius: 5px; } a:hover { background-color: #0056b3; } .note {
+      margin-top: 20px; font-size: 0.9em; color: #777777; }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>Hello, {{name}}!</h1>
-      <p>We are excited to have you on board. Please click the link below to
-        verify your email address:</p>
+      <p>The law firm of
+        {{companyName}}
+        is excited to have you on board. Please click the link below to verify
+        your email address:</p>
       <a href="{{link}}">Verify Email</a>
-      <p>If you did not sign up for this account, please ignore this email.</p>
-      <p>Link is valid for only 1 hour</p>
+      <p>Also, your temporary password upon successful verification is
+        <strong>{{password}}</strong></p>
+      <p class="note">Please change the password after logging into your
+        account.</p>
+      <p class="note">The link is valid for only 1 hour.</p>
       <p>Best regards,</p>
       <p>CaseMaster Team</p>
     </div>

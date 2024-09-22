@@ -184,10 +184,9 @@ exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
 // send automated custom/dynamic email handler
 exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
   // console.log(req.body);
-  const { send_from, send_to, reply_to, template, subject, url, context } =
-    req.body;
+  const { send_to, reply_to, template, subject, url, context } = req.body;
 
-  if (!send_from || !send_to || !reply_to || !template || !subject) {
+  if (!send_to || !reply_to || !template || !subject) {
     return next(new AppError("Missing email fields", 400));
   }
 
@@ -218,6 +217,8 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
       }
       fullContext.name = user.firstName;
     }
+
+    const send_from = process.env.SENDINBLUE_EMAIL; // Send from the company email
 
     await sendMail(
       subject,

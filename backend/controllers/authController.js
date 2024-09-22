@@ -519,7 +519,12 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
   const send_from = process.env.SENDINBLUE_EMAIL;
   const reply_to = "noreply@gmail.com";
   const template = "verifyEmail";
-  const context = { name: user.firstName, link: verificationURL };
+  const context = {
+    name: user.firstName,
+    link: verificationURL,
+    companyName: process.env.COMPANY_NAME || "A.T Lukman & Co",
+    password: process.env.TEMP_PASSWORD,
+  };
 
   try {
     await sendMail(subject, send_to, send_from, reply_to, template, context);

@@ -51,7 +51,7 @@ const TaskResponseForm = ({ taskId }) => {
       const emailData = {
         subject: "Task Response Submitted - A.T. Lukman & Co.",
         send_to: response?.data?.assignedBy?.email,
-        send_from: user?.data?.email,
+        // send_from: user?.data?.email,
         reply_to: "noreply@atlukman.com",
         template: "taskResponse",
         url: "dashboard/tasks",

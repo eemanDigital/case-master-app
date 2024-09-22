@@ -37,7 +37,7 @@ const LeaveAppForm = () => {
       const emailData = {
         subject: "Employee's Leave Application- A.T. Lukman & Co.",
         send_to: values.applyTo,
-        send_from: user?.data?.email,
+        // send_from: user?.data?.email,
         reply_to: "noreply@gmail.com",
         template: "leaveApplication",
         url: "dashboard/staff",

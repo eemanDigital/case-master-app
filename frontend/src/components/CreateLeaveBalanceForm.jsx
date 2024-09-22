@@ -36,7 +36,7 @@ const CreateLeaveBalanceForm = () => {
       const emailData = {
         subject: "Leave Balance Award- A.T. Lukman & Co.",
         send_to: selectedUser.email,
-        send_from: user?.data?.email,
+        // send_from: user?.data?.email,
         reply_to: "noreply@gmail.com",
         template: "leaveBalance",
         url: "dashboard/staff",

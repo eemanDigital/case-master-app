@@ -35,6 +35,8 @@ const ClientDetails = () => {
 
   return (
     <Card className="shadow-lg">
+      <GoBackButton />
+
       <Space direction="vertical" size="large" style={{ width: "100%" }}>
         <div className="flex flex-col sm:flex-row justify-between items-center">
           <Title level={2}>
@@ -42,7 +44,6 @@ const ClientDetails = () => {
             Client Details
           </Title>
           <Space wrap>
-            <GoBackButton />
             {isClient && <UpdateClientInfo />}
             {isSuperOrAdmin && <UpdateClientStatus clientId={id} />}
           </Space>
@@ -90,7 +91,7 @@ const ClientDetails = () => {
           </Descriptions.Item>
         </Descriptions>
 
-        <Card
+        {/* <Card
           title={
             <>
               <FileOutlined /> Cases
@@ -107,7 +108,7 @@ const ClientDetails = () => {
           ) : (
             <Text type="secondary">No cases associated with this client.</Text>
           )}
-        </Card>
+        </Card> */}
       </Space>
     </Card>
   );

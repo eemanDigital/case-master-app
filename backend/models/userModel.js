@@ -28,8 +28,6 @@ const userSchema = new mongoose.Schema(
 
     middleName: String,
 
-    // virtuals to get user's full name
-
     email: {
       type: String,
       trim: true,
@@ -44,20 +42,26 @@ const userSchema = new mongoose.Schema(
       trim: true,
       select: false,
       required: [true, "You must provide a password"],
-      minLength: [6, "Password must have at least 6 character"],
-      maxLength: [15, "Password must not be more than 15 character"],
+      minLength: [8, "Password must have at least 8 characters"],
+      validate: {
+        validator: function (value) {
+          return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
+            value
+          );
+        },
+        message:
+          "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
+      },
     },
-
     passwordConfirm: {
       type: String,
       trim: true,
       required: [true, "Please confirm your password"],
       validate: {
-        //only work on CREATE and SAVE
         validator: function (el) {
-          return el === this.password; //returns a boolean
+          return el === this.password;
         },
-        message: `Passwords are not the same`,
+        message: "Passwords are not the same",
       },
     },
 

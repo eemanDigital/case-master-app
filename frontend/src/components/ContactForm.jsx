@@ -53,7 +53,7 @@ const ContactForm = () => {
       const emailData = {
         subject: "Contact Request - A.T. Lukman & Co.",
         send_to: devEmail,
-        send_from: user?.data?.email,
+        // send_from: user?.data?.email,
         reply_to: user?.data?.email,
         template: "contactRequest",
         context: {

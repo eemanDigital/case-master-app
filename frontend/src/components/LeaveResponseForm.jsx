@@ -36,7 +36,7 @@ const LeaveResponseForm = ({ appId }) => {
       const emailData = {
         subject: "Leave Application Response- A.T. Lukman & Co.",
         send_to: data?.data?.employee?.email,
-        send_from: user?.data?.email,
+        // send_from: user?.data?.email,
         reply_to: "noreply@gmail.com",
         template: "leaveResponse",
         url: "dashboard/staff",

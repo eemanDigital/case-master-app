@@ -1,77 +1,79 @@
 import PropTypes from "prop-types";
-import { Button, Popover } from "antd";
-import avatar from "../assets/avatar.png";
-import { CheckCircleOutlined } from "@ant-design/icons";
-import { MdPendingActions } from "react-icons/md";
+import { Card, Avatar, Tooltip, Typography, Tag, Divider } from "antd";
+import {
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  UserOutlined,
+} from "@ant-design/icons";
+
+const { Title, Text } = Typography;
 
 function ClientCaseInfo({ cases }) {
   return (
-    <div className="flex flex-col justify-center items-start flex-wrap">
-      <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-4">
-        {cases?.map((singleCase, index) => (
-          <div
-            key={index}
-            className="bg-gradient-to-r from-rose-400 to-rose-600 rounded-lg shadow-sm p-4 md:w-[80%] w-full h-[200px]">
-            <h4 className="text-lg font-medium mb-1 text-white text-justify">
-              Case {index + 1}: {singleCase?.firstParty?.name[0]?.name} vs{" "}
-              {singleCase?.secondParty?.name[0]?.name}
-            </h4>
-            <p className="capitalize">
-              <div className="flex items-center justify-between">
-                <p className="font-medium">Status: </p>
-                {singleCase.caseStatus === "decided" ? (
-                  <p>
-                    <CheckCircleOutlined className="text-green-600 text-[40px]" />
-                  </p>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {cases?.map((singleCase, index) => (
+        <Card
+          key={index}
+          className="w-full shadow-md hover:shadow-lg transition-shadow duration-300"
+          hoverable>
+          <Title level={4} className="mb-2">
+            Case {index + 1}: {singleCase?.firstParty?.name[0]?.name} vs{" "}
+            {singleCase?.secondParty?.name[0]?.name}
+          </Title>
+          <Divider className="my-3" />
+          <div className="flex justify-between items-center mb-4">
+            <Text strong>Status:</Text>
+            <Tag
+              color={
+                singleCase.caseStatus === "decided" ? "success" : "warning"
+              }
+              icon={
+                singleCase.caseStatus === "decided" ? (
+                  <CheckCircleOutlined />
                 ) : (
-                  <p>
-                    <MdPendingActions className="text-orange-500 text-[40px]" />
-                  </p>
-                )}
-              </div>
-              {singleCase.caseStatus}
-            </p>
+                  <ClockCircleOutlined />
+                )
+              }>
+              {singleCase.caseStatus.toUpperCase()}
+            </Tag>
+          </div>
+          <Divider className="my-3" />
+          <Title level={5} className="mb-2">
+            Account Officers:
+          </Title>
+          <div className="flex flex-wrap gap-2">
             {singleCase?.accountOfficer?.map((officer, officerIndex) => (
-              <Popover
+              <Tooltip
                 key={officerIndex}
-                content={
-                  <div className="space-y-2">
-                    <img
-                      className="w-16 h-16 rounded-full"
-                      src={officer?.photo || avatar}
-                      alt="Avatar"
-                    />
+                title={
+                  <div>
                     <p>
-                      <span className="font-medium">Full Name: </span>
-                      {officer.firstName} {officer.lastName}
+                      <strong>Name:</strong> {officer.firstName}{" "}
+                      {officer.lastName}
                     </p>
                     <p>
-                      <span className="font-medium">Email: </span>
-                      {officer?.email}
+                      <strong>Email:</strong> {officer?.email}
                     </p>
                     <p>
-                      <span className="font-medium">Phone: </span>
-                      {officer?.phone}
+                      <strong>Phone:</strong> {officer?.phone}
                     </p>
                   </div>
-                }
-                title="Account Officer Details"
-                trigger="hover">
-                <Button
-                  type="link"
-                  className="flex bg-blue-500 text-white justify-center my-2">
-                  See Case Account Officer
-                </Button>
-              </Popover>
+                }>
+                <Avatar
+                  src={officer?.photo}
+                  icon={!officer?.photo && <UserOutlined />}
+                  size="large"
+                  className="cursor-pointer"
+                />
+              </Tooltip>
             ))}
           </div>
-        ))}
-      </div>
+        </Card>
+      ))}
     </div>
   );
 }
 
-// Define PropTypes
 ClientCaseInfo.propTypes = {
   cases: PropTypes.arrayOf(
     PropTypes.shape({
@@ -93,7 +95,8 @@ ClientCaseInfo.propTypes = {
       accountOfficer: PropTypes.arrayOf(
         PropTypes.shape({
           photo: PropTypes.string,
-          fullName: PropTypes.string.isRequired,
+          firstName: PropTypes.string.isRequired,
+          lastName: PropTypes.string.isRequired,
           email: PropTypes.string.isRequired,
           phone: PropTypes.string.isRequired,
         })

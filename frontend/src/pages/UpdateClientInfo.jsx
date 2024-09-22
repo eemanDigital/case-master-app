@@ -34,13 +34,13 @@ const UpdateClientInfo = () => {
 
   // loading state handler
   if (loading) {
-    return <LoadingSpinner />;
+    return <>Loading...</>;
   }
 
   return (
     <section className="bg-gray-200">
       <Button onClick={showModal} className="m-2 blue-btn">
-        Update Client Information
+        Update Your Information
       </Button>
       <Modal
         width={580}

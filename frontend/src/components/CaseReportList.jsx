@@ -27,6 +27,7 @@ import { toast } from "react-toastify";
 import AddEventToCalender from "./AddEventToCalender";
 import { useDownloadPdfHandler } from "../hooks/useDownloadPdfHandler";
 import SendCaseReport from "./SendCaseReport";
+import { ShowStaff } from "./protect/Protect";
 
 const { Title, Text } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
@@ -259,8 +260,9 @@ const CaseReportList = ({
                     endDate={report.adjournedDate}
                   />
                 )}
-
-                <SendCaseReport report={report} />
+                <ShowStaff>
+                  <SendCaseReport report={report} />
+                </ShowStaff>
               </div>
             </Card>
           )
