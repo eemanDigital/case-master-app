@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
-import { Table, Card, Button, Typography, Space, Alert } from "antd";
+import { Table, Card, Button, Typography, Space, Alert, Tooltip } from "antd";
 import { DownloadOutlined, UserAddOutlined } from "@ant-design/icons";
 import { formatDate } from "../utils/formatDate";
 import LawyersInCourtForm from "../pages/LawyersInCourtForm";
@@ -106,12 +106,12 @@ const SingleCauseList = ({
         isSuperOrAdmin && selectedReportId === record.key ? (
           <LawyersInCourtForm reportId={record.key} />
         ) : (
-          <Button
-            className="blue-btn"
-            icon={<UserAddOutlined />}
-            onClick={() => setSelectedReportId(record.key)}>
-            Assign Lawyer
-          </Button>
+          <Tooltip title="Assign Lawyer To Court">
+            <Button
+              className="blue-btn"
+              icon={<UserAddOutlined />}
+              onClick={() => setSelectedReportId(record.key)}></Button>
+          </Tooltip>
         ),
     },
   ].filter(Boolean);
