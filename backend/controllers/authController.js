@@ -83,62 +83,7 @@ exports.register = catchAsync(async (req, res, next) => {
   res.status(201).json({ message: "User Registered Successfully" });
 });
 
-///// function to handle login
-// exports.login = catchAsync(async (req, res, next) => {
-//   const { email, password } = req.body;
-
-//   // 1) Check if email and password exist
-//   if (!email || !password) {
-//     return next(new AppError("Please provide email and password!", 400));
-//   }
-
-//   // 2) Check if user exists
-//   const user = await User.findOne({ email }).select("+password");
-//   if (!user) {
-//     return next(new AppError("User does not exist", 404));
-//   }
-
-//   // 3) Check if password is correct
-//   if (!(await user.correctPassword(password, user.password))) {
-//     return next(new AppError("Incorrect email or password", 401));
-//   }
-
-//   // Trigger user 2FA auth for unknown user agent
-//   const ua = parser(req.headers["user-agent"]); // Get user-agent header
-//   const currentUserAgent = ua.ua;
-
-//   const allowedAgent = user.userAgent.includes(currentUserAgent);
-
-//   if (!allowedAgent) {
-//     // Generate 6 digit code
-//     const loginCode = Math.floor(100000 + Math.random() * 900000);
-
-//     console.log(loginCode);
-
-//     // Encrypt loginCode
-//     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
-
-//     // Check for existing token and delete if found
-//     const userToken = await Token.findOne({ userId: user._id });
-//     if (userToken) {
-//       await userToken.deleteOne();
-//     }
-
-//     // Save the new token to the database
-//     await new Token({
-//       userId: user._id,
-//       loginToken: encryptedLoginCode,
-//       createAt: Date.now(),
-//       expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour
-//     }).save();
-
-//     return next(new AppError("New Browser or device detected", 400));
-//   }
-
-//   // 4) If everything is ok, send token to client
-//   createSendToken(user, 200, res);
-// });
-
+// login user handler
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -151,6 +96,13 @@ exports.login = catchAsync(async (req, res, next) => {
   const user = await User.findOne({ email }).select("+password");
   if (!user) {
     return next(new AppError("Incorrect email or password", 401));
+  }
+
+  // deny access to inactive user/staff- an inactive client can gain access
+  if (user.isActive === false && user.role !== "client") {
+    return next(
+      new AppError("You are no longer eligible to login to this account")
+    );
   }
 
   // 3) Check if password is correct
