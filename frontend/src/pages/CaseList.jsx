@@ -122,7 +122,7 @@ const CaseList = () => {
       render: (_, record) => (
         <Tooltip title="Click for Details">
           <Link to={`${record._id}/casedetails`}>
-            <h1 className="font-bold text-gray-700 hover:text-gray-400">{`${
+            <h1 className="font-bold text-blue-600 hover:text-blue-800">{`${
               record.firstParty?.name[0]?.name || ""
             } vs ${record.secondParty?.name[0]?.name || ""}`}</h1>
           </Link>

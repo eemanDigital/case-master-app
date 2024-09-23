@@ -30,10 +30,7 @@ import { Alert, Button } from "antd";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import CurrentDayCauseList from "./CurrentDayCauseList";
 import VerifyAccountNotice from "./VerifyAccountNotice";
-import ButtonWithIcon from "./ButtonWithIcon";
 import { Link } from "react-router-dom";
-import NoteList from "../pages/NoteList";
-import { PlusOutlined } from "@ant-design/icons";
 
 // context for year for search filter
 export const PaymentFiltersContext = createContext();
@@ -89,7 +86,6 @@ const Dashboard = () => {
     error: dataError,
     loading: dataLoading,
   } = useDataGetterHook();
-
   // end
   const { isAdminOrHr, isStaff, isClient, isVerified } = useAdminHook();
   // user count

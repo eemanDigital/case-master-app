@@ -9,20 +9,26 @@ const useUsersCount = (users) => {
   // Memoize the count of lawyers to avoid unnecessary recalculations
   const lawyerCount = useMemo(() => {
     return Array.isArray(users?.data)
-      ? users.data.filter((user) => user.isLawyer === true).length
+      ? users.data.filter(
+          (user) => user.isLawyer === true && user.isActive === true
+        ).length
       : 0;
   }, [users]);
 
   // Memoize the count of clients to avoid unnecessary recalculations
   const clientCount = useMemo(() => {
     return Array.isArray(users?.data)
-      ? users.data.filter((user) => user.role === "client").length
+      ? users.data.filter(
+          (user) => user.role === "client" && user.isActive === true
+        ).length
       : 0;
   }, [users]);
 
   const staff = useMemo(() => {
     return Array.isArray(users?.data)
-      ? users.data.filter((user) => user.role !== "client").length
+      ? users.data.filter(
+          (user) => user.role !== "client" && user.isActive === true
+        ).length
       : 0;
   }, [users]);
   // Return the counts of lawyers and clients

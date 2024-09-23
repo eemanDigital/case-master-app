@@ -70,7 +70,7 @@ const EventForm = () => {
         const emailData = {
           subject: "New Task Assigned - A.T. Lukman & Co.",
           send_to: sendToEmails,
-          send_from: user?.data?.email,
+          // send_from: user?.data?.email,
           reply_to: "noreply@gmail.com",
           template: "events",
           url: "dashboard/events",

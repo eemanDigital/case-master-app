@@ -117,7 +117,7 @@ const StaffList = () => {
                   render={(text, record) => (
                     <Tooltip title="Click for details">
                       <Link
-                        className="text-md font-bold capitalize text-gray-700 hover:text-gray-400 cursor-pointer  flex items-center"
+                        className="text-md font-bold capitalize text-blue-600 hover:text-blue-800 cursor-pointer  flex items-center"
                         to={`/dashboard/staff/${record?._id}/details`}>
                         {`${record.firstName} ${record.lastName}`}
                       </Link>
@@ -130,17 +130,19 @@ const StaffList = () => {
               <Column title="Role" dataIndex="role" key="role" />
               <Column title="Position" dataIndex="position" key="position" />
               <Column
-                title="Is Active"
+                title="Status"
                 dataIndex="isActive"
                 key="isActive"
-                render={(isActive) => {
-                  console.log("isActive:", isActive);
-                  return (
-                    <span style={{ color: isActive ? "green" : "red" }}>
-                      {isActive ? "Active" : "Inactive"}
-                    </span>
-                  );
-                }}
+                render={(isActive) => (
+                  <span
+                    className={`px-3 py-1 rounded-full text-xs ${
+                      isActive
+                        ? "bg-green-100 text-green-800"
+                        : "bg-red-100 text-red-800"
+                    }`}>
+                    {isActive ? "Active" : "Inactive"}
+                  </span>
+                )}
               />
 
               <Column

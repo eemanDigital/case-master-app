@@ -98,7 +98,7 @@ const ClientLists = () => {
               render={(text, record) => (
                 <Tooltip title="View Details">
                   <Link
-                    className="text-blue-600 hover:text-blue-800 font-semibold"
+                    className="text-blue-600 hover:text-blue-800 font-bold"
                     to={`${record?._id}/details`}>
                     {`${record.firstName} ${record.secondName || ""}`}
                   </Link>

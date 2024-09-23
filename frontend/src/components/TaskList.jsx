@@ -76,7 +76,9 @@ const TaskList = () => {
       dataIndex: "title",
       key: "title",
       render: (text, record) => (
-        <Link className="pl-5" to={`${record?.id}/details`}>
+        <Link
+          className="pl-5 text-blue-600 hover:text-blue-800 font-bold"
+          to={`${record?.id}/details`}>
           {text}
         </Link>
       ),
