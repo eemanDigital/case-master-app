@@ -85,8 +85,8 @@ const CaseCountsByPeriodChart = ({ data }) => {
         footer={null}
         width="80%"
         style={{ body: { overflow: "hidden" } }}>
-        <div className="p-5 w-full overflow-hidden">
-          <ResponsiveContainer width="100%" height={400}>
+        <div className=" w-full overflow-hidden">
+          <ResponsiveContainer width="100%" height={300}>
             <BarChart
               data={transformedData}
               barSize={20}

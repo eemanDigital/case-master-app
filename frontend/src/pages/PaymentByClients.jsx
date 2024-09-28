@@ -65,7 +65,7 @@ const PaymentByClient = () => {
     <>
       {loading.clientPayments && <LoadingSpinner />}
 
-      <div className="flex flex-col md:flex-row justify-between md:items-start items-center gap-3 w-full px-2">
+      <div className="  gap-3 w-full px-2">
         <Card
           title="Total Payment By Each Client"
           className="text-black mt-4 xl:w-[70%] md:w-[100%] "

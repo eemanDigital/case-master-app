@@ -24,11 +24,6 @@ const SendCaseReport = ({ report }) => {
       url: `dashboard/case-reports/${report._id}`,
       context: {
         name: report.caseReported.accountOfficer[0].firstName,
-        caseName: `${report.caseReported.firstParty.name
-          .map((n) => n.name)
-          .join(", ")} vs ${report.caseReported.secondParty.name
-          .map((n) => n.name)
-          .join(", ")}`,
         suitNo: report.caseReported.suitNo,
         caseReported: `${report.caseReported.firstParty.name
           .map((n) => n.name)

@@ -1,0 +1,125 @@
+{
+  "firstParty": {
+    "description": "Description of the first party",
+    "name": [{ "name": "Tayo Ade" }, { "name": "First Party Name 1" }],
+    "processesFiled": [{ "name": "Process 1" }, { "name": "Process 2" }]
+  },
+  "secondParty": {
+    "description": "Description of the second party",
+    "name": [
+      { "name": "Second Party Name 1" },
+      { "name": "Honourable Lukman Jibola" }
+    ],
+    "processesFiled": [{ "name": "Process 3" }, { "name": "Process 4" }]
+  },
+  "otherParty": [
+    {
+      "description": "Description of other party 1",
+      "name": [
+        { "name": "Other Party 1 Name 1" },
+        { "name": "Other Party 1 Name 2" }
+      ],
+      "processesFiled": [{ "name": "Process 5" }, { "name": "Process 6" }]
+    },
+    {
+      "description": "Description of other party 2",
+      "name": [
+        { "name": "Other Party 2 Name 1" },
+        { "name": "Other Party 2 Name 2" }
+      ],
+      "processesFiled": [{ "name": "Process 7" }, { "name": "Process 8" }]
+    }
+  ],
+  "suitNo": "123/2024",
+  "caseOfficeFileNo": "456/2024",
+  "courtName": "Federal High Court",
+  "courtNo": "Court No. 1",
+  "location": "Court Location",
+  "state": "State Name",
+  "otherCourt": "Other Court Details",
+  "judge": [{ "name": "Judge Name 1" }, { "name": "Judge Name 2" }],
+  "caseSummary": "Brief summary of the case",
+  "caseStatus": "pending",
+  "natureOfCase": "contract dispute",
+  "category": "civil",
+  "isFiledByTheOffice": false,
+  "filingDate": "2024-08-23T00:00:00.000Z",
+  "modeOfCommencement": "writ of summons",
+  "caseStrengths": [{ "name": "Strength 1" }, { "name": "Strength 2" }],
+  "caseWeaknesses": [{ "name": "Weakness 1" }, { "name": "Weakness 2" }],
+  "casePriority": "high",
+  "stepToBeTaken": [{ "name": "Step 1" }, { "name": "Step 2" }],
+  "accountOfficer": "account_officer_id_here",
+  "client": "client_id_here",
+  "generalComment": "General comments about the case"
+}
+
+{
+    "firstParty": {
+      "description": "Description of the first party",
+      "name": [{ "name": "Honourable Popoola Oladipupo" }, { "name": "First Party Name 2" }],
+      "processesFiled": [{ "name": "Process 1" }, { "name": "Process 2" }]
+    },
+    "secondParty": {
+      "description": "Description of the second party",
+      "name": [{ "name": "Second Party Name 2" }, { "name": "Tayo Ade" }],
+      "processesFiled": [{ "name": "Process 3" }, { "name": "Process 4" }]
+    },
+    "otherParty": [
+      {
+        "description": "Description of other party 1",
+        "name": [{ "name": "Other Party 1 Name 1" }, { "name": "Honourable Lukman Jibola" }],
+        "processesFiled": [{ "name": "Process 5" }, { "name": "Process 6" }]
+      },
+      {
+        "description": "Description of other party 2",
+        "name": [{ "name": "Other Party 2 Name 1" }, { "name": "Other Party 2 Name 2" }],
+        "processesFiled": [{ "name": "Process 7" }, { "name": "Process 8" }]
+      }
+    ],
+    "suitNo": "124/2024",
+    "caseOfficeFileNo": "457/2024",
+    "courtName": "Federal High Court",
+    "courtNo": "Court No. 2",
+    "location": "Court Location 2",
+    "state": "Another State",
+    "otherCourt": "Other Court Details 2",
+    "judge": [{ "name": "Judge Name 3" }, { "name": "Judge Name 4" }],
+    "caseSummary": "Brief summary of the second case",
+    "caseStatus": "resolved",
+    "natureOfCase": "land dispute",
+    "category": "civil",
+    "isFiledByTheOffice": true,
+    "filingDate": "2024-09-01T00:00:00.000Z",
+    "modeOfCommencement": "originating summons",
+    "caseStrengths": [{ "name": "Strength 3" }, { "name": "Strength 4" }],
+    "caseWeaknesses": [{ "name": "Weakness 3" }, { "name": "Weakness 4" }],
+    "casePriority": "medium",
+    "stepToBeTaken": [{ "name": "Step 3" }, { "name": "Step 4" }],
+    "accountOfficer": "account_officer_id_2",
+    "client": "client_id_2",
+    "generalComment": "Additional comments about the second case",
+   
+  }
+  {
+    "firstParty": {
+      "description": "Description of the first party",
+      "name": [{ "name": "Tayo Ade" }, { "name": "Honourable Lukman Jibola" }],
+      "processesFiled": [{ "name": "Process 1" }, { "name": "Process 2" }]
+    },
+    "secondParty": {
+      "description": "Description of the second party",
+      "name": [{ "name": "Honourable Popoola Oladipupo" }, { "name": "Second Party Name 3" }],
+      "processesFiled": [{ "name": "Process 3" }, { "name": "Process 4" }]
+    },
+    "otherParty": [
+      {
+        "description": "Description of other party 1",
+        "name": [{ "name": "Other Party 1 Name 1" }, { "name": "Other Party 1 Name 2" }],
+        "processesFiled": [{ "name": "Process 5" }, { "name": "Process 6" }]
+      },
+      {
+        "description": "Description of other party 2",
+        "name": [{ "name": "Other Party 2 Name 1" }, { "name": "Other Party 2 Name 2" }],
+        "processesFiled": [{ "name": "Process 7" }, { "name": "Process
+  

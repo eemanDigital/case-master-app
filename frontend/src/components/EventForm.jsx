@@ -16,7 +16,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { getUsers } from "../redux/features/auth/authSlice";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
-import { formatDate } from "../utils/formatDate";
+import moment from "moment";
 import { FaCalendar } from "react-icons/fa";
 
 const { TextArea } = Input;
@@ -61,26 +61,39 @@ const EventForm = () => {
 
         // Map user objects to their email addresses
         const sendToEmails = participants?.map((user) => user.email);
-        const participantNames = participants?.map(
-          (user) =>
-            `${user.firstName} ${user.lastName} (${user.position || "client"})`
-        );
+        const participantNames = participants?.map((user) => {
+          const lastName = user.lastName || "";
+          const secondName = user.secondName || "";
+          return `${user.firstName} ${lastName || secondName} (${
+            user.position || "client"
+          })`;
+        });
+
+        // Function to format date and time
+        const formatDateTime = (date) => {
+          return moment(date).format("MMMM D, YYYY [at] h:mm A");
+        };
+
+        // Function to format time only
+        const formatTime = (date) => {
+          return moment(date).format("h:mm A");
+        };
 
         // Prepare email data
         const emailData = {
-          subject: "New Task Assigned - A.T. Lukman & Co.",
+          subject: "Office Event - A.T. Lukman & Co.",
           send_to: sendToEmails,
-          // send_from: user?.data?.email,
           reply_to: "noreply@gmail.com",
           template: "events",
           url: "dashboard/events",
-
           context: {
             sendersName: user?.data?.firstName,
             sendersPosition: user?.data?.position,
             title: values.title,
-            start: formatDate(values.start),
-            end: formatDate(values.end),
+            startDateTime: formatDateTime(values.start),
+            endDateTime: formatDateTime(values.end),
+            startTime: formatTime(values.start),
+            endTime: formatTime(values.end),
             participants: participantNames,
             description: values.description,
             location: values.location,

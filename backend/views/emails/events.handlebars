@@ -4,36 +4,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Event Notification - A.T. Lukman & Co.</title>
     <style>
-      /* Optional styles for improved appearance */ body { font-family: Arial,
-      sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; } .container
-      { width: 100%; max-width: 600px; margin: 0 auto; background-color:
-      #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,
-      0, 0, 0.1); } .header { text-align: center; padding: 10px 0;
-      background-color: #007bff; color: #ffffff; border-radius: 8px 8px 0 0; }
-      .content { padding: 20px; } .footer { text-align: center; padding: 10px 0;
-      font-size: 12px; color: #777777; } table { width: 100%; } th, td {
-      padding: 5px; border-bottom: 1px solid #ddd; }
+      body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin:
+      0; padding: 0; } .container { width: 100%; max-width: 600px; margin: 0
+      auto; background-color: #ffffff; padding: 20px; border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); } .header { text-align: center;
+      padding: 20px 0; background-color: #007bff; color: #ffffff; border-radius:
+      8px 8px 0 0; } .content { padding: 20px; } .footer { text-align: center;
+      padding: 10px 0; font-size: 12px; color: #777777; } table { width: 100%;
+      border-collapse: collapse; } th, td { padding: 10px; border-bottom: 1px
+      solid #ddd; text-align: left; } th { background-color: #f2f2f2;
+      font-weight: bold; } .btn { display: inline-block; padding: 10px 20px;
+      background-color: #007bff; color: #ffffff; text-decoration: none;
+      border-radius: 5px; margin-top: 20px; }
     </style>
   </head>
   <body>
     <div class="container">
       <div class="header">
-        <h1>Event Notification - A.T. Lukman & Co.</h1>
+        <h1>Event Notification</h1>
+        <h2>A.T. Lukman & Co.</h2>
       </div>
       <div class="content">
-        <p>Dear {{#each participants}}{{this}},{{/each}}</p>
-        <p>This email serves as a notification for an upcoming event.</p>
+        <p>Dear
+          {{#each participants}}{{this}}{{#unless @last}},
+            {{/unless}}{{/each}},</p>
+        <p>You are cordially invited to the following event:</p>
         <h2>{{title}}</h2>
-        <p>**Organized by:** {{sendersName}} ({{sendersPosition}})</p>
+        <p><strong>Organized by:</strong>
+          {{sendersName}}
+          ({{sendersPosition}})</p>
         <table>
           <tbody>
             <tr>
-              <th>Start Date:</th>
-              <td>{{start}}</td>
+              <th>Date:</th>
+              <td>{{startDateTime}}</td>
             </tr>
             <tr>
-              <th>End Date:</th>
-              <td>{{end}}</td>
+              <th>Time:</th>
+              <td>{{startTime}} - {{endTime}}</td>
             </tr>
             <tr>
               <th>Location:</th>
@@ -45,8 +53,8 @@
             </tr>
           </tbody>
         </table>
-        <p>For more details and to RSVP, please visit:
-          <a href="{{url}}">Event Details</a>.</p>
+        <p>We look forward to your participation in this event.</p>
+        <a href="{{url}}" class="btn">View Event Details & RSVP</a>
       </div>
       <div class="footer">
         <p>&copy; {{year}} A.T. Lukman & Co. All rights reserved.</p>

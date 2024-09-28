@@ -141,28 +141,26 @@ const SingleCauseList = ({
           }
         </Card>
       )}
-      <Card title={title || "Cause List"}>
-        <Table
-          onRow={(record) => ({
-            onClick: () => onRowClick(record),
-          })}
-          columns={columns}
-          dataSource={data}
-          loading={loadingCauseList}
-          pagination={!hideButton && { pageSize: 10 }}
-          scroll={{ x: 750 }}
-        />
-        {showDownloadBtn && (
-          <Button
-            loading={loadingPdf}
-            className="blue-btn"
-            icon={<DownloadOutlined />}
-            onClick={onDownloadCauseList}
-            style={{ marginTop: 16 }}>
-            Download Cause List
-          </Button>
-        )}
-      </Card>
+      <Table
+        onRow={(record) => ({
+          onClick: () => onRowClick(record),
+        })}
+        columns={columns}
+        dataSource={data}
+        loading={loadingCauseList}
+        pagination={!hideButton && { pageSize: 10 }}
+        scroll={{ x: 750 }}
+      />
+      {showDownloadBtn && (
+        <Button
+          loading={loadingPdf}
+          className="blue-btn"
+          icon={<DownloadOutlined />}
+          onClick={onDownloadCauseList}
+          style={{ marginTop: 16 }}>
+          Download Cause List
+        </Button>
+      )}
     </Space>
   );
 };

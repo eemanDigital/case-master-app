@@ -71,7 +71,7 @@ const ClientLists = () => {
   if (isLoading) return <LoadingSpinner />;
 
   return (
-    <Card className="shadow-md">
+    <div>
       {isError ? (
         <PageErrorAlert errorCondition={isError} errorMessage={message} />
       ) : (
@@ -149,7 +149,7 @@ const ClientLists = () => {
           </Table>
         </>
       )}
-    </Card>
+    </div>
   );
 };
 
