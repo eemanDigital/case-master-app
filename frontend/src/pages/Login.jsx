@@ -17,6 +17,17 @@ const Login = () => {
     useSelector((state) => state.auth);
   const [inputValue, setInputValue] = useState({ email: "", password: "" });
 
+  //remove space from password to field
+  useEffect(() => {
+    const password = inputValue.password;
+    if (password.includes(" ")) {
+      setInputValue((prevValue) => ({
+        ...prevValue,
+        password: password.replace(/\s/g, ""),
+      }));
+    }
+  }, [inputValue.password]);
+
   // handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
