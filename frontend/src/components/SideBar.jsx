@@ -134,7 +134,7 @@ const SideBar = ({ isMobile, closeDrawer }) => {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="logo-vertical py-4 px-2">
+      <div className="logo-vertical py-4 ">
         {!isClient ? (
           <div className="flex justify-center items-center">
             <Link to="profile" onClick={isMobile ? closeDrawer : undefined}>

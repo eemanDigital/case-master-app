@@ -47,7 +47,7 @@ const CaseCountsByClient = ({ data }) => {
         <BarChart
           width={300}
           height={100}
-          barSize={20}
+          barSize={5}
           data={transformedData}
           margin={{
             top: 10,

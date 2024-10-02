@@ -149,17 +149,16 @@ const Dashboard = () => {
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
       {!isVerified && <VerifyAccountNotice />}
       <ShowOnlyVerifiedUser>
-        <div className="flex items-center space-x-4 mb-2">
+        <div className="flex items-center justify-between space-x-4 mb-2">
           <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
             {user?.data?.firstName}'s Dashboard
           </h1>
+          {isAdminOrHr && <LeaveNotification />}
         </div>
         <ShowStaff>
           <ScrollingEvents />
 
           <div className="flex flex-wrap items-center justify-between  rounded-lg md:flex-nowrap md:justify-start md:space-x-4">
-            {isAdminOrHr && <LeaveNotification />}
-
             <div className="w-full md:w-auto my-3">
               <EventForm />
             </div>
@@ -168,9 +167,7 @@ const Dashboard = () => {
             <LeaveAppForm />
 
             <Link to="note-list">
-              <Button
-                type="primary"
-                className="bg-green-500 hover:bg-green-600">
+              <Button className="bg-green-500 hover:bg-green-600 text-white">
                 Show Notes
               </Button>
             </Link>
@@ -290,7 +287,7 @@ const Dashboard = () => {
                 }
               />
               <CasesByCategoriesChart
-                title="Cases By Rating"
+                title="Cases By Priority"
                 data={
                   casesByRating?.data?.filter(
                     (item) => item?.groupName !== null
@@ -298,7 +295,7 @@ const Dashboard = () => {
                 }
               />
               <CasesByCategoriesChart
-                title="Cases By Mode"
+                title="Cases By Mode of Commencement"
                 data={
                   casesByMode?.data?.filter(
                     (item) => item?.groupName !== null

@@ -54,7 +54,7 @@ const CaseCountsByYearChart = ({ data }) => {
           <XAxis dataKey="year" />
           <YAxis />
           <Legend />
-          <Bar dataKey="count" fill="#1c4e80" barSize={20} />
+          <Bar dataKey="count" fill="#1c4e80" barSize={10} />
         </BarChart>
       </Card>
 

@@ -61,7 +61,7 @@ const CaseCountsByPeriodChart = ({ data }) => {
           width={300}
           height={100}
           data={transformedData}
-          barSize={20}
+          barSize={10}
           margin={{
             top: 0,
             right: 50,

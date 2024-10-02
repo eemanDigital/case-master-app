@@ -5,8 +5,6 @@ import { toast } from "react-toastify";
 import { login, RESET, sendLoginCode } from "../redux/features/auth/authSlice";
 import useTogglePassword from "../hooks/useTogglePassword";
 import GoogleUserLogin from "./GoogleUserLogin";
-
-// Import icons from a library like react-icons
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 
 const Login = () => {
@@ -53,9 +51,7 @@ const Login = () => {
       dispatch(sendLoginCode(inputValue.email));
       navigate(`/loginWithCode/${inputValue.email}`);
     }
-    // if (isSuccess && !isLoggedIn) {
-    //   // toast.success(message);
-    // }
+
     dispatch(RESET());
   }, [
     isSuccess,

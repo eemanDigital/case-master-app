@@ -1,5 +1,6 @@
 import { useState } from "react";
 import PropTypes from "prop-types";
+import { Modal } from "antd";
 import {
   BarChart,
   Bar,
@@ -10,7 +11,6 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { Modal } from "antd";
 
 const CasesByCategoriesChart = ({ data, title }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -37,7 +37,9 @@ const CasesByCategoriesChart = ({ data, title }) => {
         className="bg-white p-3 h-[190px] rounded-lg cursor-pointer shadow-sm hover:shadow-md transition-shadow flex flex-col justify-center items-center m-1 sm:m-2"
         onClick={handleCardClick}>
         <ResponsiveContainer width="100%" height={175} className="mt-6">
-          <h1 className=" text-center font-medium mt-2 text-white">{title}</h1>
+          <h1 className=" text-center font-medium mt-2 text-gray-800">
+            {title}
+          </h1>
           <BarChart
             data={transformedData}
             margin={{
