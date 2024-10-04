@@ -1,3 +1,4 @@
+import React from "react"; // Import React to use JSX
 import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -37,7 +38,8 @@ const Login = () => {
   // login user handler
   const loginUser = async (e) => {
     e.preventDefault();
-    if (!inputValue.email || !inputValue.password) {
+
+    if (!inputValue.email.trim() || !inputValue.password.trim()) {
       toast.error("Enter both your email and password");
       return;
     }
@@ -53,9 +55,7 @@ const Login = () => {
       dispatch(sendLoginCode(inputValue.email));
       navigate(`/loginWithCode/${inputValue.email}`);
     }
-    // if (isSuccess && !isLoggedIn) {
-    //   // toast.success(message);
-    // }
+
     dispatch(RESET());
   }, [
     isSuccess,
@@ -91,7 +91,6 @@ const Login = () => {
                   name="email"
                   type="email"
                   autoComplete="email"
-                  required
                   className="appearance-none rounded-none relative block w-full px-3 py-2 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                   placeholder="Email address"
                   value={inputValue.email}
@@ -112,7 +111,6 @@ const Login = () => {
                   name="password"
                   type={showPassword ? "text" : "password"}
                   autoComplete="current-password"
-                  required
                   className="appearance-none rounded-none relative block w-full px-3 py-2 pl-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
                   placeholder="Password"
                   value={inputValue.password}
@@ -122,11 +120,18 @@ const Login = () => {
                   <button
                     type="button"
                     onClick={togglePassword}
-                    className="focus:outline-none">
+                    className="focus:outline-none"
+                    aria-label="toggle password visibility">
                     {showPassword ? (
-                      <FaEyeSlash className="h-5 w-5 text-gray-400" />
+                      <FaEyeSlash
+                        className="h-5 w-5 text-gray-400"
+                        data-testid="eye-slash-icon"
+                      />
                     ) : (
-                      <FaEye className="h-5 w-5 text-gray-400" />
+                      <FaEye
+                        className="h-5 w-5 text-gray-400"
+                        data-testid="eye-icon"
+                      />
                     )}
                   </button>
                 </div>

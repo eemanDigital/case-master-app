@@ -1,8 +1,9 @@
 import { useState, useEffect, createContext } from "react";
+import { Suspense, lazy } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
-import CasesByCategoriesChart from "./CasesByCategoriesChart";
+// import CasesByCategoriesChart from "./CasesByCategoriesChart";
 import AccountOfficerCharts from "./AccountOfficerCharts";
 import CaseCountsByPeriodChart from "./CaseCountsByPeriodChart";
 import CaseCountsByClientChart from "./CaseCountsByClientChart";
@@ -34,6 +35,7 @@ import { Link } from "react-router-dom";
 
 // context for year for search filter
 export const PaymentFiltersContext = createContext();
+const CasesByCategoriesChart = lazy(() => import("./CasesByCategoriesChart"));
 
 const Dashboard = () => {
   useRedirectLogoutUser("/users/login"); // redirect to login if not logged in
@@ -164,7 +166,6 @@ const Dashboard = () => {
               <EventForm />
             </div>
 
-            {/* <div className="w-full md:w-auto"> */}
             <LeaveAppForm />
 
             <Link to="note-list">
@@ -209,12 +210,7 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Right side components */}
-                {/* <div className="w-full lg:w-1/2 px-4"> */}
-                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"> */}
                 <CurrentDayCauseList />
-                {/* </div> */}
-                {/* </div> */}
 
                 {/* Components below LatestCaseReports */}
                 <div className="w-full px-4">
@@ -264,55 +260,56 @@ const Dashboard = () => {
             </div>
 
             <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1 mt-8">
-              <CasesByCategoriesChart
-                title="Case By Status"
-                data={
-                  casesByStatus?.data?.filter(
-                    (item) => item?.groupName !== null
-                  ) || []
-                }
-              />
-
-              <CasesByCategoriesChart
-                title="Nature of Case"
-                data={
-                  casesByNature?.data?.filter(
-                    (item) => item?.groupName !== null
-                  ) || []
-                }
-              />
-              <CasesByCategoriesChart
-                title="Cases By Court"
-                data={
-                  casesByCourt?.data?.filter(
-                    (item) => item?.groupName !== null
-                  ) || []
-                }
-              />
-              <CasesByCategoriesChart
-                title="Cases By Rating"
-                data={
-                  casesByRating?.data?.filter(
-                    (item) => item?.groupName !== null
-                  ) || []
-                }
-              />
-              <CasesByCategoriesChart
-                title="Cases By Mode"
-                data={
-                  casesByMode?.data?.filter(
-                    (item) => item?.groupName !== null
-                  ) || []
-                }
-              />
-              <CasesByCategoriesChart
-                title="Cases By Category"
-                data={
-                  casesByCategory?.data?.filter(
-                    (item) => item?.groupName !== null
-                  ) || []
-                }
-              />
+              <Suspense fallback={<div>Loading...</div>}>
+                <CasesByCategoriesChart
+                  title="Case By Status"
+                  data={
+                    casesByStatus?.data?.filter(
+                      (item) => item?.groupName !== null
+                    ) || []
+                  }
+                />
+                <CasesByCategoriesChart
+                  title="Nature of Case"
+                  data={
+                    casesByNature?.data?.filter(
+                      (item) => item?.groupName !== null
+                    ) || []
+                  }
+                />
+                <CasesByCategoriesChart
+                  title="Cases By Court"
+                  data={
+                    casesByCourt?.data?.filter(
+                      (item) => item?.groupName !== null
+                    ) || []
+                  }
+                />
+                <CasesByCategoriesChart
+                  title="Cases By Rating"
+                  data={
+                    casesByRating?.data?.filter(
+                      (item) => item?.groupName !== null
+                    ) || []
+                  }
+                />
+                <CasesByCategoriesChart
+                  title="Cases By Mode"
+                  data={
+                    casesByMode?.data?.filter(
+                      (item) => item?.groupName !== null
+                    ) || []
+                  }
+                />
+                <CasesByCategoriesChart
+                  title="Cases By Category"
+                  data={
+                    casesByCategory?.data?.filter(
+                      (item) => item?.groupName !== null
+                    ) || []
+                  }
+                />
+              </Suspense>
             </div>
           </>
         )}

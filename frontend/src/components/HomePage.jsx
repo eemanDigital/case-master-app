@@ -1,6 +1,8 @@
-import React from "react";
-import Header from "./Header";
+import React, { Suspense, lazy } from "react";
 import PropTypes from "prop-types";
+
+// Lazy load the Header component
+const Header = lazy(() => import("./Header"));
 
 const Button = ({ children, primary, onClick }) => (
   <button
@@ -17,7 +19,9 @@ const Button = ({ children, primary, onClick }) => (
 const HomePage = () => {
   return (
     <div className="bg-gradient-to-b from-gray-900 to-gray-800 min-h-screen text-white">
-      <Header />
+      <Suspense fallback={<div>Loading...</div>}>
+        <Header />
+      </Suspense>
 
       <main className="container mx-auto px-4">
         <section className="py-20 md:py-36">
@@ -30,35 +34,8 @@ const HomePage = () => {
               Streamline your day-to-day office activities with our intuitive
               case management software.
             </p>
-            {/* <div className="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-6">
-              <Button
-                primary
-                onClick={() => console.log("Get Started clicked")}>
-                Get Started
-              </Button>
-              <Button onClick={() => console.log("Learn More clicked")}>
-                Learn More
-              </Button>
-            </div> */}
           </div>
         </section>
-
-        {/* <section className="py-20">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {["Intuitive Interface", "Advanced Analytics", "Secure Data"].map(
-              (feature, index) => (
-                <div
-                  key={index}
-                  className="bg-gray-700 p-6 rounded-lg shadow-lg text-center">
-                  <h3 className="text-xl font-semibold mb-2">{feature}</h3>
-                  <p className="text-gray-300">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit.
-                  </p>
-                </div>
-              )
-            )}
-          </div>
-        </section> */}
       </main>
 
       <footer className="bg-gray-900 text-gray-400 py-8 mt-20">
@@ -73,6 +50,7 @@ const HomePage = () => {
   );
 };
 
+// Add prop types for Button component
 Button.propTypes = {
   children: PropTypes.node.isRequired,
   primary: PropTypes.bool,
