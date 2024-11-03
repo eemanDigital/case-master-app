@@ -19,7 +19,7 @@ CaseMaster is a comprehensive case management application designed specifically 
 - **Password Management**: Allow users to change and reset their passwords securely.
 - **Advanced Search & Filter**: Quickly find cases, clients, or documents based on specific criteria.
 - **Charts & Data Visualization**: Gain insights into firm performance through Recharts integration.
-  
+
 ---
 
 ## Technology Stack
@@ -60,31 +60,42 @@ CaseMaster/
 └── README.md
 
 ```
+
 ## Installation
+
 Clone the Repository
+
 ```bash
 git clone https://github.com/eemanDigital/case-master-app
 cd casemaster-app
 ```
 
 ## Install Dependencies
+
 Navigate to both the backend and frontend folders to install the necessary dependencies.
+
 - Backend:
+
 ```bash
 cd backend
 npm install
 
 ```
+
 ## Install Dependencies
+
 - frontend:
+
 ```bash
 cd frontend
 npm install
 
 ```
+
 ## Environment Variables
 
 To run this project, you will need to add the following environment variables to your `.env` file:
+
 ```dotenv
 # Server Configuration
 PORT=3000
@@ -126,6 +137,7 @@ COMPANY_NAME=fake_company_name
 DEVELOPER_EMAIL=fake_developer_email
 TEMP_PASSWORD=fake_temp_password
 ```
+
 Replace with the actual values.
 
 ## Start the Application
@@ -138,19 +150,26 @@ To start the application, you need to start both the backend and frontend server
 cd backend
 npm run start
 ```
+
 ### Frontend
 
 ```bash
 cd frontend
 npm run dev
 ```
+
 ## Access the Application
 
 Visit [http://localhost:3000](http://localhost:3000) in your browser to view the backend. The frontend will be running on [http://localhost:5173](http://localhost:5173).
 
 ## Screenshots
 
+## Screenshots
+
 Here are some screenshots of the application:
+
+![Screenshot 1](screenshots/screenshot1.png)
+![Screenshot 2](screenshots/screenshot2.png)
 
 <!-- Add your screenshots here -->
 
