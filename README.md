@@ -144,3 +144,50 @@ npm run start
 cd frontend
 npm run dev
 ```
+## Access the Application
+
+Visit [http://localhost:3000](http://localhost:3000) in your browser to view the backend. The frontend will be running on [http://localhost:5173](http://localhost:5173).
+
+## Screenshots
+
+Here are some screenshots of the application:
+
+<!-- Add your screenshots here -->
+
+## Challenges Faced
+
+- **RBAC Implementation**: Ensuring secure and flexible access control based on user roles. Solved by integrating a custom RBAC module with the authentication system.
+- **Complex Form Management**: Using Ant Design to handle dynamic and complex form inputs efficiently.
+- **Data Aggregation for Charts**: Streamlining data for case categorization, payment tracking, and case listing using MongoDB’s aggregation.
+- **Automated Email Notifications**: Integrating Nodemailer with dynamic email templates for seamless notification management.
+
+## Outcomes
+
+- Increased productivity and reduced administrative overhead for law firms.
+- Improved client engagement with real-time updates through a client-facing dashboard.
+- Enhanced data security and compliance with two-factor authentication.
+
+## Future Enhancements
+
+- **Automated Case Status Update via SMS**: Notify clients of case progress directly on their mobile devices.
+- **Advanced Analytics Dashboard**: Add more data-driven insights for law firms to improve case management.
+- **Multi-language Support**: Expand the platform's accessibility for law firms globally.
+
+## Contributions
+
+Contributions to CaseMaster are welcome. Please fork the repository and submit a pull request with any new features or bug fixes.
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Contact
+
+For questions, suggestions, or feedback, please reach out:
+
+**Lukman Asinmi**
+
+- [LinkedIn](https://www.linkedin.com/in/lukman-asinmi-359512257)
+- [Email](mailto:asinmilukman@gmail.com)
+
+Let’s streamline case management together!
