@@ -133,7 +133,7 @@ const SideBar = ({ isMobile, closeDrawer }) => {
   };
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col ">
       <div className="logo-vertical py-4 ">
         {!isClient ? (
           <div className="flex justify-center items-center">
