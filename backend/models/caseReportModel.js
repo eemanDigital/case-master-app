@@ -25,8 +25,9 @@ const reportSchema = new mongoose.Schema(
     },
     adjournedDate: {
       type: Date,
-      default: Date.now,
-      required: [true, "A case must have a name"],
+      // default: Date.now,
+      // required: [true, "A case must have a next adjourned date"],
+      // this is not necessary, not all report will require next adjourned date
     },
 
     reportedBy: {

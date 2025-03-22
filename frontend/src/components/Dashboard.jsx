@@ -172,6 +172,12 @@ const Dashboard = () => {
               </Button>
             </Link>
 
+            <Link to="record-document-list">
+              <Button className="bg-blue-500 hover:bg-blue-600 text-white">
+                Show Records
+              </Button>
+            </Link>
+
             {/* </div> */}
           </div>
         </ShowStaff>

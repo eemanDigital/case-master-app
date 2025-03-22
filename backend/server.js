@@ -3,6 +3,7 @@ const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
 const cors = require("cors");
+const xss = require("xss-clean");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
@@ -22,6 +23,7 @@ const eventRouter = require("./routes/eventRoutes");
 const notificationRouter = require("./routes/notificationRoutes");
 const contactRouter = require("./routes/contactRoutes");
 const noteRouter = require("./routes/noteRoutes");
+const documentRecordRouter = require("./routes/documentRecordRoute");
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 
@@ -66,6 +68,7 @@ app.use(
 // Data sanitization
 app.use(mongoSanitize());
 app.use(hpp());
+app.use(xss());
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
@@ -75,40 +78,43 @@ app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
 // Development logging
-if (process.env.NODE_ENV === "production") {
+if (process.env.NODE_ENV === "development") {
   app.use(morgan("dev"));
 }
 
 // Rate limiter
-// const limiter = rateLimit({
-//   max: 200, // allows 200 req from same IP in 1hr
-//   windowMs: 60 * 60 * 1000,
-//   message: "Too many requests from this IP, please try again in an hour",
-//   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-//   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-//   trustProxy: true, // Enable if you're behind a reverse proxy (Heroku, Bluemix, AWS ELB, Nginx, etc)
-// });
+function rateLimiter(windowMs, message, max) {
+  const limiter = rateLimit({
+    max: max, // Allowed requests per set minutes
+    windowMs: windowMs,
+    message: message,
+    standardHeaders: true,
+    legacyHeaders: false,
+    trustProxy: true,
+    handler: (req, res, next) => {
+      next(new AppError(message, 429));
+    },
+  });
 
-let rateLimitCount = 0; // Variable to keep track of rate-limited requests
-
-// Rate limiter
-const limiter = rateLimit({
-  max: 200, // allows 200 req from same IP in 1hr
-  windowMs: 60 * 60 * 1000,
-  message: "Too many requests from this IP, please try again in an hour",
-  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
-  trustProxy: true, // Enable if you're behind a reverse proxy (Heroku, Bluemix, AWS ELB, Nginx, etc)
-  handler: (req, res, next, options) => {
-    rateLimitCount++;
-    console.log(
-      `Rate limit reached. Total rate-limited requests: ${rateLimitCount}`
-    );
-    res.status(options.statusCode).send(options.message);
-  },
-});
-
-// app.use("/api", limiter);
+  return limiter;
+}
+// Apply rate limiting only to login and password reset routes
+app.use(
+  "/api/v1/users/login",
+  rateLimiter(
+    60 * 1000,
+    "Too many login attempts, please try again in a minute.",
+    3
+  )
+);
+app.use(
+  "/api/v1/users/resetpassword",
+  rateLimiter(
+    10 * 60 * 1000,
+    "Too many password reset attempts, please try again later.",
+    3
+  )
+);
 
 // Cookie parser
 app.use(cookieParser());
@@ -127,6 +133,7 @@ app.use("/api/v1/todos", todoRoutes);
 app.use("/api/v1/contacts", contactRouter);
 app.use("/api/v1/events", eventRouter);
 app.use("/api/v1/notes", noteRouter);
+app.use("/api/v1/documentRecord", documentRecordRouter);
 
 // // Handle root URL
 app.get("/", (req, res) => {
@@ -161,7 +168,14 @@ const DB = isProduction ? DB_PROD : DB_DEV;
 
 // Connect to the chosen database
 mongoose
-  .connect(DB, {})
+  .connect(DB, {
+    serverSelectionTimeoutMS: 30000,
+    connectTimeoutMS: 30000,
+    socketTimeoutMS: 300000,
+    maxPoolSize: 50,
+    retryWrites: true,
+    retryReads: true,
+  })
   .then(() => {
     console.log(
       `Database connected (${isProduction ? "production" : "development"})`

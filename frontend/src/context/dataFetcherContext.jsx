@@ -36,6 +36,7 @@ const DataFetcherContext = ({ children }) => {
     yearlyNewCases: [],
     events: [],
     notes: [],
+    documentRecord: [],
     loading: {
       cases: false,
       users: false,
@@ -64,6 +65,7 @@ const DataFetcherContext = ({ children }) => {
       yearlyNewCases: false,
       events: false,
       notes: false,
+      documentRecord: false,
     },
     error: {
       cases: "",
@@ -93,6 +95,7 @@ const DataFetcherContext = ({ children }) => {
       yearlyNewCases: "",
       events: "",
       notes: "",
+      documentRecord: "",
     },
   });
 

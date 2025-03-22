@@ -62,6 +62,9 @@ import HomePage from "./components/HomePage.jsx";
 import NoteForm from "./pages/NoteForm.jsx";
 import UpdateNote from "./pages/UpdateNote.jsx";
 import NoteList from "./pages/NoteList.jsx";
+import DocumentRecord from "./pages/DocumentRecord.jsx";
+import DocumentRecordList from "./pages/DocumentRecordList.jsx";
+import DocumentRecordDetails from "./pages/DocumentRecordDetails.jsx";
 // import EditTaskForm from "./pages/EditTaskForm.jsx";
 
 // enable axios to get credentials everywhere in the app
@@ -258,6 +261,12 @@ function App() {
           />
           <Route path="contact-dev" element={<ContactForm />} />
           <Route path="events/:id/details" element={<EventDetail />} />
+          <Route path="record-document-list" element={<DocumentRecordList />} />
+          <Route path="record-documents" element={<DocumentRecord />} />
+          <Route
+            path="record-document-list/:id/details"
+            element={<DocumentRecordDetails />}
+          />
         </Route>
       </Route>
       // </Route>

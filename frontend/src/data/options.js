@@ -163,3 +163,11 @@ export const gender = [
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
 ];
+
+export const doc_type = [
+  // { value: "", label: "Select document's type" },
+  { value: "Court Process", label: "Court Process" },
+  { value: "Client Document", label: "Client Document" },
+  { value: "Official Correspondence", label: "Official Correspondence" },
+  { value: "Others", label: "Others" },
+];

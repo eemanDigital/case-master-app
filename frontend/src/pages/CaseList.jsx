@@ -189,6 +189,20 @@ const CaseList = () => {
 
   return (
     <>
+      <div className="flex md:flex-row flex-col justify-between items-center mb-4">
+        {isStaff && (
+          <div className="w-full md:w-auto mb-2 md:mb-0">
+            <Link to="add-case">
+              <ButtonWithIcon
+                onClick={() => {}}
+                icon={null}
+                text="+ Add Case"
+              />
+            </Link>
+          </div>
+        )}
+        <SearchBar data={cases?.data} onSearch={handleSearchChange} />
+      </div>
       {error.cases ? (
         <PageErrorAlert
           errorCondition={error.cases}
@@ -197,20 +211,7 @@ const CaseList = () => {
       ) : (
         <section className=" font-medium font-poppins">
           <Title level={1}>Cases</Title>
-          <div className="flex md:flex-row flex-col justify-between items-center mb-4">
-            {isStaff && (
-              <div className="w-full md:w-auto mb-2 md:mb-0">
-                <Link to="add-case">
-                  <ButtonWithIcon
-                    onClick={() => {}}
-                    icon={null}
-                    text="+ Add Case"
-                  />
-                </Link>
-              </div>
-            )}
-            <SearchBar data={cases?.data} onSearch={handleSearchChange} />
-          </div>
+
           <div className="overflow-x-auto">
             <Table
               columns={columns}

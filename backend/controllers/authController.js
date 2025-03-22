@@ -132,6 +132,7 @@ exports.login = catchAsync(async (req, res, next) => {
     }).save();
 
     // Send the loginCode securely via email or SMS to the user
+    console.log(req.cookies);
 
     return next(
       new AppError(
