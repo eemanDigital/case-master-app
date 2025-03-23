@@ -4,7 +4,7 @@ import { FaBalanceScale } from "react-icons/fa";
 
 const LoadingSpinner = ({
   size = "large",
-  tip = "Loading case data...",
+  tip = "Loading data...",
   color = "#1a365d", // Dark blue color
 }) => {
   const customIndicator = (
@@ -13,9 +13,6 @@ const LoadingSpinner = ({
         className="text-5xl mb-4 animate-bounce"
         style={{ color }}
       />
-      <div
-        className="w-12 h-12 border-t-4 border-b-4 rounded-full animate-spin"
-        style={{ borderColor: color }}></div>
     </div>
   );
 
@@ -23,9 +20,6 @@ const LoadingSpinner = ({
     <div className="flex flex-col justify-center items-center min-h-screen bg-white p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12">
       <Spin size={size} indicator={customIndicator} />
       <p className="mt-4 text-lg font-semibold">{tip}</p>
-      <p className="mt-2 text-sm text-gray-500">
-        Please wait while we retrieve your case information.
-      </p>
     </div>
   );
 };

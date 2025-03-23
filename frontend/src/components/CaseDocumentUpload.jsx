@@ -63,7 +63,7 @@ const CaseDocumentUpload = ({ caseId }) => {
 
   return (
     <>
-      <Button onClick={showModal} className="bg-blue-500 text-white">
+      <Button onClick={showModal} className="bg-blue-500 text-white w-28 ">
         Upload File
       </Button>
       <Modal

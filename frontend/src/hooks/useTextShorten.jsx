@@ -11,15 +11,24 @@ const useTextShorten = () => {
     }));
   };
 
+  //decode text before transforming  it to html element.
+  const decodeHtml = (html) => {
+    const txt = document.createElement("textarea");
+    txt.innerHTML = html;
+    return txt.value;
+  };
+
   // shorten text
   const shortenText = (htmlText, maxLength, id) => {
+    const decodedText = decodeHtml(htmlText); // Decode HTML
     const isFullTextShown = showFullText[id];
-    if (!isFullTextShown && htmlText?.length > maxLength) {
+
+    if (!isFullTextShown && decodedText.length > maxLength) {
       return (
         <span>
           <span
             dangerouslySetInnerHTML={{
-              __html: `${htmlText.substring(0, maxLength)}...`,
+              __html: `${decodedText.substring(0, maxLength)}...`,
             }}
           />
           <button
@@ -30,7 +39,6 @@ const useTextShorten = () => {
               cursor: "pointer",
               background: "none",
               border: "none",
-
               textDecoration: "underline",
             }}>
             Read More
@@ -40,8 +48,8 @@ const useTextShorten = () => {
     } else {
       return (
         <span>
-          <span dangerouslySetInnerHTML={{ __html: htmlText }} />
-          {htmlText?.length > maxLength && (
+          <span dangerouslySetInnerHTML={{ __html: decodedText }} />
+          {decodedText.length > maxLength && (
             <button
               onClick={() => toggleShowFullText(id)}
               style={{
@@ -59,6 +67,7 @@ const useTextShorten = () => {
       );
     }
   };
+
   return { shortenText };
 };
 

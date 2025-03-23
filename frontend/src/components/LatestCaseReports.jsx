@@ -86,9 +86,11 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
           key={report._id}
           className="w-full font-poppins shadow-md hover:shadow-lg transition-shadow duration-300 mb-4 bg-gradient-to-r from-blue-100 to-blue-200 rounded-lg border border-gray-300"
           title={
-            <h2 className="text-lg font-semibold text-gray-700 truncate sm:text-base md:text-lg lg:text-xl w-full">
+            <Link
+              to={`cases/${report.caseReported._id}/casedetails`}
+              className="text-lg font-semibold text-gray-700 truncate sm:text-base md:text-lg lg:text-xl w-full">
               {`${report?.caseReported?.firstParty?.name[0]?.name} vs ${report?.caseReported?.secondParty?.name[0]?.name}`}
-            </h2>
+            </Link>
           }>
           <Space direction="vertical" size="middle" className="w-full">
             <Text className="text-gray-700 text-justify">

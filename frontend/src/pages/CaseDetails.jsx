@@ -130,7 +130,7 @@ const CaseDetails = () => {
         </div>
 
         <Card className="mb-8 shadow-lg rounded-xl overflow-hidden ">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+          <div className="flex flex-wrap md:flex-row space-y-4 items-baseline justify-evenly">
             {[
               {
                 title: data?.data?.firstParty.description,
@@ -151,7 +151,7 @@ const CaseDetails = () => {
                 {party.names?.map((name, nameIndex) => (
                   <div
                     key={name?._id || nameIndex}
-                    className="flex items-center text-[18px]  space-x-2">
+                    className="flex items-center justify-center text-[16px]  space-x-2">
                     <p className="text-gray-700 s">{nameIndex + 1}.</p>
                     <p className="text-gray-600  font-bold  font-poppins">
                       {name.name}
@@ -199,10 +199,15 @@ const CaseDetails = () => {
                     value: data?.data?.caseOfficeFileNo,
                   },
                   { label: "Nature of Case:", value: data?.data?.natureOfCase },
-                  { label: "Court:", value: data?.data?.courtName },
-                  { label: "Court No:", value: data?.data?.courtNo },
-                  { label: "Court Location:", value: data?.data?.location },
-                  { label: "State:", value: data?.data?.state },
+                  {
+                    label: "Court:",
+                    value: `${data?.data?.courtName}, ${data?.data?.courtNo} `,
+                  },
+
+                  {
+                    label: "Court Location:",
+                    value: `${data?.data?.location}, ${data?.data?.state}`,
+                  },
                   { label: "Case Status:", value: data?.data?.caseStatus },
                   { label: "Case Category:", value: data?.data?.category },
                   {

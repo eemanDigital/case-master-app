@@ -54,12 +54,16 @@ const PaymentList = () => {
       setSearchResults(payments?.data?.payments);
       return;
     }
-
-    const results = payments?.data?.payments.filter((d) => {
+    console.log(payments?.data?.payments);
+    const results = payments?.data?.payments?.filter((d) => {
       // Check in client names
       const clientNameMatch =
-        d.invoiceId?.client?.fullName.toLowerCase().includes(searchTerm) ||
-        d.invoiceId?.client?.firstName.toLowerCase().includes(searchTerm);
+        d.invoiceId?.client?.fullName?.toLowerCase().includes(searchTerm) ||
+        d.invoiceId?.client?.firstName?.toLowerCase().includes(searchTerm);
+
+      console.log(
+        d.invoiceId?.client?.firstName?.toLowerCase().includes(searchTerm)
+      );
 
       // Check in invoice reference
       const referenceMatch = d.invoiceId?.invoiceReference

@@ -158,12 +158,12 @@ const Dashboard = () => {
         <ShowStaff>
           <ScrollingEvents />
 
-          <div className="flex flex-wrap items-center justify-between  rounded-lg md:flex-nowrap md:justify-start md:space-x-4">
-            <div className="w-full md:w-auto my-3">
-              <EventForm />
-            </div>
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-2 rounded-lg md:flex-nowrap md:justify-start md:space-x-8">
+            {/* <div className="w-full md:w-auto my-3"> */}
+            <EventForm />
+            {/* </div> */}
 
-            {/* <div className="w-full md:w-auto"> */}
+            {/* <div className="w-full md:w-auto m-3"> */}
             <LeaveAppForm />
 
             <Link to="note-list">
@@ -177,9 +177,8 @@ const Dashboard = () => {
                 Show Records
               </Button>
             </Link>
-
-            {/* </div> */}
           </div>
+          {/* </div> */}
         </ShowStaff>
 
         {/* client's Dashboard */}

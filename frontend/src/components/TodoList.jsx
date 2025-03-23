@@ -83,10 +83,10 @@ const TodoList = () => {
         onOk={handleOk}
         onCancel={handleCancel}
         footer={null}
-        width="70%"
+        width="100%"
         className="p-0">
-        <div className="p-4 w-full max-h-[80vh] overflow-y-auto">
-          <section className="flex flex-col bg-white pt-2 p-2 rounded-md">
+        <div className="p-0 w-full max-h-[80vh] overflow-y-auto">
+          <section className="flex flex-col bg-white pt-2 p-0">
             <div className="mt-4">
               <TodoTask tasks={allTodos || []} />
               <TodoForm

@@ -18,7 +18,6 @@ const CurrentDayCauseList = () => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
-  console.log(causeList.data, "CAL");
   // transform cause list data
   const transformedCauseListData = causeList.data?.reportsToday.map(
     (report) => ({
