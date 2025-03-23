@@ -174,12 +174,13 @@ const CaseReportList = ({
               key={report._id}
               className="w-full font-poppins  shadow-sm hover:shadow-md transition-shadow duration-300"
               title={
-                <h2
+                <Link
+                  to={`/dashboard/cases/${report.caseReported._id}/casedetails`}
                   className={`${
                     nameStyle || "text-lg font-semibold text-gray-700 truncate"
                   } sm:text-base md:text-lg lg:text-xl w-full`}>
                   {`${report?.caseReported?.firstParty?.name[0]?.name} vs ${report?.caseReported?.secondParty?.name[0]?.name}`}
-                </h2>
+                </Link>
               }>
               <Space direction="vertical" size="small" className="w-full">
                 {!hideButtons && (
