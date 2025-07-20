@@ -18,7 +18,7 @@ const LeaveBalanceList = () => {
   const { leaveBalance, loading, error, fetchData } = useDataGetterHook();
   const [searchResults, setSearchResults] = useState([]);
   const { user } = useSelector((state) => state.auth); // user from context
-  const { isAdminOrHr } = useAdminHook();
+  const { isAdminOrHr, isSuperAdmin } = useAdminHook();
   const dispatch = useDispatch();
   const deleteState = useSelector((state) => state.delete); // select delete state
   useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
@@ -134,28 +134,30 @@ const LeaveBalanceList = () => {
               key="sickLeaveBalance"
             />
 
-            <Column
-              title="Action"
-              key="action"
-              render={(text, record) => (
-                <Space size="middle">
-                  <Tooltip title="Delete Balance">
-                    <Button
-                      icon={<DeleteOutlined />}
-                      className="mx-6 bg-red-200 text-red-500 hover:text-red-700"
-                      onClick={() => {
-                        Modal.confirm({
-                          title:
-                            "Are you sure you want to delete this application?",
-                          onOk: () => removeBalance(record?.id),
-                        });
-                      }}
-                      type="primary"
-                      loading={deleteState.isLoading}></Button>
-                  </Tooltip>
-                </Space>
-              )}
-            />
+            {(isAdminOrHr || isSuperAdmin) && (
+              <Column
+                title="Action"
+                key="action"
+                render={(text, record) => (
+                  <Space size="middle">
+                    <Tooltip title="Delete Balance">
+                      <Button
+                        icon={<DeleteOutlined />}
+                        className="mx-6 bg-red-200 text-red-500 hover:text-red-700"
+                        onClick={() => {
+                          Modal.confirm({
+                            title:
+                              "Are you sure you want to delete this application?",
+                            onOk: () => removeBalance(record?.id),
+                          });
+                        }}
+                        type="primary"
+                        loading={deleteState.isLoading}></Button>
+                    </Tooltip>
+                  </Space>
+                )}
+              />
+            )}
           </Table>
         </div>
       )}

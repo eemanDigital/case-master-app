@@ -40,7 +40,7 @@ const CaseReportList = ({
   titleStyle,
   nameStyle,
 }) => {
-  const { isStaff } = useAdminHook();
+  const { isStaff, isSuperAdmin } = useAdminHook();
   const { fetchData } = useDataGetterHook();
   const { user } = useSelector((state) => state.auth);
   const clientId = user?.data?._id; // get client id
@@ -220,7 +220,10 @@ const CaseReportList = ({
               </Space>
               {!hideButtons && (
                 <div className="flex justify-end mt-4 space-x-2">
-                  {isStaff && <UpdateCaseReportForm reportId={report._id} />}
+                  {(isSuperAdmin ||
+                    report?.reportedBy?._id === user?.data?._id) && (
+                    <UpdateCaseReportForm reportId={report._id} />
+                  )}
                   <Tooltip title="Download Report">
                     <Button
                       loading={loadingPdf}
@@ -235,7 +238,8 @@ const CaseReportList = ({
                       }
                     />
                   </Tooltip>
-                  {isStaff && (
+                  {(isSuperAdmin ||
+                    report?.reportedBy?._id === user?.data?._id) && (
                     <Tooltip title="Delete Report">
                       <Button
                         icon={<DeleteOutlined />}
