@@ -65,6 +65,7 @@ import NoteList from "./pages/NoteList.jsx";
 import DocumentRecord from "./pages/DocumentRecord.jsx";
 import DocumentRecordList from "./pages/DocumentRecordList.jsx";
 import DocumentRecordDetails from "./pages/DocumentRecordDetails.jsx";
+import SoftDeletedCasesArchive from "./components/SoftDeletedCasesArchive.jsx";
 // import EditTaskForm from "./pages/EditTaskForm.jsx";
 
 // enable axios to get credentials everywhere in the app
@@ -142,6 +143,14 @@ function App() {
             element={
               <ShowOnlyVerifiedUser>
                 <CaseList />
+              </ShowOnlyVerifiedUser>
+            }
+          />
+          <Route
+            path="cases/soft-deleted-cases"
+            element={
+              <ShowOnlyVerifiedUser>
+                <SoftDeletedCasesArchive />
               </ShowOnlyVerifiedUser>
             }
           />

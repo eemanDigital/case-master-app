@@ -117,7 +117,7 @@ const CaseReportList = ({
   // Delete report
   const deleteReport = async (id) => {
     try {
-      await dispatch(deleteData(`reports/${id}`));
+      await dispatch(deleteData(`soft_delete/reports/${id}`));
       fetchData("reports", "reports");
     } catch (error) {
       toast.error("Failed to delete report");

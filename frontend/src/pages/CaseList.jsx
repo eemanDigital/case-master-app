@@ -7,6 +7,7 @@ import {
   Row,
   Modal,
   Tooltip,
+  Empty,
 } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
@@ -21,6 +22,7 @@ import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import ButtonWithIcon from "../components/ButtonWithIcon";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import { FaArchive } from "react-icons/fa";
 // import debounce from "lodash/debounce";
 
 const { Title } = Typography;
@@ -92,7 +94,8 @@ const CaseList = () => {
 
   // delete handler
   const deleteCase = async (id) => {
-    await dispatch(deleteData(`cases/${id}`));
+    // await dispatch(deleteData(`cases/${id}`)); //hard delete
+    await dispatch(deleteData(`soft_delete/cases/${id}`)); //soft delete
     await fetchData("cases", "cases");
   };
 
@@ -187,6 +190,8 @@ const CaseList = () => {
 
   if (loading.cases) return <LoadingSpinner />;
 
+  // if (cases.length < 0) return <h1>You have No Case</h1>;
+
   return (
     <>
       <div className="flex md:flex-row flex-col justify-between items-center mb-4">
@@ -201,9 +206,15 @@ const CaseList = () => {
             </Link>
           </div>
         )}
+
+        <Tooltip title="View Deleted Cases">
+          <Link to="soft-deleted-cases">
+            <FaArchive size={20} />
+          </Link>
+        </Tooltip>
         <SearchBar data={cases?.data} onSearch={handleSearchChange} />
       </div>
-      {error.cases ? (
+      {error.cases && cases.length > 0 ? (
         <PageErrorAlert
           errorCondition={error.cases}
           errorMessage={error.cases}
@@ -213,16 +224,20 @@ const CaseList = () => {
           <Title level={1}>Cases</Title>
 
           <div className="overflow-x-auto">
-            <Table
-              columns={columns}
-              dataSource={
-                isStaff ? currentCases : filterCasesByClient(clientId)
-              }
-              pagination={false}
-              rowKey="_id"
-              loading={loading.cases}
-              scroll={{ x: 700 }} // Enables horizontal scrolling when table content overflows
-            />
+            {cases.length < 1 ? (
+              <Empty />
+            ) : (
+              <Table
+                columns={columns}
+                dataSource={
+                  isStaff ? currentCases : filterCasesByClient(clientId)
+                }
+                pagination={false}
+                rowKey="_id"
+                loading={loading.cases}
+                scroll={{ x: 700 }} // Enables horizontal scrolling when table content overflows
+              />
+            )}
           </div>
           <Row justify="center" style={{ marginTop: 12 }}>
             <Pagination
