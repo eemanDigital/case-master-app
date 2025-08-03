@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import {
   Button,
   Table,
@@ -84,6 +83,7 @@ const SoftDeletedCasesArchive = () => {
       toast.error(error.response?.data?.message || "Failed to restore case");
     }
   };
+
   // Calculate pagination
   const columns = [
     {
