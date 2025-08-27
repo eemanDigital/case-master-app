@@ -11,7 +11,6 @@ const fileSchema = mongoose.Schema({
     type: String,
     required: [true, "Please, select a file"],
   },
-
   date: {
     type: Date,
     default: Date.now,

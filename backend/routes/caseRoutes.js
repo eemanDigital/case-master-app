@@ -10,6 +10,7 @@ const {
   getYearlyNewCases,
   getCasesByAccountOfficer,
   getCasesByClient,
+  getSoftDeletedCases,
 } = require("../controllers/caseController");
 const { protect, restrictTo } = require("../controllers/authController");
 const {
@@ -34,6 +35,7 @@ router.get(
   // cacheMiddleware(() => "$caseStatus"),
   getCasesByGroup("$caseStatus", Case)
 );
+
 router.get(
   "/cases-by-court",
   // cacheMiddleware(() => "$courtName"),
@@ -93,6 +95,9 @@ router.get(
   // cacheMiddleware(() => "cases"),
   getCases
 );
+
+// soft-deleted cases
+router.get("/soft-deleted-cases", getSoftDeletedCases);
 router.post("/", createCase);
 
 // Document upload route

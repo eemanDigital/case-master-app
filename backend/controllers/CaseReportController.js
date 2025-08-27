@@ -44,8 +44,9 @@ exports.createReport = catchAsync(async (req, res, next) => {
   });
 });
 
+// get all reports except soft-deleted ones
 exports.getReports = catchAsync(async (req, res, next) => {
-  const reports = await Report.find().sort("-date");
+  const reports = await Report.find({ isDeleted: false }).sort("-date");
 
   res.status(200).json({
     results: reports.length,
@@ -366,3 +367,26 @@ exports.generateCauseListMonth = catchAsync(async (req, res, next) => {
     `../output/${Math.random()}_causeList.pdf`
   );
 });
+
+//Soft delete handler
+// exports.softDeleteReport = catchAsync(async (req, res, next) => {
+//   const { id } = req.params;
+
+//   const report = Report.findById(id);
+
+//   // return 404 where no report is found with the ID
+//   if (!report) {
+//     return next(new AppError("Report not found", 404));
+//   }
+//   // return 403 where delete attempt by non-owner
+//   if (req.user._id.toString() !== report.reportedBy._id.toString()) {
+//     return next(new AppError("Unauthorized", 403));
+//   }
+
+//   //set isDeleted to true & delete date
+//   report.isDeleted = true;
+//   report.deletedAt = new Date();
+//   report.save();
+
+//   return res.status(200).json({ message: "Report Deleted" });
+// });
