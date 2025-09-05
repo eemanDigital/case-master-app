@@ -40,6 +40,8 @@ const SoftDeletedCasesArchive = () => {
   const dispatch = useDispatch();
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
 
+  console.log("deletedCases", deletedCases);
+
   useRedirectLogoutUser("/users/login"); // redirect to login if not logged in
 
   //  fetch cases
@@ -73,9 +75,7 @@ const SoftDeletedCasesArchive = () => {
   //Restore Case Handler
   const restoreCase = async (id) => {
     try {
-      const response = await axios.post(
-        `${baseURL}/soft_delete/cases/${id}/restore`
-      );
+      const response = await axios.post(`${baseURL}/cases/${id}/restore`);
       toast.success(response.data.message);
       await fetchData("cases/soft-deleted-cases", "deletedCases"); // Await this!
       dispatch(RESET());

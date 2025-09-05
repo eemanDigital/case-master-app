@@ -95,7 +95,7 @@ const CaseList = () => {
   // delete handler
   const deleteCase = async (id) => {
     // await dispatch(deleteData(`cases/${id}`)); //hard delete
-    await dispatch(deleteData(`soft_delete/cases/${id}`)); //soft delete
+    await dispatch(deleteData(`cases/soft-delete/${id}`)); //soft delete
     await fetchData("cases", "cases");
   };
 

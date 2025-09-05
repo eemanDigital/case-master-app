@@ -10,6 +10,7 @@ const {
   getYearlyNewCases,
   getCasesByAccountOfficer,
   getCasesByClient,
+  getDeletedCases,
 } = require("../controllers/caseController");
 const { protect, restrictTo } = require("../controllers/authController");
 const {
@@ -22,6 +23,12 @@ const {
   deleteDocument,
   getCasesByGroup,
 } = require("../controllers/factory.js");
+const {
+  softDeleteItem,
+
+  restoreItem,
+} = require("../controllers/softDeleteController.js");
+
 // const cacheMiddleware = require("../utils/cacheMiddleware.js");
 
 const router = express.Router();
@@ -68,7 +75,7 @@ router.get(
 );
 router.get(
   "/cases-by-accountOfficer",
-  // cacheMiddleware(() => "casesao"),
+  // cacheMiddleware(() => "case"),
   getCasesByAccountOfficer
 );
 router.get(
@@ -86,12 +93,21 @@ router.get(
 // Document related routes
 router.get("/:parentId/documents/:documentId/download", downloadDocument(Case));
 router.delete("/:parentId/documents/:documentId", deleteDocument(Case));
+router.delete(
+  "/soft-delete/:id",
+  softDeleteItem({ model: Case, modelName: "Case" })
+);
 
 // Basic CRUD routes for cases
 router.get(
   "/",
   // cacheMiddleware(() => "cases"),
   getCases
+);
+router.get(
+  "/soft-deleted-cases",
+
+  getDeletedCases
 );
 router.post("/", createCase);
 
@@ -109,7 +125,12 @@ router.get(
   // cacheMiddleware((req) => `singleCase:${req.params.caseId}`),
   getCase
 );
-router.patch("/:caseId", updateCase);
-router.delete("/:caseId", restrictTo("admin", "super-admin"), deleteCase);
+router.post(
+  "/:itemId/restore",
+  restoreItem({ model: Case, modelName: "Case" })
+); // restore soft deleted case
+
+router.patch("/:caseId", updateCase); // update case by id
+router.delete("/:caseId", restrictTo("admin", "super-admin"), deleteCase); // hard delete case by id
 
 module.exports = router;
