@@ -22,7 +22,7 @@ import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import ButtonWithIcon from "../components/ButtonWithIcon";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
-import { FaArchive } from "react-icons/fa";
+import ArchiveIcon from "../components/ArchiveIcon";
 // import debounce from "lodash/debounce";
 
 const { Title } = Typography;
@@ -207,11 +207,11 @@ const CaseList = () => {
           </div>
         )}
 
-        <Tooltip title="View Deleted Cases">
-          <Link to="soft-deleted-cases">
-            <FaArchive size={20} />
-          </Link>
-        </Tooltip>
+        <ArchiveIcon
+          toolTipName="View Deleted Cases"
+          link="soft-deleted-cases"
+        />
+
         <SearchBar data={cases?.data} onSearch={handleSearchChange} />
       </div>
       {error.cases && cases.length > 0 ? (

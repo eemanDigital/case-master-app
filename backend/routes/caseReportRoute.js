@@ -5,17 +5,23 @@ const {
   getReports,
   getUpcomingMatter,
   updateCaseReport,
-  addLawyerInCourt,
-  removeLawyerInCourt,
+  // addLawyerInCourt,
+  // removeLawyerInCourt,
   deleteReport,
   generateReportPdf,
-  generateCauseList,
+  // generateCauseList,
   generateCauseListMonth,
   generateCauseListWeek,
   generateCauseListNextWeek,
 } = require("../controllers/CaseReportController");
 const { protect } = require("../controllers/authController");
-const cacheMiddleware = require("../utils/cacheMiddleware");
+// const cacheMiddleware = require("../utils/cacheMiddleware");
+const Report = require("../models/caseReportModel");
+const {
+  restoreItem,
+  getDeletedItems,
+  softDeleteItem,
+} = require("../controllers/softDeleteController");
 
 const router = express.Router();
 
@@ -24,6 +30,22 @@ router.use(protect);
 router.post("/", createReport);
 router.get("/", getReports);
 router.get("/upcoming", getUpcomingMatter); //cause list route but from reports
+
+router.post(
+  "/:itemId/restore",
+  restoreItem({ model: Report, modelName: "Case Report" })
+); // restore soft deleted report
+router.get(
+  "/soft-deleted-reports",
+  getDeletedItems({
+    model: Report,
+  })
+);
+
+router.delete(
+  "/soft-delete/:id",
+  softDeleteItem({ model: Report, modelName: "Case Report" })
+);
 // Specific route for generating cause list should be before the general /:reportId route
 router.get("/pdf/causeList/week", generateCauseListWeek);
 router.get("/pdf/causeList/month", generateCauseListMonth);

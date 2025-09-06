@@ -27,6 +27,7 @@ const {
   softDeleteItem,
 
   restoreItem,
+  getDeletedItems,
 } = require("../controllers/softDeleteController.js");
 
 // const cacheMiddleware = require("../utils/cacheMiddleware.js");
@@ -107,7 +108,7 @@ router.get(
 router.get(
   "/soft-deleted-cases",
 
-  getDeletedCases
+  getDeletedItems({ model: Case })
 );
 router.post("/", createCase);
 

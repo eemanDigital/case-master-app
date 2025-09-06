@@ -62,3 +62,25 @@ exports.restoreItem = ({ model, modelName }) =>
       data: item,
     });
   });
+
+// get all deleted items
+exports.getDeletedItems = ({ model, modelName, sortParams }) =>
+  catchAsync(async (req, res, next) => {
+    // Fetch cases from the database
+    let items = await model.find({ isDeleted: true }).sort(sortParams);
+
+    // Handle the case where no items are found
+    if (items.length === 0) {
+      return next(new AppError(`No ${modelName} found`, 404));
+    }
+
+    // set redis key for caching
+    // setRedisCache("items", items);
+
+    // Send the response with the fetched items
+    res.status(200).json({
+      results: items.length,
+      fromCache: false,
+      data: items,
+    });
+  });

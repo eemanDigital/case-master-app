@@ -39,25 +39,25 @@ exports.getCases = catchAsync(async (req, res, next) => {
 });
 
 // get all deleted cases
-exports.getDeletedCases = catchAsync(async (req, res, next) => {
-  // Fetch cases from the database
-  let cases = await Case.find({ isDeleted: true }).sort("-filingDate");
+// exports.getDeletedCases = catchAsync(async (req, res, next) => {
+//   // Fetch cases from the database
+//   let cases = await Case.find({ isDeleted: true }).sort("-filingDate");
 
-  // Handle the case where no cases are found
-  if (cases.length === 0) {
-    return next(new AppError("No case found", 404));
-  }
+//   // Handle the case where no cases are found
+//   if (cases.length === 0) {
+//     return next(new AppError("No case found", 404));
+//   }
 
-  // set redis key for caching
-  // setRedisCache("cases", cases);
+//   // set redis key for caching
+//   // setRedisCache("cases", cases);
 
-  // Send the response with the fetched cases
-  res.status(200).json({
-    results: cases.length,
-    fromCache: false,
-    data: cases,
-  });
-});
+//   // Send the response with the fetched cases
+//   res.status(200).json({
+//     results: cases.length,
+//     fromCache: false,
+//     data: cases,
+//   });
+// });
 
 // get single case by id
 exports.getCase = catchAsync(async (req, res, next) => {
