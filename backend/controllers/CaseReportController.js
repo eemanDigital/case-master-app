@@ -45,7 +45,7 @@ exports.createReport = catchAsync(async (req, res, next) => {
 });
 
 exports.getReports = catchAsync(async (req, res, next) => {
-  const reports = await Report.find().sort("-date");
+  const reports = await Report.find({ isDeleted: false }).sort("-date");
 
   res.status(200).json({
     results: reports.length,
