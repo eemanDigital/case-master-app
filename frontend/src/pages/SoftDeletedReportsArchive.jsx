@@ -1,20 +1,37 @@
 import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { Link } from "react-router-dom";
-import { Card, Typography, Space, Pagination } from "antd";
+import {
+  Card,
+  Typography,
+  Space,
+  Pagination,
+  Tooltip,
+  Button,
+  Modal,
+} from "antd";
+import { DeleteOutlined } from "@ant-design/icons";
+import { MdOutlineSettingsBackupRestore } from "react-icons/md";
 
+import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import { formatDate } from "../utils/formatDate";
-
 import useTextShorten from "../hooks/useTextShorten";
-
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-
 import { useCallback } from "react";
+import { useAdminHook } from "../hooks/useAdminHook";
+import { useDispatch, useSelector } from "react-redux";
+import { toast } from "react-toastify";
+import useRestoreItem from "../hooks/useRestoreItem";
 
 const { Title, Text } = Typography;
+const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
 
 const SoftDeletedReportsArchive = () => {
   const { deletedReports, loading, error, fetchData } = useDataGetterHook();
+  const { isSuperAdmin } = useAdminHook();
+  const dispatch = useDispatch();
+  const { user } = useSelector((state) => state.auth);
+  const restoreItem = useRestoreItem(baseURL, fetchData);
 
   //  fetch reports
   const fetchReports = useCallback(() => {
@@ -24,7 +41,11 @@ const SoftDeletedReportsArchive = () => {
   useEffect(() => {
     fetchReports();
   }, [fetchReports]);
-
+  const {
+    isError: deleteError,
+    isSuccess: deleteSuccess,
+    message: deleteMsg,
+  } = useSelector((state) => state.delete); // get delete state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(5);
   const { shortenText } = useTextShorten();
@@ -35,28 +56,28 @@ const SoftDeletedReportsArchive = () => {
   //   return `Case: ${deletedReports.data?.caseReported.firstParty.name[0].name} vs ${deletedReports.data?.caseReported.secondParty.name[0].name}`;
   // };
 
-  // useEffect(() => {
-  //   if (deleteSuccess) {
-  //     // if delete is successful
-  //     toast.success(deleteMsg);
-  //     dispatch(RESET()); // reset the delete state
-  //   }
-  //   if (deleteError) {
-  //     // if delete fails
-  //     toast.error(deleteMsg);
-  //     dispatch(RESET());
-  //   }
-  // }, [deleteSuccess, deleteError, deleteMsg, dispatch]);
+  useEffect(() => {
+    if (deleteSuccess) {
+      // if delete is successful
+      toast.success(deleteMsg);
+      dispatch(RESET()); // reset the delete state
+    }
+    if (deleteError) {
+      // if delete fails
+      toast.error(deleteMsg);
+      dispatch(RESET());
+    }
+  }, [deleteSuccess, deleteError, deleteMsg, dispatch]);
 
   // // Delete report
-  // const deleteReport = async (id) => {
-  //   try {
-  //     await dispatch(deleteData(`soft_delete/reports/${id}`));
-  //     fetchData("reports", "reports");
-  //   } catch (error) {
-  //     toast.error("Failed to delete report");
-  //   }
-  // };
+  const deleteReport = async (id) => {
+    try {
+      await dispatch(deleteData(`reports/${id}`));
+      fetchData("reports", "reports");
+    } catch (error) {
+      toast.error("Failed to delete report");
+    }
+  };
 
   return (
     <section className="w-full   rounded-lg sm:px-6 px-2 ">
@@ -131,10 +152,44 @@ const SoftDeletedReportsArchive = () => {
                   </span>
                 </Text>
               </Space>
+
+              <Tooltip title="Restore Case">
+                <Button
+                  onClick={() =>
+                    restoreItem(
+                      "reports",
+                      report._id,
+                      "deletedReports",
+                      "reports/soft-deleted-reports"
+                    )
+                  }
+                  className="bg-purple-200 text-purple-500"
+                  icon={<MdOutlineSettingsBackupRestore size={20} />}
+                />
+              </Tooltip>
+
+              <div className="flex justify-end mt-4 space-x-2">
+                {(isSuperAdmin ||
+                  report?.reportedBy?._id === user?.data?._id) && (
+                  <Tooltip title="Delete Report">
+                    <Button
+                      icon={<DeleteOutlined />}
+                      className="bg-red-500 text-white hover:bg-red-600"
+                      onClick={() => {
+                        Modal.confirm({
+                          title: "Are you sure you want to delete this report?",
+                          onOk: () => deleteReport(report?._id),
+                        });
+                      }}
+                    />
+                  </Tooltip>
+                )}
+              </div>
             </Space>
           </Card>
         ))}
       </Space>
+
       {
         <Pagination
           current={currentPage}

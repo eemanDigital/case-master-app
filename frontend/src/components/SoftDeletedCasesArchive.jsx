@@ -18,9 +18,11 @@ import LoadingSpinner from "./LoadingSpinner";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
+
 import PageErrorAlert from "./PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import axios from "axios";
+import useRestoreItem from "../hooks/useRestoreItem";
 // import debounce from "lodash/debounce";
 
 const { Title } = Typography;
@@ -36,11 +38,10 @@ const SoftDeletedCasesArchive = () => {
   // const clientId = user?.data?._id;
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
+  const restoreItem = useRestoreItem(baseURL, fetchData);
 
   const dispatch = useDispatch();
   const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-  console.log("deletedCases", deletedCases);
 
   useRedirectLogoutUser("/users/login"); // redirect to login if not logged in
 
@@ -72,17 +73,17 @@ const SoftDeletedCasesArchive = () => {
     }
   }, [isSuccess, isError, message, dispatch]);
 
-  //Restore Case Handler
-  const restoreCase = async (id) => {
-    try {
-      const response = await axios.post(`${baseURL}/cases/${id}/restore`);
-      toast.success(response.data.message);
-      await fetchData("cases/soft-deleted-cases", "deletedCases"); // Await this!
-      dispatch(RESET());
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Failed to restore case");
-    }
-  };
+  // //Restore Case Handler
+  // const restoreCase = async (id) => {
+  //   try {
+  //     const response = await axios.post(`${baseURL}/cases/${id}/restore`);
+  //     toast.success(response.data.message);
+  //     await fetchData("cases/soft-deleted-cases", "deletedCases"); // Await this!
+  //     dispatch(RESET());
+  //   } catch (error) {
+  //     toast.error(error.response?.data?.message || "Failed to restore case");
+  //   }
+  // };
 
   // Calculate pagination
   const columns = [
@@ -125,9 +126,17 @@ const SoftDeletedCasesArchive = () => {
           <>
             <Tooltip title="Restore Case">
               <Button
-                onClick={() => restoreCase(record._id)}
+                onClick={() =>
+                  restoreItem(
+                    "cases",
+                    record._id,
+                    "deletedCases",
+                    "cases/soft-deleted-case"
+                  )
+                }
                 className="bg-purple-200 text-purple-500"
-                icon={<MdOutlineSettingsBackupRestore size={20} />}></Button>
+                icon={<MdOutlineSettingsBackupRestore size={20} />}
+              />
             </Tooltip>
 
             <Tooltip title="Delete Case">
