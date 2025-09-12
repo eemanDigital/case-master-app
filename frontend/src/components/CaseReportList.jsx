@@ -28,6 +28,7 @@ import AddEventToCalender from "./AddEventToCalender";
 import { useDownloadPdfHandler } from "../hooks/useDownloadPdfHandler";
 import SendCaseReport from "./SendCaseReport";
 import { ShowStaff } from "./protect/Protect";
+import ArchiveIcon from "./ArchiveIcon";
 
 const { Title, Text } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
@@ -117,7 +118,7 @@ const CaseReportList = ({
   // Delete report
   const deleteReport = async (id) => {
     try {
-      await dispatch(deleteData(`soft_delete/reports/${id}`));
+      await dispatch(deleteData(`reports/soft-delete/${id}`));
       fetchData("reports", "reports");
     } catch (error) {
       toast.error("Failed to delete report");
@@ -163,6 +164,12 @@ const CaseReportList = ({
             </Button>
           </Link>
         )}
+
+        <ArchiveIcon
+          toolTipName="View Deleted Reports"
+          link="soft-deleted-items"
+        />
+
         {showFilter && (
           <SearchBar onSearch={handleSearchChange} className="w-full md:w-64" />
         )}
