@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import deleteService from "./deleteService";
-import { toast } from "react-toastify";
+// import { toast } from "react-toastify";
 
 const initialState = {
   isLoading: false,
@@ -48,13 +48,13 @@ const deleteSlice = createSlice({
         state.isSuccess = true;
         state.isLoading = false;
         state.message = action.payload;
-        toast.success(action.payload);
+        // toast.success(action.payload);
       })
       .addCase(deleteData.rejected, (state, action) => {
         state.isError = true;
         state.isLoading = false;
         state.message = action.payload;
-        toast.error(action.payload);
+        // toast.error(action.payload);
       });
   },
 });
