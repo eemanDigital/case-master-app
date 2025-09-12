@@ -18,10 +18,8 @@ import LoadingSpinner from "./LoadingSpinner";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
-
 import PageErrorAlert from "./PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
-import axios from "axios";
 import useRestoreItem from "../hooks/useRestoreItem";
 // import debounce from "lodash/debounce";
 
@@ -73,17 +71,6 @@ const SoftDeletedCasesArchive = () => {
     }
   }, [isSuccess, isError, message, dispatch]);
 
-  // //Restore Case Handler
-  // const restoreCase = async (id) => {
-  //   try {
-  //     const response = await axios.post(`${baseURL}/cases/${id}/restore`);
-  //     toast.success(response.data.message);
-  //     await fetchData("cases/soft-deleted-cases", "deletedCases"); // Await this!
-  //     dispatch(RESET());
-  //   } catch (error) {
-  //     toast.error(error.response?.data?.message || "Failed to restore case");
-  //   }
-  // };
 
   // Calculate pagination
   const columns = [
