@@ -299,7 +299,14 @@ function App() {
       ) : (
         <>
           <RouterProvider router={router} />
-          <ToastContainer />
+          <ToastContainer
+            hideProgressBar={true}
+            autoClose="4000"
+            toastStyle={{
+              height: "40px",
+              fontSize: "14px",
+            }}
+          />
         </>
       )}
     </>

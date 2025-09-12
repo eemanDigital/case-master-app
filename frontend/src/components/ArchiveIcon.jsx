@@ -7,7 +7,7 @@ function ArchiveIcon({ toolTipName, link }) {
     <div>
       <Tooltip title={toolTipName}>
         <Link to={link}>
-          <FaArchive size={20} />
+          <FaArchive size={14} className=" text-gray-600" />
         </Link>
       </Tooltip>
     </div>

@@ -103,6 +103,32 @@ const SoftDeletedCasesArchive = () => {
       render: (text) => <p className="capitalize">{text}</p>,
       width: 200,
     },
+
+    {
+      title: "Deleted On",
+      dataIndex: "deletedAt",
+      key: "deletedAt",
+      render: (text) => <p>{new Date(text).toLocaleDateString("en-US", {})}</p>,
+      width: 150,
+    },
+    {
+      title: "Deleted By",
+      dataIndex: "deletedBy",
+      key: "deletedBy",
+      render: (text) => (
+        <p>
+          {text?.firstName} {text?.lastName}
+        </p>
+      ),
+      width: 150,
+    },
+    {
+      title: "Role",
+      dataIndex: "deletedBy",
+      key: "role",
+      render: (text) => <p className="capitalize">{text?.role || "N/A"}</p>,
+      width: 150,
+    },
     {
       title: "Action",
       key: "action",

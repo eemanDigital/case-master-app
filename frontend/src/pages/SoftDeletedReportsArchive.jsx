@@ -73,6 +73,8 @@ const SoftDeletedReportsArchive = () => {
     }
   };
 
+  console.log(deletedReports, "deletedReports");
+
   return (
     <section className="w-full   rounded-lg sm:px-6 px-2 ">
       <Title level={2}>Deleted Reports</Title>
@@ -125,6 +127,29 @@ const SoftDeletedReportsArchive = () => {
                     {`${report?.reportedBy?.firstName} ${report?.reportedBy?.lastName}`}
                   </span>
                 </Text>
+
+                <div className="flex flex-col space-y-1 md:space-y-0 md:flex-row md:space-x-4 bg-gray-100 p-2 rounded  ">
+                  <Text className="font-poppins  font-medium">
+                    Deleted By:{" "}
+                    <span className="text-gray-700">
+                      {`${report?.deletedBy?.firstName} ${report?.reportedBy?.lastName}`}
+                    </span>
+                  </Text>
+
+                  <Text className="font-poppins  font-medium">
+                    Role:{" "}
+                    <span className="text-green-500">
+                      {report?.deletedBy?.role || "N/A"}
+                    </span>
+                  </Text>
+
+                  <Text className="font-poppins  font-medium">
+                    Deleted On:{" "}
+                    <span className="text-red-500">
+                      {formatDate(report?.deletedAt)}
+                    </span>
+                  </Text>
+                </div>
               </Space>
 
               <Tooltip title="Restore Case">

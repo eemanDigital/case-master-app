@@ -145,13 +145,19 @@ const CaseReportList = ({
   }
 
   return (
-    <section className="w-full   rounded-lg sm:px-6 px-2 ">
+    <section className="w-full   rounded-lg  px-2 ">
       <Title
         level={2}
         className={`${
-          titleStyle || "text-2xl text-gray-800 font-bold p-5 mb-6"
+          titleStyle || "text-2xl text-gray-800 font-bold p-2 mb-6"
         } ${hideButtons ? "text-center" : ""}`}>
-        {title}
+        <div className="flex justify-between items-center">
+          {title}
+          <ArchiveIcon
+            toolTipName="View Deleted Reports"
+            link="soft-deleted-items"
+          />
+        </div>
       </Title>
       <div className="flex flex-col md:flex-row justify-between items-center mb-6">
         {!hideButtons && isStaff && (
@@ -164,11 +170,6 @@ const CaseReportList = ({
             </Button>
           </Link>
         )}
-
-        <ArchiveIcon
-          toolTipName="View Deleted Reports"
-          link="soft-deleted-items"
-        />
 
         {showFilter && (
           <SearchBar onSearch={handleSearchChange} className="w-full md:w-64" />

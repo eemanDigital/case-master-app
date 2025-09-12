@@ -207,11 +207,6 @@ const CaseList = () => {
           </div>
         )}
 
-        <ArchiveIcon
-          toolTipName="View Deleted Cases"
-          link="soft-deleted-cases"
-        />
-
         <SearchBar data={cases?.data} onSearch={handleSearchChange} />
       </div>
       {error.cases && cases.length > 0 ? (
@@ -221,7 +216,13 @@ const CaseList = () => {
         />
       ) : (
         <section className=" font-medium font-poppins">
-          <Title level={1}>Cases</Title>
+          <div className="flex justify-between items-center mb-4">
+            <h1 className=" text-3xl ">Cases</h1>
+            <ArchiveIcon
+              toolTipName="View Deleted Cases"
+              link="soft-deleted-cases"
+            />
+          </div>
 
           <div className="overflow-x-auto">
             {cases.length < 1 ? (
