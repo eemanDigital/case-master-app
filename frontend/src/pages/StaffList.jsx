@@ -17,9 +17,7 @@ import EventList from "./EventList";
 const StaffList = () => {
   const [searchResults, setSearchResults] = useState([]);
   const dispatch = useDispatch();
-  const { isLoading, isError, users, message } = useSelector(
-    (state) => state.auth
-  );
+  const { isError, users, message } = useSelector((state) => state.auth);
 
   const { Column, ColumnGroup } = Table;
   const { isAdminOrHr, isSuperOrAdmin } = useAdminHook();
@@ -71,107 +69,106 @@ const StaffList = () => {
 
   return (
     <>
-      {isError ? (
+      {/* {isError ? (
         <PageErrorAlert errorCondition={isError} errorMessage={message} />
-      ) : (
-        <>
-          <div className="flex md:flex-row flex-col justify-evenly  gap-3 my-4">
-            {isAdminOrHr && (
-              <>
-                <Link to="add-user">
-                  <ButtonWithIcon
-                    onClick={() => {}}
-                    icon={<PlusOutlined className="mr-2" />}
-                    text="Add User"
-                  />
-                </Link>
-                {/* leave balance form */}
-                <CreateLeaveBalanceForm />
-
-                {/* <div className="w-full md:w-auto"></div> */}
-              </>
-            )}
-            <EventList />
-            <SearchBar onSearch={handleSearchChange} />
-          </div>
-          <div className="overflow-x-auto font-medium font-poppins">
-            <Table dataSource={staffList} scroll={{ x: 700 }}>
-              <ColumnGroup title="Employee's Name">
-                <Column
-                  title="Photo"
-                  dataIndex="photo"
-                  key="photo"
-                  render={(photo) => (
-                    <div className="flex items-center justify-center">
-                      <img
-                        className="w-12 h-12 object-cover rounded-full"
-                        src={photo ? photo : avatar}
-                        alt="staff"
-                      />
-                    </div>
-                  )}
+      ) : ( */}
+      <>
+        <div className="flex md:flex-row flex-col justify-evenly  gap-3 my-4">
+          {isAdminOrHr && (
+            <>
+              <Link to="add-user">
+                <ButtonWithIcon
+                  onClick={() => {}}
+                  icon={<PlusOutlined className="mr-2" />}
+                  text="Add User"
                 />
-                <Column
-                  title="Name"
-                  key="name"
-                  render={(text, record) => (
-                    <Tooltip title="Click for details">
-                      <Link
-                        className="text-md font-bold capitalize text-blue-600 hover:text-blue-800 cursor-pointer  flex items-center"
-                        to={`/dashboard/staff/${record?._id}/details`}>
-                        {`${record.firstName} ${record.lastName}`}
-                      </Link>
+              </Link>
+              {/* leave balance form */}
+              <CreateLeaveBalanceForm />
+
+              {/* <div className="w-full md:w-auto"></div> */}
+            </>
+          )}
+          <EventList />
+          <SearchBar onSearch={handleSearchChange} />
+        </div>
+        <div className="overflow-x-auto font-medium font-poppins">
+          <Table dataSource={staffList} scroll={{ x: 700 }}>
+            <ColumnGroup title="Employee's Name">
+              <Column
+                title="Photo"
+                dataIndex="photo"
+                key="photo"
+                render={(photo) => (
+                  <div className="flex items-center justify-center">
+                    <img
+                      className="w-12 h-12 object-cover rounded-full"
+                      src={photo ? photo : avatar}
+                      alt="staff"
+                    />
+                  </div>
+                )}
+              />
+              <Column
+                title="Name"
+                key="name"
+                render={(text, record) => (
+                  <Tooltip title="Click for details">
+                    <Link
+                      className="text-md font-bold capitalize text-blue-600 hover:text-blue-800 cursor-pointer  flex items-center"
+                      to={`/dashboard/staff/${record?._id}/details`}>
+                      {`${record.firstName} ${record.lastName}`}
+                    </Link>
+                  </Tooltip>
+                )}
+              />
+            </ColumnGroup>
+
+            {/* <Column title="Email" dataIndex="email" key="email" /> */}
+            <Column title="Role" dataIndex="role" key="role" />
+            <Column title="Position" dataIndex="position" key="position" />
+            <Column
+              title="Status"
+              dataIndex="isActive"
+              key="isActive"
+              render={(isActive) => (
+                <span
+                  className={`px-3 py-1 rounded-full text-xs ${
+                    isActive
+                      ? "bg-green-100 text-green-800"
+                      : "bg-red-100 text-red-800"
+                  }`}>
+                  {isActive ? "Active" : "Inactive"}
+                </span>
+              )}
+            />
+
+            <Column
+              title="Action"
+              key="action"
+              render={(text, record) => (
+                <Space size="middle">
+                  {isSuperOrAdmin && (
+                    <Tooltip title="Delete Staff">
+                      <Button
+                        icon={<DeleteOutlined />}
+                        className="mx-6 bg-red-200 text-red-500 hover:text-red-700"
+                        onClick={() => {
+                          Modal.confirm({
+                            title: "Are you sure you want to delete this user?",
+                            onOk: () => removeUser(`soft-delete/${record._id}`),
+                          });
+                        }}
+                        type="primary"></Button>
                     </Tooltip>
                   )}
-                />
-              </ColumnGroup>
-
-              {/* <Column title="Email" dataIndex="email" key="email" /> */}
-              <Column title="Role" dataIndex="role" key="role" />
-              <Column title="Position" dataIndex="position" key="position" />
-              <Column
-                title="Status"
-                dataIndex="isActive"
-                key="isActive"
-                render={(isActive) => (
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs ${
-                      isActive
-                        ? "bg-green-100 text-green-800"
-                        : "bg-red-100 text-red-800"
-                    }`}>
-                    {isActive ? "Active" : "Inactive"}
-                  </span>
-                )}
-              />
-
-              <Column
-                title="Action"
-                key="action"
-                render={(text, record) => (
-                  <Space size="middle">
-                    {isSuperOrAdmin && (
-                      <Tooltip title="Delete Staff">
-                        <Button
-                          icon={<DeleteOutlined />}
-                          className="mx-6 bg-red-200 text-red-500 hover:text-red-700"
-                          onClick={() => {
-                            Modal.confirm({
-                              title:
-                                "Are you sure you want to delete this user?",
-                              onOk: () => removeUser(record._id),
-                            });
-                          }}
-                          type="primary"></Button>
-                      </Tooltip>
-                    )}
-                  </Space>
-                )}
-              />
-            </Table>
-          </div>
-        </>
-      )}
+                </Space>
+              )}
+            />
+          </Table>
+        </div>
+      </>
+      {/* )} */}
     </>
   );
 };

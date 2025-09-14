@@ -7,7 +7,7 @@ const sendMail = require("../utils/email");
 
 // GET ALL USERS
 exports.getUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find({});
+  const users = await User.find({ isDeleted: false });
 
   // set redis cache
   // setRedisCache("users", users, 100);

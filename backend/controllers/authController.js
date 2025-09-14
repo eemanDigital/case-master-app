@@ -98,7 +98,14 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError("Incorrect email or password", 401));
   }
 
-  // deny access to inactive user/staff- an inactive client can gain access
+  // Disallow login for deleted accounts (all roles)
+  if (user.isDeleted === true) {
+    return next(
+      new AppError("This account has been deleted and cannot log in")
+    );
+  }
+
+  // Disallow login for inactive staff, but allow inactive clients
   if (user.isActive === false && user.role !== "client") {
     return next(
       new AppError("You are no longer eligible to login to this account")

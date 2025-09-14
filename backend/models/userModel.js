@@ -56,7 +56,12 @@ const userSchema = new mongoose.Schema(
     passwordConfirm: {
       type: String,
       trim: true,
-      required: [true, "Please confirm your password"],
+      required: [
+        function () {
+          return this.isNew || this.isModified("password"); // only required on create and update
+        },
+        "Please confirm your password",
+      ],
       validate: {
         validator: function (el) {
           return el === this.password;
@@ -170,16 +175,6 @@ const userSchema = new mongoose.Schema(
       max: Date.now,
     },
 
-    // clientCase: [
-    //   {
-    //     type: mongoose.Schema.ObjectId,
-    //     ref: "Case",
-    //     // required:function() {
-    //     //   return this.role === "client"
-    //     // }
-    //   },
-    // ],
-
     isVerified: {
       type: Boolean,
       default: false,
@@ -195,6 +190,8 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: Date,
   },
   {
     timestamps: true,

@@ -60,6 +60,8 @@ const LeaveBalanceList = () => {
     debouncedSearch(e.target.value.trim().toLowerCase());
   };
 
+  console.log("leaveBalance", leaveBalance);
+
   // remove leave balance
   const removeBalance = async (id) => {
     await dispatch(deleteData(`leaves/balances/${id}`)).unwrap();

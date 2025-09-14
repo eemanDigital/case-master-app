@@ -1,14 +1,5 @@
 import { Link } from "react-router-dom";
-import {
-  Button,
-  Table,
-  Typography,
-  Pagination,
-  Row,
-  Modal,
-  Tooltip,
-  Empty,
-} from "antd";
+import { Button, Table, Pagination, Row, Modal, Tooltip, Empty } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useCallback, useEffect, useState } from "react";
@@ -23,9 +14,6 @@ import ButtonWithIcon from "../components/ButtonWithIcon";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import ArchiveIcon from "../components/ArchiveIcon";
-// import debounce from "lodash/debounce";
-
-const { Title } = Typography;
 
 const CaseList = () => {
   const { cases, loading, error, fetchData } = useDataGetterHook();
@@ -189,8 +177,6 @@ const CaseList = () => {
   ];
 
   if (loading.cases) return <LoadingSpinner />;
-
-  // if (cases.length < 0) return <h1>You have No Case</h1>;
 
   return (
     <>

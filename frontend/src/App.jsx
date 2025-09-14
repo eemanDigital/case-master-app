@@ -303,7 +303,7 @@ function App() {
             hideProgressBar={true}
             autoClose="4000"
             toastStyle={{
-              height: "40px",
+              // height: "40px",
               fontSize: "14px",
             }}
           />

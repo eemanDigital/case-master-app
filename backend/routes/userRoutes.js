@@ -3,8 +3,8 @@ const {
   getUsers,
   getUser,
   updateUser,
-  deleteUser,
-  updateUserByAdmin,
+  // deleteUser,
+  // updateUserByAdmin,
   upgradeUser,
   sendAutomatedEmail,
   getSingleUser,
@@ -28,11 +28,14 @@ const {
   loginWithCode,
   loginWithGoogle,
 } = require("../controllers/authController");
+
 const {
   uploadUserPhoto,
   resizeUserPhoto,
 } = require("../controllers/photoContoller");
-const cacheMiddleware = require("../utils/cacheMiddleware");
+// const cacheMiddleware = require("../utils/cacheMiddleware");
+const { softDeleteItem } = require("../controllers/softDeleteController");
+const User = require("../models/userModel");
 
 const router = express.Router();
 
@@ -95,6 +98,11 @@ router.get(
   getSingleUser
 );
 // // Delete user by ID
-router.delete("/:id", restrictTo("admin", "super-admin"), deleteUser);
+// router.delete("/:id", restrictTo("admin", "super-admin"), deleteUser);
+router.delete(
+  "/soft-delete/:id",
+  restrictTo("admin", "super-admin"),
+  softDeleteItem({ model: User, modelName: "User" })
+);
 
 module.exports = router;

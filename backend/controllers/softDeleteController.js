@@ -25,7 +25,7 @@ exports.softDeleteItem = ({ model, modelName }) =>
       await item.save();
 
       res.status(200).json({
-        message: `${modelName} soft deleted successfully`,
+        message: `${modelName} soft deleted`,
         deletedId: id,
       });
     } catch (error) {

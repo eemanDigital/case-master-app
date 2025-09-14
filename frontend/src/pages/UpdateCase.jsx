@@ -703,13 +703,10 @@ const UpdateCase = () => {
 
               {/* CLIENT */}
               <Form.Item
-                // rules={requiredRule}
                 name="client"
                 label="Client"
                 initialValue={formData?.client?._id}>
                 <Select
-                  // noStyle
-                  mode="multiple"
                   placeholder="Select client..."
                   options={clientOptions}
                   allowClear

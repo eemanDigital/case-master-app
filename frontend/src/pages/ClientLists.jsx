@@ -72,83 +72,83 @@ const ClientLists = () => {
 
   return (
     <div>
-      {isError ? (
+      {/* {isError ? (
         <PageErrorAlert errorCondition={isError} errorMessage={message} />
-      ) : (
-        <>
-          <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-            <Title level={2} className="mb-4 md:mb-0">
-              <UserOutlined className="mr-2" />
-              Client Management
-            </Title>
-            <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
-              {isStaff && <AddClientForm />}
-              <SearchBar onSearch={handleSearchChange} />
-            </div>
+      ) : ( */}
+      <>
+        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
+          <Title level={2} className="mb-4 md:mb-0">
+            <UserOutlined className="mr-2" />
+            Client Management
+          </Title>
+          <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
+            {isStaff && <AddClientForm />}
+            <SearchBar onSearch={handleSearchChange} />
           </div>
-          <Divider />
-          <Table
-            dataSource={searchResults}
-            rowKey="_id"
-            scroll={{ x: 750 }}
-            className="font-poppins">
+        </div>
+        <Divider />
+        <Table
+          dataSource={searchResults}
+          rowKey="_id"
+          scroll={{ x: 750 }}
+          className="font-poppins">
+          <Column
+            title="Name"
+            key="name"
+            render={(text, record) => (
+              <Tooltip title="View Details">
+                <Link
+                  className="text-blue-600 hover:text-blue-800 font-bold"
+                  to={`${record?._id}/details`}>
+                  {`${record.firstName} ${record.secondName || ""}`}
+                </Link>
+              </Tooltip>
+            )}
+          />
+          <Column title="Email" dataIndex="email" key="email" />
+          <Column title="Phone" dataIndex="phone" key="phone" />
+          <Column
+            title="Status"
+            dataIndex="isActive"
+            key="isActive"
+            render={(isActive) => (
+              <span
+                className={`px-2 py-1 rounded-full text-xs ${
+                  isActive
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}>
+                {isActive ? "Active" : "Inactive"}
+              </span>
+            )}
+          />
+          {isSuperOrAdmin && (
             <Column
-              title="Name"
-              key="name"
+              title="Action"
+              key="action"
               render={(text, record) => (
-                <Tooltip title="View Details">
-                  <Link
-                    className="text-blue-600 hover:text-blue-800 font-bold"
-                    to={`${record?._id}/details`}>
-                    {`${record.firstName} ${record.secondName || ""}`}
-                  </Link>
+                <Tooltip title="Delete Client">
+                  <Button
+                    icon={<DeleteOutlined />}
+                    className="bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 border-red-200"
+                    onClick={() => {
+                      Modal.confirm({
+                        title: "Delete Client",
+                        content:
+                          "Are you sure you want to delete this client's information?",
+                        okText: "Delete",
+                        okButtonProps: { danger: true },
+                        onOk: () => removeClient(`soft-delete/${record._id}`),
+                      });
+                    }}
+                  />
                 </Tooltip>
               )}
             />
-            <Column title="Email" dataIndex="email" key="email" />
-            <Column title="Phone" dataIndex="phone" key="phone" />
-            <Column
-              title="Status"
-              dataIndex="isActive"
-              key="isActive"
-              render={(isActive) => (
-                <span
-                  className={`px-2 py-1 rounded-full text-xs ${
-                    isActive
-                      ? "bg-green-100 text-green-800"
-                      : "bg-red-100 text-red-800"
-                  }`}>
-                  {isActive ? "Active" : "Inactive"}
-                </span>
-              )}
-            />
-            {isSuperOrAdmin && (
-              <Column
-                title="Action"
-                key="action"
-                render={(text, record) => (
-                  <Tooltip title="Delete Client">
-                    <Button
-                      icon={<DeleteOutlined />}
-                      className="bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 border-red-200"
-                      onClick={() => {
-                        Modal.confirm({
-                          title: "Delete Client",
-                          content:
-                            "Are you sure you want to delete this client's information?",
-                          okText: "Delete",
-                          okButtonProps: { danger: true },
-                          onOk: () => removeClient(record?._id),
-                        });
-                      }}
-                    />
-                  </Tooltip>
-                )}
-              />
-            )}
-          </Table>
-        </>
-      )}
+          )}
+        </Table>
+      </>
+      {/* )} */}
     </div>
   );
 };

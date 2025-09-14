@@ -14,7 +14,7 @@ const useUserSelectOptions = () => {
   // list of staff users
   const userData = Array.isArray(users?.data)
     ? users?.data
-        .filter((staff) => staff.role !== "client")
+        .filter((staff) => staff.role !== "client" && staff.isActive !== false) // Exclude clients and inactive users
         .map((s) => {
           return {
             value: s?._id,
