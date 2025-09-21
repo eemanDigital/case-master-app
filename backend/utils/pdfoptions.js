@@ -2,36 +2,25 @@ module.exports = {
   format: "A4",
   orientation: "portrait",
   border: {
-    top: "5mm",
-    right: "8mm",
-    bottom: "10mm",
-    left: "8mm",
+    top: "20mm", // more breathing space at top
+    right: "15mm", // wider content area
+    bottom: "20mm",
+    left: "15mm",
   },
   header: {
-    height: "60mm",
-    contents: {
-      first: `
-        <div style="text-align: center; font-size: 10pt; color: #555;">
-          <img src="/images/scale.jpg" alt="A.T Lukman & Co. Logo" style="width: 150px; margin-bottom: 10px;">
-          <h1 style="margin: 0;">A.T Lukman & Co.</h1>
-          <p style="margin: 5px 0;">Lawyers, Solicitors & Advocates</p>
-          <p style="margin: 5px 0;">Website: www.atlukman.com</p>
-          <p style="margin: 0;">Address: 123 Business Street, City, Country</p>
-          <p style="margin: 5px 0;">Email: asimi@gmail.com</p>
-          <p style="margin: 5px 0;">Phone: +234 123 456 789</p>
-        </div>
-      `,
-      other: "", // This ensures no header on subsequent pages
-    },
+    height: "20mm",
+    contents: `
+      <div style="text-align: center; font-size: 12pt; font-weight: bold; color: #333;">
+        A.T Lukman & Co. — Barristers & Solicitors of the Supreme Court of Nigeria.
+     
+      </div>
+    `,
   },
   footer: {
     height: "15mm",
     contents: {
       default:
-        '<div style="text-align: center; font-size: 9pt; color: #777;">Page {{page}} of {{pages}}</div>',
-      first:
-        '<div style="text-align: center; font-size: 9pt; color: #777;">Page {{page}} of {{pages}} - A.T Lukman & Co.</div>',
-      last: '<div style="text-align: center; font-size: 9pt; color: #777;">Page {{page}} of {{pages}} - Thank you for your business</div>',
+        '<div style="text-align: center; font-size: 10pt; color: #777;">Page {{page}} of {{pages}}</div>',
     },
   },
   childProcessOptions: {
@@ -43,9 +32,42 @@ module.exports = {
     <style>
       body {
         font-family: Arial, sans-serif;
-        font-size: 12pt;
+        font-size: 14pt;     /* larger default font */
+        line-height: 1.6;    /* better readability */
+        color: #222;
       }
-      /* You can add more global styles here */
+      h1 {
+        font-size: 20pt;
+        text-align: center;
+        margin-bottom: 10px;
+        color: #111;
+      }
+      h2 {
+        font-size: 16pt;
+        margin-top: 20px;
+        color: #333;
+      }
+      p {
+        font-size: 14pt;
+        margin: 8px 0;
+      }
     </style>
+
+    <h1>Case Report</h1>
+    <p><strong>Client:</strong> John Doe</p>
+    <p><strong>Case No:</strong> 12345</p>
+    <p><strong>Date:</strong> 14th September 2025</p>
+    <hr />
+
+    <h2>Summary</h2>
+    <p>
+      This is a sample PDF report generated using A.T Lukman & Co. template.
+      Replace this section with actual case details.
+    </p>
+
+    <h2>Details</h2>
+    <p>
+      More detailed case information can be placed here...
+    </p>
   `,
 };
