@@ -188,6 +188,10 @@ const CaseReportList = ({
                     nameStyle || "text-lg font-semibold text-gray-700 truncate"
                   } sm:text-base md:text-lg lg:text-xl w-full`}>
                   {`${report?.caseReported?.firstParty?.name[0]?.name} vs ${report?.caseReported?.secondParty?.name[0]?.name}`}
+                  <span className=" p-2 text-[12px]  text-gray-500 font-bold">
+                    (<span className=" ">Suit No:</span>{" "}
+                    {report?.caseReported?.suitNo})
+                  </span>
                 </Link>
               }>
               <Space direction="vertical" size="small" className="w-full">

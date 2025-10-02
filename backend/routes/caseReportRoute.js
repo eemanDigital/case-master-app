@@ -3,6 +3,7 @@ const {
   createReport,
   getReport,
   getReports,
+  getCaseReports,
   getUpcomingMatter,
   updateCaseReport,
   deleteReport,
@@ -10,6 +11,7 @@ const {
   generateCauseListMonth,
   generateCauseListWeek,
   generateCauseListNextWeek,
+  searchReports,
 } = require("../controllers/CaseReportController");
 const { protect } = require("../controllers/authController");
 // const cacheMiddleware = require("../utils/cacheMiddleware");
@@ -26,6 +28,8 @@ router.use(protect);
 
 router.post("/", createReport);
 router.get("/", getReports);
+// Advanced search endpoint
+router.post("/search", searchReports);
 router.get("/upcoming", getUpcomingMatter); //cause list route but from reports
 
 router.post(
@@ -38,6 +42,8 @@ router.get(
     model: Report,
   })
 );
+
+router.get("/cases/:caseId", getCaseReports); // Get reports by caseId
 
 router.delete(
   "/soft-delete/:id",

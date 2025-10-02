@@ -21,6 +21,7 @@ import { useCallback } from "react";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
+import GoBackButton from "../components/GoBackButton";
 import useRestoreItem from "../hooks/useRestoreItem";
 
 const { Title, Text } = Typography;
@@ -77,6 +78,7 @@ const SoftDeletedReportsArchive = () => {
 
   return (
     <section className="w-full   rounded-lg sm:px-6 px-2 ">
+      <GoBackButton />
       <Title level={2}>Deleted Reports</Title>
       <div className="flex flex-col md:flex-row justify-between items-center mb-6"></div>
       <Space direction="vertical" size="large" className="w-full">

@@ -1,5 +1,6 @@
 const Report = require("../models/caseReportModel");
 const Case = require("../models/caseModel");
+const PaginationServiceFactory = require("../services/PaginationServiceFactory");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const { generatePdf } = require("../utils/generatePdf");
@@ -45,13 +46,87 @@ exports.createReport = catchAsync(async (req, res, next) => {
 });
 
 // get all reports except soft-deleted ones
-exports.getReports = catchAsync(async (req, res, next) => {
-  const reports = await Report.find({ isDeleted: false }).sort("-date");
+// exports.getReports = catchAsync(async (req, res, next) => {
+//   const reports = await Report.find({ isDeleted: false }).sort("-date");
 
-  res.status(200).json({
-    results: reports.length,
-    data: reports,
-  });
+//   res.status(200).json({
+//     results: reports.length,
+//     data: reports,
+//   });
+// });
+
+// Create pagination service for Report model
+const reportPagination = PaginationServiceFactory.createService(Report);
+
+// Get all reports with advanced pagination and filtering
+exports.getReports = catchAsync(async (req, res, next) => {
+  const result = await reportPagination.paginate(req.query);
+
+  res.status(200).json(result);
+});
+
+// Get reports for a specific case
+// exports.getCaseReports = catchAsync(async (req, res, next) => {
+//   const customFilter = { caseReported: req.params.caseId };
+//   const result = await reportPagination.paginate(req.query, customFilter);
+
+//   res.status(200).json(result);
+// });
+
+// // Search reports by specific criteria
+// exports.searchReports = catchAsync(async (req, res, next) => {
+//   const { criteria, options } = req.body;
+
+//   const result = await reportPagination.advancedSearch(criteria, options);
+
+//   res.status(200).json(result);
+// });
+
+// // Get soft-deleted reports
+// exports.getDeletedReports = catchAsync(async (req, res, next) => {
+//   const customFilter = { isDeleted: true };
+//   const result = await reportPagination.paginate(req.query, customFilter);
+
+//   res.status(200).json(result);
+// });
+
+// Get all reports with advanced pagination and filtering
+exports.getReports = catchAsync(async (req, res, next) => {
+  const result = await reportPagination.paginate(req.query);
+
+  res.status(200).json(result);
+});
+
+// UPDATED: Advanced search with better error handling
+exports.searchReports = catchAsync(async (req, res, next) => {
+  const { criteria, options } = req.body;
+
+  // Validate required fields
+  if (!criteria) {
+    return res.status(400).json({
+      success: false,
+      message: "Search criteria is required",
+    });
+  }
+
+  try {
+    const result = await reportPagination.advancedSearch(criteria, options);
+    res.status(200).json(result);
+  } catch (error) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid search criteria",
+      error: error.message,
+    });
+  }
+});
+
+// Get reports for a specific case
+exports.getCaseReports = catchAsync(async (req, res, next) => {
+  const customFilter = { caseReported: req.params.caseId };
+  const result = await reportPagination.paginate(req.query, customFilter);
+
+  res.status(200).json(result);
 });
 
 // get single report

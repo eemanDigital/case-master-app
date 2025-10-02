@@ -10,6 +10,11 @@ const {
   getYearlyNewCases,
   getCasesByAccountOfficer,
   getCasesByClient,
+  searchCases,
+  getLawyerCases,
+  getCasesByStatus,
+  getUpcomingHearings,
+  getCasesByFilingDate,
 } = require("../controllers/caseController");
 const { protect, restrictTo } = require("../controllers/authController");
 const {
@@ -33,6 +38,21 @@ const {
 const router = express.Router();
 
 router.use(protect);
+
+// Advanced search endpoint
+router.post("/search", searchCases);
+
+// Get cases by lawyer
+router.get("/accountOfficer/:accountOfficerId", getLawyerCases);
+
+// Get cases by status
+router.get("/status/:status", getCasesByStatus);
+
+// Get upcoming hearings
+// router.get("/upcoming-hearings", getUpcomingHearings);
+
+// Get cases by filing date range
+router.get("/filing-date", getCasesByFilingDate);
 
 // Aggregate routes for various case groupings
 router.get(

@@ -1,4 +1,9 @@
-import { FaGavel, FaMapMarkerAlt, FaCalendarAlt } from "react-icons/fa";
+import {
+  FaGavel,
+  FaMapMarkerAlt,
+  FaCalendarAlt,
+  FaLocationArrow,
+} from "react-icons/fa";
 import { Typography, Button, Empty, Card, List, Avatar } from "antd";
 import { InboxOutlined, UserOutlined } from "@ant-design/icons";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
@@ -110,14 +115,14 @@ const CurrentDayCauseList = () => {
               renderItem={(item) => (
                 <List.Item className="border-b last:border-b-0 py-4 font-medium font-poppins">
                   <div className="w-full p-4 bg-gradient-to-r from-blue-100 to-blue-200 shadow-lg rounded-lg border border-gray-300">
-                    <p className="text-blue-600 text-md font-bold flex items-center">
+                    <p className="text-[14px] text-gray-700 font-bold mt-1 capitalize pb-2 tracking-wide">
+                      {item.case}{" "}
+                    </p>
+                    <p className="text-gray-600 text-xs font-medium flex items-center">
                       <FaGavel className="mr-2 text-blue-500" /> {item.suitNo}
                     </p>
-                    <p className="text-sm text-gray-700 font-medium mt-1">
-                      {item.case}
-                    </p>
                     <p className="text-xs text-gray-600 mt-1 capitalize flex items-center">
-                      <FaMapMarkerAlt className="mr-2 text-blue-500" />{" "}
+                      <FaLocationArrow className="mr-2 text-blue-500" />{" "}
                       {item.court}
                     </p>
                     <p className="text-xs text-gray-600 mt-1 flex items-center">

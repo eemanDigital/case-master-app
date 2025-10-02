@@ -81,6 +81,9 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
 
   return (
     <div className="rounded-md h-[300px] overflow-y-auto custom-scrollbar bg-gradient-to-r from-gray-100 to-gray-200 p-4">
+      <Text className="text-xl font-bold text-gray-800 mb-4 block text-center">
+        Today's Case Reports
+      </Text>
       {todayReports.map((report) => (
         <Card
           key={report._id}
