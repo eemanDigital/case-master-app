@@ -20,7 +20,7 @@ const DashBoardDataCount = ({ cases, staff, lawyerCount, clientCount }) => {
   const cardData = [
     {
       icon: FaBriefcase,
-      count: cases?.results || 0,
+      count: cases?.pagination.count || 0,
       label: "Number of Cases",
       color: "from-blue-400 to-blue-600",
     },
@@ -57,8 +57,11 @@ const DashBoardDataCount = ({ cases, staff, lawyerCount, clientCount }) => {
 
 DashBoardDataCount.propTypes = {
   cases: PropTypes.shape({
-    results: PropTypes.number,
+    pagination: PropTypes.shape({
+      count: PropTypes.number,
+    }),
   }),
+
   staff: PropTypes.number.isRequired,
   lawyerCount: PropTypes.number.isRequired,
   clientCount: PropTypes.number.isRequired,
