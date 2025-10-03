@@ -6,6 +6,7 @@ import {
   TextAreaInput,
 } from "../components/DynamicInputs";
 import useClientSelectOptions from "../hooks/useClientSelectOptions";
+import GoBackButton from "../components/GoBackButton";
 
 import {
   Button,
@@ -60,6 +61,11 @@ const CreateCaseForm = () => {
 
   return (
     <div className="max-w-4xl mx-auto  sm:p-4 p-0">
+      <GoBackButton />
+      <Typography.Title className="text-center" level={2}>
+        Create New Case
+      </Typography.Title>
+      <Divider />
       <Form
         layout="vertical"
         form={form}

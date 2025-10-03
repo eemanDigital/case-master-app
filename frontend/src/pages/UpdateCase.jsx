@@ -6,6 +6,7 @@ import {
   PlusOutlined,
 } from "@ant-design/icons";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
+import GoBackButton from "../components/GoBackButton";
 
 import {
   Button,
@@ -74,9 +75,11 @@ const UpdateCase = () => {
 
   return (
     <div>
-      <Link to="../.." relative="path">
-        Go Back
-      </Link>
+      <GoBackButton />
+      <Typography.Title className="text-center" level={2}>
+        Update Case
+      </Typography.Title>
+      <Divider />
       <div className="max-w-4xl mx-auto p-1">
         <Form
           className="space-y-6"
