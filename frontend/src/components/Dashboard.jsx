@@ -31,6 +31,8 @@ import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import CurrentDayCauseList from "./CurrentDayCauseList";
 import VerifyAccountNotice from "./VerifyAccountNotice";
 import { Link } from "react-router-dom";
+import EventList from "../pages/EventList";
+import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
 
 // context for year for search filter
 export const PaymentFiltersContext = createContext();
@@ -156,29 +158,26 @@ const Dashboard = () => {
           {isAdminOrHr && <LeaveNotification />}
         </div>
         <ShowStaff>
+          {/* Events and Quick Actions */}
           <ScrollingEvents />
 
-          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-2 rounded-lg md:flex-nowrap md:justify-start md:space-x-8">
-            {/* <div className="w-full md:w-auto my-3"> */}
+          <div className="flex flex-wrap items-center gap-3 mb-6 p-4 bg-gray-50 rounded-xl">
+            <EventList />
+
+            <CreateLeaveBalanceForm />
             <EventForm />
-            {/* </div> */}
-
-            {/* <div className="w-full md:w-auto m-3"> */}
             <LeaveAppForm />
-
             <Link to="note-list">
               <Button className="bg-green-500 hover:bg-green-600 text-white">
                 Show Notes
               </Button>
             </Link>
-
             <Link to="record-document-list">
               <Button className="bg-blue-500 hover:bg-blue-600 text-white">
                 Show Records
               </Button>
             </Link>
           </div>
-          {/* </div> */}
         </ShowStaff>
 
         {/* client's Dashboard */}
@@ -193,14 +192,11 @@ const Dashboard = () => {
               clientCount={clientCount}
             />
             <div className="container mx-auto mt-2">
-              <div className="flex flex-wrap -mx-4">
+              <div className="flex  flex-wrap -mx-4">
                 {/* LatestCaseReports - 50% width on large screens, full width on smaller screens */}
-                <div className="w-full lg:w-1/2 px-4 mb-8">
-                  <div className="bg-white rounded-lg shadow-md overflow-hidden">
-                    {/* <h2 className="bg-gradient-to-r from-blue-500 to-blue-700 text-gray-200 text-lg sm:text-xl md:text-2xl font-bold py-3 px-4 text-center">
-                      Today's Case Report
-                    </h2> */}
-                    <div className="p-4">
+                <div className=" flex-none gap-4 w-full px-4 mb-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg shadow-md w-full items-start">
+                    <div className="bg-gradient-to-br from-white to-blue-50/50 border border-gray-200 rounded-2xl shadow-sm h-[400px] w-full flex flex-col">
                       <LatestCaseReports
                         reports={reports?.data}
                         error={dataError.reports}
@@ -208,15 +204,12 @@ const Dashboard = () => {
                         fetchData={fetchData}
                       />
                     </div>
+
+                    <div className="bg-gradient-to-br from-white to-purple-50/50 border border-gray-200 rounded-2xl shadow-sm h-[400px] w-full flex flex-col">
+                      <CurrentDayCauseList />
+                    </div>
                   </div>
                 </div>
-
-                {/* Right side components */}
-                {/* <div className="w-full lg:w-1/2 px-4"> */}
-                {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"> */}
-                <CurrentDayCauseList />
-                {/* </div> */}
-                {/* </div> */}
 
                 {/* Components below LatestCaseReports */}
                 <div className="w-full px-4">
@@ -265,55 +258,36 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1 mt-8">
+            <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
               <CasesByCategoriesChart
                 title="Case By Status"
-                data={
-                  casesByStatus?.data?.filter(
-                    (item) => item?.groupName !== null
-                  ) || []
-                }
+                data={casesByStatus?.data || []}
+                // loading={casesByStatusLoading}
               />
-
               <CasesByCategoriesChart
                 title="Nature of Case"
-                data={
-                  casesByNature?.data?.filter(
-                    (item) => item?.groupName !== null
-                  ) || []
-                }
+                data={casesByNature?.data || []}
+                // loading={casesByNatureLoading}
               />
               <CasesByCategoriesChart
                 title="Cases By Court"
-                data={
-                  casesByCourt?.data?.filter(
-                    (item) => item?.groupName !== null
-                  ) || []
-                }
+                data={casesByCourt?.data || []}
+                // loading={casesByCourtLoading}
               />
               <CasesByCategoriesChart
                 title="Cases By Priority"
-                data={
-                  casesByRating?.data?.filter(
-                    (item) => item?.groupName !== null
-                  ) || []
-                }
+                data={casesByRating?.data || []}
+                // loading={casesByRatingLoading}
               />
               <CasesByCategoriesChart
                 title="Cases By Mode of Commencement"
-                data={
-                  casesByMode?.data?.filter(
-                    (item) => item?.groupName !== null
-                  ) || []
-                }
+                data={casesByMode?.data || []}
+                // loading={casesByModeLoading}
               />
               <CasesByCategoriesChart
                 title="Cases By Category"
-                data={
-                  casesByCategory?.data?.filter(
-                    (item) => item?.groupName !== null
-                  ) || []
-                }
+                data={casesByCategory?.data || []}
+                // loading={casesByCategoryLoading}
               />
             </div>
           </>

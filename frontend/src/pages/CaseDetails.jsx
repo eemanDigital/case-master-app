@@ -12,9 +12,37 @@ import {
   Empty,
   Table,
   Space,
+  Tag,
+  Avatar,
+  Divider,
+  Tabs,
+  Row,
+  Col,
 } from "antd";
-import { FaDownload } from "react-icons/fa6";
-import { RiDeleteBin2Line } from "react-icons/ri";
+import {
+  DownloadOutlined,
+  DeleteOutlined,
+  UserOutlined,
+  FileTextOutlined,
+  HistoryOutlined,
+  TeamOutlined,
+  CalendarOutlined,
+  BankOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  BulbOutlined,
+} from "@ant-design/icons";
+import {
+  DocumentArrowDownIcon,
+  TrashIcon,
+  UserGroupIcon,
+  DocumentTextIcon,
+  ClockIcon,
+  ScaleIcon,
+  BuildingLibraryIcon,
+  ExclamationTriangleIcon,
+  LightBulbIcon,
+} from "@heroicons/react/24/outline";
 import CaseDocumentUpload from "../components/CaseDocumentUpload";
 import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
 import useDeleteDocument from "../hooks/useDeleteDocument";
@@ -26,7 +54,8 @@ import MajorHeading from "../components/MajorHeading";
 import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
-const { Text, Title } = Typography;
+const { Title, Text } = Typography;
+const { TabPane } = Tabs;
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const CaseDetails = () => {
@@ -41,7 +70,9 @@ const CaseDetails = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
+  const [activeTab, setActiveTab] = useState("details");
+
+  useRedirectLogoutUser("/users/login");
 
   // fetch case data
   useEffect(() => {
@@ -56,7 +87,11 @@ const CaseDetails = () => {
 
   // loading and error state
   if (loading) {
-    <LoadingSpinner />;
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
+    return <PageErrorAlert errorCondition={error} errorMessage={error} />;
   }
 
   // Paginate the reports
@@ -68,10 +103,17 @@ const CaseDetails = () => {
   // Define columns for the document table
   const columns = [
     {
-      title: "File Name",
+      title: (
+        <div className="flex items-center gap-2">
+          <FileTextOutlined className="text-blue-600" />
+          <span>File Name</span>
+        </div>
+      ),
       dataIndex: "fileName",
       key: "fileName",
-      render: (text) => <span className="text-gray-800">{text}</span>,
+      render: (text) => (
+        <Text className="text-gray-800 font-medium">{text}</Text>
+      ),
     },
     {
       title: "Actions",
@@ -79,25 +121,33 @@ const CaseDetails = () => {
       render: (_, record) => (
         <Space size="middle">
           <Button
-            type="link"
-            icon={<FaDownload />}
+            type="primary"
+            size="small"
+            icon={<DownloadOutlined />}
             onClick={(event) =>
               handleGeneralDownload(
                 event,
                 `${baseURL}/cases/${id}/documents/${record._id}/download`,
                 record.fileName
               )
-            }>
+            }
+            className="bg-blue-600 hover:bg-blue-700 border-0">
             Download
           </Button>
           {isStaff && (
             <Button
-              type="link"
+              type="primary"
               danger
-              icon={<RiDeleteBin2Line />}
+              size="small"
+              icon={<DeleteOutlined />}
               onClick={(event) =>
                 Modal.confirm({
-                  title: "Are you sure you want to delete this document?",
+                  title: "Delete Document",
+                  content:
+                    "Are you sure you want to delete this document? This action cannot be undone.",
+                  okText: "Delete",
+                  okType: "danger",
+                  cancelText: "Cancel",
                   onOk: () =>
                     handleDeleteDocument(
                       event,
@@ -114,23 +164,120 @@ const CaseDetails = () => {
     },
   ];
 
-  //
-  if (error) {
-    return <PageErrorAlert errorCondition={error} errorMessage={error} />;
-  }
+  const getStatusColor = (status) => {
+    switch (status?.toLowerCase()) {
+      case "active":
+        return "processing";
+      case "pending":
+        return "warning";
+      case "decided":
+        return "success";
+      case "closed":
+        return "default";
+      default:
+        return "default";
+    }
+  };
+
+  const getPriorityColor = (priority) => {
+    switch (priority?.toLowerCase()) {
+      case "high":
+        return "red";
+      case "medium":
+        return "orange";
+      case "low":
+        return "green";
+      default:
+        return "blue";
+    }
+  };
+
+  // Data sections from original component
+  const caseDetailsList = [
+    { label: "Suit No:", value: data?.data?.suitNo },
+    {
+      label: "Filing Date:",
+      value: data?.data?.filingDate && formatDate(data?.data?.filingDate),
+    },
+    // {
+    //   label: "Case Summary:",
+    //   value: shortenText(data?.data?.caseSummary, 150, "caseSummary"),
+    // },
+    {
+      label: "Mode Of Commencement:",
+      value: data?.data?.modeOfCommencement,
+    },
+    {
+      label: "Filed By the Office:",
+      value: data?.data?.isFiledByTheOffice ? "Yes" : "No",
+    },
+    {
+      label: "Office Case File No:",
+      value: data?.data?.caseOfficeFileNo,
+    },
+    { label: "Nature of Case:", value: data?.data?.natureOfCase },
+    {
+      label: "Court:",
+      value: `${data?.data?.courtName}, ${data?.data?.courtNo} `,
+    },
+    {
+      label: "Court Location:",
+      value: `${data?.data?.location}, ${data?.data?.state}`,
+    },
+    { label: "Case Status:", value: data?.data?.caseStatus },
+    { label: "Case Category:", value: data?.data?.category },
+    {
+      label: "Case Priority/Ratings:",
+      value: data?.data?.casePriority,
+    },
+  ];
+
+  const analysisSections = [
+    { title: "Judge", data: data?.data?.judge, keyProp: "name" },
+    {
+      title: "Case Strength",
+      data: data?.data?.caseStrengths,
+      keyProp: "name",
+    },
+    {
+      title: "Case Weaknesses",
+      data: data?.data?.caseWeaknesses,
+      keyProp: "name",
+    },
+    {
+      title: "Steps to be Taken",
+      data: data?.data?.stepToBeTaken,
+      keyProp: "name",
+    },
+    {
+      title: "Account Officer(s)",
+      data: data?.data?.accountOfficer,
+      keyProp: "firstName",
+    },
+  ];
 
   return (
-    <div className="bg-gray-100 min-h-screen font-sans p-4">
-      <div className="container mx-auto  py-8 max-w-7xl">
-        <div className="flex flex-col sm:flex-row justify-between  mb-8">
-          {/* navigate back btn */}
-          <GoBackButton />
-          {/* document upload form */}
+    <div className="min-h-screen bg-gray-50 font-sans">
+      <div className="container mx-auto py-6 max-w-7xl">
+        {/* Header Section */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200">
+          <div className="flex items-center gap-4">
+            <GoBackButton />
+            <div>
+              <Title level={2} className="m-0 text-gray-900">
+                Case Details
+              </Title>
+              <Text className="text-gray-500">
+                {data?.data?.suitNo || "Case Management"}
+              </Text>
+            </div>
+          </div>
           {isStaff && <CaseDocumentUpload caseId={id} />}
         </div>
 
-        <Card className="mb-8 shadow-lg rounded-xl overflow-hidden ">
-          <div className="flex flex-wrap md:flex-row space-y-4 items-baseline justify-evenly">
+        {/* Parties Section */}
+        <Card className="mb-6 border-0 rounded-2xl shadow-sm bg-gradient-to-br from-white to-blue-50/50">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
               {
                 title: data?.data?.firstParty.description,
@@ -145,250 +292,444 @@ const CaseDetails = () => {
                 names: party.name,
               })),
             ].map((party, partyIndex) => (
-              <div key={partyIndex} className="space-y-4 ">
-                <MajorHeading title={party.title} />
-
-                {party.names?.map((name, nameIndex) => (
-                  <div
-                    key={name?._id || nameIndex}
-                    className="flex items-center justify-center text-[16px]  space-x-2">
-                    <p className="text-gray-700 s">{nameIndex + 1}.</p>
-                    <p className="text-gray-600  font-bold  font-poppins">
-                      {name.name}
-                    </p>
-                  </div>
-                ))}
+              <div
+                key={partyIndex}
+                className="text-center p-4 bg-white rounded-xl border border-gray-200">
+                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <UserGroupIcon className="w-6 h-6 text-blue-600" />
+                </div>
+                <Title level={4} className="text-gray-900 mb-3">
+                  {party.title}
+                </Title>
+                <div className="space-y-2">
+                  {party.names?.map((name, nameIndex) => (
+                    <div
+                      key={name?._id || nameIndex}
+                      className="flex items-center justify-center gap-2">
+                      <div className="w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-sm font-medium text-gray-700">
+                        {nameIndex + 1}
+                      </div>
+                      <Text className="text-gray-800 font-semibold">
+                        {name.name}
+                      </Text>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
         </Card>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="space-y-8">
-            <Card className="shadow-lg rounded-xl overflow-hidden">
-              <MajorHeading midTitle="Case Details" />
-
-              <List
-                itemLayout="horizontal"
-                dataSource={[
-                  { label: "Suit No:", value: data?.data?.suitNo },
-                  {
-                    label: "Filing Date:",
-                    value:
-                      data?.data?.filingDate &&
-                      formatDate(data?.data?.filingDate),
-                  },
-                  {
-                    label: "Case Summary:",
-                    value: shortenText(
-                      data?.data?.caseSummary,
-                      150,
-                      "caseSummary"
-                    ),
-                  },
-                  {
-                    label: "Mode Of Commencement:",
-                    value: data?.data?.modeOfCommencement,
-                  },
-                  {
-                    label: "Filed By the Office:",
-                    value: data?.data?.isFiledByTheOffice ? "Yes" : "No",
-                  },
-                  {
-                    label: "Office Case File No:",
-                    value: data?.data?.caseOfficeFileNo,
-                  },
-                  { label: "Nature of Case:", value: data?.data?.natureOfCase },
-                  {
-                    label: "Court:",
-                    value: `${data?.data?.courtName}, ${data?.data?.courtNo} `,
-                  },
-
-                  {
-                    label: "Court Location:",
-                    value: `${data?.data?.location}, ${data?.data?.state}`,
-                  },
-                  { label: "Case Status:", value: data?.data?.caseStatus },
-                  { label: "Case Category:", value: data?.data?.category },
-                  {
-                    label: "Case Priority/Ratings:",
-                    value: data?.data?.casePriority,
-                  },
-                ]}
-                renderItem={(item) => (
-                  <List.Item className="py-3 px-4 hover:bg-gray-50 transition-colors">
-                    <List.Item.Meta
-                      title={
-                        // <h1 className="text-[19px]  text-green-900 font-medium mb-2">
-                        //   {item.label}
-                        // </h1>
-                        <MajorHeading subtitle={item.label} />
-                      }
-                      description={
-                        item.value ? (
-                          <p className="text-gray-800 font-poppins font-medium text-justify capitalize">
-                            {item.value}
-                          </p>
-                        ) : (
-                          <p type="danger">Not provided</p>
-                        )
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
-
-              <div className=" space-y-6">
-                {[
-                  { title: "Judge", data: data?.data?.judge, keyProp: "name" },
-                  {
-                    title: "Case Strength",
-                    data: data?.data?.caseStrengths,
-                    keyProp: "name",
-                  },
-                  {
-                    title: "Case Weaknesses",
-                    data: data?.data?.caseWeaknesses,
-                    keyProp: "name",
-                  },
-                  {
-                    title: "Steps to be Taken",
-                    data: data?.data?.stepToBeTaken,
-                    keyProp: "name",
-                  },
-                  {
-                    title: "Account Officer(s)",
-                    data: data?.data?.accountOfficer,
-                    keyProp: "firstName",
-                  },
-                ].map((section, index) => (
-                  <div key={index} className="mb-6">
-                    <MajorHeading subtitle={section.title} />
-
-                    {Array.isArray(section.data) && section.data.length > 0 ? (
-                      <ol className="text-gray-700 space-y-2">
-                        {section.data.map((item, idx) => (
-                          <li
-                            key={item?._id || idx}
-                            className="flex items-start">
-                            <span className="flex-shrink-0 w-6 h-6 bg-gray-200 text-gray-800 rounded-full flex items-center justify-center mr-3 font-semibold text-sm">
-                              {idx + 1}
-                            </span>
-                            <p className="text-gray-800 pt-0.5 font-medium font-poppins">
-                              {section.title === "Account Officer(s)"
-                                ? `${item.firstName} ${item.lastName}`
-                                : item[section.keyProp] || (
-                                    <Text type="danger" className="italic">
-                                      Not provided
-                                    </Text>
-                                  )}
-                            </p>
-                          </li>
-                        ))}
-                      </ol>
-                    ) : (
-                      <Text type="danger" className="italic">
-                        No {section.title.toLowerCase()} provided.
-                      </Text>
-                    )}
-                  </div>
-                ))}
-
-                <div className="mb-4">
-                  <MajorHeading subtitle="Client" />
-
-                  <p className=" font-medium font-poppins">
-                    {data?.data?.client?.firstName}{" "}
-                    {data?.data?.client?.secondName || ""}
-                  </p>
+        {/* Main Content Tabs */}
+        <Tabs
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          className="bg-white rounded-2xl shadow-sm border border-gray-200"
+          items={[
+            {
+              key: "details",
+              label: (
+                <div className="flex items-center gap-2">
+                  <FileTextOutlined />
+                  <span>Case Details</span>
                 </div>
+              ),
+              children: (
+                <div className="space-y-6">
+                  {/* Basic Case Information */}
+                  <Card className="border-0 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                        <ScaleIcon className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <Title level={3} className="m-0 text-gray-900">
+                        Case Information
+                      </Title>
+                    </div>
 
-                <div className="mb-4">
-                  <MajorHeading subtitle="General Comment" />
-
-                  <p className="font-medium font-poppins">
-                    {data?.data?.generalComment
-                      ? shortenText(data?.data?.generalComment)
-                      : "Not Provided"}
-                  </p>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="shadow-lg rounded-xl overflow-hidden">
-              <MajorHeading midTitle="Attached Documents" />
-              <Table
-                columns={columns}
-                dataSource={documents}
-                rowKey={(record) => record._id}
-                pagination={false}
-                className="w-full"
-                scroll={{ x: true }}
-              />
-            </Card>
-          </div>
-
-          <div className="space-y-8 ">
-            <Card
-              title={<Title level={3}>Case History</Title>}
-              className="shadow-lg rounded-xl overflow-hidden ">
-              {Array.isArray(data?.data?.reports) &&
-              data?.data?.reports.length > 0 ? (
-                <>
-                  <List
-                    itemLayout="vertical"
-                    dataSource={paginatedReports}
-                    renderItem={(u) => (
-                      <List.Item
-                        key={u._id}
-                        className="hover:bg-gray-50 transition-colors font-poppins">
-                        <List.Item.Meta
-                          title={
-                            <Text strong className="text-lg">
-                              {formatDate(u.date)}
+                    <Row gutter={[16, 16]}>
+                      {caseDetailsList.map((item, index) => (
+                        <Col xs={24} md={12} key={index}>
+                          <div className="flex justify-between  items-center p-3 bg-gray-50 rounded-lg">
+                            <Text className="font-medium text-gray-700">
+                              {item.label}
                             </Text>
-                          }
-                          description={
-                            <div className="space-y-2">
-                              <Text className="font-poppins text-justify">
-                                <Text strong>Update:</Text>{" "}
-                                {shortenText(u.update, 150, u._id)}
-                              </Text>
-                              <Text>
-                                <Text strong className="font-poppins p-3">
-                                  Next Adjourned Date:
+                            <Text className="font-semibold text-gray-900 ">
+                              {item.value || (
+                                <Text type="secondary" italic>
+                                  Not provided
                                 </Text>
-                                {u.adjournedDate ? (
-                                  formatDate(u.adjournedDate)
-                                ) : (
-                                  <Text className="font-poppins" type="danger">
-                                    Not provided
+                              )}
+                            </Text>
+                          </div>
+                        </Col>
+                      ))}
+                    </Row>
+
+                    {/* Case Summary */}
+                    {/* <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileTextOutlined className="text-blue-600" />
+                        <Text className="font-medium text-gray-700">
+                          Case Summary:
+                        </Text>
+                      </div>
+                      <Text
+                        className="text-gray-800 leading-relaxed whitespace-pre-line block"
+                        style={{ wordBreak: "break-word" }}>
+                        {data?.data?.caseSummary
+                          ? shortenText(
+                              data?.data?.caseSummary,
+                              150,
+                              "caseSummary"
+                            )
+                          : "No summary provided"}
+                      </Text>
+                    </div> */}
+
+                    <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-100">
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileTextOutlined className="text-blue-600" />
+                        <Text className="font-medium text-gray-700">
+                          Case Summary:
+                        </Text>
+                      </div>
+                      <Text
+                        className="text-gray-800 leading-relaxed whitespace-pre-line block"
+                        style={{ wordBreak: "break-word" }}>
+                        {data?.data?.caseSummary
+                          ? shortenText(
+                              data?.data?.caseSummary,
+                              150,
+                              "caseSummary"
+                            )
+                          : "No summary provided"}
+                      </Text>
+                    </div>
+                  </Card>
+
+                  {/* Case Analysis Sections */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* Left Column - Strengths & Weaknesses */}
+                    <div className="space-y-6">
+                      {/* Case Strengths */}
+                      <Card className="border-0 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
+                            <CheckCircleOutlined className="text-green-600" />
+                          </div>
+                          <Title level={4} className="m-0 text-gray-900">
+                            Case Strengths
+                          </Title>
+                        </div>
+                        {data?.data?.caseStrengths?.length > 0 ? (
+                          <div className="space-y-2">
+                            {data.data.caseStrengths.map((strength, index) => (
+                              <div
+                                key={index}
+                                className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
+                                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
+                                  {index + 1}
+                                </div>
+                                <Text className="text-gray-800 font-medium">
+                                  {strength.name}
+                                </Text>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <Text type="secondary" italic>
+                            No strengths identified
+                          </Text>
+                        )}
+                      </Card>
+
+                      {/* Case Weaknesses */}
+                      <Card className="border-0 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                            <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+                          </div>
+                          <Title level={4} className="m-0 text-gray-900">
+                            Case Weaknesses
+                          </Title>
+                        </div>
+                        {data?.data?.caseWeaknesses?.length > 0 ? (
+                          <div className="space-y-2">
+                            {data.data.caseWeaknesses.map((weakness, index) => (
+                              <div
+                                key={index}
+                                className="flex items-start gap-3 p-3 bg-red-50 rounded-lg">
+                                <div className="w-6 h-6 bg-red-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
+                                  {index + 1}
+                                </div>
+                                <Text className="text-gray-800 font-medium">
+                                  {weakness.name}
+                                </Text>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <Text type="secondary" italic>
+                            No weaknesses identified
+                          </Text>
+                        )}
+                      </Card>
+                    </div>
+
+                    {/* Right Column - Judge, Steps, Team */}
+                    <div className="space-y-6">
+                      {/* Judge Information */}
+                      <Card className="border-0 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                            <UserOutlined className="text-purple-600" />
+                          </div>
+                          <Title level={4} className="m-0 text-gray-900">
+                            Judge Information
+                          </Title>
+                        </div>
+                        {data?.data?.judge?.length > 0 ? (
+                          <div className="space-y-3">
+                            {data.data.judge.map((judge, index) => (
+                              <div
+                                key={index}
+                                className="p-3 bg-purple-50 rounded-lg">
+                                <Text className="font-semibold text-gray-900 block">
+                                  {judge.name}
+                                </Text>
+                                {judge.notes && (
+                                  <Text className="text-gray-600 text-sm mt-1 block">
+                                    {judge.notes}
                                   </Text>
                                 )}
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <Text type="secondary" italic>
+                            No judge assigned
+                          </Text>
+                        )}
+                      </Card>
+
+                      {/* Steps to be Taken */}
+                      <Card className="border-0 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                            <LightBulbIcon className="w-5 h-5 text-orange-600" />
+                          </div>
+                          <Title level={4} className="m-0 text-gray-900">
+                            Steps to be Taken
+                          </Title>
+                        </div>
+                        {data?.data?.stepToBeTaken?.length > 0 ? (
+                          <div className="space-y-2">
+                            {data.data.stepToBeTaken.map((step, index) => (
+                              <div
+                                key={index}
+                                className="flex items-start gap-3 p-3 bg-orange-50 rounded-lg">
+                                <div className="w-6 h-6 bg-orange-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mt-0.5">
+                                  {index + 1}
+                                </div>
+                                <Text className="text-gray-800 font-medium">
+                                  {step.name}
+                                </Text>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <Text type="secondary" italic>
+                            No steps defined
+                          </Text>
+                        )}
+                      </Card>
+
+                      {/* Legal Team */}
+                      <Card className="border-0 rounded-2xl shadow-sm">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <TeamOutlined className="text-blue-600" />
+                          </div>
+                          <Title level={4} className="m-0 text-gray-900">
+                            Legal Team
+                          </Title>
+                        </div>
+                        <div className="space-y-3">
+                          {data?.data?.accountOfficer?.map((officer, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
+                              <Avatar
+                                src={officer?.photo}
+                                icon={<UserOutlined />}
+                                className="bg-blue-500"
+                              />
+                              <div className="flex-1">
+                                <Text className="font-semibold text-gray-900 block">
+                                  {officer.firstName} {officer.lastName}
+                                </Text>
+                                <Text className="text-gray-500 text-sm">
+                                  {officer.email}
+                                </Text>
+                              </div>
+                            </div>
+                          ))}
+                          {(!data?.data?.accountOfficer ||
+                            data?.data?.accountOfficer.length === 0) && (
+                            <Text type="secondary" italic>
+                              No legal team assigned
+                            </Text>
+                          )}
+                        </div>
+                      </Card>
+                    </div>
+                  </div>
+
+                  {/* Client and General Comment */}
+                  <Card className="border-0 rounded-2xl shadow-sm">
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24} md={12}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <UserOutlined className="text-blue-600" />
+                          <Title level={4} className="m-0 text-gray-900">
+                            Client Information
+                          </Title>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-lg">
+                          <Text className="font-semibold text-gray-900">
+                            {data?.data?.client?.firstName}{" "}
+                            {data?.data?.client?.secondName || ""}
+                          </Text>
+                          {data?.data?.client?.email && (
+                            <Text className="text-gray-500 text-sm block mt-1">
+                              {data.data.client.email}
+                            </Text>
+                          )}
+                        </div>
+                      </Col>
+                      <Col xs={24} md={12}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <FileTextOutlined className="text-green-600" />
+                          <Title level={4} className="m-0 text-gray-900">
+                            General Comment
+                          </Title>
+                        </div>
+                        <div className="p-3 bg-gray-50 rounded-lg">
+                          <Text className="text-gray-800">
+                            {data?.data?.generalComment ||
+                              "No comments provided"}
+                          </Text>
+                        </div>
+                      </Col>
+                    </Row>
+                  </Card>
+                </div>
+              ),
+            },
+            {
+              key: "documents",
+              label: (
+                <div className="flex items-center gap-2">
+                  <DocumentTextIcon className="w-4 h-4" />
+                  <span>Documents ({documents.length})</span>
+                </div>
+              ),
+              children: (
+                <Card className="border-0 rounded-2xl shadow-sm">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                      <DocumentTextIcon className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <Title level={3} className="m-0 text-gray-900">
+                      Case Documents
+                    </Title>
+                  </div>
+                  <Table
+                    columns={columns}
+                    dataSource={documents}
+                    rowKey={(record) => record._id}
+                    pagination={false}
+                    className="w-full custom-table"
+                    scroll={{ x: true }}
+                  />
+                </Card>
+              ),
+            },
+            {
+              key: "history",
+              label: (
+                <div className="flex items-center gap-2">
+                  <HistoryOutlined />
+                  <span>Case History</span>
+                </div>
+              ),
+              children: (
+                <Card className="border-0 rounded-2xl shadow-sm">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                      <HistoryOutlined className="text-purple-600" />
+                    </div>
+                    <Title level={3} className="m-0 text-gray-900">
+                      Case History & Reports
+                    </Title>
+                  </div>
+
+                  {Array.isArray(data?.data?.reports) &&
+                  data?.data?.reports.length > 0 ? (
+                    <>
+                      <div className="space-y-4">
+                        {paginatedReports.map((report) => (
+                          <div
+                            key={report._id}
+                            className="p-4 border border-gray-200 rounded-xl hover:shadow-md transition-shadow">
+                            <div className="flex items-center gap-3 mb-3">
+                              <CalendarOutlined className="text-blue-600" />
+                              <Text strong className="text-lg text-gray-900">
+                                {formatDate(report.date)}
                               </Text>
                             </div>
+                            <div className="space-y-2">
+                              <Text className="text-gray-700 leading-relaxed">
+                                {shortenText(report.update, 200, report._id)}
+                              </Text>
+                              {report.adjournedDate && (
+                                <div className="flex items-center gap-2 text-sm text-gray-600">
+                                  <ClockIcon className="w-4 h-4" />
+                                  <Text>
+                                    Next adjourned date:{" "}
+                                    {formatDate(report.adjournedDate)}
+                                  </Text>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-6">
+                        <Pagination
+                          current={currentPage}
+                          pageSize={pageSize}
+                          total={data?.data?.reports.length}
+                          onChange={handlePageChange}
+                          showSizeChanger
+                          showTotal={(total, range) =>
+                            `${range[0]}-${range[1]} of ${total} reports`
                           }
                         />
-                      </List.Item>
-                    )}
-                  />
-                  <Pagination
-                    current={currentPage}
-                    pageSize={pageSize}
-                    total={data?.data?.reports.length}
-                    onChange={handlePageChange}
-                    className="mt-6"
-                  />
-                </>
-              ) : (
-                <Empty
-                  description="No case history available."
-                  className="py-12"
-                />
-              )}
-            </Card>
-          </div>
-        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <Empty
+                      description="No case history available"
+                      className="py-12"
+                    />
+                  )}
+                </Card>
+              ),
+            },
+          ]}
+        />
       </div>
     </div>
   );
