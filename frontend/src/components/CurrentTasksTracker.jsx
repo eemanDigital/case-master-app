@@ -152,7 +152,7 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
           )}
         </div>
       }
-      className="bg-gradient-to-br from-white to-indigo-50/50 border border-gray-200 rounded-2xl shadow-sm h-full flex flex-col"
+      className="bg-gradient-to-br from-white to-indigo-50/50 border border-gray-200 rounded-2xl shadow-sm h-[290px] flex flex-col overflow-auto "
       styles={{
         body: {
           padding: 0,
@@ -191,7 +191,7 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
         // Assigned Tasks Content
         <>
           {/* Progress Overview */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200 ">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium text-gray-700">
                 Work Progress
@@ -219,7 +219,7 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
           </div>
 
           {/* Assigned Tasks List */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
+          <div className="flex-1  overflow-y-auto custom-scrollbar p-4">
             <List
               dataSource={paginatedTasks}
               renderItem={(task) => {

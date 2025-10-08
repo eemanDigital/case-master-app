@@ -20,6 +20,7 @@ const StaffSearchBar = ({
   loading = false,
   searchPlaceholder = "Search...",
   showUserFilters = true,
+  hideFields = false,
 }) => {
   const [form] = Form.useForm();
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -104,53 +105,74 @@ const StaffSearchBar = ({
         <div className="mt-4 p-4 border rounded-lg bg-gray-50">
           <Form form={form} layout="vertical" onFinish={handleAdvancedSearch}>
             <Row gutter={[16, 16]}>
-              {/* Role */}
-              <Col xs={24} md={8}>
-                <Form.Item label="Role" name="role">
-                  <Select placeholder="Select role" allowClear>
-                    {[
-                      "super-admin",
-                      "admin",
-                      "hr",
-                      "secretary",
-                      "lawyer",
-                      "client",
-                      "user",
-                    ].map((role) => (
-                      <Option key={role} value={role}>
-                        {role
-                          .replace("-", " ")
-                          .replace(/\b\w/g, (l) => l.toUpperCase())}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              {/* Position */}
-              <Col xs={24} md={8}>
-                <Form.Item label="Position" name="position">
-                  <Select placeholder="Select position" allowClear>
-                    {[
-                      "Principal",
-                      "Managing Partner",
-                      "Head of Chambers",
-                      "Senior Associate",
-                      "Associate",
-                      "Junior Associate",
-                      "Counsel",
-                      "Intern",
-                      "Secretary",
-                      "Para-legal",
-                      "Other",
-                    ].map((pos) => (
-                      <Option key={pos} value={pos}>
-                        {pos}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
+              {!hideFields && (
+                <>
+                  {/* Role */}
+                  <Col xs={24} md={8}>
+                    <Form.Item label="Role" name="role">
+                      <Select placeholder="Select role" allowClear>
+                        {[
+                          "super-admin",
+                          "admin",
+                          "hr",
+                          "secretary",
+                          "lawyer",
+                          "client",
+                          "user",
+                        ].map((role) => (
+                          <Option key={role} value={role}>
+                            {role
+                              .replace("-", " ")
+                              .replace(/\b\w/g, (l) => l.toUpperCase())}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  {/* Position */}
+                  <Col xs={24} md={8}>
+                    <Form.Item label="Position" name="position">
+                      <Select placeholder="Select position" allowClear>
+                        {[
+                          "Principal",
+                          "Managing Partner",
+                          "Head of Chambers",
+                          "Senior Associate",
+                          "Associate",
+                          "Junior Associate",
+                          "Counsel",
+                          "Intern",
+                          "Secretary",
+                          "Para-legal",
+                          "Other",
+                        ].map((pos) => (
+                          <Option key={pos} value={pos}>
+                            {pos}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  {/* Is Lawyer */}
+                  <Col xs={24} md={8}>
+                    <Form.Item label="Is Lawyer" name="isLawyer">
+                      <Select placeholder="Select lawyer status" allowClear>
+                        <Option value="true">Yes</Option>
+                        <Option value="false">No</Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  {/* Gender */}
+                  <Col xs={24} md={8}>
+                    <Form.Item label="Gender" name="gender">
+                      <Select placeholder="Select gender" allowClear>
+                        <Option value="male">Male</Option>
+                        <Option value="female">Female</Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>{" "}
+                </>
+              )}
 
               {/* Status */}
               <Col xs={24} md={8}>
@@ -161,27 +183,6 @@ const StaffSearchBar = ({
                   </Select>
                 </Form.Item>
               </Col>
-
-              {/* Is Lawyer */}
-              <Col xs={24} md={8}>
-                <Form.Item label="Is Lawyer" name="isLawyer">
-                  <Select placeholder="Select lawyer status" allowClear>
-                    <Option value="true">Yes</Option>
-                    <Option value="false">No</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              {/* Gender */}
-              <Col xs={24} md={8}>
-                <Form.Item label="Gender" name="gender">
-                  <Select placeholder="Select gender" allowClear>
-                    <Option value="male">Male</Option>
-                    <Option value="female">Female</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-
               {/* Sort By */}
               <Col xs={24} md={8}>
                 <Form.Item label="Sort By" name="sort">

@@ -1,156 +1,101 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Table, Button, Modal, Divider, Tooltip, Typography, Card } from "antd";
-import { DeleteOutlined, UserOutlined } from "@ant-design/icons";
-import { useDispatch, useSelector } from "react-redux";
-import { deleteUser, getUsers } from "../redux/features/auth/authSlice";
-import AddClientForm from "../components/AddClientForm";
-import SearchBar from "../components/SearchBar";
-import { useAdminHook } from "../hooks/useAdminHook";
-import LoadingSpinner from "../components/LoadingSpinner";
+import { Pagination, Row } from "antd";
+import { PlusOutlined } from "@ant-design/icons";
+import { useUserList } from "../hooks/useUserList";
+import ButtonWithIcon from "../components/ButtonWithIcon";
 import PageErrorAlert from "../components/PageErrorAlert";
+import StaffSearchBar from "../components/StaffSearchBar";
+import UserListTable from "../components/UserListTable";
+import ActiveFilters from "../components/ActiveFilters";
+import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
-const { Title } = Typography;
+const ClientList = () => {
+  useRedirectLogoutUser("/users/login");
 
-const ClientLists = () => {
-  const [searchResults, setSearchResults] = useState([]);
-  const dispatch = useDispatch();
-
-  const { Column } = Table;
-  const { isStaff, isSuperOrAdmin, isClient } = useAdminHook();
   const {
+    filteredList: clientList,
+    filters,
+    currentPage,
+    itemsPerPage,
     isError,
-    isLoading,
-    message,
-    user,
-    users: clients,
-  } = useSelector((state) => state.auth);
+    loading,
+    handleFiltersChange,
+    resetFilters,
+    removeUser,
+    handlePageChange,
+  } = useUserList("client");
 
-  const loggedInClient = user?.data?._id;
-
-  useEffect(() => {
-    dispatch(getUsers());
-  }, [dispatch]);
-
-  useEffect(() => {
-    if (clients?.data) {
-      let filteredClients = isClient
-        ? clients.data.filter((client) => client._id === loggedInClient)
-        : clients.data.filter((client) => client.role === "client");
-      setSearchResults(filteredClients);
-    }
-  }, [clients, isClient, loggedInClient]);
-
-  const handleSearchChange = (e) => {
-    const searchTerm = e.target.value.trim().toLowerCase();
-    if (!searchTerm) {
-      setSearchResults(
-        clients?.data.filter((client) => client.role === "client")
-      );
-      return;
-    }
-
-    const results = clients?.data.filter((d) => {
-      const fullName = `${d.firstName} ${d.secondName}`.toLowerCase();
-      return (
-        (fullName.includes(searchTerm) ||
-          d.email?.toLowerCase().includes(searchTerm) ||
-          d.phone?.toLowerCase().includes(searchTerm)) &&
-        d.role === "client"
-      );
-    });
-
-    setSearchResults(results);
+  const handleFilterRemove = (key) => {
+    const newFilters = { ...filters };
+    delete newFilters[key];
+    handleFiltersChange(newFilters);
   };
-
-  const removeClient = async (id) => {
-    await dispatch(deleteUser(id));
-    await dispatch(getUsers());
-  };
-
-  if (isLoading) return <LoadingSpinner />;
 
   return (
-    <div>
-      {/* {isError ? (
-        <PageErrorAlert errorCondition={isError} errorMessage={message} />
-      ) : ( */}
-      <>
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6">
-          <Title level={2} className="mb-4 md:mb-0">
-            <UserOutlined className="mr-2" />
-            Client Management
-          </Title>
-          <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-4">
-            {isStaff && <AddClientForm />}
-            <SearchBar onSearch={handleSearchChange} />
-          </div>
-        </div>
-        <Divider />
-        <Table
-          dataSource={searchResults}
-          rowKey="_id"
-          scroll={{ x: 750 }}
-          className="font-poppins">
-          <Column
-            title="Name"
-            key="name"
-            render={(text, record) => (
-              <Tooltip title="View Details">
-                <Link
-                  className="text-blue-600 hover:text-blue-800 font-bold"
-                  to={`${record?._id}/details`}>
-                  {`${record.firstName} ${record.secondName || ""}`}
-                </Link>
-              </Tooltip>
-            )}
-          />
-          <Column title="Email" dataIndex="email" key="email" />
-          <Column title="Phone" dataIndex="phone" key="phone" />
-          <Column
-            title="Status"
-            dataIndex="isActive"
-            key="isActive"
-            render={(isActive) => (
-              <span
-                className={`px-2 py-1 rounded-full text-xs ${
-                  isActive
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}>
-                {isActive ? "Active" : "Inactive"}
-              </span>
-            )}
-          />
-          {isSuperOrAdmin && (
-            <Column
-              title="Action"
-              key="action"
-              render={(text, record) => (
-                <Tooltip title="Delete Client">
-                  <Button
-                    icon={<DeleteOutlined />}
-                    className="bg-red-50 text-red-500 hover:bg-red-100 hover:text-red-700 border-red-200"
-                    onClick={() => {
-                      Modal.confirm({
-                        title: "Delete Client",
-                        content:
-                          "Are you sure you want to delete this client's information?",
-                        okText: "Delete",
-                        okButtonProps: { danger: true },
-                        onOk: () => removeClient(`soft-delete/${record._id}`),
-                      });
-                    }}
-                  />
-                </Tooltip>
-              )}
+    <>
+      <div className="flex md:flex-row flex-col justify-between items-center gap-3 my-4">
+        <div className="flex gap-2">
+          <Link to="add-client">
+            <ButtonWithIcon
+              onClick={() => {}}
+              icon={<PlusOutlined className="mr-2" />}
+              text="Add Client"
             />
+          </Link>
+        </div>
+
+        <div className="w-full md:w-96">
+          <StaffSearchBar
+            onFiltersChange={handleFiltersChange}
+            filters={filters}
+            loading={loading}
+            searchPlaceholder="Search clients by name, email..."
+            showUserFilters={true}
+            hideFields={true}
+          />
+        </div>
+      </div>
+
+      <ActiveFilters
+        filters={filters}
+        onFilterRemove={handleFilterRemove}
+        onClearAll={resetFilters}
+      />
+
+      {isError ? (
+        <PageErrorAlert errorCondition={true} errorMessage={isError} />
+      ) : (
+        <>
+          <UserListTable
+            dataSource={clientList}
+            loading={loading}
+            onDelete={removeUser}
+            showActions={true}
+            userType="client"
+            basePath="/dashboard/clients"
+          />
+
+          {clientList?.length > 0 && (
+            <Row justify="center" style={{ marginTop: 16 }}>
+              <Pagination
+                current={currentPage}
+                total={clientList.length * 5}
+                pageSize={itemsPerPage}
+                onChange={handlePageChange}
+                onShowSizeChange={handlePageChange}
+                showSizeChanger
+                showQuickJumper
+                showTotal={(total, range) =>
+                  `Showing ${range[0]}-${range[1]} of ${total} clients`
+                }
+                pageSizeOptions={["10", "20", "50", "100"]}
+              />
+            </Row>
           )}
-        </Table>
-      </>
-      {/* )} */}
-    </div>
+        </>
+      )}
+    </>
   );
 };
 
-export default ClientLists;
+export default ClientList;

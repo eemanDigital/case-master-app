@@ -115,8 +115,9 @@ const InvoiceDetails = () => {
       <div className="container mx-auto py-6 max-w-7xl">
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200">
+          <GoBackButton />
+
           <div className="flex items-center gap-4">
-            <GoBackButton />
             <div>
               <div className="flex items-center gap-3 mb-2">
                 <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">

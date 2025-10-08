@@ -14,6 +14,8 @@ import {
   DatePicker,
   Row,
   Col,
+  Switch,
+  Space,
 } from "antd";
 
 import { invoiceOptions } from "../data/options";
@@ -22,11 +24,13 @@ import useClientSelectOptions from "../hooks/useClientSelectOptions";
 import { invoiceInitialValue } from "../utils/initialValues";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import useHandleSubmit from "../hooks/useHandleSubmit";
+import GoBackButton from "./GoBackButton";
 const { TextArea } = Input;
 
 const CreateInvoiceForm = () => {
   const { fetchData } = useDataGetterHook();
   const [formData, setFormData] = useState(invoiceInitialValue);
+  const [publishOnSave, setPublishOnSave] = useState(false);
   const { casesOptions } = useCaseSelectOptions();
   const { clientOptions } = useClientSelectOptions();
   const navigate = useNavigate();
@@ -45,11 +49,30 @@ const CreateInvoiceForm = () => {
     }
   }, [data, navigate, fetchData]);
 
+  // Handle form submission with publish option
+  const handleFormSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+
+      // Set status based on publish option
+      const finalValues = {
+        ...values,
+        status: publishOnSave ? "unpaid" : "draft",
+        issuedDate: publishOnSave ? new Date() : null,
+      };
+
+      await onSubmit(finalValues);
+    } catch (error) {
+      console.error("Form validation failed:", error);
+    }
+  };
+
   // Validation rules
   const requiredRule = [{ required: true, message: "This field is required" }];
+
   return (
     <>
-      <Button onClick={() => navigate(-1)}>Go Back</Button>
+      <GoBackButton />
       <Form layout="vertical" form={form} name="invoice form">
         <Divider orientation="left" orientationMargin="0">
           <Typography.Title level={4}>Invoice Form</Typography.Title>
@@ -82,20 +105,20 @@ const CreateInvoiceForm = () => {
                   options={clientOptions}
                   allowClear
                 />
-
-                {/* work title field */}
               </Form.Item>
             </Col>
             <Col xs={24}>
               <Form.Item
                 label="Work Title"
                 name="workTitle"
+                rules={requiredRule}
                 initialValue={formData?.workTitle}>
                 <Input />
               </Form.Item>
             </Col>
           </Row>
         </Card>
+
         <Divider orientation="left" orientationMargin="0">
           {/* Services Rendered fields */}
           <Typography.Title level={4}>Services Rendered</Typography.Title>
@@ -175,52 +198,54 @@ const CreateInvoiceForm = () => {
                       </Col>
 
                       {/* Amount Charged */}
-                      <Form.Item
-                        label="Amount Charged"
-                        name={[field.name, "amount"]}
-                        dependencies={[
-                          [field.name, "hours"],
-                          [field.name, "feeRatePerHour"],
-                        ]}
-                        rules={[
-                          ({ getFieldValue }) => ({
-                            validator(_, value) {
-                              const hours = getFieldValue([
-                                field.name,
-                                "hours",
-                              ]);
-                              const feeRatePerHour = getFieldValue([
-                                field.name,
-                                "feeRatePerHour",
-                              ]);
+                      <Col xs={24} md={12}>
+                        <Form.Item
+                          label="Amount Charged"
+                          name={[field.name, "amount"]}
+                          dependencies={[
+                            [field.name, "hours"],
+                            [field.name, "feeRatePerHour"],
+                          ]}
+                          rules={[
+                            ({ getFieldValue }) => ({
+                              validator(_, value) {
+                                const hours = getFieldValue([
+                                  field.name,
+                                  "hours",
+                                ]);
+                                const feeRatePerHour = getFieldValue([
+                                  field.name,
+                                  "feeRatePerHour",
+                                ]);
 
-                              if (hours && feeRatePerHour && value) {
-                                return Promise.reject(
-                                  new Error(
-                                    "You can only fill in two of the three fields."
-                                  )
-                                );
-                              }
+                                if (hours && feeRatePerHour && value) {
+                                  return Promise.reject(
+                                    new Error(
+                                      "You can only fill in two of the three fields."
+                                    )
+                                  );
+                                }
 
-                              if ((!hours || !feeRatePerHour) && !value) {
-                                return Promise.reject(
-                                  new Error("Please enter the amount charged")
-                                );
-                              }
+                                if ((!hours || !feeRatePerHour) && !value) {
+                                  return Promise.reject(
+                                    new Error("Please enter the amount charged")
+                                  );
+                                }
 
-                              return Promise.resolve();
-                            },
-                          }),
-                        ]}
-                        initialValue={formData.services.amount}>
-                        <InputNumber
-                          className="w-full"
-                          formatter={(value) =>
-                            `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                          }
-                          parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                        />
-                      </Form.Item>
+                                return Promise.resolve();
+                              },
+                            }),
+                          ]}
+                          initialValue={formData.services.amount}>
+                          <InputNumber
+                            className="w-full"
+                            formatter={(value) =>
+                              `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                            }
+                            parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
+                          />
+                        </Form.Item>
+                      </Col>
                     </Row>
 
                     <Row gutter={[16, 16]}>
@@ -383,6 +408,7 @@ const CreateInvoiceForm = () => {
             )}
           </Form.List>
         </div>
+
         {/* Tax fields */}
         <Divider orientation="left" orientationMargin="0">
           <Typography.Title level={4}>Tax Charges on Invoice</Typography.Title>
@@ -394,15 +420,49 @@ const CreateInvoiceForm = () => {
                 label="Tax Type"
                 name="taxType"
                 initialValue={formData.taxType}>
-                <Input />
+                <Input placeholder="e.g., VAT, Sales Tax" />
               </Form.Item>
             </Col>
             <Col xs={24} md={12}>
               <Form.Item
-                label="Tax Rate"
+                label="Tax Rate (%)"
                 name="taxRate"
                 initialValue={formData?.taxRate}>
-                <InputNumber />
+                <InputNumber className="w-full" min={0} max={100} />
+              </Form.Item>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* Previous Balance Section */}
+        <Divider orientation="left" orientationMargin="0">
+          <Typography.Title level={4}>Previous Balance</Typography.Title>
+        </Divider>
+        <Card>
+          <Row gutter={[16, 16]}>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="Previous Balance Unpaid"
+                name="previousBalance"
+                initialValue={formData?.previousBalance}
+                tooltip="Enter any outstanding balance from previous invoices">
+                <InputNumber
+                  className="w-full"
+                  formatter={(value) =>
+                    `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                  }
+                  parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="Previous Balance Includes Tax"
+                name="previousBalanceIncludesTax"
+                valuePropName="checked"
+                initialValue={true}
+                tooltip="Check if the previous balance already includes tax (prevents double taxation)">
+                <Switch checkedChildren="Yes" unCheckedChildren="No" />
               </Form.Item>
             </Col>
           </Row>
@@ -445,7 +505,6 @@ const CreateInvoiceForm = () => {
             </Col>
             <Col xs={24} md={12}>
               <Form.Item
-                rules={requiredRule}
                 label="Reference"
                 name={["accountDetails", "reference"]}
                 initialValue={formData?.accountDetails?.reference}>
@@ -454,69 +513,23 @@ const CreateInvoiceForm = () => {
             </Col>
           </Row>
         </Card>
+
         <Divider />
         <Card>
-          {/* invoice status field */}
+          {/* Due Date */}
           <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                rules={requiredRule}
-                name="status"
-                label="Invoice Status"
-                initialValue={formData?.status}>
-                <Select
-                  placeholder="Select invoice status"
-                  showSearch
-                  filterOption={filterOption}
-                  options={invoiceOptions}
-                  allowClear
-                />
-              </Form.Item>
-            </Col>
-            {/* Due Date */}
             <Col xs={24} md={12}>
               <Form.Item
                 rules={requiredRule}
                 label="Due Date"
                 name="dueDate"
                 initialValue={formData?.dueDate}>
-                <DatePicker />
-              </Form.Item>
-            </Col>
-          </Row>
-          {/* previous balance unpaid */}
-          <Row gutter={[16, 16]}>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Previous Balance Unpaid"
-                name="previousBalance"
-                initialValue={formData?.previousBalance}>
-                <InputNumber
-                  className="w-full"
-                  formatter={(value) =>
-                    `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                  }
-                  parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                />
-              </Form.Item>
-            </Col>
-            {/* amount already paid */}
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Amount Already Paid"
-                name="amountPaid"
-                initialValue={formData?.amountPaid}>
-                <InputNumber
-                  className="w-full"
-                  formatter={(value) =>
-                    `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                  }
-                  parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                />
+                <DatePicker className="w-full" />
               </Form.Item>
             </Col>
           </Row>
         </Card>
+
         <Divider />
         {/* terms and condition field */}
         <Row gutter={[16, 16]}>
@@ -525,19 +538,50 @@ const CreateInvoiceForm = () => {
               name="paymentInstructionTAndC"
               label="Payment Instruction/Terms and Conditions"
               initialValue={formData?.paymentInstructionTAndC}>
-              <TextArea />
+              <TextArea rows={4} />
             </Form.Item>
           </Col>
         </Row>
 
         <Divider />
+
+        {/* Publish Option */}
+        <Card className="bg-blue-50 border-blue-200">
+          <Row gutter={[16, 16]}>
+            <Col xs={24}>
+              <Space direction="vertical" size="small">
+                <Typography.Text strong>Invoice Publishing</Typography.Text>
+                <Form.Item
+                  name="publishOnSave"
+                  valuePropName="checked"
+                  initialValue={false}
+                  style={{ marginBottom: 0 }}>
+                  <Switch
+                    checked={publishOnSave}
+                    onChange={setPublishOnSave}
+                    checkedChildren="Publish Now"
+                    unCheckedChildren="Save as Draft"
+                  />
+                </Form.Item>
+                <Typography.Text type="secondary" style={{ fontSize: "12px" }}>
+                  {publishOnSave
+                    ? "Invoice will be marked as 'unpaid' and ready to send to client"
+                    : "Invoice will be saved as 'draft' and can be edited later"}
+                </Typography.Text>
+              </Space>
+            </Col>
+          </Row>
+        </Card>
+
+        <Divider />
         <Form.Item>
           <Button
             className="blue-btn"
-            onClick={onSubmit}
+            onClick={handleFormSubmit}
             loading={loading}
-            htmlType="submit">
-            Save
+            htmlType="submit"
+            size="large">
+            {publishOnSave ? "Save & Publish Invoice" : "Save as Draft"}
           </Button>
         </Form.Item>
       </Form>

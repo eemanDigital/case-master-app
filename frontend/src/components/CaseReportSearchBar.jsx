@@ -1,4 +1,4 @@
-// components/AdvancedSearchBar.js - Add case search
+// components/CaseReportSearchBar.js - Fixed reset functionality
 import { useState, useEffect } from "react";
 import {
   Input,
@@ -10,7 +10,6 @@ import {
   Row,
   Col,
   Card,
-  AutoComplete,
   Tag,
 } from "antd";
 import {
@@ -21,53 +20,71 @@ import {
 } from "@ant-design/icons";
 import moment from "moment";
 import { Typography } from "antd";
+
 const { Text } = Typography;
 const { Search } = Input;
 const { RangePicker } = DatePicker;
 
-const AdvancedSearchBar = ({
+const CaseReportSearchBar = ({
   onFiltersChange,
   filters = {},
   loading = false,
   searchPlaceholder = "Search reports...",
-  showCaseSearch = true, // Enable case search
+  showCaseSearch = true,
 }) => {
   const [form] = Form.useForm();
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const [caseOptions, setCaseOptions] = useState([]);
+  const [searchValue, setSearchValue] = useState(filters.search || "");
 
-  // Sync form with current filters
+  // Sync form with current filters whenever they change
   useEffect(() => {
-    const formValues = { ...filters };
+    const formValues = {};
 
-    if (filters.startDate || filters.endDate) {
+    // Handle search input
+    setSearchValue(filters.search || "");
+
+    // Handle date range conversion
+    if (filters.startDate && filters.endDate) {
       formValues.dateRange = [
-        filters.startDate ? moment(filters.startDate) : null,
-        filters.endDate ? moment(filters.endDate) : null,
+        moment(filters.startDate),
+        moment(filters.endDate),
       ];
     }
 
+    // Handle other form fields
+    if (filters.caseSearch) formValues.caseSearch = filters.caseSearch;
+    if (filters.adjournedFor) formValues.adjournedFor = filters.adjournedFor;
+    if (filters.sort) formValues.sort = filters.sort;
+
+    // Set form values
     form.setFieldsValue(formValues);
   }, [filters, form]);
 
-  // Search for cases (you might want to implement this with an API call)
-  const handleCaseSearch = async (searchText) => {
-    if (searchText) {
-      // This would typically call your cases API to get matching cases
-      // For now, we'll use a simple implementation
-      setCaseOptions([
-        { value: "Case: John vs Smith (Suit No: 123/2024)" },
-        { value: "Case: ABC Corp vs XYZ Ltd (Suit No: 456/2024)" },
-      ]);
+  // Handle basic search
+  const handleSearch = (value) => {
+    const newFilters = { ...filters, search: value };
+    // Remove search if empty
+    if (!value) {
+      delete newFilters.search;
+    }
+    onFiltersChange(newFilters);
+  };
+
+  // Handle search input change (for controlled input)
+  const handleSearchChange = (e) => {
+    const value = e.target.value;
+    setSearchValue(value);
+    // If user clears the input, remove search filter immediately
+    if (!value && filters.search) {
+      const newFilters = { ...filters };
+      delete newFilters.search;
+      onFiltersChange(newFilters);
     }
   };
 
-  const handleSearch = (value) => {
-    onFiltersChange({ search: value });
-  };
-
+  // Handle advanced search form submission
   const handleAdvancedSearch = (values) => {
-    const newFilters = { ...values };
+    const newFilters = { ...filters };
 
     // Handle date range
     if (values.dateRange && values.dateRange[0] && values.dateRange[1]) {
@@ -78,40 +95,87 @@ const AdvancedSearchBar = ({
       delete newFilters.endDate;
     }
 
-    // Handle case search
+    // Handle other filters
     if (values.caseSearch) {
       newFilters.caseSearch = values.caseSearch;
     } else {
       delete newFilters.caseSearch;
     }
 
-    delete newFilters.dateRange;
+    if (values.adjournedFor) {
+      newFilters.adjournedFor = values.adjournedFor;
+    } else {
+      delete newFilters.adjournedFor;
+    }
 
-    // Remove empty values
-    Object.keys(newFilters).forEach((key) => {
-      if (
-        newFilters[key] === undefined ||
-        newFilters[key] === "" ||
-        newFilters[key] === null
-      ) {
-        delete newFilters[key];
-      }
-    });
+    if (values.sort) {
+      newFilters.sort = values.sort;
+    } else {
+      delete newFilters.sort;
+    }
 
     onFiltersChange(newFilters);
     setShowAdvanced(false);
   };
 
+  // Reset all filters
   const resetFilters = () => {
-    form.resetFields();
+    // Clear all filters in parent component
     onFiltersChange({});
+
+    // Reset local form state
+    form.resetFields();
+    setSearchValue("");
     setShowAdvanced(false);
   };
 
-  const hasActiveFilters = Object.keys(filters).some(
-    (key) =>
-      filters[key] !== undefined && filters[key] !== "" && filters[key] !== null
-  );
+  // Remove individual filter
+  const removeFilter = (key) => {
+    const newFilters = { ...filters };
+
+    // Handle special cases
+    if (key === "dateRange" || key === "startDate" || key === "endDate") {
+      delete newFilters.startDate;
+      delete newFilters.endDate;
+      form.setFieldsValue({ dateRange: undefined });
+    } else if (key === "search") {
+      delete newFilters.search;
+      setSearchValue("");
+    } else {
+      delete newFilters[key];
+      form.setFieldsValue({ [key]: undefined });
+    }
+
+    onFiltersChange(newFilters);
+  };
+
+  // Check if any filter is active
+  const hasActiveFilters = Object.keys(filters).some((key) => {
+    const value = filters[key];
+    return value !== undefined && value !== "" && value !== null;
+  });
+
+  // Get active filters for display (excluding internal keys)
+  const getActiveFilters = () => {
+    const activeFilters = [];
+    Object.keys(filters).forEach((key) => {
+      if (filters[key] && key !== "limit" && key !== "page") {
+        // Handle date range as a single filter
+        if (key === "startDate" && filters.endDate) {
+          activeFilters.push({
+            key: "dateRange",
+            value: `${filters.startDate} to ${filters.endDate}`,
+          });
+        } else if (key === "endDate") {
+          // Skip endDate as it's shown with startDate
+          return;
+        } else {
+          activeFilters.push({ key, value: filters[key] });
+        }
+      }
+    });
+    return activeFilters;
+  };
 
   return (
     <div className="advanced-search-bar">
@@ -124,8 +188,9 @@ const AdvancedSearchBar = ({
               enterButton={<SearchOutlined />}
               size="large"
               onSearch={handleSearch}
+              onChange={handleSearchChange}
+              value={searchValue}
               loading={loading}
-              defaultValue={filters.search}
               className="w-full"
             />
           </Col>
@@ -142,7 +207,7 @@ const AdvancedSearchBar = ({
                     ? "dashed"
                     : "default"
                 }>
-                Filters {hasActiveFilters && `(${Object.keys(filters).length})`}
+                Filters {hasActiveFilters && `(${getActiveFilters().length})`}
               </Button>
 
               {hasActiveFilters && (
@@ -158,6 +223,7 @@ const AdvancedSearchBar = ({
           </Col>
         </Row>
 
+        {/* Advanced Filters Section */}
         {showAdvanced && (
           <div className="advanced-filters mt-4 p-4 border rounded-lg bg-gray-50">
             <Form form={form} layout="vertical" onFinish={handleAdvancedSearch}>
@@ -172,7 +238,6 @@ const AdvancedSearchBar = ({
                       <Input
                         placeholder="e.g., John vs Smith or 123/2024"
                         allowClear
-                        onChange={(e) => handleCaseSearch(e.target.value)}
                       />
                     </Form.Item>
                   </Col>
@@ -231,24 +296,49 @@ const AdvancedSearchBar = ({
         <div className="active-filters mb-4">
           <Space wrap>
             <Text type="secondary">Active filters:</Text>
-            {Object.keys(filters).map(
-              (key) =>
-                filters[key] && (
-                  <Tag
-                    key={key}
-                    closable
-                    onClose={() => {
-                      const newFilters = { ...filters };
-                      delete newFilters[key];
-                      onFiltersChange(newFilters);
-                    }}
-                    className="bg-blue-100">
-                    {key === "caseSearch"
-                      ? `Case: ${filters[key]}`
-                      : `${key}: ${filters[key]}`}
-                  </Tag>
-                )
-            )}
+            {getActiveFilters().map((filter) => {
+              const { key, value } = filter;
+              let displayText = "";
+
+              // Format display text based on filter type
+              if (key === "search") {
+                displayText = `Search: ${value}`;
+              } else if (key === "caseSearch") {
+                displayText = `Case: ${value}`;
+              } else if (key === "dateRange") {
+                displayText = `Date: ${value}`;
+              } else if (key === "adjournedFor") {
+                displayText = `Adjourned For: ${value}`;
+              } else if (key === "sort") {
+                const sortLabels = {
+                  "-date": "Newest First",
+                  date: "Oldest First",
+                  "-adjournedDate": "Next Hearing (Latest)",
+                  adjournedDate: "Next Hearing (Earliest)",
+                };
+                displayText = `Sort: ${sortLabels[value] || value}`;
+              } else {
+                displayText = `${key}: ${value}`;
+              }
+
+              return (
+                <Tag
+                  key={key}
+                  closable
+                  onClose={() => removeFilter(key)}
+                  className="bg-blue-100 border-blue-300">
+                  {displayText}
+                </Tag>
+              );
+            })}
+            <Button
+              type="link"
+              size="small"
+              onClick={resetFilters}
+              icon={<ReloadOutlined />}
+              className="p-0 h-auto">
+              Clear all
+            </Button>
           </Space>
         </div>
       )}
@@ -256,4 +346,4 @@ const AdvancedSearchBar = ({
   );
 };
 
-export default AdvancedSearchBar;
+export default CaseReportSearchBar;

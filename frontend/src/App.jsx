@@ -67,6 +67,7 @@ import DocumentRecordList from "./pages/DocumentRecordList.jsx";
 import DocumentRecordDetails from "./pages/DocumentRecordDetails.jsx";
 import SoftDeletedCasesArchive from "./components/SoftDeletedCasesArchive.jsx";
 import SoftDeletedReportsArchive from "./pages/SoftDeletedReportsArchive.jsx";
+
 // import EditTaskForm from "./pages/EditTaskForm.jsx";
 
 // enable axios to get credentials everywhere in the app

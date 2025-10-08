@@ -4,6 +4,7 @@ import { Descriptions, Button, Card, Spin, Alert } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import GoBackButton from "../components/GoBackButton";
 
 const PaymentMadeOnCase = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
@@ -36,9 +37,7 @@ const PaymentMadeOnCase = () => {
   if (error) {
     return (
       <>
-        <Button className="blue-btn m-4" onClick={() => navigate(-1)}>
-          Go Back
-        </Button>
+        <GoBackButton />
         <Alert
           message="Error"
           description={error}

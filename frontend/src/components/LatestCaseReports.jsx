@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Card, Typography, Empty, Tag, Modal, Badge } from "antd";
 import { Link } from "react-router-dom";
 import { formatDate } from "../utils/formatDate";
+import useTextShorten from "../hooks/useTextShorten";
 import {
   DocumentTextIcon,
   EyeIcon,
@@ -19,6 +20,7 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
   const [hasFetched, setHasFetched] = useState(false);
   const [selectedReport, setSelectedReport] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { shortenText } = useTextShorten();
 
   const isToday = (dateString) => {
     const today = new Date();
@@ -186,7 +188,8 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
                   {/* Report Preview */}
                   <div className="mb-3">
                     <Text className="text-gray-600 text-sm line-clamp-2 leading-relaxed">
-                      {report?.update?.replace(/<[^>]+>/g, "")}
+                      {/* {report?.update?.replace(/<[^>]+>/g, "")} */}
+                      {shortenText(report?.update, 300, report._id)}
                     </Text>
                   </div>
 
@@ -282,12 +285,14 @@ const LatestCaseReports = ({ reports, error, loading, fetchData }) => {
                   </h3>
 
                   {/* ✅ Render HTML properly */}
-                  <div
-                    className="text-gray-700 leading-relaxed prose prose-sm max-w-none"
-                    dangerouslySetInnerHTML={{
-                      __html: selectedReport?.update,
-                    }}
-                  />
+                  <div className="text-gray-700 leading-relaxed prose prose-sm max-w-none" />
+
+                  {/* {report?.update?.replace(/<[^>]+>/g, "")} */}
+                  {shortenText(
+                    selectedReport?.update,
+                    Infinity,
+                    selectedReport._id
+                  )}
                 </div>
               </div>
             </Card>
