@@ -116,20 +116,31 @@ export const natureOfCaseOptions = [
   { label: "Other", value: "other" },
 ];
 
+// In your options file
 export const invoiceOptions = [
-  { label: "Select Invoice status", value: "" },
-  { label: "Paid", value: "paid" },
-  { label: "Unpaid", value: "unpaid" },
-  { label: "Overdue", value: "overdue" },
+  { value: "draft", label: "Draft" },
+  { value: "sent", label: "Sent" },
+  { value: "paid", label: "Paid" },
+  { value: "overdue", label: "Overdue" },
+  { value: "partially_paid", label: "Partially Paid" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "void", label: "Void" },
 ];
 
+// In your options file
 export const methodOptions = [
-  { label: "Select payment method", value: "" },
-  { label: "Credit Card", value: "credit_card" },
-  { label: "Bank Transfer", value: "bank_transfer" },
-  { label: "Cash", value: "cash" },
-  { label: "Cheque", value: "cheque" },
-  // { label: "Other", value: "" },
+  { value: "credit_card", label: "Credit Card" },
+  { value: "bank_transfer", label: "Bank Transfer" },
+  { value: "cash", label: "Cash" },
+  { value: "cheque", label: "Cheque" },
+  { value: "other", label: "Other" },
+];
+
+export const paymentStatusOptions = [
+  { value: "completed", label: "Completed" },
+  { value: "pending", label: "Pending" },
+  { value: "failed", label: "Failed" },
+  { value: "refunded", label: "Refunded" },
 ];
 
 export const positions = [

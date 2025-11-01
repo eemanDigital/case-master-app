@@ -25,13 +25,11 @@ import TaskList from "./components/TaskList.jsx";
 import TaskDetails from "./pages/TaskDetails.jsx";
 import ClientLists from "./pages/ClientLists.jsx";
 import ClientDetails from "./pages/ClientDetails.jsx";
-import InvoicePaymentHandler from "./components/InvoicePaymentHandler.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import CreateInvoiceForm from "./components/CreateInvoiceForm.jsx";
 import InvoiceDetails from "./pages/InvoiceDetails.jsx";
 import UpdateInvoice from "./pages/UpdateInvoice.jsx";
 import { CauseList } from "./components/CauseList.jsx";
-import PaymentDetails from "./pages/PaymentDetails.jsx";
 import StaffList from "./pages/StaffList.jsx";
 import StaffDetails from "./pages/StaffDetails.jsx";
 import MainCaseReportList from "./pages/MainCaseReportList.jsx";
@@ -67,6 +65,7 @@ import DocumentRecordList from "./pages/DocumentRecordList.jsx";
 import DocumentRecordDetails from "./pages/DocumentRecordDetails.jsx";
 import SoftDeletedCasesArchive from "./components/SoftDeletedCasesArchive.jsx";
 import SoftDeletedReportsArchive from "./pages/SoftDeletedReportsArchive.jsx";
+import InvoiceList from "./pages/InvoiceList.jsx";
 
 // import EditTaskForm from "./pages/EditTaskForm.jsx";
 
@@ -244,7 +243,7 @@ function App() {
             path="billings"
             element={
               <ShowOnlyVerifiedUser>
-                <BillingAndPaymentsRoute element={<InvoicePaymentHandler />} />
+                <BillingAndPaymentsRoute element={<InvoiceList />} />
               </ShowOnlyVerifiedUser>
             }
           />
@@ -261,10 +260,7 @@ function App() {
             path="billings/invoices/:id/update"
             element={<UpdateInvoice />}
           />
-          <Route
-            path="billings/payments/:id/details"
-            element={<PaymentDetails />}
-          />
+
           <Route
             path="billings/payments/client/:clientId/case/:caseId"
             element={<PaymentMadeOnCase />}

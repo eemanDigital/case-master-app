@@ -134,7 +134,7 @@ const DashBoardDataCount = ({
     {
       icon: FaHandshake,
       count: clientCount || 0,
-      label: "Clients",
+      label: "Active Clients",
       gradient: "from-orange-500 via-orange-600 to-orange-700",
       description: "Active client relationships",
       trend: trends.clients,

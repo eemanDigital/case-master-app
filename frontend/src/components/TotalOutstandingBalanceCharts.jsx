@@ -1,7 +1,8 @@
+// TotalOutstandingBalanceCharts.jsx - CORRECTED
 import PropTypes from "prop-types";
 import { useState, useMemo } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
-import { Card, Modal, Statistic, Tag, Space } from "antd";
+import { Card, Modal, Statistic, Tag } from "antd";
 import {
   CurrencyDollarIcon,
   ChartPieIcon,
@@ -20,15 +21,18 @@ const TotalOutstandingBalanceCharts = ({
 }) => {
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  // Memoized data calculations
-  const { value, year, totalBalance } = useMemo(
-    () => ({
+  // ✅ CORRECTED: Access data directly (not from array)
+  const { value, year, totalBalance } = useMemo(() => {
+    console.log("Payment Data:", paymentData); // DEBUG
+    console.log("Balance Data:", balanceData); // DEBUG
+
+    return {
       value: paymentData?.totalAmount || 0,
       year: paymentData?.year || new Date().getFullYear(),
-      totalBalance: balanceData?.data?.[0]?.totalBalance || 0,
-    }),
-    [paymentData, balanceData]
-  );
+      // ✅ FIX: Direct access, not array
+      totalBalance: balanceData?.data?.totalBalance || 0,
+    };
+  }, [paymentData, balanceData]);
 
   const chartData = useMemo(
     () => [
@@ -36,13 +40,13 @@ const TotalOutstandingBalanceCharts = ({
         name: "Total Income",
         value: value,
         color: "#10B981",
-        description: "Total payments received",
+        description: "Total payments received this year",
       },
       {
         name: "Outstanding Balance",
         value: totalBalance,
         color: "#EF4444",
-        description: "Pending payments",
+        description: "Pending payments across all invoices",
       },
     ],
     [value, totalBalance]
@@ -52,6 +56,7 @@ const TotalOutstandingBalanceCharts = ({
     () => value + totalBalance,
     [value, totalBalance]
   );
+
   const incomePercentage = useMemo(
     () => (totalAmount > 0 ? Math.round((value / totalAmount) * 100) : 0),
     [value, totalAmount]
@@ -114,6 +119,20 @@ const TotalOutstandingBalanceCharts = ({
           <div className="text-center">
             <ChartPieIcon className="w-8 h-8 text-gray-400 mx-auto mb-2" />
             <div className="text-gray-400">Loading financial data...</div>
+          </div>
+        </div>
+      </Card>
+    );
+  }
+
+  // ✅ ADD: Show message if no data
+  if (totalAmount === 0) {
+    return (
+      <Card className="bg-gradient-to-br from-white to-green-50/50 border border-gray-200 rounded-2xl">
+        <div className="flex items-center justify-center h-32">
+          <div className="text-center text-gray-500">
+            <ChartPieIcon className="w-8 h-8 mx-auto mb-2" />
+            <div>No financial data available for {year}</div>
           </div>
         </div>
       </Card>
@@ -187,7 +206,7 @@ const TotalOutstandingBalanceCharts = ({
               title={
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-green-500" />
-                  <span className="text-xs text-gray-600">Income</span>
+                  <span className="text-xs text-gray-600">Income ({year})</span>
                 </div>
               }
               value={value}
@@ -202,7 +221,9 @@ const TotalOutstandingBalanceCharts = ({
               title={
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 rounded-full bg-red-500" />
-                  <span className="text-xs text-gray-600">Outstanding</span>
+                  <span className="text-xs text-gray-600">
+                    Outstanding (All)
+                  </span>
                 </div>
               }
               value={totalBalance}
@@ -241,32 +262,34 @@ const TotalOutstandingBalanceCharts = ({
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="text-center border-0 shadow-sm bg-gradient-to-r from-green-50 to-emerald-50">
-              <Text className="text-gray-600">Total Income</Text>
+              <Text className="text-gray-600">Total Income ({year})</Text>
               <div className="text-2xl font-bold text-gray-900">
                 ₦{value.toLocaleString()}
               </div>
               <Tag color="success" className="mt-2">
-                {incomePercentage}% of total
+                {incomePercentage}% collected
               </Tag>
             </Card>
 
             <Card className="text-center border-0 shadow-sm bg-gradient-to-r from-red-50 to-pink-50">
-              <Text className="text-gray-600">Outstanding Balance</Text>
+              <Text className="text-gray-600">
+                Outstanding Balance (All Time)
+              </Text>
               <div className="text-2xl font-bold text-gray-900">
                 ₦{totalBalance.toLocaleString()}
               </div>
               <Tag color="error" className="mt-2">
-                {100 - incomePercentage}% of total
+                Pending collection
               </Tag>
             </Card>
 
             <Card className="text-center border-0 shadow-sm bg-gradient-to-r from-blue-50 to-cyan-50">
-              <Text className="text-gray-600">Total Amount</Text>
+              <Text className="text-gray-600">Total Revenue + Pending</Text>
               <div className="text-2xl font-bold text-gray-900">
                 ₦{totalAmount.toLocaleString()}
               </div>
               <Tag color="processing" className="mt-2">
-                Combined Total
+                Combined
               </Tag>
             </Card>
           </div>
@@ -306,7 +329,7 @@ const TotalOutstandingBalanceCharts = ({
                 </div>
                 <div className="text-sm text-gray-500">Collection Rate</div>
                 <div className="text-xs text-gray-400 mt-1">
-                  ₦{totalAmount.toLocaleString()} Total
+                  ₦{value.toLocaleString()} of ₦{totalAmount.toLocaleString()}
                 </div>
               </div>
             </div>
@@ -324,7 +347,7 @@ const TotalOutstandingBalanceCharts = ({
                   {item.name}
                 </span>
                 <Tag color={index === 0 ? "success" : "error"} className="ml-2">
-                  {Math.round((item.value / totalAmount) * 100)}%
+                  ₦{item.value.toLocaleString()}
                 </Tag>
               </div>
             ))}
@@ -335,7 +358,7 @@ const TotalOutstandingBalanceCharts = ({
   );
 };
 
-// PropTypes
+// PropTypes - UPDATED
 TotalOutstandingBalanceCharts.propTypes = {
   paymentData: PropTypes.shape({
     totalAmount: PropTypes.number,
@@ -343,12 +366,15 @@ TotalOutstandingBalanceCharts.propTypes = {
   }),
   balanceData: PropTypes.shape({
     message: PropTypes.string,
-    data: PropTypes.arrayOf(
-      PropTypes.shape({
-        totalBalance: PropTypes.number,
-        _id: PropTypes.any,
-      })
-    ),
+    // ✅ CORRECTED: data is an object, not an array
+    data: PropTypes.shape({
+      totalBalance: PropTypes.number,
+      totalInvoices: PropTypes.number,
+      totalAmount: PropTypes.number,
+      totalPaid: PropTypes.number,
+      overdueBalance: PropTypes.number,
+      overdueCount: PropTypes.number,
+    }),
   }),
   error: PropTypes.string,
   loading: PropTypes.bool.isRequired,
