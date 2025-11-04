@@ -42,6 +42,8 @@ process.on("uncaughtException", (err) => {
 // Configure environment variables
 dotenv.config({ path: "./config.env" });
 
+mongoose.set("strictPopulate", false);
+
 // MIDDLEWARES
 const app = express();
 

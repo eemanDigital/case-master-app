@@ -124,6 +124,7 @@ exports.searchReports = catchAsync(async (req, res, next) => {
 // Get reports for a specific case
 exports.getCaseReports = catchAsync(async (req, res, next) => {
   const customFilter = { caseReported: req.params.caseId };
+
   const result = await reportPagination.paginate(req.query, customFilter);
 
   res.status(200).json(result);

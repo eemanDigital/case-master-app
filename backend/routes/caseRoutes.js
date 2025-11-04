@@ -11,10 +11,11 @@ const {
   getCasesByAccountOfficer,
   getCasesByClient,
   searchCases,
-  getLawyerCases,
+  getActiveCases,
+  getCasesByCategory,
+  getCasesByPriority,
   getCasesByStatus,
-  getUpcomingHearings,
-  getCasesByFilingDate,
+  getCasesByCourt,
 } = require("../controllers/caseController");
 const { protect, restrictTo } = require("../controllers/authController");
 const {
@@ -39,20 +40,20 @@ const router = express.Router();
 
 router.use(protect);
 
+// Advanced pagination and filtering for cases
+router.get("/", getCases);
+
 // Advanced search endpoint
 router.post("/search", searchCases);
 
-// Get cases by lawyer
-router.get("/accountOfficer/:accountOfficerId", getLawyerCases);
-
-// Get cases by status
+// Filtered case routes
 router.get("/status/:status", getCasesByStatus);
-
-// Get upcoming hearings
-// router.get("/upcoming-hearings", getUpcomingHearings);
-
-// Get cases by filing date range
-router.get("/filing-date", getCasesByFilingDate);
+router.get("/account-officer/:accountOfficerId", getCasesByAccountOfficer);
+router.get("/client/:clientId", getCasesByClient);
+router.get("/court/:courtName", getCasesByCourt);
+router.get("/category/:category", getCasesByCategory);
+router.get("/priority/:priority", getCasesByPriority);
+router.get("/active", getActiveCases);
 
 // Aggregate routes for various case groupings
 router.get(

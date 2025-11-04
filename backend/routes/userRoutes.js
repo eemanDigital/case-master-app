@@ -3,6 +3,10 @@ const {
   getUsers,
   getUser,
   updateUser,
+  getUsersByRole,
+  getUsersByStatus,
+  getActiveUsers,
+  // createUser,
   // deleteUser,
   // updateUserByAdmin,
   upgradeUser,
@@ -82,6 +86,11 @@ router.get(
   // cacheMiddleware(() => "users"),
   getUsers
 );
+
+// Filtered user routes
+router.get("/role/:role", getUsersByRole);
+router.get("/status/:status", getUsersByStatus);
+router.get("/active", getActiveUsers);
 router.get(
   "/getUser",
   // cacheMiddleware((req) => `user:${req.params.userId}`),

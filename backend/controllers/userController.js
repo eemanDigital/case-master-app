@@ -4,19 +4,55 @@ const AppError = require("../utils/appError");
 const filterObj = require("../utils/filterObj");
 // const setRedisCache = require("../utils/setRedisCache");
 const sendMail = require("../utils/email");
+const PaginationServiceFactory = require("../services/paginationServiceFactory");
 
-// GET ALL USERS
+// Create pagination service for User model
+const userPagination = PaginationServiceFactory.createService(User);
+
+// Get all users with advanced pagination and filtering
 exports.getUsers = catchAsync(async (req, res, next) => {
-  const users = await User.find({ isDeleted: false });
+  const result = await userPagination.paginate(req.query);
 
-  // set redis cache
-  // setRedisCache("users", users, 100);
+  if (result.data.length === 0) {
+    return res.status(200).json({
+      success: true,
+      message: "No users found",
+      data: [],
+      pagination: result.pagination,
+    });
+  }
+
+  // If you still want to maintain some caching logic:
+  // setRedisCache("users", result.data, 100);
 
   res.status(200).json({
-    results: users.length,
+    ...result,
     fromCache: false,
-    data: users,
   });
+});
+
+// Get users by role
+exports.getUsersByRole = catchAsync(async (req, res, next) => {
+  const customFilter = { role: req.params.role };
+  const result = await userPagination.paginate(req.query, customFilter);
+
+  res.status(200).json(result);
+});
+
+// Get users by status
+exports.getUsersByStatus = catchAsync(async (req, res, next) => {
+  const customFilter = { status: req.params.status };
+  const result = await userPagination.paginate(req.query, customFilter);
+
+  res.status(200).json(result);
+});
+
+// Get active users only
+exports.getActiveUsers = catchAsync(async (req, res, next) => {
+  const customFilter = { isActive: true, isDeleted: { $ne: true } };
+  const result = await userPagination.paginate(req.query, customFilter);
+
+  res.status(200).json(result);
 });
 
 // GET A USER

@@ -1,5 +1,34 @@
 const DocumentRecord = require("../models/documentRecordModel");
 const catchAsync = require("../utils/catchAsync");
+const PaginationServiceFactory = require("../services/PaginationServiceFactory");
+
+// Create pagination service for DocumentRecord
+const documentRecordService = PaginationServiceFactory.createService(
+  DocumentRecord,
+  {
+    searchableFields: [
+      "documentName",
+      "documentType",
+      "docRef",
+      "sender",
+      "note",
+    ],
+    filterableFields: [
+      "documentType",
+      "sender",
+      "recipient",
+      "forwardedTo",
+      "dateReceived",
+      "startDate",
+      "endDate",
+      "includeDeleted",
+      "onlyDeleted",
+    ],
+    defaultSort: "-dateReceived",
+    dateField: "dateReceived",
+    maxLimit: 50,
+  }
+);
 
 // create a new document record
 exports.addDocumentRecord = catchAsync(async (req, res) => {
@@ -13,20 +42,30 @@ exports.addDocumentRecord = catchAsync(async (req, res) => {
   });
 });
 
-// get all document records
+// get all document records with pagination, filtering, and sorting
+// get all document records with pagination, filtering, and sorting
 exports.getAllDocumentRecords = catchAsync(async (req, res) => {
-  const docRecords = await DocumentRecord.find();
+  console.log("Query params:", req.query);
+  console.log("Date filter being applied:", {
+    startDate: req.query.startDate,
+    endDate: req.query.endDate,
+    dateField: "dateReceived",
+  });
+
+  const result = await documentRecordService.paginate(req.query);
+
+  console.log("Filter result:", {
+    total: result.pagination?.totalRecords,
+    dataCount: result.data?.length,
+  });
 
   res.status(200).json({
     status: "success",
-    results: docRecords.length,
-    data: {
-      docRecords,
-    },
+    ...result,
   });
 });
 
-//  get a single document record
+// get a single document record
 exports.getDocumentRecord = catchAsync(async (req, res) => {
   const docRecord = await DocumentRecord.findById(req.params.id);
 
@@ -45,7 +84,7 @@ exports.getDocumentRecord = catchAsync(async (req, res) => {
   });
 });
 
-//  update a document record
+// update a document record
 exports.updateDocumentRecord = catchAsync(async (req, res) => {
   const docRecord = await DocumentRecord.findByIdAndUpdate(
     req.params.id,
@@ -71,7 +110,7 @@ exports.updateDocumentRecord = catchAsync(async (req, res) => {
   });
 });
 
-//  delete a document record
+// delete a document record
 exports.deleteDocumentRecord = catchAsync(async (req, res) => {
   const docRecord = await DocumentRecord.findByIdAndDelete(req.params.id);
 
@@ -85,5 +124,89 @@ exports.deleteDocumentRecord = catchAsync(async (req, res) => {
   res.status(204).json({
     status: "success",
     data: null,
+  });
+});
+
+// Advanced search for document records
+exports.searchDocumentRecords = catchAsync(async (req, res) => {
+  const result = await documentRecordService.advancedSearch(
+    req.body,
+    req.query
+  );
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+  });
+});
+
+// Get documents by type
+exports.getDocumentsByType = catchAsync(async (req, res) => {
+  const { documentType } = req.params;
+  const result = await documentRecordService.paginate({
+    ...req.query,
+    documentType,
+  });
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+  });
+});
+
+// Get documents by sender
+exports.getDocumentsBySender = catchAsync(async (req, res) => {
+  const { sender } = req.params;
+  const result = await documentRecordService.paginate({
+    ...req.query,
+    sender: new RegExp(sender, "i"),
+  });
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+  });
+});
+
+// Get documents by recipient
+exports.getDocumentsByRecipient = catchAsync(async (req, res) => {
+  const { recipientId } = req.params;
+  const result = await documentRecordService.paginate({
+    ...req.query,
+    recipient: recipientId,
+  });
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+  });
+});
+
+// Get documents by forwarded user
+exports.getDocumentsByForwardedTo = catchAsync(async (req, res) => {
+  const { forwardedToId } = req.params;
+  const result = await documentRecordService.paginate({
+    ...req.query,
+    forwardedTo: forwardedToId,
+  });
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+  });
+});
+
+// Get documents by date range
+exports.getDocumentsByDateRange = catchAsync(async (req, res) => {
+  const { startDate, endDate } = req.query;
+  const result = await documentRecordService.paginate({
+    ...req.query,
+    startDate,
+    endDate,
+  });
+
+  res.status(200).json({
+    status: "success",
+    ...result,
   });
 });

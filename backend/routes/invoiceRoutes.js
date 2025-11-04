@@ -5,9 +5,12 @@ const {
   createInvoice,
   updateInvoice,
   deleteInvoice,
-  uploadUserSignature,
+  getOverdueInvoices,
   generateInvoicePdf,
   getTotalAmountDueOnInvoice,
+  sendInvoice,
+  voidInvoice,
+  checkOverdueInvoices,
 } = require("../controllers/invoiceController");
 const { protect, restrictTo } = require("../controllers/authController");
 const cacheMiddleware = require("../utils/cacheMiddleware");
@@ -26,6 +29,7 @@ router
   )
   .post(createInvoice);
 router.get("/total-amount-due-on-invoice", getTotalAmountDueOnInvoice);
+router.get("/overdue", getOverdueInvoices);
 
 router
   .route("/:id")
@@ -35,6 +39,10 @@ router
   )
   .patch(updateInvoice)
   .delete(deleteInvoice);
+router.patch("/:id/send", sendInvoice);
+router.patch("/:id/void", voidInvoice);
+
+router.get("/overdue-check", checkOverdueInvoices);
 
 router.get("/pdf/:id", generateInvoicePdf);
 

@@ -59,6 +59,21 @@ documentRecordSchema.pre(/^find/, function (next) {
   next();
 });
 
+// indexes for frequently queried fields
+documentRecordSchema.index({
+  documentName: "text",
+  sender: "text",
+  note: "text",
+});
+documentRecordSchema.index({ documentType: 1 });
+documentRecordSchema.index({ dateReceived: -1 });
+documentRecordSchema.index({ sender: 1 });
+documentRecordSchema.index({ recipient: 1 });
+documentRecordSchema.index({ forwardedTo: 1 });
+
+// Compound index for common query patterns
+documentRecordSchema.index({ documentType: 1, dateReceived: -1 });
+
 const DocumentRecord = mongoose.model("DocumentRecord", documentRecordSchema);
 
 module.exports = DocumentRecord;

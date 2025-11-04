@@ -15,6 +15,8 @@ router.post(
   paymentController.createPayment
 );
 router.get("/", paymentController.getAllPayments);
+
+router.get("/statistics", paymentController.getPaymentSummary);
 router.get(
   "/paymentEachClient",
   // cacheMiddleware(() => "paymentByEachClient"),
@@ -70,6 +72,7 @@ router.get(
   // cacheMiddleware((req) => `paymentMonthInYear:${req.params.year}`),
   paymentController.totalPaymentsByMonthInYear
 );
+
 // Get a specific payment by ID
 router.get("/:paymentId", paymentController.getPayment);
 // Update a payment by ID
