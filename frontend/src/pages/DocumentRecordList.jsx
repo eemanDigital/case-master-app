@@ -22,7 +22,7 @@ import {
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useRef } from "react"; // Added useRef
 import { toast } from "react-toastify";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "../components/PageErrorAlert";
@@ -51,32 +51,46 @@ const DocumentRecordList = () => {
     limit: 10,
   });
 
-  // ✅ Track applied filters separately
-  const [appliedFilters, setAppliedFilters] = useState(filters);
   const [showFilters, setShowFilters] = useState(false);
   const { Column } = Table;
   const dispatch = useDispatch();
+  const isInitialMount = useRef(true); // Add this ref
 
   useRedirectLogoutUser("/users/login");
 
+  // Initial data fetch
+  useEffect(() => {
+    fetchDocumentRecords();
+  }, []);
+
+  // Fetch data when filters change (pagination, sort)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    fetchDocumentRecords();
+  }, [filters.page, filters.limit, filters.sort]); // Watch these for changes
+
+  // Fetch data with current filters
+  const fetchDocumentRecords = () => {
+    const queryString = buildQueryString(filters);
+    fetchData(`documentRecord?${queryString}`, "documentRecord");
+  };
+
   // Build query string from filters
-  const buildQueryString = useCallback((filterObj) => {
+  const buildQueryString = (filters) => {
     const params = new URLSearchParams();
 
-    Object.keys(filterObj).forEach((key) => {
-      if (filterObj[key] && filterObj[key] !== "") {
-        params.append(key, filterObj[key]);
+    Object.keys(filters).forEach((key) => {
+      if (filters[key] && filters[key] !== "") {
+        params.append(key, filters[key]);
       }
     });
 
     return params.toString();
-  }, []);
-
-  // ✅ Fetch data when appliedFilters change
-  useEffect(() => {
-    const queryString = buildQueryString(appliedFilters);
-    fetchData(`documentRecord?${queryString}`, "documentRecord");
-  }, [appliedFilters, buildQueryString, fetchData]);
+  };
 
   // Handle filter changes (UI only, no API call)
   const handleFilterChange = (key, value) => {
@@ -103,28 +117,33 @@ const DocumentRecordList = () => {
     }
   };
 
-  // ✅ Apply filters (triggers API call by updating appliedFilters)
+  // CORRECTED: Apply filters (triggers API call)
   const applyFilters = () => {
-    const updatedFilters = {
+    const newFilters = {
       ...filters,
-      page: 1, // Reset to first page when applying new filters
+      page: 1, // Reset to first page
     };
-    setFilters(updatedFilters);
-    setAppliedFilters(updatedFilters); // ✅ This triggers the useEffect
+
+    setFilters(newFilters);
+
+    // Immediate API call with new filters
+    const queryString = buildQueryString(newFilters);
+    fetchData(`documentRecord?${queryString}`, "documentRecord");
+
+    // Close the filter panel
+    setShowFilters(false);
   };
 
-  // ✅ Handle pagination change (applies immediately)
+  // Handle pagination change
   const handlePageChange = (page, pageSize) => {
-    const updatedFilters = {
-      ...appliedFilters, // ✅ Use appliedFilters not filters
+    setFilters((prev) => ({
+      ...prev,
       page: page,
       limit: pageSize,
-    };
-    setFilters(updatedFilters);
-    setAppliedFilters(updatedFilters); // ✅ Apply immediately
+    }));
   };
 
-  // ✅ Reset all filters and apply
+  // CORRECTED: Reset all filters with API call
   const resetFilters = () => {
     const defaultFilters = {
       search: "",
@@ -136,33 +155,34 @@ const DocumentRecordList = () => {
       page: 1,
       limit: 10,
     };
+
     setFilters(defaultFilters);
-    setAppliedFilters(defaultFilters); // ✅ Apply reset immediately
+
+    // Fetch with reset filters
+    const queryString = buildQueryString(defaultFilters);
+    fetchData(`documentRecord?${queryString}`, "documentRecord");
   };
 
   // Delete record
   const removeRecord = async (id) => {
     try {
       await dispatch(deleteData(`documentRecord/${id}`));
-      // ✅ Refetch with current applied filters
-      const queryString = buildQueryString(appliedFilters);
-      await fetchData(`documentRecord?${queryString}`, "documentRecord");
+      fetchDocumentRecords();
       toast.success("Document record deleted successfully");
     } catch (error) {
       toast.error("Failed to delete document record");
     }
   };
 
-  // ✅ Check if current filters differ from applied filters
-  const hasUnsavedChanges =
-    JSON.stringify(filters) !== JSON.stringify(appliedFilters);
-
   // Check if any filters are active
   const hasActiveFilters =
-    appliedFilters.search ||
-    appliedFilters.documentType ||
-    appliedFilters.sender ||
-    appliedFilters.startDate;
+    filters.search ||
+    filters.documentType ||
+    filters.sender ||
+    filters.startDate;
+
+  // Remove the hasUnsavedFilters check - Apply should always work
+  // const hasUnsavedFilters = hasActiveFilters;
 
   if (loadingDocumentRecord?.documentRecord) {
     return <LoadingSpinner />;
@@ -263,7 +283,6 @@ const DocumentRecordList = () => {
                     placeholder="Search documents..."
                     prefix={<SearchOutlined />}
                     allowClear
-                    onPressEnter={applyFilters} // ✅ Apply on Enter key
                   />
                 </div>
 
@@ -301,7 +320,6 @@ const DocumentRecordList = () => {
                     }
                     placeholder="Filter by sender"
                     allowClear
-                    onPressEnter={applyFilters} // ✅ Apply on Enter key
                   />
                 </div>
 
@@ -341,20 +359,11 @@ const DocumentRecordList = () => {
                   <Button
                     type="primary"
                     onClick={applyFilters}
-                    disabled={!hasUnsavedChanges} // ✅ Disable if no changes
                     loading={loadingDocumentRecord?.documentRecord}>
                     Apply Filters
                   </Button>
                 </div>
               </div>
-
-              {/* ✅ Show unsaved changes indicator */}
-              {hasUnsavedChanges && (
-                <div className="mt-3 text-sm text-orange-600 flex items-center gap-1">
-                  <span>•</span>
-                  <span>You have unsaved filter changes</span>
-                </div>
-              )}
             </div>
           )}
 
@@ -475,52 +484,26 @@ const DocumentRecordList = () => {
               <span className="text-sm font-medium text-gray-700">
                 Active filters:
               </span>
-              {appliedFilters.search && (
-                <Tag
-                  closable
-                  onClose={() => {
-                    const newFilters = { ...appliedFilters, search: "" };
-                    setFilters(newFilters);
-                    setAppliedFilters(newFilters);
-                  }}>
-                  Search: "{appliedFilters.search}"
+              {filters.search && (
+                <Tag closable onClose={() => handleFilterChange("search", "")}>
+                  Search: {filters.search}
                 </Tag>
               )}
-              {appliedFilters.documentType && (
+              {filters.documentType && (
                 <Tag
                   closable
-                  onClose={() => {
-                    const newFilters = { ...appliedFilters, documentType: "" };
-                    setFilters(newFilters);
-                    setAppliedFilters(newFilters);
-                  }}>
-                  Type: {appliedFilters.documentType}
+                  onClose={() => handleFilterChange("documentType", "")}>
+                  Type: {filters.documentType}
                 </Tag>
               )}
-              {appliedFilters.sender && (
-                <Tag
-                  closable
-                  onClose={() => {
-                    const newFilters = { ...appliedFilters, sender: "" };
-                    setFilters(newFilters);
-                    setAppliedFilters(newFilters);
-                  }}>
-                  Sender: {appliedFilters.sender}
+              {filters.sender && (
+                <Tag closable onClose={() => handleFilterChange("sender", "")}>
+                  Sender: {filters.sender}
                 </Tag>
               )}
-              {appliedFilters.startDate && appliedFilters.endDate && (
-                <Tag
-                  closable
-                  onClose={() => {
-                    const newFilters = {
-                      ...appliedFilters,
-                      startDate: "",
-                      endDate: "",
-                    };
-                    setFilters(newFilters);
-                    setAppliedFilters(newFilters);
-                  }}>
-                  Date: {appliedFilters.startDate} to {appliedFilters.endDate}
+              {filters.startDate && filters.endDate && (
+                <Tag closable onClose={() => handleDateRangeChange(null)}>
+                  Date: {filters.startDate} to {filters.endDate}
                 </Tag>
               )}
             </div>
