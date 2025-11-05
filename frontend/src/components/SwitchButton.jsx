@@ -1,5 +1,4 @@
 import PropTypes from "prop-types";
-import { motion, AnimatePresence } from "framer-motion";
 
 const SwitchButton = ({
   currentState,
@@ -47,9 +46,7 @@ const SwitchButton = ({
   };
 
   return (
-    <motion.button
-      whileHover={!disabled ? { scale: 1.02 } : {}}
-      whileTap={!disabled ? { scale: 0.98 } : {}}
+    <button
       className={`
         relative
         ${sizeClasses[size]}
@@ -81,32 +78,27 @@ const SwitchButton = ({
       disabled={disabled}
       aria-pressed={isActive}
       aria-label={`Switch to ${text}`}>
-      <AnimatePresence>
-        {isActive && (
-          <motion.div
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0, opacity: 0 }}
-            className="absolute inset-0 bg-blue-600 rounded-lg -z-10"
-            layoutId="activeBackground"
-          />
-        )}
-      </AnimatePresence>
+      {/* Active background */}
+      {isActive && (
+        <div className="absolute inset-0 bg-blue-600 rounded-lg -z-10" />
+      )}
 
       {/* Icon */}
       {Icon && (
-        <motion.div
-          animate={{
-            scale: isActive ? 1.1 : 1,
-            color: isActive ? "currentColor" : "currentColor",
-          }}
-          transition={{ duration: 0.2 }}>
-          <Icon
-            className={`w-4 h-4 ${
-              size === "small" ? "w-3 h-3" : size === "large" ? "w-5 h-5" : ""
-            }`}
-          />
-        </motion.div>
+        <div
+          className={`
+          ${isActive ? "scale-110" : "scale-100"}
+          transition-transform duration-200
+          ${
+            size === "small"
+              ? "w-3 h-3"
+              : size === "large"
+              ? "w-5 h-5"
+              : "w-4 h-4"
+          }
+        `}>
+          <Icon />
+        </div>
       )}
 
       {/* Text */}
@@ -114,13 +106,9 @@ const SwitchButton = ({
 
       {/* Active indicator dot */}
       {isActive && variant === "minimalist" && (
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          className="w-1.5 h-1.5 bg-blue-600 rounded-full"
-        />
+        <div className="w-1.5 h-1.5 bg-blue-600 rounded-full transition-all duration-200" />
       )}
-    </motion.button>
+    </button>
   );
 };
 
