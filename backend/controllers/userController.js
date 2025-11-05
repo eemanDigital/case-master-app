@@ -4,7 +4,7 @@ const AppError = require("../utils/appError");
 const filterObj = require("../utils/filterObj");
 // const setRedisCache = require("../utils/setRedisCache");
 const sendMail = require("../utils/email");
-const PaginationServiceFactory = require("../services/paginationServiceFactory");
+const PaginationServiceFactory = require("../services/PaginationServiceFactory");
 
 // Create pagination service for User model
 const userPagination = PaginationServiceFactory.createService(User);
