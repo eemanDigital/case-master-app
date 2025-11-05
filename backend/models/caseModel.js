@@ -281,6 +281,15 @@ const caseSchema = new mongoose.Schema(
   }
 );
 
+caseSchema.index({ isDeleted: 1, active: 1 });
+caseSchema.index({ caseStatus: 1, isDeleted: 1 });
+caseSchema.index({ courtName: 1, isDeleted: 1 });
+caseSchema.index({ accountOfficer: 1, isDeleted: 1 });
+caseSchema.index({ client: 1, isDeleted: 1 });
+caseSchema.index({ filingDate: -1, isDeleted: 1 });
+caseSchema.index({ casePriority: 1, isDeleted: 1 });
+caseSchema.index({ category: 1, isDeleted: 1 });
+
 caseSchema.pre(/^find/, function (next) {
   // Populate the accountOfficer field with the firstName and lastName of the user
   this.populate({
