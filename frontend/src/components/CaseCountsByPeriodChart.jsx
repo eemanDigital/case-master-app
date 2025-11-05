@@ -511,7 +511,7 @@ const CaseCountsByPeriodChart = ({ data, loading }) => {
                     </div>
                   </div>
 
-                  {monthData.parties.length > 0 && !monthData.isEmpty && (
+                  {monthData?.parties?.length > 0 && !monthData.isEmpty && (
                     <div className="mt-2">
                       <div className="text-xs font-medium text-gray-500 mb-1">
                         SAMPLE:

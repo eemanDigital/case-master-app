@@ -43,6 +43,8 @@ const CaseCountsByClient = ({ data, loading }) => {
   const transformedData = useMemo(() => {
     if (!data) return [];
 
+    console.log("Raw data for CaseCountsByClientChart:", data);
+
     const sortedData = [...data].sort((a, b) => b.count - a.count).slice(0, 10); // Limit to top 10 clients
 
     return sortedData.map((item, index) => ({
@@ -341,13 +343,13 @@ const CaseCountsByClient = ({ data, loading }) => {
                     </Tag>
                   </div>
 
-                  {client.parties.length > 0 && (
+                  {client?.parties?.length > 0 && (
                     <div className="mt-3">
                       <div className="text-xs font-medium text-gray-500 mb-2">
                         INVOLVED PARTIES:
                       </div>
                       <div className="space-y-1 max-h-[100px] overflow-y-auto">
-                        {client.parties.slice(0, 3).map((party, idx) => (
+                        {client?.parties?.slice(0, 3).map((party, idx) => (
                           <div
                             key={idx}
                             className="text-xs text-gray-600 py-1 px-2 bg-gray-50 rounded">

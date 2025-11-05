@@ -66,6 +66,7 @@ import DocumentRecordDetails from "./pages/DocumentRecordDetails.jsx";
 import SoftDeletedCasesArchive from "./components/SoftDeletedCasesArchive.jsx";
 import SoftDeletedReportsArchive from "./pages/SoftDeletedReportsArchive.jsx";
 import InvoiceList from "./pages/InvoiceList.jsx";
+import AddClientForm from "./components/AddClientForm.jsx";
 
 // import EditTaskForm from "./pages/EditTaskForm.jsx";
 
@@ -235,6 +236,7 @@ function App() {
               </ShowOnlyVerifiedUser>
             }
           />
+          <Route path="clients/add-client" element={<AddClientForm />} />
           <Route path="clients/:id/details" element={<ClientDetails />} />
 
           {/* billing/payment/invoice */}

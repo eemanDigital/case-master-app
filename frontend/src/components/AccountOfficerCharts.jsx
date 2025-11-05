@@ -319,8 +319,9 @@ const AccountOfficerCharts = ({ data, title, colorScheme = "primary" }) => {
                     </Text>
                   </div>
                   <Text className="text-gray-500 text-sm flex-1 text-right truncate">
-                    {item.cases.slice(0, 2).join(", ")}
-                    {item.cases.length > 2 && ` +${item.cases.length - 2} more`}
+                    {item?.cases?.slice(0, 2).join(", ")}
+                    {item?.cases?.length > 2 &&
+                      ` +${item?.cases?.length - 2} more`}
                   </Text>
                 </div>
               ))}

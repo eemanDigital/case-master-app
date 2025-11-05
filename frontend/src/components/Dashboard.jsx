@@ -26,7 +26,7 @@ import {
   ShowOnlyVerifiedUser,
   ShowStaff,
 } from "./protect/Protect";
-import { Alert, Button } from "antd";
+import { Alert, Button, Skeleton } from "antd";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import CurrentDayCauseList from "./CurrentDayCauseList";
 import VerifyAccountNotice from "./VerifyAccountNotice";
@@ -34,19 +34,19 @@ import { Link } from "react-router-dom";
 import EventList from "../pages/EventList";
 import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
 
-// context for year for search filter
+// Context for year for search filter
 export const PaymentFiltersContext = createContext();
 
 const Dashboard = () => {
-  useRedirectLogoutUser("/users/login"); // redirect to login if not logged in
+  useRedirectLogoutUser("/users/login");
 
   const { user } = useSelector((state) => state.auth);
   const userId = user?.data?._id;
   const year = new Date().getFullYear();
-  // const [year, setYear] = useState(new Date().getFullYear());
   const [yearMonth, setYearMonth] = useState(new Date().getFullYear());
   const [yearEachMonth, setYearEachMonth] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth() + 1);
+
   const { error: userError, dataFetcher: dataFetcherUser } = useDataFetch();
   const {
     data: fetchedYearData,
@@ -54,7 +54,6 @@ const Dashboard = () => {
     error: fetchErrorYear,
     dataFetcher: dataFetcherYear,
   } = useDataFetch();
-
   const {
     data: fetchedMonthData,
     loading: fetchLoadingMonth,
@@ -70,6 +69,8 @@ const Dashboard = () => {
 
   const {
     fetchData,
+    fetchBatch,
+    refreshData,
     cases,
     users,
     tasks,
@@ -85,42 +86,67 @@ const Dashboard = () => {
     casesByAccountOfficer,
     monthlyNewCases,
     yearlyNewCases,
+    dashboardStats, // ✅ Add this from the new endpoint
     error: dataError,
     loading: dataLoading,
   } = useDataGetterHook();
-  // end
+
   const { isAdminOrHr, isStaff, isClient, isVerified } = useAdminHook();
-  // user count
   const { lawyerCount, clientCount, staff } = useUsersCount(users);
+  // ✅ SINGLE API CALL for all dashboard stats
+  // useEffect(() => {
+  //   const fetchDashboardData = async () => {
+  //     try {
+  //       // Fetch dashboard stats in one call
+  //       await fetchData("cases/dashboard-stats", "dashboardStats");
 
-  // fetch data
+  //       // Fetch other essential data in parallel
+  //       await fetchBatch([
+  //         { endpoint: "cases", key: "cases" },
+  //         { endpoint: "users", key: "users" },
+  //         { endpoint: "reports", key: "reports" },
+  //         { endpoint: "tasks", key: "tasks" },
+  //         { endpoint: "reports/upcoming", key: "causeList" },
+  //         { endpoint: "payments/totalBalance", key: "totalBalanceOnPayments" },
+  //       ]);
+  //     } catch (error) {
+  //       console.error("Error fetching dashboard data:", error);
+  //     }
+  //   };
+
+  //   fetchDashboardData();
+  // }, [fetchData, fetchBatch]);
+  // In your Dashboard component, replace the current useEffect with this:
   useEffect(() => {
-    fetchData("cases", "cases");
-    fetchData("users", "users");
-    fetchData("reports", "reports");
-    fetchData("tasks", "tasks");
-    fetchData("cases/case-status", "casesByStatus");
-    fetchData("cases/cases-by-court", "casesByCourt");
-    fetchData("cases/cases-by-natureOfCase", "casesByNature");
-    fetchData("cases/cases-by-rating", "casesByRating");
-    fetchData("cases/cases-by-mode", "casesByMode");
-    fetchData("cases/cases-by-category", "casesByCategory");
-    fetchData("cases/cases-by-client", "casesByClient");
-    fetchData("cases/cases-by-client", "casesByClient");
-    fetchData("cases/cases-by-accountOfficer", "casesByAccountOfficer");
-    fetchData("cases/monthly-new-cases", "monthlyNewCases");
-    fetchData("cases/yearly-new-cases", "yearlyNewCases");
-    fetchData("reports/upcoming", "causeList");
-    fetchData("payments/paymentEachClient", "clientPayments");
-    fetchData("payments/totalBalance", "totalBalanceOnPayments");
-  }, []);
+    const fetchDashboardData = async () => {
+      try {
+        // ✅ SINGLE CALL for all case statistics
+        await fetchData("cases/dashboard-stats", "dashboardStats");
 
+        // ✅ Essential data in parallel
+        await fetchBatch([
+          { endpoint: "users", key: "users" },
+          { endpoint: "reports", key: "reports" },
+          { endpoint: "tasks", key: "tasks" },
+          { endpoint: "reports/upcoming", key: "causeList" },
+          { endpoint: "payments/totalBalance", key: "totalBalanceOnPayments" },
+        ]);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      }
+    };
+
+    fetchDashboardData();
+  }, [fetchData, fetchBatch]);
+
+  // ✅ Separate effect for user-specific data
   useEffect(() => {
     if (userId) {
       dataFetcherUser(`users/${userId}`, "GET");
     }
   }, [userId, dataFetcherUser]);
 
+  // ✅ Separate effects for payment data (only when params change)
   useEffect(() => {
     if (year) {
       dataFetcherYear(`payments/totalPayments/${year}`, "GET");
@@ -133,7 +159,6 @@ const Dashboard = () => {
     }
   }, [month, yearMonth, dataFetcherMonth]);
 
-  // get data each month in a year
   useEffect(() => {
     if (yearEachMonth) {
       dataFetcherEachMonth(
@@ -143,13 +168,40 @@ const Dashboard = () => {
     }
   }, [yearEachMonth, dataFetcherEachMonth]);
 
-  // if error from fetch user
-  if (userError) return <Alert message={userError} />;
+  // ✅ Extract data from dashboardStats response
+  const dashboardData = dashboardStats?.data || {};
+
+  // Use dashboard data if available, fallback to individual endpoints for backward compatibility
+  const effectiveCasesByStatus =
+    dashboardData.casesByStatus || casesByStatus?.data || [];
+  const effectiveCasesByCourt =
+    dashboardData.casesByCourt || casesByCourt?.data || [];
+  const effectiveCasesByNature =
+    dashboardData.casesByNature || casesByNature?.data || [];
+  const effectiveCasesByRating =
+    dashboardData.casesByRating || casesByRating?.data || [];
+  const effectiveCasesByMode =
+    dashboardData.casesByMode || casesByMode?.data || [];
+  const effectiveCasesByCategory =
+    dashboardData.casesByCategory || casesByCategory?.data || [];
+  const effectiveCasesByClient =
+    dashboardData.casesByClient || casesByClient?.data || [];
+  const effectiveCasesByAccountOfficer =
+    dashboardData.casesByAccountOfficer || casesByAccountOfficer?.data || [];
+  const effectiveMonthlyNewCases =
+    dashboardData.monthlyNewCases || monthlyNewCases?.data || [];
+  const effectiveYearlyNewCases =
+    dashboardData.yearlyNewCases || yearlyNewCases?.data || [];
+  const totalCases = dashboardData.totalCases || cases?.pagination?.total || 0;
+  const activeCases = dashboardData.activeCases || 0;
+
+  if (userError) return <Alert message={userError} type="error" showIcon />;
 
   return (
     <PaymentFiltersContext.Provider
       value={{ setYearEachMonth, setYearMonth, setMonth }}>
       {!isVerified && <VerifyAccountNotice />}
+
       <ShowOnlyVerifiedUser>
         <div className="flex items-center justify-between space-x-4 mb-2">
           <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
@@ -157,13 +209,13 @@ const Dashboard = () => {
           </h1>
           {isAdminOrHr && <LeaveNotification />}
         </div>
+
         <ShowStaff>
           {/* Events and Quick Actions */}
           <ScrollingEvents />
 
           <div className="flex flex-wrap items-center gap-3 mb-6 p-4 bg-gray-50 rounded-xl">
             <EventList />
-
             <CreateLeaveBalanceForm />
             <EventForm />
             <LeaveAppForm />
@@ -180,115 +232,233 @@ const Dashboard = () => {
           </div>
         </ShowStaff>
 
-        {/* client's Dashboard */}
+        {/* Client's Dashboard */}
         {isClient && <ClientDashboard />}
+
         {isStaff && (
           <>
-            {/* data count cards */}
-            <DashBoardDataCount
-              cases={cases}
-              staff={staff}
-              lawyerCount={lawyerCount}
-              clientCount={clientCount}
-            />
+            {/* Data count cards with skeleton loading */}
+            {dataLoading.dashboardStats || dataLoading.cases ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                {[1, 2, 3, 4].map((i) => (
+                  <Skeleton.Button
+                    key={i}
+                    active
+                    block
+                    style={{ height: 120 }}
+                  />
+                ))}
+              </div>
+            ) : (
+              // In your Dashboard component, update the DashBoardDataCount usage:
+              <DashBoardDataCount
+                cases={cases}
+                staff={staff}
+                lawyerCount={lawyerCount}
+                clientCount={clientCount}
+                // ✅ NEW: Pass optimized data
+                totalCases={totalCases}
+                activeCases={activeCases}
+                dashboardStats={dashboardStats}
+                loading={dataLoading.dashboardStats || dataLoading.cases}
+                // trends={/* your trend data */}
+              />
+            )}
+
             <div className="container mx-auto mt-2">
-              <div className="flex  flex-wrap -mx-4">
-                {/* LatestCaseReports - 50% width on large screens, full width on smaller screens */}
-                <div className=" flex-none gap-4 w-full px-4 mb-8">
+              <div className="flex flex-wrap -mx-4">
+                {/* Latest Reports and Cause List */}
+                <div className="flex-none gap-4 w-full px-4 mb-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg shadow-md w-full items-start">
                     <div className="bg-gradient-to-br from-white to-blue-50/50 border border-gray-200 rounded-2xl shadow-sm h-[400px] w-full flex flex-col">
-                      <LatestCaseReports
-                        reports={reports?.data}
-                        error={dataError.reports}
-                        loading={dataLoading.reports}
-                        fetchData={fetchData}
-                      />
+                      {dataLoading.reports ? (
+                        <div className="p-4">
+                          <Skeleton active paragraph={{ rows: 8 }} />
+                        </div>
+                      ) : (
+                        <LatestCaseReports
+                          reports={reports?.data}
+                          error={dataError.reports}
+                          loading={dataLoading.reports}
+                          fetchData={fetchData}
+                        />
+                      )}
                     </div>
 
                     <div className="bg-gradient-to-br from-white to-purple-50/50 border border-gray-200 rounded-2xl shadow-sm h-[400px] w-full flex flex-col">
-                      <CurrentDayCauseList />
+                      {dataLoading.causeList ? (
+                        <div className="p-4">
+                          <Skeleton active paragraph={{ rows: 8 }} />
+                        </div>
+                      ) : (
+                        <CurrentDayCauseList />
+                      )}
                     </div>
                   </div>
                 </div>
 
-                {/* Components below LatestCaseReports */}
+                {/* Components Grid */}
                 <div className="w-full px-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <CurrentTasksTracker
-                      tasks={tasks?.data || []}
-                      userId={userId}
-                    />
+                    {/* Tasks and Todo - Show immediately if data available */}
+                    {dataLoading.tasks ? (
+                      <Skeleton active paragraph={{ rows: 6 }} />
+                    ) : (
+                      <CurrentTasksTracker
+                        tasks={tasks?.data || []}
+                        userId={userId}
+                      />
+                    )}
+
                     <TodoList />
 
-                    <CaseCountsByClientChart data={casesByClient?.data || []} />
-                    <AccountOfficerCharts
-                      title="Cases By Account Officer"
-                      data={casesByAccountOfficer?.data || []}
-                    />
+                    {/* Charts with skeleton loading - using dashboard data */}
+                    {dataLoading.dashboardStats ? (
+                      <Skeleton.Node
+                        active
+                        style={{ width: "100%", height: 300 }}
+                      />
+                    ) : (
+                      <CaseCountsByClientChart data={effectiveCasesByClient} />
+                    )}
 
-                    <CaseCountsByPeriodChart
-                      data={monthlyNewCases?.data || []}
-                    />
-                    <CaseCountsByYearChart data={yearlyNewCases?.data || []} />
+                    {dataLoading.dashboardStats ? (
+                      <Skeleton.Node
+                        active
+                        style={{ width: "100%", height: 300 }}
+                      />
+                    ) : (
+                      <AccountOfficerCharts
+                        title="Cases By Account Officer"
+                        data={effectiveCasesByAccountOfficer}
+                      />
+                    )}
+
+                    {dataLoading.dashboardStats ? (
+                      <Skeleton.Node
+                        active
+                        style={{ width: "100%", height: 300 }}
+                      />
+                    ) : (
+                      <CaseCountsByPeriodChart
+                        data={effectiveMonthlyNewCases}
+                      />
+                    )}
+
+                    {dataLoading.dashboardStats ? (
+                      <Skeleton.Node
+                        active
+                        style={{ width: "100%", height: 300 }}
+                      />
+                    ) : (
+                      <CaseCountsByYearChart data={effectiveYearlyNewCases} />
+                    )}
 
                     {/* Admin components */}
                     <ShowAdminComponent>
-                      <CurrentMonthIncomeCharts
-                        data={{
-                          ...fetchedMonthData?.data,
-                          month: String(fetchedMonthData?.data?.month),
-                        }}
-                        loading={fetchLoadingMonth}
-                        error={fetchErrorMonth}
-                      />
-                      <TotalOutstandingBalanceCharts
-                        paymentData={fetchedYearData?.data}
-                        balanceData={totalBalanceOnPayments}
-                        loading={fetchLoadingYear}
-                        error={fetchErrorYear}
-                      />
-                      <MonthlyIncomeChart
-                        data={fetchedEachMonthDataInYear?.data}
-                        loading={fetchLoadingEachMonth}
-                        error={fetchErrorEachMonth}
-                      />
+                      {fetchLoadingMonth ? (
+                        <Skeleton.Node
+                          active
+                          style={{ width: "100%", height: 300 }}
+                        />
+                      ) : (
+                        <CurrentMonthIncomeCharts
+                          data={{
+                            ...fetchedMonthData?.data,
+                            month: String(fetchedMonthData?.data?.month),
+                          }}
+                          loading={fetchLoadingMonth}
+                          error={fetchErrorMonth}
+                        />
+                      )}
+
+                      {fetchLoadingYear ? (
+                        <Skeleton.Node
+                          active
+                          style={{ width: "100%", height: 300 }}
+                        />
+                      ) : (
+                        <TotalOutstandingBalanceCharts
+                          paymentData={fetchedYearData?.data}
+                          balanceData={totalBalanceOnPayments}
+                          loading={fetchLoadingYear}
+                          error={fetchErrorYear}
+                        />
+                      )}
+
+                      {fetchLoadingEachMonth ? (
+                        <Skeleton.Node
+                          active
+                          style={{ width: "100%", height: 300 }}
+                        />
+                      ) : (
+                        <MonthlyIncomeChart
+                          data={fetchedEachMonthDataInYear?.data}
+                          loading={fetchLoadingEachMonth}
+                          error={fetchErrorEachMonth}
+                        />
+                      )}
                     </ShowAdminComponent>
                   </div>
                 </div>
               </div>
             </div>
 
+            {/* Status Charts with skeleton loading - using dashboard data */}
             <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
-              <CasesByCategoriesChart
-                title="Case By Status"
-                data={casesByStatus?.data || []}
-                // loading={casesByStatusLoading}
-              />
-              <CasesByCategoriesChart
-                title="Nature of Case"
-                data={casesByNature?.data || []}
-                // loading={casesByNatureLoading}
-              />
-              <CasesByCategoriesChart
-                title="Cases By Court"
-                data={casesByCourt?.data || []}
-                // loading={casesByCourtLoading}
-              />
-              <CasesByCategoriesChart
-                title="Cases By Priority"
-                data={casesByRating?.data || []}
-                // loading={casesByRatingLoading}
-              />
-              <CasesByCategoriesChart
-                title="Cases By Mode of Commencement"
-                data={casesByMode?.data || []}
-                // loading={casesByModeLoading}
-              />
-              <CasesByCategoriesChart
-                title="Cases By Category"
-                data={casesByCategory?.data || []}
-                // loading={casesByCategoryLoading}
-              />
+              {dataLoading.dashboardStats ? (
+                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
+              ) : (
+                <CasesByCategoriesChart
+                  title="Case By Status"
+                  data={effectiveCasesByStatus}
+                />
+              )}
+
+              {dataLoading.dashboardStats ? (
+                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
+              ) : (
+                <CasesByCategoriesChart
+                  title="Nature of Case"
+                  data={effectiveCasesByNature}
+                />
+              )}
+
+              {dataLoading.dashboardStats ? (
+                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
+              ) : (
+                <CasesByCategoriesChart
+                  title="Cases By Court"
+                  data={effectiveCasesByCourt}
+                />
+              )}
+
+              {dataLoading.dashboardStats ? (
+                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
+              ) : (
+                <CasesByCategoriesChart
+                  title="Cases By Priority"
+                  data={effectiveCasesByRating}
+                />
+              )}
+
+              {dataLoading.dashboardStats ? (
+                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
+              ) : (
+                <CasesByCategoriesChart
+                  title="Cases By Mode of Commencement"
+                  data={effectiveCasesByMode}
+                />
+              )}
+
+              {dataLoading.dashboardStats ? (
+                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
+              ) : (
+                <CasesByCategoriesChart
+                  title="Cases By Category"
+                  data={effectiveCasesByCategory}
+                />
+              )}
             </div>
           </>
         )}

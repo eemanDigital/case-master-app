@@ -446,7 +446,7 @@ const CaseCountsByYearChart = ({ data, loading }) => {
                     </div>
                   </div>
 
-                  {yearData.parties.length > 0 && (
+                  {yearData?.parties?.length > 0 && (
                     <div className="mt-3">
                       <div className="text-xs font-medium text-gray-500 mb-2">
                         SAMPLE PARTIES:

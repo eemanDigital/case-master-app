@@ -77,7 +77,7 @@ const CasesByCategoriesChart = ({ data, title, loading }) => {
         color: palette[index % palette.length],
         percentage: Math.round((item.count / totalCases) * 100),
         shortName:
-          item.groupName.length > 12
+          item?.groupName?.length > 12
             ? item.groupName.substring(0, 12) + "..."
             : item.groupName,
       }));

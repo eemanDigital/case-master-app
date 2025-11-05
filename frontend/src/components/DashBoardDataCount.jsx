@@ -100,16 +100,40 @@ const DashBoardDataCount = ({
   staff,
   lawyerCount,
   clientCount,
+  // ✅ NEW PROPS for optimized backend
+  totalCases = null,
+  activeCases = null,
+  dashboardStats = null,
   loading = false,
   trends = {},
 }) => {
+  console.log("DashboardDataCount Props:", {
+    cases,
+    staff,
+    lawyerCount,
+    clientCount,
+    totalCases,
+    activeCases,
+  });
+
+  // ✅ Calculate effective values with new props as priority
+  const effectiveTotalCases =
+    totalCases !== null ? totalCases : cases?.pagination?.count || 0;
+  const effectiveActiveCases =
+    activeCases !== null ? activeCases : cases?.pagination?.count || 0;
+
+  // ✅ Get counts from dashboardStats if available
+  const statsData = dashboardStats?.data || {};
+  const finalTotalCases = statsData.totalCases || effectiveTotalCases;
+  const finalActiveCases = statsData.activeCases || effectiveActiveCases;
+
   const cardData = [
     {
       icon: FaBriefcase,
-      count: cases?.pagination?.count || 0,
+      count: finalTotalCases,
       label: "Total Cases",
       gradient: "from-blue-500 via-blue-600 to-blue-700",
-      description: "Active and pending legal cases",
+      description: "All cases in the system",
       trend: trends.cases,
       color: "blue",
     },
@@ -142,14 +166,12 @@ const DashBoardDataCount = ({
     },
   ];
 
-  // Calculate additional metrics
+  // ✅ Calculate additional metrics using optimized data
   const metrics = {
     casePerLawyer:
-      lawyerCount > 0
-        ? Math.round((cases?.pagination?.count || 0) / lawyerCount)
-        : 0,
-    clientSatisfaction: 95, // This could come from props
-    activeCases: cases?.pagination?.count || 0,
+      lawyerCount > 0 ? Math.round(finalTotalCases / lawyerCount) : 0,
+    clientSatisfaction: 95, // This could come from props or dashboardStats in future
+    activeCases: finalActiveCases,
   };
 
   return (
@@ -222,6 +244,7 @@ const DashBoardDataCount = ({
 };
 
 DashBoardDataCount.propTypes = {
+  // Original props
   cases: PropTypes.shape({
     pagination: PropTypes.shape({
       count: PropTypes.number,
@@ -237,6 +260,15 @@ DashBoardDataCount.propTypes = {
     lawyers: PropTypes.number,
     clients: PropTypes.number,
   }),
+  // ✅ NEW PROPS for optimized backend integration
+  totalCases: PropTypes.number,
+  activeCases: PropTypes.number,
+  dashboardStats: PropTypes.shape({
+    data: PropTypes.shape({
+      totalCases: PropTypes.number,
+      activeCases: PropTypes.number,
+    }),
+  }),
 };
 
 DashBoardDataCount.defaultProps = {
@@ -245,6 +277,9 @@ DashBoardDataCount.defaultProps = {
   clientCount: 0,
   loading: false,
   trends: {},
+  totalCases: null,
+  activeCases: null,
+  dashboardStats: null,
 };
 
 export default DashBoardDataCount;
