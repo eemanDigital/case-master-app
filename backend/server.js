@@ -10,6 +10,8 @@ const helmet = require("helmet");
 const hpp = require("hpp");
 const mongoSanitize = require("express-mongo-sanitize");
 const cookieParser = require("cookie-parser");
+
+// Route imports
 const userRouter = require("./routes/userRoutes");
 const caseRouter = require("./routes/caseRoutes");
 const taskRouter = require("./routes/taskRoutes");
@@ -24,54 +26,144 @@ const notificationRouter = require("./routes/notificationRoutes");
 const contactRouter = require("./routes/contactRoutes");
 const noteRouter = require("./routes/noteRoutes");
 const documentRecordRouter = require("./routes/documentRecordRoute");
-// const softDeleteRouter = require("./routes/softDeleteRoute");
+
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 
+// ============================================
+// GLOBAL ERROR HANDLERS
+// ============================================
+
 /**
- * //UNCAUGHT EXCEPTIONS: all errors/bugs that
- *  occur in a synchronous code and not handled
- * anywhere in the app
+ * Handle Unhandled Promise Rejections
+ * This prevents the server from crashing
  */
-process.on("uncaughtException", (err) => {
-  console.log("UNCAUGHT ERROR 🔥. Shutting down...");
-  console.log(err.name, err.message);
-  process.exit(1);
+process.on("unhandledRejection", (err, promise) => {
+  console.error("🚨 UNHANDLED PROMISE REJECTION:");
+  console.error("Error Name:", err.name);
+  console.error("Error Message:", err.message);
+  console.error("Stack Trace:", err.stack);
+
+  // Don't crash the server - just log the error
+  if (process.env.NODE_ENV === "development") {
+    console.error("Full Error Object:", err);
+  }
+
+  // Optionally send alert to monitoring service (Sentry, etc.)
+  // sendErrorToMonitoring(err);
+
+  // DON'T EXIT THE PROCESS - Keep server running
+  console.log("⚠️ Server continuing to run despite error...");
 });
 
-// Configure environment variables
+/**
+ * Handle Uncaught Exceptions
+ */
+process.on("uncaughtException", (err) => {
+  console.error("🚨 UNCAUGHT EXCEPTION:");
+  console.error("Error Name:", err.name);
+  console.error("Error Message:", err.message);
+  console.error("Stack Trace:", err.stack);
+
+  // For uncaught exceptions, it's safer to restart
+  // But we'll try to shut down gracefully
+  console.log("⚠️ Attempting graceful shutdown...");
+
+  // Give pending requests time to complete
+  setTimeout(() => {
+    process.exit(1);
+  }, 3000);
+});
+
+/**
+ * Handle SIGTERM (graceful shutdown)
+ */
+process.on("SIGTERM", () => {
+  console.log("👋 SIGTERM RECEIVED. Shutting down gracefully...");
+  server.close(() => {
+    console.log("💥 Process terminated!");
+    process.exit(0);
+  });
+});
+
+// Handle SIGINT (Ctrl+C)
+process.on("SIGINT", () => {
+  console.log("👋 SIGINT RECEIVED. Shutting down gracefully...");
+  server.close(() => {
+    console.log("💥 Process terminated!");
+    process.exit(0);
+  });
+});
+
+// ============================================
+// EXPRESS APP SETUP
+// ============================================
+
+// Configure environment variables FIRST
 dotenv.config({ path: "./config.env" });
 
-mongoose.set("strictPopulate", false);
-
-// MIDDLEWARES
+// Initialize Express app
 const app = express();
+
+// MongoDB configuration
+mongoose.set("strictPopulate", false);
+mongoose.set("strictQuery", true);
 
 // Enable trust proxy
 app.set("trust proxy", 1);
 
 // Security middlewares
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:"],
+      },
+    },
+  })
+);
+
+// CORS configuration
 app.use(
   cors({
-    origin: ["http://localhost:5173", "https://case-master-app.vercel.app"],
+    origin: [
+      "http://localhost:5173",
+      "https://case-master-app.vercel.app",
+      process.env.FRONTEND_URL, // Add from environment variable
+    ].filter(Boolean), // Remove any undefined values
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
     credentials: true,
+    optionsSuccessStatus: 200,
   })
 );
 
 // Body parsers
-app.use(express.urlencoded({ extended: true }));
-app.use(
-  express.json({
-    limit: "10kb",
-  })
-);
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+app.use(express.json({ limit: "10mb" }));
+
+// Cookie parser
+app.use(cookieParser());
 
 // Data sanitization
 app.use(mongoSanitize());
-app.use(hpp());
 app.use(xss());
+app.use(
+  hpp({
+    whitelist: [
+      // Add fields that can have multiple parameters
+      "duration",
+      "ratingsQuantity",
+      "ratingsAverage",
+      "maxGroupSize",
+      "difficulty",
+      "price",
+    ],
+  })
+);
 
 // Serve static files
 app.use(express.static(path.join(__dirname, "public")));
@@ -80,51 +172,68 @@ app.use(express.static(path.join(__dirname, "public")));
 app.set("view engine", "pug");
 app.set("views", path.join(__dirname, "views"));
 
-// Development logging
-// if (process.env.NODE_ENV === "development") {
-//   app.use(morgan("dev"));
+// Logging
+if (process.env.NODE_ENV === "development") {
+  app.use(morgan("dev"));
+} else {
+  app.use(morgan("combined")); // More detailed in production
+}
+
+// Rate limiter function
+// function rateLimiter(windowMs, message, max) {
+//   return rateLimit({
+//     max: max,
+//     windowMs: windowMs,
+//     message: message,
+//     standardHeaders: true,
+//     legacyHeaders: false,
+//     trustProxy: true,
+//     handler: (req, res, next) => {
+//       next(new AppError(message, 429));
+//     },
+//   });
 // }
 
-app.use(morgan("dev"));
+// Apply rate limiting to sensitive routes
+// app.use(
+//   "/api/v1/users/login",
+//   rateLimiter(
+//     15 * 60 * 1000, // 15 minutes
+//     "Too many login attempts from this IP, please try again in 15 minutes.",
+//     5 // 5 attempts per 15 minutes
+//   )
+// );
 
-// Rate limiter
-function rateLimiter(windowMs, message, max) {
-  const limiter = rateLimit({
-    max: max, // Allowed requests per set minutes
-    windowMs: windowMs,
-    message: message,
-    standardHeaders: true,
-    legacyHeaders: false,
-    trustProxy: true,
-    handler: (req, res, next) => {
-      next(new AppError(message, 429));
-    },
+// app.use(
+//   "/api/v1/users/resetpassword",
+//   rateLimiter(
+//     15 * 60 * 1000, // 15 minutes
+//     "Too many password reset attempts, please try again in 15 minutes.",
+//     3
+//   )
+// );
+
+// General API rate limiting (more lenient)
+// app.use(
+//   "/api/v1/",
+//   rateLimiter(
+//     15 * 60 * 1000, // 15 minutes
+//     "Too many requests from this IP, please try again later.",
+//     100 // 100 requests per 15 minutes
+//   )
+// );
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.status(200).json({
+    status: "success",
+    message: "Server is healthy",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
   });
+});
 
-  return limiter;
-}
-// Apply rate limiting only to login and password reset routes
-app.use(
-  "/api/v1/users/login",
-  rateLimiter(
-    60 * 1000,
-    "Too many login attempts, please try again in a minute.",
-    3
-  )
-);
-app.use(
-  "/api/v1/users/resetpassword",
-  rateLimiter(
-    10 * 60 * 1000,
-    "Too many password reset attempts, please try again later.",
-    3
-  )
-);
-
-// Cookie parser
-app.use(cookieParser());
-
-// Routes
+// API routes
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
@@ -139,67 +248,147 @@ app.use("/api/v1/contacts", contactRouter);
 app.use("/api/v1/events", eventRouter);
 app.use("/api/v1/notes", noteRouter);
 app.use("/api/v1/documentRecord", documentRecordRouter);
-// app.use("/api/v1/soft_delete", softDeleteRouter);
 
-// // Handle root URL
+// Root endpoint
 app.get("/", (req, res) => {
   res.status(200).json({
     status: "success",
-    message: "Welcome to the API",
+    message: "Welcome to Case Master API",
+    version: "1.0.0",
+    documentation: process.env.API_DOCS_URL || "Not available",
   });
 });
 
-// Handle 404 errors
+// Handle 404 errors - MUST be after all routes
 app.all("*", (req, res, next) => {
   next(new AppError(`Can't find ${req.originalUrl} on this server`, 404));
 });
 
-// Error handling middleware
+// Custom error handling middleware for specific errors
+app.use((err, req, res, next) => {
+  console.error("🔥 Express Error Handler:");
+  console.error("Error:", err.message);
+  console.error("Stack:", err.stack);
+
+  // Handle specific error types
+  if (err.name === "TimeoutError") {
+    return res.status(408).json({
+      status: "error",
+      message:
+        "Request timeout. Please try again with a smaller file or check your connection.",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
+  }
+
+  if (err.name === "MulterError") {
+    return res.status(400).json({
+      status: "error",
+      message: `File upload error: ${err.message}`,
+    });
+  }
+
+  if (err.message?.includes("Cloudinary")) {
+    return res.status(502).json({
+      status: "error",
+      message:
+        "File storage service is temporarily unavailable. Please try again later.",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
+  }
+
+  // Pass to main error controller
+  next(err);
+});
+
+// Main error handling middleware (MUST be last)
 app.use(errorController);
+
+// ============================================
+// DATABASE CONNECTION & SERVER STARTUP
+// ============================================
 
 // Determine the environment
 const isProduction = process.env.NODE_ENV === "production";
 
-// Connection string for MongoDB Atlas (production)
-const DB_PROD = process.env.DATABASE.replace(
+// Validate required environment variables
+const requiredEnvVars = ["DATABASE", "DATABASE_PASSWORD"];
+if (isProduction) {
+  requiredEnvVars.forEach((envVar) => {
+    if (!process.env[envVar]) {
+      console.error(`❌ Missing required environment variable: ${envVar}`);
+      process.exit(1);
+    }
+  });
+}
+
+// Database connection strings
+const DB_PROD = process.env.DATABASE?.replace(
   "<PASSWORD>",
   process.env.DATABASE_PASSWORD
 );
 
-// Connection string for local MongoDB (development)
-const DB_DEV = process.env.DATABASE_LOCAL;
+const DB_DEV =
+  process.env.DATABASE_LOCAL || "mongodb://localhost:27017/case-master";
 
-// Choose the appropriate database connection string
 const DB = isProduction ? DB_PROD : DB_DEV;
 
-// Connect to the chosen database
-mongoose
-  .connect(DB, {
-    serverSelectionTimeoutMS: 30000,
-    connectTimeoutMS: 30000,
-    socketTimeoutMS: 300000,
-    maxPoolSize: 50,
-    retryWrites: true,
-    retryReads: true,
-  })
-  .then(() => {
-    console.log(
-      `Database connected (${isProduction ? "production" : "development"})`
-    );
-  })
-  .catch((err) => {
-    console.error("Error connecting to database:", err);
-  });
-
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server connected on ${PORT}`);
-});
-
-// ALL PROMISE REJECTION
-// UNHANDLED REJECTION ERROR: e.g. where DB is down
-process.on("unhandledRejection", (err) => {
-  console.log(err.name, err.message);
-  console.log("UNHANDLED REJECTION! Shutting down...");
+if (!DB) {
+  console.error("❌ No database connection string configured");
   process.exit(1);
+}
+
+// Database connection with retry logic
+const connectWithRetry = async (retries = 5, delay = 5000) => {
+  try {
+    await mongoose.connect(DB, {
+      serverSelectionTimeoutMS: 30000,
+      connectTimeoutMS: 30000,
+      socketTimeoutMS: 45000,
+      maxPoolSize: 50,
+      retryWrites: true,
+      retryReads: true,
+    });
+    console.log(
+      `✅ Database connected (${isProduction ? "production" : "development"})`
+    );
+  } catch (err) {
+    console.error(
+      `❌ Database connection failed (attempt ${6 - retries}/5):`,
+      err.message
+    );
+
+    if (retries > 0) {
+      console.log(`🔄 Retrying connection in ${delay / 1000} seconds...`);
+      setTimeout(() => connectWithRetry(retries - 1, delay), delay);
+    } else {
+      console.error("💥 Maximum connection retries reached. Exiting...");
+      process.exit(1);
+    }
+  }
+};
+
+// Connect to database
+connectWithRetry();
+
+// Server startup
+const PORT = process.env.PORT || 5000;
+
+const server = app.listen(PORT, () => {
+  console.log(`
+🚀 Server started successfully!
+📍 Port: ${PORT}
+🌍 Environment: ${process.env.NODE_ENV || "development"}
+📅 Started at: ${new Date().toISOString()}
+  `);
 });
+
+// Handle server errors
+server.on("error", (err) => {
+  console.error("❌ Server error:", err);
+  if (err.code === "EADDRINUSE") {
+    console.error(`Port ${PORT} is already in use`);
+  }
+});
+
+// Export app for testing
+module.exports = app;
