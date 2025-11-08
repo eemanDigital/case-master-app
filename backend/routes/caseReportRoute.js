@@ -3,6 +3,7 @@ const {
   createReport,
   getReport,
   getReports,
+  debugReportFilters,
   getCaseReports,
   getUpcomingMatter,
   updateCaseReport,
@@ -28,6 +29,7 @@ router.use(protect);
 
 router.post("/", createReport);
 router.get("/", getReports);
+router.get("/debug", protect, debugReportFilters);
 // Advanced search endpoint
 router.post("/search", searchReports);
 router.get("/upcoming", getUpcomingMatter); //cause list route but from reports

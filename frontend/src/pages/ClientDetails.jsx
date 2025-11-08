@@ -1,12 +1,30 @@
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Card, Typography, Descriptions, Tag, Divider, Space } from "antd";
+import {
+  Card,
+  Typography,
+  Descriptions,
+  Tag,
+  Divider,
+  Space,
+  Row,
+  Col,
+  Statistic,
+  Avatar,
+  Badge,
+} from "antd";
 import {
   UserOutlined,
   PhoneOutlined,
   MailOutlined,
   HomeOutlined,
-  FileOutlined,
+  FileTextOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  EnvironmentOutlined,
+  IdcardOutlined,
+  SafetyCertificateOutlined,
+  EditOutlined,
 } from "@ant-design/icons";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -33,84 +51,286 @@ const ClientDetails = () => {
 
   const clientData = data?.data;
 
-  return (
-    <Card className="shadow-lg">
-      <GoBackButton />
+  // Calculate client statistics
+  const clientStats = {
+    totalCases: clientData?.case?.length || 0,
+    activeCases: clientData?.case?.filter((c) => c.active)?.length || 0,
+    completedCases:
+      clientData?.case?.filter((c) => c.caseStatus === "completed")?.length ||
+      0,
+  };
 
-      <Space direction="vertical" size="large" style={{ width: "100%" }}>
-        <div className="flex flex-col sm:flex-row justify-between items-center">
-          <Title level={2}>
-            <UserOutlined className="mr-2" />
-            Client Details
-          </Title>
-          <Space wrap>
-            {isClient && <UpdateClientInfo />}
-            {isSuperOrAdmin && <UpdateClientStatus clientId={id} />}
-          </Space>
+  const getStatusTag = (isActive, isVerified) => {
+    if (!isActive) {
+      return (
+        <Tag color="red" icon={<ClockCircleOutlined />}>
+          Inactive
+        </Tag>
+      );
+    }
+    if (isVerified) {
+      return (
+        <Tag color="green" icon={<CheckCircleOutlined />}>
+          Active & Verified
+        </Tag>
+      );
+    }
+    return (
+      <Tag color="orange" icon={<ClockCircleOutlined />}>
+        Pending Verification
+      </Tag>
+    );
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50 py-6 px-4">
+      <div className="max-w-6xl mx-auto">
+        {/* Header Section */}
+        <div className="mb-6">
+          <GoBackButton />
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mt-4">
+            <div className="flex items-center gap-4">
+              <Badge
+                count={clientData?.isActive ? "Active" : "Inactive"}
+                color={clientData?.isActive ? "green" : "red"}
+                offset={[-20, 60]}>
+                <Avatar
+                  size={80}
+                  src={clientData?.photo}
+                  icon={<UserOutlined />}
+                  className="border-2 border-white shadow-md"
+                />
+              </Badge>
+              <div>
+                <Title level={2} className="mb-1">
+                  {clientData?.firstName} {clientData?.secondName}
+                </Title>
+                <Text type="secondary" className="text-lg">
+                  Client ID: {clientData?._id?.substring(0, 8)}...
+                </Text>
+              </div>
+            </div>
+
+            <Space wrap>
+              {isClient && (
+                <UpdateClientInfo
+                  clientData={clientData}
+                  buttonProps={{
+                    icon: <EditOutlined />,
+                    type: "primary",
+                    size: "large",
+                  }}
+                />
+              )}
+              {isSuperOrAdmin && (
+                <UpdateClientStatus
+                  clientId={id}
+                  clientData={clientData}
+                  buttonProps={{
+                    size: "large",
+                  }}
+                />
+              )}
+            </Space>
+          </div>
         </div>
 
-        <Divider />
+        {/* Statistics Cards */}
+        <Row gutter={[16, 16]} className="mb-6">
+          <Col xs={24} sm={8}>
+            <Card className="text-center shadow-sm hover:shadow-md transition-shadow">
+              <Statistic
+                title="Total Cases"
+                value={clientStats.totalCases}
+                prefix={<FileTextOutlined className="text-blue-500" />}
+                valueStyle={{ color: "#1890ff" }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card className="text-center shadow-sm hover:shadow-md transition-shadow">
+              <Statistic
+                title="Active Cases"
+                value={clientStats.activeCases}
+                prefix={<CheckCircleOutlined className="text-green-500" />}
+                valueStyle={{ color: "#52c41a" }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={8}>
+            <Card className="text-center shadow-sm hover:shadow-md transition-shadow">
+              <Statistic
+                title="Completed Cases"
+                value={clientStats.completedCases}
+                prefix={
+                  <SafetyCertificateOutlined className="text-purple-500" />
+                }
+                valueStyle={{ color: "#722ed1" }}
+              />
+            </Card>
+          </Col>
+        </Row>
 
-        <Descriptions
-          bordered
-          column={{ xxl: 3, xl: 3, lg: 3, md: 2, sm: 1, xs: 1 }}>
-          <Descriptions.Item label="First Name">
-            {clientData?.firstName}
-          </Descriptions.Item>
-          <Descriptions.Item label="Second Name">
-            {clientData?.secondName || "N/A"}
-          </Descriptions.Item>
-          <Descriptions.Item label="Status">
-            <Tag color={clientData?.isActive ? "green" : "red"}>
-              {clientData?.isActive ? "Active" : "Inactive"}
-            </Tag>
-          </Descriptions.Item>
-          <Descriptions.Item
-            label={
-              <>
-                <MailOutlined /> Email
-              </>
-            }>
-            {clientData?.email}
-          </Descriptions.Item>
-          <Descriptions.Item
-            label={
-              <>
-                <PhoneOutlined /> Phone
-              </>
-            }>
-            {clientData?.phone}
-          </Descriptions.Item>
-          <Descriptions.Item
-            label={
-              <>
-                <HomeOutlined /> Address
-              </>
-            }>
-            {clientData?.address}
-          </Descriptions.Item>
-        </Descriptions>
+        <Row gutter={[24, 24]}>
+          {/* Personal Information */}
+          <Col xs={24} lg={12}>
+            <Card
+              title={
+                <span className="flex items-center gap-2">
+                  <IdcardOutlined className="text-blue-500" />
+                  Personal Information
+                </span>
+              }
+              className="shadow-sm h-full">
+              <Descriptions column={1} size="middle">
+                <Descriptions.Item
+                  label={
+                    <span className="font-semibold flex items-center gap-2">
+                      <UserOutlined /> Full Name
+                    </span>
+                  }>
+                  <Text strong>
+                    {clientData?.firstName} {clientData?.secondName || ""}
+                  </Text>
+                </Descriptions.Item>
 
-        {/* <Card
-          title={
-            <>
-              <FileOutlined /> Cases
-            </>
-          }
-          className="mt-4">
-          {clientData?.case?.length > 0 ? (
-            clientData.case.map((c, index) => (
-              <div key={index} className="mb-2">
-                <Text strong>Case {index + 1}:</Text>{" "}
-                {c.firstParty?.name[0]?.name} vs {c.secondParty?.name[0]?.name}
-              </div>
-            ))
-          ) : (
-            <Text type="secondary">No cases associated with this client.</Text>
-          )}
-        </Card> */}
-      </Space>
-    </Card>
+                <Descriptions.Item
+                  label={
+                    <span className="font-semibold flex items-center gap-2">
+                      <MailOutlined /> Email Address
+                    </span>
+                  }>
+                  <div className="flex items-center gap-2">
+                    {clientData?.email}
+                    {clientData?.isVerified && (
+                      <Tag
+                        color="green"
+                        icon={<SafetyCertificateOutlined />}
+                        size="small">
+                        Verified
+                      </Tag>
+                    )}
+                  </div>
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                  label={
+                    <span className="font-semibold flex items-center gap-2">
+                      <PhoneOutlined /> Phone Number
+                    </span>
+                  }>
+                  {clientData?.phone || "Not provided"}
+                </Descriptions.Item>
+
+                <Descriptions.Item
+                  label={
+                    <span className="font-semibold flex items-center gap-2">
+                      <EnvironmentOutlined /> Address
+                    </span>
+                  }>
+                  {clientData?.address || "Not provided"}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+          </Col>
+
+          {/* Account & Status Information */}
+          <Col xs={24} lg={12}>
+            <Card
+              title={
+                <span className="flex items-center gap-2">
+                  <SafetyCertificateOutlined className="text-green-500" />
+                  Account Information
+                </span>
+              }
+              className="shadow-sm h-full">
+              <Descriptions column={1} size="middle">
+                <Descriptions.Item label="Account Status">
+                  {getStatusTag(clientData?.isActive, clientData?.isVerified)}
+                </Descriptions.Item>
+
+                <Descriptions.Item label="Member Since">
+                  <Text>
+                    {clientData?.createdAt
+                      ? new Date(clientData.createdAt).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )
+                      : "N/A"}
+                  </Text>
+                </Descriptions.Item>
+
+                <Descriptions.Item label="Last Updated">
+                  <Text>
+                    {clientData?.updatedAt
+                      ? new Date(clientData.updatedAt).toLocaleDateString(
+                          "en-US",
+                          {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          }
+                        )
+                      : "N/A"}
+                  </Text>
+                </Descriptions.Item>
+
+                <Descriptions.Item label="Client ID">
+                  <Text code className="text-xs">
+                    {clientData?._id}
+                  </Text>
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Cases Section - Uncomment if you have case data */}
+        {/* {clientStats.totalCases > 0 && (
+          <>
+            <Divider />
+            <Card
+              title={
+                <span className="flex items-center gap-2">
+                  <FileTextOutlined className="text-purple-500" />
+                  Associated Cases ({clientStats.totalCases})
+                </span>
+              }
+              className="shadow-sm mt-6"
+            >
+              <Row gutter={[16, 16]}>
+                {clientData?.case?.map((c, index) => (
+                  <Col xs={24} md={12} key={c._id || index}>
+                    <Card 
+                      size="small" 
+                      className="border-l-4 border-blue-500 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <Text strong className="block">
+                            {c.caseNumber || `Case ${index + 1}`}
+                          </Text>
+                          <Text type="secondary" className="text-sm">
+                            {c.firstParty?.name[0]?.name} vs {c.secondParty?.name[0]?.name}
+                          </Text>
+                        </div>
+                        <Tag color={c.active ? "blue" : "default"}>
+                          {c.caseStatus || 'Active'}
+                        </Tag>
+                      </div>
+                    </Card>
+                  </Col>
+                ))}
+              </Row>
+            </Card>
+          </>
+        )} */}
+      </div>
+    </div>
   );
 };
 

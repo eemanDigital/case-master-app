@@ -1,4 +1,4 @@
-// components/CaseReportSearchBar.js - Fixed reset functionality
+// components/CaseReportSearchBar.js - Ensure it uses the onReset prop
 import { useState, useEffect } from "react";
 import {
   Input,
@@ -27,6 +27,7 @@ const { RangePicker } = DatePicker;
 
 const CaseReportSearchBar = ({
   onFiltersChange,
+  onReset, // ✅ Make sure this prop is received
   filters = {},
   loading = false,
   searchPlaceholder = "Search reports...",
@@ -86,6 +87,8 @@ const CaseReportSearchBar = ({
   const handleAdvancedSearch = (values) => {
     const newFilters = { ...filters };
 
+    console.log("Advanced Search Values:", values);
+
     // Handle date range
     if (values.dateRange && values.dateRange[0] && values.dateRange[1]) {
       newFilters.startDate = values.dateRange[0].format("YYYY-MM-DD");
@@ -118,10 +121,14 @@ const CaseReportSearchBar = ({
     setShowAdvanced(false);
   };
 
-  // Reset all filters
+  // ✅ FIXED: Use the onReset prop from parent
   const resetFilters = () => {
-    // Clear all filters in parent component
-    onFiltersChange({});
+    if (onReset) {
+      onReset(); // Call parent's reset function
+    } else {
+      // Fallback: Clear all filters in parent component
+      onFiltersChange({});
+    }
 
     // Reset local form state
     form.resetFields();
@@ -152,6 +159,12 @@ const CaseReportSearchBar = ({
   // Check if any filter is active
   const hasActiveFilters = Object.keys(filters).some((key) => {
     const value = filters[key];
+
+    // Exclude default sort and empty values
+    if (key === "sort" && value === "-date") {
+      return false; // Don't count default sort as active filter
+    }
+
     return value !== undefined && value !== "" && value !== null;
   });
 
@@ -159,7 +172,13 @@ const CaseReportSearchBar = ({
   const getActiveFilters = () => {
     const activeFilters = [];
     Object.keys(filters).forEach((key) => {
+      // ✅ FIX: Exclude default sort and empty values
       if (filters[key] && key !== "limit" && key !== "page") {
+        // ✅ FIX: Don't show default sort as an active filter
+        if (key === "sort" && filters[key] === "-date") {
+          return; // Skip default sort
+        }
+
         // Handle date range as a single filter
         if (key === "startDate" && filters.endDate) {
           activeFilters.push({

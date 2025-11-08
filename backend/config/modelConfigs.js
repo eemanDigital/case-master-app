@@ -1,17 +1,35 @@
+// config/modelConfigs.js - FIXED Report configuration
+
 const modelConfigs = {
   Report: {
-    searchableFields: ["update", "adjournedFor", "clientEmail"],
+    searchableFields: [
+      "update",
+      "adjournedFor",
+      "caseReported.firstParty.name",
+      "caseReported.secondParty.name",
+      "caseReported.suitNo",
+      "caseReported.courtName",
+      "caseReported.courtNo",
+      "caseReported.location",
+      "caseReported.state",
+      "caseReported.accountOfficer.firstName",
+      "caseReported.accountOfficer.lastName",
+    ],
     filterableFields: [
       "reportedBy",
-      "caseReported",
+      "caseReported.suitNo",
+      "caseReported.courtNo",
       "lawyersInCourt",
       "clientEmail",
+      "adjournedFor",
       "caseId",
       "caseSearch",
+      "startDate",
+      "endDate",
       "includeDeleted",
       "onlyDeleted",
     ],
-    textFilterFields: ["clientEmail"], // ✅ Fields that should use partial matching
+    textFilterFields: ["clientEmail", "adjournedFor", "update"],
     defaultSort: "-date",
     dateField: "date",
     maxLimit: 50,
@@ -19,13 +37,12 @@ const modelConfigs = {
       {
         path: "caseReported",
         select:
-          "firstParty secondParty suitNo courtNo client courtName location state",
+          "firstParty secondParty suitNo courtNo client courtName location state accountOfficer",
       },
       { path: "reportedBy", select: "firstName lastName middleName" },
       { path: "lawyersInCourt", select: "firstName lastName middleName" },
     ],
   },
-
   Case: {
     searchableFields: [
       "firstParty.name.name",
@@ -51,6 +68,8 @@ const modelConfigs = {
       "filingDate",
       "accountOfficer",
       "client",
+      "startDate",
+      "endDate",
       "includeDeleted",
       "onlyDeleted",
     ],
@@ -109,7 +128,7 @@ const modelConfigs = {
     ],
     filterableFields: [
       "documentType",
-      "sender", // ✅ Will now use partial matching!
+      "sender",
       "recipient",
       "forwardedTo",
       "dateReceived",

@@ -40,7 +40,7 @@ const CaseReportList = ({
   hideButtons,
   titleStyle,
   nameStyle,
-  endpoint = "reports", // Make endpoint configurable
+  endpoint = "reports",
 }) => {
   const { isStaff, isSuperAdmin } = useAdminHook();
   const { user } = useSelector((state) => state.auth);
@@ -75,14 +75,9 @@ const CaseReportList = ({
     limit: 10,
   });
 
-  // // Handle search and filter changes
-  // const handleFiltersChange = (newFilters) => {
-  //   updateFilters(newFilters);
-  // };
-
-  // Reset all filters using the hook's reset function
+  // ✅ FIXED: Proper reset function that calls the hook's reset
   const handleResetFilters = () => {
-    resetSearch();
+    resetSearch(); // This should reset to initial state
   };
 
   // prepare event title for calendar
@@ -165,16 +160,6 @@ const CaseReportList = ({
         </div>
 
         {/* Actions and Search */}
-        {/* <div className="mt-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"> */}
-        {/* {!hideButtons && isStaff && (
-            <Link to="add-report">
-              <Button type="primary" icon={<PlusOutlined />} size="large">
-                Add New Report
-              </Button>
-            </Link>
-          )} */}
-
-        {/* Actions and Search - Fixed layout */}
         <div className="mb-6">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             {/* Add Report Button */}
@@ -190,11 +175,9 @@ const CaseReportList = ({
 
             {/* Search Bar - Takes remaining space */}
             <div className="flex-1 min-w-0">
-              {" "}
-              {/* Important: prevents overflow */}
               <CaseReportSearchBar
                 onFiltersChange={handleFiltersChange}
-                onReset={handleResetFilters} // Add this prop
+                onReset={handleResetFilters} // ✅ FIXED: Now properly passing reset function
                 filters={filters}
                 loading={loading}
                 searchPlaceholder="Search reports or filter by case..."
@@ -203,7 +186,6 @@ const CaseReportList = ({
             </div>
           </div>
         </div>
-        {/* </div> */}
       </div>
 
       {/* Main Content */}
@@ -375,7 +357,7 @@ const CaseReportList = ({
                 : "Get started by creating your first case report"}
             </Text>
             {Object.keys(filters).length > 0 ? (
-              <Button type="primary" onClick={resetSearch}>
+              <Button type="primary" onClick={handleResetFilters}>
                 Clear all filters
               </Button>
             ) : (

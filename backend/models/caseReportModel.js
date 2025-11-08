@@ -13,7 +13,7 @@ const reportSchema = new mongoose.Schema(
     },
 
     update: {
-      type: "string",
+      type: String,
       trim: true,
       required: [true, "A case must have a name"],
     },
@@ -38,7 +38,7 @@ const reportSchema = new mongoose.Schema(
 
     clientEmail: {
       type: String,
-      require: true,
+      required: true,
     },
 
     lawyersInCourt: [

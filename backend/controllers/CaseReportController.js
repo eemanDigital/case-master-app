@@ -5,6 +5,7 @@ const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const { generatePdf } = require("../utils/generatePdf");
 const moment = require("moment-timezone");
+const QueryBuilder = require("../utils/queryBuilder");
 
 // const moment = require("moment");
 // const setRedisCache = require("../utils/setRedisCache");
@@ -57,13 +58,6 @@ exports.createReport = catchAsync(async (req, res, next) => {
 
 // Create pagination service for Report model
 const reportPagination = PaginationServiceFactory.createService(Report);
-
-// Get all reports with advanced pagination and filtering
-exports.getReports = catchAsync(async (req, res, next) => {
-  const result = await reportPagination.paginate(req.query);
-
-  res.status(200).json(result);
-});
 
 // Get reports for a specific case
 // exports.getCaseReports = catchAsync(async (req, res, next) => {
@@ -442,4 +436,98 @@ exports.generateCauseListMonth = catchAsync(async (req, res, next) => {
     "../views/causeListMonth.pug",
     `../output/${Math.random()}_causeList.pdf`
   );
+});
+
+// Add this to your reportController.js for debugging
+
+/**
+ * DEBUG ENDPOINT - Remove after fixing
+ * Test report filtering and search
+ */
+exports.debugReportFilters = catchAsync(async (req, res, next) => {
+  console.log("\n🔍 DEBUG: Report Filter Test");
+  console.log("Query params:", req.query);
+
+  // Test 1: Basic query
+  const basicFilter = QueryBuilder.buildMongooseFilter(req.query, {
+    searchableFields: ["update", "adjournedFor", "clientEmail"],
+    filterableFields: [
+      "reportedBy",
+      "caseReported",
+      "lawyersInCourt",
+      "clientEmail",
+      "caseId",
+      "caseSearch",
+    ],
+    textFilterFields: ["clientEmail", "adjournedFor"],
+    dateField: "date",
+  });
+
+  console.log("\n📋 Generated Filter:", JSON.stringify(basicFilter, null, 2));
+
+  // Test 2: Count matching documents
+  const count = await Report.countDocuments(basicFilter);
+  console.log(`\n📊 Matching documents: ${count}`);
+
+  // Test 3: Get sample documents
+  const samples = await Report.find(basicFilter)
+    .limit(3)
+    .populate("caseReported", "suitNo firstParty secondParty")
+    .populate("reportedBy", "firstName lastName");
+
+  console.log(
+    `\n📄 Sample Results:`,
+    samples.map((s) => ({
+      id: s._id,
+      caseId: s.caseReported?._id,
+      caseName: `${s.caseReported?.firstParty?.name?.[0]?.name} vs ${s.caseReported?.secondParty?.name?.[0]?.name}`,
+      update: s.update?.substring(0, 50),
+      adjournedFor: s.adjournedFor,
+    }))
+  );
+
+  // Test 4: If caseSearch is provided, test case search
+  if (req.query.caseSearch) {
+    const Case = require("../models/caseModel");
+    const matchingCases = await Case.find({
+      $or: [
+        {
+          "firstParty.name.name": {
+            $regex: req.query.caseSearch,
+            $options: "i",
+          },
+        },
+        {
+          "secondParty.name.name": {
+            $regex: req.query.caseSearch,
+            $options: "i",
+          },
+        },
+        { suitNo: { $regex: req.query.caseSearch, $options: "i" } },
+      ],
+      isDeleted: { $ne: true },
+    }).select("suitNo firstParty secondParty");
+
+    console.log(`\n🔍 Case Search "${req.query.caseSearch}":`);
+    console.log(`   Found ${matchingCases.length} matching cases`);
+    matchingCases.forEach((c) => {
+      console.log(
+        `   - ${c.firstParty.name?.[0]?.name} vs ${c.secondParty.name?.[0]?.name} (${c.suitNo})`
+      );
+    });
+  }
+
+  res.status(200).json({
+    debug: true,
+    queryParams: req.query,
+    generatedFilter: basicFilter,
+    matchingCount: count,
+    samples: samples.map((s) => ({
+      id: s._id,
+      case: s.caseReported,
+      update: s.update,
+      adjournedFor: s.adjournedFor,
+      reportedBy: s.reportedBy,
+    })),
+  });
 });
