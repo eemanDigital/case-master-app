@@ -84,74 +84,74 @@ exports.register = catchAsync(async (req, res, next) => {
 });
 
 // // login user handler
-// exports.login = catchAsync(async (req, res, next) => {
-//   const { email, password } = req.body;
+exports.login = catchAsync(async (req, res, next) => {
+  const { email, password } = req.body;
 
-//   // 1) Check if email and password exist
-//   if (!email || !password) {
-//     return next(new AppError("Please provide email and password!", 400));
-//   }
+  // 1) Check if email and password exist
+  if (!email || !password) {
+    return next(new AppError("Please provide email and password!", 400));
+  }
 
-//   // 2) Check if user exists and select password
-//   const user = await User.findOne({ email }).select("+password");
-//   if (!user) {
-//     return next(new AppError("Incorrect email or password", 401));
-//   }
+  // 2) Check if user exists and select password
+  const user = await User.findOne({ email }).select("+password");
+  if (!user) {
+    return next(new AppError("Incorrect email or password", 401));
+  }
 
-//   // Disallow login for deleted accounts (all roles)
-//   if (user.isDeleted === true) {
-//     return next(
-//       new AppError("This account has been deleted and cannot log in")
-//     );
-//   }
+  // Disallow login for deleted accounts (all roles)
+  if (user.isDeleted === true) {
+    return next(
+      new AppError("This account has been deleted and cannot log in")
+    );
+  }
 
-//   // Disallow login for inactive staff, but allow inactive clients
-//   if (user.isActive === false && user.role !== "client") {
-//     return next(
-//       new AppError("You are no longer eligible to login to this account")
-//     );
-//   }
+  // Disallow login for inactive staff, but allow inactive clients
+  if (user.isActive === false && user.role !== "client") {
+    return next(
+      new AppError("You are no longer eligible to login to this account")
+    );
+  }
 
-//   // 3) Check if password is correct
-//   const isPasswordCorrect = await user.correctPassword(password, user.password);
-//   if (!isPasswordCorrect) {
-//     return next(new AppError("Incorrect email or password", 401));
-//   }
+  // 3) Check if password is correct
+  const isPasswordCorrect = await user.correctPassword(password, user.password);
+  if (!isPasswordCorrect) {
+    return next(new AppError("Incorrect email or password", 401));
+  }
 
-//   // 4) Trigger 2FA for unknown user agent
-//   const currentUserAgent = parser(req.headers["user-agent"]).ua;
-//   const isAllowedAgent = user.userAgent.includes(currentUserAgent);
+  // 4) Trigger 2FA for unknown user agent
+  const currentUserAgent = parser(req.headers["user-agent"]).ua;
+  const isAllowedAgent = user.userAgent.includes(currentUserAgent);
 
-//   if (!isAllowedAgent) {
-//     const loginCode = Math.floor(100000 + Math.random() * 900000);
+  if (!isAllowedAgent) {
+    const loginCode = Math.floor(100000 + Math.random() * 900000);
 
-//     console.log(loginCode);
+    console.log(loginCode);
 
-//     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
+    const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
 
-//     await Token.findOneAndDelete({ userId: user._id });
+    await Token.findOneAndDelete({ userId: user._id });
 
-//     await new Token({
-//       userId: user._id,
-//       loginToken: encryptedLoginCode,
-//       createAt: Date.now(),
-//       expiresAt: Date.now() + 60 * 60 * 1000,
-//     }).save();
+    await new Token({
+      userId: user._id,
+      loginToken: encryptedLoginCode,
+      createAt: Date.now(),
+      expiresAt: Date.now() + 60 * 60 * 1000,
+    }).save();
 
-//     // Send the loginCode securely via email or SMS to the user
-//     console.log(req.cookies);
+    // Send the loginCode securely via email or SMS to the user
+    console.log(req.cookies);
 
-//     return next(
-//       new AppError(
-//         "New Browser or device detected. A verification code has been sent to your email.",
-//         400
-//       )
-//     );
-//   }
+    return next(
+      new AppError(
+        "New Browser or device detected. A verification code has been sent to your email.",
+        400
+      )
+    );
+  }
 
-//   // 5) Send token to client
-//   createSendToken(user, 200, res);
-// });
+  // 5) Send token to client
+  createSendToken(user, 200, res);
+});
 
 // // send login code handler
 // exports.sendLoginCode = catchAsync(async (req, res, next) => {
@@ -328,101 +328,101 @@ exports.register = catchAsync(async (req, res, next) => {
 // });
 
 // Fixed login function
-exports.login = catchAsync(async (req, res, next) => {
-  const { email, password } = req.body;
+// exports.login = catchAsync(async (req, res, next) => {
+//   const { email, password } = req.body;
 
-  if (!email || !password) {
-    return next(new AppError("Please provide email and password!", 400));
-  }
+//   if (!email || !password) {
+//     return next(new AppError("Please provide email and password!", 400));
+//   }
 
-  const user = await User.findOne({ email }).select("+password");
-  if (!user) {
-    return next(new AppError("Incorrect email or password", 401));
-  }
+//   const user = await User.findOne({ email }).select("+password");
+//   if (!user) {
+//     return next(new AppError("Incorrect email or password", 401));
+//   }
 
-  if (user.isDeleted === true) {
-    return next(
-      new AppError("This account has been deleted and cannot log in")
-    );
-  }
+//   if (user.isDeleted === true) {
+//     return next(
+//       new AppError("This account has been deleted and cannot log in")
+//     );
+//   }
 
-  if (user.isActive === false && user.role !== "client") {
-    return next(
-      new AppError("You are no longer eligible to login to this account")
-    );
-  }
+//   if (user.isActive === false && user.role !== "client") {
+//     return next(
+//       new AppError("You are no longer eligible to login to this account")
+//     );
+//   }
 
-  const isPasswordCorrect = await user.correctPassword(password, user.password);
-  if (!isPasswordCorrect) {
-    return next(new AppError("Incorrect email or password", 401));
-  }
+//   const isPasswordCorrect = await user.correctPassword(password, user.password);
+//   if (!isPasswordCorrect) {
+//     return next(new AppError("Incorrect email or password", 401));
+//   }
 
-  const currentUserAgent = parser(req.headers["user-agent"]).ua;
-  const isAllowedAgent = user.userAgent.includes(currentUserAgent);
+//   const currentUserAgent = parser(req.headers["user-agent"]).ua;
+//   const isAllowedAgent = user.userAgent.includes(currentUserAgent);
 
-  if (!isAllowedAgent) {
-    // Generate and send login code in one operation
-    const loginCode = Math.floor(100000 + Math.random() * 900000).toString();
-    console.log("🔐 Generated Login Code:", loginCode);
+//   if (!isAllowedAgent) {
+//     // Generate and send login code in one operation
+//     const loginCode = Math.floor(100000 + Math.random() * 900000).toString();
+//     console.log("🔐 Generated Login Code:", loginCode);
 
-    const encryptedLoginCode = cryptr.encrypt(loginCode);
+//     const encryptedLoginCode = cryptr.encrypt(loginCode);
 
-    // Delete existing tokens
-    await Token.deleteMany({ userId: user._id });
+//     // Delete existing tokens
+//     await Token.deleteMany({ userId: user._id });
 
-    // Save new token
-    await new Token({
-      userId: user._id,
-      loginToken: encryptedLoginCode,
-      createAt: Date.now(),
-      expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
-    }).save();
+//     // Save new token
+//     await new Token({
+//       userId: user._id,
+//       loginToken: encryptedLoginCode,
+//       createAt: Date.now(),
+//       expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+//     }).save();
 
-    // ✅ FIXED: Send email immediately
-    try {
-      const subject = "Your Login Verification Code - CaseMaster";
-      const send_to = user.email;
-      const send_from =
-        process.env.SENDINBLUE_EMAIL || process.env.EMAIL_USERNAME;
-      const reply_to = "noreply@casemaster.com";
-      const template = "loginCode";
-      const context = {
-        name: user.firstName,
-        code: loginCode, // Send plain code for email
-        expiresIn: "10 minutes",
-      };
+//     // ✅ FIXED: Send email immediately
+//     try {
+//       const subject = "Your Login Verification Code - CaseMaster";
+//       const send_to = user.email;
+//       const send_from =
+//         process.env.SENDINBLUE_EMAIL || process.env.EMAIL_USERNAME;
+//       const reply_to = "noreply@casemaster.com";
+//       const template = "loginCode";
+//       const context = {
+//         name: user.firstName,
+//         code: loginCode, // Send plain code for email
+//         expiresIn: "10 minutes",
+//       };
 
-      await sendMail(subject, send_to, send_from, reply_to, template, context);
+//       await sendMail(subject, send_to, send_from, reply_to, template, context);
 
-      // ✅ FIXED: Use next() with AppError to trigger 2FA flow in frontend
-      return next(
-        new AppError(
-          "New device detected. Verification code sent to your email.",
-          400,
-          {
-            twoFactor: true,
-            email: user.email,
-          }
-        )
-      );
-    } catch (emailError) {
-      console.error("❌ Failed to send verification email:", emailError);
+//       // ✅ FIXED: Use next() with AppError to trigger 2FA flow in frontend
+//       return next(
+//         new AppError(
+//           "New device detected. Verification code sent to your email.",
+//           400,
+//           {
+//             twoFactor: true,
+//             email: user.email,
+//           }
+//         )
+//       );
+//     } catch (emailError) {
+//       console.error("❌ Failed to send verification email:", emailError);
 
-      // Delete the token since email failed
-      await Token.deleteMany({ userId: user._id });
+//       // Delete the token since email failed
+//       await Token.deleteMany({ userId: user._id });
 
-      return next(
-        new AppError(
-          "Failed to send verification code. Please try again later.",
-          500
-        )
-      );
-    }
-  }
+//       return next(
+//         new AppError(
+//           "Failed to send verification code. Please try again later.",
+//           500
+//         )
+//       );
+//     }
+//   }
 
-  // If known device, login directly
-  createSendToken(user, 200, res);
-});
+//   // If known device, login directly
+//   createSendToken(user, 200, res);
+// });
 
 // Fixed sendLoginCode function
 exports.sendLoginCode = catchAsync(async (req, res, next) => {
