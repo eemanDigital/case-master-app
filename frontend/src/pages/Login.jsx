@@ -33,6 +33,38 @@ const Login = () => {
   };
 
   // login user handler
+  // const loginUser = async (e) => {
+  //   e.preventDefault();
+  //   if (!inputValue.email || !inputValue.password) {
+  //     toast.error("Enter both your email and password");
+  //     return;
+  //   }
+  //   await dispatch(login(inputValue));
+  // };
+
+  // handle success and error toast
+  // useEffect(() => {
+  //   if (isSuccess && isLoggedIn) {
+  //     navigate("/dashboard");
+  //   }
+  //   if (isError && twoFactor) {
+  //     dispatch(sendLoginCode(inputValue.email));
+  //     navigate(`/loginWithCode/${inputValue.email}`);
+  //   }
+
+  //   dispatch(RESET());
+  // }, [
+  //   isSuccess,
+  //   isLoggedIn,
+  //   isError,
+  //   message,
+  //   dispatch,
+  //   navigate,
+  //   twoFactor,
+  //   inputValue.email,
+  // ]);
+
+  // login user handler
   const loginUser = async (e) => {
     e.preventDefault();
     if (!inputValue.email || !inputValue.password) {
@@ -47,9 +79,13 @@ const Login = () => {
     if (isSuccess && isLoggedIn) {
       navigate("/dashboard");
     }
-    if (isError && twoFactor) {
-      dispatch(sendLoginCode(inputValue.email));
-      navigate(`/loginWithCode/${inputValue.email}`);
+
+    // ✅ FIXED: Check for twoFactor flag in the error message or action payload
+    if (isError && message?.includes("New device detected")) {
+      // Extract email from the action payload or use the input value
+      const emailToUse = inputValue.email;
+      dispatch(sendLoginCode(emailToUse));
+      navigate(`/loginWithCode/${emailToUse}`);
     }
 
     dispatch(RESET());
@@ -60,7 +96,6 @@ const Login = () => {
     message,
     dispatch,
     navigate,
-    twoFactor,
     inputValue.email,
   ]);
 

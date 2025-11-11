@@ -237,6 +237,97 @@ exports.register = catchAsync(async (req, res, next) => {
 // });
 
 // Fixed login function
+// exports.login = catchAsync(async (req, res, next) => {
+//   const { email, password } = req.body;
+
+//   if (!email || !password) {
+//     return next(new AppError("Please provide email and password!", 400));
+//   }
+
+//   const user = await User.findOne({ email }).select("+password");
+//   if (!user) {
+//     return next(new AppError("Incorrect email or password", 401));
+//   }
+
+//   if (user.isDeleted === true) {
+//     return next(
+//       new AppError("This account has been deleted and cannot log in")
+//     );
+//   }
+
+//   if (user.isActive === false && user.role !== "client") {
+//     return next(
+//       new AppError("You are no longer eligible to login to this account")
+//     );
+//   }
+
+//   const isPasswordCorrect = await user.correctPassword(password, user.password);
+//   if (!isPasswordCorrect) {
+//     return next(new AppError("Incorrect email or password", 401));
+//   }
+
+//   const currentUserAgent = parser(req.headers["user-agent"]).ua;
+//   const isAllowedAgent = user.userAgent.includes(currentUserAgent);
+
+//   if (!isAllowedAgent) {
+//     // Generate and send login code in one operation
+//     const loginCode = Math.floor(100000 + Math.random() * 900000).toString();
+//     console.log("🔐 Generated Login Code:", loginCode);
+
+//     const encryptedLoginCode = cryptr.encrypt(loginCode);
+
+//     // Delete existing tokens
+//     await Token.deleteMany({ userId: user._id });
+
+//     // Save new token
+//     await new Token({
+//       userId: user._id,
+//       loginToken: encryptedLoginCode,
+//       createAt: Date.now(),
+//       expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+//     }).save();
+
+//     // ✅ FIXED: Send email immediately
+//     try {
+//       const subject = "Your Login Verification Code - CaseMaster";
+//       const send_to = user.email;
+//       const send_from =
+//         process.env.SENDINBLUE_EMAIL || process.env.EMAIL_USERNAME;
+//       const reply_to = "noreply@casemaster.com";
+//       const template = "loginCode";
+//       const context = {
+//         name: user.firstName,
+//         code: loginCode, // Send plain code for email
+//         expiresIn: "10 minutes",
+//       };
+
+//       await sendMail(subject, send_to, send_from, reply_to, template, context);
+
+//       return res.status(200).json({
+//         status: "2fa_required",
+//         message: "Verification code sent to your email",
+//         email: user.email, // Include email for frontend
+//       });
+//     } catch (emailError) {
+//       console.error("❌ Failed to send verification email:", emailError);
+
+//       // Delete the token since email failed
+//       await Token.deleteMany({ userId: user._id });
+
+//       return next(
+//         new AppError(
+//           "Failed to send verification code. Please try again later.",
+//           500
+//         )
+//       );
+//     }
+//   }
+
+//   // If known device, login directly
+//   createSendToken(user, 200, res);
+// });
+
+// Fixed login function
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -303,11 +394,17 @@ exports.login = catchAsync(async (req, res, next) => {
 
       await sendMail(subject, send_to, send_from, reply_to, template, context);
 
-      return res.status(200).json({
-        status: "2fa_required",
-        message: "Verification code sent to your email",
-        email: user.email, // Include email for frontend
-      });
+      // ✅ FIXED: Use next() with AppError to trigger 2FA flow in frontend
+      return next(
+        new AppError(
+          "New device detected. Verification code sent to your email.",
+          400,
+          {
+            twoFactor: true,
+            email: user.email,
+          }
+        )
+      );
     } catch (emailError) {
       console.error("❌ Failed to send verification email:", emailError);
 
