@@ -1,4 +1,4 @@
-const dotenv = require("dotenv");
+const dotenv = require("dotenv").config({ path: "./config.env" });
 const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
@@ -98,9 +98,6 @@ process.on("SIGINT", () => {
 // ============================================
 // EXPRESS APP SETUP
 // ============================================
-
-// Configure environment variables FIRST
-dotenv.config({ path: "./config.env" });
 
 // Initialize Express app
 const app = express();
@@ -341,8 +338,8 @@ if (!DB) {
 const connectWithRetry = async (retries = 5, delay = 5000) => {
   try {
     await mongoose.connect(DB, {
-      serverSelectionTimeoutMS: 30000,
-      connectTimeoutMS: 30000,
+      serverSelectionTimeoutMS: 60000, //
+      connectTimeoutMS: 60000,
       socketTimeoutMS: 45000,
       maxPoolSize: 50,
       retryWrites: true,

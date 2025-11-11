@@ -83,157 +83,368 @@ exports.register = catchAsync(async (req, res, next) => {
   res.status(201).json({ message: "User Registered Successfully" });
 });
 
-// login user handler
+// // login user handler
+// exports.login = catchAsync(async (req, res, next) => {
+//   const { email, password } = req.body;
+
+//   // 1) Check if email and password exist
+//   if (!email || !password) {
+//     return next(new AppError("Please provide email and password!", 400));
+//   }
+
+//   // 2) Check if user exists and select password
+//   const user = await User.findOne({ email }).select("+password");
+//   if (!user) {
+//     return next(new AppError("Incorrect email or password", 401));
+//   }
+
+//   // Disallow login for deleted accounts (all roles)
+//   if (user.isDeleted === true) {
+//     return next(
+//       new AppError("This account has been deleted and cannot log in")
+//     );
+//   }
+
+//   // Disallow login for inactive staff, but allow inactive clients
+//   if (user.isActive === false && user.role !== "client") {
+//     return next(
+//       new AppError("You are no longer eligible to login to this account")
+//     );
+//   }
+
+//   // 3) Check if password is correct
+//   const isPasswordCorrect = await user.correctPassword(password, user.password);
+//   if (!isPasswordCorrect) {
+//     return next(new AppError("Incorrect email or password", 401));
+//   }
+
+//   // 4) Trigger 2FA for unknown user agent
+//   const currentUserAgent = parser(req.headers["user-agent"]).ua;
+//   const isAllowedAgent = user.userAgent.includes(currentUserAgent);
+
+//   if (!isAllowedAgent) {
+//     const loginCode = Math.floor(100000 + Math.random() * 900000);
+
+//     console.log(loginCode);
+
+//     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
+
+//     await Token.findOneAndDelete({ userId: user._id });
+
+//     await new Token({
+//       userId: user._id,
+//       loginToken: encryptedLoginCode,
+//       createAt: Date.now(),
+//       expiresAt: Date.now() + 60 * 60 * 1000,
+//     }).save();
+
+//     // Send the loginCode securely via email or SMS to the user
+//     console.log(req.cookies);
+
+//     return next(
+//       new AppError(
+//         "New Browser or device detected. A verification code has been sent to your email.",
+//         400
+//       )
+//     );
+//   }
+
+//   // 5) Send token to client
+//   createSendToken(user, 200, res);
+// });
+
+// // send login code handler
+// exports.sendLoginCode = catchAsync(async (req, res, next) => {
+//   const { email } = req.params;
+//   const user = await User.findOne({ email });
+
+//   if (!user) {
+//     return next(new AppError("There is no user with email address.", 404));
+//   }
+
+//   let userToken = await Token.findOne({
+//     userId: user._id,
+//     expiresAt: { $gt: Date.now() },
+//   });
+
+//   if (!userToken) {
+//     return next(new AppError("Invalid or expired token. Please re-login", 404));
+//   }
+
+//   const loginCode = userToken.loginToken;
+//   if (!loginCode) {
+//     return next(new AppError("Login code is missing or invalid.", 400));
+//   }
+
+//   let decryptedLoginCode;
+//   try {
+//     decryptedLoginCode = cryptr.decrypt(loginCode);
+//   } catch (error) {
+//     return next(new AppError("Failed to decrypt login code.", 400));
+//   }
+
+//   const subject = "Login Access Code - CaseMaster";
+//   const send_to = email;
+//   const send_from = process.env.SENDINBLUE_EMAIL;
+//   const reply_to = "noreply@gmail.com";
+//   const template = "loginCode";
+//   const context = { name: user.firstName, link: decryptedLoginCode };
+
+//   try {
+//     await sendMail(subject, send_to, send_from, reply_to, template, context);
+//     res.status(200).json({ message: `Access Code sent to your ${email}` });
+//   } catch (error) {
+//     return next(new AppError("Email sending failed", 400));
+//   }
+// });
+// // 2fa
+// exports.loginWithCode = catchAsync(async (req, res, next) => {
+//   const { email } = req.params;
+//   const { loginCode } = req.body;
+
+//   const user = await User.findOne({ email });
+//   // if user not found
+//   if (!user) {
+//     return next(new AppError("User not found.", 404));
+//   }
+
+//   // find login code
+//   // find login code for user
+//   let userToken = await Token.findOne({
+//     userId: user._id,
+//     expiresAt: { $gt: Date.now() },
+//   });
+//   if (!userToken) {
+//     return next(new AppError("Invalid or expired token", 404));
+//   }
+
+//   const decryptedLoginCode = cryptr.decrypt(userToken.loginToken);
+//   // if login code entered by user is not the same as token in db
+//   // console.log(loginCode, decryptedLoginCode);
+//   if (loginCode !== decryptedLoginCode) {
+//     return next(new AppError("Incorrect access code, please try again", 404));
+//   } else {
+//     // register user agent
+//     const ua = parser(req.headers["user-agent"]); // Get user-agent header
+//     const currentUserAgent = ua.ua;
+//     // add new user agent to the list of existing agents
+//     user.userAgent.push(currentUserAgent);
+//     await user.save({ validateBeforeSave: false });
+
+//     // 4) If everything is ok, login user
+//     createSendToken(user, 200, res);
+//   }
+// });
+
+// Fixed login function
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
-  // 1) Check if email and password exist
   if (!email || !password) {
     return next(new AppError("Please provide email and password!", 400));
   }
 
-  // 2) Check if user exists and select password
   const user = await User.findOne({ email }).select("+password");
   if (!user) {
     return next(new AppError("Incorrect email or password", 401));
   }
 
-  // Disallow login for deleted accounts (all roles)
   if (user.isDeleted === true) {
     return next(
       new AppError("This account has been deleted and cannot log in")
     );
   }
 
-  // Disallow login for inactive staff, but allow inactive clients
   if (user.isActive === false && user.role !== "client") {
     return next(
       new AppError("You are no longer eligible to login to this account")
     );
   }
 
-  // 3) Check if password is correct
   const isPasswordCorrect = await user.correctPassword(password, user.password);
   if (!isPasswordCorrect) {
     return next(new AppError("Incorrect email or password", 401));
   }
 
-  // 4) Trigger 2FA for unknown user agent
   const currentUserAgent = parser(req.headers["user-agent"]).ua;
   const isAllowedAgent = user.userAgent.includes(currentUserAgent);
 
   if (!isAllowedAgent) {
-    const loginCode = Math.floor(100000 + Math.random() * 900000);
+    // Generate and send login code in one operation
+    const loginCode = Math.floor(100000 + Math.random() * 900000).toString();
+    console.log("🔐 Generated Login Code:", loginCode);
 
-    console.log(loginCode);
+    const encryptedLoginCode = cryptr.encrypt(loginCode);
 
-    const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
+    // Delete existing tokens
+    await Token.deleteMany({ userId: user._id });
 
-    await Token.findOneAndDelete({ userId: user._id });
-
+    // Save new token
     await new Token({
       userId: user._id,
       loginToken: encryptedLoginCode,
       createAt: Date.now(),
-      expiresAt: Date.now() + 60 * 60 * 1000,
+      expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
     }).save();
 
-    // Send the loginCode securely via email or SMS to the user
-    console.log(req.cookies);
+    // ✅ FIXED: Send email immediately
+    try {
+      const subject = "Your Login Verification Code - CaseMaster";
+      const send_to = user.email;
+      const send_from =
+        process.env.SENDINBLUE_EMAIL || process.env.EMAIL_USERNAME;
+      const reply_to = "noreply@casemaster.com";
+      const template = "loginCode";
+      const context = {
+        name: user.firstName,
+        code: loginCode, // Send plain code for email
+        expiresIn: "10 minutes",
+      };
 
-    return next(
-      new AppError(
-        "New Browser or device detected. A verification code has been sent to your email.",
-        400
-      )
-    );
+      await sendMail(subject, send_to, send_from, reply_to, template, context);
+
+      return res.status(200).json({
+        status: "2fa_required",
+        message: "Verification code sent to your email",
+        email: user.email, // Include email for frontend
+      });
+    } catch (emailError) {
+      console.error("❌ Failed to send verification email:", emailError);
+
+      // Delete the token since email failed
+      await Token.deleteMany({ userId: user._id });
+
+      return next(
+        new AppError(
+          "Failed to send verification code. Please try again later.",
+          500
+        )
+      );
+    }
   }
 
-  // 5) Send token to client
+  // If known device, login directly
   createSendToken(user, 200, res);
 });
 
-// send login code handler
+// Fixed sendLoginCode function
 exports.sendLoginCode = catchAsync(async (req, res, next) => {
   const { email } = req.params;
+
+  if (!email) {
+    return next(new AppError("Email is required", 400));
+  }
+
   const user = await User.findOne({ email });
-
   if (!user) {
-    return next(new AppError("There is no user with email address.", 404));
+    return next(new AppError("No user found with this email address", 404));
   }
 
-  let userToken = await Token.findOne({
+  // Generate new code instead of relying on existing token
+  const loginCode = Math.floor(100000 + Math.random() * 900000).toString();
+  console.log("🔐 New Login Code:", loginCode);
+
+  const encryptedLoginCode = cryptr.encrypt(loginCode);
+
+  // Delete any existing tokens
+  await Token.deleteMany({ userId: user._id });
+
+  // Save new token
+  await new Token({
     userId: user._id,
-    expiresAt: { $gt: Date.now() },
-  });
-
-  if (!userToken) {
-    return next(new AppError("Invalid or expired token. Please re-login", 404));
-  }
-
-  const loginCode = userToken.loginToken;
-  if (!loginCode) {
-    return next(new AppError("Login code is missing or invalid.", 400));
-  }
-
-  let decryptedLoginCode;
-  try {
-    decryptedLoginCode = cryptr.decrypt(loginCode);
-  } catch (error) {
-    return next(new AppError("Failed to decrypt login code.", 400));
-  }
-
-  const subject = "Login Access Code - CaseMaster";
-  const send_to = email;
-  const send_from = process.env.SENDINBLUE_EMAIL;
-  const reply_to = "noreply@gmail.com";
-  const template = "loginCode";
-  const context = { name: user.firstName, link: decryptedLoginCode };
+    loginToken: encryptedLoginCode,
+    createAt: Date.now(),
+    expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
+  }).save();
 
   try {
+    const subject = "Your New Login Verification Code - CaseMaster";
+    const send_to = user.email;
+    const send_from =
+      process.env.SENDINBLUE_EMAIL || process.env.EMAIL_USERNAME;
+    const reply_to = "noreply@casemaster.com";
+    const template = "loginCode";
+    const context = {
+      name: user.firstName,
+      code: loginCode,
+      expiresIn: "10 minutes",
+    };
+
     await sendMail(subject, send_to, send_from, reply_to, template, context);
-    res.status(200).json({ message: `Access Code sent to your ${email}` });
+
+    res.status(200).json({
+      message: `New verification code sent to ${email}`,
+      expiresIn: "10 minutes",
+    });
   } catch (error) {
-    return next(new AppError("Email sending failed", 400));
+    console.error("❌ Failed to resend verification code:", error);
+
+    // Clean up on failure
+    await Token.deleteMany({ userId: user._id });
+
+    return next(
+      new AppError(
+        "Failed to send verification code. Please try again later.",
+        500
+      )
+    );
   }
 });
-// 2fa
+
+// Fixed loginWithCode function
 exports.loginWithCode = catchAsync(async (req, res, next) => {
   const { email } = req.params;
   const { loginCode } = req.body;
 
-  const user = await User.findOne({ email });
-  // if user not found
-  if (!user) {
-    return next(new AppError("User not found.", 404));
+  if (!loginCode || loginCode.length !== 6) {
+    return next(new AppError("Please enter a valid 6-digit code", 400));
   }
 
-  // find login code
-  // find login code for user
-  let userToken = await Token.findOne({
+  const user = await User.findOne({ email });
+  if (!user) {
+    return next(new AppError("User not found", 404));
+  }
+
+  // Find valid token
+  const userToken = await Token.findOne({
     userId: user._id,
     expiresAt: { $gt: Date.now() },
   });
+
   if (!userToken) {
-    return next(new AppError("Invalid or expired token", 404));
+    return next(
+      new AppError("Verification code expired. Please request a new one.", 400)
+    );
   }
 
-  const decryptedLoginCode = cryptr.decrypt(userToken.loginToken);
-  // if login code entered by user is not the same as token in db
-  // console.log(loginCode, decryptedLoginCode);
+  if (!userToken.loginToken) {
+    return next(new AppError("Invalid verification code", 400));
+  }
+
+  let decryptedLoginCode;
+  try {
+    decryptedLoginCode = cryptr.decrypt(userToken.loginToken);
+  } catch (error) {
+    return next(new AppError("Invalid verification code", 400));
+  }
+
   if (loginCode !== decryptedLoginCode) {
-    return next(new AppError("Incorrect access code, please try again", 404));
-  } else {
-    // register user agent
-    const ua = parser(req.headers["user-agent"]); // Get user-agent header
-    const currentUserAgent = ua.ua;
-    // add new user agent to the list of existing agents
+    return next(new AppError("Incorrect verification code", 400));
+  }
+
+  // Code is correct - register user agent and login
+  const ua = parser(req.headers["user-agent"]);
+  const currentUserAgent = ua.ua;
+
+  if (!user.userAgent.includes(currentUserAgent)) {
     user.userAgent.push(currentUserAgent);
     await user.save({ validateBeforeSave: false });
-
-    // 4) If everything is ok, login user
-    createSendToken(user, 200, res);
   }
+
+  // Clean up used token
+  await Token.deleteMany({ userId: user._id });
+
+  createSendToken(user, 200, res);
 });
 
 // logout handler
@@ -350,6 +561,10 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   const { email } = req.body;
   // 1) Get user based on POSTed email
   // console.log(`Searching for user with email: ${email}`);
+
+  if (!email) {
+    return next(new AppError("Please provide your email address.", 400));
+  }
   const user = await User.findOne({ email });
   if (!user) {
     return next(new AppError("There is no user with email address.", 404));

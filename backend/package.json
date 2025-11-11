@@ -15,6 +15,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@sendinblue/client": "^3.3.1",
     "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
     "cloudinary": "^2.3.0",
@@ -39,6 +40,7 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
+    "node-fetch": "^2.7.0",
     "nodemailer": "^6.9.13",
     "nodemailer-express-handlebars": "^6.1.2",
     "passport": "^0.7.0",
