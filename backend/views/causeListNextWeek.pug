@@ -1,113 +1,477 @@
 doctype html
-html
-  head
-    meta(charset="UTF-8")
-    meta(name="viewport" content="width=device-width, initial-scale=1.0")
-    title Cause List
-    style.
+html(lang="en")
+head
+  meta(charset="UTF-8")
+  meta(name="viewport" content="width=device-width, initial-scale=1.0")
+  title Next Week's Cause List - #{new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+  //- COPY THE EXACT SAME STYLE BLOCK FROM ABOVE
+  style.
+    :root {
+      --primary: #1a237e;
+      --primary-dark: #000051;
+      --primary-light: #534bae;
+      --accent: #d32f2f;
+      --accent-dark: #9a0007;
+      --text: #000000;
+      --text-strong: #1a237e;
+      --text-light: #444444;
+      --border: #b0b0b0;
+      --background: #ffffff;
+      --row-hover: #f0f4ff;
+      --header-bg: #1a237e;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 18px;
+      line-height: 1.6;
+      background: #f0f2f5;
+      color: var(--text);
+      padding: 25px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+      overflow: hidden;
+      border: 3px solid var(--primary);
+    }
+    
+    .header {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+      color: white;
+      padding: 40px 50px;
+      text-align: center;
+      border-bottom: 6px solid var(--accent);
+    }
+    
+    .header h1 {
+      font-size: 42px;
+      font-weight: 800;
+      margin-bottom: 15px;
+      letter-spacing: 1px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+    
+    .header .subtitle {
+      font-size: 24px;
+      opacity: 0.95;
+      font-weight: 600;
+    }
+    
+    .period-info {
+      background: #2c387e;
+      color: white;
+      padding: 20px 50px;
+      border-bottom: 3px solid var(--accent);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 20px;
+    }
+    
+    .period-name {
+      font-weight: 700;
+      font-size: 26px;
+      color: #ffffff;
+    }
+    
+    .stats {
+      display: flex;
+      gap: 25px;
+    }
+    
+    .stat-item {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 12px 20px;
+      border-radius: 8px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      font-size: 18px;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+    }
+    
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      padding: 10px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 18px;
+      min-width: 900px;
+    }
+    
+    thead {
+      background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    }
+    
+    th {
+      padding: 22px 25px;
+      text-align: left;
+      font-weight: 700;
+      color: white;
+      font-size: 20px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-right: 3px solid var(--primary-light);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+    
+    th:last-child {
+      border-right: none;
+    }
+    
+    td {
+      padding: 20px 25px;
+      border-bottom: 3px solid var(--border);
+      vertical-align: top;
+      background: white;
+      font-size: 18px;
+    }
+    
+    tbody tr:nth-child(even) td {
+      background: #f8f9ff;
+    }
+    
+    tbody tr:hover td {
+      background: var(--row-hover);
+      transform: scale(1.01);
+      transition: all 0.2s ease;
+    }
+    
+    .serial-number {
+      text-align: center;
+      font-weight: 700;
+      color: var(--text-strong);
+      font-size: 20px;
+      width: 70px;
+      background: #f0f4ff !important;
+    }
+    
+    .date-cell {
+      font-weight: 700;
+      color: var(--primary);
+      white-space: nowrap;
+      width: 180px;
+      font-size: 20px;
+    }
+    
+    .full-date {
+      display: block;
+      font-size: 16px;
+      color: var(--text-light);
+      margin-top: 5px;
+      font-weight: 600;
+    }
+    
+    .case-title {
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.6;
+      font-size: 20px;
+    }
+    
+    .case-title .vs {
+      color: var(--accent);
+      font-weight: 700;
+      margin: 0 10px;
+      font-size: 18px;
+    }
+    
+    .suit-no {
+      display: block;
+      font-size: 16px;
+      color: var(--text-strong);
+      margin-top: 8px;
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      background: #f0f0f0;
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    
+    .adjourned-for {
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.5;
+      font-weight: 600;
+    }
+    
+    .lawyers-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .lawyers-list li {
+      padding: 12px 0;
+      font-size: 17px;
+      border-bottom: 2px solid #e0e0e0;
+      font-weight: 600;
+    }
+    
+    .lawyers-list li:last-child {
+      border-bottom: none;
+    }
+    
+    .lawyers-list li:before {
+      content: "⚖️";
+      color: var(--accent);
+      font-weight: bold;
+      margin-right: 12px;
+      font-size: 18px;
+    }
+    
+    .no-data {
+      text-align: center;
+      padding: 80px 40px;
+      color: var(--text-light);
+      font-style: italic;
+      background: var(--row-hover);
+      font-size: 24px;
+      font-weight: 600;
+    }
+    
+    .footer {
+      background: var(--primary);
+      color: white;
+      padding: 25px 50px;
+      text-align: center;
+      border-top: 3px solid var(--accent);
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .footer .timestamp {
+      margin-top: 10px;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 1200px) {
       body {
-        font-family: Arial, sans-serif;
+        padding: 20px;
         font-size: 16px;
-        line-height: 1.6;
-        padding: 20px;
-        background-color: #f4f4f4;
-        color: #333;
-        margin: 0;
       }
-      .container {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: stretch;
-        max-width: 1000px;
-        margin: 2rem auto;
-        padding: 20px;
-        border-radius: 8px;
-        background-color: #fff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
+      
       .header {
-        text-align: center;
-        margin-bottom: 20px;
+        padding: 30px 40px;
       }
+      
       .header h1 {
-        margin: 0;
-        font-size: 28px;
-        color: #2c3e50;
+        font-size: 36px;
       }
-      .table-container {
-        width: 100%;
-        overflow-x: auto;
+      
+      .header .subtitle {
+        font-size: 20px;
       }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 20px;
-        font-size: 16px;
-        min-width: 600px; /* Ensures the table does not become too narrow */
+      
+      .period-info {
+        padding: 15px 40px;
+        font-size: 18px;
       }
+      
+      .period-name {
+        font-size: 22px;
+      }
+      
       th, td {
-        border: 1px solid #ddd;
-        padding: 12px;
-        text-align: left;
-        vertical-align: middle;
-        background-color: #f9f9f9;
+        padding: 18px 20px;
       }
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 15px;
+        font-size: 16px;
+      }
+      
+      .container {
+        border-radius: 8px;
+      }
+      
+      .header {
+        padding: 25px 30px;
+      }
+      
+      .header h1 {
+        font-size: 28px;
+      }
+      
+      .header .subtitle {
+        font-size: 18px;
+      }
+      
+      .period-info {
+        padding: 12px 30px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+        font-size: 16px;
+      }
+      
+      .period-name {
+        font-size: 20px;
+      }
+      
+      .stats {
+        width: 100%;
+        justify-content: flex-start;
+        gap: 15px;
+      }
+      
+      .stat-item {
+        padding: 8px 15px;
+        font-size: 16px;
+      }
+      
+      th, td {
+        padding: 15px 18px;
+        font-size: 16px;
+      }
+      
       th {
-        background-color: #2c3e50;
-        color: #fff;
-        font-weight: bold;
+        font-size: 16px;
+        padding: 16px 18px;
       }
-      .lawyers-list {
-        list-style-type: none;
+      
+      .footer {
+        padding: 20px 30px;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+      
+      .header {
+        padding: 20px 25px;
+      }
+      
+      .header h1 {
+        font-size: 24px;
+      }
+      
+      .period-info {
+        padding: 10px 25px;
+      }
+      
+      .stats {
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+      
+      th, td {
+        padding: 12px 15px;
+        font-size: 15px;
+      }
+      
+      table {
+        min-width: 800px;
+      }
+    }
+    
+    @media print {
+      body {
         padding: 0;
+        background: white;
+        font-size: 16px;
+      }
+      
+      .container {
+        box-shadow: none;
+        border-radius: 0;
         margin: 0;
+        border: 3px solid #000;
       }
-      .lawyers-list li {
-        margin: 0;
-        padding: 4px 0;
-        border-bottom: 1px solid #ddd;
+      
+      .header {
+        background: var(--primary) !important;
+        -webkit-print-color-adjust: exact;
       }
-      @media (max-width: 768px) {
-        body {
-          font-size: 14px;
-          padding: 10px;
-        }
-        .header h1 {
-          font-size: 22px;
-        }
-        th, td {
-          padding: 8px;
-        }
-        .container {
-          padding: 15px;
-          margin: 1rem auto;
-        }
-        .lawyers-list li {
-          padding: 3px 0;
-        }
+      
+      thead {
+        background: var(--primary) !important;
+        -webkit-print-color-adjust: exact;
       }
-  body
-    .container
-      .header
-        h1 Cause List for the Next Week
-      .table-container
-        table
-          thead
-            tr
-              th No.
-              th Date
-              th Case
-              th Adjourned For
-              th Lawyers in Court
-          tbody
+      
+      .period-info {
+        background: #2c387e !important;
+        -webkit-print-color-adjust: exact;
+      }
+      
+      .footer {
+        background: var(--primary) !important;
+        -webkit-print-color-adjust: exact;
+      }
+    }
+
+body
+  .container
+    .header
+      h1 NEXT WEEK'S CAUSE LIST
+      .subtitle UPCOMING COURT PROCEEDINGS SCHEDULE
+    
+    .period-info
+      .period-name WEEK OF #{new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).toUpperCase()}
+      .stats
+        .stat-item TOTAL CASES: #{reports ? reports.length : 0}
+        .stat-item NEXT WEEK
+    
+    .table-container
+      table
+        thead
+          tr
+            th(style="width: 80px") NO.
+            th(style="width: 200px") DATE
+            th CASE INFORMATION
+            th ADJOURNED FOR
+            th LEGAL REPRESENTATION
+        tbody
+          if reports && reports.length > 0
             each report, index in reports
               tr
-                td #{index + 1}
-                td #{new Date(report.adjournedDate).toLocaleDateString('en-US', { weekday: 'long' })}
-                td #{report.caseReported ? report.caseReported.firstParty.name[0].name : 'N/A'} vs #{report.caseReported ? report.caseReported.secondParty.name[0].name : 'N/A'}
-                td #{report.adjournedFor}
+                td.serial-number #{index + 1}
+                td.date-cell 
+                  | #{new Date(report.adjournedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+                  span.full-date #{new Date(report.adjournedDate).toLocaleDateString('en-US', { year: 'numeric' })}
                 td
-                  ul.lawyers-list
-                    each lawyer in report.lawyersInCourt
-                      li #{lawyer.firstName} #{lawyer.lastName}, Esq
+                  .case-title
+                    | #{report.caseReported ? report.caseReported.firstParty.name[0].name : 'N/A'}
+                    span.vs VS
+                    | #{report.caseReported ? report.caseReported.secondParty.name[0].name : 'N/A'}
+                  if report.caseReported && report.caseReported.suitNo
+                    .suit-no SUIT NO: #{report.caseReported.suitNo}
+                td
+                  .adjourned-for #{report.adjournedFor}
+                td
+                  if report.lawyersInCourt && report.lawyersInCourt.length > 0
+                    ul.lawyers-list
+                      each lawyer in report.lawyersInCourt
+                        li #{lawyer.firstName} #{lawyer.lastName}, Esq.
+                  else
+                    .adjourned-for(style="font-style: italic; color: #666; font-weight: 600;") NO COUNSEL ASSIGNED
+          else
+            tr
+              td(colspan="5")
+                .no-data NO UPCOMING CASES SCHEDULED FOR NEXT WEEK
+    
+    .footer
+      | OFFICIAL UPCOMING COURT SCHEDULE - A.T. LUKMAN & CO.
+      .timestamp DOCUMENT GENERATED ON #{new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }).toUpperCase()}

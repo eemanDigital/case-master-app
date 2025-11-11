@@ -191,6 +191,92 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
   });
 });
 
+// // send automated email to user
+// exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
+//   const { send_to, reply_to, template, subject, url, context } = req.body;
+
+//   if (!send_to || !reply_to || !template || !subject) {
+//     return next(new AppError("Missing email fields", 404));
+//   }
+
+//   // get user
+//   const user = await User.findOne({ email: send_to });
+//   if (!user) {
+//     return next(new AppError("No user found with that ID", 404));
+//   }
+
+//   const send_from = process.env.SENDINBLUE_EMAIL;
+
+//   const baseContext = {
+//     ...context,
+//     name: user.firstName,
+//     link: ` ${process.env.FRONTEND_URL}/${url}`,
+//   };
+
+//   await sendMail(subject, send_to, send_from, reply_to, template, baseContext);
+//   res.status(200).json({ message: "Email Sent" });
+// });
+
+// // send automated custom/dynamic email handler
+// exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
+//   // console.log(req.body);
+//   const { send_to, reply_to, template, subject, url, context } = req.body;
+
+//   if (!send_to || !reply_to || !template || !subject) {
+//     return next(new AppError("Missing email fields", 400));
+//   }
+
+//   // Convert send_to to an array if it's a multiple email
+//   const recipients = Array.isArray(send_to) ? send_to : [send_to];
+
+//   const devEmail = process.env.DEVELOPER_EMAIL;
+
+//   // Prepare the base context
+//   const baseContext = {
+//     ...context,
+//     link: `${process.env.FRONTEND_URL}/${url}`,
+//     year: new Date().getFullYear(),
+//     companyName: process.env.COMPANY_NAME || "A.T Lukman & Co",
+//   };
+
+//   // Function to send email to a single recipient
+//   const sendEmailToRecipient = async (recipientEmail) => {
+//     let user = null;
+//     let fullContext = { ...baseContext };
+
+//     if (recipientEmail === devEmail) {
+//       fullContext.name = "Developer";
+//     } else {
+//       user = await User.findOne({ email: recipientEmail });
+//       if (!user) {
+//         throw new AppError(`No user found with email: ${recipientEmail}`, 404);
+//       }
+//       fullContext.name = user.firstName;
+//     }
+
+//     const send_from = process.env.SENDINBLUE_EMAIL; // Send from the company email
+
+//     await sendMail(
+//       subject,
+//       recipientEmail,
+//       send_from,
+//       reply_to,
+//       template,
+//       fullContext
+//     );
+//   };
+
+//   try {
+//     // Send emails to all recipients in parallel
+//     await Promise.all(recipients.map(sendEmailToRecipient));
+//     res
+//       .status(200)
+//       .json({ message: `Email${recipients.length > 1 ? "s" : ""} Sent` });
+//   } catch (error) {
+//     return next(error);
+//   }
+// });
+
 // send automated email to user
 exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
   const { send_to, reply_to, template, subject, url, context } = req.body;
@@ -217,9 +303,47 @@ exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
   res.status(200).json({ message: "Email Sent" });
 });
 
+// Helper function to sanitize HTML for email
+const sanitizeForEmail = (maybeEncodedHtml) => {
+  if (!maybeEncodedHtml) return "";
+
+  const { decode } = require("html-entities");
+  const sanitizeHtml = require("sanitize-html");
+
+  const EMAIL_SANITIZE_OPTIONS = {
+    allowedTags: [
+      "p",
+      "br",
+      "strong",
+      "b",
+      "em",
+      "i",
+      "u",
+      "ul",
+      "ol",
+      "li",
+      "blockquote",
+      "h3",
+      "h4",
+    ],
+    allowedAttributes: {}, // Remove all attributes (no styles, no links)
+    // Convert links to plain text
+    transformTags: {
+      a: function (tagName, attribs) {
+        return {
+          tagName: "span",
+          attribs: {},
+        };
+      },
+    },
+  };
+
+  const decoded = decode(String(maybeEncodedHtml));
+  return sanitizeHtml(decoded, EMAIL_SANITIZE_OPTIONS);
+};
+
 // send automated custom/dynamic email handler
 exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
-  // console.log(req.body);
   const { send_to, reply_to, template, subject, url, context } = req.body;
 
   if (!send_to || !reply_to || !template || !subject) {
@@ -239,6 +363,11 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
     companyName: process.env.COMPANY_NAME || "A.T Lukman & Co",
   };
 
+  // ✅ Sanitize HTML content ONLY for caseReport template
+  if (template === "caseReport" && baseContext.update) {
+    baseContext.update = sanitizeForEmail(baseContext.update);
+  }
+
   // Function to send email to a single recipient
   const sendEmailToRecipient = async (recipientEmail) => {
     let user = null;
@@ -254,7 +383,7 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
       fullContext.name = user.firstName;
     }
 
-    const send_from = process.env.SENDINBLUE_EMAIL; // Send from the company email
+    const send_from = process.env.SENDINBLUE_EMAIL;
 
     await sendMail(
       subject,
