@@ -7,11 +7,11 @@ const GoBackButton = () => {
   return (
     <button
       onClick={() => navigate(-1)}
-      className="w-28 sm:w-32 group flex items-center px-4 py-1 mb-4 sm:mb-6 text-sm font-poppins font-medium transition-all duration-200 ease-in-out
-                 bg-blue-500 hover:bg-blue-600 text-white rounded-md shadow-md hover:shadow-lg
-                 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-opacity-50">
-      <FaArrowLeft className="w-3 h-3 sm:w-4 sm:h-4 mr-2 transition-transform duration-200 ease-in-out group-hover:-translate-x-1" />
-      <span>Go Back</span>
+      className="group flex items-center gap-2 px-3 py-2 mb-4 text-sm font-medium text-gray-600 
+                 hover:text-gray-900 transition-all duration-200 ease-in-out
+                 focus:outline-none focus:text-gray-900">
+      <FaArrowLeft className="w-3 h-3 transition-transform group-hover:-translate-x-1" />
+      <span>Back</span>
     </button>
   );
 };

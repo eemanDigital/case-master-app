@@ -1,4 +1,5 @@
 import React from "react";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
 import { Button } from "antd";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
@@ -17,7 +18,6 @@ const SendCaseReport = ({ report }) => {
     const emailData = {
       subject: "Case Report - A.T. Lukman & Co.",
       send_to: report.clientEmail,
-      // send_from: user?.data?.email,
       send_from: "eemandigitalconcept@gmail.com",
       reply_to: "noreply@gmail.com",
       template: "caseReport",
@@ -30,10 +30,11 @@ const SendCaseReport = ({ report }) => {
           .join(", ")} vs ${report.caseReported.secondParty.name
           .map((n) => n.name)
           .join(", ")}`,
-        update: report.update,
+        update: report.update, // ✅ Pass as-is, backend will sanitize
         adjournedFor: report.adjournedFor,
         adjournedDate: new Date(report.adjournedDate).toLocaleDateString(),
         reportedBy: `${report.reportedBy.firstName} ${report.reportedBy.lastName}`,
+        reportDate: new Date(report.date).toLocaleDateString(),
       },
     };
 
@@ -44,7 +45,7 @@ const SendCaseReport = ({ report }) => {
 
       if (resultAction) {
         setEmailSent(true);
-        toast.success("Email sent successfully!");
+        // toast.success("Email sent successfully!");
       }
     } catch (error) {
       setEmailError(error);
@@ -64,6 +65,46 @@ const SendCaseReport = ({ report }) => {
       {emailSent ? "Email Sent" : "Send Report To Client"}
     </Button>
   );
+};
+
+// ✅ PropTypes validation
+SendCaseReport.propTypes = {
+  report: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    clientEmail: PropTypes.string.isRequired,
+    update: PropTypes.string,
+    adjournedFor: PropTypes.string,
+    adjournedDate: PropTypes.string.isRequired,
+    reportedBy: PropTypes.shape({
+      firstName: PropTypes.string.isRequired,
+      lastName: PropTypes.string.isRequired,
+    }).isRequired,
+    caseReported: PropTypes.shape({
+      suitNo: PropTypes.string.isRequired,
+      firstParty: PropTypes.shape({
+        name: PropTypes.arrayOf(
+          PropTypes.shape({
+            name: PropTypes.string.isRequired,
+          })
+        ),
+      }).isRequired,
+      secondParty: PropTypes.shape({
+        name: PropTypes.arrayOf(
+          PropTypes.shape({
+            name: PropTypes.string.isRequired,
+          })
+        ),
+      }).isRequired,
+      accountOfficer: PropTypes.arrayOf(
+        PropTypes.shape({
+          firstName: PropTypes.string.isRequired,
+          lastName: PropTypes.string,
+          email: PropTypes.string,
+          phone: PropTypes.string,
+        })
+      ).isRequired,
+    }).isRequired,
+  }).isRequired,
 };
 
 export default SendCaseReport;
