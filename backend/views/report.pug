@@ -1,134 +1,248 @@
 doctype html
-html
-  head
-    meta(charset="UTF-8")
-    meta(name="viewport" content="width=device-width, initial-scale=1.0")
-    title Report
-    style.
-      html {
-        font-size: 24px; /* Base font size */
-      }
-      body {
-        font-family: Arial, sans-serif;
-        font-size: 1rem; !important;
-        line-height: 1.6;
-        padding: 20px;
-        //- background-color: #f4f4f4;
-        color: #333;
-        margin: 0;
-      }
-      .container {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: stretch;
-        max-width: 900px;
-        margin: 2rem auto;
-        padding: 20px;
-        border-radius: 8px;
-        background-color: #fff;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-      .header {
-        text-align: center;
-        margin-bottom: 20px;
-      }
-      .header h1 {
-        margin: 0;
-        font-size: 1.75rem; /* Equivalent to 28px */
-        color: #2c3e50;
-      }
-      .section {
-        margin-bottom: 20px;
-        padding: 10px 0;
-      }
-      .section h2 {
-        margin: 0 0 10px 0;
-        font-size: 1.25rem; /* Equivalent to 20px */
-        border-bottom: 2px solid #2c3e50;
-        color: #2c3e50;
-        padding-bottom: 5px;
-      }
-      .field {
-        margin-bottom: 10px;
-        display: flex;
-        flex-wrap: wrap;
-      }
-      .field span {
-        display: inline-block;
-        width: 160px;
-        font-weight: bold;
-        color: #555;
-      }
-      ul {
-        list-style-type: none;
-        padding: 0;
-      }
-      ul li {
-        padding: 5px 0;
-        border-bottom: 1px solid #ddd;
-      }
-      @media (max-width: 768px) {
-        html {
-          font-size: 14px; /* Reduces the base font size for smaller screens */
-        }
-        body {
-          font-size: 1rem; /* Equivalent to 14px */
-          padding: 10px;
-        }
-        .header h1 {
-          font-size: 1.5rem; /* Equivalent to 24px */
-        }
-        .section h2 {
-          font-size: 1.125rem; /* Equivalent to 18px */
-        }
-        .field span {
-          width: 100%;
-          margin-bottom: 5px;
-        }
-        .container {
-          padding: 15px;
-          margin: 1rem auto;
-        }
-      }
-  body
-    .container
-      .header
-        h1 Report
-      .section
-        h2 Case Information
-        .field
-          span Suit No:
-          | #{report.caseReported ? report.caseReported.suitNo : 'N/A'}
-        .field
-          span Case:
-          | #{report.caseReported ? report.caseReported.firstParty.name[0].name : 'N/A'} Vs. #{report.caseReported ? report.caseReported.secondParty.name[0].name : 'N/A'}
-        .field 
-          span Court
-          | #{report.caseReported ? report.caseReported.courtName.charAt(0).toUpperCase() + report.caseReported.courtName.slice(1) + ', ' + report.caseReported.courtNo + ', ' + report.caseReported.location + ', ' + report.caseReported.state : 'N/A'}
-      
-      .section
-        h2 Report Details
-        .field
-          span Date:
-          | #{new Date(report.date).toLocaleDateString()}
-        .field
-          span Update:
-          != report.update
-        .field
-          span Adjourned For:
-          | #{report.adjournedFor}
-        .field
-          span Adjourned Date:
-          | #{new Date(report.adjournedDate).toLocaleDateString()}
-      .section
-        h2 Reported By
-        .field
-          span Reporter:
-          | #{report.reportedBy ? report.reportedBy.firstName + ' ' + report.reportedBy.lastName : 'N/A'}
-      .section
-        h2 Lawyers in Court
-        ul
-          each lawyer in report.lawyersInCourt
-            li
-              | #{lawyer.firstName} #{lawyer.lastName}
+html(lang="en")
+head
+  meta(charset="UTF-8")
+  meta(name="viewport" content="width=device-width, initial-scale=1.0")
+  title Case Report - #{report.caseReported ? report.caseReported.suitNo : 'N/A'}
+  style.
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Georgia', serif; 
+      font-size: 14px; 
+      line-height: 1.6; 
+      color: #2c3e50; 
+      background: #fff; 
+      padding: 20px; 
+    }
+    .report-container { 
+      max-width: 900px; 
+      margin: 0 auto; 
+      background: #fff; 
+      border: 1px solid #ddd; 
+      border-radius: 8px; 
+      overflow: hidden; 
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+    }
+    .report-header { 
+      background: #1a237e; 
+      color: white; 
+      padding: 30px; 
+      text-align: center; 
+      border-bottom: 4px solid #5c6bc0; 
+    }
+    .report-header h1 { 
+      font-size: 28px; 
+      font-weight: 700; 
+      margin-bottom: 8px; 
+    }
+    .report-header .subtitle { 
+      font-size: 16px; 
+      opacity: 0.9; 
+    }
+    .report-header .case-ref { 
+      font-size: 14px; 
+      margin-top: 10px; 
+      background: rgba(255,255,255,0.1); 
+      padding: 6px 12px; 
+      border-radius: 15px; 
+      display: inline-block; 
+    }
+    .section { 
+      padding: 20px 30px; 
+      border-bottom: 1px solid #e8eaf6; 
+    }
+    .section:last-child { border-bottom: none; }
+    .section-header { 
+      margin-bottom: 20px; 
+      padding-bottom: 10px; 
+      border-bottom: 2px solid #5c6bc0; 
+    }
+    .section-header h2 { 
+      font-size: 18px; 
+      font-weight: 600; 
+      color: #1a237e; 
+      display: flex; 
+      align-items: center; 
+      gap: 8px; 
+    }
+    .field-grid { 
+      display: grid; 
+      grid-template-columns: 1fr 2fr; 
+      gap: 12px; 
+      align-items: start; 
+    }
+    .field { display: contents; }
+    .field-label { 
+      font-weight: 600; 
+      color: #3949ab; 
+      padding: 8px 0; 
+    }
+    .field-value { 
+      padding: 8px 0; 
+      color: #37474f; 
+    }
+    .update-content { 
+      background: #f8f9ff; 
+      border-left: 3px solid #5c6bc0; 
+      padding: 15px; 
+      border-radius: 6px; 
+      margin-top: 10px; 
+    }
+    .update-content p { margin-bottom: 12px; }
+    .update-content p:last-child { margin-bottom: 0; }
+    .lawyers-list { list-style: none; padding: 0; }
+    .lawyers-list li { 
+      padding: 10px 0; 
+      border-bottom: 1px solid #e8eaf6; 
+      display: flex; 
+      align-items: center; 
+    }
+    .lawyers-list li:last-child { border-bottom: none; }
+    .lawyers-list li::before { 
+      content: "⚖️"; 
+      margin-right: 10px; 
+    }
+    .status-badge { 
+      display: inline-block; 
+      padding: 4px 12px; 
+      border-radius: 15px; 
+      font-size: 12px; 
+      font-weight: 600; 
+      text-transform: uppercase; 
+    }
+    .status-active { background: #e8f5e8; color: #2e7d32; border: 1px solid #4caf50; }
+    .status-pending { background: #fff3e0; color: #ef6c00; border: 1px solid #ff9800; }
+    .status-closed { background: #ffebee; color: #c62828; border: 1px solid #f44336; }
+    .report-footer { 
+      background: #1a237e; 
+      color: white; 
+      padding: 20px 30px; 
+      text-align: center; 
+    }
+    .footer-info { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-bottom: 15px; 
+      font-size: 13px; 
+    }
+    .confidential { 
+      color: #ff9800; 
+      font-weight: 600; 
+      font-size: 13px; 
+    }
+    .copyright { 
+      color: #c5cae9; 
+      font-size: 12px; 
+      margin-top: 10px; 
+    }
+    @media (max-width: 768px) {
+      body { padding: 10px; font-size: 13px; }
+      .report-header { padding: 20px; }
+      .report-header h1 { font-size: 22px; }
+      .section { padding: 15px 20px; }
+      .field-grid { grid-template-columns: 1fr; gap: 8px; }
+      .field-label { border-bottom: 1px solid #e8eaf6; padding-bottom: 4px; }
+      .field-value { padding-top: 4px; padding-bottom: 12px; }
+      .footer-info { flex-direction: column; gap: 10px; text-align: center; }
+    }
+    @media print {
+      body { padding: 0; font-size: 12pt; }
+      .report-container { box-shadow: none; border: 1px solid #ccc; margin: 0; max-width: none; }
+      .report-header { background: #1a237e !important; }
+      .update-content { background: #f8f9ff !important; }
+    }
+
+body
+.report-container
+  .report-header
+    h1 LEGAL CASE REPORT
+    .subtitle Official Court Proceedings Documentation
+    .case-ref Case Reference: #{report.caseReported ? report.caseReported.suitNo : 'Not Available'}
+  
+  .section
+    .section-header
+      h2 📋 Case Information
+    .field-grid
+      .field
+        .field-label Suit Number
+        .field-value #{report.caseReported ? report.caseReported.suitNo : 'Not Available'}
+      .field
+        .field-label Case Title
+        .field-value 
+          strong #{report.caseReported ? report.caseReported.firstParty.name[0].name : 'N/A'} 
+          span(style="color: #5c6bc0; margin: 0 10px;") VS 
+          strong #{report.caseReported ? report.caseReported.secondParty.name[0].name : 'N/A'}
+      .field
+        .field-label Court Details
+        .field-value
+          if report.caseReported
+            | #{report.caseReported.courtName.charAt(0).toUpperCase() + report.caseReported.courtName.slice(1)}
+            if report.caseReported.courtNo
+              | , #{report.caseReported.courtNo}
+            if report.caseReported.location
+              | , #{report.caseReported.location}
+            if report.caseReported.state
+              | , #{report.caseReported.state}
+          else
+            | Not Available
+      .field
+        .field-label Case Status
+        .field-value
+          if report.caseReported && report.caseReported.caseStatus
+            span.status-badge(class=`status-${report.caseReported.caseStatus}`) #{report.caseReported.caseStatus.toUpperCase()}
+          else
+            | Not Available
+  
+  .section
+    .section-header
+      h2 📊 Report Details
+    .field-grid
+      .field
+        .field-label Report Date
+        .field-value #{new Date(report.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+      .field
+        .field-label Adjourned For
+        .field-value #{report.adjournedFor || 'Not Specified'}
+      .field
+        .field-label Next Hearing
+        .field-value #{new Date(report.adjournedDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+    
+    .field(style="grid-column: 1 / -1; margin-top: 15px;")
+      .field-label Case Proceedings Update
+      .field-value
+        .update-content
+          if report.update
+            != report.update 
+          else
+            p No updates recorded for this hearing date.
+  
+  .section
+    .section-header
+      h2 ⚖️ Legal Representation
+    .field-grid
+      .field
+        .field-label Reported By
+        .field-value 
+          strong #{report.reportedBy ? report.reportedBy.firstName + ' ' + report.reportedBy.lastName : 'Not Available'}
+          if report.reportedBy && report.reportedBy.position
+            br
+            span(style="color: #5c6bc0; font-size: 13px;") #{report.reportedBy.position}
+      .field(style="grid-column: 1 / -1;")
+        .field-label Legal Counsel Present
+        .field-value
+          if report.lawyersInCourt && report.lawyersInCourt.length > 0
+            ul.lawyers-list
+              each lawyer in report.lawyersInCourt
+                li 
+                  strong #{lawyer.firstName} #{lawyer.lastName}
+                  if lawyer.position
+                    span(style="color: #5c6bc0; margin-left: 8px;") - #{lawyer.position}
+          else
+            .field-value(style="color: #666; font-style: italic;") No legal counsel recorded
+  
+  .report-footer
+    .footer-info
+      .confidential 🔒 CONFIDENTIAL & ATTORNEY-CLIENT PRIVILEGED
+      .generated-date Generated: #{new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+    .copyright © #{new Date().getFullYear()} A.T. Lukman & Co. All Rights Reserved.

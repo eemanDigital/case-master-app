@@ -271,8 +271,9 @@ const CaseReportList = ({
 
               {/* Actions */}
               {!hideButtons && (
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-4 border-t border-gray-200">
-                  <div className="flex gap-3">
+                <div className="flex flex-col xs:flex-row xs:flex-wrap gap-3 pt-4 border-t border-gray-200">
+                  {/* First Button Group */}
+                  <div className="flex flex-wrap gap-2 xs:gap-3 justify-start xs:flex-1 min-w-0">
                     <AddEventToCalender
                       title={createEventTitle(report)}
                       description={createEventDescription(report)}
@@ -284,7 +285,8 @@ const CaseReportList = ({
                     </ShowStaff>
                   </div>
 
-                  <div className="flex gap-2">
+                  {/* Second Button Group */}
+                  <div className="flex flex-wrap gap-2 xs:gap-2 justify-start xs:justify-end xs:flex-1 min-w-0">
                     {(isSuperAdmin ||
                       report?.reportedBy?._id === user?.data?._id) && (
                       <UpdateCaseReportForm reportId={report._id} />
@@ -300,6 +302,7 @@ const CaseReportList = ({
                             "report.pdf"
                           )
                         }
+                        className="flex-shrink-0"
                       />
                     </Tooltip>
                     {(isSuperAdmin ||
@@ -315,6 +318,7 @@ const CaseReportList = ({
                               onOk: () => deleteReport(report?._id),
                             });
                           }}
+                          className="flex-shrink-0"
                         />
                       </Tooltip>
                     )}

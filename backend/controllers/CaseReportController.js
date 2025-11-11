@@ -1,3 +1,4 @@
+// controllers/CaseReportController.js
 const Report = require("../models/caseReportModel");
 const Case = require("../models/caseModel");
 const PaginationServiceFactory = require("../services/PaginationServiceFactory");
@@ -7,8 +8,50 @@ const { generatePdf } = require("../utils/generatePdf");
 const moment = require("moment-timezone");
 const QueryBuilder = require("../utils/queryBuilder");
 
-// const moment = require("moment");
-// const setRedisCache = require("../utils/setRedisCache");
+// New imports for decoding & sanitizing HTML before rendering into Pug/Email/PDF
+const { decode } = require("html-entities");
+const sanitizeHtml = require("sanitize-html");
+
+// sanitize defaults for update content (allow safe formatting tags)
+const SANITIZE_OPTIONS = {
+  allowedTags: [
+    "p",
+    "br",
+    "strong",
+    "b",
+    "em",
+    "i",
+    "u",
+    "ul",
+    "ol",
+    "li",
+    "blockquote",
+    "span",
+    "div",
+    "h1",
+    "h2",
+    "h3",
+    "sub",
+    "sup",
+    "small",
+  ],
+  allowedAttributes: {
+    span: ["style"],
+    div: ["style"],
+    p: ["style"],
+  },
+  // Do not allow any URL-containing attributes by default
+};
+
+// helper to decode entity-encoded HTML and sanitize it
+function sanitizeUpdateContent(maybeEncodedHtml) {
+  if (!maybeEncodedHtml) return "";
+  // decode entities (&lt; -> <)
+  const decoded = decode(String(maybeEncodedHtml));
+  // sanitize and return cleaned HTML
+  const cleaned = sanitizeHtml(decoded, SANITIZE_OPTIONS);
+  return cleaned;
+}
 
 // create report
 exports.createReport = catchAsync(async (req, res, next) => {
@@ -46,43 +89,8 @@ exports.createReport = catchAsync(async (req, res, next) => {
   });
 });
 
-// get all reports except soft-deleted ones
-// exports.getReports = catchAsync(async (req, res, next) => {
-//   const reports = await Report.find({ isDeleted: false }).sort("-date");
-
-//   res.status(200).json({
-//     results: reports.length,
-//     data: reports,
-//   });
-// });
-
 // Create pagination service for Report model
 const reportPagination = PaginationServiceFactory.createService(Report);
-
-// Get reports for a specific case
-// exports.getCaseReports = catchAsync(async (req, res, next) => {
-//   const customFilter = { caseReported: req.params.caseId };
-//   const result = await reportPagination.paginate(req.query, customFilter);
-
-//   res.status(200).json(result);
-// });
-
-// // Search reports by specific criteria
-// exports.searchReports = catchAsync(async (req, res, next) => {
-//   const { criteria, options } = req.body;
-
-//   const result = await reportPagination.advancedSearch(criteria, options);
-
-//   res.status(200).json(result);
-// });
-
-// // Get soft-deleted reports
-// exports.getDeletedReports = catchAsync(async (req, res, next) => {
-//   const customFilter = { isDeleted: true };
-//   const result = await reportPagination.paginate(req.query, customFilter);
-
-//   res.status(200).json(result);
-// });
 
 // Get all reports with advanced pagination and filtering
 exports.getReports = catchAsync(async (req, res, next) => {
@@ -307,11 +315,14 @@ exports.generateReportPdf = catchAsync(async (req, res, next) => {
     return next(new AppError("No report found with that ID", 404));
   }
 
+  // Decode & sanitize `update` HTML before rendering in PDF
+  const cleanedUpdate = sanitizeUpdateContent(report.update || "");
+
   // Handle undefined data
   const safeReport = {
     caseReported: report.caseReported || null,
     date: report.date || Date.now(),
-    update: report.update || "",
+    update: cleanedUpdate,
     adjournedFor: report.adjournedFor || "",
     adjournedDate: report.adjournedDate || Date.now(),
     reportedBy: report.reportedBy || null,
@@ -339,19 +350,23 @@ exports.generateCauseListWeek = catchAsync(async (req, res, next) => {
     },
   })
     .sort("adjournedDate")
-    .select("caseReported adjournedFor adjournedDate");
+    .select(
+      "caseReported adjournedFor adjournedDate update lawyersInCourt date reportedBy"
+    );
 
   if (!reports || reports.length === 0) {
     return next(new AppError("No reports found", 404));
   }
 
-  // Map through reports to ensure all fields are properly set
+  // Map through reports to ensure all fields are properly set (including sanitized update)
   const safeReports = reports.map((report) => ({
     caseReported: report.caseReported || null,
     date: report.date || Date.now(),
     adjournedFor: report.adjournedFor || "",
     adjournedDate: report.adjournedDate || Date.now(),
     lawyersInCourt: report.lawyersInCourt || [],
+    update: sanitizeUpdateContent(report.update || ""),
+    reportedBy: report.reportedBy || null,
   }));
 
   // Generate PDF handler function
@@ -375,19 +390,23 @@ exports.generateCauseListNextWeek = catchAsync(async (req, res, next) => {
     },
   })
     .sort("adjournedDate")
-    .select("caseReported adjournedFor adjournedDate");
+    .select(
+      "caseReported adjournedFor adjournedDate update lawyersInCourt date reportedBy"
+    );
 
   if (!reports || reports.length === 0) {
     return next(new AppError("No reports found", 404));
   }
 
-  // Map through reports to ensure all fields are properly set
+  // Map through reports to ensure all fields are properly set (including sanitized update)
   const safeReports = reports.map((report) => ({
     caseReported: report.caseReported || null,
     date: report.date || Date.now(),
     adjournedFor: report.adjournedFor || "",
     adjournedDate: report.adjournedDate || Date.now(),
     lawyersInCourt: report.lawyersInCourt || [],
+    update: sanitizeUpdateContent(report.update || ""),
+    reportedBy: report.reportedBy || null,
   }));
 
   // Generate PDF handler function
@@ -414,19 +433,23 @@ exports.generateCauseListMonth = catchAsync(async (req, res, next) => {
     },
   })
     .sort("adjournedDate")
-    .select("caseReported adjournedFor adjournedDate");
+    .select(
+      "caseReported adjournedFor adjournedDate update lawyersInCourt date reportedBy"
+    );
 
   if (!reports || reports.length === 0) {
     return next(new AppError("No reports found", 404));
   }
 
-  // Map through reports to ensure all fields are properly set
+  // Map through reports to ensure all fields are properly set (including sanitized update)
   const safeReports = reports.map((report) => ({
     caseReported: report.caseReported || null,
     date: report.date || Date.now(),
     adjournedFor: report.adjournedFor || "",
     adjournedDate: report.adjournedDate || Date.now(),
     lawyersInCourt: report.lawyersInCourt || [],
+    update: sanitizeUpdateContent(report.update || ""),
+    reportedBy: report.reportedBy || null,
   }));
 
   // Generate PDF handler function

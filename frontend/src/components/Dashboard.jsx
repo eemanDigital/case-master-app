@@ -33,6 +33,7 @@ import VerifyAccountNotice from "./VerifyAccountNotice";
 import { Link } from "react-router-dom";
 import EventList from "../pages/EventList";
 import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
+import QuickActionsPanel from "./QuickActionsPanel";
 
 // Context for year for search filter
 export const PaymentFiltersContext = createContext();
@@ -214,22 +215,7 @@ const Dashboard = () => {
           {/* Events and Quick Actions */}
           <ScrollingEvents />
 
-          <div className="flex flex-wrap items-center gap-3 mb-6 p-4 bg-gray-50 rounded-xl">
-            <EventList />
-            <CreateLeaveBalanceForm />
-            <EventForm />
-            <LeaveAppForm />
-            <Link to="note-list">
-              <Button className="bg-green-500 hover:bg-green-600 text-white">
-                Show Notes
-              </Button>
-            </Link>
-            <Link to="record-document-list">
-              <Button className="bg-blue-500 hover:bg-blue-600 text-white">
-                Show Records
-              </Button>
-            </Link>
-          </div>
+          <QuickActionsPanel />
         </ShowStaff>
 
         {/* Client's Dashboard */}
