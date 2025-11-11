@@ -368,6 +368,8 @@ exports.sendLoginCode = catchAsync(async (req, res, next) => {
       name: user.firstName,
       code: loginCode,
       expiresIn: "10 minutes",
+      year: new Date().getFullYear(),
+      companyName: process.env.COMPANY_NAME || "CaseMaster",
     };
 
     await sendMail(subject, send_to, send_from, reply_to, template, context);
@@ -565,6 +567,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   if (!email) {
     return next(new AppError("Please provide your email address.", 400));
   }
+
   const user = await User.findOne({ email });
   if (!user) {
     return next(new AppError("There is no user with email address.", 404));

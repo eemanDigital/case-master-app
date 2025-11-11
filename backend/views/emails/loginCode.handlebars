@@ -21,20 +21,20 @@
   <body>
     <div class="container">
       <div class="header">
-        <h1>Login Code</h1>
+        <h1>Login Verification Code</h1>
       </div>
       <div class="content">
         <p>Hello {{name}},</p>
         <p>We noticed a login attempt from a new device. To complete your login,
-          please use the following code:</p>
-        <div class="code">{{link}}</div>
+          please use the following verification code:</p>
+        <div class="code">{{code}}</div>
         <p>If you did not attempt to log in, please ignore this email or contact
           our support team immediately.</p>
-        <p>This code is valid for 1 hour</p>
-        <p>Thank you,<br />The Support Team</p>
+        <p>This code is valid for {{expiresIn}}.</p>
+        <p>Thank you,<br />The CaseMaster Team</p>
       </div>
       <div class="footer">
-        <p>&copy; {{year}} CaseMaster Team. All rights reserved.</p>
+        <p>&copy; {{year}} {{companyName}}. All rights reserved.</p>
       </div>
     </div>
   </body>
