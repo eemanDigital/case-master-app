@@ -11,7 +11,7 @@ import { useUserList } from "../hooks/useUserList";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useSelector } from "react-redux";
 import ButtonWithIcon from "../components/ButtonWithIcon";
-import PageErrorAlert from "../components/PageErrorAlert";
+// import PageErrorAlert from "../components/PageErrorAlert";
 import StaffSearchBar from "../components/StaffSearchBar";
 import UserListTable from "../components/UserListTable";
 import ActiveFilters from "../components/ActiveFilters";

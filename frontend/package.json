@@ -19,6 +19,7 @@
     "axios": "^1.6.8",
     "calendar-link": "^2.7.0",
     "date-fns": "^3.6.0",
+    "dayjs": "^1.11.19",
     "file-saver": "^2.0.5",
     "js-file-download": "^0.4.12",
     "lodash": "^4.17.21",

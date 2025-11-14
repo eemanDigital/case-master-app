@@ -1,18 +1,36 @@
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { useAdminHook } from "../hooks/useAdminHook";
-import { Space, Table, Button, Modal, Tooltip } from "antd";
-import { formatDate } from "../utils/formatDate";
-import avatar from "../assets/avatar.png";
-import { DeleteOutlined } from "@ant-design/icons";
+import {
+  Space,
+  Table,
+  Button,
+  Modal,
+  Tooltip,
+  Tag,
+  Select,
+  DatePicker,
+} from "antd";
+import {
+  DeleteOutlined,
+  EyeOutlined,
+  FilterOutlined,
+  ReloadOutlined,
+} from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import LoadingSpinner from "../components/LoadingSpinner";
-import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
+import debounce from "lodash/debounce";
+import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { useAdminHook } from "../hooks/useAdminHook";
 import { deleteData } from "../redux/features/delete/deleteSlice";
+import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBar from "../components/SearchBar";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import { formatDate } from "../utils/formatDate";
+import avatar from "../assets/avatar.png";
+
+const { Column, ColumnGroup } = Table;
+const { RangePicker } = DatePicker;
 
 const LeaveApplicationList = () => {
   const {
@@ -21,174 +39,365 @@ const LeaveApplicationList = () => {
     error: errorLeaveApp,
     fetchData,
   } = useDataGetterHook();
+
   const [searchResults, setSearchResults] = useState([]);
-  const { Column, ColumnGroup } = Table;
+  const [filters, setFilters] = useState({
+    status: null,
+    typeOfLeave: null,
+    dateRange: null,
+  });
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 10,
+    total: 0,
+  });
+
   const { user } = useSelector((state) => state.auth);
   const { isAdminOrHr } = useAdminHook();
   const dispatch = useDispatch();
-  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
+  const deleteState = useSelector((state) => state.delete);
 
-  // render all cases initially before filter
+  useRedirectLogoutUser("/users/login");
+
+  // Fetch leave applications
+  const fetchLeaveApplications = async () => {
+    const params = new URLSearchParams({
+      page: pagination.current,
+      limit: pagination.pageSize,
+    });
+
+    if (filters.status) params.append("status", filters.status);
+    if (filters.typeOfLeave) params.append("typeOfLeave", filters.typeOfLeave);
+    if (filters.dateRange) {
+      params.append("startDate", filters.dateRange[0]);
+      params.append("endDate", filters.dateRange[1]);
+    }
+
+    await fetchData(`leaves/applications?${params.toString()}`, "leaveApps");
+  };
+
+  useEffect(() => {
+    fetchLeaveApplications();
+  }, [pagination.current, pagination.pageSize, filters]);
+
+  // Update search results when data changes
   useEffect(() => {
     if (leaveApps?.data) {
-      setSearchResults(leaveApps?.data);
+      setSearchResults(leaveApps.data);
+      if (leaveApps.totalResults) {
+        setPagination((prev) => ({
+          ...prev,
+          total: leaveApps.totalResults,
+        }));
+      }
     }
-  }, [leaveApps?.data]); // Only depend on users.data to avoid unnecessary re-renders
+  }, [leaveApps]);
 
-  // fetch data
-  useEffect(() => {
-    fetchData("leaves/applications", "leaveApps");
-  }, []);
+  // Debounced search
+  const debouncedSearch = useMemo(
+    () =>
+      debounce((searchTerm) => {
+        if (!searchTerm) {
+          setSearchResults(leaveApps?.data || []);
+          return;
+        }
+        const results = (leaveApps?.data || []).filter((d) => {
+          const fullName =
+            `${d.employee?.firstName} ${d.employee?.lastName}`.toLowerCase();
+          return fullName.includes(searchTerm.toLowerCase());
+        });
+        setSearchResults(results);
+      }, 300),
+    [leaveApps?.data]
+  );
+
+  const handleSearchChange = (e) => {
+    debouncedSearch(e.target.value.trim());
+  };
+
+  // Handle filter changes
+  const handleFilterChange = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  };
+
+  // Clear all filters
+  const clearFilters = () => {
+    setFilters({
+      status: null,
+      typeOfLeave: null,
+      dateRange: null,
+    });
+    setPagination({ current: 1, pageSize: 10, total: 0 });
+  };
+
+  // Delete leave application
+  const removeApplication = async (id) => {
+    try {
+      await dispatch(deleteData(`leaves/applications/${id}`)).unwrap();
+      toast.success("Leave application deleted successfully");
+      fetchLeaveApplications();
+    } catch (error) {
+      toast.error("Failed to delete leave application");
+    }
+  };
+
+  // Get status tag color
+  const getStatusColor = (status) => {
+    const colors = {
+      pending: "warning",
+      approved: "success",
+      rejected: "error",
+      cancelled: "default",
+    };
+    return colors[status] || "default";
+  };
+
+  // Get leave type color
+  const getLeaveTypeColor = (type) => {
+    const colors = {
+      annual: "blue",
+      casual: "cyan",
+      sick: "red",
+      maternity: "magenta",
+      paternity: "purple",
+      compassionate: "orange",
+      unpaid: "default",
+    };
+    return colors[type] || "default";
+  };
+
+  // Table columns
+  const columns = [
+    {
+      title: "Photo",
+      dataIndex: ["employee", "photo"],
+      key: "photo",
+      width: 80,
+      render: (photo) => (
+        <div className="flex items-center justify-center">
+          <img
+            className="w-10 h-10 object-cover rounded-full border-2 border-gray-200"
+            src={photo || avatar}
+            alt="Employee"
+          />
+        </div>
+      ),
+    },
+    {
+      title: "Employee",
+      dataIndex: ["employee", "firstName"],
+      key: "employeeName",
+      width: 180,
+      render: (text, record) => (
+        <Link
+          to={`${record.id}/details`}
+          className="text-blue-600 hover:text-blue-800 font-medium capitalize">
+          {`${record.employee?.firstName} ${record.employee?.lastName}`}
+        </Link>
+      ),
+    },
+    {
+      title: "Leave Type",
+      dataIndex: "typeOfLeave",
+      key: "typeOfLeave",
+      width: 130,
+      render: (type) => (
+        <Tag color={getLeaveTypeColor(type)} className="capitalize">
+          {type}
+        </Tag>
+      ),
+    },
+    {
+      title: "Start Date",
+      dataIndex: "startDate",
+      key: "startDate",
+      width: 120,
+      render: (date) => formatDate(date),
+    },
+    {
+      title: "End Date",
+      dataIndex: "endDate",
+      key: "endDate",
+      width: 120,
+      render: (date) => formatDate(date),
+    },
+    {
+      title: "Days",
+      dataIndex: "daysAppliedFor",
+      key: "daysAppliedFor",
+      width: 80,
+      render: (days) => <span className="font-semibold">{days}</span>,
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      width: 110,
+      render: (status) => (
+        <Tag color={getStatusColor(status)} className="capitalize">
+          {status}
+        </Tag>
+      ),
+    },
+    {
+      title: "Applied On",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      width: 120,
+      render: (date) => formatDate(date),
+    },
+    {
+      title: "Action",
+      key: "action",
+      width: 120,
+      fixed: "right",
+      render: (_, record) => (
+        <Space size="small">
+          <Tooltip title="View Details">
+            <Link to={`${record.id}/details`}>
+              <Button
+                type="primary"
+                icon={<EyeOutlined />}
+                size="small"
+                className="bg-blue-500"
+              />
+            </Link>
+          </Tooltip>
+
+          {(isAdminOrHr || record.employee?._id === user?.data?._id) && (
+            <Tooltip title="Delete">
+              <Button
+                danger
+                icon={<DeleteOutlined />}
+                size="small"
+                loading={deleteState.isLoading}
+                onClick={() => {
+                  Modal.confirm({
+                    title: "Delete Leave Application",
+                    content:
+                      "Are you sure you want to delete this leave application?",
+                    okText: "Yes, Delete",
+                    okType: "danger",
+                    onOk: () => removeApplication(record._id),
+                  });
+                }}
+              />
+            </Tooltip>
+          )}
+        </Space>
+      ),
+    },
+  ];
+
+  // Filter leave applications based on user role
+  const filteredLeaveApps = isAdminOrHr
+    ? searchResults
+    : searchResults?.filter((app) => app?.employee?._id === user?.data?._id);
 
   if (loadingLeaveApp?.leaveApps) {
     return <LoadingSpinner />;
   }
 
-  // handles search filter
-  const handleSearchChange = (e) => {
-    const searchTerm = e.target.value.trim().toLowerCase();
+  if (errorLeaveApp.leaveApps) {
+    return (
+      <PageErrorAlert
+        errorCondition={errorLeaveApp.leaveApps}
+        errorMessage={errorLeaveApp.leaveApps}
+      />
+    );
+  }
 
-    if (!searchTerm) {
-      setSearchResults(leaveApps?.data);
-      return;
-    }
-    const results = leaveApps?.data.filter((d) => {
-      const fullName =
-        `${d.employee.firstName}${d.employee.lastName}`.toLowerCase();
-      return fullName.includes(searchTerm);
-    });
-    setSearchResults(results);
-  };
+  //   return
 
-  // delete leave app
-  const removeApplication = async (id) => {
-    try {
-      await dispatch(deleteData(`leaves/applications/${id}`));
-      await fetchData("leaves/applications", "leaveApps");
-    } catch (error) {
-      toast.error("Failed to delete invoice");
-    }
-  };
+  <div className="p-4">
+    {/* Header */}
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+      <h1 className="text-2xl font-bold text-gray-800">
+        Leave Applications
+        {!isAdminOrHr && " - My Applications"}
+      </h1>
 
-  // Filter out the leave applications based on the user's role
-  const filteredLeaveApps = isAdminOrHr
-    ? searchResults
-    : searchResults?.filter((app) => app?.employee?._id === user?.data?._id);
+      <div className="flex flex-wrap gap-2 items-center">
+        <SearchBar onSearch={handleSearchChange} />
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={fetchLeaveApplications}
+          title="Refresh">
+          Refresh
+        </Button>
+      </div>
+    </div>
 
-  return (
-    <>
-      {errorLeaveApp.leaveApps ? (
-        <PageErrorAlert
-          errorCondition={errorLeaveApp.leaveApps}
-          errorMessage={errorLeaveApp.leaveApps}
+    {/* Filters */}
+    <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
+      <div className="flex items-center gap-2 mb-3">
+        <FilterOutlined />
+        <span className="font-medium">Filters</span>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Select
+          placeholder="All Status"
+          allowClear
+          value={filters.status}
+          onChange={(value) => handleFilterChange("status", value)}
+          options={[
+            { label: "Pending", value: "pending" },
+            { label: "Approved", value: "approved" },
+            { label: "Rejected", value: "rejected" },
+            { label: "Cancelled", value: "cancelled" },
+          ]}
         />
-      ) : (
-        <>
-          <div className="flex flex-col md:flex-row justify-between items-center  mb-3">
-            <h1 className="text-2xl font-bold text-gray-800 mb-3">
-              Staff Leave Applications
-            </h1>
 
-            <SearchBar onSearch={handleSearchChange} />
-          </div>
-          <div className=" overflow-x-auto mt-3">
-            <Table dataSource={filteredLeaveApps} scroll={{ x: 1000 }}>
-              <ColumnGroup title="Leave Applications">
-                <Column
-                  title="Photo"
-                  dataIndex={["employee", "photo"]}
-                  key="photo"
-                  render={(photo, record) => (
-                    <div className="flex items-center justify-center">
-                      <img
-                        className="w-12 h-12 object-cover rounded-full"
-                        src={photo ? photo : avatar}
-                      />
-                    </div>
-                  )}
-                />
+        <Select
+          placeholder="All Leave Types"
+          allowClear
+          value={filters.typeOfLeave}
+          onChange={(value) => handleFilterChange("typeOfLeave", value)}
+          options={[
+            { label: "Annual", value: "annual" },
+            { label: "Casual", value: "casual" },
+            { label: "Sick", value: "sick" },
+            { label: "Maternity", value: "maternity" },
+            { label: "Paternity", value: "paternity" },
+            { label: "Compassionate", value: "compassionate" },
+            { label: "Unpaid", value: "unpaid" },
+          ]}
+        />
 
-                <Column
-                  title="Employee Name"
-                  dataIndex={["employee", "firstName"]}
-                  key="employee.name"
-                  render={(text, record) => (
-                    <Link
-                      className="capitalize text-gray-700 hover:text-gray-400 cursor-pointer font-medium"
-                      to={`${record?.id}/details`}
-                      title="Click for details">
-                      {`${record.employee.firstName} ${record.employee.lastName}`}
-                    </Link>
-                  )}
-                />
-              </ColumnGroup>
+        <RangePicker
+          placeholder={["Start Date", "End Date"]}
+          onChange={(dates, dateStrings) =>
+            handleFilterChange("dateRange", dateStrings)
+          }
+        />
 
-              <Column
-                title="Start Date"
-                dataIndex="startDate"
-                key="startDate"
-                render={(date) => formatDate(date || null)}
-              />
-              <Column
-                title="End Date"
-                dataIndex="endDate"
-                key="endDate"
-                render={(date) => formatDate(date || null)}
-              />
-              <Column
-                title="Type of Leave"
-                dataIndex="typeOfLeave"
-                key="typeOfLeave"
-              />
-              <Column
-                title="status"
-                dataIndex="status"
-                key="status"
-                render={(text, record) => (
-                  <div
-                    className={
-                      record?.status === "approved"
-                        ? "bg-green-500 p-1 text-center text-white rounded-md"
-                        : record?.status === "pending"
-                        ? "bg-yellow-500 p-1 text-center text-white rounded-md"
-                        : "bg-red-500 p-1 text-center text-white rounded-md"
-                    }>
-                    {text}
-                  </div>
-                )}
-              />
+        {(filters.status || filters.typeOfLeave || filters.dateRange) && (
+          <Button onClick={clearFilters}>Clear Filters</Button>
+        )}
+      </div>
+    </div>
 
-              <Column
-                title="Action"
-                key="action"
-                render={(text, record) => (
-                  <Space size="middle">
-                    {/* <Button type="link">
-                      <Link to={`${record?.id}/details`}>Get Details</Link>
-                    </Button> */}
-
-                    <Tooltip title="Delete Application">
-                      <Button
-                        icon={<DeleteOutlined />}
-                        className="mx-6 bg-red-200 text-red-500 hover:text-red-700"
-                        onClick={() => {
-                          Modal.confirm({
-                            title:
-                              "Are you sure you want to delete this application?",
-                            onOk: () => removeApplication(record?._id),
-                          });
-                        }}
-                        type="primary"></Button>
-                    </Tooltip>
-                  </Space>
-                )}
-              />
-            </Table>
-          </div>
-        </>
-      )}
-    </>
-  );
+    {/* Table */}
+    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <Table
+        dataSource={filteredLeaveApps}
+        columns={columns}
+        rowKey="_id"
+        scroll={{ x: 1200 }}
+        loading={loadingLeaveApp?.leaveApps}
+        pagination={{
+          ...pagination,
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} applications`,
+          onChange: (page, pageSize) => {
+            setPagination((prev) => ({ ...prev, current: page, pageSize }));
+          },
+        }}
+      />
+    </div>
+  </div>;
 };
 
 export default LeaveApplicationList;
