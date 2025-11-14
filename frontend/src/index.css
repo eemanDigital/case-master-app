@@ -207,3 +207,87 @@
 .custom-descriptions .ant-descriptions-item-content {
   font-weight: 500;
 }
+
+/* Mobile-responsive table styles for case */
+/* @media (max-width: 768px) {
+  .responsive-table .ant-table-thead > tr > th {
+    padding: 8px 4px;
+    font-size: 11px;
+  }
+
+  .responsive-table .ant-table-tbody > tr > td {
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+
+  .responsive-table .ant-btn {
+    min-width: 32px;
+    height: 32px;
+  }
+
+  .responsive-table .ant-space {
+    gap: 4px !important;
+  }
+
+  .pagination-responsive .ant-pagination-item {
+    min-width: 32px;
+    height: 32px;
+    line-height: 30px;
+  }
+
+  .pagination-responsive .ant-pagination-item a {
+    font-size: 12px;
+  }
+
+  .pagination-responsive .ant-pagination-prev,
+  .pagination-responsive .ant-pagination-next {
+    min-width: 32px;
+    height: 32px;
+    line-height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  .responsive-table .ant-table-thead > tr > th {
+    padding: 6px 2px;
+    font-size: 10px;
+  }
+
+  .responsive-table .ant-table-tbody > tr > td {
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+
+  .responsive-table .ant-btn {
+    min-width: 28px;
+    height: 28px;
+    padding: 0 4px;
+  }
+
+  .responsive-table .ant-btn .anticon {
+    font-size: 12px;
+  }
+
+  .pagination-responsive .ant-pagination-item {
+    min-width: 28px;
+    height: 28px;
+    line-height: 26px;
+  }
+
+  .pagination-responsive .ant-pagination-item a {
+    font-size: 11px;
+  }
+
+  .pagination-responsive .ant-pagination-prev,
+  .pagination-responsive .ant-pagination-next {
+    min-width: 28px;
+    height: 28px;
+    line-height: 28px;
+  }
+
+  .pagination-responsive .ant-pagination-jump-prev,
+  .pagination-responsive .ant-pagination-jump-next {
+    height: 28px;
+    line-height: 28px;
+  }
+} */

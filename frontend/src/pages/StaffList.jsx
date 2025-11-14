@@ -27,9 +27,9 @@ const StaffList = () => {
     filters,
     currentPage,
     itemsPerPage,
-    isError,
+    // isError,
     users,
-    message,
+    // message,
     loading,
     handleFiltersChange,
     resetFilters,
@@ -237,90 +237,83 @@ const StaffList = () => {
         )}
 
         {/* Main Content */}
-        {isError ? (
-          <PageErrorAlert errorCondition={isError} errorMessage={message} />
-        ) : (
-          <>
-            <Card className="shadow-sm border-0" bodyStyle={{ padding: 0 }}>
-              <UserListTable
-                dataSource={filteredStaff}
-                loading={loading}
-                onDelete={isSuperOrAdmin ? removeUser : null} // Only super-admin can delete
-                showActions={isAdminOrHr || isSuperOrAdmin} // Admin/HR can perform actions
-                showRole={true}
-                showPosition={true}
-                showLawyer={true}
-                userType="staff"
-                basePath="/dashboard/staff"
-                showEdit={isAdminOrHr || isSuperOrAdmin} // Only admins can edit
-                showDelete={isSuperOrAdmin} // Only super-admin can delete
-                showView={true} // Everyone can view
+
+        <Card className="shadow-sm border-0" bodyStyle={{ padding: 0 }}>
+          <UserListTable
+            dataSource={filteredStaff}
+            loading={loading}
+            onDelete={isSuperOrAdmin ? removeUser : null} // Only super-admin can delete
+            showActions={isAdminOrHr || isSuperOrAdmin} // Admin/HR can perform actions
+            showRole={true}
+            showPosition={true}
+            showLawyer={true}
+            userType="staff"
+            basePath="/dashboard/staff"
+            showEdit={isAdminOrHr || isSuperOrAdmin} // Only admins can edit
+            showDelete={isSuperOrAdmin} // Only super-admin can delete
+            showView={true} // Everyone can view
+          />
+
+          {/* Empty State */}
+          {filteredStaff.length === 0 && !loading && (
+            <div className="p-12 text-center">
+              <Empty
+                description={
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                      {Object.keys(filters).length > 0
+                        ? "No Staff Found"
+                        : "No Staff Members"}
+                    </h3>
+                    <p className="text-gray-500">
+                      {Object.keys(filters).length > 0
+                        ? "No staff members match your current filters. Try adjusting your search criteria."
+                        : isAdminOrHr || isSuperOrAdmin
+                        ? "No staff members have been added yet. Start by adding your first team member."
+                        : "No staff members found in the directory."}
+                    </p>
+                  </div>
+                }
               />
-
-              {/* Empty State */}
-              {filteredStaff.length === 0 && !loading && (
-                <div className="p-12 text-center">
-                  <Empty
-                    description={
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                          {Object.keys(filters).length > 0
-                            ? "No Staff Found"
-                            : "No Staff Members"}
-                        </h3>
-                        <p className="text-gray-500">
-                          {Object.keys(filters).length > 0
-                            ? "No staff members match your current filters. Try adjusting your search criteria."
-                            : isAdminOrHr || isSuperOrAdmin
-                            ? "No staff members have been added yet. Start by adding your first team member."
-                            : "No staff members found in the directory."}
-                        </p>
-                      </div>
-                    }
-                  />
-                  {Object.keys(filters).length > 0 ? (
-                    <ButtonWithIcon
-                      onClick={resetFilters}
-                      text="Clear All Filters"
-                      className="mt-4"
-                    />
-                  ) : (
-                    (isAdminOrHr || isSuperOrAdmin) && (
-                      <Link to="add-user" className="mt-4 inline-block">
-                        <ButtonWithIcon
-                          icon={<PlusOutlined />}
-                          text="Add First Staff Member"
-                          type="primary"
-                        />
-                      </Link>
-                    )
-                  )}
-                </div>
-              )}
-            </Card>
-
-            {/* Pagination */}
-            {filteredStaff.length > 0 && (
-              <Row justify="center" style={{ marginTop: 24 }}>
-                <Pagination
-                  current={currentPage}
-                  total={
-                    users?.pagination?.totalRecords || filteredStaff.length
-                  }
-                  pageSize={itemsPerPage}
-                  onChange={handlePageChange}
-                  onShowSizeChange={handlePageChange}
-                  showSizeChanger
-                  showQuickJumper
-                  showTotal={(total, range) =>
-                    `Showing ${range[0]}-${range[1]} of ${total} staff members`
-                  }
-                  pageSizeOptions={["10", "20", "50", "100"]}
-                  className="pagination-custom"
+              {Object.keys(filters).length > 0 ? (
+                <ButtonWithIcon
+                  onClick={resetFilters}
+                  text="Clear All Filters"
+                  className="mt-4"
                 />
-              </Row>
-            )}
-          </>
+              ) : (
+                (isAdminOrHr || isSuperOrAdmin) && (
+                  <Link to="add-user" className="mt-4 inline-block">
+                    <ButtonWithIcon
+                      icon={<PlusOutlined />}
+                      text="Add First Staff Member"
+                      type="primary"
+                    />
+                  </Link>
+                )
+              )}
+            </div>
+          )}
+        </Card>
+
+        {/* Pagination */}
+        {filteredStaff.length > 0 && (
+          <Row justify="center" style={{ marginTop: 24 }}>
+            <Pagination
+              current={currentPage}
+              total={users?.pagination?.totalRecords || filteredStaff.length}
+              pageSize={itemsPerPage}
+              onChange={handlePageChange}
+              onShowSizeChange={handlePageChange}
+              showSizeChanger
+              showQuickJumper
+              showTotal={(total, range) =>
+                `Showing ${range[0]}-${range[1]} of ${total} staff members`
+              }
+              pageSizeOptions={["10", "20", "50", "100"]}
+              className="pagination-custom"
+            />
+          </Row>
         )}
       </div>
     </div>

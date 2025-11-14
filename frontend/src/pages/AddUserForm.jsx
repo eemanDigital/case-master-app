@@ -7,6 +7,7 @@ import {
   Button,
   DatePicker,
   Typography,
+  Alert,
 } from "antd";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -32,6 +33,24 @@ const SignUp = () => {
     navigate("/dashboard/staff");
   };
 
+  // Custom validator for year of call (should be in the past)
+  const validateYearOfCall = (_, value) => {
+    if (!value) return Promise.resolve();
+
+    const selectedYear = value.year();
+    const currentYear = new Date().getFullYear();
+
+    if (selectedYear > currentYear) {
+      return Promise.reject(new Error("Year of call cannot be in the future"));
+    }
+
+    if (selectedYear < 1900) {
+      return Promise.reject(new Error("Please enter a valid year"));
+    }
+
+    return Promise.resolve();
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
       <div className="relative py-3 px-4 sm:max-w-xl md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto w-full">
@@ -40,18 +59,28 @@ const SignUp = () => {
           <Title level={2} className="text-center mb-8 text-gray-800">
             Add Staff
           </Title>
+
           <Form
             form={form}
             name="register"
             onFinish={onFinish}
             layout="vertical"
-            className="space-y-6">
+            className="space-y-6"
+            scrollToFirstError>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              {/* Personal Information */}
               <Form.Item
                 name="firstName"
                 label="First Name"
                 rules={[
-                  { required: true, message: "Please input your first name!" },
+                  {
+                    required: true,
+                    message: "Please input your first name!",
+                  },
+                  {
+                    min: 2,
+                    message: "First name must be at least 2 characters",
+                  },
                 ]}>
                 <Input placeholder="First Name" />
               </Form.Item>
@@ -60,7 +89,14 @@ const SignUp = () => {
                 name="lastName"
                 label="Last Name"
                 rules={[
-                  { required: true, message: "Please input your last name!" },
+                  {
+                    required: true,
+                    message: "Please input your last name!",
+                  },
+                  {
+                    min: 2,
+                    message: "Last name must be at least 2 characters",
+                  },
                 ]}>
                 <Input placeholder="Last Name" />
               </Form.Item>
@@ -73,17 +109,27 @@ const SignUp = () => {
                 name="email"
                 label="Email"
                 rules={[
-                  { required: true, message: "Please input your email!" },
-                  { type: "email", message: "Please enter a valid email!" },
+                  {
+                    required: true,
+                    message: "Please input your email!",
+                  },
+                  {
+                    type: "email",
+                    message: "Please enter a valid email!",
+                  },
                 ]}>
                 <Input placeholder="Email" />
               </Form.Item>
 
+              {/* Password Fields */}
               <Form.Item
                 name="password"
                 label="Password"
                 rules={[
-                  { required: true, message: "Please enter your password" },
+                  {
+                    required: true,
+                    message: "Please enter your password",
+                  },
                   {
                     pattern:
                       /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
@@ -104,7 +150,10 @@ const SignUp = () => {
                 label="Confirm Password"
                 dependencies={["password"]}
                 rules={[
-                  { required: true, message: "Please confirm your password" },
+                  {
+                    required: true,
+                    message: "Please confirm your password",
+                  },
                   ({ getFieldValue }) => ({
                     validator(_, value) {
                       if (!value || getFieldValue("password") === value) {
@@ -124,14 +173,101 @@ const SignUp = () => {
                 />
               </Form.Item>
 
-              <Form.Item name="isLawyer" valuePropName="checked">
+              {/* Lawyer Checkbox */}
+              <Form.Item
+                name="isLawyer"
+                valuePropName="checked"
+                className="sm:col-span-2">
                 <Checkbox>Is User A Lawyer</Checkbox>
               </Form.Item>
 
-              <Form.Item name="yearOfCall" label="Year of Call">
-                <DatePicker className="w-full" />
+              {/* Lawyer-Specific Fields - Conditionally Required */}
+              <Form.Item
+                noStyle
+                shouldUpdate={(prevValues, currentValues) =>
+                  prevValues.isLawyer !== currentValues.isLawyer
+                }>
+                {({ getFieldValue }) =>
+                  getFieldValue("isLawyer") && (
+                    <Alert
+                      message="Lawyer Information Required"
+                      description="Please fill in all lawyer-specific fields below"
+                      type="info"
+                      showIcon
+                      className="mb-4 sm:col-span-2"
+                    />
+                  )
+                }
               </Form.Item>
 
+              <Form.Item
+                name="yearOfCall"
+                label="Year of Call to Bar"
+                rules={[
+                  ({ getFieldValue }) => ({
+                    required: getFieldValue("isLawyer"),
+                    message: "Year of call is required for lawyers",
+                  }),
+                  {
+                    validator: validateYearOfCall,
+                  },
+                ]}>
+                <DatePicker
+                  className="w-full"
+                  picker="year"
+                  placeholder="Select year of call"
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="practiceArea"
+                label="Practice Area"
+                rules={[
+                  ({ getFieldValue }) => ({
+                    required: getFieldValue("isLawyer"),
+                    message: "Practice area is required for lawyers",
+                  }),
+                  {
+                    min: 3,
+                    message: "Practice area must be at least 3 characters",
+                  },
+                ]}>
+                <Input placeholder="e.g. Intellectual Property Law, Corporate Law, etc." />
+              </Form.Item>
+
+              <Form.Item
+                name="universityAttended"
+                label="University Attended"
+                rules={[
+                  ({ getFieldValue }) => ({
+                    required: getFieldValue("isLawyer"),
+                    message: "University attended is required for lawyers",
+                  }),
+                  {
+                    min: 3,
+                    message: "Please enter a valid university name",
+                  },
+                ]}>
+                <Input placeholder="e.g. University of Ilorin, University of Lagos, etc." />
+              </Form.Item>
+
+              <Form.Item
+                name="lawSchoolAttended"
+                label="Law School Attended"
+                rules={[
+                  ({ getFieldValue }) => ({
+                    required: getFieldValue("isLawyer"),
+                    message: "Law school attended is required for lawyers",
+                  }),
+                  {
+                    min: 3,
+                    message: "Please enter a valid law school name",
+                  },
+                ]}>
+                <Input placeholder="e.g. Nigerian Law School, Abuja, Kano Law School, etc." />
+              </Form.Item>
+
+              {/* Contact Information */}
               <Form.Item
                 name="phone"
                 label="Phone Contact"
@@ -139,6 +275,14 @@ const SignUp = () => {
                   {
                     required: true,
                     message: "Please input your phone number!",
+                  },
+                  {
+                    pattern: /^[+]?[\d\s\-()]+$/,
+                    message: "Please enter a valid phone number",
+                  },
+                  {
+                    min: 10,
+                    message: "Phone number must be at least 10 digits",
                   },
                 ]}>
                 <Input placeholder="Phone Contact" />
@@ -149,38 +293,56 @@ const SignUp = () => {
                 label="Address"
                 className="sm:col-span-2"
                 rules={[
-                  { required: true, message: "Please input your address!" },
+                  {
+                    required: true,
+                    message: "Please input your address!",
+                  },
+                  {
+                    min: 10,
+                    message: "Address must be at least 10 characters",
+                  },
                 ]}>
                 <Input placeholder="No.2, Maitama Close, Abuja" />
               </Form.Item>
 
+              {/* Professional Information */}
               <Form.Item
                 name="position"
                 label="Position"
                 rules={[
-                  { required: true, message: "Please select your position!" },
+                  {
+                    required: true,
+                    message: "Please select your position!",
+                  },
                 ]}>
-                <Select options={positions} />
+                <Select options={positions} placeholder="Select position" />
               </Form.Item>
 
               <Form.Item
                 name="gender"
                 label="Gender"
                 rules={[
-                  { required: true, message: "Please select your gender!" },
+                  {
+                    required: true,
+                    message: "Please select your gender!",
+                  },
                 ]}>
-                <Select options={gender} />
+                <Select options={gender} placeholder="Select gender" />
               </Form.Item>
 
               <Form.Item
                 name="role"
                 label="Role"
                 rules={[
-                  { required: true, message: "Please select your role!" },
+                  {
+                    required: true,
+                    message: "Please select your role!",
+                  },
                 ]}>
-                <Select options={roles} />
+                <Select options={roles} placeholder="Select role" />
               </Form.Item>
 
+              {/* Conditional Other Position Field */}
               <Form.Item
                 noStyle
                 shouldUpdate={(prevValues, currentValues) =>
@@ -196,6 +358,10 @@ const SignUp = () => {
                           required: true,
                           message: "Please specify the other position!",
                         },
+                        {
+                          min: 2,
+                          message: "Position must be at least 2 characters",
+                        },
                       ]}>
                       <Input placeholder="Specify Position" />
                     </Form.Item>
@@ -203,30 +369,40 @@ const SignUp = () => {
                 }
               </Form.Item>
 
-              <Form.Item name="practiceArea" label="Practice Area">
-                <Input placeholder="e.g. Intellectual Property Law" />
+              {/* Additional Fields */}
+              <Form.Item
+                name="annualLeaveEntitled"
+                label="Annual Leave Entitled (Days)">
+                <Input type="number" min="0" max="365" placeholder="e.g. 21" />
               </Form.Item>
 
-              <Form.Item name="universityAttended" label="University Attended">
-                <Input placeholder="e.g. University of Ilorin" />
-              </Form.Item>
-
-              <Form.Item name="lawSchoolAttended" label="Law School Attended">
-                <Input placeholder="e.g. Kano Law School" />
-              </Form.Item>
-
-              <Form.Item name="bio" label="Bio" className="sm:col-span-2">
-                <TextArea rows={4} placeholder="Short bio about the staff" />
+              <Form.Item
+                name="bio"
+                label="Bio"
+                className="sm:col-span-2"
+                rules={[
+                  {
+                    max: 500,
+                    message: "Bio must not exceed 500 characters",
+                  },
+                ]}>
+                <TextArea
+                  rows={4}
+                  placeholder="Short bio about the staff"
+                  showCount
+                  maxLength={500}
+                />
               </Form.Item>
             </div>
 
-            <Form.Item>
+            <Form.Item className="text-center">
               <Button
                 type="primary"
                 htmlType="submit"
-                className="w-full sm:w-auto  bg-blue-500 text-white font-semibold rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
+                size="large"
+                className="w-full sm:w-64 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
                 loading={isLoading}>
-                {isLoading ? "Saving..." : "Add Staff"}
+                {isLoading ? "Adding Staff..." : "Add Staff"}
               </Button>
             </Form.Item>
           </Form>

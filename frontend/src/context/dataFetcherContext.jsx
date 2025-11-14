@@ -41,6 +41,7 @@ const DataFetcherContext = ({ children }) => {
     yearlyNewCases: [],
     deletedCases: [],
     deletedReports: [],
+    accountOfficerAggregates: [],
     events: [],
     notes: [],
     documentRecord: [],

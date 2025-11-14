@@ -141,7 +141,7 @@ const UserListTable = ({
           <Column
             title="Action"
             key="action"
-            width={120}
+            width={60}
             fixed="right"
             render={(text, record) => (
               <Space size="small">

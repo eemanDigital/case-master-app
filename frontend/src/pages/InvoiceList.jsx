@@ -299,12 +299,11 @@ const InvoiceList = () => {
               type="link"
               danger
               icon={<DeleteOutlined />}
-              loading={isLoading}>
-              Delete
-            </Button>
+              loading={isLoading}></Button>
           )}
         </Space>
       ),
+      width: 95,
       fixed: "right",
     },
   ];

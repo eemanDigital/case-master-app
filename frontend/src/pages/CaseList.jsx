@@ -212,46 +212,30 @@ const CaseList = () => {
       ),
       width: 100,
     },
-    {
-      title: "Priority",
-      dataIndex: "casePriority",
-      key: "casePriority",
-      render: (text) => (
-        <Tag
-          color={
-            text === "high" ? "red" : text === "medium" ? "orange" : "green"
-          }
-          className="capitalize">
-          {text}
-        </Tag>
-      ),
-      width: 100,
-    },
-    {
-      title: "Filing Date",
-      dataIndex: "filingDate",
-      key: "filingDate",
-      render: (date) => new Date(date).toLocaleDateString(),
-      width: 120,
-    },
+
     {
       title: "Action",
       key: "action",
       render: (_, record) =>
         isStaff ? (
-          <Space>
+          <Space
+            size="small"
+            direction="vertical"
+            className="sm:flex-row sm:space-x-1 ">
             <Link to={`${record._id}/update`}>
               <Tooltip title="Edit Case">
                 <Button
-                  className="bg-purple-200 text-purple-500"
+                  size="small"
+                  className="bg-purple-200 text-purple-500 border-0"
                   icon={<EditOutlined />}
                 />
               </Tooltip>
             </Link>
             <Tooltip title="Delete Case">
               <Button
+                size="small"
                 icon={<DeleteOutlined />}
-                className="bg-red-200 text-red-500 hover:text-red-700"
+                className="bg-red-200 text-red-500 hover:text-red-700 border-0"
                 onClick={() =>
                   Modal.confirm({
                     title: "Are you sure you want to delete this case?",
@@ -267,7 +251,7 @@ const CaseList = () => {
             </Tooltip>
           </Space>
         ) : null,
-      width: 150,
+      width: 75,
       fixed: "right",
     },
   ];
@@ -371,7 +355,7 @@ const CaseList = () => {
                 pagination={false}
                 rowKey="_id"
                 loading={loading.cases}
-                scroll={{ x: 1000 }}
+                scroll={{ x: 900 }}
               />
             )}
           </div>

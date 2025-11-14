@@ -13,9 +13,7 @@ import { useSelector } from "react-redux";
 import useUsersCount from "../hooks/useUsersCount";
 import DashBoardDataCount from "./DashBoardDataCount";
 import LatestCaseReports from "./LatestCaseReports";
-import LeaveAppForm from "../pages/LeaveAppForm";
 import TodoList from "./TodoList";
-import EventForm from "./EventForm";
 import ScrollingEvents from "./ScrollingEvents";
 import CurrentTasksTracker from "./CurrentTasksTracker";
 import CurrentMonthIncomeCharts from "./CurrentMonthIncomeChart";
@@ -26,13 +24,11 @@ import {
   ShowOnlyVerifiedUser,
   ShowStaff,
 } from "./protect/Protect";
-import { Alert, Button, Skeleton } from "antd";
+import { Alert, Skeleton } from "antd";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import CurrentDayCauseList from "./CurrentDayCauseList";
 import VerifyAccountNotice from "./VerifyAccountNotice";
-import { Link } from "react-router-dom";
-import EventList from "../pages/EventList";
-import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
+
 import QuickActionsPanel from "./QuickActionsPanel";
 
 // Context for year for search filter
@@ -77,6 +73,7 @@ const Dashboard = () => {
     tasks,
     reports,
     totalBalanceOnPayments,
+    accountOfficerAggregates,
     casesByStatus,
     casesByCourt,
     casesByNature,
@@ -131,6 +128,10 @@ const Dashboard = () => {
           { endpoint: "tasks", key: "tasks" },
           { endpoint: "reports/upcoming", key: "causeList" },
           { endpoint: "payments/totalBalance", key: "totalBalanceOnPayments" },
+          {
+            endpoint: "cases/account-officers/aggregate",
+            key: "accountOfficerAggregates",
+          },
         ]);
       } catch (error) {
         console.error("Error fetching dashboard data:", error);
@@ -168,6 +169,8 @@ const Dashboard = () => {
       );
     }
   }, [yearEachMonth, dataFetcherEachMonth]);
+
+  console.log(accountOfficerAggregates, "<<< accountOfficerAggregates");
 
   // ✅ Extract data from dashboardStats response
   const dashboardData = dashboardStats?.data || {};
@@ -316,7 +319,7 @@ const Dashboard = () => {
                     ) : (
                       <AccountOfficerCharts
                         title="Cases By Account Officer"
-                        data={effectiveCasesByAccountOfficer}
+                        data={accountOfficerAggregates?.data}
                       />
                     )}
 

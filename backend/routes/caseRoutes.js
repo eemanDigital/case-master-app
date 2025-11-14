@@ -218,7 +218,7 @@ router.get("/priority/:priority", getCasesByPriority);
 router.get("/active", getActiveCases);
 
 // Aggregate routes (keep for backward compatibility)
-router.get("/cases-by-accountOfficer", getCasesByAccountOfficerAggregate);
+router.get("/account-officers/aggregate", getCasesByAccountOfficerAggregate);
 router.get("/cases-by-client", getCasesByClientAggregate);
 router.get("/monthly-new-cases", getMonthlyNewCases);
 router.get("/yearly-new-cases", getYearlyNewCases);
