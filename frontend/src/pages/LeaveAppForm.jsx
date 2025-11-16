@@ -32,7 +32,7 @@ const LeaveAppForm = ({ onSuccess }) => {
   ];
 
   const { user } = useSelector((state) => state.auth);
-  const { data, loading, error: dataError, dataFetcher } = useDataFetch();
+  const { loading, error: dataError, dataFetcher } = useDataFetch();
   const { adminOptions } = useUserSelectOptions();
   const [visible, setVisible] = useState(false);
   const [leaveBalance, setLeaveBalance] = useState(null);
@@ -54,11 +54,17 @@ const LeaveAppForm = ({ onSuccess }) => {
         `leaves/balances/${user.data._id}`,
         "GET"
       );
-      if (response?.data) {
-        setLeaveBalance(response.data);
+
+      if (response?.data?.leaveBalance) {
+        setLeaveBalance(response.data.leaveBalance);
+      } else {
+        // ✅ Handle null balance gracefully
+        setLeaveBalance(null);
+        console.warn("No leave balance found for employee");
       }
     } catch (err) {
       console.error("Failed to fetch leave balance:", err);
+      setLeaveBalance(null); // ✅ Set null instead of crashing
     }
   };
 
@@ -192,7 +198,8 @@ const LeaveAppForm = ({ onSuccess }) => {
         footer={null}
         width={600}>
         {/* Leave Balance Summary */}
-        {leaveBalance && (
+
+        {leaveBalance ? (
           <Alert
             message="Your Leave Balance"
             description={
@@ -201,6 +208,7 @@ const LeaveAppForm = ({ onSuccess }) => {
                   <strong>Annual:</strong> {leaveBalance.annualLeaveBalance}{" "}
                   days
                 </div>
+
                 <div>
                   <strong>Sick:</strong> {leaveBalance.sickLeaveBalance} days
                 </div>
@@ -215,10 +223,25 @@ const LeaveAppForm = ({ onSuccess }) => {
               </div>
             }
             type="info"
+          />
+        ) : (
+          <Alert
+            message="No Leave Balance Found"
+            description="Please contact HR to set up your leave entitlements."
+            type="warning"
             showIcon
-            className="mb-4"
           />
         )}
+
+        {selectedLeaveType &&
+          !leaveBalance &&
+          selectedLeaveType !== "unpaid" && (
+            <Alert
+              message="Cannot verify balance"
+              description="Application will be submitted pending HR verification."
+              type="warning"
+            />
+          )}
 
         <Form
           form={form}

@@ -10,11 +10,13 @@ import EventList from "../pages/EventList";
 import EventForm from "./EventForm";
 import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
 import LeaveAppForm from "../pages/LeaveAppForm";
+import { useAdminHook } from "../hooks/useAdminHook";
 
 const { Panel } = Collapse;
 
 const QuickActionsPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { isAdminOrHr } = useAdminHook();
 
   return (
     <div className="mb-6">
@@ -47,7 +49,7 @@ const QuickActionsPanel = () => {
             {/* Column 2: Leave Management */}
             <div className="space-y-2 xs:space-y-0 xs:flex xs:flex-col xs:gap-2">
               <div className="flex gap-2 flex-wrap">
-                <CreateLeaveBalanceForm />
+                {isAdminOrHr && <CreateLeaveBalanceForm />}
                 <LeaveAppForm />
               </div>
             </div>

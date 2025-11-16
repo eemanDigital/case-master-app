@@ -1,5 +1,17 @@
-import { useState, useEffect } from "react";
-import { Modal, Button, Form, Input, Select, DatePicker, Alert } from "antd";
+import PropTypes from "prop-types";
+import { useState } from "react";
+import {
+  Modal,
+  Button,
+  Form,
+  Input,
+  Select,
+  DatePicker,
+  InputNumber,
+  Alert,
+  Space,
+} from "antd";
+import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
@@ -9,40 +21,52 @@ import dayjs from "dayjs";
 
 const { TextArea } = Input;
 
-const LeaveResponseForm = ({ appId, onSuccess, applicationData }) => {
+const LeaveResponseForm = ({ application, onSuccess }) => {
   const [open, setOpen] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState(null);
   const { user } = useSelector((state) => state.auth);
   const { data, loading, error: dataError, dataFetcher } = useDataFetch();
   const dispatch = useDispatch();
   const [form] = Form.useForm();
 
-  const statusOptions = [
-    { label: "Approved", value: "approved" },
-    { label: "Rejected", value: "rejected" },
-  ];
-
-  useEffect(() => {
-    if (applicationData && open) {
-      form.setFieldsValue({
-        startDate: applicationData.startDate
-          ? dayjs(applicationData.startDate)
-          : null,
-        endDate: applicationData.endDate
-          ? dayjs(applicationData.endDate)
-          : null,
-        daysApproved: applicationData.daysAppliedFor,
-        status: applicationData.status,
-      });
-    }
-  }, [applicationData, open, form]);
-
   const showModal = () => {
     setOpen(true);
+    // Pre-fill form with application data
+    form.setFieldsValue({
+      startDate: application.startDate ? dayjs(application.startDate) : null,
+      endDate: application.endDate ? dayjs(application.endDate) : null,
+      daysApproved: application.daysAppliedFor,
+    });
   };
 
   const handleCancel = () => {
     setOpen(false);
     form.resetFields();
+    setSelectedStatus(null);
+  };
+
+  const statusOptions = [
+    {
+      label: "Approve Application",
+      value: "approved",
+      icon: <CheckCircleOutlined />,
+    },
+    {
+      label: "Reject Application",
+      value: "rejected",
+      icon: <CloseCircleOutlined />,
+    },
+  ];
+
+  // Calculate days when dates change
+  const handleDateChange = () => {
+    const startDate = form.getFieldValue("startDate");
+    const endDate = form.getFieldValue("endDate");
+
+    if (startDate && endDate) {
+      const days = endDate.diff(startDate, "days") + 1;
+      form.setFieldsValue({ daysApproved: days });
+    }
   };
 
   const handleFinish = async (values) => {
@@ -50,57 +74,70 @@ const LeaveResponseForm = ({ appId, onSuccess, applicationData }) => {
       const payload = {
         status: values.status,
         responseMessage: values.responseMessage,
-        reviewedBy: user?.data?._id,
-        reviewedAt: new Date().toISOString(),
       };
 
-      // Include dates if modified
-      if (values.startDate && values.endDate) {
+      // Only add dates if they were actually modified
+      if (
+        values.startDate &&
+        values.startDate !== dayjs(application.startDate)
+      ) {
         payload.startDate = values.startDate.format("YYYY-MM-DD");
+      }
+      if (values.endDate && values.endDate !== dayjs(application.endDate)) {
         payload.endDate = values.endDate.format("YYYY-MM-DD");
       }
 
-      // Include approved days if status is approved
-      if (values.status === "approved" && values.daysApproved) {
-        payload.daysApproved = values.daysApproved;
+      // Only add daysApproved if status is approved AND it's different from daysAppliedFor
+      if (values.status === "approved") {
+        if (
+          values.daysApproved &&
+          values.daysApproved !== application.daysAppliedFor
+        ) {
+          payload.daysApproved = values.daysApproved;
+        }
       }
 
       // Submit response
-      await dataFetcher(`leaves/applications/${appId}`, "PUT", payload);
+      const response = await dataFetcher(
+        `leaves/applications/${application._id || application.id}`,
+        "PUT",
+        payload
+      );
 
-      if (!dataError) {
+      if (response?.status === "success") {
+        toast.success(`Leave application ${values.status} successfully`);
+
         // Prepare email data
         const emailData = {
-          subject: "Leave Application Response - A.T. Lukman & Co.",
-          send_to: applicationData.employee?.email,
+          subject: `Leave Application ${
+            values.status === "approved" ? "Approved" : "Rejected"
+          } - A.T. Lukman & Co.`,
+          send_to: application.employee?.email,
           reply_to: "noreply@atlukman.com",
           template: "leaveResponse",
-          url: "/dashboard/leaves",
+          url: "dashboard/staff",
           context: {
-            applicationDate: formatDate(applicationData.createdAt),
-            typeOfLeave: applicationData.typeOfLeave,
-            startDate: formatDate(
-              values.startDate || applicationData.startDate
-            ),
-            endDate: formatDate(values.endDate || applicationData.endDate),
+            applicantName: `${application.employee?.firstName} ${application.employee?.lastName}`,
+            applicationDate: formatDate(application.createdAt),
+            typeOfLeave: application.typeOfLeave,
+            startDate: payload.startDate || formatDate(application.startDate),
+            endDate: payload.endDate || formatDate(application.endDate),
             status: values.status,
-            daysApproved: values.daysApproved || applicationData.daysAppliedFor,
+            daysApproved: payload.daysApproved || application.daysAppliedFor,
             responseMessage: values.responseMessage,
             approvedBy: `${user?.data?.firstName} ${user?.data?.lastName}`,
-            applicantName: `${applicationData.employee?.firstName} ${applicationData.employee?.lastName}`,
           },
         };
 
-        // Send email notification
+        // Send notification email
         await dispatch(sendAutomatedCustomEmail(emailData));
 
-        toast.success(`Leave application ${values.status} successfully!`);
-        handleCancel();
+        form.resetFields();
+        setOpen(false);
+        setSelectedStatus(null);
 
-        // Call success callback if provided
-        if (onSuccess) {
-          onSuccess();
-        }
+        // Callback to refresh parent component
+        if (onSuccess) onSuccess();
       }
     } catch (err) {
       console.error("Response submission error:", err);
@@ -108,17 +145,13 @@ const LeaveResponseForm = ({ appId, onSuccess, applicationData }) => {
     }
   };
 
-  const handleStatusChange = (status) => {
-    if (status === "approved") {
-      form.setFieldValue("daysApproved", applicationData.daysAppliedFor);
-    } else {
-      form.setFieldValue("daysApproved", null);
-    }
-  };
-
   return (
     <>
-      <Button type="primary" onClick={showModal}>
+      <Button
+        type="primary"
+        onClick={showModal}
+        className="blue-btn"
+        icon={<CheckCircleOutlined />}>
         Respond to Application
       </Button>
 
@@ -127,121 +160,204 @@ const LeaveResponseForm = ({ appId, onSuccess, applicationData }) => {
         open={open}
         onCancel={handleCancel}
         footer={null}
-        width={600}
-        destroyOnClose>
-        {applicationData && (
-          <Alert
-            message="Application Details"
-            description={
-              <div className="text-sm">
-                <p>
-                  <strong>Employee:</strong>{" "}
-                  {applicationData.employee?.firstName}{" "}
-                  {applicationData.employee?.lastName}
-                </p>
-                <p>
-                  <strong>Leave Type:</strong> {applicationData.typeOfLeave}
-                </p>
-                <p>
-                  <strong>Duration:</strong> {applicationData.daysAppliedFor}{" "}
-                  days
-                </p>
-                <p>
-                  <strong>Reason:</strong> {applicationData.reason}
-                </p>
+        width={600}>
+        {/* Application Summary */}
+        <Alert
+          message="Application Details"
+          description={
+            <div className="space-y-1 mt-2">
+              <div>
+                <strong>Employee:</strong>{" "}
+                {`${application.employee?.firstName} ${application.employee?.lastName}`}
               </div>
-            }
-            type="info"
-            className="mb-4"
-          />
-        )}
+              <div>
+                <strong>Leave Type:</strong>{" "}
+                <span className="capitalize">{application.typeOfLeave}</span>
+              </div>
+              <div>
+                <strong>Period:</strong>{" "}
+                {`${formatDate(application.startDate)} - ${formatDate(
+                  application.endDate
+                )}`}
+              </div>
+              <div>
+                <strong>Days Applied:</strong> {application.daysAppliedFor} days
+              </div>
+              <div>
+                <strong>Reason:</strong> {application.reason}
+              </div>
+            </div>
+          }
+          type="info"
+          showIcon
+          className="mb-4"
+        />
 
         <Form
           form={form}
           layout="vertical"
           onFinish={handleFinish}
-          requiredMark="optional">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Form.Item name="startDate" label="Start Date (Optional)">
-              <DatePicker
-                format="YYYY-MM-DD"
-                style={{ width: "100%" }}
-                placeholder="Leave start date"
-              />
-            </Form.Item>
-
-            <Form.Item name="endDate" label="End Date (Optional)">
-              <DatePicker
-                format="YYYY-MM-DD"
-                style={{ width: "100%" }}
-                placeholder="Leave end date"
-              />
-            </Form.Item>
-          </div>
-
+          autoComplete="off">
           <Form.Item
             name="status"
-            label="Decision"
-            rules={[{ required: true, message: "Please select a decision" }]}>
+            label="Response Decision"
+            rules={[
+              { required: true, message: "Please select response status" },
+            ]}>
             <Select
+              placeholder="Select your decision"
               options={statusOptions}
-              placeholder="Select decision"
-              onChange={handleStatusChange}
+              onChange={(value) => setSelectedStatus(value)}
             />
           </Form.Item>
 
-          <Form.Item
-            noStyle
-            shouldUpdate={(prevValues, currentValues) =>
-              prevValues.status !== currentValues.status
-            }>
-            {({ getFieldValue }) =>
-              getFieldValue("status") === "approved" ? (
+          {selectedStatus === "approved" && (
+            <>
+              <Alert
+                message="Optional: Modify leave dates or approved days"
+                type="warning"
+                showIcon
+                className="mb-4"
+              />
+
+              <div className="grid grid-cols-2 gap-4">
                 <Form.Item
-                  name="daysApproved"
-                  label="Days Approved"
-                  rules={[
-                    { required: true, message: "Please enter approved days" },
-                  ]}>
-                  <Input
-                    type="number"
-                    min={0.5}
-                    max={applicationData?.daysAppliedFor}
-                    step={0.5}
-                    placeholder="Enter number of days approved"
+                  name="startDate"
+                  label="Start Date"
+                  tooltip="Leave blank to keep original date">
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    format="YYYY-MM-DD"
+                    onChange={handleDateChange}
                   />
                 </Form.Item>
-              ) : null
-            }
-          </Form.Item>
+
+                <Form.Item
+                  name="endDate"
+                  label="End Date"
+                  tooltip="Leave blank to keep original date">
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    format="YYYY-MM-DD"
+                    onChange={handleDateChange}
+                  />
+                </Form.Item>
+              </div>
+
+              <Form.Item
+                name="daysApproved"
+                label="Days Approved"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please specify days approved",
+                  },
+                  {
+                    type: "number",
+                    min: 0.5,
+                    message: "Minimum 0.5 days",
+                  },
+                  {
+                    type: "number",
+                    max: application.daysAppliedFor,
+                    message: "Cannot exceed days applied",
+                  },
+                ]}>
+                <InputNumber
+                  style={{ width: "100%" }}
+                  min={0.5}
+                  max={application.daysAppliedFor}
+                  step={0.5}
+                  placeholder="Number of days"
+                />
+              </Form.Item>
+            </>
+          )}
 
           <Form.Item
             name="responseMessage"
-            label="Response Message"
+            label={
+              selectedStatus === "approved"
+                ? "Approval Message (Optional)"
+                : "Response Message"
+            }
             rules={[
-              { required: true, message: "Please provide a response message" },
-              { max: 500, message: "Message cannot exceed 500 characters" },
+              {
+                required: selectedStatus === "rejected",
+                message: "Please provide a reason for rejection",
+              },
+              {
+                min: 10,
+                message: "Message must be at least 10 characters",
+              },
+              {
+                max: 500,
+                message: "Message cannot exceed 500 characters",
+              },
             ]}>
             <TextArea
               rows={4}
-              placeholder="Provide detailed response to the employee..."
+              placeholder={
+                selectedStatus === "approved"
+                  ? "Add any comments or instructions (optional)..."
+                  : "Please provide detailed reason for rejection..."
+              }
               showCount
               maxLength={500}
             />
           </Form.Item>
 
-          <Form.Item className="mb-0">
-            <div className="flex gap-3 justify-end">
+          {dataError && (
+            <Alert
+              message="Error"
+              description={dataError}
+              type="error"
+              showIcon
+              closable
+              className="mb-4"
+            />
+          )}
+
+          <Form.Item>
+            <Space style={{ width: "100%", justifyContent: "flex-end" }}>
               <Button onClick={handleCancel}>Cancel</Button>
-              <Button type="primary" htmlType="submit" loading={loading}>
-                Submit Response
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                danger={selectedStatus === "rejected"}
+                className={selectedStatus === "rejected" ? "" : "blue-btn"}>
+                {selectedStatus === "approved"
+                  ? "Approve Application"
+                  : selectedStatus === "rejected"
+                  ? "Reject Application"
+                  : "Submit Response"}
               </Button>
-            </div>
+            </Space>
           </Form.Item>
         </Form>
       </Modal>
     </>
   );
+};
+
+LeaveResponseForm.propTypes = {
+  application: PropTypes.shape({
+    _id: PropTypes.string,
+    id: PropTypes.string,
+    employee: PropTypes.shape({
+      firstName: PropTypes.string,
+      lastName: PropTypes.string,
+      email: PropTypes.string,
+    }),
+    startDate: PropTypes.string,
+    endDate: PropTypes.string,
+    typeOfLeave: PropTypes.string,
+    daysAppliedFor: PropTypes.number,
+    reason: PropTypes.string,
+    createdAt: PropTypes.string,
+  }).isRequired,
+  onSuccess: PropTypes.func,
 };
 
 export default LeaveResponseForm;

@@ -59,6 +59,13 @@ const LeaveApplicationList = () => {
 
   useRedirectLogoutUser("/users/login");
 
+  // Debug logging
+  useEffect(() => {
+    console.log("LeaveApps Raw Data:", leaveApps);
+    console.log("Is Array?:", Array.isArray(leaveApps?.data));
+    console.log("Data Type:", typeof leaveApps?.data);
+  }, [leaveApps]);
+
   // Fetch leave applications
   const fetchLeaveApplications = async () => {
     const params = new URLSearchParams({
@@ -82,7 +89,7 @@ const LeaveApplicationList = () => {
 
   // Update search results when data changes
   useEffect(() => {
-    if (leaveApps?.data) {
+    if (leaveApps?.data && Array.isArray(leaveApps.data)) {
       setSearchResults(leaveApps.data);
       if (leaveApps.totalResults) {
         setPagination((prev) => ({
@@ -90,6 +97,20 @@ const LeaveApplicationList = () => {
           total: leaveApps.totalResults,
         }));
       }
+    } else if (
+      leaveApps?.data?.leaveApplications &&
+      Array.isArray(leaveApps.data.leaveApplications)
+    ) {
+      // Handle nested data structure
+      setSearchResults(leaveApps.data.leaveApplications);
+      if (leaveApps.data.totalResults) {
+        setPagination((prev) => ({
+          ...prev,
+          total: leaveApps.data.totalResults,
+        }));
+      }
+    } else {
+      setSearchResults([]);
     }
   }, [leaveApps]);
 
@@ -97,13 +118,18 @@ const LeaveApplicationList = () => {
   const debouncedSearch = useMemo(
     () =>
       debounce((searchTerm) => {
+        const dataArray = Array.isArray(leaveApps?.data)
+          ? leaveApps.data
+          : leaveApps?.data?.leaveApplications || [];
+
         if (!searchTerm) {
-          setSearchResults(leaveApps?.data || []);
+          setSearchResults(dataArray);
           return;
         }
-        const results = (leaveApps?.data || []).filter((d) => {
-          const fullName =
-            `${d.employee?.firstName} ${d.employee?.lastName}`.toLowerCase();
+        const results = dataArray.filter((d) => {
+          const fullName = `${d.employee?.firstName || ""} ${
+            d.employee?.lastName || ""
+          }`.toLowerCase();
           return fullName.includes(searchTerm.toLowerCase());
         });
         setSearchResults(results);
@@ -291,9 +317,15 @@ const LeaveApplicationList = () => {
   ];
 
   // Filter leave applications based on user role
-  const filteredLeaveApps = isAdminOrHr
-    ? searchResults
-    : searchResults?.filter((app) => app?.employee?._id === user?.data?._id);
+  const filteredLeaveApps = useMemo(() => {
+    const results = Array.isArray(searchResults) ? searchResults : [];
+
+    if (isAdminOrHr) {
+      return results;
+    }
+
+    return results.filter((app) => app?.employee?._id === user?.data?._id);
+  }, [searchResults, isAdminOrHr, user?.data?._id]);
 
   if (loadingLeaveApp?.leaveApps) {
     return <LoadingSpinner />;
@@ -308,96 +340,96 @@ const LeaveApplicationList = () => {
     );
   }
 
-  //   return
+  return (
+    <div className="p-4">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">
+          Leave Applications
+          {!isAdminOrHr && " - My Applications"}
+        </h1>
 
-  <div className="p-4">
-    {/* Header */}
-    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-      <h1 className="text-2xl font-bold text-gray-800">
-        Leave Applications
-        {!isAdminOrHr && " - My Applications"}
-      </h1>
-
-      <div className="flex flex-wrap gap-2 items-center">
-        <SearchBar onSearch={handleSearchChange} />
-        <Button
-          icon={<ReloadOutlined />}
-          onClick={fetchLeaveApplications}
-          title="Refresh">
-          Refresh
-        </Button>
-      </div>
-    </div>
-
-    {/* Filters */}
-    <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-      <div className="flex items-center gap-2 mb-3">
-        <FilterOutlined />
-        <span className="font-medium">Filters</span>
+        <div className="flex flex-wrap gap-2 items-center">
+          <SearchBar onSearch={handleSearchChange} />
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchLeaveApplications}
+            title="Refresh">
+            Refresh
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-        <Select
-          placeholder="All Status"
-          allowClear
-          value={filters.status}
-          onChange={(value) => handleFilterChange("status", value)}
-          options={[
-            { label: "Pending", value: "pending" },
-            { label: "Approved", value: "approved" },
-            { label: "Rejected", value: "rejected" },
-            { label: "Cancelled", value: "cancelled" },
-          ]}
-        />
+      {/* Filters */}
+      <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
+        <div className="flex items-center gap-2 mb-3">
+          <FilterOutlined />
+          <span className="font-medium">Filters</span>
+        </div>
 
-        <Select
-          placeholder="All Leave Types"
-          allowClear
-          value={filters.typeOfLeave}
-          onChange={(value) => handleFilterChange("typeOfLeave", value)}
-          options={[
-            { label: "Annual", value: "annual" },
-            { label: "Casual", value: "casual" },
-            { label: "Sick", value: "sick" },
-            { label: "Maternity", value: "maternity" },
-            { label: "Paternity", value: "paternity" },
-            { label: "Compassionate", value: "compassionate" },
-            { label: "Unpaid", value: "unpaid" },
-          ]}
-        />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <Select
+            placeholder="All Status"
+            allowClear
+            value={filters.status}
+            onChange={(value) => handleFilterChange("status", value)}
+            options={[
+              { label: "Pending", value: "pending" },
+              { label: "Approved", value: "approved" },
+              { label: "Rejected", value: "rejected" },
+              { label: "Cancelled", value: "cancelled" },
+            ]}
+          />
 
-        <RangePicker
-          placeholder={["Start Date", "End Date"]}
-          onChange={(dates, dateStrings) =>
-            handleFilterChange("dateRange", dateStrings)
-          }
-        />
+          <Select
+            placeholder="All Leave Types"
+            allowClear
+            value={filters.typeOfLeave}
+            onChange={(value) => handleFilterChange("typeOfLeave", value)}
+            options={[
+              { label: "Annual", value: "annual" },
+              { label: "Casual", value: "casual" },
+              { label: "Sick", value: "sick" },
+              { label: "Maternity", value: "maternity" },
+              { label: "Paternity", value: "paternity" },
+              { label: "Compassionate", value: "compassionate" },
+              { label: "Unpaid", value: "unpaid" },
+            ]}
+          />
 
-        {(filters.status || filters.typeOfLeave || filters.dateRange) && (
-          <Button onClick={clearFilters}>Clear Filters</Button>
-        )}
+          <RangePicker
+            placeholder={["Start Date", "End Date"]}
+            onChange={(dates, dateStrings) =>
+              handleFilterChange("dateRange", dateStrings)
+            }
+          />
+
+          {(filters.status || filters.typeOfLeave || filters.dateRange) && (
+            <Button onClick={clearFilters}>Clear Filters</Button>
+          )}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <Table
+          dataSource={Array.isArray(filteredLeaveApps) ? filteredLeaveApps : []}
+          columns={columns}
+          rowKey={(record) => record._id || record.id}
+          scroll={{ x: 1200 }}
+          loading={loadingLeaveApp?.leaveApps}
+          pagination={{
+            ...pagination,
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} applications`,
+            onChange: (page, pageSize) => {
+              setPagination((prev) => ({ ...prev, current: page, pageSize }));
+            },
+          }}
+        />
       </div>
     </div>
-
-    {/* Table */}
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-      <Table
-        dataSource={filteredLeaveApps}
-        columns={columns}
-        rowKey="_id"
-        scroll={{ x: 1200 }}
-        loading={loadingLeaveApp?.leaveApps}
-        pagination={{
-          ...pagination,
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} applications`,
-          onChange: (page, pageSize) => {
-            setPagination((prev) => ({ ...prev, current: page, pageSize }));
-          },
-        }}
-      />
-    </div>
-  </div>;
+  );
 };
 
 export default LeaveApplicationList;

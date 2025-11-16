@@ -41,15 +41,29 @@ exports.getLeaveBalance = catchAsync(async (req, res, next) => {
   const { employeeId } = req.params;
   const year = req.query.year || new Date().getFullYear();
 
-  const leaveBalance = await leaveService.getEmployeeLeaveBalance(
-    employeeId,
-    year
-  );
+  try {
+    const leaveBalance = await leaveService.getEmployeeLeaveBalance(
+      employeeId,
+      year
+    );
 
-  res.status(200).json({
-    status: "success",
-    data: { leaveBalance },
-  });
+    res.status(200).json({
+      status: "success",
+      data: { leaveBalance },
+    });
+  } catch (error) {
+    // ✅ Return success with null balance instead of error
+    if (error.statusCode === 404) {
+      return res.status(200).json({
+        status: "success",
+        data: {
+          leaveBalance: null,
+          message: "No leave balance found. Please contact HR.",
+        },
+      });
+    }
+    throw error;
+  }
 });
 
 /**

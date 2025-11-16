@@ -7,10 +7,18 @@ class LeaveService {
    * Get leave balance for employee
    */
   async getEmployeeLeaveBalance(employeeId, year = new Date().getFullYear()) {
-    const balance = await LeaveBalance.findOne({
+    // Try to find balance for specific year
+    let balance = await LeaveBalance.findOne({
       employee: employeeId,
       year: year,
     });
+
+    // ✅ Fallback: Get most recent balance if specific year not found
+    if (!balance) {
+      balance = await LeaveBalance.findOne({
+        employee: employeeId,
+      }).sort({ year: -1 }); // Most recent year
+    }
 
     if (!balance) {
       throw new AppError("Leave balance not found for this employee", 404);

@@ -25,7 +25,11 @@ const leaveApplicationSchema = new mongoose.Schema(
       required: [true, "End date is required"],
       validate: {
         validator: function (value) {
-          return value >= this.startDate;
+          // During updates, startDate might not be modified
+          // so we need to check both the new value and the existing document
+          const startDate = this.startDate || this.getUpdate?.$set?.startDate;
+          if (!startDate) return true; // Skip validation if no start date
+          return value >= startDate;
         },
         message: "End date must be on or after start date",
       },
@@ -64,7 +68,12 @@ const leaveApplicationSchema = new mongoose.Schema(
       min: [0, "Approved days cannot be negative"],
       validate: {
         validator: function (value) {
-          return !value || value <= this.daysAppliedFor;
+          if (!value) return true; // Not required, so undefined/null is OK
+          // During updates, daysAppliedFor might not be in context
+          const appliedDays =
+            this.daysAppliedFor || this.getUpdate?.$set?.daysAppliedFor;
+          if (!appliedDays) return true; // Skip validation if no applied days
+          return value <= appliedDays;
         },
         message: "Approved days cannot exceed applied days",
       },

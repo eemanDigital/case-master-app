@@ -1,3 +1,4 @@
+// components/AdvancedLeaveNotification.jsx
 import { useEffect, useMemo, useState } from "react";
 import {
   Badge,
@@ -5,23 +6,29 @@ import {
   List,
   Button,
   Tooltip,
-  Tag,
   Empty,
-  Spin,
+  Tag,
+  Space,
   Divider,
+  Spin,
+  Tabs,
   Avatar,
+  Segmented,
 } from "antd";
 import {
   BellOutlined,
-  CalendarOutlined,
-  UserOutlined,
   ClockCircleOutlined,
-  ExclamationCircleOutlined,
-  ReloadOutlined,
+  UserOutlined,
+  CalendarOutlined,
+  EyeOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  FilterOutlined,
 } from "@ant-design/icons";
 import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { formatDate } from "../utils/formatDate";
+import { useAdminHook } from "../hooks/useAdminHook";
+import { useSelector } from "react-redux";
 
 const LeaveNotification = () => {
   const {
@@ -31,326 +38,444 @@ const LeaveNotification = () => {
     fetchData,
   } = useDataGetterHook();
 
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [popoverVisible, setPopoverVisible] = useState(false);
+  const { isAdminOrHr } = useAdminHook();
+  const { user } = useSelector((state) => state.auth);
+  const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("pending");
+  const [filterType, setFilterType] = useState("all");
 
+  // Initial fetch
   useEffect(() => {
-    if (popoverVisible) {
-      fetchData("leaves/applications", "leaveApps");
+    fetchData("leaves/applications", "leaveApps");
+  }, []);
+
+  // Auto-refresh every 60 seconds when popover is open
+  useEffect(() => {
+    if (open) {
+      const interval = setInterval(() => {
+        fetchData("leaves/applications", "leaveApps");
+      }, 60000); // 60 seconds
+
+      return () => clearInterval(interval);
     }
-  }, [refreshKey, popoverVisible]);
+  }, [open]);
 
-  // Safe filtering with proper error handling
-  const pendingLeaves = useMemo(() => {
-    if (!leaveApps) return [];
+  // Safely extract array from API response
+  const allLeaves = useMemo(() => {
+    let dataArray = [];
 
-    // Handle different response structures
-    let applications = [];
-    if (Array.isArray(leaveApps.data)) {
-      applications = leaveApps.data;
-    } else if (Array.isArray(leaveApps.data?.data)) {
-      applications = leaveApps.data.data;
-    } else if (Array.isArray(leaveApps)) {
-      applications = leaveApps;
+    if (Array.isArray(leaveApps?.data)) {
+      dataArray = leaveApps.data;
+    } else if (Array.isArray(leaveApps?.data?.leaveApplications)) {
+      dataArray = leaveApps.data.leaveApplications;
     }
 
-    return applications
-      .filter((leave) => leave?.status === "pending")
-      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // Sort by creation date
+    return dataArray;
   }, [leaveApps]);
 
-  // Get urgent leaves (starting within 3 days)
-  const urgentLeaves = useMemo(() => {
-    const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+  // Filter leaves by status
+  const leavesByStatus = useMemo(() => {
+    const pending = allLeaves.filter((leave) => leave?.status === "pending");
+    const approved = allLeaves.filter((leave) => leave?.status === "approved");
+    const rejected = allLeaves.filter((leave) => leave?.status === "rejected");
+    const recent = [...pending, ...approved, ...rejected]
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .slice(0, 10);
 
-    return pendingLeaves.filter((leave) => {
-      const startDate = new Date(leave.startDate);
-      return startDate <= threeDaysFromNow;
-    });
-  }, [pendingLeaves]);
+    return { pending, approved, rejected, recent };
+  }, [allLeaves]);
 
-  const handleRefresh = () => {
-    setRefreshKey((prev) => prev + 1);
+  // Filter by leave type
+  const filteredLeaves = useMemo(() => {
+    const currentLeaves = leavesByStatus[activeTab] || [];
+
+    if (filterType === "all") {
+      return currentLeaves;
+    }
+
+    return currentLeaves.filter((leave) => leave?.typeOfLeave === filterType);
+  }, [leavesByStatus, activeTab, filterType]);
+
+  // Get unique leave types for filter
+  const leaveTypes = useMemo(() => {
+    const types = new Set(
+      allLeaves.map((leave) => leave?.typeOfLeave).filter(Boolean)
+    );
+    return Array.from(types);
+  }, [allLeaves]);
+
+  // Helper functions
+  const getTimeAgo = (date) => {
+    const now = new Date();
+    const past = new Date(date);
+    const diffMs = now - past;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return past.toLocaleDateString();
+  };
+
+  const formatDateRange = (start, end) => {
+    const startDate = new Date(start);
+    const endDate = new Date(end);
+    const options = { month: "short", day: "numeric" };
+    return `${startDate.toLocaleDateString(
+      "en-US",
+      options
+    )} - ${endDate.toLocaleDateString("en-US", options)}`;
   };
 
   const getLeaveTypeColor = (type) => {
     const colors = {
       annual: "blue",
-      casual: "green",
-      sick: "orange",
-      maternity: "pink",
-      paternity: "cyan",
-      compassionate: "purple",
-      unpaid: "gray",
+      casual: "cyan",
+      sick: "red",
+      maternity: "magenta",
+      paternity: "purple",
+      compassionate: "orange",
+      unpaid: "default",
     };
     return colors[type] || "default";
   };
 
-  const isLeaveUrgent = (leave) => {
-    const startDate = new Date(leave.startDate);
-    const threeDaysFromNow = new Date();
-    threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
-    return startDate <= threeDaysFromNow;
+  const getStatusIcon = (status) => {
+    const icons = {
+      pending: <ClockCircleOutlined className="text-yellow-500" />,
+      approved: <CheckCircleOutlined className="text-green-500" />,
+      rejected: <CloseCircleOutlined className="text-red-500" />,
+    };
+    return icons[status] || null;
   };
 
-  const getDaysUntilLeave = (leave) => {
-    const startDate = new Date(leave.startDate);
-    const today = new Date();
-    const diffTime = startDate - today;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
-
-  const notificationContent = (
-    <div className="w-96 max-h-96">
-      {/* Header */}
-      <div className="flex justify-between items-center p-3 border-b bg-gray-50 rounded-t-lg">
-        <div className="flex items-center gap-2">
-          <BellOutlined className="text-blue-500" />
-          <span className="font-semibold text-gray-800">
-            Pending Leave Applications
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          {urgentLeaves.length > 0 && (
-            <Tag color="red" icon={<ExclamationCircleOutlined />}>
-              {urgentLeaves.length} Urgent
-            </Tag>
-          )}
-          <Button
-            size="small"
-            icon={<ReloadOutlined />}
-            onClick={handleRefresh}
-            loading={loadingLeaveApp.leaveApps}
-            type="text"
-          />
-        </div>
-      </div>
-
-      {/* Urgent Leaves Section */}
-      {urgentLeaves.length > 0 && (
-        <div className="border-b">
-          <div className="p-2 bg-red-50">
-            <div className="flex items-center gap-2 text-red-700 text-sm font-medium">
-              <ExclamationCircleOutlined />
-              <span>Urgent - Starting Soon</span>
-            </div>
-          </div>
-          <List
-            size="small"
-            dataSource={urgentLeaves.slice(0, 3)}
-            renderItem={(item) => (
-              <LeaveNotificationItem
-                item={item}
-                isUrgent={true}
-                daysUntil={getDaysUntilLeave(item)}
-              />
-            )}
-          />
-          {urgentLeaves.length > 3 && (
-            <div className="text-center p-1 bg-red-50">
-              <span className="text-xs text-red-600">
-                +{urgentLeaves.length - 3} more urgent applications
-              </span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Loading State */}
-      {loadingLeaveApp.leaveApps ? (
-        <div className="flex flex-col justify-center items-center p-6">
-          <Spin size="default" />
-          <span className="mt-2 text-gray-500 text-sm">
-            Loading applications...
-          </span>
-        </div>
-      ) : errorLeaveApp.leaveApps ? (
-        <div className="text-center p-6">
-          <ExclamationCircleOutlined className="text-red-500 text-2xl mb-2" />
-          <div className="text-red-500 font-medium">
-            Failed to load notifications
-          </div>
-          <div className="text-gray-500 text-sm mb-3">
-            {errorLeaveApp.leaveApps.message || "Please try again"}
-          </div>
-          <Button
-            size="small"
-            type="primary"
-            onClick={handleRefresh}
-            icon={<ReloadOutlined />}>
-            Try Again
-          </Button>
-        </div>
-      ) : pendingLeaves.length > 0 ? (
-        <>
-          <List
-            size="small"
-            dataSource={pendingLeaves
-              .filter((leave) => !isLeaveUrgent(leave))
-              .slice(0, 10 - Math.min(urgentLeaves.length, 3))}
-            renderItem={(item) => (
-              <LeaveNotificationItem
-                item={item}
-                isUrgent={false}
-                daysUntil={getDaysUntilLeave(item)}
-              />
-            )}
-            className="max-h-64 overflow-y-auto"
-          />
-
-          {pendingLeaves.length > 10 && (
-            <div className="text-center p-3 border-t bg-gray-50">
-              <Link to="/leaves/applications?status=pending">
-                <Button type="link" size="small">
-                  View all {pendingLeaves.length} pending applications
-                </Button>
-              </Link>
-            </div>
-          )}
-        </>
-      ) : (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={
-            <div className="text-gray-500">
-              <div>No pending leave applications</div>
-              <div className="text-xs mt-1">All caught up!</div>
-            </div>
-          }
-          className="py-8"
-        />
-      )}
-
-      {/* Footer */}
-      <Divider className="my-2" />
-      <div className="flex justify-between items-center px-3 pb-2">
-        <span className="text-xs text-gray-500">
-          {pendingLeaves.length} pending
-        </span>
-        <Link to="/leaves/applications/create">
-          <Button type="link" size="small" className="text-xs">
-            + New Application
-          </Button>
-        </Link>
-      </div>
-    </div>
-  );
-
-  // Individual notification item component
-  const LeaveNotificationItem = ({ item, isUrgent, daysUntil }) => (
+  // Render leave item
+  const renderLeaveItem = (item) => (
     <List.Item
-      className={`hover:bg-gray-50 px-3 py-2 border-b border-gray-100 ${
-        isUrgent ? "bg-orange-50 hover:bg-orange-100" : ""
-      }`}
+      key={item._id || item.id}
+      className="hover:bg-gray-50 px-3 py-3 rounded-lg transition-all cursor-pointer"
       actions={[
         <Link
-          to={`/leaves/applications/${item._id || item.id}`}
-          key="view"
-          className="text-xs">
-          <Button type="link" size="small" className="text-blue-600">
-            Review
+          to={`/dashboard/staff/leave-application/${
+            item?.id || item?._id
+          }/details`}
+          onClick={() => setOpen(false)}>
+          <Button
+            type="primary"
+            size="small"
+            icon={<EyeOutlined />}
+            className="bg-blue-500">
+            View
           </Button>
         </Link>,
       ]}>
       <List.Item.Meta
         avatar={
           <Avatar
-            size="small"
-            src={item.employee?.photo}
+            size={44}
+            src={item?.employee?.photo}
             icon={<UserOutlined />}
-            className={isUrgent ? "border border-red-300" : ""}
+            className="border-2 border-gray-200"
           />
         }
         title={
-          <div className="flex items-center justify-between">
-            <span className="font-medium text-sm">
-              {item.employee?.firstName} {item.employee?.lastName}
-            </span>
-            {isUrgent && (
-              <Tag color="red" size="small">
-                {daysUntil === 0 ? "Today" : `${daysUntil}d`}
-              </Tag>
-            )}
+          <div className="flex items-center justify-between mb-1">
+            <Link
+              className="font-medium text-gray-900 hover:text-blue-600 capitalize"
+              to={`/dashboard/staff/leave-application/${
+                item?.id || item?._id
+              }/details`}
+              onClick={() => setOpen(false)}>
+              {item?.employee?.firstName} {item?.employee?.lastName}
+            </Link>
+            <div className="flex items-center gap-2">
+              {getStatusIcon(item?.status)}
+              <span className="text-xs text-gray-400">
+                {getTimeAgo(item?.createdAt)}
+              </span>
+            </div>
           </div>
         }
         description={
-          <div className="text-xs text-gray-600 space-y-1">
-            <div className="flex items-center gap-1">
+          <Space direction="vertical" size="small" className="w-full">
+            <div className="flex items-center gap-2 flex-wrap">
               <Tag
-                color={getLeaveTypeColor(item.typeOfLeave)}
-                className="text-xs capitalize m-0">
-                {item.typeOfLeave}
+                color={getLeaveTypeColor(item?.typeOfLeave)}
+                className="capitalize m-0">
+                {item?.typeOfLeave}
               </Tag>
-              <span className="text-gray-400">•</span>
-              <span>{item.daysAppliedFor || item.daysAppliedFor} days</span>
-            </div>
-            <div className="flex items-center gap-1 text-gray-500">
-              <CalendarOutlined className="text-xs" />
-              <span>
-                {formatDate(item.startDate)} → {formatDate(item.endDate)}
+              <span className="text-xs text-gray-500 font-medium">
+                {item?.daysAppliedFor} day{item?.daysAppliedFor > 1 ? "s" : ""}
               </span>
+              {item?.status !== "pending" && item?.daysApproved && (
+                <span className="text-xs text-green-600 font-medium">
+                  (Approved: {item.daysApproved})
+                </span>
+              )}
             </div>
-            {item.reason && (
-              <div className="truncate" title={item.reason}>
-                "{item.reason?.substring(0, 60)}..."
-              </div>
+            <div className="flex items-center gap-1 text-xs text-gray-600">
+              <CalendarOutlined />
+              <span>{formatDateRange(item?.startDate, item?.endDate)}</span>
+            </div>
+            {item?.reason && (
+              <p className="text-xs text-gray-500 m-0 line-clamp-2">
+                {item.reason}
+              </p>
             )}
-            <div className="flex items-center gap-1 text-gray-400">
-              <ClockCircleOutlined className="text-xs" />
-              <span>Applied {formatDate(item.createdAt, "relative")}</span>
-            </div>
-          </div>
+          </Space>
         }
       />
     </List.Item>
   );
 
-  const badgeCount = pendingLeaves.length > 99 ? "99+" : pendingLeaves.length;
+  // Tab items configuration
+  const tabItems = [
+    {
+      key: "pending",
+      label: (
+        <Space>
+          <ClockCircleOutlined />
+          Pending
+          <Badge
+            count={leavesByStatus.pending.length}
+            showZero
+            style={{ backgroundColor: "#faad14" }}
+          />
+        </Space>
+      ),
+    },
+    {
+      key: "approved",
+      label: (
+        <Space>
+          <CheckCircleOutlined />
+          Approved
+          <Badge
+            count={leavesByStatus.approved.length}
+            showZero
+            style={{ backgroundColor: "#52c41a" }}
+          />
+        </Space>
+      ),
+    },
+    {
+      key: "rejected",
+      label: (
+        <Space>
+          <CloseCircleOutlined />
+          Rejected
+          <Badge
+            count={leavesByStatus.rejected.length}
+            showZero
+            style={{ backgroundColor: "#ff4d4f" }}
+          />
+        </Space>
+      ),
+    },
+    {
+      key: "recent",
+      label: (
+        <Space>
+          <BellOutlined />
+          Recent
+        </Space>
+      ),
+    },
+  ];
 
-  // return
-  <Popover
-    content={notificationContent}
-    title={null}
-    trigger="click"
-    placement="bottomRight"
-    overlayClassName="leave-notification-popover"
-    open={popoverVisible}
-    onOpenChange={(visible) => {
-      setPopoverVisible(visible);
-      if (visible) {
-        handleRefresh(); // Refresh data when popover opens
-      }
-    }}
-    overlayStyle={{
-      boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-    }}>
-    <Badge
-      count={badgeCount}
-      overflowCount={99}
-      size="small"
-      className="cursor-pointer"
-      offset={[-2, 2]}
-      style={{
-        backgroundColor: urgentLeaves.length > 0 ? "#ff4d4f" : "#1890ff",
-      }}>
-      <Tooltip title={`${pendingLeaves.length} pending leave applications`}>
-        <Button
-          icon={<BellOutlined />}
-          shape="circle"
-          size="large"
-          className={`shadow-md hover:shadow-lg transition-all duration-200 ${
-            pendingLeaves.length > 0
-              ? urgentLeaves.length > 0
-                ? "text-red-500 border-red-200 bg-red-50 hover:bg-red-100"
-                : "text-orange-500 border-orange-200 bg-orange-50 hover:bg-orange-100"
-              : "text-gray-400 border-gray-200 bg-white hover:bg-gray-50"
-          }`}
-        />
-      </Tooltip>
-    </Badge>
-  </Popover>;
+  // Notification content
+  const content = (
+    <div style={{ width: 420, maxHeight: 550 }}>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="text-lg font-bold m-0 text-gray-800">
+          Leave Applications
+        </h3>
+        <Space>
+          <Tooltip title="Filter by type">
+            <Button
+              type="text"
+              size="small"
+              icon={<FilterOutlined />}
+              onClick={() => {
+                // Toggle filter visibility or show filter modal
+              }}
+            />
+          </Tooltip>
+          <Button
+            type="text"
+            size="small"
+            onClick={() => fetchData("leaves/applications", "leaveApps")}
+            loading={loadingLeaveApp.leaveApps}>
+            Refresh
+          </Button>
+        </Space>
+      </div>
+
+      {/* Leave Type Filter */}
+      {leaveTypes.length > 0 && (
+        <div className="mb-3">
+          <Segmented
+            options={[
+              { label: "All", value: "all" },
+              ...leaveTypes.map((type) => ({
+                label: type.charAt(0).toUpperCase() + type.slice(1),
+                value: type,
+              })),
+            ]}
+            value={filterType}
+            onChange={setFilterType}
+            size="small"
+            block
+          />
+        </div>
+      )}
+
+      <Divider className="my-3" />
+
+      {/* Tabs */}
+      <Tabs
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        items={tabItems}
+        size="small"
+        className="leave-notification-tabs"
+      />
+
+      {/* Content Area */}
+      <div className="mt-3">
+        {loadingLeaveApp.leaveApps ? (
+          <div className="text-center py-12">
+            <Spin size="large" />
+            <p className="text-gray-500 mt-3">Loading applications...</p>
+          </div>
+        ) : errorLeaveApp.leaveApps ? (
+          <div className="text-center py-12">
+            <Empty
+              description={
+                <div>
+                  <p className="text-red-500 font-medium">Failed to load</p>
+                  <p className="text-gray-500 text-sm">
+                    {errorLeaveApp.leaveApps}
+                  </p>
+                </div>
+              }
+            />
+          </div>
+        ) : filteredLeaves.length > 0 ? (
+          <div className="overflow-y-auto" style={{ maxHeight: 380 }}>
+            <List
+              itemLayout="vertical"
+              dataSource={filteredLeaves}
+              renderItem={renderLeaveItem}
+              className="leave-notification-list"
+            />
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <div>
+                  <p className="text-gray-700 font-medium">No applications</p>
+                  <p className="text-gray-500 text-sm">
+                    {filterType !== "all"
+                      ? `No ${filterType} leave applications`
+                      : `No ${activeTab} leave applications`}
+                  </p>
+                </div>
+              }
+            />
+          </div>
+        )}
+
+        {/* View All Button */}
+        {filteredLeaves.length > 0 && (
+          <div className="text-center mt-3 pt-3 border-t">
+            <Link
+              to="/dashboard/staff/leave-application"
+              onClick={() => setOpen(false)}>
+              <Button type="link" block className="text-blue-600 font-medium">
+                View All Applications →
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // Only show for admin/HR users
+  if (!isAdminOrHr) {
+    return null;
+  }
+
+  const pendingCount = leavesByStatus.pending.length;
+  const hasUrgent = leavesByStatus.pending.some((leave) => {
+    const daysUntilStart = Math.floor(
+      (new Date(leave.startDate) - new Date()) / (1000 * 60 * 60 * 24)
+    );
+    return daysUntilStart <= 3; // Urgent if starting within 3 days
+  });
+
+  return (
+    <Popover
+      content={content}
+      title={null}
+      trigger="click"
+      placement="bottomRight"
+      open={open}
+      onOpenChange={setOpen}
+      overlayClassName="leave-notification-popover"
+      arrow={{ pointAtCenter: true }}>
+      <Badge
+        count={pendingCount}
+        overflowCount={99}
+        offset={[-8, 8]}
+        className="cursor-pointer"
+        status={hasUrgent ? "error" : "default"}>
+        <Tooltip
+          title={
+            pendingCount > 0
+              ? `${pendingCount} pending leave application${
+                  pendingCount > 1 ? "s" : ""
+                }`
+              : "Leave Applications"
+          }
+          placement="bottom">
+          <Button
+            icon={
+              <BellOutlined
+                className={
+                  pendingCount > 0
+                    ? hasUrgent
+                      ? "text-red-600 animate-shake"
+                      : "text-blue-600 animate-ring"
+                    : "text-gray-600"
+                }
+                style={{ fontSize: 20 }}
+              />
+            }
+            shape="circle"
+            size="large"
+            className={`
+              border-0 shadow-md hover:shadow-lg transition-all
+              ${
+                pendingCount > 0
+                  ? hasUrgent
+                    ? "bg-red-50 hover:bg-red-100"
+                    : "bg-blue-50 hover:bg-blue-100"
+                  : "bg-white hover:bg-gray-50"
+              }
+            `}
+          />
+        </Tooltip>
+      </Badge>
+    </Popover>
+  );
 };
 
 export default LeaveNotification;

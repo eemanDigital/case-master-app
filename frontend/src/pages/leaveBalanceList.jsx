@@ -1,27 +1,9 @@
-// ============================================================================
-
-// components/LeaveBalanceList.jsx
 import { useEffect, useState, useMemo } from "react";
-import {
-  Space,
-  Table,
-  Button,
-  Modal,
-  Tooltip,
-  Tag,
-  Progress,
-  Card,
-  Statistic,
-  notification,
-} from "antd";
+import { Space, Table, Button, Modal, Tooltip, Tag, Progress } from "antd";
 import {
   DeleteOutlined,
   ReloadOutlined,
   TrophyOutlined,
-  UserOutlined,
-  CalendarOutlined,
-  MedicineBoxOutlined,
-  HeartOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import debounce from "lodash/debounce";
@@ -34,7 +16,7 @@ import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import avatar from "../assets/avatar.png";
 
-const { Column } = Table;
+const { Column, ColumnGroup } = Table;
 
 const LeaveBalanceList = () => {
   const { leaveBalance, loading, error, fetchData } = useDataGetterHook();
@@ -56,24 +38,15 @@ const LeaveBalanceList = () => {
   }, []);
 
   // Update search results when data changes
-  // In LeaveBalanceList.jsx, replace the useEffect:
-
   useEffect(() => {
-    if (leaveBalance?.data) {
-      // Handle both single object and array responses
-      let dataArray = [];
-
-      if (Array.isArray(leaveBalance.data)) {
-        dataArray = leaveBalance.data;
-      } else if (leaveBalance.data.leaveBalance) {
-        // Handle single object response
-        dataArray = [leaveBalance.data.leaveBalance];
-      } else if (Array.isArray(leaveBalance.data.data)) {
-        // Handle array in data property
-        dataArray = leaveBalance.data.data;
-      }
-
-      setSearchResults(dataArray);
+    if (leaveBalance?.data && Array.isArray(leaveBalance.data)) {
+      setSearchResults(leaveBalance.data);
+    } else if (
+      leaveBalance?.data?.leaveBalances &&
+      Array.isArray(leaveBalance.data.leaveBalances)
+    ) {
+      // Handle nested data structure
+      setSearchResults(leaveBalance.data.leaveBalances);
     } else {
       setSearchResults([]);
     }
@@ -83,33 +56,19 @@ const LeaveBalanceList = () => {
   const debouncedSearch = useMemo(
     () =>
       debounce((searchTerm) => {
-        // Extract data array using the same logic
-        let dataArray = [];
-        if (Array.isArray(leaveBalance?.data)) {
-          dataArray = leaveBalance.data;
-        } else if (leaveBalance?.data?.leaveBalance) {
-          dataArray = [leaveBalance.data.leaveBalance];
-        } else if (Array.isArray(leaveBalance?.data?.data)) {
-          dataArray = leaveBalance.data.data;
-        }
+        const dataArray = Array.isArray(leaveBalance?.data)
+          ? leaveBalance.data
+          : leaveBalance?.data?.leaveBalances || [];
 
         if (!searchTerm) {
           setSearchResults(dataArray);
           return;
         }
-
         const results = dataArray.filter((d) => {
           const fullName = `${d.employee?.firstName || ""} ${
             d.employee?.lastName || ""
           }`.toLowerCase();
-          const employeeId = d.employee?.employeeId?.toLowerCase() || "";
-          const department = d.employee?.department?.toLowerCase() || "";
-
-          return (
-            fullName.includes(searchTerm.toLowerCase()) ||
-            employeeId.includes(searchTerm.toLowerCase()) ||
-            department.includes(searchTerm.toLowerCase())
-          );
+          return fullName.includes(searchTerm.toLowerCase());
         });
         setSearchResults(results);
       }, 300),
@@ -125,15 +84,9 @@ const LeaveBalanceList = () => {
     try {
       await dispatch(deleteData(`leaves/balances/${id}`)).unwrap();
       await fetchLeaveBalance();
-      notification.success({
-        message: "Success",
-        description: "Leave balance deleted successfully",
-      });
+      toast.success("Leave balance deleted successfully");
     } catch (error) {
-      notification.error({
-        message: "Error",
-        description: "Failed to delete leave balance",
-      });
+      toast.error("Failed to delete leave balance");
     }
   };
 
@@ -145,7 +98,7 @@ const LeaveBalanceList = () => {
     return "#f5222d"; // red
   };
 
-  // Calculate total available leave (matches backend virtual field)
+  // Calculate total available leave
   const calculateTotalLeave = (record) => {
     return (
       (record.annualLeaveBalance || 0) +
@@ -157,86 +110,30 @@ const LeaveBalanceList = () => {
     );
   };
 
-  // Get leave type color
-  const getLeaveTypeColor = (type) => {
-    const colors = {
-      annual: "blue",
-      sick: "orange",
-      maternity: "magenta",
-      paternity: "purple",
-      compassionate: "red",
-      casual: "green",
-      unpaid: "gray",
-    };
-    return colors[type] || "default";
-  };
-
-  // Statistics for admin view
-  const summaryStats = useMemo(() => {
-    if (!searchResults.length) return null;
-
-    const dataArray = Array.isArray(searchResults) ? searchResults : [];
-
-    return {
-      totalEmployees: dataArray.length,
-      totalAnnualLeave: dataArray.reduce(
-        (sum, item) => sum + (item.annualLeaveBalance || 0),
-        0
-      ),
-      totalSickLeave: dataArray.reduce(
-        (sum, item) => sum + (item.sickLeaveBalance || 0),
-        0
-      ),
-      averageAnnual: Math.round(
-        dataArray.reduce(
-          (sum, item) => sum + (item.annualLeaveBalance || 0),
-          0
-        ) / dataArray.length
-      ),
-      lowBalanceCount: dataArray.filter(
-        (item) => (item.annualLeaveBalance || 0) < 5
-      ).length,
-    };
-  }, [searchResults]);
-
-  // Filter data based on user role
-  const filteredLeaveBalance = useMemo(() => {
-    const dataArray = Array.isArray(searchResults) ? searchResults : [];
-
-    if (isAdminOrHr) {
-      return dataArray;
-    } else {
-      return dataArray.filter(
-        (balance) => balance?.employee?._id === user?.data?._id
-      );
-    }
-  }, [searchResults, isAdminOrHr, user?.data?._id]);
-
   // Columns for the table
   const columns = [
     {
-      title: "Employee",
-      key: "employee",
-      fixed: "left",
-      width: 220,
-      render: (_, record) => (
-        <div className="flex items-center gap-3">
+      title: "Photo",
+      dataIndex: ["employee", "photo"],
+      key: "photo",
+      width: 80,
+      render: (photo) => (
+        <div className="flex items-center justify-center">
           <img
-            className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
-            src={record.employee?.photo || avatar}
+            className="w-12 h-12 rounded-full object-cover border-2 border-gray-200"
+            src={photo || avatar}
             alt="Employee"
           />
-          <div>
-            <div className="font-semibold capitalize">
-              {record.employee?.firstName} {record.employee?.lastName}
-            </div>
-            <div className="text-xs text-gray-500">
-              {record.employee?.employeeId} • {record.employee?.department}
-            </div>
-            <div className="text-xs text-gray-400">
-              Year: {record.year || new Date().getFullYear()}
-            </div>
-          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Employee Name",
+      key: "employeeName",
+      width: 200,
+      render: (_, record) => (
+        <div className="capitalize font-medium">
+          {`${record.employee?.firstName} ${record.employee?.lastName}`}
         </div>
       ),
     },
@@ -244,17 +141,14 @@ const LeaveBalanceList = () => {
       title: "Annual Leave",
       dataIndex: "annualLeaveBalance",
       key: "annualLeaveBalance",
-      width: 160,
-      sorter: (a, b) =>
-        (a.annualLeaveBalance || 0) - (b.annualLeaveBalance || 0),
+      width: 150,
       render: (balance) => (
-        <div className="text-center">
-          <div className="font-bold text-lg text-blue-600">{balance || 0}</div>
-          <div className="text-xs text-gray-500 mb-1">days</div>
+        <div>
+          <div className="font-semibold">{balance} days</div>
           <Progress
-            percent={Math.round(((balance || 0) / 30) * 100)}
+            percent={Math.round((balance / 30) * 100)}
             size="small"
-            strokeColor={getBalanceColor(balance || 0, 30)}
+            strokeColor={getBalanceColor(balance, 30)}
             showInfo={false}
           />
         </div>
@@ -264,18 +158,14 @@ const LeaveBalanceList = () => {
       title: "Sick Leave",
       dataIndex: "sickLeaveBalance",
       key: "sickLeaveBalance",
-      width: 140,
-      sorter: (a, b) => (a.sickLeaveBalance || 0) - (b.sickLeaveBalance || 0),
+      width: 130,
       render: (balance) => (
-        <div className="text-center">
-          <div className="font-bold text-lg text-orange-600">
-            {balance || 0}
-          </div>
-          <div className="text-xs text-gray-500 mb-1">days</div>
+        <div>
+          <div className="font-semibold">{balance} days</div>
           <Progress
-            percent={Math.round(((balance || 0) / 14) * 100)}
+            percent={Math.round((balance / 14) * 100)}
             size="small"
-            strokeColor={getBalanceColor(balance || 0, 14)}
+            strokeColor={getBalanceColor(balance, 14)}
             showInfo={false}
           />
         </div>
@@ -285,243 +175,205 @@ const LeaveBalanceList = () => {
       title: "Maternity",
       dataIndex: "maternityLeaveBalance",
       key: "maternityLeaveBalance",
-      width: 110,
+      width: 100,
       render: (balance) => (
-        <div className="text-center">
-          <Tag color="magenta" className="w-full justify-center">
-            <MedicineBoxOutlined /> {balance || 0}
-          </Tag>
-        </div>
+        <Tag color={balance > 0 ? "magenta" : "default"}>{balance} days</Tag>
       ),
     },
     {
       title: "Paternity",
       dataIndex: "paternityLeaveBalance",
       key: "paternityLeaveBalance",
-      width: 110,
+      width: 100,
       render: (balance) => (
-        <div className="text-center">
-          <Tag color="purple" className="w-full justify-center">
-            <UserOutlined /> {balance || 0}
-          </Tag>
-        </div>
+        <Tag color={balance > 0 ? "purple" : "default"}>{balance} days</Tag>
       ),
     },
     {
       title: "Compassionate",
       dataIndex: "compassionateLeaveBalance",
       key: "compassionateLeaveBalance",
-      width: 130,
+      width: 120,
       render: (balance) => (
-        <div className="text-center">
-          <Tag color="red" className="w-full justify-center">
-            <HeartOutlined /> {balance || 0}
-          </Tag>
-        </div>
+        <Tag color={balance > 0 ? "orange" : "default"}>{balance} days</Tag>
       ),
     },
     {
       title: "Carry Over",
       dataIndex: "carryOverDays",
       key: "carryOverDays",
-      width: 120,
-      sorter: (a, b) => (a.carryOverDays || 0) - (b.carryOverDays || 0),
+      width: 100,
       render: (days) => (
-        <div className="text-center">
-          <Tag color="blue" className="w-full justify-center">
-            <TrophyOutlined /> {days || 0} days
-          </Tag>
-        </div>
+        <Tag color={days > 0 ? "blue" : "default"} icon={<TrophyOutlined />}>
+          {days} days
+        </Tag>
       ),
     },
     {
       title: "Total Available",
-      key: "totalAvailableLeave",
-      width: 140,
-      sorter: (a, b) => calculateTotalLeave(a) - calculateTotalLeave(b),
+      key: "totalAvailable",
+      width: 120,
       render: (_, record) => {
         const total = calculateTotalLeave(record);
-        return (
-          <div className="text-center">
-            <div
-              className={`font-bold text-lg ${
-                total > 100
-                  ? "text-green-600"
-                  : total > 50
-                  ? "text-blue-600"
-                  : "text-orange-600"
-              }`}>
-              {total}
-            </div>
-            <div className="text-xs text-gray-500">days</div>
-          </div>
-        );
+        return <div className="font-bold text-green-600">{total} days</div>;
       },
     },
     {
-      title: "Last Updated",
-      dataIndex: "lastUpdated",
-      key: "lastUpdated",
-      width: 120,
-      render: (date) => (
-        <div className="text-xs text-gray-500 text-center">
-          {date ? new Date(date).toLocaleDateString() : "N/A"}
-        </div>
-      ),
+      title: "Year",
+      dataIndex: "year",
+      key: "year",
+      width: 80,
+      render: (year) => <Tag>{year}</Tag>,
     },
-    ...(isAdminOrHr || isSuperAdmin
-      ? [
-          {
-            title: "Actions",
-            key: "actions",
-            fixed: "right",
-            width: 100,
-            render: (_, record) => (
-              <Space size="small">
-                <Tooltip title="Delete Balance">
-                  <Button
-                    size="small"
-                    danger
-                    type="text"
-                    icon={<DeleteOutlined />}
-                    loading={deleteState.isLoading}
-                    onClick={() => {
-                      Modal.confirm({
-                        title: "Delete Leave Balance",
-                        content: `Are you sure you want to delete leave balance for ${record.employee?.firstName} ${record.employee?.lastName}? This action cannot be undone.`,
-                        okText: "Yes, Delete",
-                        okType: "danger",
-                        cancelText: "Cancel",
-                        onOk: () => removeBalance(record._id || record.id),
-                      });
-                    }}
-                  />
-                </Tooltip>
-              </Space>
-            ),
-          },
-        ]
-      : []),
   ];
+
+  // Add action column only for admin/HR
+  if (isAdminOrHr || isSuperAdmin) {
+    columns.push({
+      title: "Action",
+      key: "action",
+      width: 100,
+      fixed: "right",
+      render: (_, record) => (
+        <Space size="small">
+          <Tooltip title="Delete Balance">
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              size="small"
+              loading={deleteState.isLoading}
+              onClick={() => {
+                Modal.confirm({
+                  title: "Delete Leave Balance",
+                  content:
+                    "Are you sure you want to delete this leave balance? This action cannot be undone.",
+                  okText: "Yes, Delete",
+                  okType: "danger",
+                  onOk: () => removeBalance(record.id),
+                });
+              }}
+            />
+          </Tooltip>
+        </Space>
+      ),
+    });
+  }
+
+  // Filter leave balance based on user role
+  const filteredLeaveBalance = useMemo(() => {
+    const results = Array.isArray(searchResults) ? searchResults : [];
+
+    if (isAdminOrHr) {
+      return results;
+    }
+
+    return results.filter(
+      (balance) => balance?.employee?._id === user?.data?._id
+    );
+  }, [searchResults, isAdminOrHr, user?.data?._id]);
 
   if (loading.leaveBalance) {
     return <LoadingSpinner />;
   }
 
-  // return
-  <>
-    {error.leaveBalance ? (
+  if (error.leaveBalance) {
+    return (
       <PageErrorAlert
         errorCondition={error.leaveBalance}
         errorMessage={error.leaveBalance}
       />
-    ) : (
-      <div className="space-y-6">
-        {/* Summary Statistics - Only for Admin/HR */}
-        {isAdminOrHr && summaryStats && (
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <Card size="small">
-              <Statistic
-                title="Total Employees"
-                value={summaryStats.totalEmployees}
-                prefix={<UserOutlined className="text-blue-500" />}
-              />
-            </Card>
-            <Card size="small">
-              <Statistic
-                title="Total Annual Leave"
-                value={summaryStats.totalAnnualLeave}
-                suffix="days"
-                prefix={<CalendarOutlined className="text-green-500" />}
-              />
-            </Card>
-            <Card size="small">
-              <Statistic
-                title="Total Sick Leave"
-                value={summaryStats.totalSickLeave}
-                suffix="days"
-                prefix={<MedicineBoxOutlined className="text-orange-500" />}
-              />
-            </Card>
-            <Card size="small">
-              <Statistic
-                title="Avg Annual Leave"
-                value={summaryStats.averageAnnual}
-                suffix="days"
-                prefix={<TrophyOutlined className="text-purple-500" />}
-              />
-            </Card>
-            <Card size="small">
-              <Statistic
-                title="Low Balance"
-                value={summaryStats.lowBalanceCount}
-                suffix="employees"
-                prefix={<HeartOutlined className="text-red-500" />}
-              />
-            </Card>
-          </div>
-        )}
+    );
+  }
 
-        <Card
-          title={
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800">
-                  Staff Leave Balances
-                </h1>
-                <p className="text-gray-600 text-sm">
-                  {filteredLeaveBalance.length} employee(s) found • Year:{" "}
-                  {new Date().getFullYear()}
-                </p>
-              </div>
-              <div className="flex gap-2 w-full md:w-auto">
-                <SearchBar
-                  onSearch={handleSearchChange}
-                  placeholder="Search by name, ID, or department..."
-                  className="min-w-[250px]"
-                />
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={fetchLeaveBalance}
-                  loading={loading.leaveBalance}
-                  type="default">
-                  Refresh
-                </Button>
-              </div>
-            </div>
-          }
-          className="shadow-sm">
-          <Table
-            columns={columns}
-            dataSource={filteredLeaveBalance || []}
-            scroll={{ x: 1300 }}
-            pagination={{
-              pageSize: 10,
-              showSizeChanger: true,
-              showQuickJumper: true,
-              showTotal: (total, range) =>
-                `${range[0]}-${range[1]} of ${total} items`,
-            }}
-            rowKey={(record) => record._id || record.id}
-            loading={loading.leaveBalance}
-            size="middle"
-            className="leave-balance-table"
-          />
-        </Card>
+  return (
+    <div className="p-4">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">
+          Leave Balance Overview
+          {!isAdminOrHr && " - My Balance"}
+        </h1>
 
-        {/* Quick Tips */}
-        {!isAdminOrHr && filteredLeaveBalance.length > 0 && (
-          <Card size="small" className="bg-blue-50 border-blue-200">
-            <div className="text-sm text-blue-700">
-              <strong>Note:</strong> Your leave balances are updated
-              automatically when leaves are approved. Contact HR if you notice
-              any discrepancies in your balance.
-            </div>
-          </Card>
-        )}
+        <div className="flex gap-2 items-center">
+          <SearchBar onSearch={handleSearchChange} />
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={fetchLeaveBalance}
+            title="Refresh">
+            Refresh
+          </Button>
+        </div>
       </div>
-    )}
-  </>;
+
+      {/* Statistics Cards (for non-admin users) */}
+      {!isAdminOrHr && filteredLeaveBalance.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          {filteredLeaveBalance.map((balance) => (
+            <>
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <div className="text-blue-600 text-sm font-medium">
+                  Annual Leave
+                </div>
+                <div className="text-2xl font-bold text-blue-700 mt-1">
+                  {balance.annualLeaveBalance}
+                </div>
+                <div className="text-xs text-gray-500">days available</div>
+              </div>
+
+              <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                <div className="text-red-600 text-sm font-medium">
+                  Sick Leave
+                </div>
+                <div className="text-2xl font-bold text-red-700 mt-1">
+                  {balance.sickLeaveBalance}
+                </div>
+                <div className="text-xs text-gray-500">days available</div>
+              </div>
+
+              <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                <div className="text-purple-600 text-sm font-medium">
+                  Special Leave
+                </div>
+                <div className="text-2xl font-bold text-purple-700 mt-1">
+                  {(balance.maternityLeaveBalance || 0) +
+                    (balance.paternityLeaveBalance || 0) +
+                    (balance.compassionateLeaveBalance || 0)}
+                </div>
+                <div className="text-xs text-gray-500">days available</div>
+              </div>
+
+              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+                <div className="text-green-600 text-sm font-medium">
+                  Total Available
+                </div>
+                <div className="text-2xl font-bold text-green-700 mt-1">
+                  {calculateTotalLeave(balance)}
+                </div>
+                <div className="text-xs text-gray-500">days total</div>
+              </div>
+            </>
+          ))}
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+        <Table
+          dataSource={
+            Array.isArray(filteredLeaveBalance) ? filteredLeaveBalance : []
+          }
+          columns={columns}
+          rowKey={(record) => record._id || record.id}
+          scroll={{ x: 1200 }}
+          loading={loading.leaveBalance}
+          pagination={{
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} records`,
+          }}
+        />
+      </div>
+    </div>
+  );
 };
 
 export default LeaveBalanceList;
