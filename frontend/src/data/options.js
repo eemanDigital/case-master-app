@@ -61,12 +61,12 @@ export const todoPriority = [
   { label: "High", value: "high" },
 ];
 
+// data/options.js
 export const taskPriorityOptions = [
-  { value: "Select task priority", label: "" },
-  { value: "urgent", label: "Urgent" },
-  { value: "high", label: "High" },
-  { value: "medium", label: "Medium" },
-  { value: "low", label: "Low" },
+  { label: "Urgent", value: "urgent" },
+  { label: "High", value: "high" },
+  { label: "Medium", value: "medium" },
+  { label: "Low", value: "low" },
 ];
 
 export const caseCategoryOptions = [
@@ -181,4 +181,12 @@ export const doc_type = [
   { value: "Client Document", label: "Client Document" },
   { value: "Official Correspondence", label: "Official Correspondence" },
   { value: "Others", label: "Others" },
+];
+
+export const taskStatusOptions = [
+  { label: "Pending", value: "pending" },
+  { label: "In Progress", value: "in-progress" },
+  { label: "Completed", value: "completed" },
+  { label: "Overdue", value: "overdue" },
+  { label: "Cancelled", value: "cancelled" },
 ];

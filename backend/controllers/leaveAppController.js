@@ -31,6 +31,7 @@ exports.createLeaveApplication = catchAsync(async (req, res, next) => {
   await leaveService.checkOverlappingLeaves(employeeId, start, end);
 
   // Validate leave balance (except for unpaid leaves)
+  // Make this a warning rather than blocking if balance doesn't exist
   if (typeOfLeave !== "unpaid") {
     try {
       await leaveService.validateLeaveBalance(
@@ -39,14 +40,14 @@ exports.createLeaveApplication = catchAsync(async (req, res, next) => {
         leaveDays
       );
     } catch (error) {
-      // ✅ Allow application if balance not found
+      // If balance not found, allow application but log warning
       if (error.statusCode === 404) {
         console.warn(
-          `Application created without balance verification for ${employeeId}`
+          `Leave application created without balance verification for employee ${employeeId}`
         );
-        // Continue - HR can verify manually
+        // Continue with application creation
       } else {
-        // Still throw for other errors (e.g., insufficient balance)
+        // Re-throw other errors (e.g., insufficient balance)
         throw error;
       }
     }
@@ -80,12 +81,15 @@ exports.getLeaveApplication = catchAsync(async (req, res, next) => {
     return next(new AppError("Leave application not found", 404));
   }
 
-  // Authorization check: only employee, their supervisor, or admin can view
-  if (
-    leaveApplication.employee._id.toString() !== req.user._id.toString() &&
-    req.user.role !== "admin" &&
-    req.user.role !== "hr"
-  ) {
+  // Authorization check: only employee, admin, hr, or super-admin can view
+  const isOwner =
+    leaveApplication.employee._id.toString() === req.user._id.toString();
+  const isAdmin =
+    req.user.role === "admin" ||
+    req.user.role === "hr" ||
+    req.user.role === "super-admin";
+
+  if (!isOwner && !isAdmin) {
     return next(
       new AppError(
         "You do not have permission to view this leave application",
@@ -99,7 +103,6 @@ exports.getLeaveApplication = catchAsync(async (req, res, next) => {
     data: { leaveApplication },
   });
 });
-
 /**
  * Get all leave applications with filters
  */
@@ -118,10 +121,10 @@ exports.getLeaveApplications = catchAsync(async (req, res, next) => {
   const filter = {};
 
   // Non-admin users can only see their own applications
-  if (req.user.role !== "admin" && req.user.role !== "hr") {
-    filter.employee = req.user._id;
+  if (!["super-admin", "admin", "hr"].includes(req.user.role)) {
+    filter.employee = req.user._id; // Regular employees see only theirs
   } else if (employeeId) {
-    filter.employee = employeeId;
+    filter.employee = employeeId; // Admins/HR can filter by employee
   }
 
   if (status) filter.status = status;
@@ -267,7 +270,7 @@ exports.cancelLeaveApplication = catchAsync(async (req, res, next) => {
   // Only employee or admin can cancel
   if (
     leaveApplication.employee._id.toString() !== req.user._id.toString() &&
-    req.user.role !== "admin"
+    !["super-admin", "admin", "hr"].includes(req.user.role)
   ) {
     return next(
       new AppError("You do not have permission to cancel this application", 403)

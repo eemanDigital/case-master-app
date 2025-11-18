@@ -13,11 +13,11 @@ class LeaveService {
       year: year,
     });
 
-    // ✅ Fallback: Get most recent balance if specific year not found
+    // If not found for specific year, try to get the most recent one
     if (!balance) {
       balance = await LeaveBalance.findOne({
         employee: employeeId,
-      }).sort({ year: -1 }); // Most recent year
+      }).sort({ year: -1 }); // Get most recent year
     }
 
     if (!balance) {

@@ -1,28 +1,159 @@
-<html>
+<html lang="en">
   <head>
-    <title>Task Notification</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Task Assignment - A.T. Lukman & Co.</title>
     <style>
-      body { font-family: Arial, sans-serif; } .task { border: 1px solid #ddd;
-      padding: 10px; margin-bottom: 10px; } .task-title { font-weight: bold; }
-      .task-due { color: #888; }
+      /* Reset and base styles */ * { margin: 0; padding: 0; box-sizing:
+      border-box; } body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana,
+      sans-serif; line-height: 1.6; color: #333; background-color: #f8fafc;
+      margin: 0; padding: 0; } .email-container { max-width: 600px; margin: 0
+      auto; background-color: #ffffff; border-radius: 12px; overflow: hidden;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0,
+      0, 0.06); } /* Header */ .header { background: linear-gradient(135deg,
+      #1e40af 0%, #3b82f6 100%); color: white; padding: 30px 40px; text-align:
+      center; } .logo { font-size: 24px; font-weight: bold; margin-bottom: 10px;
+      } .company-name { font-size: 18px; opacity: 0.9; font-weight: 300; } /*
+      Content */ .content { padding: 40px; } .greeting { font-size: 18px; color:
+      #1e293b; margin-bottom: 24px; font-weight: 600; } .task-card { background:
+      #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 24px;
+      margin-bottom: 30px; } .task-title { font-size: 20px; font-weight: 700;
+      color: #1e293b; margin-bottom: 16px; border-bottom: 2px solid #3b82f6;
+      padding-bottom: 8px; } .task-details { display: grid; gap: 12px; }
+      .detail-row { display: flex; align-items: flex-start; gap: 12px; }
+      .detail-label { font-weight: 600; color: #475569; min-width: 120px; }
+      .detail-value { color: #1e293b; flex: 1; } .priority-badge { display:
+      inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px;
+      font-weight: 600; text-transform: uppercase; } .priority-urgent {
+      background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+      .priority-high { background: #fff7ed; color: #ea580c; border: 1px solid
+      #fed7aa; } .priority-medium { background: #eff6ff; color: #2563eb; border:
+      1px solid #dbeafe; } .priority-low { background: #f0fdf4; color: #16a34a;
+      border: 1px solid #bbf7d0; } .instruction-box { background: white; border:
+      1px solid #e2e8f0; border-radius: 6px; padding: 16px; margin-top: 8px;
+      font-style: italic; color: #475569; } /* Action Button */ .action-section
+      { text-align: center; margin: 30px 0; } .btn { display: inline-block;
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); color:
+      white; text-decoration: none; padding: 14px 32px; border-radius: 8px;
+      font-weight: 600; font-size: 16px; transition: all 0.3s ease; box-shadow:
+      0 4px 6px -1px rgba(59, 130, 246, 0.3); } .btn:hover { transform:
+      translateY(-2px); box-shadow: 0 6px 8px -1px rgba(59, 130, 246, 0.4); } /*
+      Sender Info */ .sender-info { background: #f1f5f9; border-radius: 8px;
+      padding: 20px; margin-top: 30px; text-align: center; } .sender-name {
+      font-weight: 600; color: #1e293b; margin-bottom: 4px; } .sender-position {
+      color: #64748b; font-size: 14px; } /* Footer */ .footer { background:
+      #1e293b; color: #94a3b8; padding: 30px 40px; text-align: center;
+      font-size: 14px; } .footer-links { margin: 20px 0; } .footer-link { color:
+      #cbd5e1; text-decoration: none; margin: 0 12px; transition: color 0.3s
+      ease; } .footer-link:hover { color: #ffffff; } .copyright { margin-top:
+      20px; padding-top: 20px; border-top: 1px solid #334155; color: #94a3b8; }
+      /* Responsive */ @media (max-width: 600px) { .content { padding: 24px; }
+      .header { padding: 24px; } .detail-row { flex-direction: column; gap: 4px;
+      } .detail-label { min-width: auto; } }
     </style>
   </head>
   <body>
-    <h1>Task Notification</h1>
+    <div class="email-container">
+      <!-- Header -->
+      <div class="header">
+        <div class="logo">📋</div>
+        <div class="company-name">A.T. Lukman & Co.</div>
+        <h1 style="margin-top: 16px; font-size: 28px; font-weight: 300;">New
+          Task Assignment</h1>
+      </div>
 
-    <div class="task">
-      <div class="task-title">{{title}}</div>
-      <div class="task-due">Due On: {{dueDate}}</div>
-      <div class="task-status">Instruction: {{instruction}}</div>
-      <div class="task-status">Task Priority: {{taskPriority}}</div>
-      <p>Kindly, Check your dashboard for more detail:<a
-          href="{{link}}"
-        >Click</a></p>
-      <div>From: {{sendersName}}, <span>{{sendersPosition}}</span></div>
+      <!-- Content -->
+      <div class="content">
+        <div class="greeting">
+          Hello Team,
+        </div>
+
+        <p style="color: #64748b; margin-bottom: 24px;">
+          You have been assigned a new task. Please review the details below and
+          take appropriate action.
+        </p>
+
+        <!-- Task Card -->
+        <div class="task-card">
+          <div class="task-title">{{title}}</div>
+
+          <div class="task-details">
+            <div class="detail-row">
+              <span class="detail-label">Due Date:</span>
+              <span class="detail-value">
+                <strong>{{dueDate}}</strong>
+                {{#if daysUntilDue}}
+                  <span
+                    style="color: #dc2626; font-size: 14px; margin-left: 8px;"
+                  >
+                    ({{daysUntilDue}}
+                    days remaining)
+                  </span>
+                {{/if}}
+              </span>
+            </div>
+
+            <div class="detail-row">
+              <span class="detail-label">Priority:</span>
+              <span class="detail-value">
+                <span class="priority-badge priority-{{taskPriority}}">
+                  {{taskPriority}}
+                  Priority
+                </span>
+              </span>
+            </div>
+
+            {{#if assignedTo}}
+              <div class="detail-row">
+                <span class="detail-label">Assigned To:</span>
+                <span class="detail-value">{{assignedTo}}</span>
+              </div>
+            {{/if}}
+
+            <div class="detail-row">
+              <span class="detail-label">Instructions:</span>
+              <div class="detail-value">
+                <div class="instruction-box">
+                  {{instruction}}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Button -->
+        <div class="action-section">
+          <a href="{{link}}" class="btn">
+            View Task Details
+          </a>
+          <p style="color: #64748b; margin-top: 12px; font-size: 14px;">
+            Click above to access the task in your dashboard
+          </p>
+        </div>
+
+        <!-- Sender Information -->
+        <div class="sender-info">
+          <div class="sender-name">{{sendersName}}</div>
+          <div class="sender-position">{{sendersPosition}}</div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="footer">
+        <div class="footer-links">
+          <a href="{{companyWebsite}}" class="footer-link">Website</a>
+          <a href="#" class="footer-link">Support</a>
+          <a href="#" class="footer-link">Privacy Policy</a>
+        </div>
+
+        <div class="copyright">
+          <p>&copy; {{year}} A.T. Lukman & Co. All rights reserved.</p>
+          <p style="margin-top: 8px; font-size: 12px;">
+            This is an automated notification. Please do not reply to this
+            email.
+          </p>
+        </div>
+      </div>
     </div>
-    <footer><p>&copy;
-        {{year}}
-        CaseMaster Team. All rights reserved.</p></footer>
-
   </body>
 </html>

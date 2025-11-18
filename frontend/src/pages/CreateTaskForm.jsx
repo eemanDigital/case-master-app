@@ -1,7 +1,7 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { PlusOutlined } from "@ant-design/icons";
-import { taskPriorityOptions } from "./../data/options";
+import { PlusOutlined, TagOutlined } from "@ant-design/icons";
+import { taskPriorityOptions, taskStatusOptions } from "./../data/options";
 import {
   Button,
   Input,
@@ -10,6 +10,9 @@ import {
   Select,
   DatePicker,
   Typography,
+  InputNumber,
+  Tag,
+  Space,
 } from "antd";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
@@ -23,6 +26,7 @@ import { getUsers } from "../redux/features/auth/authSlice";
 import { formatDate } from "../utils/formatDate";
 import { toast } from "react-toastify";
 import ButtonWithIcon from "../components/ButtonWithIcon";
+import dayjs from "dayjs";
 
 const { TextArea } = Input;
 const { Title } = Typography;
@@ -40,6 +44,10 @@ const CreateTaskForm = () => {
   const { open, confirmLoading, showModal, handleOk, handleCancel } =
     useModal();
   const [form] = Form.useForm();
+  const [tags, setTags] = useState([]);
+  const [inputVisible, setInputVisible] = useState(false);
+  const [tagInputValue, setTagInputValue] = useState("");
+
   const {
     dataFetcher,
     loading: loadingData,
@@ -50,13 +58,15 @@ const CreateTaskForm = () => {
   const handleSubmission = useCallback(
     (result) => {
       if (result?.error) {
-        // Handle Error here
+        toast.error(result.error);
       } else {
-        // Handle Success here
+        toast.success("Task created successfully!");
         form.resetFields();
+        setTags([]);
+        handleCancel();
       }
     },
-    [form]
+    [form, handleCancel]
   );
 
   // Fetch users
@@ -68,49 +78,100 @@ const CreateTaskForm = () => {
   const handleSubmit = useCallback(
     async (values) => {
       try {
-        // Extract user IDs from values.assignedTo
-        const assignedUserIds = values.assignedTo || []; // Ensure it's an array
-
-        // Find corresponding user objects from the users state
-        const assignedUsers = users?.data?.filter((user) =>
-          assignedUserIds.includes(user._id)
-        );
-
-        // Map user objects to their email addresses
-        const sendToEmails = assignedUsers?.map((user) => user.email);
-        // Prepare email data
-        const emailData = {
-          subject: "New Task Assigned - A.T. Lukman & Co.",
-          send_to: sendToEmails,
-          send_from: user?.data?.email,
-          reply_to: "noreply@gmail.com",
-          template: "taskAssignment",
-          url: "dashboard/tasks",
-          context: {
-            sendersName: user?.data?.firstName,
-            sendersPosition: user?.data?.position,
-            title: values.title,
-            dueDate: formatDate(values.dueDate),
-            instruction: values.instruction,
-            taskPriority: values.taskPriority,
-          },
+        // Prepare payload according to backend model
+        const payload = {
+          title: values.title,
+          instruction: values.instruction,
+          taskPriority: values.taskPriority,
+          dueDate: values.dueDate.format("YYYY-MM-DD"),
+          assignedBy: user?.data?._id, // Current user as assigner
+          ...(values.caseToWorkOn && { caseToWorkOn: [values.caseToWorkOn] }), // Array of case IDs
+          ...(values.assignedTo && { assignedTo: values.assignedTo }), // Array of staff IDs
+          ...(values.assignedToClient && {
+            assignedToClient: values.assignedToClient,
+          }), // Single client ID
+          ...(tags.length > 0 && {
+            tags: tags.map((tag) => tag.toLowerCase().trim()),
+          }), // Lowercase tags
+          ...(values.completionPercentage && {
+            completionPercentage: values.completionPercentage,
+          }),
+          ...(values.status && { status: values.status }),
         };
 
-        // Post data
-        const result = await dataFetcher("tasks", "POST", values);
-        await fetchData("tasks", "tasks");
-        handleSubmission(result);
-
-        // Send email if emailData is provided
-        if (!result?.error && emailData) {
-          await dispatch(sendAutomatedCustomEmail(emailData));
+        // Validate assignment (must have staff or client assignment)
+        if (
+          (!payload.assignedTo || payload.assignedTo.length === 0) &&
+          !payload.assignedToClient
+        ) {
+          toast.error(
+            "Task must be assigned to at least one staff member or client"
+          );
+          return;
         }
-        form.resetFields();
+
+        // Validate dates
+        const dueDate = dayjs(values.dueDate);
+        const today = dayjs().startOf("day");
+
+        if (dueDate.isBefore(today)) {
+          toast.error("Due date must be in the future");
+          return;
+        }
+
+        // Post data
+        const result = await dataFetcher("tasks", "POST", payload);
+
+        // Send email notification if task was created successfully
+        if (result?.status === "success") {
+          // Prepare email data for assigned users
+          const assignedUserIds = payload.assignedTo || [];
+          const assignedUsers = users?.data?.filter((user) =>
+            assignedUserIds.includes(user._id)
+          );
+
+          if (assignedUsers && assignedUsers.length > 0) {
+            const sendToEmails = assignedUsers.map((user) => user.email);
+            const emailData = {
+              subject: "New Task Assigned - A.T. Lukman & Co.",
+              send_to: sendToEmails,
+              reply_to: "noreply@atlukman.com",
+              template: "taskAssignment",
+              url: "/dashboard/tasks",
+              context: {
+                sendersName: `${user?.data?.firstName} ${user?.data?.lastName}`,
+                sendersPosition: user?.data?.position,
+                title: payload.title,
+                dueDate: formatDate(payload.dueDate),
+                instruction: payload.instruction,
+                taskPriority: payload.taskPriority,
+                assignedTo: assignedUsers
+                  .map((u) => `${u.firstName} ${u.lastName}`)
+                  .join(", "),
+              },
+            };
+
+            await dispatch(sendAutomatedCustomEmail(emailData));
+          }
+
+          await fetchData("tasks", "tasks");
+          handleSubmission(result);
+        }
       } catch (err) {
-        console.error(err);
+        console.error("Task creation error:", err);
+        toast.error(err.message || "Failed to create task");
       }
     },
-    [dataFetcher, fetchData, form, handleSubmission, user, users, dispatch]
+    [
+      dataFetcher,
+      fetchData,
+      form,
+      handleSubmission,
+      user,
+      users,
+      dispatch,
+      tags,
+    ]
   );
 
   // Form submission
@@ -118,10 +179,11 @@ const CreateTaskForm = () => {
     let values;
     try {
       values = await form.validateFields();
+      await handleSubmit(values);
     } catch (errorInfo) {
+      console.error("Form validation error:", errorInfo);
       return;
     }
-    await handleSubmit(values);
   }, [form, handleSubmit]);
 
   // Email success
@@ -138,6 +200,46 @@ const CreateTaskForm = () => {
     }
   }, [dataError]);
 
+  // Tag handling functions
+  const handleTagClose = (removedTag) => {
+    const newTags = tags.filter((tag) => tag !== removedTag);
+    setTags(newTags);
+  };
+
+  const showInput = () => {
+    setInputVisible(true);
+  };
+
+  const handleTagInputChange = (e) => {
+    setTagInputValue(e.target.value);
+  };
+
+  const handleTagInputConfirm = () => {
+    if (tagInputValue && tags.indexOf(tagInputValue) === -1) {
+      setTags([...tags, tagInputValue]);
+    }
+    setInputVisible(false);
+    setTagInputValue("");
+  };
+
+  const forMap = (tag) => (
+    <span key={tag} style={{ display: "inline-block" }}>
+      <Tag
+        closable
+        onClose={() => handleTagClose(tag)}
+        style={{ marginBottom: "4px" }}>
+        {tag}
+      </Tag>
+    </span>
+  );
+
+  const tagChild = tags.map(forMap);
+
+  // Disable past dates for due date
+  const disabledDate = (current) => {
+    return current && current < dayjs().startOf("day");
+  };
+
   return (
     <>
       <ButtonWithIcon
@@ -147,136 +249,261 @@ const CreateTaskForm = () => {
       />
       <Modal
         width="80%"
-        title={<Title level={3}>Assign Task</Title>}
+        title={<Title level={3}>Create New Task</Title>}
         open={open}
         onOk={handleOk}
         footer={null}
         onCancel={handleCancel}
         confirmLoading={confirmLoading}
-        className="modal-container ">
+        className="modal-container"
+        style={{ maxWidth: "900px" }}>
         <Form
           layout="vertical"
           form={form}
           name="create_task_form"
-          className="flex flex-col gap-3 ">
-          <Form.Item
-            label="Task Title"
-            name="title"
-            rules={[
-              {
-                required: true,
-                message: "Please provide title for the task!",
-              },
-            ]}>
-            <Input placeholder="Enter task title" />
-          </Form.Item>
+          className="flex flex-col gap-4"
+          initialValues={{
+            taskPriority: "medium",
+            status: "pending",
+          }}>
+          {/* Basic Task Information */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Form.Item
+              label="Task Title"
+              name="title"
+              rules={[
+                {
+                  required: true,
+                  message: "Please provide a title for the task!",
+                },
+                {
+                  min: 3,
+                  message: "Title must be at least 3 characters",
+                },
+                {
+                  max: 200,
+                  message: "Title cannot exceed 200 characters",
+                },
+              ]}>
+              <Input placeholder="Enter task title" showCount maxLength={200} />
+            </Form.Item>
+
+            <Form.Item
+              name="taskPriority"
+              label="Task Priority"
+              rules={[
+                {
+                  required: true,
+                  message: "Please specify task priority",
+                },
+              ]}>
+              <Select
+                placeholder="Select priority level"
+                options={taskPriorityOptions}
+                className="w-full"
+              />
+            </Form.Item>
+          </div>
+
           <Form.Item
             name="instruction"
-            label="Instruction"
+            label="Instructions"
             rules={[
               {
                 required: true,
                 message: "Please provide instructions for the task!",
               },
+              {
+                min: 10,
+                message: "Instructions must be at least 10 characters",
+              },
+              {
+                max: 5000,
+                message: "Instructions cannot exceed 5000 characters",
+              },
             ]}>
-            <TextArea rows={4} placeholder="Enter detailed instructions" />
-          </Form.Item>
-          <Form.Item name="caseToWorkOn" label="Case To Work On">
-            <Select
-              placeholder="Select a case"
-              options={casesOptions}
-              allowClear
-              className="w-full"
+            <TextArea
+              rows={4}
+              placeholder="Enter detailed instructions for the task..."
+              showCount
+              maxLength={5000}
             />
           </Form.Item>
-          <div className="flex sm:flex-row flex-col w-full justify-center items-center space-x-4">
-            <div className="sm:flex-1 w-full">
-              <Form.Item
-                name="assignedTo"
-                label="Staff"
-                dependencies={["assignedToClient"]}
-                rules={[
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (value || getFieldValue("assignedToClient")) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(
-                        new Error(
-                          'Task must be assigned to "Staff" or "Client".'
-                        )
-                      );
-                    },
-                  }),
-                ]}>
-                <Select
-                  mode="multiple"
-                  placeholder="Select staff members"
-                  options={userData}
-                  allowClear
-                  className="w-full"
-                />
-              </Form.Item>
-            </div>
 
-            <div className="sm:flex-1 w-full">
-              <Form.Item
-                name="assignedToClient"
-                label="Client"
-                dependencies={["assignedTo"]}
-                rules={[
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (value || getFieldValue("assignedTo")) {
-                        return Promise.resolve();
-                      }
+          {/* Assignment Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Form.Item name="caseToWorkOn" label="Related Case (Optional)">
+              <Select
+                placeholder="Select a related case"
+                options={casesOptions}
+                allowClear
+                className="w-full"
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="dueDate"
+              label="Due Date"
+              rules={[
+                {
+                  required: true,
+                  message: "Please specify the due date for the task",
+                },
+              ]}>
+              <DatePicker
+                className="w-full"
+                disabledDate={disabledDate}
+                placeholder="Select due date"
+              />
+            </Form.Item>
+          </div>
+
+          {/* Assignment Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Form.Item
+              name="assignedTo"
+              label="Assign to Staff"
+              dependencies={["assignedToClient"]}
+              rules={[
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (
+                      value &&
+                      value.length > 0 &&
+                      getFieldValue("assignedToClient")
+                    ) {
                       return Promise.reject(
                         new Error(
-                          'Task must be assigned to "Staff" or "Client".'
+                          "Task cannot be assigned to both staff and client"
                         )
                       );
-                    },
-                  }),
-                ]}>
-                <Select
-                  placeholder="Select a client"
-                  options={clientOptions}
-                  allowClear
-                  className="w-full"
+                    }
+                    return Promise.resolve();
+                  },
+                }),
+              ]}>
+              <Select
+                mode="multiple"
+                placeholder="Select staff members"
+                options={userData}
+                allowClear
+                className="w-full"
+                maxTagCount={3}
+              />
+            </Form.Item>
+
+            <Form.Item
+              name="assignedToClient"
+              label="Assign to Client"
+              dependencies={["assignedTo"]}
+              rules={[
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (
+                      value &&
+                      getFieldValue("assignedTo") &&
+                      getFieldValue("assignedTo").length > 0
+                    ) {
+                      return Promise.reject(
+                        new Error(
+                          "Task cannot be assigned to both staff and client"
+                        )
+                      );
+                    }
+                    return Promise.resolve();
+                  },
+                }),
+              ]}>
+              <Select
+                placeholder="Select a client"
+                options={clientOptions}
+                allowClear
+                className="w-full"
+              />
+            </Form.Item>
+          </div>
+
+          {/* Additional Options */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Form.Item
+              name="completionPercentage"
+              label="Initial Completion % (Optional)">
+              <InputNumber
+                min={0}
+                max={100}
+                placeholder="0-100"
+                className="w-full"
+                addonAfter="%"
+              />
+            </Form.Item>
+
+            <Form.Item name="status" label="Initial Status">
+              <Select
+                placeholder="Select status"
+                options={taskStatusOptions}
+                className="w-full"
+              />
+            </Form.Item>
+          </div>
+
+          {/* Tags Section */}
+          <Form.Item label="Tags (Optional)">
+            <div className="border border-dashed border-gray-300 rounded-lg p-3">
+              <div className="mb-2">
+                <Space size={[0, 8]} wrap>
+                  {tagChild}
+                </Space>
+              </div>
+              {inputVisible ? (
+                <Input
+                  type="text"
+                  size="small"
+                  style={{ width: 150 }}
+                  value={tagInputValue}
+                  onChange={handleTagInputChange}
+                  onBlur={handleTagInputConfirm}
+                  onPressEnter={handleTagInputConfirm}
+                  placeholder="Enter tag"
                 />
-              </Form.Item>
+              ) : (
+                <Button
+                  size="small"
+                  type="dashed"
+                  icon={<TagOutlined />}
+                  onClick={showInput}>
+                  Add Tag
+                </Button>
+              )}
+            </div>
+            <div className="text-xs text-gray-500 mt-1">
+              Add tags to categorize and search tasks (e.g., 'urgent',
+              'research', 'draft')
+            </div>
+          </Form.Item>
+
+          {/* Validation Summary */}
+          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+            <div className="text-sm text-blue-700">
+              <strong>Validation Rules:</strong>
+              <ul className="mt-1 list-disc list-inside space-y-1">
+                <li>Title: 3-200 characters</li>
+                <li>Instructions: 10-5000 characters</li>
+                <li>Due date must be in the future</li>
+                <li>Must assign to staff OR client (not both)</li>
+                <li>Completion %: 0-100</li>
+              </ul>
             </div>
           </div>
-          <Form.Item
-            name="dueDate"
-            label="Due Date"
-            rules={[
-              {
-                required: true,
-                message: "Specify the due date for the task",
-              },
-            ]}>
-            <DatePicker className="w-full" />
-          </Form.Item>
-          <SelectInputs
-            defaultValue="high"
-            fieldName="taskPriority"
-            label="Task Priority"
-            rules={[
-              {
-                required: true,
-                message: "Specify task priority",
-              },
-            ]}
-            options={taskPriorityOptions}
-          />
-          <Form.Item>
+
+          <Form.Item className="mb-0">
             <Button
               onClick={onSubmit}
               loading={loadingData}
               htmlType="submit"
+              type="primary"
+              size="large"
               className="w-full blue-btn">
-              Save
+              Create Task
             </Button>
           </Form.Item>
         </Form>

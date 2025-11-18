@@ -264,7 +264,7 @@ const CreateLeaveBalanceForm = () => {
 
             {selectedEmployee && (
               <Alert
-                message={`Selected: ${selectedEmployee.firstName} ${selectedEmployee.lastName} (${selectedEmployee.employeeId}) - ${selectedEmployee.department}`}
+                message={`Selected: ${selectedEmployee.firstName} ${selectedEmployee.lastName}`}
                 type="info"
                 showIcon
                 className="mb-2"

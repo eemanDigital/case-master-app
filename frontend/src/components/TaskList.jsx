@@ -2,15 +2,14 @@ import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import TaskReminderForm from "./TaskReminderForm";
-import { Table, Modal, Space, Tooltip, Button } from "antd";
-import { DeleteOutlined } from "@ant-design/icons";
+import { Table, Modal, Space, Tooltip, Button, Tag, Badge } from "antd";
+import { DeleteOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
 import CreateTaskForm from "../pages/CreateTaskForm";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import { toast } from "react-toastify";
-import { EditOutlined } from "@ant-design/icons";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "./PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
@@ -22,25 +21,26 @@ const TaskList = () => {
     error: taskError,
     fetchData,
   } = useDataGetterHook();
-  const { isError, isSuccess, message } = useSelector((state) => state.delete); // fetch tasks data
-  const { user } = useSelector((state) => state.auth); // get logged in user
-  const loggedInClientId = user?.data?._id; // get logged in user id
+  const { isError, isSuccess, message } = useSelector((state) => state.delete);
+  const { user } = useSelector((state) => state.auth);
+  const loggedInUserId = user?.data?._id;
 
-  const { isSuperOrAdmin, isStaff, isClient } = useAdminHook(); // check user role
+  const { isSuperOrAdmin, isStaff, isClient } = useAdminHook();
   const dispatch = useDispatch();
 
-  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
+  // console.log("Tasks data:", tasks);
 
-  // fetch tasks data
+  useRedirectLogoutUser("/users/login");
+
   useEffect(() => {
     fetchData("tasks", "tasks");
   }, [fetchData]);
-  // display toast message
+
   useEffect(() => {
     if (isSuccess) {
       toast.success(message);
       dispatch(RESET());
-      fetchData();
+      fetchData("tasks", "tasks");
     }
     if (isError) {
       toast.error(message);
@@ -48,7 +48,6 @@ const TaskList = () => {
     }
   }, [isSuccess, isError, message, dispatch, fetchData]);
 
-  // handle delete
   const deleteTask = async (id) => {
     try {
       await dispatch(deleteData(`tasks/${id}`));
@@ -58,131 +57,239 @@ const TaskList = () => {
     }
   };
 
-  // Display loading message if data is being fetched
-  if (loadingTasks.tasks) return <LoadingSpinner />;
+  const getStatusColor = (status) => {
+    const colors = {
+      pending: "blue",
+      "in-progress": "orange",
+      completed: "green",
+      overdue: "red",
+      cancelled: "gray",
+    };
+    return colors[status] || "default";
+  };
 
-  // Display error message if there is an error fetching data
-  if (taskError.error)
-    return (
-      <PageErrorAlert
-        errorCondition={taskError.error}
-        errorMessage={taskError.error}
-      />
-    );
+  const getPriorityColor = (priority) => {
+    const colors = {
+      urgent: "red",
+      high: "orange",
+      medium: "blue",
+      low: "green",
+    };
+    return colors[priority] || "default";
+  };
 
   const columns = [
     {
       title: "Task Title",
       dataIndex: "title",
       key: "title",
+      width: 200,
       render: (text, record) => (
-        <Link
-          className="pl-5 text-blue-600 hover:text-blue-800 font-bold"
-          to={`${record?.id}/details`}>
-          {text}
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            className="text-blue-600 hover:text-blue-800 font-medium"
+            to={`${record?._id || record?.id}/details`}>
+            {text}
+          </Link>
+          {record?.reminder?.isActive && (
+            <Badge dot color="orange" title="Has reminder" />
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      width: 120,
+      render: (status) => (
+        <Tag color={getStatusColor(status)} className="capitalize">
+          {status}
+        </Tag>
+      ),
+    },
+    {
+      title: "Priority",
+      dataIndex: "taskPriority",
+      key: "taskPriority",
+      width: 100,
+      render: (priority) => (
+        <Tag color={getPriorityColor(priority)} className="capitalize">
+          {priority}
+        </Tag>
       ),
     },
     {
       title: "Assigned To",
       dataIndex: "assignedTo",
       key: "assignedTo",
+      width: 150,
       render: (assignedTo) =>
-        assignedTo
-          ? assignedTo.map((staff) => (
-              <p key={staff?._id}>
+        assignedTo?.length > 0 ? (
+          <div className="space-y-1">
+            {assignedTo.slice(0, 2).map((staff) => (
+              <div key={staff?._id} className="text-xs">
                 {staff?.firstName} {staff?.lastName}
-              </p>
-            ))
-          : "N/A",
+              </div>
+            ))}
+            {assignedTo.length > 2 && (
+              <div className="text-xs text-gray-500">
+                +{assignedTo.length - 2} more
+              </div>
+            )}
+          </div>
+        ) : (
+          "N/A"
+        ),
     },
     {
       title: "Client",
       dataIndex: "assignedToClient",
       key: "assignedToClient",
-      render: (client) => client?.firstName,
+      width: 120,
+      render: (client) =>
+        client ? (
+          <div className="text-sm">
+            {client?.firstName} {client?.lastName}
+          </div>
+        ) : (
+          "N/A"
+        ),
     },
-
     {
-      title: "Date Assigned",
-      dataIndex: "dateAssigned",
-      key: "dateAssigned",
-      render: (dateAssigned) => formatDate(dateAssigned),
+      title: "Due Date",
+      dataIndex: "dueDate",
+      key: "dueDate",
+      width: 120,
+      render: (dueDate) => <div className="text-sm">{formatDate(dueDate)}</div>,
+      sorter: (a, b) => new Date(a.dueDate) - new Date(b.dueDate),
     },
     {
-      title: "Action",
-      key: "action",
-      render: (text, record) => (
-        <Space size="middle">
-          <Link to={`#${record.id}/update`}>
-            <Tooltip title="Edit Task">
-              <Button
-                className="bg-purple-200 text-purple-500"
-                icon={<EditOutlined />}></Button>
-            </Tooltip>
-          </Link>
-          {/* reminder component */}
-          {user?.data?._id === record?.assignedBy?._id && (
-            <TaskReminderForm id={record.id} />
-          )}
-          {/* only the person assigning assignment see the btn */}
-          {user?.data?._id === record?.assignedBy?._id && (
-            <DeleteOutlined
-              size={20}
-              className="bg-red-200 text-red-500  p-2 rounded-md cursor-pointer hover:text-red-700"
-              onClick={() => {
-                Modal.confirm({
-                  title: "Are you sure you want to delete this task?",
-                  onOk: () => deleteTask(record?.id),
-                });
-              }}
-            />
-          )}
-        </Space>
+      title: "Progress",
+      dataIndex: "completionPercentage",
+      key: "completionPercentage",
+      width: 100,
+      render: (percentage) => (
+        <div className="text-sm font-medium">{percentage || 0}%</div>
       ),
+    },
+    {
+      title: "Actions",
+      key: "action",
+      width: 150,
+      render: (text, record) => {
+        const isTaskCreator = user?.data?._id === record?.assignedBy?._id;
+        const canModify = isTaskCreator || isSuperOrAdmin;
+
+        return (
+          <Space size="small">
+            <Tooltip title="View Details">
+              <Link to={`${record?._id || record?.id}/details`}>
+                <Button icon={<EyeOutlined />} size="small" type="text" />
+              </Link>
+            </Tooltip>
+
+            {canModify && (
+              <Tooltip title="Edit Task">
+                <Link to={`${record?._id || record?.id}/update`}>
+                  <Button
+                    icon={<EditOutlined />}
+                    size="small"
+                    type="text"
+                    className="text-purple-600"
+                  />
+                </Link>
+              </Tooltip>
+            )}
+
+            {canModify && (
+              <TaskReminderForm taskId={record?._id || record?.id} />
+            )}
+
+            {canModify && (
+              <Tooltip title="Delete Task">
+                <Button
+                  icon={<DeleteOutlined />}
+                  size="small"
+                  type="text"
+                  danger
+                  onClick={() => {
+                    Modal.confirm({
+                      title: "Delete Task",
+                      content: "Are you sure you want to delete this task?",
+                      okText: "Yes, Delete",
+                      okType: "danger",
+                      onOk: () => deleteTask(record?._id || record?.id),
+                    });
+                  }}
+                />
+              </Tooltip>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
-  // filter task by user. User only see his own task for staff
-  const filterTaskByUser = (userId) => {
-    if (!tasks?.data) return [];
-    return tasks?.data.filter(
-      (task) =>
-        task?.assignedTo && task?.assignedTo.some((user) => user._id === userId)
-    );
-  };
+  // Filter tasks based on user role
+  const filteredTasks = useMemo(() => {
+    if (!tasks?.data?.tasks) return [];
 
-  // filter task by user client. client only see his own task/msg
-  const filterTaskByClientUser = (userId) => {
-    if (!tasks?.data) return [];
-    return tasks?.data.filter((task) => task?.assignedToClient?._id === userId);
-  };
+    const taskArray = Array.isArray(tasks.data?.tasks) ? tasks.data?.tasks : [];
+
+    if (isSuperOrAdmin) {
+      return taskArray;
+    } else if (isClient) {
+      return taskArray.filter(
+        (task) => task?.assignedToClient?._id === loggedInUserId
+      );
+    } else if (isStaff) {
+      return taskArray.filter(
+        (task) =>
+          task?.assignedTo?.some((user) => user._id === loggedInUserId) ||
+          task?.assignedBy?._id === loggedInUserId
+      );
+    }
+
+    return taskArray;
+  }, [tasks?.data, isSuperOrAdmin, isClient, isStaff, loggedInUserId]);
+
+  if (loadingTasks.tasks) return <LoadingSpinner />;
+
+  if (taskError.tasks) {
+    return (
+      <PageErrorAlert
+        errorCondition={taskError.tasks}
+        errorMessage={taskError.tasks}
+      />
+    );
+  }
 
   return (
-    <>
-      {taskError.tasks ? (
-        <PageErrorAlert
-          errorCondition={taskError.tasks}
-          errorMessage={taskError.tasks}
-        />
-      ) : (
-        <div className=" mt-10 overflow-x-auto font-medium font-poppins">
-          {isStaff && <CreateTaskForm />}
-          <Table
-            columns={columns}
-            dataSource={
-              isSuperOrAdmin
-                ? tasks?.data
-                : isClient
-                ? filterTaskByClientUser(loggedInClientId)
-                : filterTaskByUser(loggedInClientId)
-            }
-            rowKey="_id"
-            scroll={{ x: 700 }}
-          />
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
+          <p className="text-gray-600">{filteredTasks.length} task(s) found</p>
         </div>
-      )}{" "}
-    </>
+        {(isStaff || isSuperOrAdmin) && <CreateTaskForm />}
+      </div>
+
+      <Table
+        columns={columns}
+        dataSource={filteredTasks}
+        rowKey={(record) => record._id || record.id}
+        scroll={{ x: 1000 }}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) =>
+            `${range[0]}-${range[1]} of ${total} items`,
+        }}
+        className="bg-white rounded-lg shadow"
+      />
+    </div>
   );
 };
 

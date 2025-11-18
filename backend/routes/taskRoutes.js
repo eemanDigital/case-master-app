@@ -1,68 +1,121 @@
 const express = require("express");
-const {
-  getTasks,
-  createTask,
-  getTask,
-  updateTask,
-  deleteTask,
-  // updateTaskResponse,
-} = require("../controllers/taskController");
-// const { fileUpload } = require("../utils/taskDocHandler");
-const Task = require("../models/taskModel");
-const {
-  createTaskResponse,
-  deleteTaskResponse,
-  getTaskResponse,
-  // taskResponseFileUpload,
-  downloadFile,
-} = require("../controllers/taskResponseController");
+const taskController = require("../controllers/taskController");
+const taskResponseController = require("../controllers/taskResponseController");
+// const taskDocumentController = require("../controllers/taskDocumentController");
+const taskReminderController = require("../controllers/taskReminderController");
 const { protect, restrictTo } = require("../controllers/authController");
+const {
+  multerFileUploader,
+  uploadToCloudinary,
+} = require("../utils/multerFileUploader");
 const {
   downloadDocument,
   deleteDocument,
   createDocument,
 } = require("../controllers/factory");
-const {
-  multerFileUploader,
-  uploadToCloudinary,
-} = require("../utils/multerFileUploader");
+const Task = require("../models/taskModel");
 
 const router = express.Router();
 
-router.use(protect); //protect route from access unless user log in
+// Apply authentication to all routes
+router.use(protect);
 
-// document upload route
+// ============================================================================
+// TASK ROUTES (Maintaining your existing structure)
+// ============================================================================
 
-router.get("/:parentId/documents/:documentId/download", downloadDocument(Task));
-router.delete("/:parentId/documents/:documentId", deleteDocument(Task));
+// Create task (staff only) - Your existing route
+router.post(
+  "/",
+  restrictTo("super-admin", "admin", "staff", "hr"),
+  taskController.createTask
+);
 
+// Get all tasks (filtered by role) - Your existing route
+router.get("/", taskController.getTasks);
+
+// Get single task - Your existing route
+router.get("/:taskId", taskController.getTask);
+
+// Update task - Your existing route
+router.patch("/:id", taskController.updateTask);
+
+// Delete task - Your existing route
+router.delete(
+  "/:id",
+  restrictTo("admin", "super-admin"),
+  taskController.deleteTask
+);
+
+// ============================================================================
+// TASK DOCUMENT ROUTES (Maintaining your existing structure)
+// ============================================================================
+
+// Document upload - Your existing route structure
 router.post(
   "/:id/documents",
   multerFileUploader("file"),
   uploadToCloudinary,
   createDocument(Task)
 );
-///////////////////
 
-router.get("/", getTasks);
-router.get("/:taskId", getTask);
+// Document download - Your existing route structure
+router.get("/:parentId/documents/:documentId/download", downloadDocument(Task));
 
-// router.get("/download/:taskId", downloadFile);
-// router.patch("/:id", fileUpload, updateTask);
-router.patch("/:id", updateTask);
-router.delete("/:id", restrictTo("admin", "super-admin"), deleteTask);
-router.post("/", createTask);
+// Document delete - Your existing route structure
+router.delete("/:parentId/documents/:documentId", deleteDocument(Task));
 
-// sub-doc route for task response
-router.get("/:taskId/response/:responseId/download", downloadFile);
+// ============================================================================
+// TASK RESPONSE ROUTES (Maintaining your existing structure)
+// ============================================================================
+
+// Create response with file upload - Your existing route structure
 router.post(
   "/:taskId/response",
   multerFileUploader("doc"),
   uploadToCloudinary,
-  createTaskResponse
+  taskResponseController.createTaskResponse
 );
-router.delete("/:taskId/response/:responseId", deleteTaskResponse);
-router.get("/:taskId/response/:responseId", getTaskResponse);
-// router.patch("/:taskId/response/:responseId", updateTaskResponse);
+
+// Get specific response - Your existing route structure
+router.get(
+  "/:taskId/response/:responseId",
+  taskResponseController.getTaskResponse
+);
+
+// Delete response - Your existing route structure
+router.delete(
+  "/:taskId/response/:responseId",
+  taskResponseController.deleteTaskResponse
+);
+
+// Download response document - Your existing route structure
+router.get(
+  "/:taskId/response/:responseId/download",
+  taskResponseController.downloadFile
+);
+
+// ============================================================================
+// NEW ROUTES (Additional functionality from refactored code)
+// ============================================================================
+
+// Task statistics
+router.get("/stats/:userId?", taskController.getTaskStats);
+
+// Cancel task
+router.patch("/:id/cancel", taskController.cancelTask);
+
+// ============================================================================
+// TASK REMINDER ROUTES (New functionality)
+// ============================================================================
+
+// Create reminder
+router.post("/:taskId/reminder", taskReminderController.createTaskReminder);
+
+// Update reminder
+router.put("/:taskId/reminder", taskReminderController.updateTaskReminder);
+
+// Delete reminder
+router.delete("/:taskId/reminder", taskReminderController.deleteTaskReminder);
 
 module.exports = router;

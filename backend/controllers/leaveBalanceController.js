@@ -52,13 +52,14 @@ exports.getLeaveBalance = catchAsync(async (req, res, next) => {
       data: { leaveBalance },
     });
   } catch (error) {
-    // ✅ Return success with null balance instead of error
+    // If balance not found, return a helpful response instead of error
     if (error.statusCode === 404) {
       return res.status(200).json({
         status: "success",
         data: {
           leaveBalance: null,
-          message: "No leave balance found. Please contact HR.",
+          message:
+            "No leave balance found for this employee. Please create one.",
         },
       });
     }

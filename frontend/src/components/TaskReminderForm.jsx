@@ -8,7 +8,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 const { TextArea } = Input;
 
-const TaskReminderForm = ({ id }) => {
+const TaskReminderForm = ({ taskId }) => {
   const [open, setOpen] = useState(false);
   const { dataFetcher, loading } = useDataFetch();
 
@@ -43,9 +43,15 @@ const TaskReminderForm = ({ id }) => {
       toast.error("Please correct the form errors before submitting.");
       return;
     }
-    const result = await dataFetcher(`tasks/${id}`, "patch", values);
+
+    // Updated to match backend route structure
+    const result = await dataFetcher(
+      `tasks/${taskId}/reminder`,
+      "POST",
+      values.reminder
+    );
     handleSubmission(result);
-  }, [form, handleSubmission, dataFetcher, id]);
+  }, [form, handleSubmission, dataFetcher, taskId]);
 
   return (
     <>
@@ -66,21 +72,29 @@ const TaskReminderForm = ({ id }) => {
           <Form
             layout="vertical"
             form={form}
-            name="dynamic_form_complex"
+            name="task_reminder_form"
             className="w-full max-w-lg"
             onFinish={onSubmit}>
             <Card bordered={false} className="w-full">
               <Form.Item
                 name={["reminder", "message"]}
-                label="Write your message here..."
-                initialValue=""
+                label="Reminder Message"
                 rules={[
                   {
                     required: true,
-                    message: "Please, provide your message!",
+                    message: "Please provide a reminder message!",
+                  },
+                  {
+                    max: 200,
+                    message: "Message should not exceed 200 characters",
                   },
                 ]}>
-                <TextArea rows={5} placeholder="Your text here..." />
+                <TextArea
+                  rows={5}
+                  placeholder="Enter your reminder message here..."
+                  showCount
+                  maxLength={200}
+                />
               </Form.Item>
 
               <Form.Item>
@@ -88,7 +102,7 @@ const TaskReminderForm = ({ id }) => {
                   loading={loading}
                   className="blue-btn"
                   htmlType="submit">
-                  Save
+                  Send Reminder
                 </Button>
               </Form.Item>
             </Card>
@@ -98,8 +112,9 @@ const TaskReminderForm = ({ id }) => {
     </>
   );
 };
-// Prop types validation
+
 TaskReminderForm.propTypes = {
-  id: PropTypes.string.isRequired,
+  taskId: PropTypes.string.isRequired,
 };
+
 export default TaskReminderForm;

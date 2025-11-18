@@ -15,6 +15,7 @@ import {
   EyeOutlined,
   FilterOutlined,
   ReloadOutlined,
+  StopOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -28,8 +29,9 @@ import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import { formatDate } from "../utils/formatDate";
 import avatar from "../assets/avatar.png";
+import { useDataFetch } from "../hooks/useDataFetch";
 
-const { Column, ColumnGroup } = Table;
+const { Column } = Table;
 const { RangePicker } = DatePicker;
 
 const LeaveApplicationList = () => {
@@ -40,6 +42,7 @@ const LeaveApplicationList = () => {
     fetchData,
   } = useDataGetterHook();
 
+  const { dataFetcher } = useDataFetch();
   const [searchResults, setSearchResults] = useState([]);
   const [filters, setFilters] = useState({
     status: null,
@@ -59,14 +62,7 @@ const LeaveApplicationList = () => {
 
   useRedirectLogoutUser("/users/login");
 
-  // Debug logging
-  useEffect(() => {
-    console.log("LeaveApps Raw Data:", leaveApps);
-    console.log("Is Array?:", Array.isArray(leaveApps?.data));
-    console.log("Data Type:", typeof leaveApps?.data);
-  }, [leaveApps]);
-
-  // Fetch leave applications
+  // Fetch leave applications - MATCHES BACKEND ROUTE
   const fetchLeaveApplications = async () => {
     const params = new URLSearchParams({
       page: pagination.current,
@@ -80,6 +76,7 @@ const LeaveApplicationList = () => {
       params.append("endDate", filters.dateRange[1]);
     }
 
+    // Route: GET /leaves/applications
     await fetchData(`leaves/applications?${params.toString()}`, "leaveApps");
   };
 
@@ -89,29 +86,34 @@ const LeaveApplicationList = () => {
 
   // Update search results when data changes
   useEffect(() => {
-    if (leaveApps?.data && Array.isArray(leaveApps.data)) {
-      setSearchResults(leaveApps.data);
-      if (leaveApps.totalResults) {
-        setPagination((prev) => ({
-          ...prev,
-          total: leaveApps.totalResults,
-        }));
-      }
-    } else if (
+    console.log("LeaveApps Data:", leaveApps); // Debug log
+
+    let applications = [];
+
+    // Handle different response structures
+    if (
       leaveApps?.data?.leaveApplications &&
       Array.isArray(leaveApps.data.leaveApplications)
     ) {
-      // Handle nested data structure
-      setSearchResults(leaveApps.data.leaveApplications);
+      applications = leaveApps.data.leaveApplications;
       if (leaveApps.data.totalResults) {
         setPagination((prev) => ({
           ...prev,
           total: leaveApps.data.totalResults,
         }));
       }
-    } else {
-      setSearchResults([]);
+    } else if (Array.isArray(leaveApps?.data)) {
+      applications = leaveApps.data;
+      if (leaveApps.totalResults) {
+        setPagination((prev) => ({
+          ...prev,
+          total: leaveApps.totalResults,
+        }));
+      }
     }
+
+    setSearchResults(applications);
+    console.log("Applications Set:", applications.length); // Debug log
   }, [leaveApps]);
 
   // Debounced search
@@ -141,13 +143,11 @@ const LeaveApplicationList = () => {
     debouncedSearch(e.target.value.trim());
   };
 
-  // Handle filter changes
   const handleFilterChange = (key, value) => {
     setFilters((prev) => ({ ...prev, [key]: value }));
     setPagination((prev) => ({ ...prev, current: 1 }));
   };
 
-  // Clear all filters
   const clearFilters = () => {
     setFilters({
       status: null,
@@ -157,7 +157,20 @@ const LeaveApplicationList = () => {
     setPagination({ current: 1, pageSize: 10, total: 0 });
   };
 
-  // Delete leave application
+  // Cancel leave application - MATCHES BACKEND ROUTE: PATCH /leaves/applications/:id/cancel
+  const cancelApplication = async (id, reason) => {
+    try {
+      await dataFetcher(`leaves/applications/${id}/cancel`, "PATCH", {
+        cancellationReason: reason || "Cancelled by user",
+      });
+      toast.success("Leave application cancelled successfully");
+      fetchLeaveApplications();
+    } catch (error) {
+      toast.error(error.message || "Failed to cancel leave application");
+    }
+  };
+
+  // Delete leave application - MATCHES BACKEND ROUTE: DELETE /leaves/applications/:id
   const removeApplication = async (id) => {
     try {
       await dispatch(deleteData(`leaves/applications/${id}`)).unwrap();
@@ -168,7 +181,6 @@ const LeaveApplicationList = () => {
     }
   };
 
-  // Get status tag color
   const getStatusColor = (status) => {
     const colors = {
       pending: "warning",
@@ -179,7 +191,6 @@ const LeaveApplicationList = () => {
     return colors[status] || "default";
   };
 
-  // Get leave type color
   const getLeaveTypeColor = (type) => {
     const colors = {
       annual: "blue",
@@ -217,7 +228,7 @@ const LeaveApplicationList = () => {
       width: 180,
       render: (text, record) => (
         <Link
-          to={`${record.id}/details`}
+          to={`${record.id || record._id}/details`}
           className="text-blue-600 hover:text-blue-800 font-medium capitalize">
           {`${record.employee?.firstName} ${record.employee?.lastName}`}
         </Link>
@@ -276,12 +287,12 @@ const LeaveApplicationList = () => {
     {
       title: "Action",
       key: "action",
-      width: 120,
+      width: 150,
       fixed: "right",
       render: (_, record) => (
         <Space size="small">
           <Tooltip title="View Details">
-            <Link to={`${record.id}/details`}>
+            <Link to={`${record.id || record._id}/details`}>
               <Button
                 type="primary"
                 icon={<EyeOutlined />}
@@ -291,7 +302,29 @@ const LeaveApplicationList = () => {
             </Link>
           </Tooltip>
 
-          {(isAdminOrHr || record.employee?._id === user?.data?._id) && (
+          {/* Cancel button for pending/approved applications */}
+          {["pending", "approved"].includes(record.status) &&
+            (record.employee?._id === user?.data?._id || isAdminOrHr) && (
+              <Tooltip title="Cancel Application">
+                <Button
+                  icon={<StopOutlined />}
+                  size="small"
+                  onClick={() => {
+                    Modal.confirm({
+                      title: "Cancel Leave Application",
+                      content:
+                        "Are you sure you want to cancel this application?",
+                      okText: "Yes, Cancel",
+                      okType: "danger",
+                      onOk: () => cancelApplication(record._id || record.id),
+                    });
+                  }}
+                />
+              </Tooltip>
+            )}
+
+          {/* Delete button for admin/HR only */}
+          {isAdminOrHr && (
             <Tooltip title="Delete">
               <Button
                 danger
@@ -305,7 +338,7 @@ const LeaveApplicationList = () => {
                       "Are you sure you want to delete this leave application?",
                     okText: "Yes, Delete",
                     okType: "danger",
-                    onOk: () => removeApplication(record._id),
+                    onOk: () => removeApplication(record._id || record.id),
                   });
                 }}
               />
@@ -316,7 +349,6 @@ const LeaveApplicationList = () => {
     },
   ];
 
-  // Filter leave applications based on user role
   const filteredLeaveApps = useMemo(() => {
     const results = Array.isArray(searchResults) ? searchResults : [];
 
@@ -342,7 +374,6 @@ const LeaveApplicationList = () => {
 
   return (
     <div className="p-4">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
         <h1 className="text-2xl font-bold text-gray-800">
           Leave Applications

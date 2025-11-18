@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import GoBackButton from "../components/GoBackButton";
 import {
   Card,
   Descriptions,
@@ -14,7 +15,7 @@ import {
 import {
   ArrowLeftOutlined,
   UserOutlined,
-  CalendarOutlined,
+  // CalendarOutlined,
   FileTextOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
@@ -107,9 +108,7 @@ const LeaveApplicationDetails = () => {
     <div className="p-4 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
-        <Button onClick={() => navigate(-1)} icon={<ArrowLeftOutlined />}>
-          Back to List
-        </Button>
+        <GoBackButton />
 
         <Space>
           {isAdminOrHr && application.status === "pending" && (
