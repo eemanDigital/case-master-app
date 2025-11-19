@@ -2,8 +2,13 @@ import { Link } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import TaskReminderForm from "./TaskReminderForm";
-import { Table, Modal, Space, Tooltip, Button, Tag, Badge } from "antd";
-import { DeleteOutlined, EditOutlined, EyeOutlined } from "@ant-design/icons";
+import { Table, Modal, Space, Tooltip, Button, Tag, Badge, Avatar } from "antd";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  EyeOutlined,
+  TeamOutlined,
+} from "@ant-design/icons";
 import CreateTaskForm from "../pages/CreateTaskForm";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useDispatch, useSelector } from "react-redux";
@@ -28,9 +33,9 @@ const TaskList = () => {
   const { isSuperOrAdmin, isStaff, isClient } = useAdminHook();
   const dispatch = useDispatch();
 
-  // console.log("Tasks data:", tasks);
-
   useRedirectLogoutUser("/users/login");
+
+  console.log("Tasks data:", tasks);
 
   useEffect(() => {
     fetchData("tasks", "tasks");
@@ -61,6 +66,7 @@ const TaskList = () => {
     const colors = {
       pending: "blue",
       "in-progress": "orange",
+      "under-review": "purple",
       completed: "green",
       overdue: "red",
       cancelled: "gray",
@@ -78,6 +84,19 @@ const TaskList = () => {
     return colors[priority] || "default";
   };
 
+  const getCategoryColor = (category) => {
+    const colors = {
+      research: "blue",
+      drafting: "purple",
+      filing: "cyan",
+      hearing: "orange",
+      "client-meeting": "green",
+      discovery: "gold",
+      other: "default",
+    };
+    return colors[category] || "default";
+  };
+
   const columns = [
     {
       title: "Task Title",
@@ -91,10 +110,19 @@ const TaskList = () => {
             to={`${record?._id || record?.id}/details`}>
             {text}
           </Link>
-          {record?.reminder?.isActive && (
-            <Badge dot color="orange" title="Has reminder" />
+          {record?.reminders?.some((r) => r.status === "pending") && (
+            <Badge dot color="orange" title="Has active reminder" />
           )}
         </div>
+      ),
+    },
+    {
+      title: "Case",
+      dataIndex: "case",
+      key: "case",
+      width: 120,
+      render: (caseObj) => (
+        <div className="text-xs">{caseObj?.caseNumber || "N/A"}</div>
       ),
     },
     {
@@ -104,18 +132,29 @@ const TaskList = () => {
       width: 120,
       render: (status) => (
         <Tag color={getStatusColor(status)} className="capitalize">
-          {status}
+          {status?.replace("-", " ")}
         </Tag>
       ),
     },
     {
       title: "Priority",
-      dataIndex: "taskPriority",
-      key: "taskPriority",
+      dataIndex: "priority",
+      key: "priority",
       width: 100,
       render: (priority) => (
         <Tag color={getPriorityColor(priority)} className="capitalize">
           {priority}
+        </Tag>
+      ),
+    },
+    {
+      title: "Category",
+      dataIndex: "category",
+      key: "category",
+      width: 120,
+      render: (category) => (
+        <Tag color={getCategoryColor(category)} className="capitalize">
+          {category?.replace("-", " ")}
         </Tag>
       ),
     },
@@ -127,9 +166,24 @@ const TaskList = () => {
       render: (assignedTo) =>
         assignedTo?.length > 0 ? (
           <div className="space-y-1">
-            {assignedTo.slice(0, 2).map((staff) => (
-              <div key={staff?._id} className="text-xs">
-                {staff?.firstName} {staff?.lastName}
+            {assignedTo.slice(0, 2).map((assignment) => (
+              <div
+                key={assignment?.user?._id}
+                className="flex items-center gap-1">
+                <Avatar
+                  size="small"
+                  src={assignment?.user?.photo}
+                  className="w-4 h-4">
+                  {assignment?.user?.firstName?.[0]}
+                </Avatar>
+                <span className="text-xs">
+                  {assignment?.user?.firstName} {assignment?.user?.lastName}
+                  {assignment.role !== "primary" && (
+                    <Tag color="blue" className="ml-1 text-xs">
+                      {assignment.role}
+                    </Tag>
+                  )}
+                </span>
               </div>
             ))}
             {assignedTo.length > 2 && (
@@ -137,20 +191,6 @@ const TaskList = () => {
                 +{assignedTo.length - 2} more
               </div>
             )}
-          </div>
-        ) : (
-          "N/A"
-        ),
-    },
-    {
-      title: "Client",
-      dataIndex: "assignedToClient",
-      key: "assignedToClient",
-      width: 120,
-      render: (client) =>
-        client ? (
-          <div className="text-sm">
-            {client?.firstName} {client?.lastName}
           </div>
         ) : (
           "N/A"
@@ -166,11 +206,19 @@ const TaskList = () => {
     },
     {
       title: "Progress",
-      dataIndex: "completionPercentage",
-      key: "completionPercentage",
+      dataIndex: "progress",
+      key: "progress",
       width: 100,
-      render: (percentage) => (
-        <div className="text-sm font-medium">{percentage || 0}%</div>
+      render: (progress) => (
+        <div className="flex items-center gap-2">
+          <div className="w-12 bg-gray-200 rounded-full h-2">
+            <div
+              className="bg-blue-600 h-2 rounded-full"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className="text-sm font-medium w-8">{progress}%</span>
+        </div>
       ),
     },
     {
@@ -188,19 +236,6 @@ const TaskList = () => {
                 <Button icon={<EyeOutlined />} size="small" type="text" />
               </Link>
             </Tooltip>
-
-            {canModify && (
-              <Tooltip title="Edit Task">
-                <Link to={`${record?._id || record?.id}/update`}>
-                  <Button
-                    icon={<EditOutlined />}
-                    size="small"
-                    type="text"
-                    className="text-purple-600"
-                  />
-                </Link>
-              </Tooltip>
-            )}
 
             {canModify && (
               <TaskReminderForm taskId={record?._id || record?.id} />
@@ -241,13 +276,17 @@ const TaskList = () => {
       return taskArray;
     } else if (isClient) {
       return taskArray.filter(
-        (task) => task?.assignedToClient?._id === loggedInUserId
+        (task) =>
+          task?.assignedTo?.some(
+            (assignment) => assignment.user._id === loggedInUserId
+          ) || task?.assignedBy?._id === loggedInUserId
       );
     } else if (isStaff) {
       return taskArray.filter(
         (task) =>
-          task?.assignedTo?.some((user) => user._id === loggedInUserId) ||
-          task?.assignedBy?._id === loggedInUserId
+          task?.assignedTo?.some(
+            (assignment) => assignment.user._id === loggedInUserId
+          ) || task?.assignedBy?._id === loggedInUserId
       );
     }
 
@@ -279,7 +318,7 @@ const TaskList = () => {
         columns={columns}
         dataSource={filteredTasks}
         rowKey={(record) => record._id || record.id}
-        scroll={{ x: 1000 }}
+        scroll={{ x: 1200 }}
         pagination={{
           pageSize: 10,
           showSizeChanger: true,

@@ -109,7 +109,7 @@ const DataFetcherContext = ({ children }) => {
     if (!skipCache && !forceRefresh) {
       const cachedData = getCachedData(cacheKey);
       if (cachedData) {
-        console.log(`📦 Using cached data for: ${key}`);
+        // console.log(`📦 Using cached data for: ${key}`);
         setState((prevState) => ({
           ...prevState,
           [key]: cachedData,
@@ -121,7 +121,7 @@ const DataFetcherContext = ({ children }) => {
 
     // ✅ Check if same request is already pending
     if (pendingRequests.has(cacheKey)) {
-      console.log(`⏳ Request already pending for: ${key}`);
+      // console.log(`⏳ Request already pending for: ${key}`);
       return pendingRequests.get(cacheKey);
     }
 
@@ -144,7 +144,7 @@ const DataFetcherContext = ({ children }) => {
     // ✅ Create the fetch promise
     const fetchPromise = (async () => {
       try {
-        console.log(`🔄 Fetching: ${key} from ${endpoint}`);
+        // console.log(`🔄 Fetching: ${key} from ${endpoint}`);
 
         const response = await axios.get(`${baseURL}/${endpoint}`, {
           params,
@@ -165,14 +165,14 @@ const DataFetcherContext = ({ children }) => {
           // ✅ Cache the response
           setCacheData(cacheKey, response.data);
 
-          console.log(`✅ Fetched: ${key}`);
+          // console.log(`✅ Fetched: ${key}`);
         }
 
         return response.data;
       } catch (err) {
         // Don't set error if request was cancelled
         if (axios.isCancel(err) || err.name === "CanceledError") {
-          console.log(`🚫 Request cancelled for: ${key}`);
+          // console.log(`🚫 Request cancelled for: ${key}`);
           return null;
         }
 
@@ -209,7 +209,7 @@ const DataFetcherContext = ({ children }) => {
    */
   const fetchBatch = useCallback(
     async (requests) => {
-      console.log(`📦 Batch fetching ${requests.length} endpoints...`);
+      // console.log(`📦 Batch fetching ${requests.length} endpoints...`);
 
       const promises = requests.map(({ endpoint, key, options }) =>
         fetchData(endpoint, key, options).catch((err) => {
@@ -221,9 +221,9 @@ const DataFetcherContext = ({ children }) => {
       const results = await Promise.allSettled(promises);
 
       const successful = results.filter((r) => r.status === "fulfilled").length;
-      console.log(
-        `✅ Batch fetch complete: ${successful}/${requests.length} successful`
-      );
+      // console.log(
+      // `✅ Batch fetch complete: ${successful}/${requests.length} successful`
+      // );
 
       return results;
     },
@@ -253,7 +253,7 @@ const DataFetcherContext = ({ children }) => {
           withCredentials: true,
         });
         setCacheData(cacheKey, response.data);
-        console.log(`🔮 Prefetched: ${key}`);
+        // console.log(`🔮 Prefetched: ${key}`);
       } catch (err) {
         console.error(`Failed to prefetch ${key}:`, err.message);
       }
@@ -269,7 +269,7 @@ const DataFetcherContext = ({ children }) => {
     });
     abortControllersRef.current.clear();
     pendingRequests.clear();
-    console.log("🚫 All requests cancelled");
+    // console.log("🚫 All requests cancelled");
   }, []);
 
   // ✅ Cleanup on unmount

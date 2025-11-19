@@ -23,8 +23,8 @@ const TotalOutstandingBalanceCharts = ({
 
   // ✅ CORRECTED: Access data directly (not from array)
   const { value, year, totalBalance } = useMemo(() => {
-    console.log("Payment Data:", paymentData); // DEBUG
-    console.log("Balance Data:", balanceData); // DEBUG
+    // console.log("Payment Data:", paymentData); // DEBUG
+    // console.log("Balance Data:", balanceData); // DEBUG
 
     return {
       value: paymentData?.totalAmount || 0,

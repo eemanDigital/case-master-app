@@ -1,4 +1,3 @@
-// components/TaskDetails.js (updated)
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
@@ -15,6 +14,8 @@ import {
   Row,
   Col,
   Modal,
+  Timeline,
+  List,
 } from "antd";
 import {
   CalendarOutlined,
@@ -26,6 +27,8 @@ import {
   CheckCircleOutlined,
   PlayCircleOutlined,
   EyeOutlined,
+  FileTextOutlined,
+  HistoryOutlined,
 } from "@ant-design/icons";
 import {
   ClipboardDocumentIcon,
@@ -48,7 +51,6 @@ import PageErrorAlert from "../components/PageErrorAlert";
 import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import AddEventToCalender from "../components/AddEventToCalender";
-
 import TaskReminderForm from "../components/TaskReminderForm";
 import TaskQuickActions from "../components/TaskQuickActions";
 import TaskAttachmentsCard from "../components/TaskAttachmentsCard ";
@@ -69,7 +71,7 @@ const TaskDetails = () => {
 
   const { handleDeleteDocument, documents } = useDeleteDocument(
     task?.documents ? { documents: task?.documents } : null,
-    id // Using task ID as storage name
+    id
   );
 
   const currentUser = user?.data?._id;
@@ -79,10 +81,8 @@ const TaskDetails = () => {
   useRedirectLogoutUser("/users/login");
 
   const isAssignedToCurrentUser = task?.assignedTo?.some(
-    (staff) => staff._id === currentUser
+    (assignment) => assignment?.user?._id === currentUser
   );
-  const isAssignedToCurrentClientUser =
-    task?.assignedToClient?._id === currentUser;
 
   const canModifyTask = useMemo(() => {
     return isAssignedBy || ["super-admin", "admin"].includes(user?.data?.role);
@@ -125,6 +125,19 @@ const TaskDetails = () => {
     }
   };
 
+  const getCategoryColor = (category) => {
+    const colors = {
+      research: "blue",
+      drafting: "purple",
+      filing: "cyan",
+      hearing: "orange",
+      "client-meeting": "green",
+      discovery: "gold",
+      other: "default",
+    };
+    return colors[category] || "default";
+  };
+
   const getStatusConfig = (task) => {
     if (task?.status === "completed") {
       return {
@@ -152,6 +165,13 @@ const TaskDetails = () => {
         color: "processing",
         text: "In Progress",
         icon: <PlayCircleOutlined />,
+      };
+    }
+    if (task?.status === "under-review") {
+      return {
+        color: "purple",
+        text: "Under Review",
+        icon: <EyeOutlined />,
       };
     }
     if (moment(task?.dueDate).diff(moment(), "days") <= 2) {
@@ -183,13 +203,22 @@ const TaskDetails = () => {
   const handleDocumentDelete = async (documentId) => {
     const success = await handleDeleteDocument(documentId);
     if (success) {
-      refetch(); // Refresh task data
+      refetch();
     }
   };
 
   const handleTaskUpdate = () => {
-    refetch(); // Refresh task data after any update
+    refetch();
   };
+
+  // Calculate total time spent from responses
+  const totalTimeSpent = useMemo(() => {
+    if (!task?.responses) return 0;
+    return task.responses.reduce(
+      (total, response) => total + (response.timeSpent || 0),
+      0
+    );
+  }, [task?.responses]);
 
   if (loading) return <LoadingSpinner />;
   if (dataError) {
@@ -213,8 +242,10 @@ const TaskDetails = () => {
 
   const createEventTitle = `Task: ${task?.title}`;
   const createEventDescription = `Task Description: ${
-    task?.instruction
-  }\n\nPriority: ${task?.taskPriority}\nDue Date: ${formatDate(task?.dueDate)}`;
+    task?.description || task?.instruction
+  }\n\nPriority: ${task?.priority}\nCategory: ${
+    task?.category
+  }\nDue Date: ${formatDate(task?.dueDate)}`;
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -240,24 +271,27 @@ const TaskDetails = () => {
                       {statusConfig.text}
                     </Tag>
                     <Tag
-                      color={getPriorityColor(task?.taskPriority)}
-                      icon={getPriorityIcon(task?.taskPriority)}
+                      color={getPriorityColor(task?.priority)}
+                      icon={getPriorityIcon(task?.priority)}
                       className="text-sm font-semibold capitalize">
-                      {task?.taskPriority} Priority
+                      {task?.priority} Priority
                     </Tag>
-                    {task?.completionPercentage > 0 && (
-                      <div className="flex items-center gap-2">
-                        <Progress
-                          percent={task.completionPercentage}
-                          size="small"
-                          style={{ width: 80 }}
-                          showInfo={false}
-                        />
-                        <Text className="text-sm text-gray-600">
-                          {task.completionPercentage}%
-                        </Text>
-                      </div>
-                    )}
+                    <Tag
+                      color={getCategoryColor(task?.category)}
+                      className="text-sm font-semibold capitalize">
+                      {task?.category?.replace("-", " ")}
+                    </Tag>
+                    <div className="flex items-center gap-2">
+                      <Progress
+                        percent={task.progress}
+                        size="small"
+                        style={{ width: 80 }}
+                        showInfo={false}
+                      />
+                      <Text className="text-sm text-gray-600">
+                        {task.progress}%
+                      </Text>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -280,12 +314,24 @@ const TaskDetails = () => {
                         (
                         {daysUntilDue > 0
                           ? `${daysUntilDue} days left`
+                          : daysUntilDue === 0
+                          ? "Due today"
                           : "Overdue"}
                         )
                       </span>
                     )}
                   </Text>
                 </div>
+
+                {totalTimeSpent > 0 && (
+                  <div className="flex items-center gap-2">
+                    <ClockCircleOutlined className="text-gray-500" />
+                    <Text className="text-sm text-gray-600">
+                      {Math.floor(totalTimeSpent / 60)}h {totalTimeSpent % 60}m
+                      spent
+                    </Text>
+                  </div>
+                )}
 
                 {task?.tags?.length > 0 && (
                   <div className="flex items-center gap-2">
@@ -335,6 +381,23 @@ const TaskDetails = () => {
                   Task Details
                 </Title>
               </div>
+
+              {/* Description Section */}
+              {task?.description && (
+                <div className="mb-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileTextOutlined className="text-gray-600" />
+                    <Text className="font-semibold text-gray-900">
+                      Description
+                    </Text>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <Text className="text-gray-800 leading-relaxed">
+                      {task.description}
+                    </Text>
+                  </div>
+                </div>
+              )}
 
               {/* Instruction Section */}
               <div className="mb-6">
@@ -387,27 +450,20 @@ const TaskDetails = () => {
                   </div>
                 </Col>
 
-                {/* Assigned To Client */}
+                {/* Case Information */}
                 <Col xs={24} sm={12}>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg h-full">
-                    <Avatar
-                      size="small"
-                      src={task?.assignedToClient?.photo}
-                      icon={<UserOutlined />}
-                      className="bg-purple-500"
-                    />
+                    <ScaleIcon className="w-4 h-4 text-purple-600" />
                     <div>
                       <Text className="text-sm font-medium text-gray-600 block">
-                        Client
+                        Related Case
                       </Text>
                       <Text className="font-semibold text-gray-900">
-                        {task?.assignedToClient
-                          ? `${task.assignedToClient?.firstName} ${task.assignedToClient?.lastName}`
-                          : "Not Assigned"}
+                        {task?.case?.caseNumber || "N/A"}
                       </Text>
-                      {task?.assignedToClient?.email && (
+                      {task?.case?.title && (
                         <Text className="text-xs text-gray-500 block">
-                          {task.assignedToClient.email}
+                          {task.case.title}
                         </Text>
                       )}
                     </div>
@@ -428,24 +484,30 @@ const TaskDetails = () => {
                       </Text>
                       <div className="flex flex-wrap gap-2">
                         {task?.assignedTo?.length > 0 ? (
-                          task.assignedTo.map((staff, index) => (
+                          task.assignedTo.map((assignment, index) => (
                             <div
                               key={index}
                               className="flex items-center gap-2 bg-white px-3 py-1 rounded border">
                               <Avatar
                                 size="small"
-                                src={staff.photo}
+                                src={assignment?.user?.photo}
                                 className="w-6 h-6">
-                                {staff.firstName?.[0]}
-                                {staff.lastName?.[0]}
+                                {assignment?.user?.firstName?.[0]}
+                                {assignment?.user?.lastName?.[0]}
                               </Avatar>
                               <Text className="text-sm">
-                                {staff.firstName} {staff.lastName}
+                                {assignment?.user?.firstName}{" "}
+                                {assignment?.user?.lastName}
                               </Text>
-                              {staff.position && (
+                              {assignment?.user?.position && (
                                 <Text className="text-xs text-gray-500">
-                                  ({staff.position})
+                                  ({assignment?.user?.position})
                                 </Text>
+                              )}
+                              {assignment?.role !== "primary" && (
+                                <Tag color="blue" className="text-xs">
+                                  {assignment?.role}
+                                </Tag>
                               )}
                             </div>
                           ))
@@ -462,53 +524,9 @@ const TaskDetails = () => {
 
               <Divider />
 
-              {/* Case Information */}
-              {task?.caseToWorkOn?.length > 0 && (
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <ScaleIcon className="w-4 h-4 text-gray-600" />
-                    <Text className="font-semibold text-gray-900">
-                      Related Cases ({task.caseToWorkOn.length})
-                    </Text>
-                  </div>
-                  <div className="space-y-2">
-                    {task.caseToWorkOn.map((taskCase, index) => {
-                      const firstName =
-                        taskCase.firstParty?.name?.[0]?.name || "N/A";
-                      const secondName =
-                        taskCase.secondParty?.name?.[0]?.name || "N/A";
-                      return (
-                        <div
-                          key={index}
-                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                          <Badge count={index + 1} color="blue" />
-                          <div className="flex-1">
-                            <Text className="font-medium text-gray-900">
-                              {firstName} vs {secondName}
-                            </Text>
-                            {taskCase.suitNo && (
-                              <Text className="text-xs text-gray-500 block">
-                                Suit No: {taskCase.suitNo}
-                              </Text>
-                            )}
-                            {taskCase.caseStatus && (
-                              <Tag color="blue" className="text-xs mt-1">
-                                {taskCase.caseStatus}
-                              </Tag>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              <Divider />
-
               {/* Timeline Information */}
               <Row gutter={[16, 16]}>
-                <Col xs={24} sm={12}>
+                <Col xs={24} sm={8}>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <CalendarOutlined className="text-blue-600" />
                     <div>
@@ -524,7 +542,7 @@ const TaskDetails = () => {
                     </div>
                   </div>
                 </Col>
-                <Col xs={24} sm={12}>
+                <Col xs={24} sm={8}>
                   <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
                     <ClockCircleOutlined
                       className={
@@ -551,6 +569,21 @@ const TaskDetails = () => {
                     </div>
                   </div>
                 </Col>
+                {task?.estimatedHours && (
+                  <Col xs={24} sm={8}>
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                      <ClockCircleOutlined className="text-purple-600" />
+                      <div>
+                        <Text className="text-sm font-medium text-gray-600 block">
+                          Estimated Hours
+                        </Text>
+                        <Text className="font-semibold text-gray-900">
+                          {task.estimatedHours} hours
+                        </Text>
+                      </div>
+                    </div>
+                  </Col>
+                )}
               </Row>
 
               {/* Completion Date */}
@@ -575,6 +608,53 @@ const TaskDetails = () => {
               )}
             </Card>
 
+            {/* Activity Timeline */}
+            {task?.responses?.length > 0 && (
+              <Card
+                className="border-0 rounded-2xl shadow-sm"
+                bodyStyle={{ padding: "24px" }}>
+                <div className="flex items-center gap-3 mb-6">
+                  <HistoryOutlined className="text-blue-600" />
+                  <Title level={3} className="m-0 text-gray-900">
+                    Activity Timeline
+                  </Title>
+                </div>
+                <Timeline>
+                  {task.responses.map((response, index) => (
+                    <Timeline.Item
+                      key={index}
+                      dot={<CheckCircleOutlined className="text-green-500" />}
+                      color="green">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <Text strong>
+                            {response.submittedBy?.firstName}{" "}
+                            {response.submittedBy?.lastName}
+                          </Text>
+                          <Text className="block text-gray-600">
+                            {response.comments}
+                          </Text>
+                          {response.timeSpent > 0 && (
+                            <Text className="text-sm text-gray-500">
+                              Time spent: {response.timeSpent} minutes
+                            </Text>
+                          )}
+                          {response.completed && (
+                            <Tag color="green" className="mt-1">
+                              Marked as completed
+                            </Tag>
+                          )}
+                        </div>
+                        <Text className="text-sm text-gray-500">
+                          {moment(response.submittedAt).fromNow()}
+                        </Text>
+                      </div>
+                    </Timeline.Item>
+                  ))}
+                </Timeline>
+              </Card>
+            )}
+
             {/* Attachments Card */}
             <TaskAttachmentsCard
               documents={documents}
@@ -585,49 +665,62 @@ const TaskDetails = () => {
               onPreviewDocument={handleDocumentPreview}
             />
 
-            {/* Reminder Alert */}
-            {task?.reminder?.isActive && (
-              <Alert
-                message={
-                  <div className="flex items-center gap-2">
-                    <ExclamationTriangleIcon className="w-4 h-4" />
-                    <span>Reminder: {task.reminder.message}</span>
-                  </div>
-                }
-                description={
-                  <div className="mt-1">
-                    <Text type="secondary" className="text-sm">
-                      Set by {task.reminder.sender?.firstName}{" "}
-                      {task.reminder.sender?.lastName} •
-                      {moment(task.reminder?.timestamp).fromNow()}
-                    </Text>
-                  </div>
-                }
-                type="warning"
-                showIcon={false}
-                className="border-0 rounded-2xl bg-orange-50 border-orange-200"
-                action={
-                  canModifyTask && (
-                    <Button
-                      size="small"
-                      type="link"
-                      onClick={async () => {
-                        try {
-                          await dataFetcher(
-                            `tasks/${task._id}/reminder`,
-                            "DELETE"
-                          );
-                          message.success("Reminder dismissed");
-                          refetch();
-                        } catch (error) {
-                          message.error("Failed to dismiss reminder");
+            {/* Active Reminders */}
+            {task?.reminders?.some((r) => r.status === "pending") && (
+              <Card
+                className="border-0 rounded-2xl shadow-sm border-orange-200 bg-orange-50"
+                bodyStyle={{ padding: "24px" }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <ExclamationTriangleIcon className="w-5 h-5 text-orange-600" />
+                  <Title level={3} className="m-0 text-gray-900">
+                    Active Reminders
+                  </Title>
+                </div>
+                <List
+                  dataSource={task.reminders.filter(
+                    (r) => r.status === "pending"
+                  )}
+                  renderItem={(reminder) => (
+                    <List.Item>
+                      <List.Item.Meta
+                        avatar={
+                          <ExclamationTriangleIcon className="w-4 h-4 text-orange-500" />
                         }
-                      }}>
-                      Dismiss
-                    </Button>
-                  )
-                }
-              />
+                        title={reminder.message}
+                        description={
+                          <div>
+                            <Text type="secondary">
+                              Scheduled for: {formatDate(reminder.scheduledFor)}
+                            </Text>
+                            <br />
+                            <Text type="secondary">
+                              Created: {moment(reminder.timestamp).fromNow()}
+                            </Text>
+                          </div>
+                        }
+                      />
+                      {canModifyTask && (
+                        <Button
+                          size="small"
+                          onClick={async () => {
+                            try {
+                              await dataFetcher(
+                                `tasks/${task._id}/reminders/${reminder._id}`,
+                                "DELETE"
+                              );
+                              message.success("Reminder cancelled");
+                              refetch();
+                            } catch (error) {
+                              message.error("Failed to cancel reminder");
+                            }
+                          }}>
+                          Cancel
+                        </Button>
+                      )}
+                    </List.Item>
+                  )}
+                />
+              </Card>
             )}
           </div>
 
@@ -644,21 +737,20 @@ const TaskDetails = () => {
               </div>
 
               {/* Response Form */}
-              {!isAssignedBy &&
-                (isAssignedToCurrentUser || isAssignedToCurrentClientUser) && (
-                  <div className="mb-6">
-                    <TaskResponseForm
-                      taskId={task?._id}
-                      onResponseSubmit={refetch}
-                    />
-                  </div>
-                )}
+              {!isAssignedBy && isAssignedToCurrentUser && (
+                <div className="mb-6">
+                  <TaskResponseForm
+                    taskId={task?._id}
+                    onResponseSubmit={refetch}
+                    task={task}
+                  />
+                </div>
+              )}
 
               {/* Response Display */}
               <TaskResponse
                 task={task}
                 isAssignedToCurrentUser={isAssignedToCurrentUser}
-                isAssignedToCurrentClientUser={isAssignedToCurrentClientUser}
                 onResponseUpdate={refetch}
               />
             </Card>

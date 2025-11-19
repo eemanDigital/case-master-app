@@ -318,7 +318,7 @@ const CurrentTasksTracker = ({ tasks, userId }) => {
                 from superiors
               </span>
               <Link
-                to="/tasks"
+                to="tasks"
                 className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-medium">
                 <EyeIcon className="w-3 h-3" />
                 View All

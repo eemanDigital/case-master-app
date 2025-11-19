@@ -170,8 +170,6 @@ const Dashboard = () => {
     }
   }, [yearEachMonth, dataFetcherEachMonth]);
 
-  console.log(accountOfficerAggregates, "<<< accountOfficerAggregates");
-
   // ✅ Extract data from dashboardStats response
   const dashboardData = dashboardStats?.data || {};
 
@@ -294,7 +292,7 @@ const Dashboard = () => {
                       <Skeleton active paragraph={{ rows: 6 }} />
                     ) : (
                       <CurrentTasksTracker
-                        tasks={tasks?.data || []}
+                        tasks={tasks?.data?.tasks || []}
                         userId={userId}
                       />
                     )}

@@ -43,8 +43,6 @@ const CaseCountsByClient = ({ data, loading }) => {
   const transformedData = useMemo(() => {
     if (!data) return [];
 
-    console.log("Raw data for CaseCountsByClientChart:", data);
-
     const sortedData = [...data].sort((a, b) => b.count - a.count).slice(0, 10); // Limit to top 10 clients
 
     return sortedData.map((item, index) => ({

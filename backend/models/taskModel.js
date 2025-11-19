@@ -1,101 +1,84 @@
 const mongoose = require("mongoose");
 
-// Reminder sub-schema
-const reminderSchema = new mongoose.Schema(
-  {
-    message: {
-      type: String,
-      maxLength: [200, "Message should not exceed 200 characters"],
-      required: [true, "Reminder message is required"],
-      trim: true,
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now,
-    },
-    sender: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "Sender is required"],
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
+// Sub-document schemas
+const reminderSchema = new mongoose.Schema({
+  message: {
+    type: String,
+    maxLength: [50, "Message should not exceed 50 characters"],
+    required: [true, "Reminder message is required"],
   },
-  { _id: true }
-);
+  timestamp: {
+    type: Date,
+    default: Date.now,
+  },
+  scheduledFor: {
+    type: Date,
+    required: [true, "Reminder schedule time is required"],
+  },
+  status: {
+    type: String,
+    enum: ["pending", "sent", "cancelled"],
+    default: "pending",
+  },
+});
 
-// Task response sub-schema
-const taskResponseSchema = new mongoose.Schema(
-  {
-    completed: {
-      type: Boolean,
-      required: [true, "Completion status is required"],
-      default: false,
-    },
-    doc: {
-      type: String,
-      validate: {
-        validator: function (v) {
-          return !v || /^https?:\/\/.+/.test(v);
-        },
-        message: "Document must be a valid URL",
+const taskResponseSchema = new mongoose.Schema({
+  completed: {
+    type: Boolean,
+    default: false,
+  },
+  documents: [
+    {
+      fileName: String,
+      fileUrl: String,
+      uploadedAt: {
+        type: Date,
+        default: Date.now,
       },
     },
-    comment: {
-      type: String,
-      trim: true,
-      maxLength: [1000, "Comment cannot exceed 1000 characters"],
-    },
-    submittedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: [true, "Submitter is required"],
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now,
-      immutable: true,
-    },
+  ],
+  comments: {
+    type: String,
+    trim: true,
   },
-  { _id: true, timestamps: false }
-);
+  submittedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  submittedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  timeSpent: {
+    // For tracking time spent on task
+    type: Number, // in minutes
+    default: 0,
+  },
+});
 
-// Document sub-schema
-const documentSchema = new mongoose.Schema(
-  {
-    fileName: {
-      type: String,
-      required: [true, "File name is required"],
-      trim: true,
-      maxLength: [255, "File name too long"],
-    },
-    file: {
-      type: String,
-      required: [true, "File URL is required"],
-      validate: {
-        validator: function (v) {
-          return /^https?:\/\/.+/.test(v);
-        },
-        message: "File must be a valid URL",
-      },
-    },
-    uploadedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      // required: [true, "Uploader is required"],
-    },
-    uploadedAt: {
-      type: Date,
-      default: Date.now,
-      immutable: true,
-    },
-    fileSize: Number,
-    mimeType: String,
+const taskDocumentSchema = new mongoose.Schema({
+  fileName: {
+    type: String,
+    required: [true, "File name is required"],
+    trim: true,
   },
-  { _id: true }
-);
+  fileUrl: {
+    type: String,
+    required: [true, "File URL is required"],
+  },
+  uploadedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  uploadedAt: {
+    type: Date,
+    default: Date.now,
+  },
+  fileSize: Number,
+  mimeType: String,
+});
 
 // Main task schema
 const taskSchema = new mongoose.Schema(
@@ -104,130 +87,112 @@ const taskSchema = new mongoose.Schema(
       type: String,
       trim: true,
       required: [true, "Task title is required"],
-      maxLength: [200, "Title cannot exceed 200 characters"],
-      minLength: [3, "Title must be at least 3 characters"],
-      index: true,
+      maxLength: [100, "Title should not exceed 100 characters"],
+    },
+    description: {
+      type: String,
+      trim: true,
+    },
+    instruction: {
+      type: String,
+      trim: true,
+      required: [true, "Task instructions are required"],
     },
 
-    caseToWorkOn: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Case",
-      },
-    ],
-
+    // Relationships
+    case: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Case",
+      required: [true, "Task must be associated with a case"],
+    },
     assignedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: [true, "Task must have an assigner"],
-      index: true,
+      required: true,
     },
-
     assignedTo: [
       {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+          required: true,
+        },
+        role: {
+          type: String,
+          enum: ["primary", "collaborator", "reviewer"],
+          default: "primary",
+        },
+        assignedAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
 
-    // assignedTo: [
-    //   {
-    //     type: mongoose.Schema.Types.ObjectId,
-    //     ref: "User",
-    //     validate: {
-    //       validator: function (value) {
-    //         return value.length > 0 || this.assignedToClient;
-    //       },
-    //       message:
-    //         "Task must be assigned to at least one staff member or a client",
-    //     },
-    //   },
-    // ],
-
-    assignedToClient: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      validate: {
-        validator: function (value) {
-          return !value || this.assignedTo.length === 0;
-        },
-        message: "Task cannot be assigned to both staff and client",
-      },
-    },
-
+    // Timeline
     dateAssigned: {
       type: Date,
       default: Date.now,
-      immutable: true,
-      index: true,
     },
-
-    // In your taskModel.js, update the dueDate validation:
     dueDate: {
       type: Date,
       required: [true, "Due date is required"],
       validate: {
         validator: function (value) {
-          // Allow due date to be after either dateAssigned OR the current date
-          // This allows extending deadlines even if the original assignment date is in the past
-          return value > this.dateAssigned || value > new Date();
+          return value > this.dateAssigned;
         },
-        message: "Due date must be after assignment date or current date",
+        message: "Due date must be after assignment date",
       },
-      index: true,
     },
+    completedAt: Date,
 
-    instruction: {
-      type: String,
-      trim: true,
-      required: [true, "Task instruction is required"],
-      minLength: [10, "Instruction must be at least 10 characters"],
-      maxLength: [5000, "Instruction cannot exceed 5000 characters"],
-    },
-
-    taskPriority: {
-      type: String,
-      trim: true,
-      enum: {
-        values: ["urgent", "high", "medium", "low"],
-        message: "{VALUE} is not a valid priority",
-      },
-      default: "medium",
-      index: true,
-    },
-
+    // Task metadata
     status: {
       type: String,
-      enum: {
-        values: ["pending", "in-progress", "completed", "overdue", "cancelled"],
-        message: "{VALUE} is not a valid status",
-      },
+      enum: [
+        "pending",
+        "in-progress",
+        "under-review",
+        "completed",
+        "overdue",
+        "cancelled",
+      ],
       default: "pending",
-      index: true,
     },
-
-    completionPercentage: {
-      type: Number,
-      min: 0,
-      max: 100,
-      default: 0,
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high", "urgent"],
+      default: "medium",
     },
+    category: {
+      type: String,
+      enum: [
+        "research",
+        "drafting",
+        "filing",
+        "hearing",
+        "client-meeting",
+        "discovery",
+        "other",
+      ],
+      required: true,
+    },
+    estimatedHours: Number,
 
-    tags: [
-      {
-        type: String,
-        trim: true,
-        lowercase: true,
-      },
-    ],
+    // Task components
+    reminders: [reminderSchema],
+    documents: [taskDocumentSchema],
+    responses: [taskResponseSchema],
 
-    reminder: reminderSchema,
-    documents: [documentSchema],
-    taskResponse: [taskResponseSchema],
-
-    completedAt: Date,
-    cancelledAt: Date,
-    cancellationReason: String,
+    // Tracking
+    lastUpdated: {
+      type: Date,
+      default: Date.now,
+    },
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
   },
   {
     timestamps: true,
@@ -236,97 +201,72 @@ const taskSchema = new mongoose.Schema(
   }
 );
 
-// Indexes for performance
-taskSchema.index({ assignedBy: 1, status: 1 });
-taskSchema.index({ assignedTo: 1, status: 1 });
-taskSchema.index({ assignedToClient: 1, status: 1 });
-taskSchema.index({ dueDate: 1, status: 1 });
-taskSchema.index({ createdAt: -1 });
+// Indexes for better query performance
+taskSchema.index({ case: 1, status: 1 });
+taskSchema.index({ "assignedTo.user": 1, status: 1 });
+taskSchema.index({ dueDate: 1 });
+taskSchema.index({ priority: 1, dueDate: 1 });
 
-// Virtual: Check if task is overdue
+// Virtual for overdue tasks
 taskSchema.virtual("isOverdue").get(function () {
-  return this.status !== "completed" && this.dueDate < new Date();
+  return this.dueDate < new Date() && this.status !== "completed";
 });
 
-// Virtual: Days until due
-taskSchema.virtual("daysUntilDue").get(function () {
-  const diff = this.dueDate - new Date();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+// Virtual for task progress
+taskSchema.virtual("progress").get(function () {
+  const statusProgress = {
+    pending: 0,
+    "in-progress": 50,
+    "under-review": 75,
+    completed: 100,
+    overdue: 0,
+    cancelled: 0,
+  };
+  return statusProgress[this.status] || 0;
 });
 
-// Virtual: Is completed
-taskSchema.virtual("isCompleted").get(function () {
-  return (
-    this.status === "completed" ||
-    (this.taskResponse.length > 0 && this.taskResponse[0].completed)
-  );
-});
-
-// Pre-save middleware: Update status based on conditions
+// Pre-save middleware to update lastUpdated
 taskSchema.pre("save", function (next) {
-  // Update status to overdue if past due date
-  if (this.dueDate < new Date() && this.status === "pending") {
-    this.status = "overdue";
-  }
-
-  // Update status to completed if response indicates completion
-  if (this.taskResponse.length > 0 && this.taskResponse[0].completed) {
-    this.status = "completed";
-    if (!this.completedAt) {
-      this.completedAt = new Date();
-    }
-    this.completionPercentage = 100;
-  }
-
+  this.lastUpdated = new Date();
   next();
 });
 
-// Pre-find middleware: Populate related fields
+// Query middleware for population
+// In your taskModel.js, update the population
 taskSchema.pre(/^find/, function (next) {
-  this.populate({
-    path: "assignedTo",
-    select: "firstName lastName email photo position",
-  })
-    .populate({
-      path: "caseToWorkOn",
-      select: "firstParty.name.name secondParty.name.name suitNo caseStatus",
-    })
-    .populate({
-      path: "assignedBy",
-      select: "firstName lastName email position role photo",
-    })
-    .populate({
-      path: "assignedToClient",
-      select: "firstName lastName email photo",
-    })
-    .populate({
-      path: "taskResponse.submittedBy",
-      select: "firstName lastName email",
-    })
-    .populate({
-      path: "documents.uploadedBy",
-      select: "firstName lastName",
-    })
-    .populate({
-      path: "reminder.sender",
-      select: "firstName lastName",
-    });
-
+  this.populate([
+    { path: "assignedBy", select: "firstName lastName email" },
+    { path: "assignedTo.user", select: "firstName lastName email role" },
+    { path: "case", select: "caseNumber title status" },
+    { path: "updatedBy", select: "firstName lastName" },
+    { path: "documents.uploadedBy", select: "firstName lastName" },
+    { path: "responses.submittedBy", select: "firstName lastName" },
+  ]);
   next();
 });
 
-// Method: Check if user can modify task
-taskSchema.methods.canModify = function (userId) {
-  return this.assignedBy.toString() === userId.toString();
+// Static method to find overdue tasks
+taskSchema.statics.findOverdue = function () {
+  return this.find({
+    dueDate: { $lt: new Date() },
+    status: { $in: ["pending", "in-progress", "under-review"] },
+  });
 };
 
-// Method: Check if user is assigned to task
-taskSchema.methods.isAssignedTo = function (userId) {
-  return (
-    this.assignedTo.some((user) => user._id.toString() === userId.toString()) ||
-    (this.assignedToClient &&
-      this.assignedToClient._id.toString() === userId.toString())
-  );
+// Instance method to mark as complete
+taskSchema.methods.markComplete = function (responseData) {
+  this.status = "completed";
+  this.completedAt = new Date();
+  if (responseData) {
+    this.responses.push(responseData);
+  }
+  return this.save();
+};
+
+// Instance method to add reminder
+taskSchema.methods.addReminder = function (reminderData) {
+  this.reminders.push(reminderData);
+  return this.save();
 };
 
 const Task = mongoose.model("Task", taskSchema);

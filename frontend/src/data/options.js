@@ -75,6 +75,16 @@ export const caseCategoryOptions = [
   { value: "criminal", label: "Criminal" },
 ];
 
+export const taskCategoryOptions = [
+  { label: "Research", value: "research" },
+  { label: "Drafting", value: "drafting" },
+  { label: "Filing", value: "filing" },
+  { label: "Hearing", value: "hearing" },
+  { label: "Client Meeting", value: "client-meeting" },
+  { label: "Discovery", value: "discovery" },
+  { label: "Other", value: "other" },
+];
+
 export const natureOfCaseOptions = [
   { label: "select area of law", value: "" },
   { label: "Contract Dispute", value: "contract dispute" },

@@ -1,3 +1,4 @@
+import React, { useState, useEffect, useCallback } from "react";
 import PropTypes from "prop-types";
 import {
   Card,
@@ -10,6 +11,9 @@ import {
   Button,
   Tooltip,
   Popconfirm,
+  Row,
+  Col,
+  Empty,
 } from "antd";
 import {
   CheckCircleOutlined,
@@ -18,240 +22,349 @@ import {
   FileOutlined,
   DeleteOutlined,
   DownloadOutlined,
+  PaperClipOutlined,
 } from "@ant-design/icons";
-import { formatDate } from "../utils/formatDate";
-import {
-  handleGeneralDownload,
-  handleTaskResponseDownload,
-} from "../utils/generalFileDownloadHandler";
-import { useDispatch, useSelector } from "react-redux";
-import { deleteData } from "../redux/features/delete/deleteSlice";
 import { toast } from "react-toastify";
-import { useEffect } from "react";
+import { formatDate } from "../utils/formatDate";
+import { downloadFile } from "../utils/fileDownloadHandler";
 
 const { Title, Text } = Typography;
 
 const TaskResponse = ({
   task,
-  isAssignedToCurrentUser,
-  isAssignedToCurrentClientUser,
+  isAssignedToCurrentUser = false,
+  isAssignedToCurrentClientUser = false,
   onResponseUpdate,
 }) => {
   const baseURL = import.meta.env.VITE_BASE_URL;
-  const { isError, isSuccess, message, isLoading } = useSelector(
-    (state) => state.delete
-  );
-  const dispatch = useDispatch();
+  const [deletingIds, setDeletingIds] = useState(new Set());
+  const [downloadingIds, setDownloadingIds] = useState(new Set());
 
   const responses = task?.taskResponse || [];
 
-  console.log(responses, "RES");
+  // Check if user can delete a response
+  const canDeleteResponse = useCallback(
+    (response) => {
+      const currentUser = JSON.parse(localStorage.getItem("user"))?.data;
+      if (!currentUser) return false;
 
-  // Handle delete response
-  const removeResponse = async (taskId, responseId) => {
+      const isResponseOwner = response.submittedBy?._id === currentUser._id;
+      const isTaskOwner = task.assignedBy?._id === currentUser._id;
+      const isAdmin = ["super-admin", "admin", "hr"].includes(currentUser.role);
+
+      return isResponseOwner || isTaskOwner || isAdmin;
+    },
+    [task.assignedBy]
+  );
+
+  // Handle response deletion
+  const handleDeleteResponse = async (taskId, responseId) => {
+    setDeletingIds((prev) => new Set(prev).add(responseId));
+
     try {
-      await dispatch(deleteData(`tasks/${taskId}/response/${responseId}`));
-    } catch (error) {
-      console.error("Error deleting response:", error);
-      toast.error("Failed to delete response");
-    }
-  };
+      const response = await fetch(
+        `${baseURL}/tasks/${taskId}/response/${responseId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        }
+      );
 
-  // // Handle download response document
-  // const handleDownloadResponse = (response, event) => {
-  //   if (response.doc) {
-  //     handleGeneralDownload(response.doc, `response_${response._id}`);
-  //   } else if (baseURL && task?._id && response._id) {
-  //     const downloadUrl = `${baseURL}/tasks/${task._id}/response/${response._id}/download`;
-  //     handleGeneralDownload(downloadUrl, `response_${response._id}`);
-  //   } else {
-  //     console.error("Cannot determine download URL for response:", response);
-  //     toast.error("Download URL not available");
-  //   }
-  // };
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to delete response");
+      }
 
-  // Show toast messages for delete operations
-  useEffect(() => {
-    if (isSuccess && message) {
-      toast.success(message);
-      // Trigger refresh after successful deletion
+      const data = await response.json();
+      toast.success(data.message || "Response deleted successfully");
+
+      // Trigger parent update
       if (onResponseUpdate) {
         onResponseUpdate();
       }
+    } catch (error) {
+      console.error("Error deleting response:", error);
+      toast.error(error.message || "Failed to delete response");
+    } finally {
+      setDeletingIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(responseId);
+        return newSet;
+      });
     }
-  }, [isSuccess, message, onResponseUpdate]);
-
-  useEffect(() => {
-    if (isError && message) {
-      toast.error(message);
-    }
-  }, [isError, message]);
-
-  const getStatusIcon = (completed) => {
-    return completed ? (
-      <CheckCircleOutlined className="text-green-500" />
-    ) : (
-      <CloseCircleOutlined className="text-red-500" />
-    );
   };
 
+  // Handle document download
+  const handleDownload = async (event, response) => {
+    const responseId = response._id;
+    setDownloadingIds((prev) => new Set(prev).add(responseId));
+
+    try {
+      await downloadFile(
+        event,
+        `${baseURL}/tasks/${task._id}/response/${responseId}/download`,
+        `response_${response.submittedBy?.firstName || "user"}_${
+          response.timestamp
+        }`
+      );
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.error("Failed to download document");
+    } finally {
+      setDownloadingIds((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(responseId);
+        return newSet;
+      });
+    }
+  };
+
+  // Format filename for display
+  const formatFileName = (url) => {
+    if (!url) return "Document";
+
+    try {
+      const fileName = url.split("/").pop();
+      return (
+        fileName
+          .replace(/^\d+_[\w]{12,}_/, "") // Remove timestamp and hash
+          .replace(/_/g, " ")
+          .replace(/\.[^/.]+$/, "") // Remove extension
+          .substring(0, 40)
+          .trim() || "Document"
+      );
+    } catch {
+      return "Document";
+    }
+  };
+
+  // Get status tag component
   const getStatusTag = (completed) => {
     return completed ? (
-      <Tag color="green" icon={<CheckCircleOutlined />}>
+      <Tag
+        color="success"
+        icon={<CheckCircleOutlined />}
+        className="text-xs font-medium">
         Completed
       </Tag>
     ) : (
-      <Tag color="orange" icon={<CloseCircleOutlined />}>
+      <Tag
+        color="warning"
+        icon={<CloseCircleOutlined />}
+        className="text-xs font-medium">
         In Progress
       </Tag>
     );
   };
 
+  // Empty state
   if (responses.length === 0) {
     return (
-      <div className="text-center py-6">
-        <Text type="secondary">No responses yet</Text>
-        {(isAssignedToCurrentUser || isAssignedToCurrentClientUser) && (
-          <div className="mt-2">
-            <Text type="secondary" className="text-sm">
-              Be the first to respond to this task
-            </Text>
-          </div>
-        )}
-      </div>
+      <Card className="border-0 rounded-2xl shadow-sm">
+        <Empty
+          image={<PaperClipOutlined className="text-6xl text-gray-300" />}
+          description={
+            <div className="text-center py-4">
+              <Text type="secondary" className="block text-lg mb-2">
+                No responses yet
+              </Text>
+              {(isAssignedToCurrentUser || isAssignedToCurrentClientUser) && (
+                <Text type="secondary" className="text-sm">
+                  Be the first to submit a response
+                </Text>
+              )}
+            </div>
+          }
+        />
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <Title level={5} className="mb-4">
-        Responses ({responses.length})
-      </Title>
+    <Card className="border-0 rounded-2xl shadow-sm">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <PaperClipOutlined className="text-blue-600 text-lg" />
+          <Title level={4} className="m-0">
+            Task Responses
+          </Title>
+        </div>
+        <Tag color="blue" className="text-sm font-medium">
+          {responses.length} {responses.length === 1 ? "response" : "responses"}
+        </Tag>
+      </div>
 
+      {/* Response List */}
       <List
         dataSource={responses}
-        renderItem={(response, index) => (
-          <List.Item
-            className="border-0 px-0"
-            actions={[
-              // Download button for response document
-              response.doc && (
-                <Tooltip title="Download Document" key="download">
-                  <Button
-                    type="text"
-                    icon={<DownloadOutlined />}
-                    onClick={(event) =>
-                      handleTaskResponseDownload(
-                        event,
-                        response?.doc ||
-                          `${baseURL}/tasks/${task._id}/response/${response._id}/download`,
-                        "response"
-                      )
-                    }
-                    className="text-blue-500 hover:text-blue-700"
-                    size="small">
-                    Download
-                  </Button>
-                </Tooltip>
-              ),
-              // Delete button for assigned users
-              (isAssignedToCurrentUser || isAssignedToCurrentClientUser) && (
-                <Popconfirm
-                  key="delete"
-                  title="Delete Response"
-                  description="Are you sure you want to delete this response?"
-                  onConfirm={() => removeResponse(task._id, response._id)}
-                  okText="Yes"
-                  cancelText="No"
-                  okType="danger">
-                  <Tooltip title="Delete Response">
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      loading={isLoading}
-                      size="small">
-                      Delete
-                    </Button>
-                  </Tooltip>
-                </Popconfirm>
-              ),
-            ].filter(Boolean)}>
+        renderItem={(response) => (
+          <List.Item className="!px-0 !py-3 !border-0">
             <Card
-              size="small"
-              className="w-full border-l-4 border-l-blue-500 hover:shadow-sm transition-shadow"
-              styles={{ body: { padding: "16px" } }}>
-              <div className="flex items-start justify-between mb-3">
-                <Space>
-                  <Avatar
-                    size="small"
-                    icon={<UserOutlined />}
-                    src={response.submittedBy?.photo}
-                  />
-                  <div>
-                    <Text strong>
-                      {response.submittedBy?.firstName}{" "}
-                      {response.submittedBy?.lastName}
-                    </Text>
-                    <div className="text-xs text-gray-500">
-                      {formatDate(response.timestamp)}
+              className="w-full shadow-sm hover:shadow-md transition-all duration-200 rounded-xl border border-gray-200"
+              bodyStyle={{ padding: "24px" }}>
+              {/* Response Header */}
+              <Row gutter={[16, 12]} align="middle" className="mb-4">
+                <Col xs={24} md={16}>
+                  <Space size="middle">
+                    <Avatar
+                      size={48}
+                      icon={<UserOutlined />}
+                      src={response.submittedBy?.photo}
+                      className="bg-gradient-to-br from-blue-400 to-blue-600"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <Text
+                        strong
+                        className="block text-gray-900 text-base truncate">
+                        {response.submittedBy?.firstName || "Unknown"}{" "}
+                        {response.submittedBy?.lastName || "User"}
+                      </Text>
+                      <Text type="secondary" className="text-xs">
+                        {formatDate(response.timestamp) || "Unknown date"}
+                      </Text>
                     </div>
+                  </Space>
+                </Col>
+
+                <Col xs={24} md={8}>
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-end gap-2">
+                    {getStatusTag(response.completed)}
+
+                    <Space size="small" className="flex justify-end">
+                      {/* Download Button */}
+                      {response.doc && (
+                        <Tooltip title="Download document">
+                          <Button
+                            type="text"
+                            size="middle"
+                            icon={<DownloadOutlined />}
+                            onClick={(event) => handleDownload(event, response)}
+                            loading={downloadingIds.has(response._id)}
+                            className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                          />
+                        </Tooltip>
+                      )}
+
+                      {/* Delete Button */}
+                      {canDeleteResponse(response) && (
+                        <Popconfirm
+                          title="Delete Response"
+                          description={
+                            <div className="max-w-xs">
+                              <p className="mb-2">
+                                Are you sure you want to delete this response?
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                This action cannot be undone.
+                              </p>
+                            </div>
+                          }
+                          onConfirm={() =>
+                            handleDeleteResponse(task._id, response._id)
+                          }
+                          okText="Delete"
+                          cancelText="Cancel"
+                          okType="danger"
+                          placement="topRight">
+                          <Tooltip title="Delete response">
+                            <Button
+                              type="text"
+                              size="middle"
+                              danger
+                              icon={<DeleteOutlined />}
+                              loading={deletingIds.has(response._id)}
+                              className="hover:bg-red-50"
+                            />
+                          </Tooltip>
+                        </Popconfirm>
+                      )}
+                    </Space>
                   </div>
-                </Space>
-                {getStatusTag(response.completed)}
-              </div>
+                </Col>
+              </Row>
 
+              {/* Comment Section */}
               {response.comment && (
-                <div className="mb-3">
-                  <Text className="text-gray-700 whitespace-pre-line">
-                    {response.comment}
-                  </Text>
+                <div className="mb-4">
+                  <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                    <Text className="text-gray-800 whitespace-pre-line leading-relaxed text-sm">
+                      {response.comment}
+                    </Text>
+                  </div>
                 </div>
               )}
 
+              {/* Document Attachment */}
               {response.doc && (
-                <div className="flex items-center gap-2 mt-2 p-2 bg-gray-50 rounded border">
-                  <FileOutlined className="text-blue-500" />
-                  <Text className="text-sm flex-1">
-                    Document attached:{" "}
-                    {response.doc.split("/").pop() || "response_document"}
-                  </Text>
-                  <Button
-                    type="link"
-                    size="small"
-                    icon={<DownloadOutlined />}
-                    onClick={(e) => handleDownloadResponse(response, e)}
-                    className="text-blue-500">
-                    Download
-                  </Button>
+                <div className="mb-4">
+                  <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-xl border border-blue-200 hover:border-blue-300 transition-colors">
+                    <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg flex-shrink-0">
+                      <FileOutlined className="text-blue-600 text-lg" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <Text className="text-sm font-semibold text-gray-900 block truncate mb-1">
+                        {formatFileName(response.doc)}
+                      </Text>
+                      <Text
+                        type="secondary"
+                        className="text-xs block truncate font-mono">
+                        {response.doc.split("/").pop()}
+                      </Text>
+                    </div>
+
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<DownloadOutlined />}
+                      onClick={(event) => handleDownload(event, response)}
+                      loading={downloadingIds.has(response._id)}
+                      className="flex-shrink-0">
+                      Download
+                    </Button>
+                  </div>
                 </div>
               )}
 
-              <Divider className="my-3" />
+              <Divider className="my-4" />
 
-              <div className="flex justify-between items-center text-xs text-gray-500">
-                <Space>
-                  <Text>
-                    Submitted: {formatDate(response.timestamp, "relative")}
+              {/* Footer */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <Text className="text-xs">
+                    Submitted{" "}
+                    {formatDate(response.timestamp, "relative") || "recently"}
                   </Text>
-                </Space>
+                </div>
+
                 {response.completed && (
-                  <Text type="success" className="text-xs">
-                    Marked as completed
-                  </Text>
+                  <div className="flex items-center gap-2">
+                    <CheckCircleOutlined className="text-green-500" />
+                    <Text type="success" className="text-xs font-medium">
+                      Task marked as completed
+                    </Text>
+                  </div>
                 )}
               </div>
             </Card>
           </List.Item>
         )}
+        className="response-list"
       />
-    </div>
+    </Card>
   );
 };
 
 TaskResponse.propTypes = {
   task: PropTypes.shape({
     _id: PropTypes.string.isRequired,
+    assignedBy: PropTypes.shape({
+      _id: PropTypes.string,
+    }),
     taskResponse: PropTypes.arrayOf(
       PropTypes.shape({
         _id: PropTypes.string.isRequired,

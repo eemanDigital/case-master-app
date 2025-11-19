@@ -107,14 +107,14 @@ const DashBoardDataCount = ({
   loading = false,
   trends = {},
 }) => {
-  console.log("DashboardDataCount Props:", {
-    cases,
-    staff,
-    lawyerCount,
-    clientCount,
-    totalCases,
-    activeCases,
-  });
+  // console.log("DashboardDataCount Props:", {
+  //   cases,
+  //   staff,
+  //   lawyerCount,
+  //   clientCount,
+  //   totalCases,
+  //   activeCases,
+  // });
 
   // ✅ Calculate effective values with new props as priority
   const effectiveTotalCases =
