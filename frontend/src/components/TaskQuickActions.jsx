@@ -207,16 +207,9 @@ const TaskQuickActions = ({ task, onUpdate, canModifyTask }) => {
               mode="multiple"
               placeholder="Select staff members"
               optionLabelProp="label"
-              allowClear>
-              {staffOptions.map((staff) => (
-                <Option
-                  key={staff.value}
-                  value={staff.value}
-                  label={staff.label}>
-                  {staff.label}
-                </Option>
-              ))}
-            </Select>
+              allowClear
+              options={userData}
+            />
           </Form.Item>
 
           <Form.Item

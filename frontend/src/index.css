@@ -358,3 +358,24 @@
 .animate-shake {
   animation: shake 0.5s ease-in-out infinite;
 }
+
+/* Task Response Modal Styles */
+.task-response-modal .ant-modal-body {
+  padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .task-response-modal {
+    margin: 20px;
+    width: calc(100% - 40px) !important;
+  }
+}
+
+.response-form .ant-upload-drag {
+  border: 2px dashed #d9d9d9;
+  border-radius: 8px;
+}
+
+.response-form .ant-upload-drag:hover {
+  border-color: #1890ff;
+}

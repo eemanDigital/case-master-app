@@ -1,6 +1,5 @@
 import PropTypes from "prop-types";
-import { useEffect, useState } from "react";
-import { useDataFetch } from "../hooks/useDataFetch";
+import { useEffect, useState, useCallback } from "react";
 import {
   Modal,
   Button,
@@ -8,435 +7,546 @@ import {
   Input,
   Checkbox,
   Upload,
-  message,
+  Card,
   Space,
-  Progress,
   Alert,
+  Progress,
+  Tag,
+  Typography,
   Divider,
+  Row,
+  Col,
+  Select,
+  TimePicker,
 } from "antd";
-import useModal from "../hooks/useModal";
-import { toast } from "react-toastify";
-import { useDispatch, useSelector } from "react-redux";
-import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import {
   UploadOutlined,
   PaperClipOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
+  SendOutlined,
+  FileTextOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
+import useModal from "../hooks/useModal";
+import { toast } from "react-toastify";
+import { useDispatch, useSelector } from "react-redux";
+import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
+import { useDataFetch } from "../hooks/useDataFetch"; // Import your custom hook
 
-const TaskResponseForm = ({ taskId, onResponseSubmit, task }) => {
+const { Text, Title } = Typography;
+const { TextArea } = Input;
+const { Option } = Select;
+
+const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
   const dispatch = useDispatch();
   const [form] = Form.useForm();
   const { user } = useSelector((state) => state.auth);
   const { sendingEmail, emailSent, msg } = useSelector((state) => state.email);
+
+  // Use your custom data fetch hook
+  const { dataFetcher, loading: apiLoading, error: apiError } = useDataFetch();
+
   const [fileList, setFileList] = useState([]);
+  const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionStatus, setSubmissionStatus] = useState(null);
 
   const { open, showModal, handleCancel } = useModal();
-  const { dataFetcher, error: dataError } = useDataFetch();
 
-  const handleFileChange = ({ fileList }) => {
-    setFileList(fileList);
-  };
-
-  const beforeUpload = (file) => {
-    const isLt10M = file.size / 1024 / 1024 < 10;
-    if (!isLt10M) {
-      message.error("File must be smaller than 10MB!");
-      return false;
-    }
-
-    // Validate file types
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "image/jpeg",
-      "image/jpg",
-      "image/png",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-    ];
-
-    if (!allowedTypes.includes(file.type)) {
-      message.error("You can only upload PDF, Word, Excel, or image files!");
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleRemoveFile = (file) => {
-    setFileList(fileList.filter((f) => f.uid !== file.uid));
-  };
-
-  const simulateUploadProgress = () => {
-    setUploadProgress(0);
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(interval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 200);
-    return interval;
-  };
-
-  const handleSubmit = async (values) => {
-    setIsSubmitting(true);
-    const progressInterval = simulateUploadProgress();
-
-    try {
-      const formData = new FormData();
-      formData.append("completed", values.completed || false);
-      formData.append("comment", values.comment || "");
-
-      // Append file if exists
-      if (fileList.length > 0 && fileList[0].originFileObj) {
-        formData.append("doc", fileList[0].originFileObj);
-      }
-
-      const response = await dataFetcher(
-        `tasks/${taskId}/response`,
-        "POST",
-        formData,
-        true // Set to true for FormData requests
-      );
-
-      clearInterval(progressInterval);
-      setUploadProgress(100);
-
-      if (response?.status === "success") {
-        toast.success("Task response submitted successfully!");
-
-        // Send email notification to task assigner
-        if (task?.assignedBy?.email) {
-          const emailData = {
-            subject: `Task Response Submitted - ${task?.title}`,
-            send_to: task.assignedBy.email,
-            reply_to: "noreply@atlukman.com",
-            template: "taskResponse",
-            url: `/dashboard/tasks/${taskId}`,
-            context: {
-              recipient: task.assignedBy.firstName,
-              comment: values.comment || "No comments provided",
-              completed: values.completed ? "Yes" : "No",
-              taskTitle: task.title,
-              submittedBy: `${user?.data?.firstName} ${user?.data?.lastName}`,
-              submissionDate: new Date().toLocaleDateString(),
-              taskPriority: task.taskPriority,
-              dueDate: new Date(task.dueDate).toLocaleDateString(),
-            },
-          };
-
-          try {
-            await dispatch(sendAutomatedCustomEmail(emailData));
-          } catch (emailError) {
-            console.warn("Email notification failed:", emailError);
-            // Don't fail the whole submission if email fails
-          }
-        }
-
-        // Reset form and close modal
-        form.resetFields();
-        setFileList([]);
-        setUploadProgress(0);
-        handleCancel();
-
-        // Notify parent component
-        if (onResponseSubmit) {
-          onResponseSubmit(response.data.task);
-        }
-      }
-    } catch (err) {
-      clearInterval(progressInterval);
-      setUploadProgress(0);
-
-      console.error("Submission error:", err);
-      const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        "Failed to submit task response. Please try again.";
-
-      toast.error(errorMessage);
-
-      // Show more detailed error in development
-      if (process.env.NODE_ENV === "development") {
-        console.error("Detailed error:", err.response?.data);
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleCancelWithReset = () => {
+  // Reset form when modal closes
+  const handleModalCancel = useCallback(() => {
     form.resetFields();
     setFileList([]);
     setUploadProgress(0);
+    setSubmissionStatus(null);
     handleCancel();
+  }, [form, handleCancel]);
+
+  // Handle file upload changes with validation
+  const handleFileChange = useCallback(({ fileList: newFileList }) => {
+    const validatedFileList = newFileList.map((file) => {
+      const isLt10M = file.size ? file.size / 1024 / 1024 < 10 : true;
+      const isValidType = [
+        "image/jpeg",
+        "image/jpg",
+        "image/png",
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "text/plain",
+        "application/zip",
+      ].includes(file.type);
+
+      if (file.size && !isLt10M) {
+        file.status = "error";
+        file.response = "File size must be less than 10MB";
+      } else if (!isValidType) {
+        file.status = "error";
+        file.response = "File type not supported";
+      } else if (file.status !== "error") {
+        file.status = "done";
+      }
+
+      return file;
+    });
+
+    setFileList(validatedFileList);
+  }, []);
+
+  // Remove file from upload list
+  const handleRemoveFile = useCallback((file) => {
+    setFileList((prev) => prev.filter((f) => f.uid !== file.uid));
+  }, []);
+
+  // Upload files to the server using axios
+  const uploadFiles = async (taskId) => {
+    if (fileList.length === 0) return [];
+
+    const uploadPromises = fileList
+      .filter((file) => file.originFileObj)
+      .map(async (file) => {
+        const formData = new FormData();
+        formData.append("files", file.originFileObj);
+        formData.append(
+          "description",
+          `Task response document for ${taskDetails?.title || "task"}`
+        );
+
+        try {
+          // Use dataFetcher for file upload
+          const result = await dataFetcher(
+            `tasks/${taskId}/response-documents`,
+            "POST",
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          );
+
+          if (result.error) {
+            throw new Error(result.error);
+          }
+
+          return result.data?.files?.[0]?._id || null;
+        } catch (error) {
+          console.error("File upload error:", error);
+          toast.error(`Failed to upload ${file.name}`);
+          return null;
+        }
+      });
+
+    return await Promise.all(uploadPromises);
   };
 
-  // Get response status from task
-  const existingResponse = task?.taskResponse?.[0];
-  const isCompleted =
-    existingResponse?.completed || task?.status === "completed";
+  // Handle form submission
+  const handleSubmit = async (values) => {
+    setUploading(true);
+    setSubmissionStatus("uploading");
 
+    try {
+      // Convert Day.js time to minutes
+      let timeSpentInMinutes = 0;
+      if (values.timeSpent) {
+        const hours = values.timeSpent.hour();
+        const minutes = values.timeSpent.minute();
+        timeSpentInMinutes = hours * 60 + minutes;
+      }
+
+      // 1. Upload files first
+      const documentIds = await uploadFiles(taskId);
+      const validDocumentIds = documentIds.filter((id) => id !== null);
+
+      // 2. Prepare response payload
+      const payload = {
+        status: values.completed ? "completed" : "in-progress",
+        completionPercentage: values.completed
+          ? 100
+          : values.completionPercentage || 0,
+        comment: values.comment,
+        timeSpent: timeSpentInMinutes || 0,
+        documentIds: validDocumentIds,
+      };
+
+      // 3. Submit task response using dataFetcher
+      const response = await dataFetcher(
+        `tasks/${taskId}/responses`,
+        "POST",
+        payload
+      );
+
+      if (response.error) {
+        throw new Error(response.error);
+      }
+
+      setSubmissionStatus("success");
+
+      // 4. Send email notification
+      if (response?.data?.assignedBy?.email) {
+        try {
+          const emailData = {
+            subject: "Task Response Submitted - A.T. Lukman & Co.",
+            send_to: response.data.assignedBy.email,
+            reply_to: "noreply@atlukman.com",
+            template: "taskResponse",
+            url: "/dashboard/tasks",
+            context: {
+              recipient: response.data.assignedBy.firstName,
+              position: response.data.assignedBy.position,
+              comment: values.comment,
+              completed: values.completed ? "Completed" : "In Progress",
+              completionPercentage: values.completionPercentage || 0,
+              submittedBy: `${user?.firstName} ${user?.lastName}`,
+              taskTitle: taskDetails?.title || "Task",
+              timeSpent: timeSpentInMinutes
+                ? `${timeSpentInMinutes} minutes`
+                : "Not specified",
+            },
+          };
+
+          await dispatch(sendAutomatedCustomEmail(emailData));
+        } catch (emailError) {
+          console.error("Failed to send email:", emailError);
+          toast.warning("Response submitted, but email notification failed.");
+        }
+      }
+
+      toast.success("Task response submitted successfully!");
+
+      // 5. Callback to refresh parent component
+      if (onResponseSubmitted) {
+        onResponseSubmitted();
+      }
+
+      // 6. Close modal after short delay
+      setTimeout(() => {
+        handleModalCancel();
+      }, 1500);
+    } catch (error) {
+      console.error("Submission error:", error);
+      setSubmissionStatus("error");
+      toast.error(
+        error.message || "Failed to submit task response. Please try again."
+      );
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Calculate time spent in minutes
+  const handleTimeChange = (time) => {
+    form.setFieldValue("timeSpent", time);
+  };
+
+  // Handle completion checkbox change
+  const handleCompletionChange = (e) => {
+    if (e.target.checked) {
+      form.setFieldValue("completionPercentage", 100);
+    } else {
+      form.setFieldValue("completionPercentage", 0);
+    }
+  };
+
+  // Handle completion percentage change
+  const handleCompletionPercentageChange = (value) => {
+    if (value === 100) {
+      form.setFieldValue("completed", true);
+    } else {
+      form.setFieldValue("completed", false);
+    }
+  };
+
+  // Show API errors
   useEffect(() => {
-    if (emailSent && msg) {
+    if (apiError) {
+      toast.error(apiError);
+    }
+  }, [apiError]);
+
+  // Show success message when email is sent
+  useEffect(() => {
+    if (emailSent) {
       toast.success(msg);
     }
   }, [emailSent, msg]);
 
-  useEffect(() => {
-    if (dataError) {
-      toast.error(dataError);
-    }
-  }, [dataError]);
-
-  // Pre-fill form if response exists
-  useEffect(() => {
-    if (existingResponse && open) {
-      form.setFieldsValue({
-        completed: existingResponse.completed,
-        comment: existingResponse.comment || "",
-      });
-    }
-  }, [existingResponse, open, form]);
+  const isSubmitting = uploading || sendingEmail || apiLoading;
 
   return (
-    <div className="w-full">
+    <div className="task-response-form">
       <Button
-        type={existingResponse ? "default" : "primary"}
+        type="primary"
+        icon={<SendOutlined />}
         onClick={showModal}
-        className="w-full sm:w-auto px-6 py-2 text-sm sm:text-base font-medium rounded-md shadow-sm transition duration-300 ease-in-out flex items-center justify-center gap-2"
-        disabled={isSubmitting}
-        icon={
-          existingResponse ? <CheckCircleOutlined /> : <PaperClipOutlined />
-        }>
-        {isSubmitting
-          ? "Submitting..."
-          : existingResponse
-          ? "Update Response"
-          : "Submit Response"}
+        size="large"
+        className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 border-blue-600"
+        disabled={isSubmitting}>
+        {isSubmitting ? "Submitting..." : "Submit Response"}
       </Button>
 
       <Modal
         title={
           <div className="flex items-center gap-2">
-            <PaperClipOutlined className="text-blue-500" />
-            <span>
-              {existingResponse
-                ? "Update Task Response"
-                : "Submit Task Response"}
-            </span>
+            <SendOutlined className="text-blue-500" />
+            <Title level={4} className="mb-0">
+              Submit Task Response
+            </Title>
           </div>
         }
         open={open}
-        onCancel={handleCancelWithReset}
-        footer={[
-          <Button
-            key="cancel"
-            onClick={handleCancelWithReset}
-            disabled={isSubmitting}>
-            Cancel
-          </Button>,
-          <Button
-            key="submit"
-            type="primary"
-            onClick={() => form.submit()}
-            loading={isSubmitting}
-            icon={<CheckCircleOutlined />}>
-            {existingResponse ? "Update Response" : "Submit Response"}
-          </Button>,
-        ]}
+        onCancel={handleModalCancel}
         width={700}
-        destroyOnClose>
-        <div className="space-y-4">
-          {/* Task Info */}
-          {task && (
-            <Alert
-              message="Task Information"
-              description={
-                <div className="text-sm">
-                  <div>
-                    <strong>Title:</strong> {task.title}
-                  </div>
-                  <div>
-                    <strong>Priority:</strong>{" "}
-                    <span className="capitalize">{task.taskPriority}</span>
-                  </div>
-                  <div>
-                    <strong>Due Date:</strong>{" "}
-                    {new Date(task.dueDate).toLocaleDateString()}
-                  </div>
-                </div>
-              }
-              type="info"
-              showIcon
-            />
-          )}
+        footer={null}
+        destroyOnClose
+        className="task-response-modal">
+        <Divider className="my-4" />
 
-          {/* Existing Response Alert */}
-          {existingResponse && (
-            <Alert
-              message="Response Exists"
-              description="You have already submitted a response for this task. You can update it below."
-              type="warning"
-              showIcon
-            />
-          )}
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          className="response-form"
+          disabled={isSubmitting}
+          initialValues={{
+            completionPercentage: 0,
+            timeSpent: null,
+            completed: false,
+          }}>
+          <Row gutter={[16, 16]}>
+            {/* Left Column - Response Details */}
+            <Col xs={24} lg={12}>
+              {/* Completion Status */}
+              <Card size="small" className="mb-4">
+                <Form.Item name="completed" valuePropName="checked">
+                  <Checkbox
+                    disabled={isSubmitting}
+                    onChange={handleCompletionChange}>
+                    <Space>
+                      <CheckCircleOutlined className="text-green-500" />
+                      <Text strong>Mark task as completed</Text>
+                    </Space>
+                  </Checkbox>
+                </Form.Item>
+              </Card>
 
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={handleSubmit}
-            className="mt-4"
-            disabled={isSubmitting}>
-            <Form.Item
-              name="completed"
-              valuePropName="checked"
-              initialValue={existingResponse?.completed || false}>
-              <Checkbox disabled={isCompleted}>
-                Mark task as completed
-                {isCompleted && (
-                  <span className="ml-2 text-green-600 text-sm">
-                    (Currently completed)
-                  </span>
-                )}
-              </Checkbox>
-            </Form.Item>
+              {/* Progress Percentage */}
+              <Card size="small" className="mb-4">
+                <Form.Item
+                  label="Completion Percentage"
+                  name="completionPercentage"
+                  rules={[
+                    {
+                      required: true,
+                      message: "Please set completion percentage",
+                    },
+                  ]}>
+                  <Select
+                    placeholder="Select completion percentage"
+                    disabled={isSubmitting}
+                    onChange={handleCompletionPercentageChange}>
+                    <Option value={0}>0% - Not Started</Option>
+                    <Option value={25}>25% - Just Started</Option>
+                    <Option value={50}>50% - Halfway</Option>
+                    <Option value={75}>75% - Almost Done</Option>
+                    <Option value={100}>100% - Completed</Option>
+                  </Select>
+                </Form.Item>
+              </Card>
 
-            <Divider />
+              {/* Time Spent */}
+              <Card size="small" className="mb-4">
+                <Form.Item label="Time Spent (HH:mm)" name="timeSpent">
+                  <TimePicker
+                    format="HH:mm"
+                    placeholder="Select time spent"
+                    onChange={handleTimeChange}
+                    disabled={isSubmitting}
+                    className="w-full"
+                    showNow={false}
+                  />
+                </Form.Item>
+                <Text type="secondary" className="text-xs">
+                  Select the time you spent on this task
+                </Text>
+              </Card>
+            </Col>
 
+            {/* Right Column - File Upload */}
+            <Col xs={24} lg={12}>
+              <Card
+                size="small"
+                title={
+                  <Space>
+                    <PaperClipOutlined />
+                    <Text strong>Attach Files</Text>
+                    <Tag color="blue">{fileList.length}</Tag>
+                  </Space>
+                }>
+                <Form.Item name="files">
+                  <Upload
+                    fileList={fileList}
+                    onChange={handleFileChange}
+                    onRemove={handleRemoveFile}
+                    multiple
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt,.xlsx,.xls,.zip"
+                    listType="text"
+                    beforeUpload={() => false}
+                    itemRender={(originNode, file) => (
+                      <div className="flex items-center justify-between w-full p-2 hover:bg-gray-50 rounded">
+                        <Space>
+                          <FileTextOutlined />
+                          <Text
+                            ellipsis={{ tooltip: file.name }}
+                            className="max-w-[150px]">
+                            {file.name}
+                          </Text>
+                          {file.status === "uploading" && (
+                            <Progress percent={uploadProgress} size="small" />
+                          )}
+                        </Space>
+                        {file.status === "error" && (
+                          <Tag color="red" icon={<CloseCircleOutlined />}>
+                            {file.response}
+                          </Tag>
+                        )}
+                      </div>
+                    )}>
+                    <Button
+                      icon={<UploadOutlined />}
+                      type="dashed"
+                      block
+                      disabled={isSubmitting}
+                      className="h-20 border-dashed">
+                      <div className="flex flex-col items-center">
+                        <UploadOutlined className="text-lg mb-1" />
+                        <Text>Click or drag files to upload</Text>
+                      </div>
+                    </Button>
+                  </Upload>
+                </Form.Item>
+
+                <Text type="secondary" className="text-xs block mt-2">
+                  Supported formats: PDF, DOC, DOCX, JPG, PNG, TXT, Excel, ZIP
+                  (Max 10MB per file)
+                </Text>
+              </Card>
+            </Col>
+          </Row>
+
+          {/* Comment Section - Full Width */}
+          <Card
+            size="small"
+            title={
+              <Space>
+                <FileTextOutlined />
+                <Text strong>Response Details & Comments</Text>
+              </Space>
+            }
+            className="mt-4">
             <Form.Item
               name="comment"
-              label="Comments & Progress Update"
               rules={[
-                { required: true, message: "Please provide your comments" },
-                { min: 10, message: "Comments must be at least 10 characters" },
+                { required: true, message: "Please provide a comment!" },
                 {
-                  max: 1000,
-                  message: "Comments cannot exceed 1000 characters",
+                  min: 10,
+                  message: "Comment must be at least 10 characters long",
+                },
+                {
+                  max: 2000,
+                  message: "Comment must not exceed 2000 characters",
                 },
               ]}
-              initialValue={existingResponse?.comment || ""}>
-              <Input.TextArea
+              validateTrigger="onBlur">
+              <TextArea
                 rows={5}
-                placeholder="Provide detailed comments about your task progress, challenges faced, and any important updates..."
+                placeholder="Describe your progress, challenges encountered, completion details, or any other relevant information..."
                 showCount
-                maxLength={1000}
+                maxLength={2000}
                 disabled={isSubmitting}
+                className="resize-none"
               />
             </Form.Item>
+          </Card>
 
-            <Form.Item
-              label="Attach Supporting Document"
-              extra="Supported formats: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (Max: 10MB)">
-              <Upload
-                fileList={fileList}
-                beforeUpload={beforeUpload}
-                onChange={handleFileChange}
-                onRemove={handleRemoveFile}
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
-                maxCount={1}
-                disabled={isSubmitting}>
-                <Button icon={<UploadOutlined />} disabled={isSubmitting}>
-                  Select File
-                </Button>
-              </Upload>
+          {/* Status Alerts */}
+          {submissionStatus === "uploading" && (
+            <Alert
+              message="Uploading Files..."
+              description="Please wait while we upload your files and submit the response."
+              type="info"
+              showIcon
+              className="mt-4"
+            />
+          )}
 
-              {/* Show existing document if updating response */}
-              {existingResponse?.doc && !fileList.length && (
-                <div className="mt-2 p-2 bg-gray-50 rounded border">
-                  <Space>
-                    <PaperClipOutlined className="text-blue-500" />
-                    <span className="text-sm">
-                      Current document: {existingResponse.doc.split("/").pop()}
-                    </span>
-                    <Button
-                      type="link"
-                      size="small"
-                      href={existingResponse.doc}
-                      target="_blank">
-                      View
-                    </Button>
-                  </Space>
-                </div>
-              )}
-            </Form.Item>
+          {submissionStatus === "success" && (
+            <Alert
+              message="Response Submitted Successfully!"
+              description="Your task response has been submitted and notifications have been sent."
+              type="success"
+              showIcon
+              className="mt-4"
+            />
+          )}
 
-            {/* Upload Progress */}
-            {uploadProgress > 0 && uploadProgress < 100 && (
-              <Form.Item label="Upload Progress">
-                <Progress
-                  percent={uploadProgress}
-                  status="active"
-                  strokeColor={{
-                    "0%": "#108ee9",
-                    "100%": "#87d068",
-                  }}
-                />
-              </Form.Item>
-            )}
-          </Form>
+          {submissionStatus === "error" && (
+            <Alert
+              message="Submission Failed"
+              description="There was an error submitting your response. Please try again."
+              type="error"
+              showIcon
+              className="mt-4"
+            />
+          )}
 
-          {/* Submission Guidelines */}
-          <Alert
-            message="Submission Guidelines"
-            description={
-              <ul className="text-xs space-y-1 list-disc list-inside">
-                <li>
-                  Provide detailed comments about your progress and any
-                  challenges
-                </li>
-                <li>Attach relevant documents to support your response</li>
-                <li>Mark as completed only when the task is fully done</li>
-                <li>
-                  Your response will be sent to the task assigner for review
-                </li>
-              </ul>
-            }
-            type="info"
-            showIcon
-          />
-        </div>
+          {/* API Error Alert */}
+          {apiError && (
+            <Alert
+              message="API Error"
+              description={apiError}
+              type="error"
+              showIcon
+              className="mt-4"
+            />
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+            <Button
+              onClick={handleModalCancel}
+              disabled={isSubmitting}
+              size="large">
+              Cancel
+            </Button>
+            <Button
+              type="primary"
+              icon={isSubmitting ? <LoadingOutlined /> : <SendOutlined />}
+              htmlType="submit"
+              disabled={isSubmitting}
+              loading={isSubmitting}
+              size="large"
+              className="bg-blue-600 hover:bg-blue-700 border-blue-600">
+              {isSubmitting ? "Submitting..." : "Submit Response"}
+            </Button>
+          </div>
+        </Form>
       </Modal>
     </div>
   );
 };
 
+// Prop types validation
 TaskResponseForm.propTypes = {
   taskId: PropTypes.string.isRequired,
-  onResponseSubmit: PropTypes.func,
-  task: PropTypes.shape({
-    _id: PropTypes.string,
+  onResponseSubmitted: PropTypes.func,
+  taskDetails: PropTypes.shape({
     title: PropTypes.string,
-    taskPriority: PropTypes.string,
-    dueDate: PropTypes.string,
-    assignedBy: PropTypes.shape({
-      email: PropTypes.string,
-      firstName: PropTypes.string,
-    }),
-    taskResponse: PropTypes.arrayOf(
-      PropTypes.shape({
-        completed: PropTypes.bool,
-        comment: PropTypes.string,
-        doc: PropTypes.string,
-        submittedBy: PropTypes.string,
-        timestamp: PropTypes.string,
-      })
-    ),
-    status: PropTypes.string,
+    assignedBy: PropTypes.object,
   }),
-};
-
-TaskResponseForm.defaultProps = {
-  onResponseSubmit: () => {},
-  task: null,
 };
 
 export default TaskResponseForm;

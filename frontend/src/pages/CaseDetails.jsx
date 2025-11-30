@@ -43,19 +43,21 @@ import {
   ExclamationTriangleIcon,
   LightBulbIcon,
 } from "@heroicons/react/24/outline";
-import CaseDocumentUpload from "../components/CaseDocumentUpload";
+// import CaseDocumentUpload from "../components/CaseDocumentUpload";
 import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
-import useDeleteDocument from "../hooks/useDeleteDocument";
+// import useDeleteDocument from "../hooks/useDeleteDocument";
 import { useAdminHook } from "../hooks/useAdminHook";
 import useTextShorten from "../hooks/useTextShorten";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
-import MajorHeading from "../components/MajorHeading";
+// import MajorHeading from "../components/MajorHeading";
 import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import FileUploader from "../components/FileUpload";
+import CaseDocuments from "../components/CaseDocument";
 
 const { Title, Text } = Typography;
-const { TabPane } = Tabs;
+// const { TabPane } = Tabs;
 const baseURL = import.meta.env.VITE_BASE_URL;
 
 const CaseDetails = () => {
@@ -63,16 +65,19 @@ const CaseDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { isStaff } = useAdminHook();
   const { shortenText } = useTextShorten();
-  const { handleDeleteDocument, documents } = useDeleteDocument(
-    data?.data,
-    "caseData"
-  );
+  const documents = data?.data?.documents || [];
+  // const { handleDeleteDocument, documents } = useDeleteDocument(
+  //   data?.data,
+  //   "caseData"
+  // );
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const [activeTab, setActiveTab] = useState("details");
 
   useRedirectLogoutUser("/users/login");
+
+  console.log(data);
 
   // fetch case data
   useEffect(() => {
@@ -115,53 +120,53 @@ const CaseDetails = () => {
         <Text className="text-gray-800 font-medium">{text}</Text>
       ),
     },
-    {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <Space size="middle">
-          <Button
-            type="primary"
-            size="small"
-            icon={<DownloadOutlined />}
-            onClick={(event) =>
-              handleGeneralDownload(
-                event,
-                `${baseURL}/cases/${id}/documents/${record._id}/download`,
-                record.fileName
-              )
-            }
-            className="bg-blue-600 hover:bg-blue-700 border-0">
-            Download
-          </Button>
-          {isStaff && (
-            <Button
-              type="primary"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              onClick={(event) =>
-                Modal.confirm({
-                  title: "Delete Document",
-                  content:
-                    "Are you sure you want to delete this document? This action cannot be undone.",
-                  okText: "Delete",
-                  okType: "danger",
-                  cancelText: "Cancel",
-                  onOk: () =>
-                    handleDeleteDocument(
-                      event,
-                      `cases/${id}/documents/${record._id}`,
-                      record._id
-                    ),
-                })
-              }>
-              Delete
-            </Button>
-          )}
-        </Space>
-      ),
-    },
+    // {
+    //   title: "Actions",
+    //   key: "actions",
+    //   render: (_, record) => (
+    //     <Space size="middle">
+    //       <Button
+    //         type="primary"
+    //         size="small"
+    //         icon={<DownloadOutlined />}
+    //         onClick={(event) =>
+    //           handleGeneralDownload(
+    //             event,
+    //             `${baseURL}/cases/${id}/documents/${record._id}/download`,
+    //             record.fileName
+    //           )
+    //         }
+    //         className="bg-blue-600 hover:bg-blue-700 border-0">
+    //         Download
+    //       </Button>
+    //       {isStaff && (
+    //         <Button
+    //           type="primary"
+    //           danger
+    //           size="small"
+    //           icon={<DeleteOutlined />}
+    //           onClick={(event) =>
+    //             Modal.confirm({
+    //               title: "Delete Document",
+    //               content:
+    //                 "Are you sure you want to delete this document? This action cannot be undone.",
+    //               okText: "Delete",
+    //               okType: "danger",
+    //               cancelText: "Cancel",
+    //               onOk: () =>
+    //                 handleDeleteDocument(
+    //                   event,
+    //                   `cases/${id}/documents/${record._id}`,
+    //                   record._id
+    //                 ),
+    //             })
+    //           }>
+    //           Delete
+    //         </Button>
+    //       )}
+    //     </Space>
+    //   ),
+    // },
   ];
 
   const getStatusColor = (status) => {
@@ -272,7 +277,17 @@ const CaseDetails = () => {
               </Text>
             </div>
           </div>
-          {isStaff && <CaseDocumentUpload caseId={id} />}
+          {isStaff && (
+            <FileUploader
+              entityType="Case"
+              entityId={id}
+              category="case-document"
+              buttonText="Upload Case Documents"
+              buttonProps={{ type: "primary" }}
+              multiple={true}
+              onUploadSuccess=""
+            />
+          )}
         </div>
 
         {/* Parties Section */}
@@ -512,7 +527,6 @@ const CaseDetails = () => {
                           </Text>
                         )}
                       </Card>
-
                       {/* Steps to be Taken */}
                       <Card className="border-0 rounded-2xl shadow-sm">
                         <div className="flex items-center gap-3 mb-4">
@@ -544,7 +558,6 @@ const CaseDetails = () => {
                           </Text>
                         )}
                       </Card>
-
                       {/* Legal Team */}
                       <Card className="border-0 rounded-2xl shadow-sm">
                         <div className="flex items-center gap-3 mb-4">
@@ -632,7 +645,7 @@ const CaseDetails = () => {
               label: (
                 <div className="flex items-center gap-2">
                   <DocumentTextIcon className="w-4 h-4" />
-                  <span>Documents ({documents.length})</span>
+                  <span>Documents ({documents?.length})</span>
                 </div>
               ),
               children: (
@@ -645,17 +658,11 @@ const CaseDetails = () => {
                       Case Documents
                     </Title>
                   </div>
-                  <Table
-                    columns={columns}
-                    dataSource={documents}
-                    rowKey={(record) => record._id}
-                    pagination={false}
-                    className="w-full custom-table"
-                    scroll={{ x: true }}
-                  />
+                  <CaseDocuments caseId={id} />,
                 </Card>
               ),
             },
+
             {
               key: "history",
               label: (
@@ -700,6 +707,14 @@ const CaseDetails = () => {
                                     Next adjourned date:{" "}
                                     {formatDate(report.adjournedDate)}
                                   </Text>
+
+                                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                                    <ScaleIcon className="w-4 h-4" />
+                                    <Text>
+                                      Reported By: {report.reportedBy.firstName}{" "}
+                                      {report.reportedBy.lastName}
+                                    </Text>
+                                  </div>
                                 </div>
                               )}
                             </div>

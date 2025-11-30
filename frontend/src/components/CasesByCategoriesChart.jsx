@@ -68,18 +68,16 @@ const CasesByCategoriesChart = ({ data, title, loading }) => {
     const totalCases = data.reduce((sum, item) => sum + item.count, 0);
 
     return data
-      .filter((item) => item?.groupName !== null)
+      .filter((item) => item?._id !== null)
       .sort((a, b) => b.count - a.count)
       .map((item, index) => ({
-        id: `${item.groupName}-${index}`,
-        name: item.groupName,
+        id: `${item._id}-${index}`,
+        name: item._id.toUpperCase(),
         Cases: item.count,
         color: palette[index % palette.length],
         percentage: Math.round((item.count / totalCases) * 100),
         shortName:
-          item?.groupName?.length > 12
-            ? item.groupName.substring(0, 12) + "..."
-            : item.groupName,
+          item?._id?.length > 12 ? item._id.substring(0, 12) + "..." : item._id,
       }));
   }, [data, title]);
 
@@ -129,6 +127,7 @@ const CasesByCategoriesChart = ({ data, title, loading }) => {
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
+
       return (
         <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-4 shadow-2xl min-w-[200px]">
           <div className="flex items-center gap-2 mb-3">

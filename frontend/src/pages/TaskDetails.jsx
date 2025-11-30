@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+// components/TaskDetails.js
+import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import {
   Card,
@@ -8,40 +9,41 @@ import {
   Tag,
   Space,
   Button,
-  Badge,
-  Avatar,
   Progress,
+  Tabs,
+  List,
+  Badge,
+  Tooltip,
   Row,
   Col,
-  Modal,
-  Timeline,
-  List,
+  Grid,
+  Dropdown,
+  Statistic,
+  Descriptions,
+  Collapse,
 } from "antd";
 import {
   CalendarOutlined,
   UserOutlined,
   FlagOutlined,
+  FileTextOutlined,
   TeamOutlined,
   ClockCircleOutlined,
-  ExclamationCircleOutlined,
   CheckCircleOutlined,
-  PlayCircleOutlined,
+  SyncOutlined,
+  PaperClipOutlined,
   EyeOutlined,
-  FileTextOutlined,
+  DownloadOutlined,
+  ReloadOutlined,
+  MoreOutlined,
+  InfoCircleOutlined,
+  MailOutlined,
   HistoryOutlined,
+  FileDoneOutlined,
+  ArrowLeftOutlined,
 } from "@ant-design/icons";
-import {
-  ClipboardDocumentIcon,
-  DocumentTextIcon,
-  ExclamationTriangleIcon,
-  CheckCircleIcon,
-  ScaleIcon,
-} from "@heroicons/react/24/outline";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
-import TaskDocUpload from "./TaskDocUpload";
-import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
-import useDeleteDocument from "../hooks/useDeleteDocument";
 import TaskResponseForm from "../components/TaskResponseForm";
 import moment from "moment";
 import TaskResponse from "../components/TaskResponse";
@@ -51,174 +53,153 @@ import PageErrorAlert from "../components/PageErrorAlert";
 import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import AddEventToCalender from "../components/AddEventToCalender";
-import TaskReminderForm from "../components/TaskReminderForm";
-import TaskQuickActions from "../components/TaskQuickActions";
+import TaskFileUploader from "../components/TaskFileUploader";
+import useFileManager from "../hooks/useFileManager";
 import TaskAttachmentsCard from "../components/TaskAttachmentsCard ";
 
-const { Title, Text } = Typography;
+const { Title, Text, Paragraph } = Typography;
+const { TabPane } = Tabs;
+const { useBreakpoint } = Grid;
+const { Panel } = Collapse;
 
 const TaskDetails = () => {
-  const {
-    dataFetcher,
-    data,
-    loading,
-    error: dataError,
-    refetch,
-  } = useDataFetch();
+  const { dataFetcher, data, loading, error: dataError } = useDataFetch();
   const { id } = useParams();
   const { user } = useSelector((state) => state.auth);
-  const task = data?.data?.task;
-
-  const { handleDeleteDocument, documents } = useDeleteDocument(
-    task?.documents ? { documents: task?.documents } : null,
-    id
-  );
-
+  const task = data?.data;
   const currentUser = user?.data?._id;
   const assignedById = task?.assignedBy?._id;
   const isAssignedBy = currentUser === assignedById;
+  const [activeTab, setActiveTab] = useState("overview");
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const screens = useBreakpoint();
+
+  // Use the new useFileManager hook
+  const fileManager = useFileManager("Task", id, {
+    enableNotifications: true,
+    autoFetch: true,
+  });
 
   useRedirectLogoutUser("/users/login");
 
-  const isAssignedToCurrentUser = task?.assignedTo?.some(
-    (assignment) => assignment?.user?._id === currentUser
+  const isAssignedToCurrentUser = useMemo(
+    () =>
+      task?.assignees?.some((assignee) => assignee.user?._id === currentUser) ||
+      task?.assignedTo?.some((staff) => staff._id === currentUser),
+    [task, currentUser]
   );
 
-  const canModifyTask = useMemo(() => {
-    return isAssignedBy || ["super-admin", "admin"].includes(user?.data?.role);
-  }, [isAssignedBy, user?.data?.role]);
+  const isAssignedToCurrentClientUser = useMemo(
+    () => task?.assignedToClient?._id === currentUser,
+    [task, currentUser]
+  );
 
-  const [previewDocument, setPreviewDocument] = useState(null);
+  // Manual refresh function
+  const refreshTask = () => {
+    setRefreshTrigger((prev) => prev + 1);
+    fileManager.refreshFiles();
+  };
 
   useEffect(() => {
     dataFetcher(`tasks/${id}`, "GET");
-  }, [id, dataFetcher]);
+  }, [id, dataFetcher, refreshTrigger]);
 
-  // Enhanced status and priority handling
-  const getPriorityColor = (priority) => {
-    switch (priority?.toLowerCase()) {
-      case "urgent":
-        return "red";
-      case "high":
-        return "orange";
-      case "medium":
-        return "blue";
-      case "low":
-        return "green";
-      default:
-        return "default";
-    }
+  const handleUploadSuccess = () => {
+    refreshTask();
   };
 
-  const getPriorityIcon = (priority) => {
-    switch (priority?.toLowerCase()) {
-      case "urgent":
-        return <ExclamationCircleOutlined />;
-      case "high":
-        return <FlagOutlined />;
-      case "medium":
-        return <PlayCircleOutlined />;
-      case "low":
-        return <FlagOutlined />;
-      default:
-        return <FlagOutlined />;
-    }
+  const handleTaskResponse = () => {
+    refreshTask();
   };
 
-  const getCategoryColor = (category) => {
-    const colors = {
-      research: "blue",
-      drafting: "purple",
-      filing: "cyan",
-      hearing: "orange",
-      "client-meeting": "green",
-      discovery: "gold",
-      other: "default",
+  // Status and priority configurations
+  const getPriorityConfig = (priority) => {
+    const configs = {
+      urgent: { color: "red", text: "URGENT" },
+      high: { color: "orange", text: "HIGH" },
+      medium: { color: "blue", text: "MEDIUM" },
+      low: { color: "green", text: "LOW" },
     };
-    return colors[category] || "default";
-  };
-
-  const getStatusConfig = (task) => {
-    if (task?.status === "completed") {
-      return {
-        color: "success",
-        text: "Completed",
-        icon: <CheckCircleOutlined />,
-      };
-    }
-    if (task?.status === "cancelled") {
-      return {
-        color: "default",
-        text: "Cancelled",
-        icon: <ExclamationCircleOutlined />,
-      };
-    }
-    if (task?.status === "overdue") {
-      return {
-        color: "error",
-        text: "Overdue",
-        icon: <ExclamationCircleOutlined />,
-      };
-    }
-    if (task?.status === "in-progress") {
-      return {
-        color: "processing",
-        text: "In Progress",
-        icon: <PlayCircleOutlined />,
-      };
-    }
-    if (task?.status === "under-review") {
-      return {
-        color: "purple",
-        text: "Under Review",
-        icon: <EyeOutlined />,
-      };
-    }
-    if (moment(task?.dueDate).diff(moment(), "days") <= 2) {
-      return {
-        color: "warning",
-        text: "Due Soon",
-        icon: <ClockCircleOutlined />,
-      };
-    }
-    return { color: "default", text: "Pending", icon: <ClockCircleOutlined /> };
-  };
-
-  const statusConfig = useMemo(() => getStatusConfig(task), [task]);
-  const isOverdue = useMemo(
-    () =>
-      task?.status !== "completed" && moment(task?.dueDate).isBefore(moment()),
-    [task]
-  );
-
-  const daysUntilDue = useMemo(() => {
-    if (!task?.dueDate) return null;
-    return moment(task.dueDate).diff(moment(), "days");
-  }, [task?.dueDate]);
-
-  const handleDocumentPreview = (doc) => {
-    setPreviewDocument(doc);
-  };
-
-  const handleDocumentDelete = async (documentId) => {
-    const success = await handleDeleteDocument(documentId);
-    if (success) {
-      refetch();
-    }
-  };
-
-  const handleTaskUpdate = () => {
-    refetch();
-  };
-
-  // Calculate total time spent from responses
-  const totalTimeSpent = useMemo(() => {
-    if (!task?.responses) return 0;
-    return task.responses.reduce(
-      (total, response) => total + (response.timeSpent || 0),
-      0
+    return (
+      configs[priority?.toLowerCase()] || { color: "blue", text: "MEDIUM" }
     );
-  }, [task?.responses]);
+  };
+
+  const getStatusConfig = (status, isOverdue) => {
+    if (isOverdue) {
+      return {
+        color: "red",
+        icon: <ClockCircleOutlined />,
+        text: "OVERDUE",
+        badge: "error",
+      };
+    }
+
+    const configs = {
+      completed: {
+        color: "green",
+        icon: <CheckCircleOutlined />,
+        text: "COMPLETED",
+        badge: "success",
+      },
+      "in-progress": {
+        color: "blue",
+        icon: <SyncOutlined spin />,
+        text: "IN PROGRESS",
+        badge: "processing",
+      },
+      "under-review": {
+        color: "orange",
+        icon: <EyeOutlined />,
+        text: "UNDER REVIEW",
+        badge: "warning",
+      },
+      pending: {
+        color: "default",
+        icon: <ClockCircleOutlined />,
+        text: "PENDING",
+        badge: "default",
+      },
+      cancelled: {
+        color: "default",
+        icon: <ClockCircleOutlined />,
+        text: "CANCELLED",
+        badge: "default",
+      },
+    };
+
+    return (
+      configs[status?.toLowerCase()] || {
+        color: "default",
+        icon: <ClockCircleOutlined />,
+        text: status,
+        badge: "default",
+      }
+    );
+  };
+
+  const getRoleColor = (role) => {
+    const colors = {
+      primary: "gold",
+      collaborator: "blue",
+      reviewer: "purple",
+      viewer: "green",
+    };
+    return colors[role] || "default";
+  };
+
+  // Calculate time metrics
+  const timeMetrics = useMemo(() => {
+    if (!task) return {};
+
+    const dueDate = moment(task.dueDate);
+    const today = moment();
+    const daysRemaining = dueDate.diff(today, "days");
+    const isOverdue = daysRemaining < 0;
+    const daysUntilDue = Math.abs(daysRemaining);
+
+    return { dueDate, today, daysRemaining, isOverdue, daysUntilDue };
+  }, [task]);
 
   if (loading) return <LoadingSpinner />;
   if (dataError) {
@@ -227,600 +208,514 @@ const TaskDetails = () => {
     );
   }
 
-  if (!task) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Alert
-          message="Task Not Found"
-          description="The requested task could not be found."
-          type="error"
-          showIcon
-        />
-      </div>
-    );
-  }
+  const createEventTitle = `Official Task: ${task?.title}`;
+  const createEventDescription = `Task Description: ${task?.instruction}`;
+  const statusConfig = getStatusConfig(task?.status, timeMetrics.isOverdue);
+  const priorityConfig = getPriorityConfig(task?.taskPriority);
 
-  const createEventTitle = `Task: ${task?.title}`;
-  const createEventDescription = `Task Description: ${
-    task?.description || task?.instruction
-  }\n\nPriority: ${task?.priority}\nCategory: ${
-    task?.category
-  }\nDue Date: ${formatDate(task?.dueDate)}`;
+  // Mobile-friendly detail item
+  const DetailItem = ({ icon, label, value, span = 1 }) => (
+    <Col xs={24} sm={12} lg={span === 2 ? 12 : 8} xl={span === 2 ? 12 : 6}>
+      <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg h-full">
+        <span className="text-blue-500 mt-1">{icon}</span>
+        <div className="flex-1 min-w-0">
+          <Text strong className="text-xs text-gray-500 block mb-1">
+            {label}
+          </Text>
+          <Text className="text-sm block">{value || "N/A"}</Text>
+        </div>
+      </div>
+    </Col>
+  );
+
+  // Action buttons dropdown for mobile
+  const actionButtons = (
+    <Space
+      direction={screens.xs ? "vertical" : "horizontal"}
+      size="small"
+      className="w-full">
+      {/* Reference Documents Upload */}
+      <TaskFileUploader
+        taskId={task?._id}
+        uploadType="reference"
+        buttonText={screens.xs ? "Reference" : "Add Reference Docs"}
+        buttonProps={{
+          type: "primary",
+          icon: <PaperClipOutlined />,
+          size: screens.xs ? "small" : "middle",
+        }}
+        onUploadSuccess={handleUploadSuccess}
+      />
+
+      {/* Response Documents Upload - Only for assignees */}
+      {(isAssignedToCurrentUser || isAssignedToCurrentClientUser) && (
+        <TaskFileUploader
+          taskId={task?._id}
+          uploadType="response"
+          buttonText={screens.xs ? "Response" : "Add Response Docs"}
+          buttonProps={{
+            type: "dashed",
+            icon: <FileTextOutlined />,
+            size: screens.xs ? "small" : "middle",
+          }}
+          onUploadSuccess={handleUploadSuccess}
+        />
+      )}
+
+      <AddEventToCalender
+        title={createEventTitle}
+        description={createEventDescription}
+        startDate={task?.dateAssigned}
+        endDate={task?.dueDate}
+        buttonProps={{
+          size: screens.xs ? "small" : "middle",
+        }}
+      />
+    </Space>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="container mx-auto py-6 max-w-7xl">
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto py-4 px-4 max-w-7xl">
         {/* Header Section */}
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 p-6 bg-white rounded-2xl shadow-sm border border-gray-200">
-          <div className="flex items-start gap-4 flex-1">
-            <GoBackButton />
-            <div className="flex-1">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <ClipboardDocumentIcon className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <Title level={2} className="m-0 text-gray-900 mb-1">
-                    {task?.title}
-                  </Title>
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <Tag
-                      color={statusConfig.color}
-                      icon={statusConfig.icon}
-                      className="text-sm font-semibold">
-                      {statusConfig.text}
-                    </Tag>
-                    <Tag
-                      color={getPriorityColor(task?.priority)}
-                      icon={getPriorityIcon(task?.priority)}
-                      className="text-sm font-semibold capitalize">
-                      {task?.priority} Priority
-                    </Tag>
-                    <Tag
-                      color={getCategoryColor(task?.category)}
-                      className="text-sm font-semibold capitalize">
-                      {task?.category?.replace("-", " ")}
-                    </Tag>
-                    <div className="flex items-center gap-2">
-                      <Progress
-                        percent={task.progress}
-                        size="small"
-                        style={{ width: 80 }}
-                        showInfo={false}
-                      />
-                      <Text className="text-sm text-gray-600">
-                        {task.progress}%
-                      </Text>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Progress and Due Date Info */}
-              <div className="flex items-center gap-6 mt-3">
-                <div className="flex items-center gap-2">
-                  <ClockCircleOutlined
-                    className={`text-sm ${
-                      isOverdue ? "text-red-500" : "text-gray-500"
-                    }`}
-                  />
-                  <Text
-                    className={`text-sm ${
-                      isOverdue ? "text-red-600 font-medium" : "text-gray-600"
-                    }`}>
-                    Due: {formatDate(task?.dueDate)}
-                    {daysUntilDue !== null && (
-                      <span className="ml-1">
-                        (
-                        {daysUntilDue > 0
-                          ? `${daysUntilDue} days left`
-                          : daysUntilDue === 0
-                          ? "Due today"
-                          : "Overdue"}
-                        )
-                      </span>
-                    )}
-                  </Text>
-                </div>
-
-                {totalTimeSpent > 0 && (
-                  <div className="flex items-center gap-2">
-                    <ClockCircleOutlined className="text-gray-500" />
-                    <Text className="text-sm text-gray-600">
-                      {Math.floor(totalTimeSpent / 60)}h {totalTimeSpent % 60}m
-                      spent
-                    </Text>
-                  </div>
-                )}
-
-                {task?.tags?.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    {task.tags.slice(0, 3).map((tag, index) => (
-                      <Tag key={index} color="blue" className="text-xs">
-                        {tag}
-                      </Tag>
-                    ))}
-                    {task.tags.length > 3 && (
-                      <Text className="text-xs text-gray-500">
-                        +{task.tags.length - 3} more
-                      </Text>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <Space>
-            {canModifyTask && (
-              <TaskDocUpload taskId={task?._id} onUploadSuccess={refetch} />
-            )}
-            {canModifyTask && (
-              <TaskReminderForm taskId={task?._id} onReminderSet={refetch} />
-            )}
-            <AddEventToCalender
-              title={createEventTitle}
-              description={createEventDescription}
-              startDate={task?.dateAssigned}
-              endDate={task?.dueDate}
-            />
-          </Space>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Task Details */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Task Information Card */}
-            <Card
-              className="border-0 rounded-2xl shadow-sm bg-gradient-to-br from-white to-blue-50/50"
-              bodyStyle={{ padding: "24px" }}>
-              <div className="flex items-center gap-3 mb-6">
-                <DocumentTextIcon className="w-5 h-5 text-blue-600" />
-                <Title level={3} className="m-0 text-gray-900">
-                  Task Details
-                </Title>
-              </div>
-
-              {/* Description Section */}
-              {task?.description && (
-                <div className="mb-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <FileTextOutlined className="text-gray-600" />
-                    <Text className="font-semibold text-gray-900">
-                      Description
-                    </Text>
-                  </div>
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <Text className="text-gray-800 leading-relaxed">
-                      {task.description}
-                    </Text>
-                  </div>
-                </div>
-              )}
-
-              {/* Instruction Section */}
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <ClipboardDocumentIcon className="w-4 h-4 text-gray-600" />
-                  <Text className="font-semibold text-gray-900">
-                    Instructions
-                  </Text>
-                </div>
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                  <Text className="text-gray-800 leading-relaxed text-justify whitespace-pre-line">
-                    {task?.instruction || "No instructions provided"}
-                  </Text>
-                </div>
-              </div>
-
-              <Divider />
-
-              {/* Assignment Details */}
-              <Row gutter={[16, 16]}>
-                {/* Assigned By */}
-                <Col xs={24} sm={12}>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg h-full">
-                    <Avatar
-                      size="small"
-                      src={task?.assignedBy?.photo}
-                      icon={<UserOutlined />}
-                      className="bg-green-500"
-                    />
-                    <div>
-                      <Text className="text-sm font-medium text-gray-600 block">
-                        Assigned By
-                      </Text>
-                      <Text className="font-semibold text-gray-900">
-                        {task?.assignedBy
-                          ? `${task.assignedBy?.firstName} ${task.assignedBy?.lastName}`
-                          : "N/A"}
-                      </Text>
-                      {task?.assignedBy?.position && (
-                        <Text className="text-xs text-gray-500 block">
-                          {task.assignedBy.position}
-                        </Text>
-                      )}
-                      {task?.assignedBy?.email && (
-                        <Text className="text-xs text-gray-500 block">
-                          {task.assignedBy.email}
-                        </Text>
-                      )}
-                    </div>
-                  </div>
-                </Col>
-
-                {/* Case Information */}
-                <Col xs={24} sm={12}>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg h-full">
-                    <ScaleIcon className="w-4 h-4 text-purple-600" />
-                    <div>
-                      <Text className="text-sm font-medium text-gray-600 block">
-                        Related Case
-                      </Text>
-                      <Text className="font-semibold text-gray-900">
-                        {task?.case?.caseNumber || "N/A"}
-                      </Text>
-                      {task?.case?.title && (
-                        <Text className="text-xs text-gray-500 block">
-                          {task.case.title}
-                        </Text>
-                      )}
-                    </div>
-                  </div>
-                </Col>
-
-                {/* Assigned To Staff */}
-                <Col xs={24}>
-                  <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                    <Avatar
-                      size="small"
-                      icon={<TeamOutlined />}
-                      className="bg-blue-500 mt-1"
-                    />
-                    <div className="flex-1">
-                      <Text className="text-sm font-medium text-gray-600 block mb-2">
-                        Assigned Staff ({task?.assignedTo?.length || 0})
-                      </Text>
-                      <div className="flex flex-wrap gap-2">
-                        {task?.assignedTo?.length > 0 ? (
-                          task.assignedTo.map((assignment, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center gap-2 bg-white px-3 py-1 rounded border">
-                              <Avatar
-                                size="small"
-                                src={assignment?.user?.photo}
-                                className="w-6 h-6">
-                                {assignment?.user?.firstName?.[0]}
-                                {assignment?.user?.lastName?.[0]}
-                              </Avatar>
-                              <Text className="text-sm">
-                                {assignment?.user?.firstName}{" "}
-                                {assignment?.user?.lastName}
-                              </Text>
-                              {assignment?.user?.position && (
-                                <Text className="text-xs text-gray-500">
-                                  ({assignment?.user?.position})
-                                </Text>
-                              )}
-                              {assignment?.role !== "primary" && (
-                                <Tag color="blue" className="text-xs">
-                                  {assignment?.role}
-                                </Tag>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <Text className="text-gray-500 text-sm">
-                            No staff assigned
-                          </Text>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </Col>
-              </Row>
-
-              <Divider />
-
-              {/* Timeline Information */}
-              <Row gutter={[16, 16]}>
-                <Col xs={24} sm={8}>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <CalendarOutlined className="text-blue-600" />
-                    <div>
-                      <Text className="text-sm font-medium text-gray-600 block">
-                        Date Assigned
-                      </Text>
-                      <Text className="font-semibold text-gray-900">
-                        {formatDate(task?.dateAssigned)}
-                      </Text>
-                      <Text className="text-xs text-gray-500 block">
-                        {moment(task?.dateAssigned).fromNow()}
-                      </Text>
-                    </div>
-                  </div>
-                </Col>
-                <Col xs={24} sm={8}>
-                  <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                    <ClockCircleOutlined
-                      className={
-                        isOverdue
-                          ? "text-red-600"
-                          : daysUntilDue <= 2
-                          ? "text-orange-600"
-                          : "text-green-600"
-                      }
-                    />
-                    <div>
-                      <Text className="text-sm font-medium text-gray-600 block">
-                        Due Date
-                      </Text>
-                      <Text className="font-semibold text-gray-900">
-                        {formatDate(task?.dueDate)}
-                      </Text>
-                      <Text
-                        className={`text-xs ${
-                          isOverdue ? "text-red-500" : "text-gray-500"
-                        } block`}>
-                        {isOverdue ? "Overdue" : `${daysUntilDue} days left`}
-                      </Text>
-                    </div>
-                  </div>
-                </Col>
-                {task?.estimatedHours && (
-                  <Col xs={24} sm={8}>
-                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                      <ClockCircleOutlined className="text-purple-600" />
-                      <div>
-                        <Text className="text-sm font-medium text-gray-600 block">
-                          Estimated Hours
-                        </Text>
-                        <Text className="font-semibold text-gray-900">
-                          {task.estimatedHours} hours
-                        </Text>
-                      </div>
-                    </div>
-                  </Col>
-                )}
-              </Row>
-
-              {/* Completion Date */}
-              {task?.completedAt && (
-                <>
-                  <Divider />
-                  <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
-                    <CheckCircleOutlined className="text-green-600" />
-                    <div>
-                      <Text className="text-sm font-medium text-gray-600 block">
-                        Completed On
-                      </Text>
-                      <Text className="font-semibold text-gray-900">
-                        {formatDate(task.completedAt)}
-                      </Text>
-                      <Text className="text-xs text-gray-500 block">
-                        {moment(task.completedAt).fromNow()}
-                      </Text>
-                    </div>
-                  </div>
-                </>
-              )}
-            </Card>
-
-            {/* Activity Timeline */}
-            {task?.responses?.length > 0 && (
-              <Card
-                className="border-0 rounded-2xl shadow-sm"
-                bodyStyle={{ padding: "24px" }}>
-                <div className="flex items-center gap-3 mb-6">
-                  <HistoryOutlined className="text-blue-600" />
-                  <Title level={3} className="m-0 text-gray-900">
-                    Activity Timeline
-                  </Title>
-                </div>
-                <Timeline>
-                  {task.responses.map((response, index) => (
-                    <Timeline.Item
-                      key={index}
-                      dot={<CheckCircleOutlined className="text-green-500" />}
-                      color="green">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <Text strong>
-                            {response.submittedBy?.firstName}{" "}
-                            {response.submittedBy?.lastName}
-                          </Text>
-                          <Text className="block text-gray-600">
-                            {response.comments}
-                          </Text>
-                          {response.timeSpent > 0 && (
-                            <Text className="text-sm text-gray-500">
-                              Time spent: {response.timeSpent} minutes
-                            </Text>
-                          )}
-                          {response.completed && (
-                            <Tag color="green" className="mt-1">
-                              Marked as completed
-                            </Tag>
-                          )}
-                        </div>
-                        <Text className="text-sm text-gray-500">
-                          {moment(response.submittedAt).fromNow()}
-                        </Text>
-                      </div>
-                    </Timeline.Item>
-                  ))}
-                </Timeline>
-              </Card>
-            )}
-
-            {/* Attachments Card */}
-            <TaskAttachmentsCard
-              documents={documents}
-              task={task}
-              baseURL={import.meta.env.VITE_BASE_URL}
-              handleDeleteDocument={handleDocumentDelete}
-              handleGeneralDownload={handleGeneralDownload}
-              onPreviewDocument={handleDocumentPreview}
-            />
-
-            {/* Active Reminders */}
-            {task?.reminders?.some((r) => r.status === "pending") && (
-              <Card
-                className="border-0 rounded-2xl shadow-sm border-orange-200 bg-orange-50"
-                bodyStyle={{ padding: "24px" }}>
-                <div className="flex items-center gap-3 mb-4">
-                  <ExclamationTriangleIcon className="w-5 h-5 text-orange-600" />
-                  <Title level={3} className="m-0 text-gray-900">
-                    Active Reminders
-                  </Title>
-                </div>
-                <List
-                  dataSource={task.reminders.filter(
-                    (r) => r.status === "pending"
-                  )}
-                  renderItem={(reminder) => (
-                    <List.Item>
-                      <List.Item.Meta
-                        avatar={
-                          <ExclamationTriangleIcon className="w-4 h-4 text-orange-500" />
-                        }
-                        title={reminder.message}
-                        description={
-                          <div>
-                            <Text type="secondary">
-                              Scheduled for: {formatDate(reminder.scheduledFor)}
-                            </Text>
-                            <br />
-                            <Text type="secondary">
-                              Created: {moment(reminder.timestamp).fromNow()}
-                            </Text>
-                          </div>
-                        }
-                      />
-                      {canModifyTask && (
-                        <Button
-                          size="small"
-                          onClick={async () => {
-                            try {
-                              await dataFetcher(
-                                `tasks/${task._id}/reminders/${reminder._id}`,
-                                "DELETE"
-                              );
-                              message.success("Reminder cancelled");
-                              refetch();
-                            } catch (error) {
-                              message.error("Failed to cancel reminder");
-                            }
-                          }}>
-                          Cancel
-                        </Button>
-                      )}
-                    </List.Item>
-                  )}
-                />
-              </Card>
-            )}
-          </div>
-
-          {/* Right Column - Task Response and Quick Actions */}
-          <div className="space-y-6">
-            <Card
-              className="border-0 rounded-2xl shadow-sm bg-gradient-to-br from-white to-green-50/50 h-fit"
-              bodyStyle={{ padding: "24px" }}>
-              <div className="flex items-center gap-3 mb-6">
-                <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                <Title level={3} className="m-0 text-gray-900">
-                  Task Response
-                </Title>
-              </div>
-
-              {/* Response Form */}
-              {!isAssignedBy && isAssignedToCurrentUser && (
-                <div className="mb-6">
-                  <TaskResponseForm
-                    taskId={task?._id}
-                    onResponseSubmit={refetch}
-                    task={task}
-                  />
-                </div>
-              )}
-
-              {/* Response Display */}
-              <TaskResponse
-                task={task}
-                isAssignedToCurrentUser={isAssignedToCurrentUser}
-                onResponseUpdate={refetch}
-              />
-            </Card>
-
-            {/* Quick Actions */}
-            <TaskQuickActions
-              task={task}
-              onUpdate={handleTaskUpdate}
-              canModifyTask={canModifyTask}
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Document Preview Modal */}
-      <Modal
-        title={previewDocument?.fileName}
-        open={!!previewDocument}
-        onCancel={() => setPreviewDocument(null)}
-        width="90%"
-        style={{ maxWidth: 1200 }}
-        footer={[
-          <Button
-            key="download"
-            onClick={() => {
-              if (previewDocument) {
-                handleGeneralDownload(
-                  previewDocument.file,
-                  previewDocument.fileName
-                );
-              }
-            }}>
-            Download
-          </Button>,
-          <Button key="close" onClick={() => setPreviewDocument(null)}>
-            Close
-          </Button>,
-        ]}>
-        {previewDocument && (
-          <div className="w-full h-96">
-            {previewDocument.file?.match(/\.(pdf)$/i) ? (
-              <iframe
-                src={previewDocument.file}
-                className="w-full h-full border-0"
-                title={previewDocument.fileName}
-              />
-            ) : previewDocument.file?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
-              <img
-                src={previewDocument.file}
-                alt={previewDocument.fileName}
-                className="w-full h-full object-contain"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <Text>Preview not available for this file type</Text>
+        <Card className="mb-6 shadow-sm border-0">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-3">
+                <GoBackButton />
                 <Button
-                  type="link"
-                  onClick={() =>
-                    handleGeneralDownload(
-                      previewDocument.file,
-                      previewDocument.fileName
-                    )
-                  }>
-                  Download instead
+                  icon={<ReloadOutlined />}
+                  onClick={refreshTask}
+                  loading={loading}
+                  size="small">
+                  {screens.xs ? "" : "Refresh"}
                 </Button>
               </div>
+
+              <Title
+                level={screens.xs ? 3 : 2}
+                className="m-0 mb-2 line-clamp-2 break-words">
+                {task?.title}
+              </Title>
+
+              <Space wrap size={[8, 8]} className="mb-3">
+                <Badge
+                  status={statusConfig.badge}
+                  text={
+                    <Text strong className="text-sm">
+                      {statusConfig.icon} {statusConfig.text}
+                    </Text>
+                  }
+                />
+                <Tag color={priorityConfig.color} className="text-xs">
+                  {priorityConfig.text} PRIORITY
+                </Tag>
+                {timeMetrics.isOverdue && (
+                  <Tag color="red" className="text-xs">
+                    OVERDUE
+                  </Tag>
+                )}
+              </Space>
+
+              {task?.description && (
+                <Paragraph
+                  ellipsis={{ rows: 2, expandable: true, symbol: "more" }}
+                  className="text-gray-600 mb-0">
+                  {task.description}
+                </Paragraph>
+              )}
+            </div>
+
+            {/* Action Buttons - Desktop */}
+            {!screens.xs && (
+              <div className="flex-shrink-0">{actionButtons}</div>
             )}
           </div>
+
+          {/* Action Buttons - Mobile (full width) */}
+          {screens.xs && <div className="mt-4">{actionButtons}</div>}
+
+          {/* Progress Bar */}
+          <div className="mt-6">
+            <div className="flex justify-between items-center mb-2">
+              <Text strong className="text-sm">
+                Overall Progress
+              </Text>
+              <Text strong className="text-sm">
+                {task?.overallProgress || 0}%
+              </Text>
+            </div>
+            <Progress
+              percent={task?.overallProgress || 0}
+              status={
+                task?.status === "completed"
+                  ? "success"
+                  : timeMetrics.isOverdue
+                  ? "exception"
+                  : "active"
+              }
+              strokeColor={
+                task?.status === "completed"
+                  ? "#52c41a"
+                  : timeMetrics.isOverdue
+                  ? "#ff4d4f"
+                  : task?.taskPriority === "urgent"
+                  ? "#ff4d4f"
+                  : task?.taskPriority === "high"
+                  ? "#fa8c16"
+                  : "#1890ff"
+              }
+              size={screens.xs ? "small" : "default"}
+            />
+          </div>
+        </Card>
+
+        {/* Quick Stats - Mobile Only */}
+        {screens.xs && (
+          <Row gutter={[8, 8]} className="mb-4">
+            <Col span={8}>
+              <Card size="small" className="text-center">
+                <Statistic
+                  value={fileManager.statistics.totalFiles}
+                  prefix={<FileTextOutlined />}
+                  valueStyle={{ fontSize: "16px" }}
+                />
+                <div className="text-xs text-gray-500">Files</div>
+              </Card>
+            </Col>
+            <Col span={8}>
+              <Card size="small" className="text-center">
+                <Statistic
+                  value={task?.taskResponses?.length || 0}
+                  prefix={<HistoryOutlined />}
+                  valueStyle={{ fontSize: "16px" }}
+                />
+                <div className="text-xs text-gray-500">Responses</div>
+              </Card>
+            </Col>
+            <Col span={8}>
+              <Card size="small" className="text-center">
+                <div
+                  className="text-lg font-semibold"
+                  style={{
+                    color: timeMetrics.isOverdue ? "#ff4d4f" : "#52c41a",
+                  }}>
+                  {timeMetrics.daysUntilDue}
+                </div>
+                <div className="text-xs text-gray-500">
+                  {timeMetrics.isOverdue ? "Days Overdue" : "Days Left"}
+                </div>
+              </Card>
+            </Col>
+          </Row>
         )}
-      </Modal>
+
+        {/* Main Content */}
+        <Card className="shadow-sm border-0">
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            size={screens.xs ? "small" : "middle"}
+            items={[
+              {
+                key: "overview",
+                label: (
+                  <span>
+                    <InfoCircleOutlined className="mr-1" />
+                    {screens.xs ? "Overview" : "Task Overview"}
+                  </span>
+                ),
+                children: (
+                  <div className="py-4">
+                    {/* Key Information Grid */}
+                    <Row gutter={[16, 16]} className="mb-6">
+                      <DetailItem
+                        icon={<UserOutlined />}
+                        label="Assigned By"
+                        value={
+                          task?.assignedBy
+                            ? `${task.assignedBy?.firstName} ${task.assignedBy?.lastName} (${task.assignedBy?.position})`
+                            : "N/A"
+                        }
+                        span={2}
+                      />
+
+                      <DetailItem
+                        icon={<TeamOutlined />}
+                        label="Assignees"
+                        value={
+                          task?.assignees && task.assignees.length > 0 ? (
+                            <Space direction="vertical" size="small">
+                              {task.assignees.map((assignee, index) => (
+                                <div key={index}>
+                                  <Tag
+                                    color={getRoleColor(assignee.role)}
+                                    size="small">
+                                    {assignee.role}
+                                  </Tag>
+                                  {assignee.user?.firstName}{" "}
+                                  {assignee.user?.lastName}
+                                </div>
+                              ))}
+                            </Space>
+                          ) : task?.assignedTo ? (
+                            task.assignedTo
+                              .map(
+                                (staff) =>
+                                  `${staff.firstName} ${staff.lastName}`
+                              )
+                              .join(", ")
+                          ) : (
+                            "N/A"
+                          )
+                        }
+                        span={2}
+                      />
+
+                      <DetailItem
+                        icon={<UserOutlined />}
+                        label="Assigned to Client"
+                        value={
+                          task?.assignedToClient
+                            ? `${task.assignedToClient?.firstName} ${task.assignedToClient?.secondName}`
+                            : "N/A"
+                        }
+                      />
+
+                      <DetailItem
+                        icon={<FileTextOutlined />}
+                        label="Case Reference"
+                        value={
+                          task?.caseToWorkOn && task.caseToWorkOn.length > 0
+                            ? task.caseToWorkOn
+                                .map((taskCase) => {
+                                  const firstName =
+                                    taskCase.firstParty?.name[0]?.name;
+                                  const secondName =
+                                    taskCase.secondParty?.name[0]?.name;
+                                  return `${firstName} vs ${secondName}`;
+                                })
+                                .join(", ")
+                            : task?.customCaseReference || "N/A"
+                        }
+                        span={2}
+                      />
+
+                      <DetailItem
+                        icon={<FlagOutlined />}
+                        label="Category"
+                        value={
+                          task?.category
+                            ? task.category.replace(/-/g, " ").toUpperCase()
+                            : "N/A"
+                        }
+                      />
+
+                      <DetailItem
+                        icon={<ClockCircleOutlined />}
+                        label="Estimated Effort"
+                        value={
+                          task?.estimatedEffort
+                            ? `${task.estimatedEffort} hours`
+                            : "Not specified"
+                        }
+                      />
+
+                      <DetailItem
+                        icon={<CalendarOutlined />}
+                        label="Time Assigned"
+                        value={formatDate(task?.dateAssigned)}
+                      />
+
+                      <DetailItem
+                        icon={<CalendarOutlined />}
+                        label="Due Date"
+                        value={
+                          <Space direction="vertical" size={0}>
+                            <Text>{formatDate(task?.dueDate)}</Text>
+                            {timeMetrics.isOverdue ? (
+                              <Text type="danger" className="text-xs">
+                                {timeMetrics.daysUntilDue} days overdue
+                              </Text>
+                            ) : (
+                              <Text type="secondary" className="text-xs">
+                                {timeMetrics.daysRemaining} days remaining
+                              </Text>
+                            )}
+                          </Space>
+                        }
+                      />
+
+                      {task?.startDate && (
+                        <DetailItem
+                          icon={<CalendarOutlined />}
+                          label="Start Date"
+                          value={formatDate(task?.startDate)}
+                        />
+                      )}
+
+                      {task?.actualCompletionDate && (
+                        <DetailItem
+                          icon={<CheckCircleOutlined />}
+                          label="Completed On"
+                          value={formatDate(task?.actualCompletionDate)}
+                        />
+                      )}
+                    </Row>
+
+                    {/* Instructions and Description */}
+                    <Collapse ghost size="small" className="bg-transparent">
+                      <Panel header="Instructions & Details" key="1">
+                        <div className="space-y-4">
+                          {task?.instruction && (
+                            <div>
+                              <Text strong className="block mb-2">
+                                Instructions:
+                              </Text>
+                              <div className="bg-blue-50 p-4 rounded-lg">
+                                <Paragraph className="mb-0 whitespace-pre-wrap">
+                                  {task.instruction}
+                                </Paragraph>
+                              </div>
+                            </div>
+                          )}
+
+                          {task?.description && (
+                            <div>
+                              <Text strong className="block mb-2">
+                                Full Description:
+                              </Text>
+                              <Paragraph className="text-gray-700 whitespace-pre-wrap">
+                                {task.description}
+                              </Paragraph>
+                            </div>
+                          )}
+                        </div>
+                      </Panel>
+                    </Collapse>
+
+                    {/* Tags */}
+                    {task?.tags && task.tags.length > 0 && (
+                      <div className="mt-6">
+                        <Text strong className="block mb-2">
+                          Tags:
+                        </Text>
+                        <Space wrap size={[0, 8]}>
+                          {task.tags.map((tag, index) => (
+                            <Tag key={index} color="blue" className="m-0">
+                              {tag}
+                            </Tag>
+                          ))}
+                        </Space>
+                      </div>
+                    )}
+                  </div>
+                ),
+              },
+              {
+                key: "documents",
+                label: (
+                  <span>
+                    <FileDoneOutlined className="mr-1" />
+                    Documents
+                    <Badge
+                      count={fileManager.statistics.totalFiles}
+                      offset={[8, -8]}
+                      size="small"
+                      style={{ backgroundColor: "#1890ff" }}
+                    />
+                  </span>
+                ),
+                children: (
+                  <div className="py-4">
+                    <TaskAttachmentsCard
+                      fileManager={fileManager}
+                      showUploadSection={true}
+                      onUploadClick={() => console.log("Open upload modal")}
+                    />
+                  </div>
+                ),
+              },
+              {
+                key: "responses",
+                label: (
+                  <span>
+                    <HistoryOutlined className="mr-1" />
+                    {screens.xs ? "Activity" : "Responses & Activity"}
+                    {task?.taskResponses?.length > 0 && (
+                      <Badge
+                        count={task.taskResponses.length}
+                        offset={[8, -8]}
+                        size="small"
+                        style={{ backgroundColor: "#52c41a" }}
+                      />
+                    )}
+                  </span>
+                ),
+                children: (
+                  <div className="py-4">
+                    {!isAssignedBy &&
+                      (isAssignedToCurrentUser ||
+                        isAssignedToCurrentClientUser) && (
+                        <Card size="small" className="mb-4">
+                          <TaskResponseForm
+                            taskId={task?._id}
+                            onResponseSubmitted={handleTaskResponse}
+                          />
+                        </Card>
+                      )}
+                    <TaskResponse
+                      task={task}
+                      isAssignedToCurrentUser={isAssignedToCurrentUser}
+                      isAssignedToCurrentClientUser={
+                        isAssignedToCurrentClientUser
+                      }
+                      onResponseUpdate={handleTaskResponse}
+                    />
+                  </div>
+                ),
+              },
+            ]}
+          />
+
+          {/* Reminders Section */}
+          {task?.reminders && task.reminders.length > 0 && (
+            <div className="mt-6">
+              <Divider orientation="left">
+                <MailOutlined className="mr-2" />
+                Reminders
+              </Divider>
+              <div className="space-y-3">
+                {task.reminders.map((reminder, index) => (
+                  <Alert
+                    key={index}
+                    message={`Reminder: ${reminder.message}`}
+                    description={
+                      <Space direction="vertical" size={0}>
+                        <Text>
+                          Scheduled for: {formatDate(reminder.scheduledFor)}
+                        </Text>
+                        <Text type="secondary">
+                          Sent by: {reminder.sender?.firstName}{" "}
+                          {reminder.sender?.lastName}
+                        </Text>
+                        {reminder.isSent && (
+                          <Text type="secondary">
+                            Sent on: {formatDate(reminder.sentAt)}
+                          </Text>
+                        )}
+                      </Space>
+                    }
+                    type={reminder.isSent ? "success" : "warning"}
+                    showIcon
+                    size="small"
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+      </div>
     </div>
   );
 };

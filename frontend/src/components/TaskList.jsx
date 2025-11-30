@@ -1,23 +1,50 @@
-import { Link } from "react-router-dom";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import TaskReminderForm from "./TaskReminderForm";
-import { Table, Modal, Space, Tooltip, Button, Tag, Badge, Avatar } from "antd";
+import {
+  Table,
+  Modal,
+  Space,
+  Tooltip,
+  Button,
+  Card,
+  Tag,
+  Dropdown,
+  Input,
+  Select,
+  Badge,
+  Row,
+  Col,
+  Statistic,
+} from "antd";
 import {
   DeleteOutlined,
   EditOutlined,
   EyeOutlined,
-  TeamOutlined,
+  FilterOutlined,
+  SearchOutlined,
+  MoreOutlined,
+  ClockCircleOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+  SyncOutlined,
+  UserOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import CreateTaskForm from "../pages/CreateTaskForm";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useDispatch, useSelector } from "react-redux";
-import { useEffect, useMemo } from "react";
 import LoadingSpinner from "./LoadingSpinner";
 import { toast } from "react-toastify";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "./PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+// import "./TaskList.css"; // Optional CSS for additional styling
+
+const { Search } = Input;
+const { Option } = Select;
 
 const TaskList = () => {
   const {
@@ -26,26 +53,33 @@ const TaskList = () => {
     error: taskError,
     fetchData,
   } = useDataGetterHook();
+
   const { isError, isSuccess, message } = useSelector((state) => state.delete);
   const { user } = useSelector((state) => state.auth);
-  const loggedInUserId = user?.data?._id;
-
+  const loggedInClientId = user?.data?._id;
   const { isSuperOrAdmin, isStaff, isClient } = useAdminHook();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // State for filters and search
+  const [searchText, setSearchText] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [viewMode, setViewMode] = useState("table"); // 'table' or 'card'
 
   useRedirectLogoutUser("/users/login");
 
-  console.log("Tasks data:", tasks);
-
+  // Fetch tasks data
   useEffect(() => {
     fetchData("tasks", "tasks");
   }, [fetchData]);
 
+  // Display toast message
   useEffect(() => {
     if (isSuccess) {
       toast.success(message);
       dispatch(RESET());
-      fetchData("tasks", "tasks");
+      fetchData();
     }
     if (isError) {
       toast.error(message);
@@ -53,76 +87,152 @@ const TaskList = () => {
     }
   }, [isSuccess, isError, message, dispatch, fetchData]);
 
-  const deleteTask = async (id) => {
-    try {
-      await dispatch(deleteData(`tasks/${id}`));
-      await fetchData("tasks", "tasks");
-    } catch (error) {
-      toast.error("Failed to delete task");
+  // Handle delete with confirmation
+  const deleteTask = useCallback(
+    async (id) => {
+      try {
+        await dispatch(deleteData(`tasks/${id}`));
+        await fetchData("tasks", "tasks");
+      } catch (error) {
+        toast.error("Failed to delete task");
+      }
+    },
+    [dispatch, fetchData]
+  );
+
+  // Filter tasks based on user role
+  const filteredTasksByRole = useMemo(() => {
+    if (!tasks?.data) return [];
+
+    let filteredTasks = tasks.data;
+
+    if (isClient) {
+      filteredTasks = filteredTasks.filter(
+        (task) => task?.assignedToClient?._id === loggedInClientId
+      );
+    } else if (!isSuperOrAdmin) {
+      filteredTasks = filteredTasks.filter(
+        (task) =>
+          task?.assignedTo?.some((user) => user._id === loggedInClientId) ||
+          task?.assignees?.some(
+            (assignee) => assignee.user?._id === loggedInClientId
+          )
+      );
+    }
+
+    return filteredTasks;
+  }, [tasks?.data, isSuperOrAdmin, isClient, loggedInClientId]);
+
+  // Apply search and filters
+  const filteredAndSearchedTasks = useMemo(() => {
+    return filteredTasksByRole.filter((task) => {
+      const matchesSearch =
+        searchText === "" ||
+        task.title?.toLowerCase().includes(searchText.toLowerCase()) ||
+        task.description?.toLowerCase().includes(searchText.toLowerCase()) ||
+        task.customCaseReference
+          ?.toLowerCase()
+          .includes(searchText.toLowerCase());
+
+      const matchesStatus =
+        statusFilter === "all" || task.status === statusFilter;
+      const matchesPriority =
+        priorityFilter === "all" || task.taskPriority === priorityFilter;
+
+      return matchesSearch && matchesStatus && matchesPriority;
+    });
+  }, [filteredTasksByRole, searchText, statusFilter, priorityFilter]);
+
+  // Statistics
+  const taskStats = useMemo(() => {
+    const total = filteredTasksByRole.length;
+    const completed = filteredTasksByRole.filter(
+      (task) => task.status === "completed"
+    ).length;
+    const inProgress = filteredTasksByRole.filter(
+      (task) => task.status === "in-progress"
+    ).length;
+    const overdue = filteredTasksByRole.filter((task) => task.isOverdue).length;
+
+    return { total, completed, inProgress, overdue };
+  }, [filteredTasksByRole]);
+
+  // Get status color and icon
+  const getStatusConfig = (status, isOverdue) => {
+    if (isOverdue) {
+      return {
+        color: "red",
+        icon: <ExclamationCircleOutlined />,
+        text: "Overdue",
+      };
+    }
+
+    switch (status) {
+      case "completed":
+        return {
+          color: "green",
+          icon: <CheckCircleOutlined />,
+          text: "Completed",
+        };
+      case "in-progress":
+        return {
+          color: "blue",
+          icon: <SyncOutlined spin />,
+          text: "In Progress",
+        };
+      case "under-review":
+        return { color: "orange", icon: <EyeOutlined />, text: "Under Review" };
+      case "pending":
+        return {
+          color: "default",
+          icon: <ClockCircleOutlined />,
+          text: "Pending",
+        };
+      default:
+        return {
+          color: "default",
+          icon: <ClockCircleOutlined />,
+          text: status,
+        };
     }
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: "blue",
-      "in-progress": "orange",
-      "under-review": "purple",
-      completed: "green",
-      overdue: "red",
-      cancelled: "gray",
-    };
-    return colors[status] || "default";
-  };
-
+  // Get priority color
   const getPriorityColor = (priority) => {
-    const colors = {
-      urgent: "red",
-      high: "orange",
-      medium: "blue",
-      low: "green",
-    };
-    return colors[priority] || "default";
+    switch (priority) {
+      case "urgent":
+        return "red";
+      case "high":
+        return "orange";
+      case "medium":
+        return "blue";
+      case "low":
+        return "green";
+      default:
+        return "default";
+    }
   };
 
-  const getCategoryColor = (category) => {
-    const colors = {
-      research: "blue",
-      drafting: "purple",
-      filing: "cyan",
-      hearing: "orange",
-      "client-meeting": "green",
-      discovery: "gold",
-      other: "default",
-    };
-    return colors[category] || "default";
-  };
-
+  // Table columns
   const columns = [
     {
-      title: "Task Title",
+      title: "Task",
       dataIndex: "title",
       key: "title",
       width: 200,
       render: (text, record) => (
-        <div className="flex items-center gap-2">
+        <div className="task-title-cell">
           <Link
-            className="text-blue-600 hover:text-blue-800 font-medium"
-            to={`${record?._id || record?.id}/details`}>
+            className="text-blue-600 hover:text-blue-800 font-semibold line-clamp-2"
+            to={`${record?.id}/details`}>
             {text}
           </Link>
-          {record?.reminders?.some((r) => r.status === "pending") && (
-            <Badge dot color="orange" title="Has active reminder" />
+          {record.description && (
+            <div className="text-xs text-gray-500 mt-1 line-clamp-1">
+              {record.description}
+            </div>
           )}
         </div>
-      ),
-    },
-    {
-      title: "Case",
-      dataIndex: "case",
-      key: "case",
-      width: 120,
-      render: (caseObj) => (
-        <div className="text-xs">{caseObj?.caseNumber || "N/A"}</div>
       ),
     },
     {
@@ -130,16 +240,22 @@ const TaskList = () => {
       dataIndex: "status",
       key: "status",
       width: 120,
-      render: (status) => (
-        <Tag color={getStatusColor(status)} className="capitalize">
-          {status?.replace("-", " ")}
-        </Tag>
-      ),
+      render: (status, record) => {
+        const config = getStatusConfig(status, record.isOverdue);
+        return (
+          <Tag
+            color={config.color}
+            icon={config.icon}
+            className="flex items-center gap-1 whitespace-nowrap">
+            {config.text}
+          </Tag>
+        );
+      },
     },
     {
       title: "Priority",
-      dataIndex: "priority",
-      key: "priority",
+      dataIndex: "taskPriority",
+      key: "taskPriority",
       width: 100,
       render: (priority) => (
         <Tag color={getPriorityColor(priority)} className="capitalize">
@@ -148,186 +264,433 @@ const TaskList = () => {
       ),
     },
     {
-      title: "Category",
-      dataIndex: "category",
-      key: "category",
-      width: 120,
-      render: (category) => (
-        <Tag color={getCategoryColor(category)} className="capitalize">
-          {category?.replace("-", " ")}
-        </Tag>
-      ),
-    },
-    {
       title: "Assigned To",
-      dataIndex: "assignedTo",
-      key: "assignedTo",
+      dataIndex: "assignees",
+      key: "assignees",
       width: 150,
-      render: (assignedTo) =>
-        assignedTo?.length > 0 ? (
+      render: (assignees, record) => {
+        const displayUsers =
+          assignees?.length > 0 ? assignees : record.assignedTo;
+
+        if (!displayUsers || displayUsers.length === 0) {
+          return <span className="text-gray-400">Unassigned</span>;
+        }
+
+        return (
           <div className="space-y-1">
-            {assignedTo.slice(0, 2).map((assignment) => (
-              <div
-                key={assignment?.user?._id}
-                className="flex items-center gap-1">
-                <Avatar
-                  size="small"
-                  src={assignment?.user?.photo}
-                  className="w-4 h-4">
-                  {assignment?.user?.firstName?.[0]}
-                </Avatar>
-                <span className="text-xs">
-                  {assignment?.user?.firstName} {assignment?.user?.lastName}
-                  {assignment.role !== "primary" && (
-                    <Tag color="blue" className="ml-1 text-xs">
-                      {assignment.role}
-                    </Tag>
-                  )}
+            {displayUsers.slice(0, 2).map((user, index) => (
+              <div key={index} className="flex items-center gap-1 text-xs">
+                <UserOutlined className="text-gray-400" />
+                <span className="line-clamp-1">
+                  {user.firstName} {user.lastName}
                 </span>
               </div>
             ))}
-            {assignedTo.length > 2 && (
-              <div className="text-xs text-gray-500">
-                +{assignedTo.length - 2} more
-              </div>
+            {displayUsers.length > 2 && (
+              <Badge count={`+${displayUsers.length - 2}`} size="small" />
             )}
           </div>
-        ) : (
-          "N/A"
-        ),
+        );
+      },
     },
     {
       title: "Due Date",
       dataIndex: "dueDate",
       key: "dueDate",
       width: 120,
-      render: (dueDate) => <div className="text-sm">{formatDate(dueDate)}</div>,
-      sorter: (a, b) => new Date(a.dueDate) - new Date(b.dueDate),
-    },
-    {
-      title: "Progress",
-      dataIndex: "progress",
-      key: "progress",
-      width: 100,
-      render: (progress) => (
-        <div className="flex items-center gap-2">
-          <div className="w-12 bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full"
-              style={{ width: `${progress}%` }}
-            />
+      render: (dueDate, record) => (
+        <div className="text-xs">
+          <div
+            className={`${
+              record.isOverdue ? "text-red-500 font-semibold" : "text-gray-600"
+            }`}>
+            {formatDate(dueDate)}
           </div>
-          <span className="text-sm font-medium w-8">{progress}%</span>
+          {record.isOverdue && (
+            <div className="text-red-400 text-xs">Overdue</div>
+          )}
         </div>
       ),
     },
     {
       title: "Actions",
-      key: "action",
-      width: 150,
+      key: "actions",
+      width: 100,
+      fixed: "right",
       render: (text, record) => {
-        const isTaskCreator = user?.data?._id === record?.assignedBy?._id;
-        const canModify = isTaskCreator || isSuperOrAdmin;
+        const canEdit = user?.data?._id === record?.assignedBy?._id;
+
+        const menuItems = [
+          {
+            key: "view",
+            label: (
+              <Link to={`${record?.id}/details`}>
+                <Space>
+                  <EyeOutlined />
+                  View Details
+                </Space>
+              </Link>
+            ),
+          },
+          ...(canEdit
+            ? [
+                {
+                  key: "edit",
+                  label: (
+                    <Link to={`#${record.id}/update`}>
+                      <Space>
+                        <EditOutlined />
+                        Edit Task
+                      </Space>
+                    </Link>
+                  ),
+                },
+                {
+                  key: "reminder",
+                  label: <TaskReminderForm id={record?.id} />,
+                },
+                {
+                  key: "delete",
+                  label: (
+                    <Space
+                      onClick={() => {
+                        Modal.confirm({
+                          title: "Delete Task",
+                          content:
+                            "Are you sure you want to delete this task? This action cannot be undone.",
+                          okText: "Delete",
+                          okType: "danger",
+                          cancelText: "Cancel",
+                          onOk: () => deleteTask(record?.id),
+                        });
+                      }}
+                      className="text-red-500 hover:text-red-700 cursor-pointer">
+                      <DeleteOutlined />
+                      Delete
+                    </Space>
+                  ),
+                },
+              ]
+            : []),
+        ];
 
         return (
           <Space size="small">
-            <Tooltip title="View Details">
-              <Link to={`${record?._id || record?.id}/details`}>
-                <Button icon={<EyeOutlined />} size="small" type="text" />
-              </Link>
-            </Tooltip>
-
-            {canModify && (
-              <TaskReminderForm taskId={record?._id || record?.id} />
-            )}
-
-            {canModify && (
-              <Tooltip title="Delete Task">
-                <Button
-                  icon={<DeleteOutlined />}
-                  size="small"
-                  type="text"
-                  danger
-                  onClick={() => {
-                    Modal.confirm({
-                      title: "Delete Task",
-                      content: "Are you sure you want to delete this task?",
-                      okText: "Yes, Delete",
-                      okType: "danger",
-                      onOk: () => deleteTask(record?._id || record?.id),
-                    });
-                  }}
-                />
+            <Link to={`${record?.id}/details`}>
+              <Tooltip title="View Details">
+                <Button type="text" icon={<EyeOutlined />} size="small" />
               </Tooltip>
-            )}
+            </Link>
+
+            <Dropdown
+              menu={{ items: menuItems }}
+              placement="bottomRight"
+              trigger={["click"]}>
+              <Button type="text" icon={<MoreOutlined />} size="small" />
+            </Dropdown>
           </Space>
         );
       },
     },
   ];
 
-  // Filter tasks based on user role
-  const filteredTasks = useMemo(() => {
-    if (!tasks?.data?.tasks) return [];
+  // Card view component
+  const TaskCard = ({ task }) => {
+    const statusConfig = getStatusConfig(task.status, task.isOverdue);
+    const canEdit = user?.data?._id === task?.assignedBy?._id;
 
-    const taskArray = Array.isArray(tasks.data?.tasks) ? tasks.data?.tasks : [];
+    return (
+      <Card
+        className="task-card h-full hover:shadow-lg transition-all duration-200"
+        size="small">
+        <div className="flex justify-between items-start mb-3">
+          <Tag color={statusConfig.color} icon={statusConfig.icon}>
+            {statusConfig.text}
+          </Tag>
+          <Tag
+            color={getPriorityColor(task.taskPriority)}
+            className="capitalize">
+            {task.taskPriority}
+          </Tag>
+        </div>
 
-    if (isSuperOrAdmin) {
-      return taskArray;
-    } else if (isClient) {
-      return taskArray.filter(
-        (task) =>
-          task?.assignedTo?.some(
-            (assignment) => assignment.user._id === loggedInUserId
-          ) || task?.assignedBy?._id === loggedInUserId
-      );
-    } else if (isStaff) {
-      return taskArray.filter(
-        (task) =>
-          task?.assignedTo?.some(
-            (assignment) => assignment.user._id === loggedInUserId
-          ) || task?.assignedBy?._id === loggedInUserId
-      );
-    }
+        <Link to={`${task?.id}/details`} className="block mb-2">
+          <h3 className="font-semibold text-gray-800 hover:text-blue-600 line-clamp-2 mb-1">
+            {task.title}
+          </h3>
+        </Link>
 
-    return taskArray;
-  }, [tasks?.data, isSuperOrAdmin, isClient, isStaff, loggedInUserId]);
+        {task.description && (
+          <p className="text-sm text-gray-600 line-clamp-2 mb-3">
+            {task.description}
+          </p>
+        )}
 
+        <div className="space-y-2 text-xs text-gray-500 mb-3">
+          <div className="flex items-center gap-1">
+            <UserOutlined />
+            <span>
+              {task.assignees?.length > 0
+                ? `${task.assignees.length} assignee(s)`
+                : task.assignedTo?.length > 0
+                ? `${task.assignedTo.length} assignee(s)`
+                : "Unassigned"}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <ClockCircleOutlined />
+            <span
+              className={task.isOverdue ? "text-red-500 font-semibold" : ""}>
+              Due: {formatDate(task.dueDate)}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex justify-between items-center pt-2 border-t">
+          <Space size="small">
+            <Link to={`${task?.id}/details`}>
+              <Button type="link" size="small" icon={<EyeOutlined />}>
+                View
+              </Button>
+            </Link>
+
+            {canEdit && (
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: "edit",
+                      label: (
+                        <Link to={`#${task.id}/update`}>
+                          <Space>
+                            <EditOutlined />
+                            Edit
+                          </Space>
+                        </Link>
+                      ),
+                    },
+                    {
+                      key: "reminder",
+                      label: <TaskReminderForm id={task?.id} />,
+                    },
+                    {
+                      key: "delete",
+                      label: (
+                        <Space
+                          onClick={() => {
+                            Modal.confirm({
+                              title: "Delete Task",
+                              content:
+                                "Are you sure you want to delete this task?",
+                              okText: "Delete",
+                              okType: "danger",
+                              onOk: () => deleteTask(task?.id),
+                            });
+                          }}
+                          className="text-red-500 hover:text-red-700 cursor-pointer">
+                          <DeleteOutlined />
+                          Delete
+                        </Space>
+                      ),
+                    },
+                  ],
+                }}
+                placement="topRight">
+                <Button type="text" size="small" icon={<MoreOutlined />} />
+              </Dropdown>
+            )}
+          </Space>
+
+          {task.referenceDocuments?.length > 0 && (
+            <Badge
+              count={task.referenceDocuments.length}
+              size="small"
+              showZero={false}>
+              <FileTextOutlined className="text-gray-400" />
+            </Badge>
+          )}
+        </div>
+      </Card>
+    );
+  };
+
+  // Display loading
   if (loadingTasks.tasks) return <LoadingSpinner />;
 
-  if (taskError.tasks) {
+  // Display error
+  if (taskError.error) {
     return (
       <PageErrorAlert
-        errorCondition={taskError.tasks}
-        errorMessage={taskError.tasks}
+        errorCondition={taskError.error}
+        errorMessage={taskError.error}
       />
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Tasks</h1>
-          <p className="text-gray-600">{filteredTasks.length} task(s) found</p>
+    <div className="task-list-container p-4 md:p-6">
+      {/* Header Section */}
+      <div className="mb-6">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+              Tasks
+            </h1>
+            <p className="text-gray-600">
+              Manage and track all your tasks in one place
+            </p>
+          </div>
+
+          {isStaff && <CreateTaskForm />}
         </div>
-        {(isStaff || isSuperOrAdmin) && <CreateTaskForm />}
+
+        {/* Statistics Cards */}
+        <Row gutter={[16, 16]} className="mb-6">
+          <Col xs={12} sm={6}>
+            <Card size="small">
+              <Statistic
+                title="Total Tasks"
+                value={taskStats.total}
+                prefix={<FileTextOutlined />}
+                valueStyle={{ color: "#1890ff" }}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={6}>
+            <Card size="small">
+              <Statistic
+                title="Completed"
+                value={taskStats.completed}
+                prefix={<CheckCircleOutlined />}
+                valueStyle={{ color: "#52c41a" }}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={6}>
+            <Card size="small">
+              <Statistic
+                title="In Progress"
+                value={taskStats.inProgress}
+                prefix={<SyncOutlined />}
+                valueStyle={{ color: "#1890ff" }}
+              />
+            </Card>
+          </Col>
+          <Col xs={12} sm={6}>
+            <Card size="small">
+              <Statistic
+                title="Overdue"
+                value={taskStats.overdue}
+                prefix={<ExclamationCircleOutlined />}
+                valueStyle={{ color: "#ff4d4f" }}
+              />
+            </Card>
+          </Col>
+        </Row>
+
+        {/* Filters and Search */}
+        <Card className="mb-6" size="small">
+          <div className="flex flex-col lg:flex-row gap-4">
+            <Search
+              placeholder="Search tasks..."
+              allowClear
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              className="flex-1"
+              prefix={<SearchOutlined />}
+            />
+
+            <div className="flex flex-wrap gap-2">
+              <Select
+                value={statusFilter}
+                onChange={setStatusFilter}
+                placeholder="Status"
+                className="min-w-[120px]"
+                suffixIcon={<FilterOutlined />}>
+                <Option value="all">All Status</Option>
+                <Option value="pending">Pending</Option>
+                <Option value="in-progress">In Progress</Option>
+                <Option value="under-review">Under Review</Option>
+                <Option value="completed">Completed</Option>
+              </Select>
+
+              <Select
+                value={priorityFilter}
+                onChange={setPriorityFilter}
+                placeholder="Priority"
+                className="min-w-[120px]"
+                suffixIcon={<FilterOutlined />}>
+                <Option value="all">All Priority</Option>
+                <Option value="urgent">Urgent</Option>
+                <Option value="high">High</Option>
+                <Option value="medium">Medium</Option>
+                <Option value="low">Low</Option>
+              </Select>
+
+              <Select
+                value={viewMode}
+                onChange={setViewMode}
+                className="min-w-[100px]">
+                <Option value="table">Table View</Option>
+                <Option value="card">Card View</Option>
+              </Select>
+            </div>
+          </div>
+        </Card>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={filteredTasks}
-        rowKey={(record) => record._id || record.id}
-        scroll={{ x: 1200 }}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total, range) =>
-            `${range[0]}-${range[1]} of ${total} items`,
-        }}
-        className="bg-white rounded-lg shadow"
-      />
+      {/* Tasks Display */}
+      {taskError.tasks ? (
+        <PageErrorAlert
+          errorCondition={taskError.tasks}
+          errorMessage={taskError.tasks}
+        />
+      ) : (
+        <>
+          {viewMode === "table" ? (
+            <Card>
+              <Table
+                columns={columns}
+                dataSource={filteredAndSearchedTasks}
+                rowKey="_id"
+                scroll={{ x: 800 }}
+                pagination={{
+                  pageSize: 10,
+                  showSizeChanger: true,
+                  showQuickJumper: true,
+                  showTotal: (total, range) =>
+                    `${range[0]}-${range[1]} of ${total} tasks`,
+                }}
+                size="middle"
+              />
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {filteredAndSearchedTasks.map((task) => (
+                <TaskCard key={task._id} task={task} />
+              ))}
+            </div>
+          )}
+
+          {filteredAndSearchedTasks.length === 0 && (
+            <Card className="text-center py-12">
+              <FileTextOutlined className="text-4xl text-gray-300 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-500 mb-2">
+                No tasks found
+              </h3>
+              <p className="text-gray-400 mb-4">
+                {searchText ||
+                statusFilter !== "all" ||
+                priorityFilter !== "all"
+                  ? "Try adjusting your search or filters"
+                  : "Get started by creating your first task"}
+              </p>
+              {isStaff && <CreateTaskForm buttonProps={{ type: "primary" }} />}
+            </Card>
+          )}
+        </>
+      )}
     </div>
   );
 };
