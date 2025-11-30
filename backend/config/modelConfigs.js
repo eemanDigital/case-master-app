@@ -39,6 +39,15 @@ const modelConfigs = {
         select:
           "firstParty secondParty suitNo courtNo client courtName location state accountOfficer",
       },
+      {
+        path: "documents",
+        select: "_id fileName fileType", // Only minimal fields for lists
+        options: { limit: 3 }, // Only show first 3 documents in lists
+        match: {
+          isDeleted: { $ne: true },
+          isArchived: { $ne: true },
+        },
+      },
       { path: "reportedBy", select: "firstName lastName middleName" },
       { path: "lawyersInCourt", select: "firstName lastName middleName" },
     ],

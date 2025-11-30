@@ -1,139 +1,95 @@
+// SUB-DOCUMENT CONTROLLER
 const Task = require("../models/taskModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 
-exports.createTaskResponse = catchAsync(async (req, res, next) => {
-  const { taskId } = req.params;
-  const responseData = {
-    ...req.body,
-    submittedBy: req.user.id,
-  };
+const path = require("path");
 
-  // Handle file uploads
-  if (req.files && req.files.length > 0) {
-    responseData.documents = req.files.map((file) => ({
-      fileName: file.originalname,
-      fileUrl: file.cloudinaryUrl,
-      fileSize: file.size,
-      mimeType: file.mimetype,
-    }));
+// create response
+exports.createTaskResponse = catchAsync(async (req, res, next) => {
+  // get parent id
+  const id = req.params.taskId;
+  const response = req.body;
+
+  // Check if a file was uploaded
+  if (req.file) {
+    const filePath = req.file.cloudinaryUrl;
+    response.doc = filePath;
   }
+
+  // Find the parent task
+  const parentTask = await Task.findById(id);
+
+  if (!parentTask) {
+    return next(new AppError("No parent task for this response", 404));
+  } else {
+    // Push taskResponse to parent data (if parent is found)
+    parentTask.taskResponse.push(response);
+    await parentTask.save(); // Save the parent task document
+
+    res.status(201).json({
+      message: "success",
+      data: parentTask,
+    });
+  }
+});
+
+//remove response
+exports.deleteTaskResponse = catchAsync(async (req, res, next) => {
+  const { taskId, responseId } = req.params; //parentTask id
 
   const task = await Task.findById(taskId);
 
   if (!task) {
-    return next(new AppError("Task not found", 404));
+    next(new AppError("task/response does not response"));
   }
 
-  // Update task status based on response
-  if (responseData.completed) {
-    task.status = "under-review";
-  }
-
-  task.responses.push(responseData);
-  task.updatedBy = req.user.id;
+  task.taskResponse.pull({ _id: responseId });
   await task.save();
 
-  res.status(201).json({
-    status: "success",
-    data: { task },
-  });
+  res.status(204).json({ message: "success" });
 });
 
+// get task response
 exports.getTaskResponse = catchAsync(async (req, res, next) => {
   const { taskId, responseId } = req.params;
+  const task = await Task.findById(taskId).populate({
+    path: "taskResponse",
+    match: { _id: responseId },
+  });
 
-  const task = await Task.findOne(
-    {
-      _id: taskId,
-      "responses._id": responseId,
-    },
-    {
-      "responses.$": 1,
-    }
+  if (!task) {
+    next(new AppError("task/response does not exist"));
+  }
+  //   select the last response
+  const lastResponse = task.taskResponse.slice(-1)[0];
+  //   const lastResponse = task.taskResponse;
+
+  res.status(200).json(lastResponse);
+});
+
+// download file
+exports.downloadFile = catchAsync(async (req, res, next) => {
+  const { taskId, responseId } = req.params;
+  const task = await Task.findById(taskId);
+
+  if (!task) {
+    next(new AppError("task/response does not exist"));
+  }
+
+  const responseIndex = task.taskResponse.findIndex(
+    (r) => r._id.toString() === responseId
   );
-
-  if (!task || !task.responses.length) {
-    return next(new AppError("Response not found", 404));
+  if (responseIndex === -1) {
+    next(new AppError("response not found"));
   }
+
+  const fileUrl = task.taskResponse[responseIndex].doc;
 
   res.status(200).json({
     status: "success",
-    data: { response: task.responses[0] },
-  });
-});
-
-exports.updateTaskResponse = catchAsync(async (req, res, next) => {
-  const { taskId, responseId } = req.params;
-
-  const task = await Task.findOne({ _id: taskId });
-
-  if (!task) {
-    return next(new AppError("Task not found", 404));
-  }
-
-  const response = task.responses.id(responseId);
-  if (!response) {
-    return next(new AppError("Response not found", 404));
-  }
-
-  // Update response fields
-  Object.keys(req.body).forEach((key) => {
-    if (req.body[key] !== undefined) {
-      response[key] = req.body[key];
-    }
-  });
-
-  task.updatedBy = req.user.id;
-  await task.save();
-
-  res.status(200).json({
-    status: "success",
-    data: { response },
-  });
-});
-
-exports.deleteTaskResponse = catchAsync(async (req, res, next) => {
-  const { taskId, responseId } = req.params;
-
-  const task = await Task.findById(taskId);
-
-  if (!task) {
-    return next(new AppError("Task not found", 404));
-  }
-
-  task.responses.pull({ _id: responseId });
-  task.updatedBy = req.user.id;
-  await task.save();
-
-  res.status(204).json({
-    status: "success",
-    data: null,
-  });
-});
-
-exports.approveTaskResponse = catchAsync(async (req, res, next) => {
-  const { taskId, responseId } = req.params;
-
-  const task = await Task.findById(taskId);
-
-  if (!task) {
-    return next(new AppError("Task not found", 404));
-  }
-
-  const response = task.responses.id(responseId);
-  if (!response) {
-    return next(new AppError("Response not found", 404));
-  }
-
-  // Mark task as completed
-  task.status = "completed";
-  task.completedAt = new Date();
-  task.updatedBy = req.user.id;
-  await task.save();
-
-  res.status(200).json({
-    status: "success",
-    data: { task },
+    data: {
+      fileUrl,
+    },
   });
 });

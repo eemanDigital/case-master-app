@@ -1,88 +1,56 @@
+// routes/taskRoutes.js
 const express = require("express");
-const {
-  getTasks,
-  createTask,
-  getTask,
-  updateTask,
-  deleteTask,
-  getUserTasks,
-  getCaseTasks,
-  getTaskStats,
-} = require("../controllers/taskController");
-
-const {
-  createTaskResponse,
-  getTaskResponse,
-  updateTaskResponse,
-  deleteTaskResponse,
-  approveTaskResponse,
-} = require("../controllers/taskResponseController");
-
-const {
-  uploadTaskDocument,
-  getTaskDocument,
-  deleteTaskDocument,
-  downloadTaskDocument,
-} = require("../controllers/taskDocumentController");
-
-const { protect, restrictTo } = require("../controllers/authController");
-const {
-  multerFileUploader,
-  uploadToCloudinary,
-} = require("../utils/multerFileUploader");
+const taskController = require("../controllers/taskController");
+const authController = require("../controllers/authController");
+const fileController = require("../controllers/fileController");
 
 const router = express.Router();
 
 // Protect all routes
-router.use(protect);
+router.use(authController.protect);
 
-// Task routes
-router.get("/stats", getTaskStats);
-router.get("/my-tasks", getUserTasks);
-router.get("/case/:caseId", getCaseTasks);
-router
-  .route("/")
-  .get(getTasks)
-  .post(restrictTo("admin", "super-admin"), createTask);
+// Task CRUD
+router.route("/").get(taskController.getTasks).post(taskController.createTask);
+
+router.route("/my-tasks").get(taskController.getMyTasks);
+
+router.route("/overdue").get(taskController.getOverdueTasks);
 
 router
   .route("/:taskId")
-  .get(getTask)
-  .patch(updateTask)
-  .delete(restrictTo("admin", "super-admin"), deleteTask);
+  .get(taskController.getTask)
+  .patch(taskController.updateTask)
+  .delete(taskController.deleteTask);
 
-// Task Document routes
-router.route("/:taskId/documents").post(
-  // restrictTo("admin", "attorney", "paralegal", "staff"),
-  multerFileUploader("file"),
-  uploadToCloudinary,
-  uploadTaskDocument
+// Task documents
+router.route("/:taskId/documents").get(taskController.getTaskDocuments);
+
+// ✅ CORRECTED: Use ONLY the file upload route for reference-documents
+router.route("/:taskId/reference-documents").post(
+  fileController.uploadMultiple, // This handles the file upload
+  taskController.uploadReferenceDocuments // This processes the uploaded files
 );
+
+// ✅ CORRECTED: Use ONLY the file upload route for response-documents
+router
+  .route("/:taskId/response-documents")
+  .post(fileController.uploadMultiple, taskController.uploadResponseDocuments);
+
+// Task responses
+router.route("/:taskId/responses").post(taskController.submitTaskResponse);
 
 router
-  .route("/:taskId/documents/:documentId")
-  .get(getTaskDocument)
-  .delete(deleteTaskDocument);
+  .route("/:taskId/responses/:responseIndex/review")
+  .post(taskController.reviewTaskResponse);
 
-router.get("/:taskId/documents/:documentId/download", downloadTaskDocument);
+// Task assignees
+router.route("/:taskId/assignees").post(taskController.addAssignee);
 
-// Task Response routes
-router.route("/:taskId/responses").post(
-  multerFileUploader("documents", 5), // max 5 files
-  uploadToCloudinary,
-  createTaskResponse
-);
+// ❌ REMOVE THESE DUPLICATE ROUTES (they're already defined above)
+// router.route("/:taskId/reference-documents")
+//   .post(taskController.addReferenceDocuments);
 
-router
-  .route("/:taskId/responses/:responseId")
-  .get(getTaskResponse)
-  .patch(updateTaskResponse)
-  .delete(deleteTaskResponse);
-
-router.patch(
-  "/:taskId/responses/:responseId/approve",
-  // restrictTo("admin", "attorney"),
-  approveTaskResponse
-);
+// router.route("/:taskId/response-documents")
+//   .post(fileController.uploadMultiple, taskController.uploadResponseDocuments);
 
 module.exports = router;

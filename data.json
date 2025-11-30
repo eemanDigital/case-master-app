@@ -1,125 +1,198 @@
-{
-  "firstParty": {
-    "description": "Description of the first party",
-    "name": [{ "name": "Tayo Ade" }, { "name": "First Party Name 1" }],
-    "processesFiled": [{ "name": "Process 1" }, { "name": "Process 2" }]
-  },
-  "secondParty": {
-    "description": "Description of the second party",
-    "name": [
-      { "name": "Second Party Name 1" },
-      { "name": "Honourable Lukman Jibola" }
-    ],
-    "processesFiled": [{ "name": "Process 3" }, { "name": "Process 4" }]
-  },
-  "otherParty": [
-    {
-      "description": "Description of other party 1",
-      "name": [
-        { "name": "Other Party 1 Name 1" },
-        { "name": "Other Party 1 Name 2" }
-      ],
-      "processesFiled": [{ "name": "Process 5" }, { "name": "Process 6" }]
-    },
-    {
-      "description": "Description of other party 2",
-      "name": [
-        { "name": "Other Party 2 Name 1" },
-        { "name": "Other Party 2 Name 2" }
-      ],
-      "processesFiled": [{ "name": "Process 7" }, { "name": "Process 8" }]
-    }
-  ],
-  "suitNo": "123/2024",
-  "caseOfficeFileNo": "456/2024",
-  "courtName": "Federal High Court",
-  "courtNo": "Court No. 1",
-  "location": "Court Location",
-  "state": "State Name",
-  "otherCourt": "Other Court Details",
-  "judge": [{ "name": "Judge Name 1" }, { "name": "Judge Name 2" }],
-  "caseSummary": "Brief summary of the case",
-  "caseStatus": "pending",
-  "natureOfCase": "contract dispute",
-  "category": "civil",
-  "isFiledByTheOffice": false,
-  "filingDate": "2024-08-23T00:00:00.000Z",
-  "modeOfCommencement": "writ of summons",
-  "caseStrengths": [{ "name": "Strength 1" }, { "name": "Strength 2" }],
-  "caseWeaknesses": [{ "name": "Weakness 1" }, { "name": "Weakness 2" }],
-  "casePriority": "high",
-  "stepToBeTaken": [{ "name": "Step 1" }, { "name": "Step 2" }],
-  "accountOfficer": "account_officer_id_here",
-  "client": "client_id_here",
-  "generalComment": "General comments about the case"
-}
-
-{
-    "firstParty": {
-      "description": "Description of the first party",
-      "name": [{ "name": "Honourable Popoola Oladipupo" }, { "name": "First Party Name 2" }],
-      "processesFiled": [{ "name": "Process 1" }, { "name": "Process 2" }]
-    },
-    "secondParty": {
-      "description": "Description of the second party",
-      "name": [{ "name": "Second Party Name 2" }, { "name": "Tayo Ade" }],
-      "processesFiled": [{ "name": "Process 3" }, { "name": "Process 4" }]
-    },
-    "otherParty": [
-      {
-        "description": "Description of other party 1",
-        "name": [{ "name": "Other Party 1 Name 1" }, { "name": "Honourable Lukman Jibola" }],
-        "processesFiled": [{ "name": "Process 5" }, { "name": "Process 6" }]
-      },
-      {
-        "description": "Description of other party 2",
-        "name": [{ "name": "Other Party 2 Name 1" }, { "name": "Other Party 2 Name 2" }],
-        "processesFiled": [{ "name": "Process 7" }, { "name": "Process 8" }]
-      }
-    ],
-    "suitNo": "124/2024",
-    "caseOfficeFileNo": "457/2024",
-    "courtName": "Federal High Court",
-    "courtNo": "Court No. 2",
-    "location": "Court Location 2",
-    "state": "Another State",
-    "otherCourt": "Other Court Details 2",
-    "judge": [{ "name": "Judge Name 3" }, { "name": "Judge Name 4" }],
-    "caseSummary": "Brief summary of the second case",
-    "caseStatus": "resolved",
-    "natureOfCase": "land dispute",
-    "category": "civil",
-    "isFiledByTheOffice": true,
-    "filingDate": "2024-09-01T00:00:00.000Z",
-    "modeOfCommencement": "originating summons",
-    "caseStrengths": [{ "name": "Strength 3" }, { "name": "Strength 4" }],
-    "caseWeaknesses": [{ "name": "Weakness 3" }, { "name": "Weakness 4" }],
-    "casePriority": "medium",
-    "stepToBeTaken": [{ "name": "Step 3" }, { "name": "Step 4" }],
-    "accountOfficer": "account_officer_id_2",
-    "client": "client_id_2",
-    "generalComment": "Additional comments about the second case",
-   
-  }
+[
   {
     "firstParty": {
-      "description": "Description of the first party",
-      "name": [{ "name": "Tayo Ade" }, { "name": "Honourable Lukman Jibola" }],
-      "processesFiled": [{ "name": "Process 1" }, { "name": "Process 2" }]
+      "description": "Land ownership dispute over boundary demarcation.",
+      "name": [{ "name": "John Doe" }],
+      "processesFiled": [{ "name": "Statement of Claim" }]
     },
     "secondParty": {
-      "description": "Description of the second party",
-      "name": [{ "name": "Honourable Popoola Oladipupo" }, { "name": "Second Party Name 3" }],
-      "processesFiled": [{ "name": "Process 3" }, { "name": "Process 4" }]
+      "description": "Claims rightful ownership of the disputed parcel of land.",
+      "name": [{ "name": "Ibrahim Musa" }],
+      "processesFiled": [{ "name": "Statement of Defence" }]
     },
-    "otherParty": [
+    "otherParty": [],
+    "suitNo": "FHC/ABJ/001/2025",
+    "caseOfficeFileNo": "OFF/CASE/2025/01",
+    "courtName": "federal high court",
+    "courtNo": "Court 3",
+    "location": "Abuja",
+    "state": "FCT",
+    "judge": [{ "name": "Justice B. Tukur" }],
+    "caseSummary": "This is a civil action arising from conflicting land ownership claims.",
+    "caseStatus": "pending",
+    "natureOfCase": "land law",
+    "category": "civil",
+    "isFiledByTheOffice": true,
+    "filingDate": "2025-02-10",
+    "modeOfCommencement": "writ of summons",
+    "caseStrengths": [{ "name": "Strong documentary evidence" }],
+    "caseWeaknesses": [{ "name": "Witness credibility concerns" }],
+    "casePriority": "medium",
+    "stepToBeTaken": [{ "name": "File additional documents" }],
+    "accountOfficer": ["66efefef79a67e462f717231"],
+    "client": "68c6c8eee6ca8aef3922c42d",
+    "generalComment": "Client is cooperative.",
+    "documents": [
+      { "fileName": "survey_plan.pdf", "file": "https://cloudinary.com/survey" }
+    ]
+  },
+
+  {
+    "firstParty": {
+      "description": "Plaintiff alleges breach of supply contract.",
+      "name": [{ "name": "GreenTech Ltd." }],
+      "processesFiled": [{ "name": "Writ of Summons" }]
+    },
+    "secondParty": {
+      "description": "Defendant denies liability, citing force majeure.",
+      "name": [{ "name": "Banaat Limited" }],
+      "processesFiled": [{ "name": "Statement of Defence" }]
+    },
+    "otherParty": [],
+    "suitNo": "HC/LAG/224/2025",
+    "caseOfficeFileNo": "OFF/CASE/2025/02",
+    "courtName": "high court",
+    "courtNo": "Court 8",
+    "location": "Ikeja",
+    "state": "Lagos",
+    "judge": [{ "name": "Justice O. Idowu" }],
+    "caseSummary": "A dispute over an alleged breach of contract involving delayed product delivery.",
+    "caseStatus": "pending",
+    "natureOfCase": "contract dispute",
+    "category": "civil",
+    "isFiledByTheOffice": false,
+    "filingDate": "2025-01-21",
+    "modeOfCommencement": "originating summons",
+    "caseStrengths": [{ "name": "Email communication evidence" }],
+    "caseWeaknesses": [{ "name": "Missing witness statement" }],
+    "casePriority": "high",
+    "stepToBeTaken": [{ "name": "Prepare witness statement" }],
+    "accountOfficer": ["68e029ebcd74e0ba9e4501a2"],
+    "client": "690bbb3be61e5bf9c6e37b5b",
+    "generalComment": "Documents received from client.",
+    "documents": [
       {
-        "description": "Description of other party 1",
-        "name": [{ "name": "Other Party 1 Name 1" }, { "name": "Other Party 1 Name 2" }],
-        "processesFiled": [{ "name": "Process 5" }, { "name": "Process 6" }]
-      },
+        "fileName": "contract_agreement.pdf",
+        "file": "https://cloudinary.com/agreement"
+      }
+    ]
+  },
+
+  {
+    "firstParty": {
+      "description": "Employer alleges misconduct by former employee.",
+      "name": [{ "name": "Janet Chukwu" }],
+      "processesFiled": [{ "name": "Petition" }]
+    },
+    "secondParty": {
+      "description": "Employee contesting termination.",
+      "name": [{ "name": "Maryam Adewole" }],
+      "processesFiled": [{ "name": "Counter Affidavit" }]
+    },
+    "otherParty": [],
+    "suitNo": "NICN/ABJ/77/2025",
+    "caseOfficeFileNo": "HR/EMP/2025/03",
+    "courtName": "national industrial court",
+    "courtNo": "Court 2",
+    "location": "Abuja",
+    "state": "FCT",
+    "judge": [{ "name": "Justice A. Kanyip" }],
+    "caseSummary": "An employment dispute arising from alleged misconduct.",
+    "caseStatus": "pending",
+    "natureOfCase": "employment law",
+    "category": "civil",
+    "isFiledByTheOffice": true,
+    "filingDate": "2025-03-02",
+    "modeOfCommencement": "originating motion",
+    "caseStrengths": [{ "name": "Clear company policy violations" }],
+    "caseWeaknesses": [{ "name": "Inadequate record keeping" }],
+    "casePriority": "low",
+    "stepToBeTaken": [{ "name": "Arrange mediation meeting" }],
+    "accountOfficer": ["68c6a315d2a29e6ae8c04ff2"],
+    "client": "67da8b200899748431324152",
+    "generalComment": "Awaiting response from HR.",
+    "documents": [
       {
-        "description": "Description of other party 2",
-        "name": [{ "name": "Other Party 2 Name 1" }, { "name": "Other Party 2 Name 2" }],
-        "processesFiled": [{ "name": "Process 7" }, { "name": "Process
-  
+        "fileName": "termination_letter.pdf",
+        "file": "https://cloudinary.com/termination"
+      }
+    ]
+  },
+
+  {
+    "firstParty": {
+      "description": "Plaintiff alleges defamation against defendant.",
+      "name": [{ "name": "Zara Maruf" }],
+      "processesFiled": [{ "name": "Writ of Summons" }]
+    },
+    "secondParty": {
+      "description": "Defendant denies publishing defamatory content.",
+      "name": [{ "name": "Maryam Muftauudeen" }],
+      "processesFiled": [{ "name": "Statement of Defence" }]
+    },
+    "otherParty": [],
+    "suitNo": "FHC/KD/129/2025",
+    "caseOfficeFileNo": "LEGAL/DEF/2025/04",
+    "courtName": "federal high court",
+    "courtNo": "Court 5",
+    "location": "Kaduna",
+    "state": "Kaduna",
+    "judge": [{ "name": "Justice I. Sani" }],
+    "caseSummary": "Defamation claim involving social media statements.",
+    "caseStatus": "pending",
+    "natureOfCase": "tortous liability",
+    "category": "civil",
+    "isFiledByTheOffice": false,
+    "filingDate": "2025-04-14",
+    "modeOfCommencement": "writ of summons",
+    "caseStrengths": [{ "name": "Screenshots of posts" }],
+    "caseWeaknesses": [{ "name": "Need forensic verification" }],
+    "casePriority": "medium",
+    "stepToBeTaken": [{ "name": "Request metadata verification" }],
+    "accountOfficer": ["69163c37b943208216387eea"],
+    "client": "68c6c8eee6ca8aef3922c42d",
+    "generalComment": "Client insists on apology.",
+    "documents": []
+  },
+
+  {
+    "firstParty": {
+      "description": "Prosecution alleges fraudulent transactions.",
+      "name": [{ "name": "Federal Republic of Nigeria" }],
+      "processesFiled": [{ "name": "Charge Sheet" }]
+    },
+    "secondParty": {
+      "description": "Defendant pleads not guilty to fraud allegations.",
+      "name": [{ "name": "Ademola Olatunde" }],
+      "processesFiled": [{ "name": "Bail Application" }]
+    },
+    "otherParty": [],
+    "suitNo": "CR/ABJ/2025/554",
+    "caseOfficeFileNo": "CRIM/FRAUD/2025/05",
+    "courtName": "high court",
+    "courtNo": "Court 11",
+    "location": "Abuja",
+    "state": "FCT",
+    "judge": [{ "name": "Justice M. Hassan" }],
+    "caseSummary": "Criminal charge involving alleged fraudulent dealings with financial records.",
+    "caseStatus": "pending",
+    "natureOfCase": "criminal law",
+    "category": "criminal",
+    "isFiledByTheOffice": false,
+    "filingDate": "2025-05-09",
+    "modeOfCommencement": "charge",
+    "caseStrengths": [{ "name": "Strong forensic evidence" }],
+    "caseWeaknesses": [{ "name": "Witness unavailable" }],
+    "casePriority": "high",
+    "stepToBeTaken": [{ "name": "Prepare cross-examination questions" }],
+    "accountOfficer": ["69163d12b943208216387efc"],
+    "client": "68c6c8eee6ca8aef3922c42d",
+    "generalComment": "Case attracting media attention.",
+    "documents": [
+      {
+        "fileName": "evidence_bundle.zip",
+        "file": "https://cloudinary.com/evidence"
+      }
+    ]
+  }
+]

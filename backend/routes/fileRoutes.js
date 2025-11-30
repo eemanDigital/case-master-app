@@ -1,161 +1,57 @@
 const express = require("express");
-const {
-  createFile,
-  getFiles,
-  downloadFile,
-  getFile,
-  updateFile,
-  deleteFile,
-  getFileStats,
-  bulkDeleteFiles,
-} = require("../controllers/fileController");
-const { protect } = require("../controllers/authController");
-const {
-  uploadToCloudinary,
-  multerFileUploader,
-} = require("../utils/multerFileUploader");
+const fileController = require("../controllers/fileController");
+const authController = require("../controllers/authController");
 
 const router = express.Router();
 
-// ============================================
-// PUBLIC ROUTES (if any - currently none)
-// ============================================
+// Protect all routes (require authentication)
+router.use(authController.protect);
 
-// ============================================
-// PROTECTED ROUTES (All routes require authentication)
-// ============================================
-router.use(protect);
+// Upload routes
+router
+  .route("/upload")
+  .post(fileController.uploadSingle, fileController.uploadFile);
 
-// ============================================
-// STATISTICS & ANALYTICS
-// ============================================
+router
+  .route("/upload-multiple")
+  .post(fileController.uploadMultiple, fileController.uploadMultipleFiles);
 
-/**
- * @route   GET /api/v1/documents/stats
- * @desc    Get file statistics for authenticated user (total files, size, categories)
- * @access  Private
- * @returns {Object} Statistics including totalFiles, totalSize, categories breakdown
- */
-router.get("/stats", getFileStats);
+// Get user's files and storage usage
+router.get("/my-files", fileController.getMyFiles);
+router.get("/storage-usage", fileController.getStorageUsage);
 
-// ============================================
-// BULK OPERATIONS
-// ============================================
+// Get files for specific entity (Case, Task, etc.)
+router.get("/entity/:entityType/:entityId", fileController.getEntityFiles);
 
-/**
- * @route   DELETE /api/v1/documents/bulk
- * @desc    Delete multiple files at once
- * @access  Private
- * @body    { fileIds: ["id1", "id2", "id3"] }
- * @returns {Object} Deleted count and status
- */
-router.delete("/bulk", bulkDeleteFiles);
+// File operations
+router
+  .route("/:id")
+  .get(fileController.getFileDownloadUrl)
+  .delete(fileController.deleteFile);
 
-// ============================================
-// MAIN FILE CRUD OPERATIONS
-// ============================================
+router.patch("/:id/archive", fileController.toggleArchive);
 
-/**
- * @route   GET /api/v1/documents
- * @desc    Get all documents for authenticated user with pagination and filtering
- * @access  Private
- * @query   page, limit, sort, category, fileType, search
- * @example GET /api/v1/documents?page=1&limit=10&category=legal&search=contract
- */
-router.get("/", getFiles);
+// Admin only routes
+router
+  .route("/:id/permanent-delete")
+  .delete(
+    authController.restrictTo("admin", "super-admin"),
+    fileController.permanentlyDeleteFile
+  );
 
-/**
- * @route   POST /api/v1/documents
- * @desc    Upload a new document to Cloudinary and create database record
- * @access  Private
- * @body    fileName, description, category
- * @file    file (required - multipart/form-data)
- * @returns {Object} Created file document
- *
- * File Upload Configuration:
- * - Max size: 10MB (configurable in multerFileUploader)
- * - Allowed types: JPEG, PNG, PDF, DOC, DOCX, TXT, XLSX, XLS, CSV
- * - Files are automatically organized in Cloudinary by type
- */
+// Task-specific upload routes
 router.post(
-  "/",
-  multerFileUploader("file", {
-    maxSize: 10 * 1024 * 1024, // 10MB
-    allowedTypes: /jpeg|jpg|png|doc|docx|pdf|txt|xlsx|xls|csv/,
-  }),
-  uploadToCloudinary,
-  createFile
+  "/upload/task-reference",
+  authController.protect,
+  fileController.uploadMultiple,
+  fileController.uploadTaskReferenceDocuments
 );
 
-// ============================================
-// INDIVIDUAL FILE OPERATIONS
-// ============================================
-
-/**
- * @route   GET /api/v1/documents/:id
- * @desc    Get single document by ID with ownership verification
- * @access  Private
- * @param   id - Document ID
- * @returns {Object} File document details
- */
-router.get("/:id", getFile);
-
-/**
- * @route   GET /api/v1/documents/:id/download
- * @desc    Get document download URL (also tracks download count)
- * @access  Private
- * @param   id - Document ID
- * @returns {Object} File URL, fileName, and publicId for download
- */
-router.get("/:id/download", downloadFile);
-
-/**
- * @route   PATCH /api/v1/documents/:id
- * @desc    Update document metadata and/or replace file
- * @access  Private
- * @param   id - Document ID
- * @body    fileName, description, category
- * @file    file (optional - if provided, replaces existing file)
- * @returns {Object} Updated file document
- *
- * Note: If new file is uploaded, old file is automatically deleted from Cloudinary
- */
-router.patch(
-  "/:id",
-  multerFileUploader("file", {
-    maxSize: 10 * 1024 * 1024,
-    allowedTypes: /jpeg|jpg|png|doc|docx|pdf|txt|xlsx|xls|csv/,
-  }),
-  uploadToCloudinary,
-  updateFile
+router.post(
+  "/upload/task-response",
+  authController.protect,
+  fileController.uploadMultiple,
+  fileController.uploadTaskResponseDocuments
 );
-
-/**
- * @route   DELETE /api/v1/documents/:id
- * @desc    Delete document from both database and Cloudinary with ownership verification
- * @access  Private
- * @param   id - Document ID
- * @returns {null} 204 No Content on success
- *
- * Note: File is permanently deleted from Cloudinary storage
- */
-router.delete("/:id", deleteFile);
-
-// ============================================
-// LEGACY/DEPRECATED ROUTES (if maintaining backward compatibility)
-// ============================================
-
-/**
- * @route   GET /api/v1/documents/file/:id
- * @desc    Get single file (legacy route - use /:id instead)
- * @access  Private
- * @deprecated Use GET /api/v1/documents/:id instead
- */
-// router.get("/file/:id", getFile); // Uncomment if needed for backward compatibility
-
-// ============================================
-// ERROR HANDLING
-// ============================================
-// Note: Global error handler in app.js catches all route errors
 
 module.exports = router;

@@ -1,52 +1,3 @@
-// const mongoose = require("mongoose");
-
-// const fileSchema = mongoose.Schema(
-//   {
-//     fileName: {
-//       type: String,
-//       trim: true,
-//       required: [true, "File name is required"],
-//       maxLength: [100, "File name cannot be more than 100 characters"],
-//     },
-//     file: {
-//       type: String,
-//       required: [true, "File URL is required"],
-//     },
-//     cloudinaryPublicId: {
-//       type: String,
-//       required: [true, "Cloudinary public ID is required"],
-//     },
-//     uploadedBy: {
-//       type: mongoose.Schema.Types.ObjectId,
-//       ref: "User",
-//       required: [true, "Uploader information is required"],
-//     },
-//     fileSize: {
-//       type: Number,
-//       default: 0,
-//     },
-//     fileType: {
-//       type: String,
-//       default: "unknown",
-//     },
-//     date: {
-//       type: Date,
-//       default: Date.now,
-//     },
-//   },
-//   {
-//     timestamps: true, // Adds createdAt and updatedAt
-//   }
-// );
-
-// // Index for better performance
-// fileSchema.index({ uploadedBy: 1, date: -1 });
-// fileSchema.index({ cloudinaryPublicId: 1 });
-
-// const File = mongoose.model("File", fileSchema);
-
-// module.exports = File;
-
 const mongoose = require("mongoose");
 
 const fileSchema = new mongoose.Schema(
@@ -62,23 +13,23 @@ const fileSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    file: {
+    // AWS S3 specific fields
+    s3Key: {
       type: String,
-      required: [true, "File URL is required"],
-    },
-    cloudinaryPublicId: {
-      type: String,
-      required: [true, "Cloudinary public ID is required"],
+      required: [true, "S3 key is required"],
       unique: true,
     },
-    cloudinaryFolder: {
+    s3Bucket: {
       type: String,
-      default: "documents",
+      required: [true, "S3 bucket name is required"],
     },
-    cloudinaryResourceType: {
+    s3Region: {
       type: String,
-      enum: ["image", "video", "raw"],
-      default: "raw",
+      default: "us-east-1",
+    },
+    fileUrl: {
+      type: String,
+      required: [true, "File URL is required"],
     },
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -92,6 +43,10 @@ const fileSchema = new mongoose.Schema(
     fileType: {
       type: String,
       required: [true, "File type is required"],
+    },
+    mimeType: {
+      type: String,
+      required: true,
     },
     description: {
       type: String,
@@ -109,9 +64,21 @@ const fileSchema = new mongoose.Schema(
         "client",
         "internal",
         "report",
+        "case-document",
+        "task-document",
         "other",
       ],
       default: "general",
+    },
+    // Reference to the entity this file belongs to
+    entityType: {
+      type: String,
+      enum: ["Case", "Task", "User", "General"],
+      required: true,
+    },
+    entityId: {
+      type: mongoose.Schema.Types.ObjectId,
+      refPath: "entityType",
     },
     tags: [
       {
@@ -133,6 +100,26 @@ const fileSchema = new mongoose.Schema(
     archivedAt: {
       type: Date,
     },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: {
+      type: Date,
+    },
+    deletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    // Versioning support
+    version: {
+      type: Number,
+      default: 1,
+    },
+    parentFile: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "File",
+    },
   },
   {
     timestamps: true,
@@ -143,10 +130,12 @@ const fileSchema = new mongoose.Schema(
 
 // Indexes for better query performance
 fileSchema.index({ uploadedBy: 1, createdAt: -1 });
+fileSchema.index({ entityType: 1, entityId: 1 });
 fileSchema.index({ uploadedBy: 1, category: 1 });
 fileSchema.index({ uploadedBy: 1, isArchived: 1 });
-fileSchema.index({ cloudinaryPublicId: 1 }, { unique: true });
+fileSchema.index({ s3Key: 1 }, { unique: true });
 fileSchema.index({ fileName: "text", description: "text" });
+fileSchema.index({ isDeleted: 1 });
 
 // Virtual for file size in MB
 fileSchema.virtual("fileSizeMB").get(function () {
@@ -160,38 +149,58 @@ fileSchema.virtual("fileExtension").get(function () {
   return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : "";
 });
 
-// Pre-save middleware to set archived date
+// Pre-save middleware
 fileSchema.pre("save", function (next) {
   if (this.isModified("isArchived") && this.isArchived && !this.archivedAt) {
     this.archivedAt = new Date();
   }
+  if (this.isModified("isDeleted") && this.isDeleted && !this.deletedAt) {
+    this.deletedAt = new Date();
+  }
   next();
 });
 
-// Instance method to archive file
+// Instance methods
 fileSchema.methods.archive = async function () {
   this.isArchived = true;
   this.archivedAt = new Date();
   return await this.save();
 };
 
-// Instance method to unarchive file
 fileSchema.methods.unarchive = async function () {
   this.isArchived = false;
   this.archivedAt = undefined;
   return await this.save();
 };
 
-// Static method to get user's storage usage
+fileSchema.methods.softDelete = async function (userId) {
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  this.deletedBy = userId;
+  return await this.save();
+};
+
+fileSchema.methods.incrementDownloadCount = async function () {
+  this.downloadCount += 1;
+  this.lastDownloadedAt = new Date();
+  return await this.save();
+};
+
+// Static methods
 fileSchema.statics.getUserStorageUsage = async function (userId) {
   const result = await this.aggregate([
-    { $match: { uploadedBy: userId } },
+    {
+      $match: {
+        uploadedBy: mongoose.Types.ObjectId(userId),
+        isDeleted: false,
+      },
+    },
     {
       $group: {
         _id: null,
         totalFiles: { $sum: 1 },
         totalSize: { $sum: "$fileSize" },
-        categories: {
+        byCategory: {
           $push: {
             category: "$category",
             size: "$fileSize",
@@ -201,14 +210,22 @@ fileSchema.statics.getUserStorageUsage = async function (userId) {
     },
   ]);
 
-  return result[0] || { totalFiles: 0, totalSize: 0, categories: [] };
+  return result[0] || { totalFiles: 0, totalSize: 0, byCategory: [] };
 };
 
-// Static method to clean up orphaned files (files without valid users)
+fileSchema.statics.getEntityFiles = async function (entityType, entityId) {
+  return await this.find({
+    entityType,
+    entityId,
+    isDeleted: false,
+  }).populate("uploadedBy", "firstName lastName email");
+};
+
 fileSchema.statics.cleanupOrphanedFiles = async function () {
   const User = mongoose.model("User");
-
-  const allFiles = await this.find().select("uploadedBy cloudinaryPublicId");
+  const allFiles = await this.find({ isDeleted: false }).select(
+    "uploadedBy s3Key"
+  );
   const orphanedFiles = [];
 
   for (const file of allFiles) {

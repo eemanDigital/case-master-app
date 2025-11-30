@@ -239,7 +239,7 @@ app.use("/api/v1/leaves", leaveRouter);
 app.use("/api/v1/invoices", invoiceRouter);
 app.use("/api/v1/payments", paymentRouter);
 app.use("/api/v1/notifications", notificationRouter);
-app.use("/api/v1/documents", fileRouter);
+app.use("/api/v1/files", fileRouter);
 app.use("/api/v1/todos", todoRoutes);
 app.use("/api/v1/contacts", contactRouter);
 app.use("/api/v1/events", eventRouter);

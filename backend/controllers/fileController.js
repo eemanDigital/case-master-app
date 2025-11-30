@@ -1,391 +1,586 @@
+const multer = require("multer");
+const path = require("path");
 const File = require("../models/fileModel");
+const s3Service = require("../services/s3Service");
 const AppError = require("../utils/appError");
-const catchAsync = require("../utils/catchAsync");
-const { deleteFromCloudinary } = require("../utils/multerFileUploader");
 
-/**
- * Create a new file record with Cloudinary upload
- * @route POST /api/v1/documents
- * @access Private
- */
-exports.createFile = catchAsync(async (req, res, next) => {
-  const { fileName, description, category } = req.body;
+// Configure multer to use memory storage
+const multerStorage = multer.memoryStorage();
 
-  // Validate file upload
-  if (!req.file) {
-    return next(new AppError("Please upload a file", 400));
-  }
+// File filter function
+const multerFilter = (req, file, cb) => {
+  // Define allowed file types
+  const allowedTypes = [
+    // Documents
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.ms-powerpoint",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    "text/plain",
+    "text/csv",
+    // Images
+    "image/jpeg",
+    "image/jpg",
+    "image/png",
+    "image/gif",
+    "image/webp",
+    // Archives
+    "application/zip",
+    "application/x-rar-compressed",
+  ];
 
-  // Validate Cloudinary upload
-  if (!req.file.cloudinaryPublicId || !req.file.cloudinaryUrl) {
-    return next(
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(
       new AppError(
-        "File upload to cloud storage failed. Please try again.",
-        500
-      )
+        "Invalid file type. Only documents, images, and archives are allowed.",
+        400
+      ),
+      false
     );
   }
+};
 
-  // Log upload details
-  console.log("📄 Creating file record:", {
-    fileName: fileName || req.file.originalname,
-    cloudinaryPublicId: req.file.cloudinaryPublicId,
-    uploadedBy: req.user.id,
-    size: req.file.size,
-  });
-
-  // Create file record in database
-  const fileDoc = await File.create({
-    fileName: fileName || req.file.cleanFilename || req.file.originalname,
-    file: req.file.cloudinaryUrl,
-    cloudinaryPublicId: req.file.cloudinaryPublicId,
-    cloudinaryFolder: req.file.cloudinaryFolder,
-    cloudinaryResourceType: req.file.cloudinaryResourceType || "raw",
-    uploadedBy: req.user.id,
-    fileSize: req.file.size,
-    fileType: req.file.mimetype,
-    originalName: req.file.originalname,
-    description: description || "",
-    category: category || "general",
-  });
-
-  res.status(201).json({
-    status: "success",
-    message: "File uploaded successfully",
-    data: {
-      file: fileDoc,
-    },
-  });
+// Configure multer upload
+const upload = multer({
+  storage: multerStorage,
+  fileFilter: multerFilter,
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
 });
 
-/**
- * Get all files for the authenticated user
- * @route GET /api/v1/documents
- * @access Private
- */
-exports.getFiles = catchAsync(async (req, res, next) => {
-  const {
-    page = 1,
-    limit = 10,
-    sort = "-createdAt",
-    category,
-    fileType,
-    search,
-  } = req.query;
-
-  // Build query
-  const query = { uploadedBy: req.user.id };
-
-  if (category) query.category = category;
-  if (fileType) query.fileType = new RegExp(fileType, "i");
-  if (search) {
-    query.$or = [
-      { fileName: { $regex: search, $options: "i" } },
-      { originalName: { $regex: search, $options: "i" } },
-      { description: { $regex: search, $options: "i" } },
-    ];
-  }
-
-  // Execute query with pagination
-  const skip = (parseInt(page) - 1) * parseInt(limit);
-  const [files, total] = await Promise.all([
-    File.find(query)
-      .sort(sort)
-      .skip(skip)
-      .limit(parseInt(limit))
-      .select("-__v"),
-    File.countDocuments(query),
-  ]);
-
-  res.status(200).json({
-    status: "success",
-    results: files.length,
-    data: {
-      files,
-    },
-    pagination: {
-      current: parseInt(page),
-      limit: parseInt(limit),
-      total: Math.ceil(total / parseInt(limit)),
-      totalRecords: total,
-    },
-  });
-});
+// Middleware exports
+exports.uploadSingle = upload.single("file");
+exports.uploadMultiple = upload.array("files", 10); // Max 10 files
+exports.uploadFields = upload.fields([
+  { name: "documents", maxCount: 10 },
+  { name: "images", maxCount: 5 },
+]);
 
 /**
- * Get single file by ID (with ownership verification)
- * @route GET /api/v1/documents/:id
- * @access Private
+ * Upload file controller
  */
-exports.getFile = catchAsync(async (req, res, next) => {
-  const fileDoc = await File.findOne({
-    _id: req.params.id,
-    uploadedBy: req.user.id,
-  }).select("-__v");
+exports.uploadFile = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return next(new AppError("Please upload a file", 400));
+    }
 
-  if (!fileDoc) {
-    return next(
-      new AppError("Document not found or you don't have access", 404)
+    const {
+      description,
+      category = "general",
+      entityType = "General",
+      entityId,
+      tags,
+    } = req.body;
+
+    // Upload to S3
+    const uploadResult = await s3Service.uploadFile(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype,
+      {
+        category,
+        entityType,
+        entityId,
+        uploadedBy: req.user._id,
+        metadata: {
+          uploadType: "general", // or 'task-reference', 'task-response', etc.
+          entityType,
+          entityId,
+          uploadedBy: req.user._id.toString(),
+        },
+      }
     );
-  }
 
-  res.status(200).json({
-    status: "success",
-    data: {
-      file: fileDoc,
-    },
-  });
-});
-
-/**
- * Update file metadata and optionally replace file
- * @route PATCH /api/v1/documents/:id
- * @access Private
- */
-exports.updateFile = catchAsync(async (req, res, next) => {
-  const { fileName, description, category } = req.body;
-
-  // Find existing file with ownership check
-  const existingFile = await File.findOne({
-    _id: req.params.id,
-    uploadedBy: req.user.id,
-  });
-
-  if (!existingFile) {
-    return next(
-      new AppError("Document not found or you don't have access", 404)
-    );
-  }
-
-  // Prepare update data
-  const updateData = {};
-  if (fileName) updateData.fileName = fileName;
-  if (description !== undefined) updateData.description = description;
-  if (category) updateData.category = category;
-
-  // If new file uploaded, replace the old one
-  if (req.file) {
-    console.log("🔄 Replacing file:", {
-      oldPublicId: existingFile.cloudinaryPublicId,
-      newPublicId: req.file.cloudinaryPublicId,
+    // Create file record in database with both URLs
+    const fileRecord = await File.create({
+      fileName: req.file.originalname,
+      originalName: req.file.originalname,
+      s3Key: uploadResult.s3Key,
+      s3Bucket: uploadResult.bucket,
+      s3Region: uploadResult.region,
+      fileUrl: uploadResult.fileUrl, // Permanent S3 URL
+      presignedUrl: uploadResult.presignedUrl, // Temporary pre-signed URL for immediate access
+      uploadedBy: req.user._id,
+      fileSize: req.file.size,
+      fileType: path.extname(req.file.originalname).substring(1),
+      mimeType: req.file.mimetype,
+      description,
+      category,
+      entityType,
+      entityId: entityId || null,
+      tags: tags ? tags.split(",").map((tag) => tag.trim()) : [],
+      metadata: {
+        uploadType: "general",
+        entityType,
+        entityId: entityId || null,
+        uploadedBy: req.user._id.toString(),
+        originalName: req.file.originalname,
+        fileSize: req.file.size,
+        mimeType: req.file.mimetype,
+        // Add any additional metadata you need
+      },
     });
 
-    // Delete old file from Cloudinary
-    try {
-      await deleteFromCloudinary(
-        existingFile.cloudinaryPublicId,
-        existingFile.cloudinaryResourceType || "raw"
-      );
-    } catch (error) {
-      console.error("⚠️ Failed to delete old file from Cloudinary:", error);
-      // Continue with update even if deletion fails
+    console.log("✅ File uploaded successfully:", {
+      fileId: fileRecord._id,
+      fileName: fileRecord.fileName,
+      hasPresignedUrl: !!uploadResult.presignedUrl,
+      hasFileUrl: !!uploadResult.fileUrl,
+    });
+
+    res.status(201).json({
+      status: "success",
+      data: {
+        file: fileRecord,
+      },
+    });
+  } catch (error) {
+    console.error("Upload error:", error);
+    next(new AppError(error.message, 500));
+  }
+};
+
+/**
+ * Upload multiple files controller
+ */
+exports.uploadMultipleFiles = async (req, res, next) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return next(new AppError("Please upload at least one file", 400));
     }
 
-    // Update with new file data
-    updateData.file = req.file.cloudinaryUrl;
-    updateData.cloudinaryPublicId = req.file.cloudinaryPublicId;
-    updateData.cloudinaryFolder = req.file.cloudinaryFolder;
-    updateData.cloudinaryResourceType =
-      req.file.cloudinaryResourceType || "raw";
-    updateData.fileSize = req.file.size;
-    updateData.fileType = req.file.mimetype;
-    updateData.originalName = req.file.originalname;
-  }
+    const {
+      description,
+      category = "general",
+      entityType = "General",
+      entityId,
+      tags,
+    } = req.body;
 
-  // Update file record
-  const updatedFile = await File.findByIdAndUpdate(req.params.id, updateData, {
-    new: true,
-    runValidators: true,
-  }).select("-__v");
-
-  res.status(200).json({
-    status: "success",
-    message: "File updated successfully",
-    data: {
-      file: updatedFile,
-    },
-  });
-});
-
-/**
- * Delete file from both database and Cloudinary
- * @route DELETE /api/v1/documents/:id
- * @access Private
- */
-exports.deleteFile = catchAsync(async (req, res, next) => {
-  // Find file with ownership check
-  const fileDoc = await File.findOne({
-    _id: req.params.id,
-    uploadedBy: req.user.id,
-  });
-
-  if (!fileDoc) {
-    return next(
-      new AppError("Document not found or you don't have access", 404)
-    );
-  }
-
-  console.log("🗑️ Deleting file:", {
-    id: fileDoc._id,
-    publicId: fileDoc.cloudinaryPublicId,
-    fileName: fileDoc.fileName,
-  });
-
-  // Delete from Cloudinary first
-  if (fileDoc.cloudinaryPublicId) {
-    try {
-      await deleteFromCloudinary(
-        fileDoc.cloudinaryPublicId,
-        fileDoc.cloudinaryResourceType || "raw"
+    const uploadPromises = req.files.map(async (file) => {
+      // Upload to S3
+      const uploadResult = await s3Service.uploadFile(
+        file.buffer,
+        file.originalname,
+        file.mimetype,
+        {
+          category,
+          entityType,
+          entityId,
+          uploadedBy: req.user._id,
+        }
       );
-    } catch (error) {
-      console.error("⚠️ Cloudinary deletion error:", error);
-      // Continue with database deletion even if Cloudinary fails
-      // You might want to log this for manual cleanup later
+
+      // Create file record
+      return await File.create({
+        fileName: file.originalname,
+        originalName: file.originalname,
+        s3Key: uploadResult.s3Key,
+        s3Bucket: uploadResult.bucket,
+        s3Region: uploadResult.region,
+        fileUrl: uploadResult.fileUrl,
+        uploadedBy: req.user._id,
+        fileSize: file.size,
+        fileType: path.extname(file.originalname).substring(1),
+        mimeType: file.mimetype,
+        description,
+        category,
+        entityType,
+        entityId: entityId || null,
+        tags: tags ? tags.split(",").map((tag) => tag.trim()) : [],
+      });
+    });
+
+    const fileRecords = await Promise.all(uploadPromises);
+
+    res.status(201).json({
+      status: "success",
+      results: fileRecords.length,
+      data: {
+        files: fileRecords,
+      },
+    });
+  } catch (error) {
+    console.error("Multiple upload error:", error);
+    next(new AppError(error.message, 500));
+  }
+};
+
+/**
+ * Get file download URL
+ */
+exports.getFileDownloadUrl = async (req, res, next) => {
+  try {
+    const file = await File.findById(req.params.id);
+
+    if (!file) {
+      return next(new AppError("File not found", 404));
     }
+
+    // Check if file is deleted
+    if (file.isDeleted) {
+      return next(new AppError("This file has been deleted", 410));
+    }
+
+    // Generate presigned URL
+    const downloadUrl = await s3Service.getPresignedUrl(file.s3Key, 3600); // 1 hour
+
+    // Increment download count
+    await file.incrementDownloadCount();
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        downloadUrl,
+        expiresIn: 3600,
+      },
+    });
+  } catch (error) {
+    next(new AppError(error.message, 500));
   }
-
-  // Delete from database
-  await File.findByIdAndDelete(req.params.id);
-
-  res.status(204).json({
-    status: "success",
-    data: null,
-  });
-});
+};
 
 /**
- * Download file (returns file URL for download)
- * @route GET /api/v1/documents/:id/download
- * @access Private
+ * Get all files for an entity
  */
-exports.downloadFile = catchAsync(async (req, res, next) => {
-  const fileDoc = await File.findOne({
-    _id: req.params.id,
-    uploadedBy: req.user.id,
-  }).select("file fileName originalName cloudinaryPublicId");
+exports.getEntityFiles = async (req, res, next) => {
+  try {
+    const { entityType, entityId } = req.params;
 
-  if (!fileDoc) {
-    return next(
-      new AppError("Document not found or you don't have access", 404)
-    );
+    const files = await File.getEntityFiles(entityType, entityId);
+
+    res.status(200).json({
+      status: "success",
+      results: files.length,
+      data: {
+        files,
+      },
+    });
+  } catch (error) {
+    next(new AppError(error.message, 500));
   }
-
-  // Log download activity
-  console.log("📥 File download requested:", {
-    id: fileDoc._id,
-    fileName: fileDoc.fileName,
-    user: req.user.id,
-  });
-
-  // Optionally, track download count
-  await File.findByIdAndUpdate(req.params.id, {
-    $inc: { downloadCount: 1 },
-    lastDownloadedAt: new Date(),
-  });
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      fileUrl: fileDoc.file,
-      fileName: fileDoc.fileName || fileDoc.originalName,
-      publicId: fileDoc.cloudinaryPublicId,
-    },
-  });
-});
+};
 
 /**
- * Get file statistics for the user
- * @route GET /api/v1/documents/stats
- * @access Private
+ * Get user's files
  */
-exports.getFileStats = catchAsync(async (req, res, next) => {
-  const stats = await File.aggregate([
-    { $match: { uploadedBy: req.user._id } },
-    {
-      $group: {
-        _id: null,
-        totalFiles: { $sum: 1 },
-        totalSize: { $sum: "$fileSize" },
-        avgSize: { $avg: "$fileSize" },
-        fileTypes: { $addToSet: "$fileType" },
-      },
-    },
-  ]);
+exports.getMyFiles = async (req, res, next) => {
+  try {
+    const { category, isArchived } = req.query;
 
-  const categoryBreakdown = await File.aggregate([
-    { $match: { uploadedBy: req.user._id } },
-    {
-      $group: {
-        _id: "$category",
-        count: { $sum: 1 },
-        totalSize: { $sum: "$fileSize" },
-      },
-    },
-  ]);
+    const query = {
+      uploadedBy: req.user._id,
+      isDeleted: false,
+    };
 
-  res.status(200).json({
-    status: "success",
-    data: {
-      stats: stats[0] || {
-        totalFiles: 0,
-        totalSize: 0,
-        avgSize: 0,
-        fileTypes: [],
+    if (category) query.category = category;
+    if (isArchived !== undefined) query.isArchived = isArchived === "true";
+
+    const files = await File.find(query).sort("-createdAt");
+
+    res.status(200).json({
+      status: "success",
+      results: files.length,
+      data: {
+        files,
       },
-      categoryBreakdown,
-    },
-  });
-});
+    });
+  } catch (error) {
+    next(new AppError(error.message, 500));
+  }
+};
 
 /**
- * Bulk delete files
- * @route DELETE /api/v1/documents/bulk
- * @access Private
+ * Delete file
  */
-exports.bulkDeleteFiles = catchAsync(async (req, res, next) => {
-  const { fileIds } = req.body;
+exports.deleteFile = async (req, res, next) => {
+  try {
+    const file = await File.findById(req.params.id);
 
-  if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
-    return next(new AppError("Please provide an array of file IDs", 400));
+    if (!file) {
+      return next(new AppError("File not found", 404));
+    }
+
+    // Check ownership or admin privileges
+    if (
+      file.uploadedBy.toString() !== req.user._id.toString() &&
+      !["admin", "super-admin"].includes(req.user.role)
+    ) {
+      return next(
+        new AppError("You do not have permission to delete this file", 403)
+      );
+    }
+
+    // Soft delete in database
+    await file.softDelete(req.user._id);
+
+    // Optional: Delete from S3 (comment out if you want to keep files in S3)
+    // await s3Service.deleteFile(file.s3Key);
+
+    res.status(204).json({
+      status: "success",
+      data: null,
+    });
+  } catch (error) {
+    next(new AppError(error.message, 500));
   }
+};
 
-  // Find all files with ownership check
-  const files = await File.find({
-    _id: { $in: fileIds },
-    uploadedBy: req.user.id,
-  });
+/**
+ * Permanently delete file
+ */
+exports.permanentlyDeleteFile = async (req, res, next) => {
+  try {
+    const file = await File.findById(req.params.id);
 
-  if (files.length === 0) {
-    return next(new AppError("No files found to delete", 404));
+    if (!file) {
+      return next(new AppError("File not found", 404));
+    }
+
+    // Only admins can permanently delete
+    if (!["admin", "super-admin"].includes(req.user.role)) {
+      return next(
+        new AppError(
+          "You do not have permission to permanently delete files",
+          403
+        )
+      );
+    }
+
+    // Delete from S3
+    await s3Service.deleteFile(file.s3Key);
+
+    // Delete from database
+    await File.findByIdAndDelete(req.params.id);
+
+    res.status(204).json({
+      status: "success",
+      data: null,
+    });
+  } catch (error) {
+    next(new AppError(error.message, 500));
   }
+};
 
-  console.log(`🗑️ Bulk deleting ${files.length} files`);
+/**
+ * Archive/Unarchive file
+ */
+exports.toggleArchive = async (req, res, next) => {
+  try {
+    const file = await File.findById(req.params.id);
 
-  // Delete from Cloudinary (parallel)
-  const cloudinaryDeletions = files.map((file) =>
-    deleteFromCloudinary(
-      file.cloudinaryPublicId,
-      file.cloudinaryResourceType || "raw"
-    ).catch((err) => {
-      console.error(`Failed to delete ${file.cloudinaryPublicId}:`, err);
-      return null; // Continue even if some deletions fail
-    })
-  );
+    if (!file) {
+      return next(new AppError("File not found", 404));
+    }
 
-  await Promise.all(cloudinaryDeletions);
+    if (file.uploadedBy.toString() !== req.user._id.toString()) {
+      return next(
+        new AppError("You do not have permission to modify this file", 403)
+      );
+    }
 
-  // Delete from database
-  const result = await File.deleteMany({
-    _id: { $in: fileIds },
-    uploadedBy: req.user.id,
-  });
+    const updatedFile = file.isArchived
+      ? await file.unarchive()
+      : await file.archive();
 
-  res.status(200).json({
-    status: "success",
-    message: `Successfully deleted ${result.deletedCount} file(s)`,
-    data: {
-      deletedCount: result.deletedCount,
-    },
-  });
-});
+    res.status(200).json({
+      status: "success",
+      data: {
+        file: updatedFile,
+      },
+    });
+  } catch (error) {
+    next(new AppError(error.message, 500));
+  }
+};
+
+/**
+ * Get user storage usage
+ */
+exports.getStorageUsage = async (req, res, next) => {
+  try {
+    const usage = await File.getUserStorageUsage(req.user._id);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        usage,
+      },
+    });
+  } catch (error) {
+    next(new AppError(error.message, 500));
+  }
+};
+
+// Upload task reference documents
+exports.uploadTaskReferenceDocuments = async (req, res, next) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return next(new AppError("Please upload at least one file", 400));
+    }
+
+    const { taskId, description, tags } = req.body;
+
+    // Verify task exists
+    const Task = require("../models/Task");
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return next(new AppError("Task not found", 404));
+    }
+
+    const uploadPromises = req.files.map(async (file) => {
+      const uploadResult = await s3Service.uploadFile(
+        file.buffer,
+        file.originalname,
+        file.mimetype,
+        {
+          category: "task-document",
+          entityType: "Task",
+          entityId: taskId,
+          uploadedBy: req.user._id,
+          metadata: {
+            uploadType: "task-reference",
+            taskId: taskId,
+          },
+        }
+      );
+
+      // Create file record
+      const fileRecord = await File.create({
+        fileName: file.originalname,
+        originalName: file.originalname,
+        s3Key: uploadResult.s3Key,
+        s3Bucket: uploadResult.bucket,
+        s3Region: uploadResult.region,
+        fileUrl: uploadResult.fileUrl,
+        uploadedBy: req.user._id,
+        fileSize: file.size,
+        fileType: path.extname(file.originalname).substring(1),
+        mimeType: file.mimetype,
+        description,
+        category: "task-document",
+        entityType: "Task",
+        entityId: taskId,
+        tags: tags ? tags.split(",").map((tag) => tag.trim()) : [],
+        metadata: {
+          uploadType: "task-reference",
+          taskId: taskId,
+          taskTitle: task.title,
+        },
+      });
+
+      // Add to task's reference documents
+      await Task.findByIdAndUpdate(taskId, {
+        $addToSet: { referenceDocuments: fileRecord._id },
+      });
+
+      return fileRecord;
+    });
+
+    const fileRecords = await Promise.all(uploadPromises);
+
+    res.status(201).json({
+      status: "success",
+      results: fileRecords.length,
+      data: {
+        files: fileRecords,
+      },
+    });
+  } catch (error) {
+    next(new AppError(error.message, 500));
+  }
+};
+
+/**
+ * Upload task response documents
+ */
+exports.uploadTaskResponseDocuments = async (req, res, next) => {
+  try {
+    if (!req.files || req.files.length === 0) {
+      return next(new AppError("Please upload at least one file", 400));
+    }
+
+    const { taskId, responseId, description, tags } = req.body;
+
+    // Verify task and response exist
+    const Task = require("../models/Task");
+    const task = await Task.findById(taskId);
+    if (!task) {
+      return next(new AppError("Task not found", 404));
+    }
+
+    const response = task.taskResponses.id(responseId);
+    if (!response) {
+      return next(new AppError("Task response not found", 404));
+    }
+
+    const uploadPromises = req.files.map(async (file) => {
+      const uploadResult = await s3Service.uploadFile(
+        file.buffer,
+        file.originalname,
+        file.mimetype,
+        {
+          category: "task-document",
+          entityType: "Task",
+          entityId: taskId,
+          uploadedBy: req.user._id,
+          metadata: {
+            uploadType: "task-response",
+            taskId: taskId,
+            responseId: responseId,
+          },
+        }
+      );
+
+      // Create file record
+      const fileRecord = await File.create({
+        fileName: file.originalname,
+        originalName: file.originalname,
+        s3Key: uploadResult.s3Key,
+        s3Bucket: uploadResult.bucket,
+        s3Region: uploadResult.region,
+        fileUrl: uploadResult.fileUrl,
+        uploadedBy: req.user._id,
+        fileSize: file.size,
+        fileType: path.extname(file.originalname).substring(1),
+        mimeType: file.mimetype,
+        description,
+        category: "task-document",
+        entityType: "Task",
+        entityId: taskId,
+        tags: tags ? tags.split(",").map((tag) => tag.trim()) : [],
+        metadata: {
+          uploadType: "task-response",
+          taskId: taskId,
+          responseId: responseId,
+          taskTitle: task.title,
+        },
+      });
+
+      // Add to response documents
+      response.documents.push(fileRecord._id);
+      await task.save();
+
+      return fileRecord;
+    });
+
+    const fileRecords = await Promise.all(uploadPromises);
+
+    res.status(201).json({
+      status: "success",
+      results: fileRecords.length,
+      data: {
+        files: fileRecords,
+      },
+    });
+  } catch (error) {
+    next(new AppError(error.message, 500));
+  }
+};

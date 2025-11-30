@@ -30,19 +30,19 @@ const partyProcessSchema = new mongoose.Schema({
   },
 });
 
-// Sub-document for documents
-const documentSchema = new mongoose.Schema({
-  fileName: {
-    type: String,
-    required: [true, "File name is required"],
-    trim: true,
-    maxlength: [200, "File name must be less than 200 characters long"],
-  },
-  file: {
-    type: String,
-    required: [true, "Document file is required"],
-  },
-});
+// // Sub-document for documents
+// const documentSchema = new mongoose.Schema({
+//   fileName: {
+//     type: String,
+//     required: [true, "File name is required"],
+//     trim: true,
+//     maxlength: [200, "File name must be less than 200 characters long"],
+//   },
+//   file: {
+//     type: String,
+//     required: [true, "Document file is required"],
+//   },
+// });
 
 // Case Schema
 const caseSchema = new mongoose.Schema(
@@ -228,6 +228,9 @@ const caseSchema = new mongoose.Schema(
           "petition",
           "information",
           "charge",
+          "complaint",
+          "indictment",
+
           "application",
           "notice of appeal",
           "notice of application",
@@ -265,7 +268,7 @@ const caseSchema = new mongoose.Schema(
         "General comment must be less than 2000 characters long",
       ],
     },
-    documents: [documentSchema],
+    // documents: [documentSchema],
     active: {
       type: Boolean,
       default: true,
@@ -305,7 +308,19 @@ caseSchema.pre(/^find/, function (next) {
   next();
 });
 
-// Virtual populate
+// Virtual populate for documents
+caseSchema.virtual("documents", {
+  ref: "File",
+  foreignField: "entityId",
+  localField: "_id",
+  match: {
+    entityType: "Case",
+    isDeleted: { $ne: true },
+    isArchived: { $ne: true },
+  },
+});
+
+// Virtual populate for reports
 caseSchema.virtual("reports", {
   ref: "Report",
   foreignField: "caseReported",

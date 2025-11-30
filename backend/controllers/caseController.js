@@ -172,13 +172,100 @@ exports.getActiveCases = catchAsync(async (req, res, next) => {
 });
 
 // Optimized single case retrieval with selective population
+// exports.getCase = catchAsync(async (req, res, next) => {
+//   const _id = req.params.caseId;
+//   const data = await Case.findById({ _id })
+//     .populate({
+//       path: "reports",
+//       select: "title reportDate status createdAt", // Only necessary fields
+//       options: { sort: { reportDate: -1 }, limit: 10 }, // Limit to recent reports
+//     })
+//     .populate({
+//       path: "client",
+//       select: "firstName secondName email phone profileImage",
+//     })
+//     .populate({
+//       path: "accountOfficer",
+//       select: "firstName lastName email phone role",
+//     })
+//     .select(CASE_DETAIL_PROJECTION)
+//     .lean(); // Use lean for better performance
+
+//   if (!data) {
+//     return next(new AppError("No case found with that Id", 404));
+//   }
+
+//   // setRedisCache(`singleCase:${req.params.caseId}`, data);
+//   res.status(200).json({
+//     fromCache: false,
+//     data,
+//   });
+// });
+// In your caseController.js - Fix the getCase function
+// exports.getCase = catchAsync(async (req, res, next) => {
+//   const _id = req.params.caseId;
+
+//   const data = await Case.findById({ _id })
+//     .populate({
+//       path: "reports", // ✅ This is the VIRTUAL field
+//       select: "date update adjournedFor adjournedDate clientEmail",
+//       options: { sort: { date: -1 } },
+//       populate: [
+//         {
+//           path: "reportedBy",
+//           select: "firstName lastName middleName",
+//         },
+//         {
+//           path: "lawyersInCourt",
+//           select: "firstName lastName middleName",
+//         },
+//       ],
+//     })
+//     .populate({
+//       path: "client",
+//       select: "firstName secondName email phone profileImage",
+//     })
+//     .populate({
+//       path: "accountOfficer",
+//       select: "firstName lastName email phone role",
+//     })
+//     .select(CASE_DETAIL_PROJECTION);
+
+//   if (!data) {
+//     return next(new AppError("No case found with that Id", 404));
+//   }
+
+//   // ✅ Debug: Check if reports are populated
+//   // console.log("🔍 Case Reports Debug:", {
+//   //   caseId: _id,
+//   //   suitNo: data.suitNo,
+//   //   reportsCount: data.reports ? data.reports.length : 0,
+//   //   reports: data.reports ? data.reports.map((r) => r._id) : "No reports",
+//   // });
+
+//   res.status(200).json({
+//     fromCache: false,
+//     data,
+//   });
+// });
 exports.getCase = catchAsync(async (req, res, next) => {
   const _id = req.params.caseId;
+
   const data = await Case.findById({ _id })
     .populate({
       path: "reports",
-      select: "title reportDate status createdAt", // Only necessary fields
-      options: { sort: { reportDate: -1 }, limit: 10 }, // Limit to recent reports
+      select: "date update adjournedFor adjournedDate clientEmail",
+      options: { sort: { date: -1 } },
+      populate: [
+        {
+          path: "reportedBy",
+          select: "firstName lastName middleName",
+        },
+        {
+          path: "lawyersInCourt",
+          select: "firstName lastName middleName",
+        },
+      ],
     })
     .populate({
       path: "client",
@@ -188,14 +275,42 @@ exports.getCase = catchAsync(async (req, res, next) => {
       path: "accountOfficer",
       select: "firstName lastName email phone role",
     })
-    .select(CASE_DETAIL_PROJECTION)
-    .lean(); // Use lean for better performance
+    // ✅ ADD DOCUMENT POPULATION
+    .populate({
+      path: "documents",
+      select:
+        "fileName originalName fileUrl fileSize fileType mimeType description category uploadedBy createdAt downloadCount",
+      options: { sort: { createdAt: -1 } },
+      populate: {
+        path: "uploadedBy",
+        select: "firstName lastName email",
+      },
+      match: {
+        isDeleted: { $ne: true },
+        isArchived: { $ne: true },
+      },
+    })
+    .select(CASE_DETAIL_PROJECTION);
 
   if (!data) {
     return next(new AppError("No case found with that Id", 404));
   }
 
-  // setRedisCache(`singleCase:${req.params.caseId}`, data);
+  // ✅ Debug: Check if documents and reports are populated
+  // console.log("🔍 Case Population Debug:", {
+  //   caseId: _id,
+  //   suitNo: data.suitNo,
+  //   reportsCount: data.reports ? data.reports.length : 0,
+  //   documentsCount: data.documents ? data.documents.length : 0,
+  //   documents: data.documents
+  //     ? data.documents.map((d) => ({
+  //         id: d._id,
+  //         name: d.fileName,
+  //         type: d.fileType,
+  //       }))
+  //     : "No documents",
+  // });
+
   res.status(200).json({
     fromCache: false,
     data,
