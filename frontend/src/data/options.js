@@ -76,12 +76,13 @@ export const caseCategoryOptions = [
 ];
 
 export const taskCategoryOptions = [
-  { label: "Research", value: "research" },
-  { label: "Drafting", value: "drafting" },
-  { label: "Filing", value: "filing" },
-  { label: "Hearing", value: "hearing" },
+  { label: "Legal Research", value: "legal-research" },
+  { label: "Document Drafting", value: "document-drafting" },
   { label: "Client Meeting", value: "client-meeting" },
+  { label: "Court Filing", value: "court-filing" },
   { label: "Discovery", value: "discovery" },
+  { label: "Correspondence", value: "correspondence" },
+  { label: "Administrative", value: "administrative" },
   { label: "Other", value: "other" },
 ];
 

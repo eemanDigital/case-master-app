@@ -48,7 +48,7 @@ const { Panel } = Collapse;
 const CreateTaskForm = () => {
   const { casesOptions } = useCaseSelectOptions();
   const { userData } = useUserSelectOptions();
-  const { clientOptions } = useClientSelectOptions();
+  // const { clientOptions } = useClientSelectOptions();
   const { fetchData } = useDataGetterHook();
   const dispatch = useDispatch();
   const { users, user } = useSelector((state) => state.auth);
@@ -92,105 +92,124 @@ const CreateTaskForm = () => {
   };
 
   // Handle document upload success
-  const handleDocumentUploadSuccess = (uploadedFiles) => {
-    const newDocIds = uploadedFiles.files.map((file) => file._id);
-    setReferenceDocuments((prev) => [...prev, ...newDocIds]);
-    toast.success(`Added ${uploadedFiles.files.length} reference document(s)`);
-  };
+  // const handleDocumentUploadSuccess = (uploadedFiles) => {
+  //   const newDocIds = uploadedFiles.files.map((file) => file._id);
+  //   setReferenceDocuments((prev) => [...prev, ...newDocIds]);
+  //   toast.success(`Added ${uploadedFiles.files.length} reference document(s)`);
+  // };
 
   // Handle form submission
   const handleSubmit = useCallback(
     async (values) => {
       try {
-        // Prepare task data with new fields
+        // Prepare task data with new consolidated fields
         const taskData = {
-          ...values,
-          dateAssigned: values.dateAssigned || new Date(),
-          dueDate: values.dueDate,
-          startDate: values.startDate,
-          assignedBy: user?.data?._id,
-          // Use new assignees structure
-          assignees: selectedAssignees.map((userId) => ({
-            user: userId,
-            role: "primary", // Default role, can be enhanced with role selection
-            assignedBy: user?.data?._id,
-          })),
-          // Include reference documents
-          referenceDocuments: referenceDocuments,
-          // Set default status
+          title: values.title,
+          description: values.description || "",
+          instruction: values.instruction,
+          caseToWorkOn: values.caseToWorkOn || [],
+          customCaseReference: values.customCaseReference || "",
+          startDate: values.startDate ? values.startDate.toDate() : null,
+          dueDate: values.dueDate ? values.dueDate.toDate() : new Date(),
+          taskPriority: values.taskPriority || "medium",
           status: values.status || "pending",
-          // Include new fields
           category: values.category || "other",
-          estimatedEffort: values.estimatedEffort,
+          estimatedEffort: values.estimatedEffort || 0,
           tags: values.tags
             ? values.tags.split(",").map((tag) => tag.trim())
             : [],
           dependencies: values.dependencies || [],
           isTemplate: values.isTemplate || false,
-          templateName: values.templateName,
-          recurrence: values.recurrencePattern
-            ? {
-                pattern: values.recurrencePattern,
-                endAfter: values.recurrenceEndDate,
-                occurrences: values.recurrenceOccurrences,
-              }
-            : { pattern: "none" },
+          templateName: values.templateName || "",
+          referenceDocuments: referenceDocuments || [],
+          // New fields structure
+          assignees: [
+            // Add the creator as primary assignee
+            {
+              user: user?.data?._id || user?._id,
+              role: "primary",
+              assignedBy: user?.data?._id || user?._id,
+              isClient: false,
+            },
+            // Add selected assignees
+            ...(selectedAssignees || []).map((userId) => {
+              const userObj = users?.data?.find((u) => u._id === userId);
+              return {
+                user: userId,
+                role: "collaborator",
+                assignedBy: user?.data?._id || user?._id,
+                isClient: userObj?.role === "client",
+              };
+            }),
+          ],
         };
 
-        // Remove legacy fields if using new structure
-        delete taskData.assignedTo; // Using assignees instead
+        // Post data to create task - FIXED: Use the correct data structure
+        const result = await dataFetcher("tasks", "POST", taskData);
 
-        // Extract user IDs for email
-        const assignedUserIds = selectedAssignees;
+        if (result?.error) {
+          toast.error(result.error || "Failed to create task");
+          return;
+        }
+
+        // Refresh tasks list
+        await fetchData("tasks", "tasks");
+
+        // Get all assigned users for email notification
+        const assignedUserIds = [
+          user?.data?._id || user?._id,
+          ...(selectedAssignees || []),
+        ];
+
         const assignedUsers = users?.data?.filter((user) =>
           assignedUserIds.includes(user._id)
         );
-        const sendToEmails = assignedUsers?.map((user) => user.email);
-
-        // Include client email if assigned
-        if (values.assignedToClient) {
-          const clientUser = users?.data?.find(
-            (user) => user._id === values.assignedToClient
-          );
-          if (clientUser?.email) {
-            sendToEmails.push(clientUser.email);
-          }
-        }
+        const sendToEmails = assignedUsers?.map((user) => user.email) || [];
 
         // Prepare email data
         const emailData = {
           subject: "New Task Assigned - A.T. Lukman & Co.",
           send_to: sendToEmails,
-          send_from: user?.data?.email,
-          reply_to: "noreply@gmail.com",
+          send_from: user?.data?.email || user?.email,
+          reply_to: "noreply@atlukman.com",
           template: "taskAssignment",
-          url: "dashboard/tasks",
+          url: "/dashboard/tasks",
           context: {
-            sendersName: user?.data?.firstName,
-            sendersPosition: user?.data?.position,
+            sendersName: `${user?.data?.firstName || user?.firstName} ${
+              user?.data?.lastName || user?.lastName
+            }`,
+            sendersPosition: user?.data?.position || user?.position || "",
             title: values.title,
             dueDate: formatDate(values.dueDate),
             instruction: values.instruction,
             taskPriority: values.taskPriority,
             category: values.category,
             estimatedEffort: values.estimatedEffort,
+            recipients: assignedUsers
+              ?.filter((u) => u._id !== (user?.data?._id || user?._id))
+              .map((u) => `${u.firstName} ${u.lastName}`)
+              .join(", "),
           },
         };
 
-        // Post data
-        const result = await dataFetcher("tasks", "POST", taskData);
-        await fetchData("tasks", "tasks");
-        handleSubmission(result);
-
-        // Send email if emailData is provided
-        if (!result?.error && emailData && sendToEmails.length > 0) {
-          await dispatch(sendAutomatedCustomEmail(emailData));
+        // Send email notification if successful
+        if (sendToEmails.length > 0) {
+          try {
+            await dispatch(sendAutomatedCustomEmail(emailData));
+          } catch (emailError) {
+            console.error("Email sending error:", emailError);
+            toast.warning("Task created but email notification failed.");
+          }
         }
 
+        // Reset form and close modal
         form.resetFields();
         setSelectedAssignees([]);
         setReferenceDocuments([]);
         handleCancel();
+
+        // Show success message
+        toast.success("Task created successfully!");
       } catch (err) {
         console.error("Task creation error:", err);
         toast.error("Failed to create task. Please try again.");
@@ -200,7 +219,6 @@ const CreateTaskForm = () => {
       dataFetcher,
       fetchData,
       form,
-      handleSubmission,
       user,
       users,
       dispatch,
@@ -236,15 +254,35 @@ const CreateTaskForm = () => {
     }
   }, [dataError]);
 
+  // Get role badge for user display
   const getRoleBadge = (userId) => {
     const userObj = users?.data?.find((u) => u._id === userId);
-    return userObj ? (
+    if (!userObj) return null;
+
+    const roleColors = {
+      admin: "red",
+      "super-admin": "red",
+      lawyer: "blue",
+      "para-legal": "cyan",
+      secretary: "purple",
+      client: "green",
+    };
+
+    return (
       <Tag
-        color={userObj.role === "client" ? "green" : "blue"}
-        className="text-xs">
-        {userObj.role}
+        color={roleColors[userObj.role] || "default"}
+        className="text-xs capitalize">
+        {userObj.role.replace("-", " ")}
       </Tag>
-    ) : null;
+    );
+  };
+
+  // Get user display name
+  const getUserDisplayName = (userId) => {
+    const userObj = users?.data?.find((u) => u._id === userId);
+    return userObj
+      ? `${userObj.firstName} ${userObj.lastName}`
+      : "Unknown User";
   };
 
   return (
@@ -254,6 +292,7 @@ const CreateTaskForm = () => {
         icon={<PlusOutlined className="mr-2" />}
         text="Create Task"
       />
+
       <Modal
         width="90%"
         style={{ top: 20 }}
@@ -362,65 +401,33 @@ const CreateTaskForm = () => {
                 </Form.Item>
 
                 <Form.Item
-                  name="assignedTo"
-                  label="Assign to Staff"
-                  dependencies={["assignedToClient"]}
+                  name="assignee"
+                  label="Assign to Users"
                   rules={[
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (
-                          value?.length > 0 ||
-                          getFieldValue("assignedToClient")
-                        ) {
-                          return Promise.resolve();
-                        }
-                        return Promise.reject(
-                          new Error(
-                            'Task must be assigned to "Staff" or "Client".'
-                          )
-                        );
-                      },
-                    }),
+                    {
+                      required: true,
+                      message: "Please select at least one assignee!",
+                    },
                   ]}>
                   <Select
                     mode="multiple"
-                    placeholder="Select staff members"
-                    options={userData?.filter((user) => user.role !== "client")}
+                    placeholder="Select users to assign this task to"
+                    options={userData}
                     allowClear
                     className="w-full"
                     onChange={handleAssigneeChange}
                     optionRender={(option) => (
                       <Space>
                         <span>{option.label}</span>
-                        {getRoleBadge(option.value)}
+                        <Tag
+                          color={
+                            option.data.role === "client" ? "green" : "blue"
+                          }
+                          className="text-xs capitalize">
+                          {option.data.role === "client" ? "Client" : "Staff"}
+                        </Tag>
                       </Space>
                     )}
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="assignedToClient"
-                  label="Assign to Client"
-                  dependencies={["assignedTo"]}
-                  rules={[
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        if (value || getFieldValue("assignedTo")?.length > 0) {
-                          return Promise.resolve();
-                        }
-                        return Promise.reject(
-                          new Error(
-                            'Task must be assigned to "Staff" or "Client".'
-                          )
-                        );
-                      },
-                    }),
-                  ]}>
-                  <Select
-                    placeholder="Select a client"
-                    options={clientOptions}
-                    allowClear
-                    className="w-full"
                   />
                 </Form.Item>
 
@@ -452,17 +459,15 @@ const CreateTaskForm = () => {
               {/* Selected Assignees Preview */}
               {selectedAssignees.length > 0 && (
                 <Alert
-                  message={`Assigned to ${selectedAssignees.length} staff member(s)`}
+                  message={`Assigned to ${selectedAssignees.length} user(s)`}
                   description={
                     <Space wrap>
-                      {selectedAssignees.map((userId) => {
-                        const user = users?.data?.find((u) => u._id === userId);
-                        return user ? (
-                          <Tag key={userId} icon={<UserAddOutlined />}>
-                            {user.firstName} {user.lastName}
-                          </Tag>
-                        ) : null;
-                      })}
+                      {selectedAssignees.map((userId) => (
+                        <Tag key={userId} icon={<UserAddOutlined />}>
+                          {getUserDisplayName(userId)}
+                          {getRoleBadge(userId)}
+                        </Tag>
+                      ))}
                     </Space>
                   }
                   type="info"
@@ -472,6 +477,35 @@ const CreateTaskForm = () => {
               )}
             </Panel>
           </Collapse>
+
+          {/* Reference Documents Section */}
+          {/* <Collapse ghost size="small">
+            <Panel
+              header={
+                <Space>
+                  <PaperClipOutlined />
+                  <span>Reference Documents (Optional)</span>
+                </Space>
+              }
+              key="documents">
+              <div className="mb-4">
+                <TaskFileUploader
+                  taskId={null} // No taskId yet, will be set after creation
+                  onUploadSuccess={handleDocumentUploadSuccess}
+                  uploadType="reference"
+                />
+
+                {referenceDocuments.length > 0 && (
+                  <Alert
+                    message={`${referenceDocuments.length} document(s) will be attached`}
+                    type="success"
+                    showIcon
+                    className="mt-4"
+                  />
+                )}
+              </div>
+            </Panel>
+          </Collapse> */}
 
           {/* Advanced Options */}
           <Collapse ghost size="small">

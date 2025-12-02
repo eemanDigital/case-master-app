@@ -113,7 +113,7 @@ const TaskList = () => {
     } else if (!isSuperOrAdmin) {
       filteredTasks = filteredTasks.filter(
         (task) =>
-          task?.assignedTo?.some((user) => user._id === loggedInClientId) ||
+          task?.assignee?.some((user) => user._id === loggedInClientId) ||
           task?.assignees?.some(
             (assignee) => assignee.user?._id === loggedInClientId
           )
@@ -268,26 +268,66 @@ const TaskList = () => {
       dataIndex: "assignees",
       key: "assignees",
       width: 150,
-      render: (assignees, record) => {
-        const displayUsers =
-          assignees?.length > 0 ? assignees : record.assignedTo;
-
-        if (!displayUsers || displayUsers.length === 0) {
+      render: (assignees) => {
+        if (!assignees || assignees.length === 0) {
           return <span className="text-gray-400">Unassigned</span>;
         }
+
+        // Check if assignees is already populated with user data
+        const displayUsers = assignees.map((assignee) => {
+          // If user data is already populated on the assignee object
+          if (assignee.user && typeof assignee.user === "object") {
+            return {
+              ...assignee.user,
+              role: assignee.role,
+              isClient: assignee.isClient,
+            };
+          }
+          // If user is just an ID, we need to handle it differently
+          // (but this shouldn't happen if backend is populating properly)
+          return {
+            _id: assignee.user,
+            firstName: "User",
+            lastName: assignee.user?.toString().slice(-4) || "",
+            role: assignee.role,
+            isClient: assignee.isClient,
+          };
+        });
 
         return (
           <div className="space-y-1">
             {displayUsers.slice(0, 2).map((user, index) => (
               <div key={index} className="flex items-center gap-1 text-xs">
-                <UserOutlined className="text-gray-400" />
+                <UserOutlined
+                  className={`${
+                    user.isClient ? "text-green-500" : "text-blue-500"
+                  }`}
+                />
                 <span className="line-clamp-1">
                   {user.firstName} {user.lastName}
                 </span>
+                {/* {user.role === "primary" && (
+                  <Badge
+                    size="small"
+                    style={{
+                      backgroundColor: "#1890ff",
+                      fontSize: "8px",
+                      padding: "0 4px",
+                    }}>
+                    Primary
+                  </Badge>
+                )} */}
               </div>
             ))}
-            {displayUsers.length > 2 && (
-              <Badge count={`+${displayUsers.length - 2}`} size="small" />
+            {assignees.length > 2 && (
+              <Badge
+                count={`+${assignees.length - 2}`}
+                size="small"
+                style={{
+                  backgroundColor: "#d9d9d9",
+                  color: "#666",
+                }}
+              />
             )}
           </div>
         );
@@ -431,9 +471,9 @@ const TaskList = () => {
             <UserOutlined />
             <span>
               {task.assignees?.length > 0
-                ? `${task.assignees.length} assignee(s)`
-                : task.assignedTo?.length > 0
-                ? `${task.assignedTo.length} assignee(s)`
+                ? `${task.assignees.length} assignee${
+                    task.assignees.length > 1 ? "s" : ""
+                  }`
                 : "Unassigned"}
             </span>
           </div>

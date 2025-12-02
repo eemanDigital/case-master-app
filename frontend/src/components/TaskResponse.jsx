@@ -10,7 +10,7 @@ import {
   UserOutlined,
   ClockCircleOutlined,
   MessageOutlined,
-  // ExclamationCircleOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import {
   Button,
@@ -23,17 +23,18 @@ import {
   Empty,
   Avatar,
   Progress,
-  Dropdown,
   Modal,
   Typography,
   Divider,
   Badge,
+  Alert,
 } from "antd";
 import { formatDate } from "../utils/formatDate";
 import { useDispatch, useSelector } from "react-redux";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import { toast } from "react-toastify";
-import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
+import useFileManager from "../hooks/useFileManager";
+import { RESET } from "../redux/features/delete/deleteSlice";
 
 const { Text, Paragraph } = Typography;
 
@@ -43,46 +44,111 @@ const TaskResponse = ({
   isAssignedToCurrentUser,
   onResponseUpdate,
 }) => {
-  const baseURL = import.meta.env.VITE_BASE_URL;
   const { isError, isSuccess, message, loading } = useSelector(
     (state) => state.delete
   );
+  const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [previewVisible, setPreviewVisible] = useState(false);
   const [selectedResponse, setSelectedResponse] = useState(null);
+
+  // Initialize file manager for the current task
+  const {
+    files: taskFiles,
+    downloadFile,
+    deleteFile,
+    operationInProgress,
+    fetchFiles,
+    isOperationInProgress,
+  } = useFileManager("task", task?._id, {
+    autoFetch: false, // We'll fetch manually for each response
+    enableNotifications: false, // Disable default notifications, we'll use toast
+  });
 
   // Handle toast notifications
   useEffect(() => {
     if (isSuccess) {
       toast.success("Response deleted successfully");
+
       if (onResponseUpdate) {
         onResponseUpdate();
       }
+
+      dispatch(RESET());
     }
+
     if (isError) {
       toast.error(message || "Failed to delete response");
+      dispatch(RESET());
     }
-  }, [isSuccess, isError, message, onResponseUpdate]);
+  }, [isSuccess, isError, dispatch]);
+
+  // Check if user can delete response
+  const canDeleteResponse = (response) => {
+    if (!response) return false;
+
+    const isSubmitter =
+      response.submittedBy?._id?.toString() === user?.data?._id?.toString();
+    const isCreator =
+      task?.createdBy?._id?.toString() === user?.data?._id?.toString();
+    const isAdmin = ["admin", "super-admin"].includes(user?.data?.role);
+
+    return isSubmitter || isCreator || isAdmin;
+  };
+
+  // Check if user can delete file
+  const canDeleteFile = (file, response) => {
+    if (!file || !response) return false;
+
+    const isResponseOwner = canDeleteResponse(response);
+    const isAdmin = ["admin", "super-admin"].includes(user?.data?.role);
+    const isFileOwner =
+      file.uploadedBy?._id?.toString() === user?.data?._id?.toString();
+
+    return isResponseOwner || isAdmin || isFileOwner;
+  };
 
   // Remove/delete response
   const removeResponse = async (taskId, responseId) => {
     try {
-      await dispatch(deleteData(`tasks/${taskId}/response/${responseId}`));
+      await dispatch(deleteData(`tasks/${taskId}/responses/${responseId}`));
     } catch (error) {
       console.error("Error deleting response:", error);
       toast.error("Failed to delete response");
     }
   };
 
-  // Handle file download
-  const handleDownload = (response, event) => {
+  // Handle file download using file manager
+  const handleDownload = async (file, response, event) => {
     event?.stopPropagation();
-    handleGeneralDownload(
-      event,
-      response?.doc ||
-        `${baseURL}/tasks/${task._id}/response/${response._id}/download`,
-      "response"
-    );
+
+    try {
+      await downloadFile(file);
+      toast.success(`Downloading ${file.fileName}...`);
+    } catch (error) {
+      console.error("Download failed:", error);
+      toast.error(`Failed to download ${file.fileName}`);
+    }
+  };
+
+  // Handle file deletion
+  const handleDeleteFile = async (file, response, event) => {
+    event?.stopPropagation();
+
+    try {
+      const success = await deleteFile(file);
+      if (success) {
+        toast.success(`${file.fileName} deleted successfully`);
+
+        // Optionally refresh the response data if needed
+        if (onResponseUpdate) {
+          onResponseUpdate();
+        }
+      }
+    } catch (error) {
+      console.error("Delete failed:", error);
+      toast.error(`Failed to delete ${file.fileName}`);
+    }
   };
 
   // Open response preview
@@ -92,22 +158,133 @@ const TaskResponse = ({
   };
 
   // Get status config
-  const getStatusConfig = (completed) => {
-    return completed
-      ? { color: "success", icon: <CheckCircleOutlined />, text: "Completed" }
-      : {
-          color: "error",
-          icon: <CloseCircleOutlined />,
-          text: "Not Completed",
-        };
+  const getStatusConfig = (status) => {
+    const statusConfigs = {
+      completed: {
+        color: "success",
+        icon: <CheckCircleOutlined />,
+        text: "Completed",
+      },
+      "in-progress": {
+        color: "processing",
+        icon: <ClockCircleOutlined />,
+        text: "In Progress",
+      },
+      "needs-review": {
+        color: "warning",
+        icon: <EyeOutlined />,
+        text: "Needs Review",
+      },
+      rejected: {
+        color: "error",
+        icon: <CloseCircleOutlined />,
+        text: "Rejected",
+      },
+      "on-hold": {
+        color: "default",
+        icon: <ClockCircleOutlined />,
+        text: "On Hold",
+      },
+    };
+
+    return (
+      statusConfigs[status] || {
+        color: "default",
+        icon: <ClockCircleOutlined />,
+        text: "Unknown",
+      }
+    );
   };
 
-  // Get progress percentage based on completion status
-  const getProgressPercent = (completed) => (completed ? 100 : 0);
+  // Get progress percentage
+  const getProgressPercent = (response) => {
+    return response.completionPercentage || (response.completed ? 100 : 0);
+  };
+
+  // Get user display name
+  const getUserDisplayName = (userObj) => {
+    if (!userObj) return "Unknown User";
+    return (
+      `${userObj.firstName || ""} ${userObj.lastName || ""}`.trim() ||
+      "Unknown User"
+    );
+  };
+
+  // Format timestamp
+  const getResponseTimestamp = (response) => {
+    return response.submittedAt || response.timestamp;
+  };
+
+  // Enhanced file card component for displaying files with actions
+  const FileItem = ({ file, response }) => {
+    const isDownloading =
+      isOperationInProgress(file) &&
+      operationInProgress?.startsWith("download");
+    const isDeleting =
+      isOperationInProgress(file) && operationInProgress?.startsWith("delete");
+
+    return (
+      <div className="flex justify-between items-center p-2 bg-gray-50 rounded mb-1 hover:bg-gray-100">
+        <Space className="flex-1 min-w-0">
+          <FileTextOutlined className="text-blue-500" />
+          <Tooltip title={file.fileName}>
+            <Text ellipsis className="text-sm flex-1 min-w-0">
+              {file.fileName}
+            </Text>
+          </Tooltip>
+          {file.fileSizeMB && (
+            <Text type="secondary" className="text-xs">
+              {file.fileSizeMB} MB
+            </Text>
+          )}
+        </Space>
+
+        <Space size="small">
+          <Tooltip title="Download">
+            <Button
+              type="text"
+              size="small"
+              icon={<DownloadOutlined />}
+              loading={isDownloading}
+              onClick={(e) => handleDownload(file, response, e)}
+              disabled={isDeleting}
+            />
+          </Tooltip>
+
+          {canDeleteFile(file, response) && (
+            <Tooltip title="Delete">
+              <Popconfirm
+                title="Delete File"
+                description="Are you sure you want to delete this file?"
+                onConfirm={(e) => handleDeleteFile(file, response, e)}
+                okText="Delete"
+                cancelText="Cancel"
+                okType="danger"
+                disabled={isDownloading || isDeleting}>
+                <Button
+                  type="text"
+                  danger
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  loading={isDeleting}
+                  disabled={isDownloading}
+                />
+              </Popconfirm>
+            </Tooltip>
+          )}
+        </Space>
+      </div>
+    );
+  };
 
   // Response card for mobile view
   const ResponseCard = ({ response }) => {
-    const statusConfig = getStatusConfig(response.completed);
+    const statusConfig = getStatusConfig(response.status);
+    const progressPercent = getProgressPercent(response);
+    const timestamp = getResponseTimestamp(response);
+    const userDisplayName = getUserDisplayName(
+      response.submittedBy || response.respondedBy
+    );
 
     return (
       <Card
@@ -123,11 +300,10 @@ const TaskResponse = ({
             />
             <div>
               <Text strong className="text-sm block">
-                {response.respondedBy?.firstName || "Unknown"}{" "}
-                {response.respondedBy?.lastName || "User"}
+                {userDisplayName}
               </Text>
               <Text type="secondary" className="text-xs">
-                {formatDate(response.timestamp)}
+                {formatDate(timestamp)}
               </Text>
             </div>
           </Space>
@@ -143,12 +319,12 @@ const TaskResponse = ({
         <div className="mb-3">
           <div className="flex justify-between text-xs mb-1">
             <Text type="secondary">Progress</Text>
-            <Text strong>{getProgressPercent(response.completed)}%</Text>
+            <Text strong>{progressPercent}%</Text>
           </div>
           <Progress
-            percent={getProgressPercent(response.completed)}
+            percent={progressPercent}
             size="small"
-            status={response.completed ? "success" : "active"}
+            status={response.status === "completed" ? "success" : "active"}
             showInfo={false}
           />
         </div>
@@ -170,6 +346,34 @@ const TaskResponse = ({
           </div>
         )}
 
+        {/* Documents */}
+        {response.documents && response.documents.length > 0 && (
+          <div className="mb-3">
+            <div className="flex items-center gap-1 mb-1">
+              <FileTextOutlined className="text-gray-400 text-xs" />
+              <Text strong className="text-xs">
+                Documents ({response.documents.length})
+              </Text>
+            </div>
+            <div className="space-y-1">
+              {response.documents.slice(0, 3).map((doc, index) => (
+                <FileItem
+                  key={doc._id || index}
+                  file={doc}
+                  response={response}
+                />
+              ))}
+              {response.documents.length > 3 && (
+                <div className="text-center pt-1">
+                  <Text type="secondary" className="text-xs">
+                    +{response.documents.length - 3} more files
+                  </Text>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Actions */}
         <div className="flex justify-between items-center pt-2 border-t border-gray-100">
           <Space size="small">
@@ -181,20 +385,9 @@ const TaskResponse = ({
                 onClick={() => openPreview(response)}
               />
             </Tooltip>
-
-            {response.doc && (
-              <Tooltip title="Download Document">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<DownloadOutlined />}
-                  onClick={(e) => handleDownload(response, e)}
-                />
-              </Tooltip>
-            )}
           </Space>
 
-          {(isAssignedToCurrentUser || isAssignedToCurrentClientUser) && (
+          {canDeleteResponse(response) && (
             <Popconfirm
               title="Delete Response"
               description="Are you sure you want to delete this response? This action cannot be undone."
@@ -221,7 +414,12 @@ const TaskResponse = ({
 
   // List item for desktop view
   const ResponseListItem = ({ response }) => {
-    const statusConfig = getStatusConfig(response.completed);
+    const statusConfig = getStatusConfig(response.status);
+    const progressPercent = getProgressPercent(response);
+    const timestamp = getResponseTimestamp(response);
+    const userDisplayName = getUserDisplayName(
+      response.submittedBy || response.respondedBy
+    );
 
     return (
       <List.Item
@@ -235,17 +433,7 @@ const TaskResponse = ({
             />
           </Tooltip>,
 
-          response.doc && (
-            <Tooltip title="Download Document" key="download">
-              <Button
-                type="text"
-                icon={<DownloadOutlined />}
-                onClick={(e) => handleDownload(response, e)}
-              />
-            </Tooltip>
-          ),
-
-          (isAssignedToCurrentUser || isAssignedToCurrentClientUser) && (
+          canDeleteResponse(response) && (
             <Popconfirm
               title="Delete Response"
               description="Are you sure you want to delete this response?"
@@ -275,20 +463,27 @@ const TaskResponse = ({
           }
           title={
             <Space>
-              <Text strong>
-                {response.respondedBy?.firstName || "Unknown"}{" "}
-                {response.respondedBy?.lastName || "User"}
-              </Text>
+              <Text strong>{userDisplayName}</Text>
               <Tag color={statusConfig.color} icon={statusConfig.icon}>
                 {statusConfig.text}
               </Tag>
+              {response.reviewedBy && (
+                <Tag color="green" icon={<CheckCircleOutlined />}>
+                  Reviewed
+                </Tag>
+              )}
             </Space>
           }
           description={
             <Space direction="vertical" size={0} className="w-full">
               <div className="flex items-center gap-2">
                 <ClockCircleOutlined className="text-gray-400" />
-                <Text type="secondary">{formatDate(response.timestamp)}</Text>
+                <Text type="secondary">{formatDate(timestamp)}</Text>
+                {response.timeSpent > 0 && (
+                  <Text type="secondary" className="ml-2">
+                    ⏱️ {response.timeSpent} min
+                  </Text>
+                )}
               </div>
 
               {response.comment && (
@@ -302,15 +497,32 @@ const TaskResponse = ({
               <div className="mt-2">
                 <div className="flex justify-between text-xs mb-1">
                   <Text type="secondary">Progress</Text>
-                  <Text strong>{getProgressPercent(response.completed)}%</Text>
+                  <Text strong>{progressPercent}%</Text>
                 </div>
                 <Progress
-                  percent={getProgressPercent(response.completed)}
+                  percent={progressPercent}
                   size="small"
-                  status={response.completed ? "success" : "active"}
+                  status={
+                    response.status === "completed" ? "success" : "active"
+                  }
                   showInfo={false}
                 />
               </div>
+
+              {response.documents && response.documents.length > 0 && (
+                <div className="mt-2">
+                  <Space direction="vertical" size="small" className="w-full">
+                    {response.documents.slice(0, 2).map((doc) => (
+                      <FileItem key={doc._id} file={doc} response={response} />
+                    ))}
+                    {response.documents.length > 2 && (
+                      <Text type="secondary" className="text-xs">
+                        +{response.documents.length - 2} more files
+                      </Text>
+                    )}
+                  </Space>
+                </div>
+              )}
             </Space>
           }
         />
@@ -319,27 +531,27 @@ const TaskResponse = ({
   };
 
   // Response Preview Modal
-  const ResponsePreviewModal = () => (
-    <Modal
-      title="Response Details"
-      open={previewVisible}
-      onCancel={() => setPreviewVisible(false)}
-      footer={[
-        <Button key="close" onClick={() => setPreviewVisible(false)}>
-          Close
-        </Button>,
-        selectedResponse?.doc && (
-          <Button
-            key="download"
-            type="primary"
-            icon={<DownloadOutlined />}
-            onClick={(e) => handleDownload(selectedResponse, e)}>
-            Download Document
-          </Button>
-        ),
-      ].filter(Boolean)}
-      width={600}>
-      {selectedResponse && (
+  const ResponsePreviewModal = () => {
+    if (!selectedResponse) return null;
+
+    const statusConfig = getStatusConfig(selectedResponse.status);
+    const progressPercent = getProgressPercent(selectedResponse);
+    const timestamp = getResponseTimestamp(selectedResponse);
+    const userDisplayName = getUserDisplayName(
+      selectedResponse.submittedBy || selectedResponse.respondedBy
+    );
+
+    return (
+      <Modal
+        title="Response Details"
+        open={previewVisible}
+        onCancel={() => setPreviewVisible(false)}
+        footer={[
+          <Button key="close" onClick={() => setPreviewVisible(false)}>
+            Close
+          </Button>,
+        ]}
+        width={600}>
         <div className="space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -351,18 +563,13 @@ const TaskResponse = ({
               />
               <div>
                 <Text strong className="text-lg block">
-                  {selectedResponse.respondedBy?.firstName || "Unknown"}{" "}
-                  {selectedResponse.respondedBy?.lastName || "User"}
+                  {userDisplayName}
                 </Text>
-                <Text type="secondary">
-                  {formatDate(selectedResponse.timestamp)}
-                </Text>
+                <Text type="secondary">{formatDate(timestamp)}</Text>
               </div>
             </Space>
-            <Tag
-              color={getStatusConfig(selectedResponse.completed).color}
-              icon={getStatusConfig(selectedResponse.completed).icon}>
-              {getStatusConfig(selectedResponse.completed).text}
+            <Tag color={statusConfig.color} icon={statusConfig.icon}>
+              {statusConfig.text}
             </Tag>
           </div>
 
@@ -374,10 +581,24 @@ const TaskResponse = ({
               Completion Status
             </Text>
             <Progress
-              percent={getProgressPercent(selectedResponse.completed)}
-              status={selectedResponse.completed ? "success" : "active"}
+              percent={progressPercent}
+              status={
+                selectedResponse.status === "completed" ? "success" : "active"
+              }
             />
           </div>
+
+          {/* Time Spent */}
+          {selectedResponse.timeSpent > 0 && (
+            <div>
+              <Text strong className="block mb-2">
+                Time Spent
+              </Text>
+              <Card size="small" className="bg-gray-50">
+                <Text>{selectedResponse.timeSpent} minutes</Text>
+              </Card>
+            </div>
+          )}
 
           {/* Comment */}
           {selectedResponse.comment && (
@@ -393,25 +614,57 @@ const TaskResponse = ({
             </div>
           )}
 
-          {/* Document */}
-          {selectedResponse.doc && (
+          {/* Review Info */}
+          {selectedResponse.reviewedBy && (
             <div>
               <Text strong className="block mb-2">
-                Attached Document
+                Review Details
               </Text>
-              <Button
-                icon={<FileOutlined />}
-                onClick={(e) => handleDownload(selectedResponse, e)}
-                type="dashed"
-                block>
-                Download Document
-              </Button>
+              <Card size="small" className="bg-gray-50">
+                <Space direction="vertical" size="small">
+                  <Text>
+                    Reviewed by:{" "}
+                    {getUserDisplayName(selectedResponse.reviewedBy)}
+                  </Text>
+                  {selectedResponse.reviewedAt && (
+                    <Text>
+                      Review date: {formatDate(selectedResponse.reviewedAt)}
+                    </Text>
+                  )}
+                  {selectedResponse.reviewComment && (
+                    <Text>
+                      Review comment: {selectedResponse.reviewComment}
+                    </Text>
+                  )}
+                </Space>
+              </Card>
             </div>
           )}
+
+          {/* Documents */}
+          {selectedResponse.documents &&
+            selectedResponse.documents.length > 0 && (
+              <div>
+                <Text strong className="block mb-2">
+                  Attached Documents ({selectedResponse.documents.length})
+                </Text>
+                <Card size="small" className="bg-gray-50">
+                  <Space direction="vertical" size="small" className="w-full">
+                    {selectedResponse.documents.map((doc, index) => (
+                      <FileItem
+                        key={doc._id || index}
+                        file={doc}
+                        response={selectedResponse}
+                      />
+                    ))}
+                  </Space>
+                </Card>
+              </div>
+            )}
         </div>
-      )}
-    </Modal>
-  );
+      </Modal>
+    );
+  };
 
   return (
     <div className="task-response-container">
@@ -487,16 +740,51 @@ TaskResponse.propTypes = {
     taskResponses: PropTypes.arrayOf(
       PropTypes.shape({
         _id: PropTypes.string.isRequired,
+        status: PropTypes.string,
         completed: PropTypes.bool,
+        completionPercentage: PropTypes.number,
         comment: PropTypes.string,
         timestamp: PropTypes.string,
-        doc: PropTypes.string,
-        respondedBy: PropTypes.shape({
+        submittedAt: PropTypes.string,
+        submittedBy: PropTypes.shape({
+          _id: PropTypes.string,
           firstName: PropTypes.string,
           lastName: PropTypes.string,
         }),
+        respondedBy: PropTypes.shape({
+          _id: PropTypes.string,
+          firstName: PropTypes.string,
+          lastName: PropTypes.string,
+        }),
+        timeSpent: PropTypes.number,
+        documents: PropTypes.arrayOf(
+          PropTypes.shape({
+            _id: PropTypes.string,
+            fileName: PropTypes.string,
+            fileUrl: PropTypes.string,
+            presignedUrl: PropTypes.string,
+            fileSizeMB: PropTypes.number,
+            uploadedBy: PropTypes.shape({
+              _id: PropTypes.string,
+              firstName: PropTypes.string,
+              lastName: PropTypes.string,
+            }),
+          })
+        ),
+        reviewedBy: PropTypes.shape({
+          _id: PropTypes.string,
+          firstName: PropTypes.string,
+          lastName: PropTypes.string,
+        }),
+        reviewedAt: PropTypes.string,
+        reviewComment: PropTypes.string,
       })
     ),
+    createdBy: PropTypes.shape({
+      _id: PropTypes.string,
+      firstName: PropTypes.string,
+      lastName: PropTypes.string,
+    }),
   }).isRequired,
   isAssignedToCurrentClientUser: PropTypes.bool,
   isAssignedToCurrentUser: PropTypes.bool,

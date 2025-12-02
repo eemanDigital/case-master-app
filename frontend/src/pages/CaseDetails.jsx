@@ -43,14 +43,10 @@ import {
   ExclamationTriangleIcon,
   LightBulbIcon,
 } from "@heroicons/react/24/outline";
-// import CaseDocumentUpload from "../components/CaseDocumentUpload";
-import { handleGeneralDownload } from "../utils/generalFileDownloadHandler";
-// import useDeleteDocument from "../hooks/useDeleteDocument";
 import { useAdminHook } from "../hooks/useAdminHook";
 import useTextShorten from "../hooks/useTextShorten";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
-// import MajorHeading from "../components/MajorHeading";
 import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import FileUploader from "../components/FileUpload";

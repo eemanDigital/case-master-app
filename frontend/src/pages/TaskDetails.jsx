@@ -68,8 +68,10 @@ const TaskDetails = () => {
   const { user } = useSelector((state) => state.auth);
   const task = data?.data;
   const currentUser = user?.data?._id;
-  const assignedById = task?.assignedBy?._id;
-  const isAssignedBy = currentUser === assignedById;
+  // const assignedById = task?.assignedBy?._id;
+  // const isAssignedBy = currentUser === assignedById;
+  // Calculate if current user is the task creator
+  const isAssignedBy = task?.createdBy?._id === user?.data?._id;
   const [activeTab, setActiveTab] = useState("overview");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const screens = useBreakpoint();
@@ -427,188 +429,26 @@ const TaskDetails = () => {
                 ),
                 children: (
                   <div className="py-4">
-                    {/* Key Information Grid */}
-                    <Row gutter={[16, 16]} className="mb-6">
-                      <DetailItem
-                        icon={<UserOutlined />}
-                        label="Assigned By"
-                        value={
-                          task?.assignedBy
-                            ? `${task.assignedBy?.firstName} ${task.assignedBy?.lastName} (${task.assignedBy?.position})`
-                            : "N/A"
-                        }
-                        span={2}
-                      />
-
-                      <DetailItem
-                        icon={<TeamOutlined />}
-                        label="Assignees"
-                        value={
-                          task?.assignees && task.assignees.length > 0 ? (
-                            <Space direction="vertical" size="small">
-                              {task.assignees.map((assignee, index) => (
-                                <div key={index}>
-                                  <Tag
-                                    color={getRoleColor(assignee.role)}
-                                    size="small">
-                                    {assignee.role}
-                                  </Tag>
-                                  {assignee.user?.firstName}{" "}
-                                  {assignee.user?.lastName}
-                                </div>
-                              ))}
-                            </Space>
-                          ) : task?.assignedTo ? (
-                            task.assignedTo
-                              .map(
-                                (staff) =>
-                                  `${staff.firstName} ${staff.lastName}`
-                              )
-                              .join(", ")
-                          ) : (
-                            "N/A"
-                          )
-                        }
-                        span={2}
-                      />
-
-                      <DetailItem
-                        icon={<UserOutlined />}
-                        label="Assigned to Client"
-                        value={
-                          task?.assignedToClient
-                            ? `${task.assignedToClient?.firstName} ${task.assignedToClient?.secondName}`
-                            : "N/A"
-                        }
-                      />
-
-                      <DetailItem
-                        icon={<FileTextOutlined />}
-                        label="Case Reference"
-                        value={
-                          task?.caseToWorkOn && task.caseToWorkOn.length > 0
-                            ? task.caseToWorkOn
-                                .map((taskCase) => {
-                                  const firstName =
-                                    taskCase.firstParty?.name[0]?.name;
-                                  const secondName =
-                                    taskCase.secondParty?.name[0]?.name;
-                                  return `${firstName} vs ${secondName}`;
-                                })
-                                .join(", ")
-                            : task?.customCaseReference || "N/A"
-                        }
-                        span={2}
-                      />
-
-                      <DetailItem
-                        icon={<FlagOutlined />}
-                        label="Category"
-                        value={
-                          task?.category
-                            ? task.category.replace(/-/g, " ").toUpperCase()
-                            : "N/A"
-                        }
-                      />
-
-                      <DetailItem
-                        icon={<ClockCircleOutlined />}
-                        label="Estimated Effort"
-                        value={
-                          task?.estimatedEffort
-                            ? `${task.estimatedEffort} hours`
-                            : "Not specified"
-                        }
-                      />
-
-                      <DetailItem
-                        icon={<CalendarOutlined />}
-                        label="Time Assigned"
-                        value={formatDate(task?.dateAssigned)}
-                      />
-
-                      <DetailItem
-                        icon={<CalendarOutlined />}
-                        label="Due Date"
-                        value={
-                          <Space direction="vertical" size={0}>
-                            <Text>{formatDate(task?.dueDate)}</Text>
-                            {timeMetrics.isOverdue ? (
-                              <Text type="danger" className="text-xs">
-                                {timeMetrics.daysUntilDue} days overdue
-                              </Text>
-                            ) : (
-                              <Text type="secondary" className="text-xs">
-                                {timeMetrics.daysRemaining} days remaining
-                              </Text>
-                            )}
-                          </Space>
-                        }
-                      />
-
-                      {task?.startDate && (
-                        <DetailItem
-                          icon={<CalendarOutlined />}
-                          label="Start Date"
-                          value={formatDate(task?.startDate)}
-                        />
+                    {/* Show TaskResponseForm only to assignees who are NOT the task creator */}
+                    {(isAssignedToCurrentUser ||
+                      isAssignedToCurrentClientUser) &&
+                      !isAssignedBy && (
+                        <Card size="small" className="mb-4">
+                          <TaskResponseForm
+                            taskId={task?._id}
+                            onResponseSubmitted={handleTaskResponse}
+                          />
+                        </Card>
                       )}
 
-                      {task?.actualCompletionDate && (
-                        <DetailItem
-                          icon={<CheckCircleOutlined />}
-                          label="Completed On"
-                          value={formatDate(task?.actualCompletionDate)}
-                        />
-                      )}
-                    </Row>
-
-                    {/* Instructions and Description */}
-                    <Collapse ghost size="small" className="bg-transparent">
-                      <Panel header="Instructions & Details" key="1">
-                        <div className="space-y-4">
-                          {task?.instruction && (
-                            <div>
-                              <Text strong className="block mb-2">
-                                Instructions:
-                              </Text>
-                              <div className="bg-blue-50 p-4 rounded-lg">
-                                <Paragraph className="mb-0 whitespace-pre-wrap">
-                                  {task.instruction}
-                                </Paragraph>
-                              </div>
-                            </div>
-                          )}
-
-                          {task?.description && (
-                            <div>
-                              <Text strong className="block mb-2">
-                                Full Description:
-                              </Text>
-                              <Paragraph className="text-gray-700 whitespace-pre-wrap">
-                                {task.description}
-                              </Paragraph>
-                            </div>
-                          )}
-                        </div>
-                      </Panel>
-                    </Collapse>
-
-                    {/* Tags */}
-                    {task?.tags && task.tags.length > 0 && (
-                      <div className="mt-6">
-                        <Text strong className="block mb-2">
-                          Tags:
-                        </Text>
-                        <Space wrap size={[0, 8]}>
-                          {task.tags.map((tag, index) => (
-                            <Tag key={index} color="blue" className="m-0">
-                              {tag}
-                            </Tag>
-                          ))}
-                        </Space>
-                      </div>
-                    )}
+                    <TaskResponse
+                      task={task}
+                      isAssignedToCurrentUser={isAssignedToCurrentUser}
+                      isAssignedToCurrentClientUser={
+                        isAssignedToCurrentClientUser
+                      }
+                      onResponseUpdate={handleTaskResponse}
+                    />
                   </div>
                 ),
               },

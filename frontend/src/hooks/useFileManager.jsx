@@ -8,9 +8,9 @@ const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
 /**
  * Universal File Manager Hook
  * Handles file listing, downloading, and deletion for any entity type
- * Uses cookie-based authentication (withCredentials)
+ * Supports both entity-based and general document management
  */
-const useFileManager = (entityType, entityId, options = {}) => {
+const useFileManager = (entityType = null, entityId = null, options = {}) => {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [operationInProgress, setOperationInProgress] = useState(null);
@@ -20,49 +20,57 @@ const useFileManager = (entityType, entityId, options = {}) => {
     autoFetch = true,
     enableNotifications = true,
     customEndpoint = null,
+    fetchGeneralFiles = false, // New option for general files
   } = options;
 
   // Fetch files when entity changes
   useEffect(() => {
-    if (autoFetch && entityType && entityId) {
+    if (autoFetch) {
       fetchFiles();
     }
   }, [entityType, entityId, autoFetch]);
 
   /**
-   * Fetch files for the entity
+   * Fetch files for the entity or general files
    */
   const fetchFiles = async () => {
-    if (!entityType || !entityId) {
-      console.warn("❌ Entity type and ID required to fetch files");
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
     try {
-      const endpoint =
-        customEndpoint || `files/entity/${entityType}/${entityId}`;
+      let endpoint;
+      let response;
 
-      const response = await axios.get(`${baseURL}/${endpoint}`, {
-        withCredentials: true,
-      });
+      if (fetchGeneralFiles || !entityType || !entityId) {
+        // Fetch general documents (my-files)
+        endpoint = customEndpoint || "files/my-files";
+        response = await axios.get(`${baseURL}/${endpoint}`, {
+          withCredentials: true,
+        });
+      } else {
+        // Fetch entity-specific files
+        endpoint = customEndpoint || `files/entity/${entityType}/${entityId}`;
+        response = await axios.get(`${baseURL}/${endpoint}`, {
+          withCredentials: true,
+        });
+      }
 
       const filesData = response.data?.data?.files || [];
       setFiles(filesData);
 
-      if (enableNotifications) {
+      if (enableNotifications && filesData.length > 0) {
         notification.success({
           message: "Files Loaded",
           description: `Found ${filesData.length} file(s)`,
         });
       }
 
-      console.log(filesData, "filesData");
-
       console.log(
-        `✅ Loaded ${filesData.length} files for ${entityType}:${entityId}`
+        `✅ Loaded ${filesData.length} files${
+          entityType && entityId
+            ? ` for ${entityType}:${entityId}`
+            : " (general documents)"
+        }`
       );
     } catch (error) {
       console.error("❌ Error fetching files:", error);
@@ -108,8 +116,18 @@ const useFileManager = (entityType, entityId, options = {}) => {
         downloadUrl: downloadUrl.substring(0, 100) + "...",
       });
 
-      // Open download URL in new tab
-      window.open(downloadUrl, "_blank");
+      // Create a temporary link and trigger download
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+
+      // For direct download (instead of opening in new tab)
+      link.download = file.fileName || "download";
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
 
       if (enableNotifications) {
         notification.success({
@@ -118,8 +136,7 @@ const useFileManager = (entityType, entityId, options = {}) => {
         });
       }
 
-      // Track download analytics
-      trackFileAction("download", file);
+      return downloadUrl;
     } catch (error) {
       console.error("❌ Download error:", error);
 
@@ -143,7 +160,7 @@ const useFileManager = (entityType, entityId, options = {}) => {
     const fileId = file._id || file.id;
     if (!fileId) {
       console.error("❌ File ID required for deletion");
-      return;
+      return false;
     }
 
     setOperationInProgress(`delete-${fileId}`);
@@ -163,9 +180,6 @@ const useFileManager = (entityType, entityId, options = {}) => {
           description: `${file.fileName} was deleted successfully`,
         });
       }
-
-      // Track deletion analytics
-      trackFileAction("delete", file);
 
       return true;
     } catch (error) {
@@ -187,13 +201,87 @@ const useFileManager = (entityType, entityId, options = {}) => {
   };
 
   /**
-   * Upload files to the entity
+   * Bulk delete multiple files
    */
-  const uploadFiles = async (filesToUpload, additionalData = {}) => {
-    if (!entityType || !entityId) {
-      throw new Error("Entity type and ID required for upload");
+  const bulkDeleteFiles = async (fileIds) => {
+    if (!fileIds || fileIds.length === 0) {
+      console.error("❌ File IDs required for bulk deletion");
+      return false;
     }
 
+    setOperationInProgress(`bulk-delete`);
+
+    try {
+      // Optimistically remove from UI
+      const updatedFiles = files.filter((f) => !fileIds.includes(f._id));
+      setFiles(updatedFiles);
+
+      // Delete files one by one (or implement bulk delete endpoint)
+      const deletePromises = fileIds.map(async (fileId) => {
+        await axios.delete(`${baseURL}/files/${fileId}`, {
+          withCredentials: true,
+        });
+      });
+
+      await Promise.all(deletePromises);
+
+      if (enableNotifications) {
+        notification.success({
+          message: "Files Deleted",
+          description: `Deleted ${fileIds.length} file(s) successfully`,
+        });
+      }
+
+      return true;
+    } catch (error) {
+      // Revert by re-fetching all files on failure
+      fetchFiles();
+
+      console.error("❌ Bulk delete error:", error);
+
+      if (enableNotifications) {
+        notification.error({
+          message: "Delete Failed",
+          description: "Failed to delete selected files",
+        });
+      }
+      return false;
+    } finally {
+      setOperationInProgress(null);
+    }
+  };
+
+  /**
+   * Get file statistics
+   */
+  const getStatistics = () => {
+    const totalFiles = files.length;
+    const totalSizeMB = files.reduce(
+      (total, file) => total + (parseFloat(file.fileSizeMB) || 0),
+      0
+    );
+
+    const categories = [
+      ...new Set(files.map((file) => file.category).filter(Boolean)),
+    ];
+    const fileTypes = [
+      ...new Set(files.map((file) => file.fileType).filter(Boolean)),
+    ];
+
+    return {
+      totalFiles,
+      totalSize: totalSizeMB * 1024 * 1024, // Convert back to bytes
+      totalSizeMB,
+      categories,
+      fileTypes,
+      averageSizeMB: totalFiles > 0 ? (totalSizeMB / totalFiles).toFixed(2) : 0,
+    };
+  };
+
+  /**
+   * Upload files
+   */
+  const uploadFiles = async (filesToUpload, additionalData = {}) => {
     setLoading(true);
 
     try {
@@ -209,11 +297,9 @@ const useFileManager = (entityType, entityId, options = {}) => {
         formData.append(key, additionalData[key]);
       });
 
-      // Determine upload endpoint based on entity type
-      const uploadEndpoint = getUploadEndpoint();
-
+      // Always use the general upload endpoint
       const response = await axios.post(
-        `${baseURL}/${uploadEndpoint}`,
+        `${baseURL}/files/upload-multiple`,
         formData,
         {
           withCredentials: true,
@@ -253,39 +339,6 @@ const useFileManager = (entityType, entityId, options = {}) => {
   };
 
   /**
-   * Get appropriate upload endpoint based on entity type
-   */
-  const getUploadEndpoint = () => {
-    if (customEndpoint) return customEndpoint;
-
-    switch (entityType.toLowerCase()) {
-      case "case":
-        return `cases/${entityId}/documents`;
-      case "task":
-        return `tasks/${entityId}/reference-documents`;
-      case "user":
-        return `users/${entityId}/files`;
-      case "report":
-        return `reports/${entityId}/attachments`;
-      default:
-        return `files/upload`;
-    }
-  };
-
-  /**
-   * Track file actions for analytics
-   */
-  const trackFileAction = (action, file) => {
-    console.log(`📊 File ${action}:`, {
-      fileName: file.fileName,
-      fileId: file._id,
-      entityType,
-      entityId,
-      timestamp: new Date().toISOString(),
-    });
-  };
-
-  /**
    * Utility functions
    */
   const getFileById = (fileId) => {
@@ -304,7 +357,8 @@ const useFileManager = (entityType, entityId, options = {}) => {
     const fileId = file._id || file.id;
     return (
       operationInProgress === `download-${fileId}` ||
-      operationInProgress === `delete-${fileId}`
+      operationInProgress === `delete-${fileId}` ||
+      operationInProgress === `bulk-delete`
     );
   };
 
@@ -321,16 +375,7 @@ const useFileManager = (entityType, entityId, options = {}) => {
   };
 
   // Calculate statistics
-  const statistics = {
-    totalFiles: files.length,
-    totalSize: files.reduce((total, file) => total + (file.fileSize || 0), 0),
-    totalSizeMB: files.reduce(
-      (total, file) => total + (parseFloat(file.fileSizeMB) || 0),
-      0
-    ),
-    categories: [...new Set(files.map((file) => file.category))],
-    fileTypes: [...new Set(files.map((file) => file.fileType))],
-  };
+  const statistics = getStatistics();
 
   return {
     // State
@@ -343,6 +388,7 @@ const useFileManager = (entityType, entityId, options = {}) => {
     fetchFiles,
     downloadFile,
     deleteFile,
+    bulkDeleteFiles,
     uploadFiles,
 
     // Utility functions

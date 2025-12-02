@@ -47,7 +47,7 @@ import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
 import LoginWithCode from "./components/LoginWithCode.jsx";
 import LeaveBalanceList from "./pages/leaveBalanceList.jsx";
-import DocumentForm from "./pages/DocumentsForm.jsx";
+// import DocumentForm from "./pages/DocumentsForm.jsx";
 import ContactForm from "./components/ContactForm.jsx";
 import EventDetail from "./pages/EventDetail.jsx";
 import {
@@ -67,6 +67,7 @@ import SoftDeletedCasesArchive from "./components/SoftDeletedCasesArchive.jsx";
 import SoftDeletedReportsArchive from "./pages/SoftDeletedReportsArchive.jsx";
 import InvoiceList from "./pages/InvoiceList.jsx";
 import AddClientForm from "./components/AddClientForm.jsx";
+import DocumentsList from "./components/DocumentsList.jsx";
 
 // import EditTaskForm from "./pages/EditTaskForm.jsx";
 
@@ -205,7 +206,7 @@ function App() {
             element={
               <ShowOnlyVerifiedUser>
                 <ShowStaff>
-                  <DocumentForm />
+                  <DocumentsList />
                 </ShowStaff>
               </ShowOnlyVerifiedUser>
             }

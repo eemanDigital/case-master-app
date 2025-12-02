@@ -16,7 +16,7 @@ const { Option } = Select;
 
 const FileUploader = ({
   entityType,
-  entityId,
+  entityId = null,
   category = "general",
   onUploadSuccess,
   onUploadError,
@@ -67,7 +67,10 @@ const FileUploader = ({
       // Append metadata
       formData.append("category", values.category || category);
       formData.append("entityType", entityType);
-      formData.append("entityId", entityId);
+      // Only append entityId if it's provided and valid
+      if (entityId && entityId !== "null" && entityId !== "undefined") {
+        formData.append("entityId", entityId);
+      }
 
       if (values.description) {
         formData.append("description", values.description);

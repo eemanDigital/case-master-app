@@ -30,26 +30,6 @@ const TaskAttachmentsCard = ({
     statistics,
   } = fileManager;
 
-  console.log("📁 TaskAttachmentsCard files:", files);
-
-  // Extract documents by type using file metadata
-  // const referenceDocuments =
-  //   files.filter(
-  //     (file) =>
-  //       file.metadata?.uploadType === "task-reference" ||
-  //       file.category === "task-reference"
-  //   ) || [];
-
-  // const responseDocuments =
-  //   files.filter(
-  //     (file) =>
-  //       file.metadata?.uploadType === "task-response" ||
-  //       file.category === "task-response"
-  //   ) || [];
-
-  // console.log("📋 Reference Documents:", referenceDocuments);
-  // console.log("📋 Response Documents:", responseDocuments);
-
   const getFileIcon = (fileName) => {
     const extension = fileName?.split(".").pop()?.toLowerCase();
     switch (extension) {
@@ -234,7 +214,6 @@ const DocumentCard = ({
 }) => {
   const fileId = document._id || document.id;
 
-  console.log(document, "document");
   const isDownloading = isOperationInProgress(document);
   const isDeleting = isOperationInProgress(document);
 

@@ -32,7 +32,7 @@ import useModal from "../hooks/useModal";
 import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
-import { useDataFetch } from "../hooks/useDataFetch"; // Import your custom hook
+import { useDataFetch } from "../hooks/useDataFetch";
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
@@ -161,7 +161,7 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
       const documentIds = await uploadFiles(taskId);
       const validDocumentIds = documentIds.filter((id) => id !== null);
 
-      // 2. Prepare response payload
+      // 2. Prepare response payload with updated field names
       const payload = {
         status: values.completed ? "completed" : "in-progress",
         completionPercentage: values.completed
@@ -185,22 +185,27 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
 
       setSubmissionStatus("success");
 
-      // 4. Send email notification
-      if (response?.data?.assignedBy?.email) {
+      // 4. Send email notification to task creator
+      // Updated: Get creator's email from response.data.createdBy
+      const creatorEmail = response?.data?.createdBy?.email;
+
+      if (creatorEmail) {
         try {
           const emailData = {
             subject: "Task Response Submitted - A.T. Lukman & Co.",
-            send_to: response.data.assignedBy.email,
+            send_to: creatorEmail,
             reply_to: "noreply@atlukman.com",
             template: "taskResponse",
             url: "/dashboard/tasks",
             context: {
-              recipient: response.data.assignedBy.firstName,
-              position: response.data.assignedBy.position,
+              recipient: response.data.createdBy?.firstName || "Task Creator",
+              position: response.data.createdBy?.position || "",
               comment: values.comment,
               completed: values.completed ? "Completed" : "In Progress",
               completionPercentage: values.completionPercentage || 0,
-              submittedBy: `${user?.firstName} ${user?.lastName}`,
+              submittedBy: `${user?.data?.firstName || user?.firstName} ${
+                user?.data?.lastName || user?.lastName
+              }`,
               taskTitle: taskDetails?.title || "Task",
               timeSpent: timeSpentInMinutes
                 ? `${timeSpentInMinutes} minutes`
@@ -545,7 +550,7 @@ TaskResponseForm.propTypes = {
   onResponseSubmitted: PropTypes.func,
   taskDetails: PropTypes.shape({
     title: PropTypes.string,
-    assignedBy: PropTypes.object,
+    createdBy: PropTypes.object, // Updated from assignedBy to createdBy
   }),
 };
 
