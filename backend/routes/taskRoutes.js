@@ -46,11 +46,21 @@ router
 // Task assignees
 router.route("/:taskId/assignees").post(taskController.addAssignee);
 
-// ❌ REMOVE THESE DUPLICATE ROUTES (they're already defined above)
-// router.route("/:taskId/reference-documents")
-//   .post(taskController.addReferenceDocuments);
+// Add this route after your existing task response routes
 
-// router.route("/:taskId/response-documents")
-//   .post(fileController.uploadMultiple, taskController.uploadResponseDocuments);
+// Task responses
+router.route("/:taskId/responses").post(taskController.submitTaskResponse);
+
+// ✅ ADD THIS ROUTE for deleting task responses
+router
+  .route("/:taskId/responses/:responseId")
+  .delete(taskController.deleteTaskResponse);
+
+router
+  .route("/:taskId/responses/:responseIndex/review")
+  .post(taskController.reviewTaskResponse);
+
+// Task assignees
+router.route("/:taskId/assignees").post(taskController.addAssignee);
 
 module.exports = router;

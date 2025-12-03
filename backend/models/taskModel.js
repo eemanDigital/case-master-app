@@ -26,9 +26,10 @@ const reminderSchema = new mongoose.Schema({
   sentAt: Date,
 });
 
-// Improved Task Response Schema
+// Task Response Schema
 const taskResponseSchema = new mongoose.Schema({
-  respondedBy: {
+  // This is the user who submitted the response (must be one of the assignees)
+  submittedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: [true, "Responder is required"],
@@ -109,7 +110,6 @@ const taskSchema = new mongoose.Schema(
         ref: "Case",
         validate: {
           validator: function (cases) {
-            // Either caseToWorkOn OR customCaseReference should be provided, not both
             return cases.length > 0 || this.customCaseReference;
           },
           message:
@@ -122,12 +122,15 @@ const taskSchema = new mongoose.Schema(
       trim: true,
       maxLength: [100, "Case reference should not exceed 100 characters"],
     },
-    assignedBy: {
+
+    // Single field: Who created/assigned the task
+    createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: [true, "Task assigner is required"],
+      required: [true, "Task creator is required"],
     },
-    // Unified assignment approach
+
+    // Consolidated assignment field - ONLY THIS ONE
     assignees: [
       {
         user: {
@@ -140,29 +143,25 @@ const taskSchema = new mongoose.Schema(
           enum: ["primary", "collaborator", "reviewer", "viewer"],
           default: "primary",
         },
-        assignedAt: {
-          type: Date,
-          default: Date.now,
-        },
+        // Who assigned this person to the task
         assignedBy: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "User",
           required: true,
         },
+        assignedAt: {
+          type: Date,
+          default: Date.now,
+        },
+        // Track if this assignee is a client user
+        isClient: {
+          type: Boolean,
+          default: false,
+        },
       },
     ],
-    // Keep legacy fields for backward compatibility
-    assignedTo: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-    ],
-    assignedToClient: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-    },
-    dateAssigned: {
+
+    dateCreated: {
       type: Date,
       default: Date.now,
     },
@@ -171,9 +170,9 @@ const taskSchema = new mongoose.Schema(
       validate: {
         validator: function (value) {
           if (!value) return true;
-          return value >= this.dateAssigned;
+          return value >= this.dateCreated;
         },
-        message: "Start date cannot be before assignment date",
+        message: "Start date cannot be before creation date",
       },
     },
     dueDate: {
@@ -182,10 +181,10 @@ const taskSchema = new mongoose.Schema(
       validate: [
         {
           validator: function (value) {
-            if (!this.dateAssigned) return true;
-            return value > this.dateAssigned;
+            if (!this.dateCreated) return true;
+            return value > this.dateCreated;
           },
-          message: "Due date must be after assignment date",
+          message: "Due date must be after creation date",
         },
         {
           validator: function (value) {
@@ -220,6 +219,7 @@ const taskSchema = new mongoose.Schema(
       ],
       default: "pending",
     },
+    // In your task model
     category: {
       type: String,
       enum: [
@@ -238,7 +238,6 @@ const taskSchema = new mongoose.Schema(
       type: Number, // in hours
       min: 0,
     },
-    // Task-level documents (provided when assigning the task)
     referenceDocuments: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -299,10 +298,20 @@ taskSchema.virtual("isOverdue").get(function () {
   return this.dueDate < new Date() && this.status !== "completed";
 });
 
-// Virtual for current primary assignee
+// Virtual for primary assignee
 taskSchema.virtual("primaryAssignee").get(function () {
   const primary = this.assignees.find((a) => a.role === "primary");
   return primary ? primary.user : null;
+});
+
+// Virtual for all non-client assignees
+taskSchema.virtual("teamAssignees").get(function () {
+  return this.assignees.filter((a) => !a.isClient);
+});
+
+// Virtual for client assignees
+taskSchema.virtual("clientAssignees").get(function () {
+  return this.assignees.filter((a) => a.isClient);
 });
 
 // Virtual for task progress based on responses
@@ -318,9 +327,9 @@ taskSchema.virtual("overallProgress").get(function () {
 
 // Indexes for better performance
 taskSchema.index({ status: 1, dueDate: 1 });
-taskSchema.index({ assignees: 1, status: 1 });
+taskSchema.index({ "assignees.user": 1, status: 1 });
 taskSchema.index({ caseToWorkOn: 1 });
-taskSchema.index({ assignedBy: 1 });
+taskSchema.index({ createdBy: 1 });
 taskSchema.index({ dueDate: 1 });
 taskSchema.index({ isDeleted: 1 });
 
@@ -346,50 +355,15 @@ taskSchema.pre("save", function (next) {
   next();
 });
 
-// Virtual for ALL task-related documents (both reference and response documents)
-taskSchema.virtual("allDocuments", {
-  ref: "File",
-  foreignField: "entityId",
-  localField: "_id",
-  match: {
-    entityType: { $in: ["task-reference", "task-response"] },
-    isArchived: false,
-  },
-});
-
-// Virtual for ONLY reference documents (provided when assigning task)
-taskSchema.virtual("referenceDocs", {
-  ref: "File",
-  foreignField: "entityId",
-  localField: "_id",
-  match: {
-    entityType: "task-reference",
-    isArchived: false,
-  },
-});
-
-// Virtual for ONLY response documents (submitted by assignees)
-taskSchema.virtual("responseDocuments", {
-  ref: "File",
-  foreignField: "entityId",
-  localField: "_id",
-  match: {
-    entityType: "task-response",
-    isArchived: false,
-  },
-});
-
-// Enhanced population middleware
+// Population middleware
 taskSchema.pre(/^find/, function (next) {
   if (this.options._skipPopulate) {
     return next();
   }
 
   const populateOptions = [
-    { path: "assignedBy", select: "firstName lastName email position" },
+    { path: "createdBy", select: "firstName lastName email position" },
     { path: "assignees.user", select: "firstName lastName email position" },
-    { path: "assignedTo", select: "firstName lastName email" },
-    { path: "assignedToClient", select: "firstName lastName email" },
     {
       path: "caseToWorkOn",
       select: "suitNo firstParty.name secondParty.name caseStatus",
@@ -399,7 +373,7 @@ taskSchema.pre(/^find/, function (next) {
       match: { isArchived: false },
     },
     {
-      path: "taskResponses.respondedBy",
+      path: "taskResponses.submittedBy",
       select: "firstName lastName email position",
     },
     {
@@ -420,90 +394,94 @@ taskSchema.pre(/^find/, function (next) {
   next();
 });
 
-// Instance method to add reference documents
-taskSchema.methods.addReferenceDocument = async function (fileId) {
-  if (!this.referenceDocuments.includes(fileId)) {
-    this.referenceDocuments.push(fileId);
+// Instance method to add assignee
+taskSchema.methods.addAssignee = async function (
+  userId,
+  role,
+  assignedById,
+  isClient = false
+) {
+  // Check if user is already assigned
+  const existingAssignment = this.assignees.find(
+    (a) => a.user.toString() === userId.toString()
+  );
+
+  if (existingAssignment) {
+    existingAssignment.role = role;
+    existingAssignment.isClient = isClient;
+  } else {
+    this.assignees.push({
+      user: userId,
+      role,
+      assignedBy: assignedById,
+      assignedAt: new Date(),
+      isClient,
+    });
   }
+
   return await this.save();
 };
 
-// Instance method to get all documents with context
-taskSchema.methods.getAllDocumentsWithContext = async function () {
-  await this.populate("referenceDocuments taskResponses.documents");
+// Instance method to remove assignee
+taskSchema.methods.removeAssignee = async function (userId) {
+  const initialLength = this.assignees.length;
+  this.assignees = this.assignees.filter(
+    (a) => a.user.toString() !== userId.toString()
+  );
 
-  const documents = {
-    referenceDocuments: this.referenceDocuments || [],
-    responseDocuments: [],
-  };
-
-  // Extract documents from all responses
-  this.taskResponses.forEach((response) => {
-    if (response.documents && response.documents.length > 0) {
-      documents.responseDocuments.push({
-        responseId: response._id,
-        respondedBy: response.respondedBy,
-        submittedAt: response.submittedAt,
-        documents: response.documents,
-      });
-    }
-  });
-
-  return documents;
-};
-
-// Static method to get task with all documents
-taskSchema.statics.getTaskWithAllDocuments = async function (taskId) {
-  return await this.findById(taskId)
-    .populate("referenceDocuments")
-    .populate({
-      path: "taskResponses",
-      populate: [
-        {
-          path: "respondedBy",
-          select: "firstName lastName email",
-        },
-        {
-          path: "documents",
-        },
-      ],
-    });
-};
-
-// Static methods
-taskSchema.statics.getUserTasks = function (userId, options = {}) {
-  const { status, priority, fromDate, toDate } = options;
-
-  let query = {
-    $or: [
-      { "assignees.user": userId },
-      { assignedTo: userId },
-      { assignedToClient: userId },
-    ],
-    isDeleted: false,
-  };
-
-  if (status) query.status = status;
-  if (priority) query.taskPriority = priority;
-  if (fromDate || toDate) {
-    query.dueDate = {};
-    if (fromDate) query.dueDate.$gte = fromDate;
-    if (toDate) query.dueDate.$lte = toDate;
+  if (this.assignees.length < initialLength) {
+    return await this.save();
   }
 
-  return this.find(query).sort({ dueDate: 1, taskPriority: -1 });
+  return this;
 };
 
-taskSchema.statics.getOverdueTasks = function () {
-  return this.find({
-    dueDate: { $lt: new Date() },
-    status: { $in: ["pending", "in-progress", "under-review"] },
-    isDeleted: false,
+// Instance method to check if user is assigned
+taskSchema.methods.isUserAssigned = function (userId) {
+  const userIdStr = userId.toString();
+
+  return this.assignees.some((assignee) => {
+    if (!assignee.user) return false;
+
+    // Handle both ObjectId and populated user object
+    const assigneeUserId =
+      typeof assignee.user === "object" && assignee.user._id
+        ? assignee.user._id.toString()
+        : assignee.user.toString();
+
+    return assigneeUserId === userIdStr;
   });
 };
 
-// Instance methods
+// Instance method to check if user can submit response
+taskSchema.methods.canSubmitResponse = function (userId) {
+  return this.isUserAssigned(userId);
+};
+
+// Instance method to submit response
+// In taskModel.js - Fix the addResponse method
+
+// Instance method to submit response
 taskSchema.methods.addResponse = async function (responseData) {
+  // Verify the user is assigned to the task - FIXED VERSION
+  const userId = responseData.submittedBy.toString();
+
+  const isAssigned = this.assignees.some((assignee) => {
+    if (!assignee.user) return false;
+
+    // Handle both ObjectId and populated user object
+    const assigneeUserId =
+      typeof assignee.user === "object" && assignee.user._id
+        ? assignee.user._id.toString()
+        : assignee.user.toString();
+
+    return assigneeUserId === userId;
+  });
+
+  if (!isAssigned) {
+    throw new Error("User is not assigned to this task");
+  }
+
   const response = {
     ...responseData,
     submittedAt: new Date(),
@@ -521,6 +499,7 @@ taskSchema.methods.addResponse = async function (responseData) {
   return await this.save();
 };
 
+// Instance method to review response
 taskSchema.methods.reviewResponse = async function (responseIndex, reviewData) {
   if (responseIndex >= this.taskResponses.length) {
     throw new Error("Response not found");
@@ -551,29 +530,33 @@ taskSchema.methods.reviewResponse = async function (responseIndex, reviewData) {
   return await this.save();
 };
 
-taskSchema.methods.addAssignee = async function (userId, role, assignedById) {
-  // Check if user is already assigned
-  const existingAssignment = this.assignees.find(
-    (a) => a.user.toString() === userId.toString()
-  );
+// Static method to get user's tasks
+taskSchema.statics.getUserTasks = function (userId, options = {}) {
+  const { status, priority, fromDate, toDate } = options;
 
-  if (existingAssignment) {
-    existingAssignment.role = role;
-  } else {
-    this.assignees.push({
-      user: userId,
-      role,
-      assignedBy: assignedById,
-      assignedAt: new Date(),
-    });
+  let query = {
+    "assignees.user": userId,
+    isDeleted: false,
+  };
+
+  if (status) query.status = status;
+  if (priority) query.taskPriority = priority;
+  if (fromDate || toDate) {
+    query.dueDate = {};
+    if (fromDate) query.dueDate.$gte = fromDate;
+    if (toDate) query.dueDate.$lte = toDate;
   }
 
-  // Also add to legacy field for backward compatibility
-  if (!this.assignedTo.includes(userId)) {
-    this.assignedTo.push(userId);
-  }
+  return this.find(query).sort({ dueDate: 1, taskPriority: -1 });
+};
 
-  return await this.save();
+// Static method to get overdue tasks
+taskSchema.statics.getOverdueTasks = function () {
+  return this.find({
+    dueDate: { $lt: new Date() },
+    status: { $in: ["pending", "in-progress", "under-review"] },
+    isDeleted: false,
+  });
 };
 
 const Task = mongoose.model("Task", taskSchema);

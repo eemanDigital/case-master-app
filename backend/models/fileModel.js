@@ -79,6 +79,7 @@ const fileSchema = new mongoose.Schema(
     entityId: {
       type: mongoose.Schema.Types.ObjectId,
       refPath: "entityType",
+      default: null,
     },
     tags: [
       {
