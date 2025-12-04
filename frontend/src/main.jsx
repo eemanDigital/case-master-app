@@ -11,6 +11,7 @@ import "./index.css";
 
 import PhotoContextProvider from "./context/photoContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
+import ReportDataProvider from "../providers/ReportDataProvider.jsx";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID; //google oauth client id
 
@@ -19,11 +20,13 @@ ReactDOM.createRoot(document.getElementById("root")).render(
     <Provider store={store}>
       <GoogleOAuthProvider clientId={googleClientId}>
         <AuthContextProvider>
-          <PhotoContextProvider>
-            <DataFetcherContext>
-              <App />
-            </DataFetcherContext>
-          </PhotoContextProvider>
+          <ReportDataProvider>
+            <PhotoContextProvider>
+              <DataFetcherContext>
+                <App />
+              </DataFetcherContext>
+            </PhotoContextProvider>
+          </ReportDataProvider>
         </AuthContextProvider>
       </GoogleOAuthProvider>
     </Provider>

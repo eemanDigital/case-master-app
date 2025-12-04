@@ -1,110 +1,76 @@
-// import { useDispatch, useSelector } from "react-redux";
-// // import { useDataGetterHook } from "./useDataGetterHook";
-// import { useEffect } from "react";
-// import { getUsers } from "../redux/features/auth/authSlice";
-
-// const useUserSelectOptions = () => {
-//   const { users } = useSelector((state) => state.auth);
-//   const dispatch = useDispatch();
-//   // fetch users
-//   useEffect(() => {
-//     dispatch(getUsers());
-//   }, [dispatch]);
-
-//   // list of staff users
-//   const userData = Array.isArray(users?.data)
-//     ? users?.data
-//         .filter((staff) => staff.role !== "client" && staff.isActive !== false) // Exclude clients and inactive users
-//         .map((s) => {
-//           return {
-//             value: s?._id,
-//             label: `${s.firstName} ${s.lastName}`,
-//           };
-//         })
-//     : [];
-
-//   // all users
-//   const allUsers = Array.isArray(users?.data)
-//     ? users?.data
-//         .filter((staff) => staff)
-//         .map((s) => {
-//           return {
-//             value: s?._id,
-//             label: `${s.firstName} ${s.lastName || " "} (${
-//               s.position || "Client"
-//             })`,
-//           };
-//         })
-//     : [];
-
-//   // list of admins
-//   const adminOptions = Array.isArray(users?.data)
-//     ? users?.data
-//         .filter(
-//           (ad) =>
-//             ad.role === "admin" || ad.role === "super-admin" || ad.role === "hr"
-//         )
-//         .map((ad) => {
-//           const label = `${ad.firstName} ${ad.lastName}`;
-
-//           return {
-//             value: ad?.email,
-//             label: label,
-//           };
-//         })
-//     : [];
-//   return { userData, allUsers, adminOptions };
-// };
-
-// export default useUserSelectOptions;
-// hooks/useUserSelectOptions.js
 import { useDispatch, useSelector } from "react-redux";
 import { useEffect, useMemo, useRef } from "react";
 import { getUsers } from "../redux/features/auth/authSlice";
 
 const useUserSelectOptions = () => {
-  const { users, loading } = useSelector((state) => state.auth);
+  const { users, usersLoading, usersLastFetched } = useSelector(
+    (state) => state.auth
+  );
   const dispatch = useDispatch();
-  const hasFetched = useRef(false);
+  const hasFetchedRef = useRef(false);
 
-  // Fetch users only once
   useEffect(() => {
-    if (!users?.data && !loading && !hasFetched.current) {
-      hasFetched.current = true;
-      dispatch(getUsers());
-    }
-  }, [dispatch, users?.data, loading]);
+    const CACHE_DURATION = 5 * 60 * 1000;
+    const now = Date.now();
+    const isStale =
+      !usersLastFetched || now - usersLastFetched > CACHE_DURATION;
 
-  // Memoize all calculations
-  const { userData, allUsers, adminOptions } = useMemo(() => {
+    // Only fetch if needed
+    const shouldFetch =
+      !users?.data?.length &&
+      !usersLoading &&
+      !hasFetchedRef.current &&
+      isStale;
+
+    if (shouldFetch) {
+      console.log("🔄 useUserSelectOptions: Fetching users (cache miss)");
+      hasFetchedRef.current = true;
+      dispatch(getUsers());
+    } else if (users?.data?.length) {
+      console.log("✅ useUserSelectOptions: Using cached users");
+    }
+  }, [dispatch, users?.data?.length, usersLoading, usersLastFetched]);
+
+  // Memoize calculations
+  const { userData, allUsers, adminOptions, lawyersOptions } = useMemo(() => {
     const userList = Array.isArray(users?.data) ? users.data : [];
 
     const userData = userList
       .filter((staff) => staff.role !== "client" && staff.isActive !== false)
       .map((s) => ({
-        value: s?._id,
+        value: s._id,
         label: `${s.firstName} ${s.lastName}`,
       }));
 
     const allUsers = userList.map((s) => ({
-      value: s?._id,
-      label: `${s.firstName} ${s.lastName || " "} (${s.position || "Client"})`,
+      value: s._id,
+      label: `${s.firstName} ${s.lastName || ""} (${s.position || "Client"})`,
     }));
 
     const adminOptions = userList
-      .filter(
-        (ad) =>
-          ad.role === "admin" || ad.role === "super-admin" || ad.role === "hr"
-      )
+      .filter((ad) => ["admin", "super-admin", "hr"].includes(ad.role))
       .map((ad) => ({
-        value: ad?.email,
+        value: ad.email,
         label: `${ad.firstName} ${ad.lastName}`,
       }));
 
-    return { userData, allUsers, adminOptions };
+    const lawyersOptions = userList
+      .filter((lawyer) => lawyer.isLawyer === true)
+      .map((l) => ({
+        value: l._id,
+        label: `${l.firstName} ${l.lastName}`,
+      }));
+
+    return { userData, allUsers, adminOptions, lawyersOptions };
   }, [users?.data]);
 
-  return { userData, allUsers, adminOptions, loading };
+  return {
+    userData,
+    allUsers,
+    adminOptions,
+    lawyersOptions,
+    loading: usersLoading,
+  };
 };
 
 export default useUserSelectOptions;

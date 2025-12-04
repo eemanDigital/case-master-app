@@ -2,10 +2,14 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import authService from "./authService";
 import { toast } from "react-toastify";
 
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 const initialState = {
   isLoggedIn: false,
   user: null,
-  users: [],
+  users: null, // Changed from [] to null for cache checking
+  usersLoading: false, // Added for better loading state
+  usersLastFetched: null, // Added for cache tracking
   twoFactor: false,
   isError: false,
   isSuccess: false,
@@ -30,6 +34,7 @@ export const register = createAsyncThunk(
     }
   }
 );
+
 // login user
 export const login = createAsyncThunk(
   "auth/login",
@@ -48,7 +53,7 @@ export const login = createAsyncThunk(
   }
 );
 
-// login user
+// logout user
 export const logout = createAsyncThunk("auth/logout", async (_, thunkAPI) => {
   try {
     return await authService.logout();
@@ -91,11 +96,26 @@ export const getUser = createAsyncThunk("auth/getUser", async (_, thunkAPI) => {
     return thunkAPI.rejectWithValue(message);
   }
 });
-// get users
+
+// get users - WITH CACHING
 export const getUsers = createAsyncThunk(
   "auth/getUsers",
   async (_, thunkAPI) => {
     try {
+      const state = thunkAPI.getState();
+      const now = Date.now();
+
+      // ✅ CHECK CACHE FIRST
+      if (
+        state.auth.users?.data?.length &&
+        state.auth.usersLastFetched &&
+        now - state.auth.usersLastFetched < CACHE_DURATION
+      ) {
+        console.log("✅ Using cached users data");
+        return state.auth.users; // Return cached data
+      }
+
+      console.log("📡 Fetching fresh users data from API");
       return await authService.getUsers();
     } catch (error) {
       const message =
@@ -108,6 +128,7 @@ export const getUsers = createAsyncThunk(
     }
   }
 );
+
 // send verification email
 export const sendVerificationMail = createAsyncThunk(
   "auth/sendVerificationMail",
@@ -161,12 +182,12 @@ export const forgotUserPassword = createAsyncThunk(
     }
   }
 );
+
 // reset password
 export const resetPassword = createAsyncThunk(
   "auth/resetPassword",
   async ({ resetToken, userData }, thunkAPI) => {
     try {
-      // Pass both resetToken and userData
       return await authService.resetPassword(resetToken, userData);
     } catch (error) {
       const message =
@@ -234,8 +255,7 @@ export const sendLoginCode = createAsyncThunk(
   }
 );
 
-//login with code 2FA
-
+// login with code 2FA
 export const loginWithCode = createAsyncThunk(
   "auth/loginWithCode",
   async ({ code, email }, thunkAPI) => {
@@ -281,6 +301,33 @@ const authSlice = createSlice({
       state.isLoading = false;
       state.message = "";
     },
+    // ✅ NEW: Clear users cache
+    clearUsersCache(state) {
+      state.users = null;
+      state.usersLastFetched = null;
+      console.log("🗑️ Users cache cleared");
+    },
+    // ✅ NEW: Update single user in cache
+    updateUserInCache(state, action) {
+      if (state.users?.data) {
+        const index = state.users.data.findIndex(
+          (u) => u._id === action.payload._id
+        );
+        if (index !== -1) {
+          state.users.data[index] = action.payload;
+          console.log("✏️ User updated in cache:", action.payload._id);
+        }
+      }
+    },
+    // ✅ NEW: Remove user from cache
+    removeUserFromCache(state, action) {
+      if (state.users?.data) {
+        state.users.data = state.users.data.filter(
+          (u) => u._id !== action.payload
+        );
+        console.log("🗑️ User removed from cache:", action.payload);
+      }
+    },
   },
 
   extraReducers: (builder) => {
@@ -293,6 +340,9 @@ const authSlice = createSlice({
         state.isSuccess = true;
         state.isLoading = false;
         state.message = "User added successfully";
+        // ✅ Clear cache after adding new user
+        state.users = null;
+        state.usersLastFetched = null;
         toast.success("User added successfully");
       })
       .addCase(register.rejected, (state, action) => {
@@ -319,9 +369,8 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.message = action.payload;
         state.user = null;
-        state.isLoggedIn = false; // Update isLoggedIn state
+        state.isLoggedIn = false;
         toast.error(action.payload);
-        // trigger two factor auth
         if (action.payload.includes("New Browser")) {
           state.twoFactor = true;
         }
@@ -336,17 +385,19 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = null;
         state.isLoggedIn = false;
+        // ✅ Clear users cache on logout
+        state.users = null;
+        state.usersLastFetched = null;
         toast.success(action.payload);
       })
       .addCase(logout.rejected, (state, action) => {
         state.isError = true;
         state.isLoading = false;
         state.message = action.payload;
-
         toast.error(action.payload);
       })
 
-      // login status user
+      // login status
       .addCase(getLoginStatus.pending, (state) => {
         state.isLoading = true;
       })
@@ -378,24 +429,24 @@ const authSlice = createSlice({
         toast.error(action.payload);
       })
 
-      // get users
+      // ✅ get users - WITH CACHE TRACKING
       .addCase(getUsers.pending, (state) => {
-        state.isLoading = true;
+        state.usersLoading = true;
       })
       .addCase(getUsers.fulfilled, (state, action) => {
         state.isSuccess = true;
-        state.isLoading = false;
-        // state.isLoggedIn = true;
+        state.usersLoading = false;
         state.users = action.payload;
+        state.usersLastFetched = Date.now(); // ✅ Track when fetched
       })
       .addCase(getUsers.rejected, (state, action) => {
         state.isError = true;
-        state.isLoading = false;
+        state.usersLoading = false;
         state.message = action.payload;
         toast.error(action.payload);
       })
 
-      // send sendVerification email
+      // send verification email
       .addCase(sendVerificationMail.pending, (state) => {
         state.isLoading = true;
       })
@@ -445,6 +496,7 @@ const authSlice = createSlice({
         state.message = action.payload;
         toast.error(action.payload);
       })
+
       // reset password
       .addCase(resetPassword.pending, (state) => {
         state.isLoading = true;
@@ -487,6 +539,9 @@ const authSlice = createSlice({
         state.isSuccess = true;
         state.isLoading = false;
         state.message = action.payload;
+        // ✅ Clear cache after deleting user
+        state.users = null;
+        state.usersLastFetched = null;
         toast.success(action.payload);
       })
       .addCase(deleteUser.rejected, (state, action) => {
@@ -496,7 +551,7 @@ const authSlice = createSlice({
         toast.error(action.payload);
       })
 
-      // send Login code
+      // send login code
       .addCase(sendLoginCode.pending, (state) => {
         state.isLoading = true;
       })
@@ -513,7 +568,7 @@ const authSlice = createSlice({
         toast.error(action.payload);
       })
 
-      //Login with code
+      // login with code
       .addCase(loginWithCode.pending, (state) => {
         state.isLoading = true;
       })
@@ -533,7 +588,7 @@ const authSlice = createSlice({
         toast.error(action.payload);
       })
 
-      //Login with google
+      // login with google
       .addCase(loginWithGoogle.pending, (state) => {
         state.isLoading = true;
       })
@@ -554,7 +609,12 @@ const authSlice = createSlice({
   },
 });
 
-export const { RESET } = authSlice.actions;
+export const {
+  RESET,
+  clearUsersCache,
+  updateUserInCache,
+  removeUserFromCache,
+} = authSlice.actions;
 
 export const selectIsLoggedIn = (state) => state.auth.isLoggedIn;
 export const selectUser = (state) => state.auth.user;

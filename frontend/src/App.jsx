@@ -68,6 +68,7 @@ import SoftDeletedReportsArchive from "./pages/SoftDeletedReportsArchive.jsx";
 import InvoiceList from "./pages/InvoiceList.jsx";
 import AddClientForm from "./components/AddClientForm.jsx";
 import DocumentsList from "./components/DocumentsList.jsx";
+import AuthChecker from "./components/AuthChecker.jsx";
 
 // import EditTaskForm from "./pages/EditTaskForm.jsx";
 
@@ -80,16 +81,23 @@ function App() {
   const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
 
   useEffect(() => {
-    async function checkAuthStatus() {
+    async function initialAuthCheck() {
       dispatch(setLoading(true));
-      const loginStatus = await dispatch(getLoginStatus()).unwrap();
-      if (loginStatus) {
-        await dispatch(getUser());
+      try {
+        const loginStatus = await dispatch(getLoginStatus()).unwrap();
+        if (loginStatus) {
+          await dispatch(getUser());
+        }
+      } catch (error) {
+        console.error("Initial auth check failed:", error);
+      } finally {
+        dispatch(setLoading(false));
       }
-      dispatch(setLoading(false));
     }
-    checkAuthStatus();
-  }, [dispatch, isLoggedIn]);
+
+    // Only run on initial mount
+    initialAuthCheck();
+  }, [dispatch]);
 
   const router = createBrowserRouter(
     createRoutesFromElements(
@@ -294,6 +302,7 @@ function App() {
 
   return (
     <>
+      <AuthChecker />
       {isLoading ? (
         <LoadingSpinner />
       ) : (

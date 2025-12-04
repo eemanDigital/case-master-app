@@ -14,50 +14,52 @@ const login = async (userData) => {
   const response = await axios.post(API_URL + "login", userData);
   return response.data;
 };
+
 // logout user
 const logout = async () => {
   const response = await axios.get(API_URL + "logout");
-
   return response.data.message;
 };
+
 // get login status
 const getLoginStatus = async () => {
   const response = await axios.get(API_URL + "loginStatus");
   return response.data;
 };
 
-/// get user
+// get user
 const getUser = async () => {
   const response = await axios.get(API_URL + "getUser");
-  // console.log("rRESd", response.data);
   return response.data;
 };
 
-/// get user
+// get users - NO CACHE CHECK HERE (moved to thunk)
 const getUsers = async () => {
   const response = await axios.get(API_URL);
   return response.data;
 };
 
-///send verification email
+// send verification email
 const sendVerificationMail = async (email) => {
   const response = await axios.post(API_URL + `sendVerificationEmail/${email}`);
   return response.data.message;
 };
 
-///verify user
+// verify user
 const verifyUser = async (verificationToken) => {
   const response = await axios.patch(
     API_URL + `verifyUser/${verificationToken}`
   );
   return response.data.message;
 };
-///forgot password
+
+// forgot password
 const forgotUserPassword = async (userData) => {
   const response = await axios.post(API_URL + "forgotpassword", userData);
   return response.data.message;
 };
-///rest password
+
+// reset password
 const resetPassword = async (resetToken, userData) => {
   const response = await axios.patch(
     `${API_URL}resetpassword/${resetToken}`,
@@ -66,7 +68,7 @@ const resetPassword = async (resetToken, userData) => {
   return response.data.message;
 };
 
-// password change
+// change password
 const changePassword = async (userData) => {
   const response = await axios.patch(API_URL + "changepassword", userData);
   return response.data.message;
@@ -89,6 +91,7 @@ const loginWithCode = async (code, email) => {
   const response = await axios.post(API_URL + `loginWithCode/${email}`, code);
   return response.data;
 };
+
 // login with google
 const loginWithGoogle = async (userToken) => {
   const response = await axios.post(API_URL + "google/callback", userToken);
