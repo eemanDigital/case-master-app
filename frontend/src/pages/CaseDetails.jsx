@@ -694,21 +694,22 @@ const CaseDetails = () => {
                             </div>
                             <div className="space-y-2">
                               <Text className="text-gray-700 leading-relaxed">
-                                {shortenText(report.update, 200, report._id)}
+                                {shortenText(report?.update, 200, report?._id)}
                               </Text>
                               {report.adjournedDate && (
                                 <div className="flex items-center gap-2 text-sm text-gray-600">
                                   <ClockIcon className="w-4 h-4" />
                                   <Text>
                                     Next adjourned date:{" "}
-                                    {formatDate(report.adjournedDate)}
+                                    {formatDate(report?.adjournedDate)}
                                   </Text>
 
                                   <div className="flex items-center gap-2 text-sm text-gray-600">
                                     <ScaleIcon className="w-4 h-4" />
                                     <Text>
-                                      Reported By: {report.reportedBy.firstName}{" "}
-                                      {report.reportedBy.lastName}
+                                      Reported By:{" "}
+                                      {report?.reportedBy?.firstName}{" "}
+                                      {report?.reportedBy?.lastName}
                                     </Text>
                                   </div>
                                 </div>
