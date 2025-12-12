@@ -156,15 +156,72 @@ const CaseList = () => {
       title: "Case",
       dataIndex: "case",
       key: "case",
-      render: (_, record) => (
-        <Tooltip title="Click for Details">
-          <Link to={`${record._id}/casedetails`}>
-            <h1 className="font-bold text-blue-600 hover:text-blue-800">{`${
-              record.firstParty?.name[0]?.name || ""
-            } vs ${record.secondParty?.name[0]?.name || ""}`}</h1>
-          </Link>
-        </Tooltip>
-      ),
+      render: (_, record) => {
+        const getAllNames = (party) => {
+          if (!party?.name || !Array.isArray(party.name)) return [];
+          return party.name.map((n) => n?.name).filter(Boolean);
+        };
+
+        const formatForDisplay = (names) => {
+          if (names.length === 0) return "";
+          if (names.length === 1) return names[0];
+          if (names.length === 2) return `${names[0]} and ${names[1]}`;
+          return `${names[0]}, ${names[1]}, and ${names.length - 2} other${
+            names.length - 2 > 1 ? "s" : ""
+          }`;
+        };
+
+        const firstNames = getAllNames(record.firstParty);
+        const secondNames = getAllNames(record.secondParty);
+
+        const firstPartyDisplay = formatForDisplay(firstNames);
+        const secondPartyDisplay = formatForDisplay(secondNames);
+
+        const displayText =
+          firstPartyDisplay || secondPartyDisplay
+            ? `${firstPartyDisplay || "Unknown"} vs ${
+                secondPartyDisplay || "Unknown"
+              }`
+            : "No parties";
+
+        // Create tooltip with all names
+        const firstPartyTooltip =
+          firstNames.length > 0
+            ? `First Party: ${firstNames.join(", ")}`
+            : "First Party: None";
+
+        const secondPartyTooltip =
+          secondNames.length > 0
+            ? `Second Party: ${secondNames.join(", ")}`
+            : "Second Party: None";
+
+        // const fullTooltip = `${firstPartyTooltip}\n${secondPartyTooltip}`;
+
+        return (
+          <Tooltip
+            title={
+              <div className="max-w-xs">
+                <div className="font-semibold mb-1">All Parties:</div>
+                <div className="text-xs">
+                  <div>
+                    <span className="font-medium">First Party:</span>{" "}
+                    {firstNames.length > 0 ? firstNames.join(", ") : "None"}
+                  </div>
+                  <div>
+                    <span className="font-medium">Second Party:</span>{" "}
+                    {secondNames.length > 0 ? secondNames.join(", ") : "None"}
+                  </div>
+                </div>
+              </div>
+            }>
+            <Link to={`${record._id}/casedetails`}>
+              <h1 className="font-bold text-blue-600 hover:text-blue-800 truncate">
+                {displayText}
+              </h1>
+            </Link>
+          </Tooltip>
+        );
+      },
       width: 250,
     },
     {

@@ -5,8 +5,7 @@ const nameSchema = new mongoose.Schema({
   name: {
     type: String,
     trim: true,
-    minlength: [2, "field should be at least 2 characters long"],
-    maxlength: [200, "field should be less than 100 characters long"],
+    maxlength: [22000, "field should be less than 2000 characters long"],
   },
 });
 
@@ -138,8 +137,6 @@ const caseSchema = new mongoose.Schema(
       type: String,
       trim: true,
       required: [true, "Provide a brief fact of the case"],
-
-      maxlength: [4000, "Case summary should not exceed 2000 characters"],
     },
     caseStatus: {
       type: String,
