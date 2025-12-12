@@ -35,7 +35,7 @@ import {
   MoreOutlined,
   ReloadOutlined,
   FolderOutlined,
-  CloudUploadOutlined,
+  // CloudUploadOutlined,
   FilterOutlined,
   SortAscendingOutlined,
 } from "@ant-design/icons";
@@ -83,9 +83,9 @@ const DocumentsList = ({
   });
 
   // Fetch files on mount
-  useEffect(() => {
-    fetchFiles();
-  }, []);
+  // useEffect(() => {
+  //   fetchFiles();
+  // }, []);
 
   // Get file icon based on file type
   const getFileIcon = (file, size = "20px") => {
@@ -448,7 +448,7 @@ const DocumentsList = ({
     {
       title: "Actions",
       key: "actions",
-      width: 150,
+      width: 88,
       fixed: "right",
       render: (_, file) => {
         const isDownloading = operationInProgress === `download-${file._id}`;

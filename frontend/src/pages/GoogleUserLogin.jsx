@@ -1,39 +1,10 @@
-// import { useDispatch } from "react-redux";
-// import { GoogleLogin } from "@react-oauth/google";
-// import { loginWithGoogle } from "../redux/features/auth/authSlice";
-// import { toast } from "react-toastify";
-
-// const GoogleUserLogin = () => {
-//   const dispatch = useDispatch();
-//   // google login
-//   const loginUserWithGoogle = async (credentialResponse) => {
-//     await dispatch(
-//       loginWithGoogle({ userToken: credentialResponse.credential })
-//     );
-//   };
-
-//   return (
-//     <>
-//       <div>
-//         {/* <Button onClick={() => login()}>Sign in with Google 🚀</Button> */}
-//         <GoogleLogin
-//           onSuccess={loginUserWithGoogle}
-//           onError={() => {
-//             toast.error("Login Failed");
-//           }}
-//         />
-//       </div>
-//     </>
-//   );
-// };
-
-// export default GoogleUserLogin;
 // components/GoogleUserLogin.jsx
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { GoogleLogin } from "@react-oauth/google";
 import { loginWithGoogle, RESET } from "../redux/features/auth/authSlice";
+import { toast } from "react-toastify";
 
 const GoogleUserLogin = () => {
   const navigate = useNavigate();
@@ -49,21 +20,25 @@ const GoogleUserLogin = () => {
     }
   }, [isSuccess, isLoggedIn, navigate, dispatch]);
 
-  const handleGoogleLogin = async (credentialResponse) => {
+  // Google login handler
+  const loginUserWithGoogle = async (credentialResponse) => {
     try {
       // ✅ The thunk will handle fetching fresh user data
-      await dispatch(loginWithGoogle(credentialResponse.credential));
+      await dispatch(
+        loginWithGoogle({ userToken: credentialResponse.credential })
+      ).unwrap();
     } catch (error) {
       console.error("Google login error:", error);
+      // Error toast is already shown in the slice
     }
   };
 
   return (
     <div className="flex justify-center">
       <GoogleLogin
-        onSuccess={handleGoogleLogin}
+        onSuccess={loginUserWithGoogle}
         onError={() => {
-          console.error("Google Login Failed");
+          toast.error("Login Failed");
         }}
         useOneTap
         theme="outline"

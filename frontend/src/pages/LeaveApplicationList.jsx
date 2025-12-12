@@ -9,6 +9,10 @@ import {
   Tag,
   Select,
   DatePicker,
+  Card,
+  Row,
+  Col,
+  Grid,
 } from "antd";
 import {
   DeleteOutlined,
@@ -16,6 +20,9 @@ import {
   FilterOutlined,
   ReloadOutlined,
   StopOutlined,
+  SearchOutlined,
+  CloseOutlined,
+  MenuOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -24,7 +31,6 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import LoadingSpinner from "../components/LoadingSpinner";
-import SearchBar from "../components/SearchBar";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import { formatDate } from "../utils/formatDate";
@@ -33,6 +39,7 @@ import { useDataFetch } from "../hooks/useDataFetch";
 
 const { Column } = Table;
 const { RangePicker } = DatePicker;
+const { useBreakpoint } = Grid;
 
 const LeaveApplicationList = () => {
   const {
@@ -54,15 +61,18 @@ const LeaveApplicationList = () => {
     pageSize: 10,
     total: 0,
   });
+  const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const { user } = useSelector((state) => state.auth);
   const { isAdminOrHr } = useAdminHook();
   const dispatch = useDispatch();
   const deleteState = useSelector((state) => state.delete);
+  const screens = useBreakpoint();
 
   useRedirectLogoutUser("/users/login");
 
-  // Fetch leave applications - MATCHES BACKEND ROUTE
+  // Fetch leave applications
   const fetchLeaveApplications = async () => {
     const params = new URLSearchParams({
       page: pagination.current,
@@ -76,7 +86,6 @@ const LeaveApplicationList = () => {
       params.append("endDate", filters.dateRange[1]);
     }
 
-    // Route: GET /leaves/applications
     await fetchData(`leaves/applications?${params.toString()}`, "leaveApps");
   };
 
@@ -86,11 +95,8 @@ const LeaveApplicationList = () => {
 
   // Update search results when data changes
   useEffect(() => {
-    console.log("LeaveApps Data:", leaveApps); // Debug log
-
     let applications = [];
 
-    // Handle different response structures
     if (
       leaveApps?.data?.leaveApplications &&
       Array.isArray(leaveApps.data.leaveApplications)
@@ -113,18 +119,17 @@ const LeaveApplicationList = () => {
     }
 
     setSearchResults(applications);
-    console.log("Applications Set:", applications.length); // Debug log
   }, [leaveApps]);
 
   // Debounced search
   const debouncedSearch = useMemo(
     () =>
-      debounce((searchTerm) => {
+      debounce((term) => {
         const dataArray = Array.isArray(leaveApps?.data)
           ? leaveApps.data
           : leaveApps?.data?.leaveApplications || [];
 
-        if (!searchTerm) {
+        if (!term) {
           setSearchResults(dataArray);
           return;
         }
@@ -132,7 +137,7 @@ const LeaveApplicationList = () => {
           const fullName = `${d.employee?.firstName || ""} ${
             d.employee?.lastName || ""
           }`.toLowerCase();
-          return fullName.includes(searchTerm.toLowerCase());
+          return fullName.includes(term.toLowerCase());
         });
         setSearchResults(results);
       }, 300),
@@ -140,7 +145,9 @@ const LeaveApplicationList = () => {
   );
 
   const handleSearchChange = (e) => {
-    debouncedSearch(e.target.value.trim());
+    const term = e.target.value.trim();
+    setSearchTerm(term);
+    debouncedSearch(term);
   };
 
   const handleFilterChange = (key, value) => {
@@ -157,7 +164,6 @@ const LeaveApplicationList = () => {
     setPagination({ current: 1, pageSize: 10, total: 0 });
   };
 
-  // Cancel leave application - MATCHES BACKEND ROUTE: PATCH /leaves/applications/:id/cancel
   const cancelApplication = async (id, reason) => {
     try {
       await dataFetcher(`leaves/applications/${id}/cancel`, "PATCH", {
@@ -170,7 +176,6 @@ const LeaveApplicationList = () => {
     }
   };
 
-  // Delete leave application - MATCHES BACKEND ROUTE: DELETE /leaves/applications/:id
   const removeApplication = async (id) => {
     try {
       await dispatch(deleteData(`leaves/applications/${id}`)).unwrap();
@@ -204,158 +209,188 @@ const LeaveApplicationList = () => {
     return colors[type] || "default";
   };
 
-  // Table columns
-  const columns = [
-    {
-      title: "Photo",
-      dataIndex: ["employee", "photo"],
-      key: "photo",
-      width: 80,
-      render: (photo) => (
-        <div className="flex items-center justify-center">
-          <img
-            className="w-10 h-10 object-cover rounded-full border-2 border-gray-200"
-            src={photo || avatar}
-            alt="Employee"
-          />
-        </div>
-      ),
-    },
-    {
-      title: "Employee",
-      dataIndex: ["employee", "firstName"],
-      key: "employeeName",
-      width: 180,
-      render: (text, record) => (
-        <Link
-          to={`${record.id || record._id}/details`}
-          className="text-blue-600 hover:text-blue-800 font-medium capitalize">
-          {`${record.employee?.firstName} ${record.employee?.lastName}`}
-        </Link>
-      ),
-    },
-    {
-      title: "Leave Type",
-      dataIndex: "typeOfLeave",
-      key: "typeOfLeave",
-      width: 130,
-      render: (type) => (
-        <Tag color={getLeaveTypeColor(type)} className="capitalize">
-          {type}
-        </Tag>
-      ),
-    },
-    {
-      title: "Start Date",
-      dataIndex: "startDate",
-      key: "startDate",
-      width: 120,
-      render: (date) => formatDate(date),
-    },
-    {
-      title: "End Date",
-      dataIndex: "endDate",
-      key: "endDate",
-      width: 120,
-      render: (date) => formatDate(date),
-    },
-    {
-      title: "Days",
-      dataIndex: "daysAppliedFor",
-      key: "daysAppliedFor",
-      width: 80,
-      render: (days) => <span className="font-semibold">{days}</span>,
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      key: "status",
-      width: 110,
-      render: (status) => (
-        <Tag color={getStatusColor(status)} className="capitalize">
-          {status}
-        </Tag>
-      ),
-    },
-    {
-      title: "Applied On",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      width: 120,
-      render: (date) => formatDate(date),
-    },
-    {
-      title: "Action",
-      key: "action",
-      width: 150,
-      fixed: "right",
-      render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="View Details">
-            <Link to={`${record.id || record._id}/details`}>
-              <Button
-                type="primary"
-                icon={<EyeOutlined />}
-                size="small"
-                className="bg-blue-500"
-              />
+  // Responsive columns configuration
+  const getColumns = () => {
+    const baseColumns = [
+      {
+        title: "Photo",
+        dataIndex: ["employee", "photo"],
+        key: "photo",
+        width: 60,
+        responsive: ["sm"],
+        render: (photo) => (
+          <div className="flex items-center justify-center">
+            <img
+              className="w-8 h-8 md:w-10 md:h-10 object-cover rounded-full border border-gray-200"
+              src={photo || avatar}
+              alt="Employee"
+            />
+          </div>
+        ),
+      },
+      {
+        title: "Employee",
+        dataIndex: ["employee", "firstName"],
+        key: "employeeName",
+        width: 120,
+        render: (text, record) => (
+          <div>
+            <Link
+              to={`${record.id || record._id}/details`}
+              className="text-blue-600 hover:text-blue-800 font-medium text-sm md:text-base capitalize block">
+              {`${record.employee?.firstName} ${record.employee?.lastName}`}
             </Link>
-          </Tooltip>
-
-          {/* Cancel button for pending/approved applications */}
-          {["pending", "approved"].includes(record.status) &&
-            (record.employee?._id === user?.data?._id || isAdminOrHr) && (
-              <Tooltip title="Cancel Application">
+            <span className="text-xs text-gray-500 md:hidden">
+              {record.typeOfLeave} • {record.status}
+            </span>
+          </div>
+        ),
+      },
+      {
+        title: "Leave Type",
+        dataIndex: "typeOfLeave",
+        key: "typeOfLeave",
+        width: 100,
+        responsive: ["md"],
+        render: (type) => (
+          <Tag color={getLeaveTypeColor(type)} className="capitalize text-xs">
+            {type}
+          </Tag>
+        ),
+      },
+      {
+        title: "Dates",
+        key: "dates",
+        width: 120,
+        responsive: ["sm"],
+        render: (_, record) => (
+          <div className="text-xs md:text-sm">
+            <div className="font-medium">{formatDate(record.startDate)}</div>
+            <div className="text-gray-500">to</div>
+            <div className="font-medium">{formatDate(record.endDate)}</div>
+          </div>
+        ),
+      },
+      {
+        title: "Start",
+        dataIndex: "startDate",
+        key: "startDate",
+        width: 90,
+        responsive: ["xs"],
+        render: (date) => (
+          <div className="text-xs">
+            <div className="font-medium">{formatDate(date, "MMM DD")}</div>
+          </div>
+        ),
+      },
+      {
+        title: "Days",
+        dataIndex: "daysAppliedFor",
+        key: "daysAppliedFor",
+        width: 60,
+        render: (days) => (
+          <span className="font-semibold text-sm md:text-base">{days}d</span>
+        ),
+      },
+      {
+        title: "Status",
+        dataIndex: "status",
+        key: "status",
+        width: 90,
+        responsive: ["sm"],
+        render: (status) => (
+          <Tag
+            color={getStatusColor(status)}
+            className="capitalize text-xs md:text-sm">
+            {status}
+          </Tag>
+        ),
+      },
+      {
+        title: "Applied",
+        dataIndex: "createdAt",
+        key: "createdAt",
+        width: 90,
+        responsive: ["lg"],
+        render: (date) => (
+          <div className="text-xs md:text-sm">{formatDate(date, "MMM DD")}</div>
+        ),
+      },
+      {
+        title: "Action",
+        key: "action",
+        width: 100,
+        fixed: screens.md ? "right" : false,
+        render: (_, record) => (
+          <Space size="small" className="flex-nowrap">
+            <Tooltip title="View Details">
+              <Link to={`${record.id || record._id}/details`}>
                 <Button
-                  icon={<StopOutlined />}
+                  type="primary"
+                  icon={<EyeOutlined />}
                   size="small"
+                  className="bg-blue-500 text-xs"
+                />
+              </Link>
+            </Tooltip>
+
+            {["pending", "approved"].includes(record.status) &&
+              (record.employee?._id === user?.data?._id || isAdminOrHr) && (
+                <Tooltip title="Cancel">
+                  <Button
+                    icon={<StopOutlined />}
+                    size="small"
+                    className="text-xs"
+                    onClick={() => {
+                      Modal.confirm({
+                        title: "Cancel Leave Application",
+                        content:
+                          "Are you sure you want to cancel this application?",
+                        okText: "Yes, Cancel",
+                        okType: "danger",
+                        onOk: () => cancelApplication(record._id || record.id),
+                      });
+                    }}
+                  />
+                </Tooltip>
+              )}
+
+            {isAdminOrHr && (
+              <Tooltip title="Delete">
+                <Button
+                  danger
+                  icon={<DeleteOutlined />}
+                  size="small"
+                  className="text-xs"
+                  loading={deleteState.isLoading}
                   onClick={() => {
                     Modal.confirm({
-                      title: "Cancel Leave Application",
+                      title: "Delete Leave Application",
                       content:
-                        "Are you sure you want to cancel this application?",
-                      okText: "Yes, Cancel",
+                        "Are you sure you want to delete this leave application?",
+                      okText: "Yes, Delete",
                       okType: "danger",
-                      onOk: () => cancelApplication(record._id || record.id),
+                      onOk: () => removeApplication(record._id || record.id),
                     });
                   }}
                 />
               </Tooltip>
             )}
+          </Space>
+        ),
+      },
+    ];
 
-          {/* Delete button for admin/HR only */}
-          {isAdminOrHr && (
-            <Tooltip title="Delete">
-              <Button
-                danger
-                icon={<DeleteOutlined />}
-                size="small"
-                loading={deleteState.isLoading}
-                onClick={() => {
-                  Modal.confirm({
-                    title: "Delete Leave Application",
-                    content:
-                      "Are you sure you want to delete this leave application?",
-                    okText: "Yes, Delete",
-                    okType: "danger",
-                    onOk: () => removeApplication(record._id || record.id),
-                  });
-                }}
-              />
-            </Tooltip>
-          )}
-        </Space>
-      ),
-    },
-  ];
+    return baseColumns.filter((col) => {
+      if (!col.responsive) return true;
+      const responsiveKey = col.responsive[0];
+      return screens[responsiveKey];
+    });
+  };
 
   const filteredLeaveApps = useMemo(() => {
     const results = Array.isArray(searchResults) ? searchResults : [];
-
-    if (isAdminOrHr) {
-      return results;
-    }
-
+    if (isAdminOrHr) return results;
     return results.filter((app) => app?.employee?._id === user?.data?._id);
   }, [searchResults, isAdminOrHr, user?.data?._id]);
 
@@ -373,92 +408,256 @@ const LeaveApplicationList = () => {
   }
 
   return (
-    <div className="p-4">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Leave Applications
-          {!isAdminOrHr && " - My Applications"}
-        </h1>
+    <div className="px-2 sm:px-4 md:px-6 py-3 md:py-6">
+      {/* Header */}
+      <Card className="mb-4 md:mb-6 shadow-sm">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
+            <div>
+              <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-1">
+                Leave Applications
+                {!isAdminOrHr && (
+                  <span className="text-sm md:text-base font-normal text-gray-600 block md:inline md:ml-2">
+                    - My Applications
+                  </span>
+                )}
+              </h1>
+              <div className="text-xs md:text-sm text-gray-600">
+                Showing {filteredLeaveApps.length} of {pagination.total}{" "}
+                applications
+              </div>
+            </div>
 
-        <div className="flex flex-wrap gap-2 items-center">
-          <SearchBar onSearch={handleSearchChange} />
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={fetchLeaveApplications}
-            title="Refresh">
-            Refresh
-          </Button>
-        </div>
-      </div>
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <div className="relative w-full sm:w-48">
+                <SearchOutlined className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search employees..."
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                {searchTerm && (
+                  <CloseOutlined
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 cursor-pointer"
+                    onClick={() => {
+                      setSearchTerm("");
+                      debouncedSearch("");
+                    }}
+                  />
+                )}
+              </div>
 
-      {/* Filters */}
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-        <div className="flex items-center gap-2 mb-3">
-          <FilterOutlined />
-          <span className="font-medium">Filters</span>
-        </div>
+              <div className="flex gap-2">
+                {screens.md ? (
+                  <Button
+                    icon={<FilterOutlined />}
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="flex-1 sm:flex-none">
+                    Filters
+                  </Button>
+                ) : (
+                  <Button
+                    icon={<FilterOutlined />}
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="flex-1 sm:flex-none"
+                  />
+                )}
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <Select
-            placeholder="All Status"
-            allowClear
-            value={filters.status}
-            onChange={(value) => handleFilterChange("status", value)}
-            options={[
-              { label: "Pending", value: "pending" },
-              { label: "Approved", value: "approved" },
-              { label: "Rejected", value: "rejected" },
-              { label: "Cancelled", value: "cancelled" },
-            ]}
-          />
+                <Button
+                  icon={<ReloadOutlined />}
+                  onClick={fetchLeaveApplications}
+                  className="flex-1 sm:flex-none">
+                  {screens.sm && "Refresh"}
+                </Button>
+              </div>
+            </div>
+          </div>
 
-          <Select
-            placeholder="All Leave Types"
-            allowClear
-            value={filters.typeOfLeave}
-            onChange={(value) => handleFilterChange("typeOfLeave", value)}
-            options={[
-              { label: "Annual", value: "annual" },
-              { label: "Casual", value: "casual" },
-              { label: "Sick", value: "sick" },
-              { label: "Maternity", value: "maternity" },
-              { label: "Paternity", value: "paternity" },
-              { label: "Compassionate", value: "compassionate" },
-              { label: "Unpaid", value: "unpaid" },
-            ]}
-          />
+          {/* Filters - Mobile drawer style */}
+          {(showFilters || screens.md) && (
+            <div className="pt-4 border-t">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                <Select
+                  placeholder="Status"
+                  allowClear
+                  size={screens.md ? "middle" : "small"}
+                  value={filters.status}
+                  onChange={(value) => handleFilterChange("status", value)}
+                  options={[
+                    { label: "Pending", value: "pending" },
+                    { label: "Approved", value: "approved" },
+                    { label: "Rejected", value: "rejected" },
+                    { label: "Cancelled", value: "cancelled" },
+                  ]}
+                  className="w-full"
+                />
 
-          <RangePicker
-            placeholder={["Start Date", "End Date"]}
-            onChange={(dates, dateStrings) =>
-              handleFilterChange("dateRange", dateStrings)
-            }
-          />
+                <Select
+                  placeholder="Leave Type"
+                  allowClear
+                  size={screens.md ? "middle" : "small"}
+                  value={filters.typeOfLeave}
+                  onChange={(value) => handleFilterChange("typeOfLeave", value)}
+                  options={[
+                    { label: "Annual", value: "annual" },
+                    { label: "Casual", value: "casual" },
+                    { label: "Sick", value: "sick" },
+                    { label: "Maternity", value: "maternity" },
+                    { label: "Paternity", value: "paternity" },
+                    { label: "Compassionate", value: "compassionate" },
+                    { label: "Unpaid", value: "unpaid" },
+                  ]}
+                  className="w-full"
+                />
 
-          {(filters.status || filters.typeOfLeave || filters.dateRange) && (
-            <Button onClick={clearFilters}>Clear Filters</Button>
+                <RangePicker
+                  placeholder={["Start Date", "End Date"]}
+                  size={screens.md ? "middle" : "small"}
+                  onChange={(dates, dateStrings) =>
+                    handleFilterChange("dateRange", dateStrings)
+                  }
+                  className="w-full"
+                  format={screens.sm ? "YYYY-MM-DD" : "MM/DD"}
+                />
+
+                {(filters.status ||
+                  filters.typeOfLeave ||
+                  filters.dateRange) && (
+                  <Button
+                    onClick={clearFilters}
+                    size={screens.md ? "middle" : "small"}
+                    className="w-full">
+                    Clear Filters
+                  </Button>
+                )}
+              </div>
+
+              {!screens.md && (
+                <Button
+                  type="link"
+                  onClick={() => setShowFilters(false)}
+                  className="w-full mt-3">
+                  Close Filters
+                </Button>
+              )}
+            </div>
           )}
         </div>
-      </div>
+      </Card>
+
+      {/* Stats Cards - Mobile responsive */}
+      {screens.md && (
+        <Row gutter={[12, 12]} className="mb-4 md:mb-6">
+          <Col xs={12} sm={6}>
+            <Card size="small" className="text-center">
+              <div className="text-sm text-gray-600">Total</div>
+              <div className="text-xl font-bold">{pagination.total}</div>
+            </Card>
+          </Col>
+          <Col xs={12} sm={6}>
+            <Card size="small" className="text-center">
+              <div className="text-sm text-gray-600">Pending</div>
+              <div className="text-xl font-bold text-yellow-600">
+                {filteredLeaveApps.filter((a) => a.status === "pending").length}
+              </div>
+            </Card>
+          </Col>
+          <Col xs={12} sm={6}>
+            <Card size="small" className="text-center">
+              <div className="text-sm text-gray-600">Approved</div>
+              <div className="text-xl font-bold text-green-600">
+                {
+                  filteredLeaveApps.filter((a) => a.status === "approved")
+                    .length
+                }
+              </div>
+            </Card>
+          </Col>
+          <Col xs={12} sm={6}>
+            <Card size="small" className="text-center">
+              <div className="text-sm text-gray-600">Rejected</div>
+              <div className="text-xl font-bold text-red-600">
+                {
+                  filteredLeaveApps.filter((a) => a.status === "rejected")
+                    .length
+                }
+              </div>
+            </Card>
+          </Col>
+        </Row>
+      )}
 
       {/* Table */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-        <Table
-          dataSource={Array.isArray(filteredLeaveApps) ? filteredLeaveApps : []}
-          columns={columns}
-          rowKey={(record) => record._id || record.id}
-          scroll={{ x: 1200 }}
-          loading={loadingLeaveApp?.leaveApps}
-          pagination={{
-            ...pagination,
-            showSizeChanger: true,
-            showTotal: (total) => `Total ${total} applications`,
-            onChange: (page, pageSize) => {
-              setPagination((prev) => ({ ...prev, current: page, pageSize }));
-            },
-          }}
-        />
-      </div>
+      <Card className="shadow-sm overflow-hidden">
+        {!screens.md && (
+          <div className="flex justify-between items-center mb-4">
+            <div className="text-sm font-medium">
+              {filteredLeaveApps.length} applications
+            </div>
+            <Button
+              icon={<MenuOutlined />}
+              size="small"
+              onClick={() => setShowFilters(!showFilters)}
+            />
+          </div>
+        )}
+
+        <div className="overflow-x-auto">
+          <Table
+            dataSource={
+              Array.isArray(filteredLeaveApps) ? filteredLeaveApps : []
+            }
+            columns={getColumns()}
+            rowKey={(record) => record._id || record.id}
+            scroll={{ x: screens.xs ? 600 : 800 }}
+            loading={loadingLeaveApp?.leaveApps}
+            size={screens.md ? "middle" : "small"}
+            pagination={{
+              ...pagination,
+              size: screens.md ? "default" : "small",
+              showSizeChanger: screens.sm,
+              showQuickJumper: screens.md,
+              showTotal: (total) => (
+                <div className="text-xs md:text-sm">
+                  Total {total} applications
+                </div>
+              ),
+              onChange: (page, pageSize) => {
+                setPagination((prev) => ({ ...prev, current: page, pageSize }));
+              },
+            }}
+            className="text-xs md:text-sm"
+            rowClassName="hover:bg-gray-50"
+          />
+        </div>
+      </Card>
+
+      {/* Mobile quick actions */}
+      {!screens.md && filteredLeaveApps.length > 0 && (
+        <div className="fixed bottom-4 left-0 right-0 px-4 z-10">
+          <div className="bg-white rounded-lg shadow-lg p-3 flex justify-between items-center">
+            <div className="text-sm">
+              <span className="font-medium">{filteredLeaveApps.length}</span>{" "}
+              applications
+            </div>
+            <Space>
+              <Button
+                icon={<ReloadOutlined />}
+                size="small"
+                onClick={fetchLeaveApplications}
+              />
+              <Button
+                icon={<FilterOutlined />}
+                size="small"
+                onClick={() => setShowFilters(!showFilters)}>
+                Filter
+              </Button>
+            </Space>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

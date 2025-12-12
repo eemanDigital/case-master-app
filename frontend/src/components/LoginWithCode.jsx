@@ -1,4 +1,4 @@
-// export default LoginWithCode;
+// components/LoginWithCode.jsx
 import { useEffect, useState } from "react";
 import {
   Button,
@@ -90,19 +90,22 @@ const LoginWithCode = () => {
 
     const code = { loginCode };
     try {
+      // ✅ The thunk will handle fetching fresh user data
       await dispatch(loginWithCode({ code, email })).unwrap();
     } catch (error) {
       // Error handling is done in the slice
     }
   };
 
-  // Redirect user to dashboard if login is successful
+  // ✅ Redirect user to dashboard if login is successful
   useEffect(() => {
     if (isSuccess && isLoggedIn) {
+      // User data is already fetched in the loginWithCode thunk
       toast.success("Login successful!");
       navigate("/dashboard");
+      dispatch(RESET());
     }
-  }, [isSuccess, isLoggedIn, navigate]);
+  }, [isSuccess, isLoggedIn, navigate, dispatch]);
 
   // Auto-focus first input and format code input
   const handleCodeChange = (e) => {
@@ -114,11 +117,11 @@ const LoginWithCode = () => {
 
   // Auto-submit when 6 digits are entered
   useEffect(() => {
-    if (loginCode.length === 6) {
+    if (loginCode.length === 6 && !isLoading) {
       const code = { loginCode };
       dispatch(loginWithCode({ code, email }));
     }
-  }, [loginCode, dispatch, email]);
+  }, [loginCode, dispatch, email, isLoading]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -209,7 +212,7 @@ const LoginWithCode = () => {
                 type="primary"
                 htmlType="submit"
                 loading={isLoading}
-                disabled={loginCode.length !== 6}
+                disabled={loginCode.length !== 6 || isLoading}
                 size="large"
                 block
                 icon={<LoginOutlined />}

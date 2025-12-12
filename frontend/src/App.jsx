@@ -73,7 +73,7 @@ axios.defaults.withCredentials = true;
 function App() {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.loading);
-  const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
+  // const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
   const hasInitialized = useRef(false);
 
   useEffect(() => {

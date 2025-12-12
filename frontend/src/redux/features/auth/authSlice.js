@@ -285,7 +285,7 @@ export const loginWithCode = createAsyncThunk(
 // ✅ UPDATED: login With Google - fetch user data after successful login
 export const loginWithGoogle = createAsyncThunk(
   "auth/loginWithGoogle",
-  async (userToken, thunkAPI) => {
+  async ({ userToken }, thunkAPI) => {
     try {
       const response = await authService.loginWithGoogle(userToken);
       // ✅ Auto-fetch fresh user data after Google login

@@ -177,48 +177,48 @@ if (process.env.NODE_ENV === "development") {
 }
 
 // Rate limiter function
-// function rateLimiter(windowMs, message, max) {
-//   return rateLimit({
-//     max: max,
-//     windowMs: windowMs,
-//     message: message,
-//     standardHeaders: true,
-//     legacyHeaders: false,
-//     trustProxy: true,
-//     handler: (req, res, next) => {
-//       next(new AppError(message, 429));
-//     },
-//   });
-// }
+function rateLimiter(windowMs, message, max) {
+  return rateLimit({
+    max: max,
+    windowMs: windowMs,
+    message: message,
+    standardHeaders: true,
+    legacyHeaders: false,
+    trustProxy: true,
+    handler: (req, res, next) => {
+      next(new AppError(message, 429));
+    },
+  });
+}
 
 // Apply rate limiting to sensitive routes
-// app.use(
-//   "/api/v1/users/login",
-//   rateLimiter(
-//     15 * 60 * 1000, // 15 minutes
-//     "Too many login attempts from this IP, please try again in 15 minutes.",
-//     5 // 5 attempts per 15 minutes
-//   )
-// );
+app.use(
+  "/api/v1/users/login",
+  rateLimiter(
+    15 * 60 * 1000, // 15 minutes
+    "Too many login attempts from this IP, please try again in 15 minutes.",
+    5 // 5 attempts per 15 minutes
+  )
+);
 
-// app.use(
-//   "/api/v1/users/resetpassword",
-//   rateLimiter(
-//     15 * 60 * 1000, // 15 minutes
-//     "Too many password reset attempts, please try again in 15 minutes.",
-//     3
-//   )
-// );
+app.use(
+  "/api/v1/users/resetpassword",
+  rateLimiter(
+    15 * 60 * 1000, // 15 minutes
+    "Too many password reset attempts, please try again in 15 minutes.",
+    3
+  )
+);
 
 // General API rate limiting (more lenient)
-// app.use(
-//   "/api/v1/",
-//   rateLimiter(
-//     15 * 60 * 1000, // 15 minutes
-//     "Too many requests from this IP, please try again later.",
-//     100 // 100 requests per 15 minutes
-//   )
-// );
+app.use(
+  "/api/v1/",
+  rateLimiter(
+    15 * 60 * 1000, // 15 minutes
+    "Too many requests from this IP, please try again later.",
+    100 // 100 requests per 15 minutes
+  )
+);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
