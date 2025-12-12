@@ -2,7 +2,12 @@ import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
-import { login, RESET, sendLoginCode } from "../redux/features/auth/authSlice";
+import {
+  login,
+  RESET,
+  sendLoginCode,
+  getUser,
+} from "../redux/features/auth/authSlice";
 import useTogglePassword from "../hooks/useTogglePassword";
 import GoogleUserLogin from "./GoogleUserLogin";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
@@ -15,7 +20,7 @@ const Login = () => {
     useSelector((state) => state.auth);
   const [inputValue, setInputValue] = useState({ email: "", password: "" });
 
-  //remove space from password to field
+  // Remove space from password field
   useEffect(() => {
     const password = inputValue.password;
     if (password.includes(" ")) {
@@ -26,13 +31,13 @@ const Login = () => {
     }
   }, [inputValue.password]);
 
-  // handle input change
+  // Handle input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setInputValue((prevValue) => ({ ...prevValue, [name]: value }));
   };
 
-  // login user handler
+  // Login user handler
   const loginUser = async (e) => {
     e.preventDefault();
     if (!inputValue.email || !inputValue.password) {
@@ -42,25 +47,37 @@ const Login = () => {
     await dispatch(login(inputValue));
   };
 
-  // handle success and error toast
+  // ✅ FIXED: Handle success and error - fetch fresh user data after login
   useEffect(() => {
-    if (isSuccess && isLoggedIn) {
-      navigate("/dashboard");
-    }
-    if (isError && twoFactor) {
-      dispatch(sendLoginCode(inputValue.email));
-      navigate(`/loginWithCode/${inputValue.email}`);
-    }
+    const handleLoginSuccess = async () => {
+      if (isSuccess && isLoggedIn) {
+        try {
+          // ✅ Fetch fresh user data to get latest verification status
+          await dispatch(getUser()).unwrap();
+          navigate("/dashboard");
+        } catch (error) {
+          console.error("Failed to fetch user data:", error);
+          // Still navigate even if user fetch fails
+          navigate("/dashboard");
+        }
+      }
 
-    dispatch(RESET());
+      if (isError && twoFactor) {
+        dispatch(sendLoginCode(inputValue.email));
+        navigate(`/loginWithCode/${inputValue.email}`);
+      }
+
+      dispatch(RESET());
+    };
+
+    handleLoginSuccess();
   }, [
     isSuccess,
     isLoggedIn,
     isError,
-    message,
+    twoFactor,
     dispatch,
     navigate,
-    twoFactor,
     inputValue.email,
   ]);
 
@@ -143,7 +160,8 @@ const Login = () => {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+              disabled={isLoading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed">
               {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </div>

@@ -7,9 +7,9 @@ const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 const initialState = {
   isLoggedIn: false,
   user: null,
-  users: null, // Changed from [] to null for cache checking
-  usersLoading: false, // Added for better loading state
-  usersLastFetched: null, // Added for cache tracking
+  users: null,
+  usersLoading: false,
+  usersLastFetched: null,
   twoFactor: false,
   isError: false,
   isSuccess: false,
@@ -35,12 +35,15 @@ export const register = createAsyncThunk(
   }
 );
 
-// login user
+// ✅ UPDATED: login user - auto-fetch user data after successful login
 export const login = createAsyncThunk(
   "auth/login",
   async (userData, thunkAPI) => {
     try {
-      return await authService.login(userData);
+      const response = await authService.login(userData);
+      // ✅ Don't auto-fetch here - let the Login component handle it
+      // This gives us more control over the flow
+      return response;
     } catch (error) {
       const message =
         (error.response &&
@@ -112,7 +115,7 @@ export const getUsers = createAsyncThunk(
         now - state.auth.usersLastFetched < CACHE_DURATION
       ) {
         console.log("✅ Using cached users data");
-        return state.auth.users; // Return cached data
+        return state.auth.users;
       }
 
       console.log("📡 Fetching fresh users data from API");
@@ -147,12 +150,15 @@ export const sendVerificationMail = createAsyncThunk(
   }
 );
 
-// verify user
+// ✅ UPDATED: verify user - refresh user data after verification
 export const verifyUser = createAsyncThunk(
   "auth/verifyUser",
   async (verificationToken, thunkAPI) => {
     try {
-      return await authService.verifyUser(verificationToken);
+      const response = await authService.verifyUser(verificationToken);
+      // ✅ Auto-fetch fresh user data after verification
+      await thunkAPI.dispatch(getUser());
+      return response;
     } catch (error) {
       const message =
         (error.response &&
@@ -255,12 +261,15 @@ export const sendLoginCode = createAsyncThunk(
   }
 );
 
-// login with code 2FA
+// ✅ UPDATED: login with code 2FA - fetch user data after successful login
 export const loginWithCode = createAsyncThunk(
   "auth/loginWithCode",
   async ({ code, email }, thunkAPI) => {
     try {
-      return await authService.loginWithCode(code, email);
+      const response = await authService.loginWithCode(code, email);
+      // ✅ Auto-fetch fresh user data after 2FA login
+      await thunkAPI.dispatch(getUser());
+      return response;
     } catch (error) {
       const message =
         (error.response &&
@@ -273,12 +282,15 @@ export const loginWithCode = createAsyncThunk(
   }
 );
 
-// login With Google
+// ✅ UPDATED: login With Google - fetch user data after successful login
 export const loginWithGoogle = createAsyncThunk(
   "auth/loginWithGoogle",
   async (userToken, thunkAPI) => {
     try {
-      return await authService.loginWithGoogle(userToken);
+      const response = await authService.loginWithGoogle(userToken);
+      // ✅ Auto-fetch fresh user data after Google login
+      await thunkAPI.dispatch(getUser());
+      return response;
     } catch (error) {
       const message =
         (error.response &&
@@ -300,14 +312,15 @@ const authSlice = createSlice({
       state.isSuccess = false;
       state.isLoading = false;
       state.message = "";
+      state.twoFactor = false; // ✅ Also reset twoFactor flag
     },
-    // ✅ NEW: Clear users cache
+    // Clear users cache
     clearUsersCache(state) {
       state.users = null;
       state.usersLastFetched = null;
       console.log("🗑️ Users cache cleared");
     },
-    // ✅ NEW: Update single user in cache
+    // Update single user in cache
     updateUserInCache(state, action) {
       if (state.users?.data) {
         const index = state.users.data.findIndex(
@@ -319,13 +332,20 @@ const authSlice = createSlice({
         }
       }
     },
-    // ✅ NEW: Remove user from cache
+    // Remove user from cache
     removeUserFromCache(state, action) {
       if (state.users?.data) {
         state.users.data = state.users.data.filter(
           (u) => u._id !== action.payload
         );
         console.log("🗑️ User removed from cache:", action.payload);
+      }
+    },
+    // ✅ NEW: Manual user update for verification status
+    updateCurrentUser(state, action) {
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+        console.log("✏️ Current user updated:", action.payload);
       }
     },
   },
@@ -340,7 +360,6 @@ const authSlice = createSlice({
         state.isSuccess = true;
         state.isLoading = false;
         state.message = "User added successfully";
-        // ✅ Clear cache after adding new user
         state.users = null;
         state.usersLastFetched = null;
         toast.success("User added successfully");
@@ -359,9 +378,9 @@ const authSlice = createSlice({
       .addCase(login.fulfilled, (state, action) => {
         state.isSuccess = true;
         state.isLoading = false;
-        state.message = true;
-        state.user = action.payload;
         state.isLoggedIn = true;
+        // ✅ Set basic user data, full data will be fetched by getUser
+        state.user = action.payload;
         toast.success("Login Successful");
       })
       .addCase(login.rejected, (state, action) => {
@@ -371,7 +390,10 @@ const authSlice = createSlice({
         state.user = null;
         state.isLoggedIn = false;
         toast.error(action.payload);
-        if (action.payload.includes("New Browser")) {
+        if (
+          action.payload?.includes("New Browser") ||
+          action.payload?.includes("new browser")
+        ) {
           state.twoFactor = true;
         }
       })
@@ -385,7 +407,6 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.user = null;
         state.isLoggedIn = false;
-        // ✅ Clear users cache on logout
         state.users = null;
         state.usersLastFetched = null;
         toast.success(action.payload);
@@ -410,6 +431,7 @@ const authSlice = createSlice({
         state.isError = true;
         state.isLoading = false;
         state.message = action.payload;
+        state.isLoggedIn = false; // ✅ Set to false on error
       })
 
       // get user
@@ -421,15 +443,19 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isLoggedIn = true;
         state.user = action.payload;
+        console.log(
+          "✅ User data refreshed:",
+          action.payload?.data?.isVerified
+        );
       })
       .addCase(getUser.rejected, (state, action) => {
         state.isError = true;
         state.isLoading = false;
         state.message = action.payload;
-        toast.error(action.payload);
+        // Don't show toast for getUser failures - happens silently
       })
 
-      // ✅ get users - WITH CACHE TRACKING
+      // get users - WITH CACHE TRACKING
       .addCase(getUsers.pending, (state) => {
         state.usersLoading = true;
       })
@@ -437,7 +463,7 @@ const authSlice = createSlice({
         state.isSuccess = true;
         state.usersLoading = false;
         state.users = action.payload;
-        state.usersLastFetched = Date.now(); // ✅ Track when fetched
+        state.usersLastFetched = Date.now();
       })
       .addCase(getUsers.rejected, (state, action) => {
         state.isError = true;
@@ -471,6 +497,7 @@ const authSlice = createSlice({
         state.isSuccess = true;
         state.isLoading = false;
         state.message = action.payload;
+        // ✅ User data will be updated by the getUser call in the thunk
         toast.success(action.payload);
       })
       .addCase(verifyUser.rejected, (state, action) => {
@@ -539,7 +566,6 @@ const authSlice = createSlice({
         state.isSuccess = true;
         state.isLoading = false;
         state.message = action.payload;
-        // ✅ Clear cache after deleting user
         state.users = null;
         state.usersLastFetched = null;
         toast.success(action.payload);
@@ -577,8 +603,8 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isLoggedIn = true;
         state.twoFactor = false;
-        state.user = action.payload;
-        toast.success(action.payload);
+        // ✅ User data will be updated by getUser call in thunk
+        toast.success("Login Successful");
       })
       .addCase(loginWithCode.rejected, (state, action) => {
         state.isError = true;
@@ -596,7 +622,7 @@ const authSlice = createSlice({
         state.isSuccess = true;
         state.isLoading = false;
         state.isLoggedIn = true;
-        state.user = action.payload;
+        // ✅ User data will be updated by getUser call in thunk
         toast.success("Login Successful");
       })
       .addCase(loginWithGoogle.rejected, (state, action) => {
@@ -614,6 +640,7 @@ export const {
   clearUsersCache,
   updateUserInCache,
   removeUserFromCache,
+  updateCurrentUser,
 } = authSlice.actions;
 
 export const selectIsLoggedIn = (state) => state.auth.isLoggedIn;

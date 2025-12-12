@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext } from "react";
+import { useState, useEffect, createContext, useRef, useMemo } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -28,10 +28,8 @@ import { Alert, Skeleton } from "antd";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import CurrentDayCauseList from "./CurrentDayCauseList";
 import VerifyAccountNotice from "./VerifyAccountNotice";
-
 import QuickActionsPanel from "./QuickActionsPanel";
 
-// Context for year for search filter
 export const PaymentFiltersContext = createContext();
 
 const Dashboard = () => {
@@ -40,9 +38,13 @@ const Dashboard = () => {
   const { user } = useSelector((state) => state.auth);
   const userId = user?.data?._id;
   const year = new Date().getFullYear();
-  const [yearMonth, setYearMonth] = useState(new Date().getFullYear());
-  const [yearEachMonth, setYearEachMonth] = useState(new Date().getFullYear());
-  const [month, setMonth] = useState(new Date().getMonth() + 1);
+  const currentMonth = new Date().getMonth() + 1;
+
+  const [yearMonth, setYearMonth] = useState(year);
+  const [yearEachMonth, setYearEachMonth] = useState(year);
+  const [month, setMonth] = useState(currentMonth);
+
+  const hasInitialized = useRef(false);
 
   const { error: userError, dataFetcher: dataFetcherUser } = useDataFetch();
   const {
@@ -67,135 +69,132 @@ const Dashboard = () => {
   const {
     fetchData,
     fetchBatch,
-    refreshData,
-    cases,
     users,
     tasks,
     reports,
     totalBalanceOnPayments,
     accountOfficerAggregates,
-    casesByStatus,
-    casesByCourt,
-    casesByNature,
-    casesByRating,
-    casesByMode,
-    casesByCategory,
-    casesByClient,
-    casesByAccountOfficer,
-    monthlyNewCases,
-    yearlyNewCases,
-    dashboardStats, // ✅ Add this from the new endpoint
+    dashboardStats,
     error: dataError,
     loading: dataLoading,
   } = useDataGetterHook();
 
   const { isAdminOrHr, isStaff, isClient, isVerified } = useAdminHook();
   const { lawyerCount, clientCount, staff } = useUsersCount(users);
-  // ✅ SINGLE API CALL for all dashboard stats
-  // useEffect(() => {
-  //   const fetchDashboardData = async () => {
-  //     try {
-  //       // Fetch dashboard stats in one call
-  //       await fetchData("cases/dashboard-stats", "dashboardStats");
 
-  //       // Fetch other essential data in parallel
-  //       await fetchBatch([
-  //         { endpoint: "cases", key: "cases" },
-  //         { endpoint: "users", key: "users" },
-  //         { endpoint: "reports", key: "reports" },
-  //         { endpoint: "tasks", key: "tasks" },
-  //         { endpoint: "reports/upcoming", key: "causeList" },
-  //         { endpoint: "payments/totalBalance", key: "totalBalanceOnPayments" },
-  //       ]);
-  //     } catch (error) {
-  //       console.error("Error fetching dashboard data:", error);
-  //     }
-  //   };
-
-  //   fetchDashboardData();
-  // }, [fetchData, fetchBatch]);
-  // In your Dashboard component, replace the current useEffect with this:
+  // ✅ SINGLE initialization effect
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        // ✅ SINGLE CALL for all case statistics
-        await fetchData("cases/dashboard-stats", "dashboardStats");
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
 
-        // ✅ Essential data in parallel
-        await fetchBatch([
-          { endpoint: "users", key: "users" },
-          { endpoint: "reports", key: "reports" },
-          { endpoint: "tasks", key: "tasks" },
-          { endpoint: "reports/upcoming", key: "causeList" },
-          { endpoint: "payments/totalBalance", key: "totalBalanceOnPayments" },
-          {
-            endpoint: "cases/account-officers/aggregate",
-            key: "accountOfficerAggregates",
-          },
+    const initializeDashboard = async () => {
+      try {
+        // Fetch all essential data in parallel
+        await Promise.all([
+          fetchData("cases/dashboard-stats", "dashboardStats"),
+          fetchBatch([
+            { endpoint: "users", key: "users" },
+            { endpoint: "reports", key: "reports" },
+            { endpoint: "tasks", key: "tasks" },
+            { endpoint: "reports/upcoming", key: "causeList" },
+            {
+              endpoint: "payments/totalBalance",
+              key: "totalBalanceOnPayments",
+            },
+            {
+              endpoint: "cases/account-officers/aggregate",
+              key: "accountOfficerAggregates",
+            },
+          ]),
         ]);
+
+        // Fetch payment data for admin users only
+        if (isAdminOrHr) {
+          await Promise.all([
+            dataFetcherYear(`payments/totalPayments/${year}`, "GET"),
+            dataFetcherMonth(
+              `payments/totalPayments/${yearMonth}/${month}`,
+              "GET"
+            ),
+            dataFetcherEachMonth(
+              `payments/totalPaymentsByMonthInYear/${yearEachMonth}`,
+              "GET"
+            ),
+          ]);
+        }
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+        console.error("Dashboard initialization error:", error);
       }
     };
 
-    fetchDashboardData();
-  }, [fetchData, fetchBatch]);
+    initializeDashboard();
+  }, []); // ✅ Only run once on mount
 
-  // ✅ Separate effect for user-specific data
-  useEffect(() => {
-    if (userId) {
-      dataFetcherUser(`users/${userId}`, "GET");
-    }
-  }, [userId, dataFetcherUser]);
+  // ✅ Memoize expensive computations
+  const dashboardData = useMemo(
+    () => dashboardStats?.data || {},
+    [dashboardStats]
+  );
 
-  // ✅ Separate effects for payment data (only when params change)
-  useEffect(() => {
-    if (year) {
-      dataFetcherYear(`payments/totalPayments/${year}`, "GET");
-    }
-  }, [year, dataFetcherYear]);
+  const effectiveCasesByStatus = useMemo(
+    () => dashboardData.casesByStatus || [],
+    [dashboardData.casesByStatus]
+  );
 
-  useEffect(() => {
-    if (month && yearMonth) {
-      dataFetcherMonth(`payments/totalPayments/${yearMonth}/${month}`, "GET");
-    }
-  }, [month, yearMonth, dataFetcherMonth]);
+  const effectiveCasesByCourt = useMemo(
+    () => dashboardData.casesByCourt || [],
+    [dashboardData.casesByCourt]
+  );
 
-  useEffect(() => {
-    if (yearEachMonth) {
-      dataFetcherEachMonth(
-        `payments/totalPaymentsByMonthInYear/${yearEachMonth}`,
-        "GET"
-      );
-    }
-  }, [yearEachMonth, dataFetcherEachMonth]);
+  const effectiveCasesByNature = useMemo(
+    () => dashboardData.casesByNature || [],
+    [dashboardData.casesByNature]
+  );
 
-  // ✅ Extract data from dashboardStats response
-  const dashboardData = dashboardStats?.data || {};
+  const effectiveCasesByRating = useMemo(
+    () => dashboardData.casesByRating || [],
+    [dashboardData.casesByRating]
+  );
 
-  // Use dashboard data if available, fallback to individual endpoints for backward compatibility
-  const effectiveCasesByStatus =
-    dashboardData.casesByStatus || casesByStatus?.data || [];
-  const effectiveCasesByCourt =
-    dashboardData.casesByCourt || casesByCourt?.data || [];
-  const effectiveCasesByNature =
-    dashboardData.casesByNature || casesByNature?.data || [];
-  const effectiveCasesByRating =
-    dashboardData.casesByRating || casesByRating?.data || [];
-  const effectiveCasesByMode =
-    dashboardData.casesByMode || casesByMode?.data || [];
-  const effectiveCasesByCategory =
-    dashboardData.casesByCategory || casesByCategory?.data || [];
-  const effectiveCasesByClient =
-    dashboardData.casesByClient || casesByClient?.data || [];
-  const effectiveCasesByAccountOfficer =
-    dashboardData.casesByAccountOfficer || casesByAccountOfficer?.data || [];
-  const effectiveMonthlyNewCases =
-    dashboardData.monthlyNewCases || monthlyNewCases?.data || [];
-  const effectiveYearlyNewCases =
-    dashboardData.yearlyNewCases || yearlyNewCases?.data || [];
-  const totalCases = dashboardData.totalCases || cases?.pagination?.total || 0;
-  const activeCases = dashboardData.activeCases || 0;
+  const effectiveCasesByMode = useMemo(
+    () => dashboardData.casesByMode || [],
+    [dashboardData.casesByMode]
+  );
+
+  const effectiveCasesByCategory = useMemo(
+    () => dashboardData.casesByCategory || [],
+    [dashboardData.casesByCategory]
+  );
+
+  const effectiveCasesByClient = useMemo(
+    () => dashboardData.casesByClient || [],
+    [dashboardData.casesByClient]
+  );
+
+  const effectiveCasesByAccountOfficer = useMemo(
+    () => dashboardData.casesByAccountOfficer || [],
+    [dashboardData.casesByAccountOfficer]
+  );
+
+  const effectiveMonthlyNewCases = useMemo(
+    () => dashboardData.monthlyNewCases || [],
+    [dashboardData.monthlyNewCases]
+  );
+
+  const effectiveYearlyNewCases = useMemo(
+    () => dashboardData.yearlyNewCases || [],
+    [dashboardData.yearlyNewCases]
+  );
+
+  const totalCases = useMemo(
+    () => dashboardData.totalCases || 0,
+    [dashboardData.totalCases]
+  );
+
+  const activeCases = useMemo(
+    () => dashboardData.activeCases || 0,
+    [dashboardData.activeCases]
+  );
 
   if (userError) return <Alert message={userError} type="error" showIcon />;
 
@@ -213,19 +212,15 @@ const Dashboard = () => {
         </div>
 
         <ShowStaff>
-          {/* Events and Quick Actions */}
           <ScrollingEvents />
-
           <QuickActionsPanel />
         </ShowStaff>
 
-        {/* Client's Dashboard */}
         {isClient && <ClientDashboard />}
 
         {isStaff && (
           <>
-            {/* Data count cards with skeleton loading */}
-            {dataLoading.dashboardStats || dataLoading.cases ? (
+            {dataLoading.dashboardStats ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {[1, 2, 3, 4].map((i) => (
                   <Skeleton.Button
@@ -237,24 +232,19 @@ const Dashboard = () => {
                 ))}
               </div>
             ) : (
-              // In your Dashboard component, update the DashBoardDataCount usage:
               <DashBoardDataCount
-                cases={cases}
                 staff={staff}
                 lawyerCount={lawyerCount}
                 clientCount={clientCount}
-                // ✅ NEW: Pass optimized data
                 totalCases={totalCases}
                 activeCases={activeCases}
                 dashboardStats={dashboardStats}
-                loading={dataLoading.dashboardStats || dataLoading.cases}
-                // trends={/* your trend data */}
+                loading={dataLoading.dashboardStats}
               />
             )}
 
             <div className="container mx-auto mt-2">
               <div className="flex flex-wrap -mx-4">
-                {/* Latest Reports and Cause List */}
                 <div className="flex-none gap-4 w-full px-4 mb-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg shadow-md w-full items-start">
                     <div className="bg-gradient-to-br from-white to-blue-50/50 border border-gray-200 rounded-2xl shadow-sm h-[400px] w-full flex flex-col">
@@ -284,10 +274,8 @@ const Dashboard = () => {
                   </div>
                 </div>
 
-                {/* Components Grid */}
                 <div className="w-full px-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* Tasks and Todo - Show immediately if data available */}
                     {dataLoading.tasks ? (
                       <Skeleton active paragraph={{ rows: 6 }} />
                     ) : (
@@ -299,7 +287,6 @@ const Dashboard = () => {
 
                     <TodoList />
 
-                    {/* Charts with skeleton loading - using dashboard data */}
                     {dataLoading.dashboardStats ? (
                       <Skeleton.Node
                         active
@@ -341,7 +328,6 @@ const Dashboard = () => {
                       <CaseCountsByYearChart data={effectiveYearlyNewCases} />
                     )}
 
-                    {/* Admin components */}
                     <ShowAdminComponent>
                       {fetchLoadingMonth ? (
                         <Skeleton.Node
@@ -391,7 +377,6 @@ const Dashboard = () => {
               </div>
             </div>
 
-            {/* Status Charts with skeleton loading - using dashboard data */}
             <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
               {dataLoading.dashboardStats ? (
                 <Skeleton.Node active style={{ width: "100%", height: 300 }} />

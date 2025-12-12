@@ -13,7 +13,6 @@ import Profile from "./pages/Profile.jsx";
 import CreateCaseForm from "./pages/CreateCaseForm.jsx";
 import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
 import UpdateCase from "./pages/UpdateCase.jsx";
-// import TaskReminderForm from "./components/TaskReminderForm.jsx";
 import CaseDetails from "./pages/CaseDetails.jsx";
 import Error from "./components/Error.jsx";
 import { Result, Button } from "antd";
@@ -38,7 +37,7 @@ import VerifyAccount from "./components/VerifyAccount.jsx";
 import axios from "axios";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getLoginStatus, getUser } from "./redux/features/auth/authSlice.js";
 import { setLoading } from "./redux/features/loader/loadingSlice.js";
@@ -47,7 +46,6 @@ import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
 import LoginWithCode from "./components/LoginWithCode.jsx";
 import LeaveBalanceList from "./pages/leaveBalanceList.jsx";
-// import DocumentForm from "./pages/DocumentsForm.jsx";
 import ContactForm from "./components/ContactForm.jsx";
 import EventDetail from "./pages/EventDetail.jsx";
 import {
@@ -68,25 +66,27 @@ import SoftDeletedReportsArchive from "./pages/SoftDeletedReportsArchive.jsx";
 import InvoiceList from "./pages/InvoiceList.jsx";
 import AddClientForm from "./components/AddClientForm.jsx";
 import DocumentsList from "./components/DocumentsList.jsx";
-import AuthChecker from "./components/AuthChecker.jsx";
 
-// import EditTaskForm from "./pages/EditTaskForm.jsx";
-
-// enable axios to get credentials everywhere in the app
+// Enable axios credentials
 axios.defaults.withCredentials = true;
 
 function App() {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.loading);
   const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
+    // ✅ Only run ONCE on mount
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     async function initialAuthCheck() {
       dispatch(setLoading(true));
       try {
         const loginStatus = await dispatch(getLoginStatus()).unwrap();
         if (loginStatus) {
-          await dispatch(getUser());
+          await dispatch(getUser()).unwrap();
         }
       } catch (error) {
         console.error("Initial auth check failed:", error);
@@ -95,9 +95,8 @@ function App() {
       }
     }
 
-    // Only run on initial mount
     initialAuthCheck();
-  }, [dispatch]);
+  }, []); // ✅ Empty dependency array - run once only
 
   const router = createBrowserRouter(
     createRoutesFromElements(
@@ -119,18 +118,16 @@ function App() {
             />
           }
         />
-        {/* <Route element={<AppLayout />}> */}
 
         <Route path="/users/login" element={<Login />} />
         <Route path="/forgotpassword" element={<ForgotPassword />} />
         <Route path="/resetPassword/:token" element={<ForgotPasswordReset />} />
-
         <Route path="/loginWithCode/:email" element={<LoginWithCode />} />
         <Route
           path="dashboard/verify-account/:token"
           element={<VerifyAccount />}
         />
-        {/* <Route element={<ShowOnLoginAndRedirect />}> */}
+
         <Route path="dashboard" element={<DashboardLayout />}>
           <Route index element={<Dashboard />} />
           <Route path="staff/add-user" element={<AddUserForm />} />
@@ -233,9 +230,7 @@ function App() {
             }
           />
 
-          {/* <Route path="tasks/reminder/:id" element={<TaskReminderForm />} /> */}
           <Route path="tasks/:id/details" element={<TaskDetails />} />
-          {/* <Route path="tasks/:id/update" element={<EditTaskForm />} /> */}
 
           <Route
             path="clients"
@@ -248,8 +243,6 @@ function App() {
           <Route path="clients/add-client" element={<AddClientForm />} />
           <Route path="clients/:id/details" element={<ClientDetails />} />
 
-          {/* billing/payment/invoice */}
-          {/* <Route path="billings/invoices/:id/update" element={<BillingAndPaymentsRoute element={<UpdateInvoice />} />} /> */}
           <Route
             path="billings"
             element={
@@ -276,7 +269,7 @@ function App() {
             path="billings/payments/client/:clientId/case/:caseId"
             element={<PaymentMadeOnCase />}
           />
-          {/* /////////////////////////////////// */}
+
           <Route
             path="cause-list"
             element={
@@ -295,14 +288,11 @@ function App() {
           />
         </Route>
       </Route>
-      // </Route>
-      // </Route>
     )
   );
 
   return (
     <>
-      <AuthChecker />
       {isLoading ? (
         <LoadingSpinner />
       ) : (
@@ -310,9 +300,8 @@ function App() {
           <RouterProvider router={router} />
           <ToastContainer
             hideProgressBar={true}
-            autoClose="4000"
+            autoClose={4000}
             toastStyle={{
-              // height: "40px",
               fontSize: "14px",
             }}
           />
