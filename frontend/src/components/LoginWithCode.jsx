@@ -1,5 +1,5 @@
 // components/LoginWithCode.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Button,
   Card,
@@ -41,6 +41,10 @@ const LoginWithCode = () => {
   const [countdown, setCountdown] = useState(0);
   const { email } = useParams();
 
+  // ✅ Prevent auto-submit infinite loop
+  const hasAutoSubmitted = useRef(false);
+  const lastSubmittedCode = useRef("");
+
   const { loginCode } = userLoginCode;
 
   // Countdown timer for resend
@@ -71,7 +75,9 @@ const LoginWithCode = () => {
 
   // Function to login user with code
   const loginUserWithCode = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) {
+      e.preventDefault();
+    }
 
     if (!loginCode || loginCode.trim() === "") {
       toast.error("Please enter your verification code");
@@ -88,12 +94,22 @@ const LoginWithCode = () => {
       return;
     }
 
+    // ✅ Prevent duplicate submissions
+    if (lastSubmittedCode.current === loginCode) {
+      console.log("Code already submitted, skipping...");
+      return;
+    }
+
     const code = { loginCode };
+    lastSubmittedCode.current = loginCode;
+
     try {
       // ✅ The thunk will handle fetching fresh user data
       await dispatch(loginWithCode({ code, email })).unwrap();
     } catch (error) {
-      // Error handling is done in the slice
+      // Reset on error so user can retry
+      lastSubmittedCode.current = "";
+      hasAutoSubmitted.current = false;
     }
   };
 
@@ -113,15 +129,32 @@ const LoginWithCode = () => {
     // Only allow numbers and limit to 6 digits
     const numericValue = value.replace(/\D/g, "").slice(0, 6);
     setUserLoginCode({ loginCode: numericValue });
+
+    // ✅ Reset submission flags when user changes code
+    if (numericValue.length < 6) {
+      hasAutoSubmitted.current = false;
+      lastSubmittedCode.current = "";
+    }
   };
 
-  // Auto-submit when 6 digits are entered
+  // ✅ FIXED: Auto-submit when 6 digits are entered (only once)
   useEffect(() => {
-    if (loginCode.length === 6 && !isLoading) {
-      const code = { loginCode };
-      dispatch(loginWithCode({ code, email }));
+    // Only auto-submit if:
+    // 1. Code is 6 digits
+    // 2. Not currently loading
+    // 3. Haven't already auto-submitted this code
+    // 4. This code is different from last submitted
+    if (
+      loginCode.length === 6 &&
+      !isLoading &&
+      !hasAutoSubmitted.current &&
+      lastSubmittedCode.current !== loginCode
+    ) {
+      console.log("Auto-submitting code:", loginCode);
+      hasAutoSubmitted.current = true;
+      loginUserWithCode();
     }
-  }, [loginCode, dispatch, email, isLoading]);
+  }, [loginCode, isLoading]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -191,6 +224,7 @@ const LoginWithCode = () => {
                 className="text-center text-2xl font-bold tracking-widest h-14"
                 autoFocus
                 autoComplete="one-time-code"
+                disabled={isLoading}
               />
             </Form.Item>
 
@@ -199,7 +233,7 @@ const LoginWithCode = () => {
               {Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={index}
-                  className={`w-3 h-3 rounded-full ${
+                  className={`w-3 h-3 rounded-full transition-colors ${
                     index < loginCode.length ? "bg-blue-500" : "bg-gray-300"
                   }`}
                 />
@@ -232,7 +266,7 @@ const LoginWithCode = () => {
                 type="link"
                 onClick={reSendUserLoginCode}
                 loading={resendLoading}
-                disabled={countdown > 0}
+                disabled={countdown > 0 || isLoading}
                 icon={<ReloadOutlined />}
                 className="p-0 h-auto">
                 Resend Verification Code
@@ -247,7 +281,10 @@ const LoginWithCode = () => {
             {/* Back to Login */}
             <div className="text-center">
               <Link to="/users/login">
-                <Button type="text" icon={<ArrowLeftOutlined />}>
+                <Button
+                  type="text"
+                  icon={<ArrowLeftOutlined />}
+                  disabled={isLoading}>
                   Back to Login
                 </Button>
               </Link>

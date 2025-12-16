@@ -68,13 +68,12 @@ const TaskDetails = () => {
   const { user } = useSelector((state) => state.auth);
   const task = data?.data;
   const currentUser = user?.data?._id;
-  // const assignedById = task?.assignedBy?._id;
-  // const isAssignedBy = currentUser === assignedById;
-  // Calculate if current user is the task creator
   const isAssignedBy = task?.createdBy?._id === user?.data?._id;
   const [activeTab, setActiveTab] = useState("overview");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const screens = useBreakpoint();
+
+  console.log("Task Data:", task);
 
   // Use the new useFileManager hook
   const fileManager = useFileManager("Task", id, {

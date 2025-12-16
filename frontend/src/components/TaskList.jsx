@@ -41,7 +41,6 @@ import { toast } from "react-toastify";
 import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "./PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
-// import "./TaskList.css"; // Optional CSS for additional styling
 
 const { Search } = Input;
 const { Option } = Select;
@@ -65,7 +64,7 @@ const TaskList = () => {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
-  const [viewMode, setViewMode] = useState("table"); // 'table' or 'card'
+  const [viewMode, setViewMode] = useState("table");
 
   useRedirectLogoutUser("/users/login");
 
@@ -79,13 +78,39 @@ const TaskList = () => {
     if (isSuccess) {
       toast.success(message);
       dispatch(RESET());
-      fetchData();
+      fetchData("tasks", "tasks");
     }
     if (isError) {
       toast.error(message);
       dispatch(RESET());
     }
   }, [isSuccess, isError, message, dispatch, fetchData]);
+
+  // ✅ FIXED: Better permission check function
+  const canEdit = useCallback(
+    (record) => {
+      const currentUserId = user?.data?._id;
+
+      // Handle both object and string assignedBy
+      const assignedById =
+        typeof record?.assignedBy === "object"
+          ? record?.assignedBy?._id
+          : record?.assignedBy;
+
+      const hasPermission = currentUserId === assignedById || isSuperOrAdmin;
+
+      console.log("🔐 Edit Permission Check:", {
+        taskId: record?.id,
+        currentUserId,
+        assignedById,
+        isSuperOrAdmin,
+        hasPermission,
+      });
+
+      return hasPermission;
+    },
+    [user?.data?._id, isSuperOrAdmin]
+  );
 
   // Handle delete with confirmation
   const deleteTask = useCallback(
@@ -213,7 +238,7 @@ const TaskList = () => {
     }
   };
 
-  // Table columns
+  // ✅ FIXED: Table columns with proper permission check
   const columns = [
     {
       title: "Task",
@@ -273,9 +298,7 @@ const TaskList = () => {
           return <span className="text-gray-400">Unassigned</span>;
         }
 
-        // Check if assignees is already populated with user data
         const displayUsers = assignees.map((assignee) => {
-          // If user data is already populated on the assignee object
           if (assignee.user && typeof assignee.user === "object") {
             return {
               ...assignee.user,
@@ -283,8 +306,6 @@ const TaskList = () => {
               isClient: assignee.isClient,
             };
           }
-          // If user is just an ID, we need to handle it differently
-          // (but this shouldn't happen if backend is populating properly)
           return {
             _id: assignee.user,
             firstName: "User",
@@ -299,34 +320,18 @@ const TaskList = () => {
             {displayUsers.slice(0, 2).map((user, index) => (
               <div key={index} className="flex items-center gap-1 text-xs">
                 <UserOutlined
-                  className={`${
-                    user.isClient ? "text-green-500" : "text-blue-500"
-                  }`}
+                  className={user.isClient ? "text-green-500" : "text-blue-500"}
                 />
                 <span className="line-clamp-1">
                   {user.firstName} {user.lastName}
                 </span>
-                {/* {user.role === "primary" && (
-                  <Badge
-                    size="small"
-                    style={{
-                      backgroundColor: "#1890ff",
-                      fontSize: "8px",
-                      padding: "0 4px",
-                    }}>
-                    Primary
-                  </Badge>
-                )} */}
               </div>
             ))}
             {assignees.length > 2 && (
               <Badge
                 count={`+${assignees.length - 2}`}
                 size="small"
-                style={{
-                  backgroundColor: "#d9d9d9",
-                  color: "#666",
-                }}
+                style={{ backgroundColor: "#d9d9d9", color: "#666" }}
               />
             )}
           </div>
@@ -341,9 +346,9 @@ const TaskList = () => {
       render: (dueDate, record) => (
         <div className="text-xs">
           <div
-            className={`${
+            className={
               record.isOverdue ? "text-red-500 font-semibold" : "text-gray-600"
-            }`}>
+            }>
             {formatDate(dueDate)}
           </div>
           {record.isOverdue && (
@@ -355,11 +360,12 @@ const TaskList = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 100,
+      width: 120,
       fixed: "right",
       render: (text, record) => {
-        const canEdit = user?.data?._id === record?.assignedBy?._id;
+        const hasEditPermission = canEdit(record);
 
+        // ✅ Build menu items properly
         const menuItems = [
           {
             key: "view",
@@ -372,47 +378,53 @@ const TaskList = () => {
               </Link>
             ),
           },
-          ...(canEdit
-            ? [
-                {
-                  key: "edit",
-                  label: (
-                    <Link to={`#${record.id}/update`}>
-                      <Space>
-                        <EditOutlined />
-                        Edit Task
-                      </Space>
-                    </Link>
-                  ),
-                },
-                {
-                  key: "reminder",
-                  label: <TaskReminderForm id={record?.id} />,
-                },
-                {
-                  key: "delete",
-                  label: (
-                    <Space
-                      onClick={() => {
-                        Modal.confirm({
-                          title: "Delete Task",
-                          content:
-                            "Are you sure you want to delete this task? This action cannot be undone.",
-                          okText: "Delete",
-                          okType: "danger",
-                          cancelText: "Cancel",
-                          onOk: () => deleteTask(record?.id),
-                        });
-                      }}
-                      className="text-red-500 hover:text-red-700 cursor-pointer">
-                      <DeleteOutlined />
-                      Delete
-                    </Space>
-                  ),
-                },
-              ]
-            : []),
         ];
+
+        // ✅ Add edit/delete items conditionally
+        if (hasEditPermission) {
+          menuItems.push(
+            {
+              key: "edit",
+              label: (
+                <Link to={`#${record.id}/update`}>
+                  <Space>
+                    <EditOutlined />
+                    Edit Task
+                  </Space>
+                </Link>
+              ),
+            },
+            {
+              key: "reminder",
+              label: <TaskReminderForm id={record?.id} />,
+            },
+            {
+              key: "divider",
+              type: "divider",
+            },
+            {
+              key: "delete",
+              danger: true,
+              label: (
+                <Space>
+                  <DeleteOutlined />
+                  Delete
+                </Space>
+              ),
+              onClick: () => {
+                Modal.confirm({
+                  title: "Delete Task",
+                  content:
+                    "Are you sure you want to delete this task? This action cannot be undone.",
+                  okText: "Delete",
+                  okType: "danger",
+                  cancelText: "Cancel",
+                  onOk: () => deleteTask(record?.id),
+                });
+              },
+            }
+          );
+        }
 
         return (
           <Space size="small">
@@ -421,6 +433,19 @@ const TaskList = () => {
                 <Button type="text" icon={<EyeOutlined />} size="small" />
               </Tooltip>
             </Link>
+
+            {hasEditPermission && (
+              <Tooltip title="Edit Task">
+                <Link to={`#${record.id}/update`}>
+                  <Button
+                    type="text"
+                    icon={<EditOutlined />}
+                    size="small"
+                    className="text-blue-500 hover:text-blue-700"
+                  />
+                </Link>
+              </Tooltip>
+            )}
 
             <Dropdown
               menu={{ items: menuItems }}
@@ -434,10 +459,67 @@ const TaskList = () => {
     },
   ];
 
-  // Card view component
+  // ✅ FIXED: Card view component
   const TaskCard = ({ task }) => {
     const statusConfig = getStatusConfig(task.status, task.isOverdue);
-    const canEdit = user?.data?._id === task?.assignedBy?._id;
+    const hasEditPermission = canEdit(task);
+
+    const cardMenuItems = [
+      {
+        key: "view",
+        label: (
+          <Link to={`${task?.id}/details`}>
+            <Space>
+              <EyeOutlined />
+              View Details
+            </Space>
+          </Link>
+        ),
+      },
+    ];
+
+    if (hasEditPermission) {
+      cardMenuItems.push(
+        {
+          key: "edit",
+          label: (
+            <Link to={`#${task.id}/update`}>
+              <Space>
+                <EditOutlined />
+                Edit
+              </Space>
+            </Link>
+          ),
+        },
+        {
+          key: "reminder",
+          label: <TaskReminderForm id={task?.id} />,
+        },
+        {
+          key: "divider",
+          type: "divider",
+        },
+        {
+          key: "delete",
+          danger: true,
+          label: (
+            <Space>
+              <DeleteOutlined />
+              Delete
+            </Space>
+          ),
+          onClick: () => {
+            Modal.confirm({
+              title: "Delete Task",
+              content: "Are you sure you want to delete this task?",
+              okText: "Delete",
+              okType: "danger",
+              onOk: () => deleteTask(task?.id),
+            });
+          },
+        }
+      );
+    }
 
     return (
       <Card
@@ -448,21 +530,21 @@ const TaskList = () => {
             {statusConfig.text}
           </Tag>
           <Tag
-            color={getPriorityColor(task.taskPriority)}
+            color={getPriorityColor(task?.taskPriority)}
             className="capitalize">
-            {task.taskPriority}
+            {task?.taskPriority}
           </Tag>
         </div>
 
         <Link to={`${task?.id}/details`} className="block mb-2">
           <h3 className="font-semibold text-gray-800 hover:text-blue-600 line-clamp-2 mb-1">
-            {task.title}
+            {task?.title}
           </h3>
         </Link>
 
         {task.description && (
           <p className="text-sm text-gray-600 line-clamp-2 mb-3">
-            {task.description}
+            {task?.description}
           </p>
         )}
 
@@ -495,51 +577,20 @@ const TaskList = () => {
               </Button>
             </Link>
 
-            {canEdit && (
-              <Dropdown
-                menu={{
-                  items: [
-                    {
-                      key: "edit",
-                      label: (
-                        <Link to={`#${task.id}/update`}>
-                          <Space>
-                            <EditOutlined />
-                            Edit
-                          </Space>
-                        </Link>
-                      ),
-                    },
-                    {
-                      key: "reminder",
-                      label: <TaskReminderForm id={task?.id} />,
-                    },
-                    {
-                      key: "delete",
-                      label: (
-                        <Space
-                          onClick={() => {
-                            Modal.confirm({
-                              title: "Delete Task",
-                              content:
-                                "Are you sure you want to delete this task?",
-                              okText: "Delete",
-                              okType: "danger",
-                              onOk: () => deleteTask(task?.id),
-                            });
-                          }}
-                          className="text-red-500 hover:text-red-700 cursor-pointer">
-                          <DeleteOutlined />
-                          Delete
-                        </Space>
-                      ),
-                    },
-                  ],
-                }}
-                placement="topRight">
-                <Button type="text" size="small" icon={<MoreOutlined />} />
-              </Dropdown>
+            {hasEditPermission && (
+              <Link to={`#${task.id}/update`}>
+                <Button type="link" size="small" icon={<EditOutlined />}>
+                  Edit
+                </Button>
+              </Link>
             )}
+
+            <Dropdown
+              menu={{ items: cardMenuItems }}
+              placement="topRight"
+              trigger={["click"]}>
+              <Button type="text" size="small" icon={<MoreOutlined />} />
+            </Dropdown>
           </Space>
 
           {task.referenceDocuments?.length > 0 && (
@@ -581,7 +632,6 @@ const TaskList = () => {
               Manage and track all your tasks in one place
             </p>
           </div>
-
           {isStaff && <CreateTaskForm />}
         </div>
 

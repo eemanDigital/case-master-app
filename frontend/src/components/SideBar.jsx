@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Menu } from "antd";
 import { RxDashboard } from "react-icons/rx";
@@ -8,26 +8,94 @@ import { IoBriefcaseSharp, IoHelpCircleOutline } from "react-icons/io5";
 import { TbLogout2, TbReport } from "react-icons/tb";
 import { FaFile, FaMoneyBill, FaTasks, FaUsers } from "react-icons/fa";
 import { AiOutlineSchedule } from "react-icons/ai";
+import { FaHandshake } from "react-icons/fa6";
 import avatar from "../assets/avatar.png";
 import { useRemovePhoto } from "../hooks/useRemovePhoto";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { logout, RESET } from "../redux/features/auth/authSlice";
 import { shortenText } from "../utils/shortenText";
-import { FaHandshake } from "react-icons/fa6";
 
 const SideBar = ({ isMobile, closeDrawer }) => {
   const { remove } = useRemovePhoto();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation(); // ✅ Get current location
   const { user } = useSelector((state) => state.auth);
   const { isClient, isUser } = useAdminHook();
   const [selectedKeys, setSelectedKeys] = useState(["dashboard"]);
+  const [openKeys, setOpenKeys] = useState([]); // ✅ For submenu state
 
-  // useEffect(() => {
-  //   const pathArray = location.pathname.split("/");
-  //   const key = pathArray.length > 1 ? pathArray[1] : "dashboard";
-  //   setSelectedKeys([key]);
-  // }, [location]);
+  // ✅ CRITICAL: Sync selectedKeys with current URL path
+  useEffect(() => {
+    const path = location.pathname;
+
+    // Dashboard
+    if (path === "/dashboard" || path === "/") {
+      setSelectedKeys(["dashboard"]);
+      setOpenKeys([]);
+    }
+    // Cases (including detail pages like /cases/:id/details)
+    else if (path.includes("/dashboard/cases")) {
+      setSelectedKeys(["cases"]);
+      setOpenKeys([]);
+    }
+    // Case Reports
+    else if (path.includes("/dashboard/case-reports")) {
+      setSelectedKeys(["case-reports"]);
+      setOpenKeys([]);
+    }
+    // Staff Management submenu items
+    else if (path.includes("/dashboard/staff/leave-application")) {
+      setSelectedKeys(["leave-application"]);
+      setOpenKeys(["staff-management"]); // ✅ Keep parent open
+    } else if (path.includes("/dashboard/staff/leave-balance")) {
+      setSelectedKeys(["leave-balance"]);
+      setOpenKeys(["staff-management"]);
+    } else if (path.includes("/dashboard/staff")) {
+      setSelectedKeys(["staff-list"]);
+      setOpenKeys(["staff-management"]);
+    }
+    // Cause List
+    else if (path.includes("/dashboard/cause-list")) {
+      setSelectedKeys(["cause-list"]);
+      setOpenKeys([]);
+    }
+    // Tasks
+    else if (path.includes("/dashboard/tasks")) {
+      setSelectedKeys(["tasks"]);
+      setOpenKeys([]);
+    }
+    // Clients
+    else if (path.includes("/dashboard/clients")) {
+      setSelectedKeys(["clients"]);
+      setOpenKeys([]);
+    }
+    // Documents
+    else if (path.includes("/dashboard/documents")) {
+      setSelectedKeys(["documents"]);
+      setOpenKeys([]);
+    }
+    // Billings
+    else if (path.includes("/dashboard/billings")) {
+      setSelectedKeys(["billings"]);
+      setOpenKeys([]);
+    }
+    // Contact
+    else if (path.includes("/dashboard/contact-dev")) {
+      setSelectedKeys(["contact-dev"]);
+      setOpenKeys([]);
+    }
+    // Profile or other pages
+    else if (path.includes("/dashboard/profile")) {
+      setSelectedKeys([]); // Don't highlight anything
+      setOpenKeys([]);
+    }
+    // Default
+    else {
+      setSelectedKeys(["dashboard"]);
+      setOpenKeys([]);
+    }
+  }, [location.pathname]); // ✅ Re-run whenever URL changes
 
   const handleLogout = async () => {
     dispatch(RESET());
@@ -52,11 +120,10 @@ const SideBar = ({ isMobile, closeDrawer }) => {
       icon: <TbReport />,
       label: <Link to="case-reports">Case Reports</Link>,
     },
-
     {
       key: "staff-management",
       icon: <FaUsers />,
-      label: <p>Staff Management</p>,
+      label: "Staff Management", // ✅ Fixed: Not a link, just label
       children: [
         {
           key: "staff-list",
@@ -87,7 +154,6 @@ const SideBar = ({ isMobile, closeDrawer }) => {
       icon: <FaHandshake />,
       label: <Link to="clients">Clients</Link>,
     },
-
     {
       key: "documents",
       icon: <FaFile />,
@@ -106,7 +172,11 @@ const SideBar = ({ isMobile, closeDrawer }) => {
     {
       key: "logout",
       icon: <TbLogout2 />,
-      label: <Link onClick={handleLogout}>Logout</Link>,
+      label: (
+        <span onClick={handleLogout} className="cursor-pointer">
+          Logout
+        </span>
+      ), // ✅ Fixed: Use span instead of Link for onClick
     },
   ];
 
@@ -126,15 +196,21 @@ const SideBar = ({ isMobile, closeDrawer }) => {
 
   // Handle menu click
   const handleMenuClick = (e) => {
-    setSelectedKeys([e.key]);
+    // Don't manually set selectedKeys here
+    // Let the useEffect handle it based on URL
     if (isMobile && closeDrawer) {
       closeDrawer();
     }
   };
 
+  // ✅ Handle submenu open/close
+  const handleOpenChange = (keys) => {
+    setOpenKeys(keys);
+  };
+
   return (
-    <div className="h-full flex flex-col ">
-      <div className="logo-vertical py-4 ">
+    <div className="h-full flex flex-col">
+      <div className="logo-vertical py-4">
         {!isClient ? (
           <div className="flex justify-center items-center">
             <Link to="profile" onClick={isMobile ? closeDrawer : undefined}>
@@ -146,7 +222,7 @@ const SideBar = ({ isMobile, closeDrawer }) => {
             </Link>
           </div>
         ) : (
-          <Link to="/profile" onClick={isMobile ? closeDrawer : undefined}>
+          <Link to="profile" onClick={isMobile ? closeDrawer : undefined}>
             <h1 className="text-gray-300 hover:text-gray-500 font-bold text-center">
               {shortenText(user?.data?.firstName, 10)}
             </h1>
@@ -157,8 +233,10 @@ const SideBar = ({ isMobile, closeDrawer }) => {
         theme="dark"
         mode="inline"
         selectedKeys={selectedKeys}
+        openKeys={openKeys} // ✅ Control which submenus are open
         items={filteredNavItems}
         onClick={handleMenuClick}
+        onOpenChange={handleOpenChange} // ✅ Handle submenu state
         className="flex-grow"
       />
     </div>
