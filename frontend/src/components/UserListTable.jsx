@@ -41,7 +41,7 @@ const UserListTable = ({
     <div className="overflow-x-auto font-medium font-poppins">
       <Table
         dataSource={dataSource}
-        scroll={{ x: 800 }}
+        scroll={{ x: 1000 }}
         loading={loading}
         pagination={false}
         rowKey="_id">
@@ -141,7 +141,7 @@ const UserListTable = ({
           <Column
             title="Action"
             key="action"
-            width={60}
+            width={70}
             fixed="right"
             render={(text, record) => (
               <Space size="small">
