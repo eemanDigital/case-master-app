@@ -5,7 +5,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import useModal from "../hooks/useModal";
 import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
 import useHandleSubmit from "../hooks/useHandleSubmit";
-import LoadingSpinner from "../components/LoadingSpinner";
 import { useDispatch } from "react-redux";
 import { getUsers } from "../redux/features/auth/authSlice";
 
