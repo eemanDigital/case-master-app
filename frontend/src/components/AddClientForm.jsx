@@ -51,7 +51,7 @@ const AddClientForm = () => {
 
         // Optionally navigate back to clients list after a delay
         setTimeout(() => {
-          navigate("/clients");
+          navigate("/dashboard/clients");
         }, 2000);
       }
     } catch (err) {
