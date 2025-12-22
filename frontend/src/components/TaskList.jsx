@@ -461,7 +461,7 @@ const TaskList = () => {
 
   // ✅ FIXED: Card view component
   const TaskCard = ({ task }) => {
-    const statusConfig = getStatusConfig(task.status, task.isOverdue);
+    const statusConfig = getStatusConfig(task?.status, task?.isOverdue);
     const hasEditPermission = canEdit(task);
 
     const cardMenuItems = [

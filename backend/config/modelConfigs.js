@@ -122,7 +122,7 @@ const modelConfigs = {
       "onlyDeleted",
     ],
     textFilterFields: ["position", "practiceArea"], // ✅ Partial matching
-    defaultSort: "firstName",
+    defaultSort: "-createdAt",
     maxLimit: 100,
     defaultPopulate: [],
   },

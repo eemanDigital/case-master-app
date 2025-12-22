@@ -176,49 +176,116 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("combined")); // More detailed in production
 }
 
-// Rate limiter function
-function rateLimiter(windowMs, message, max) {
-  return rateLimit({
-    max: max,
-    windowMs: windowMs,
-    message: message,
-    standardHeaders: true,
-    legacyHeaders: false,
-    trustProxy: true,
-    handler: (req, res, next) => {
-      next(new AppError(message, 429));
-    },
-  });
+// ==========================================
+// RATE LIMITERS
+// ==========================================
+
+// 1. ✅ GENERAL API Limiter (Very Lenient for Authenticated Routes)
+const generalApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 300, // 300 requests per 15 minutes (very lenient)
+  message: {
+    success: false,
+    message: "Too many requests. Please slow down.",
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  // ✅ Skip rate limiting for authenticated users
+  skip: (req) => {
+    // If user is authenticated (has token), skip rate limiting
+    // These routes are already protected by authentication middleware
+    const hasAuth = req.headers.authorization || req.cookies?.token;
+    return !!hasAuth;
+  },
+  handler: (req, res) => {
+    console.log(`⚠️  Rate limit hit: ${req.method} ${req.path} from ${req.ip}`);
+    res.status(429).json({
+      success: false,
+      message: "Too many requests. Please try again in a few minutes.",
+    });
+  },
+});
+
+// 2. ✅ STRICT Auth Limiter (For Login/Register Only)
+const strictAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Only 10 attempts for login/register
+  message: {
+    success: false,
+    message:
+      "Too many authentication attempts. Please try again in 15 minutes.",
+  },
+  skipSuccessfulRequests: true, // Don't count successful logins
+  handler: (req, res) => {
+    console.log(
+      `🔒 Auth rate limit hit: ${req.method} ${req.path} from ${req.ip}`
+    );
+    res.status(429).json({
+      success: false,
+      message: "Too many login attempts. Please wait 15 minutes.",
+    });
+  },
+});
+
+// 3. ✅ LENIENT 2FA Limiter
+const twoFactorLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 10, // 10 attempts for code entry
+  skipSuccessfulRequests: true,
+  message: {
+    success: false,
+    message: "Too many verification attempts. Please wait 10 minutes.",
+  },
+  handler: (req, res) => {
+    console.log(
+      `🔐 2FA rate limit hit: ${req.method} ${req.path} from ${req.ip}`
+    );
+    res.status(429).json({
+      success: false,
+      message:
+        "Too many verification attempts. Request a new code or wait 10 minutes.",
+    });
+  },
+});
+
+// 4. ✅ Development Mode - Disable Rate Limiting
+if (process.env.NODE_ENV === "development") {
+  console.log("⚠️  RATE LIMITING DISABLED IN DEVELOPMENT MODE");
 }
 
-// Apply rate limiting to sensitive routes
-app.use(
-  "/api/v1/users/login",
-  rateLimiter(
-    15 * 60 * 1000, // 15 minutes
-    "Too many login attempts from this IP, please try again in 15 minutes.",
-    5 // 5 attempts per 15 minutes
-  )
-);
+// ==========================================
+// APPLY RATE LIMITERS TO ROUTES
+// ==========================================
 
-app.use(
-  "/api/v1/users/resetpassword",
-  rateLimiter(
-    15 * 60 * 1000, // 15 minutes
-    "Too many password reset attempts, please try again in 15 minutes.",
-    3
-  )
-);
+// ✅ Apply ONLY to unauthenticated routes in production
+if (process.env.NODE_ENV !== "development") {
+  // General API limiter (lenient, skips authenticated users)
+  app.use("/api/v1/", generalApiLimiter);
 
-// General API rate limiting (more lenient)
-app.use(
-  "/api/v1/",
-  rateLimiter(
-    15 * 60 * 1000, // 15 minutes
-    "Too many requests from this IP, please try again later.",
-    100 // 100 requests per 15 minutes
-  )
-);
+  // Strict limiter for authentication endpoints
+  app.post("/api/v1/users/login", strictAuthLimiter);
+  app.post("/api/v1/users/register", strictAuthLimiter);
+  app.post("/api/v1/users/forgotpassword", strictAuthLimiter);
+
+  // Lenient limiter for 2FA
+  app.post("/api/v1/users/loginWithCode/:email", twoFactorLimiter);
+  app.post("/api/v1/users/sendLoginCode/:email", twoFactorLimiter);
+}
+
+// ==========================================
+// ERROR HANDLER FOR RATE LIMIT
+// ==========================================
+
+app.use((err, req, res, next) => {
+  if (err.status === 429) {
+    console.log(`❌ Rate limit error: ${req.method} ${req.path}`);
+    return res.status(429).json({
+      success: false,
+      message: "Too many requests. Please slow down.",
+    });
+  }
+  next(err);
+});
 
 // Health check endpoint
 app.get("/health", (req, res) => {

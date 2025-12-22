@@ -1,21 +1,22 @@
 import { useEffect } from "react";
 import { Modal, Button, Form, Input } from "antd";
 import "react-toastify/dist/ReactToastify.css";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom"; // Removed useParams
 import useModal from "../hooks/useModal";
-import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
+// import useInitialDataFetcher from "../hooks/useInitialDataFetcher"; // <--- DELETE THIS IMPORT
 import useHandleSubmit from "../hooks/useHandleSubmit";
 import { useDispatch } from "react-redux";
 import { getUsers } from "../redux/features/auth/authSlice";
 
-const UpdateClientInfo = () => {
+// 1. Accept clientData as a prop
+const UpdateClientInfo = ({ clientData }) => {
   const { open, showModal, handleOk, handleCancel } = useModal();
-  const { id } = useParams();
-  const { formData, loading } = useInitialDataFetcher("users", id);
+  // const { id } = useParams(); // <--- Not needed anymore
+  // const { formData, loading } = useInitialDataFetcher("users", id); // <--- DELETE THIS LINE (The Cause of the Loop)
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
-  // custom hook to handle form submission
   const {
     form,
     data,
@@ -23,18 +24,25 @@ const UpdateClientInfo = () => {
     loading: submitLoading,
   } = useHandleSubmit(`users/updateUser`, "patch");
 
-  // navigate after success
+  // 2. Populate form when clientData changes or Modal opens
+  useEffect(() => {
+    if (clientData && open) {
+      form.setFieldsValue({
+        firstName: clientData.firstName,
+        secondName: clientData.secondName,
+        email: clientData.email,
+        phone: clientData.phone,
+        address: clientData.address,
+      });
+    }
+  }, [clientData, form, open]);
+
   useEffect(() => {
     if (data) {
       dispatch(getUsers());
       navigate(-1);
     }
   }, [data, navigate, dispatch]);
-
-  // loading state handler
-  if (loading) {
-    return <>Loading...</>;
-  }
 
   return (
     <section className="bg-gray-200">
@@ -47,12 +55,11 @@ const UpdateClientInfo = () => {
         open={open}
         onOk={handleOk}
         footer={null}
-        confirmLoading={loading}
+        // confirmLoading={loading} // <--- Remove this loading (it was from the fetcher)
         onCancel={handleCancel}>
         <Form
           form={form}
-          initialValues={formData}
-          // onFinish={handleSubmit}
+          // initialValues={formData} // <--- Remove this, we use setFieldsValue in useEffect now
           className="bg-white shadow-md rounded-md px-8 pt-6 pb-8 m-4"
           layout="vertical">
           <Form.Item
