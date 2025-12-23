@@ -180,7 +180,7 @@ const LeaveAppForm = ({ onSuccess }) => {
     <>
       <Button
         type="primary"
-        className="blue-btn"
+        className="blue-btn my-4"
         icon={<FileTextOutlined />}
         onClick={showModal}>
         Apply for Leave

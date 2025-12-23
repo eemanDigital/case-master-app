@@ -8,6 +8,7 @@ import AuthContextProvider from "./context/authContext.jsx";
 
 // import "antd/dist/antd.css"; // Import Ant Design CSS here
 import "./index.css";
+import "./ClientDashboard.css";
 
 import PhotoContextProvider from "./context/photoContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";

@@ -76,7 +76,7 @@ const UserListTable = ({
                   {`${record.firstName} ${
                     record.lastName || record.secondName
                   }`}
-                  {record.middleName && ` ${record.middleName}`}
+                  {/* {record.middleName && ` ${record.middleName}`} */}
                 </Link>
               </Tooltip>
             )}

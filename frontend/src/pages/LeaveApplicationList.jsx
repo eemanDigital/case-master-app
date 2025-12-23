@@ -32,12 +32,12 @@ import { useAdminHook } from "../hooks/useAdminHook";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
+import LeaveAppForm from "../pages/LeaveAppForm";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import { formatDate } from "../utils/formatDate";
 import avatar from "../assets/avatar.png";
 import { useDataFetch } from "../hooks/useDataFetch";
 
-const { Column } = Table;
 const { RangePicker } = DatePicker;
 const { useBreakpoint } = Grid;
 
@@ -409,6 +409,8 @@ const LeaveApplicationList = () => {
 
   return (
     <div className="px-2 sm:px-4 md:px-6 py-3 md:py-6">
+      <LeaveAppForm />
+
       {/* Header */}
       <Card className="mb-4 md:mb-6 shadow-sm">
         <div className="flex flex-col gap-4">

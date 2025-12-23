@@ -1,17 +1,18 @@
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import CaseReportList from "./CaseReportList";
-import SingleCauseList from "./SingleCauseList";
+import { useDataGetterHook } from "../../hooks/useDataGetterHook";
+import CaseReportList from "../CaseReportList";
 import { useSelector } from "react-redux";
 import { useEffect } from "react";
-import LoadingSpinner from "./LoadingSpinner";
-import PageErrorAlert from "./PageErrorAlert";
-import CurrentDayCauseList from "./CurrentDayCauseList";
+import LoadingSpinner from "../LoadingSpinner";
+import PageErrorAlert from "../PageErrorAlert";
+import CurrentDayCauseList from "../CurrentDayCauseList";
 
 const ClientCaseDetails = () => {
   const { causeList, reports, loading, error, fetchData } = useDataGetterHook();
   const { user } = useSelector((state) => state.auth);
   const clientId = user?.data?._id; // get client id
-  const causeListData = causeList?.data?.reportsThisMonth || []; //cause list data for the month
+  const causeListData = causeList?.data?.reportsThisYear || []; //cause list data for the month
+
+  console.log(causeList);
 
   // fetch data
   useEffect(() => {

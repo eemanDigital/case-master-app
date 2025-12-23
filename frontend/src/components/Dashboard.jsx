@@ -7,7 +7,7 @@ import AccountOfficerCharts from "./AccountOfficerCharts";
 import CaseCountsByPeriodChart from "./CaseCountsByPeriodChart";
 import CaseCountsByClientChart from "./CaseCountsByClientChart";
 import CaseCountsByYearChart from "./CaseCountsByYearChart ";
-import ClientDashboard from "./ClientDashboard";
+// import ClientDashboard from "./ClientDashboard";
 import LeaveNotification from "./LeaveNotification";
 import { useSelector } from "react-redux";
 import useUsersCount from "../hooks/useUsersCount";
@@ -29,6 +29,7 @@ import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import CurrentDayCauseList from "./CurrentDayCauseList";
 import VerifyAccountNotice from "./VerifyAccountNotice";
 import QuickActionsPanel from "./QuickActionsPanel";
+import ClientCaseDashboard from "./clientDashboard/ClientCaseDashboard";
 
 export const PaymentFiltersContext = createContext();
 
@@ -216,7 +217,7 @@ const Dashboard = () => {
           <QuickActionsPanel />
         </ShowStaff>
 
-        {isClient && <ClientDashboard />}
+        {isClient && <ClientCaseDashboard />}
 
         {isStaff && (
           <>

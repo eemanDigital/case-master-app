@@ -15,6 +15,7 @@ import ChangePassword from "./ChangePassword";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
+import LeaveSummaryCard from "../components/LeaveSummaryCard";
 
 const Profile = () => {
   useRedirectLogoutUser("/users/login");
@@ -22,7 +23,7 @@ const Profile = () => {
   const { user, isError, isLoading, message } = useSelector(
     (state) => state.auth
   );
-
+  const isClient = user?.data?.role === "client";
   if (isLoading) return <LoadingSpinner />;
   if (isError)
     return <PageErrorAlert errorCondition={isError} errorMessage={message} />;
@@ -106,6 +107,8 @@ const Profile = () => {
             </div>
           </div>
         </div>
+
+        {!isClient && <LeaveSummaryCard id={user?.data?._id} />}
       </div>
     </div>
   );

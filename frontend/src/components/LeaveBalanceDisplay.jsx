@@ -12,6 +12,7 @@ import {
   ManOutlined,
   PlusCircleOutlined,
 } from "@ant-design/icons";
+import CreateLeaveBalanceForm from "./CreateLeaveBalanceForm";
 
 const LeaveBalanceDisplay = ({ userId }) => {
   const { data, loading, error, dataFetcher } = useDataFetch();
@@ -36,6 +37,8 @@ const LeaveBalanceDisplay = ({ userId }) => {
 
   return (
     <Card title="Leave Balance" bordered={false} className="shadow-sm">
+      {/* Column 2: Leave Management */}
+
       <Row gutter={[16, 16]}>
         {/* Annual Leave */}
         <Col xs={24} sm={12} md={8} lg={6}>

@@ -7,10 +7,10 @@ import {
   TrophyOutlined,
 } from "@ant-design/icons";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { useSelector } from "react-redux";
+// import { useSelector } from "react-redux";
 
-const LeaveSummaryCard = () => {
-  const { user } = useSelector((state) => state.auth);
+const LeaveSummaryCard = ({ id }) => {
+  // const { user } = useSelector((state) => state.auth);
   const { dataFetcher } = useDataFetch();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,10 +24,7 @@ const LeaveSummaryCard = () => {
     try {
       setLoading(true);
       // Route: GET /leaves/summary/:employeeId?
-      const response = await dataFetcher(
-        `leaves/summary/${user?.data?._id}`,
-        "GET"
-      );
+      const response = await dataFetcher(`leaves/summary/${id}`, "GET");
       if (response?.data?.summary) {
         setSummary(response.data.summary);
       }
