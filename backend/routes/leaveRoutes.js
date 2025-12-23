@@ -31,6 +31,7 @@ router.put(
 // Employees can cancel their own pending applications, admins can cancel any
 router.patch(
   "/applications/:id/cancel",
+  restrictTo("super-admin", "admin", "hr"),
   leaveAppController.cancelLeaveApplication
 );
 
@@ -58,7 +59,7 @@ router.get("/balances/:employeeId", leaveBalanceController.getLeaveBalance);
 // Only admins/HR can view all balances
 router.get(
   "/balances",
-  // restrictTo("super-admin", "admin", "hr"),
+  restrictTo("super-admin", "admin", "hr"),
   leaveBalanceController.getLeaveBalances
 );
 

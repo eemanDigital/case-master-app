@@ -280,7 +280,7 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
       },
     })
       .sort("adjournedDate")
-      .select("caseReported adjournedFor adjournedDate");
+      .select("caseReported adjournedFor adjournedDate update");
 
     // setRedisCache('causeListToday', reportsToday, 1200);
 
