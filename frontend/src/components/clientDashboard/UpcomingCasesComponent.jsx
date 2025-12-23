@@ -23,6 +23,7 @@ import {
 } from "@ant-design/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import { decode } from "html-entities";
+import { capitalizeWords } from "../../utils/capitalise";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -340,7 +341,8 @@ const UpcomingCasesComponent = ({
                         }
                         label="Court"
                         value={
-                          caseItem.caseReported?.courtName || "Not specified"
+                          capitalizeWords(caseItem.caseReported?.courtName) ||
+                          "Not specified"
                         }
                       />
                       <DetailItem

@@ -34,6 +34,7 @@ import {
 import { motion } from "framer-motion";
 import { decode } from "html-entities";
 import DOMPurify from "dompurify";
+import { capitalizeWords } from "../../utils/capitalise";
 
 const { Title, Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
@@ -164,7 +165,7 @@ const ReportCard = memo(({ report, index, compact, onViewDetails }) => {
               <div className="flex items-center gap-2">
                 <CalendarOutlined className="text-gray-400" />
                 <Text className="text-sm">
-                  <strong>Date:</strong>{" "}
+                  <strong>Adjourned Date:</strong>{" "}
                   {report.adjournedDate
                     ? new Date(report.adjournedDate).toLocaleDateString()
                     : "N/A"}
@@ -176,7 +177,7 @@ const ReportCard = memo(({ report, index, compact, onViewDetails }) => {
                 <BankOutlined className="text-gray-400" />
                 <Text className="text-sm">
                   <strong>Court:</strong>{" "}
-                  {report.caseReported?.courtName || "N/A"}
+                  {capitalizeWords(report.caseReported?.courtName) || "N/A"}
                 </Text>
               </div>
               <div className="flex items-center gap-2">
@@ -609,13 +610,13 @@ const CaseReportsFeed = ({
               {/* View All Link for limited view */}
               {maxItems && filteredReports.length > maxItems && !pagination && (
                 <div className="text-center pt-4">
-                  <Button
+                  {/* <Button
                     type="link"
                     className="text-blue-600 font-medium"
                     size="large">
                     View All Reports ({filteredReports.length})
                     <EyeOutlined className="ml-2" />
-                  </Button>
+                  </Button> */}
                 </div>
               )}
             </>

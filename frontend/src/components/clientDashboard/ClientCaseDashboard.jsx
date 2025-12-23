@@ -448,8 +448,7 @@ const ClientCaseDashboard = () => {
             title={
               <div className="flex items-center gap-1">
                 <span>Total Cases</span>
-                <Tooltip
-                  title={`${stats.totalCases} unique cases from ${stats.totalReports} reports`}>
+                <Tooltip title={`${stats.totalCases} Case(s)`}>
                   <InfoCircleOutlined className="text-xs text-gray-400 cursor-help" />
                 </Tooltip>
               </div>
@@ -457,7 +456,7 @@ const ClientCaseDashboard = () => {
             value={stats.totalCases}
             icon={<FileTextOutlined className="text-blue-500" />}
             color="#3b82f6"
-            subtitle="Unique legal matters"
+            subtitle="Case Count"
           />
         </Col>
         <Col xs={24} sm={12} lg={6}>
