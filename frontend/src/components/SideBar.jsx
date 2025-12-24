@@ -11,7 +11,7 @@ import { AiOutlineSchedule } from "react-icons/ai";
 import { FaHandshake } from "react-icons/fa6";
 import avatar from "../assets/avatar.png";
 import { useRemovePhoto } from "../hooks/useRemovePhoto";
-import { useAdminHook } from "../hooks/useAdminHook";
+
 import { logout, RESET } from "../redux/features/auth/authSlice";
 import { shortenText } from "../utils/shortenText";
 
@@ -21,7 +21,9 @@ const SideBar = ({ isMobile, closeDrawer }) => {
   const navigate = useNavigate();
   const location = useLocation(); // ✅ Get current location
   const { user } = useSelector((state) => state.auth);
-  const { isClient, isUser } = useAdminHook();
+
+  const isClient = user?.data?.role === "client";
+  const isUser = user?.data?.role === "user";
   const [selectedKeys, setSelectedKeys] = useState(["dashboard"]);
   const [openKeys, setOpenKeys] = useState([]); // ✅ For submenu state
 
@@ -186,7 +188,6 @@ const SideBar = ({ isMobile, closeDrawer }) => {
       isClient &&
       (item.key === "staff-management" ||
         item.key === "cause-list" ||
-        item.key === "billings" ||
         item.key === "documents")
     )
       return false;

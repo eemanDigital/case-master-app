@@ -5,7 +5,6 @@ const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const { generatePdf } = require("../utils/generatePdf");
 const Payment = require("../models/paymentModel");
-// const setRedisCache = require("../utils/setRedisCache");
 
 // Get all invoices with advanced pagination and filtering
 exports.getAllInvoices = catchAsync(async (req, res, next) => {
@@ -21,6 +20,14 @@ exports.getAllInvoices = catchAsync(async (req, res, next) => {
 
   let filter = {};
 
+  // Role-based filtering: clients can only see their own invoices
+  if (req.user.role === "client") {
+    filter.client = req.user.id;
+  } else if (client) {
+    // Admins can filter by specific client
+    filter.client = client;
+  }
+
   // Search filter
   if (search) {
     filter.$or = [
@@ -33,11 +40,6 @@ exports.getAllInvoices = catchAsync(async (req, res, next) => {
   // Status filter
   if (status) {
     filter.status = status;
-  }
-
-  // Client filter
-  if (client) {
-    filter.client = client;
   }
 
   // Case filter
@@ -55,9 +57,6 @@ exports.getAllInvoices = catchAsync(async (req, res, next) => {
     .limit(parseInt(limit));
 
   const total = await Invoice.countDocuments(filter);
-
-  // set redis cache
-  // setRedisCache("invoices", invoices, 5000);
 
   res.status(200).json({
     message: "success",
@@ -82,14 +81,20 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
     return next(new AppError("No invoice found with that ID", 404));
   }
 
+  // Authorization check: clients can only view their own invoices
+  if (
+    req.user.role === "client" &&
+    invoice.client._id.toString() !== req.user.id
+  ) {
+    return next(
+      new AppError("You are not authorized to view this invoice", 403)
+    );
+  }
+
   // Get payment history
-  const Payment = require("../models/paymentModel");
   const payments = await Payment.find({ invoice: invoice._id }).sort({
     paymentDate: -1,
   });
-
-  // set redis cache
-  // setRedisCache(`invoice:${req.params.id}`, invoice, 5000);
 
   res.status(200).json({
     fromCache: false,
@@ -101,61 +106,10 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
   });
 });
 
-// Create invoice with validation
-// exports.createInvoice = catchAsync(async (req, res, next) => {
-//   const { case: caseId, client: clientId, ...invoiceData } = req.body;
-
-//   // Validate case and client relationships if provided
-//   if (caseId) {
-//     const caseData = await Case.findById(caseId).populate("client");
-//     if (!caseData) {
-//       return next(new AppError("No case found with that ID", 404));
-//     }
-
-//     // If client is also provided, validate consistency
-//     if (
-//       clientId &&
-//       caseData.client &&
-//       caseData.client._id.toString() !== clientId
-//     ) {
-//       return next(
-//         new AppError(
-//           "Client in the case does not match the provided client ID",
-//           400
-//         )
-//       );
-//     }
-
-//     // If no client provided, use case's client
-//     if (!clientId && caseData.client) {
-//       invoiceData.client = caseData.client._id;
-//     }
-//   }
-
-//   // Validate client exists
-//   if (invoiceData.client) {
-//     const clientData = await User.findById(invoiceData.client);
-//     if (!clientData) {
-//       return next(new AppError("No client found with that ID", 404));
-//     }
-//   }
-
-//   const newInvoice = await Invoice.create({
-//     ...invoiceData,
-//     case: caseId,
-//     client: invoiceData.client,
-//   });
-
-//   res.status(201).json({
-//     message: "success",
-//     data: newInvoice,
-//   });
-// });
-
 exports.createInvoice = catchAsync(async (req, res, next) => {
   const { case: caseId, client: clientId, ...invoiceData } = req.body;
 
-  console.log("Received data:", { caseId, clientId, invoiceData }); // DEBUG
+  console.log("Received data:", { caseId, clientId, invoiceData });
 
   // Validate case and client relationships if provided
   if (caseId) {
@@ -163,8 +117,6 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
     if (!caseData) {
       return next(new AppError("No case found with that ID", 404));
     }
-
-    // console.log("Case data client:", caseData.client); // DEBUG
 
     // If client is also provided, validate consistency
     if (
@@ -183,7 +135,6 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
     // If no client provided, use case's client
     if (!clientId && caseData.client) {
       invoiceData.client = caseData.client._id;
-      // console.log("Setting client from case:", invoiceData.client); // DEBUG
     }
   }
 
@@ -194,10 +145,7 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
       return next(new AppError("No client found with that ID", 404));
     }
     invoiceData.client = clientId;
-    // console.log("Setting client from explicit ID:", invoiceData.client); // DEBUG
   }
-
-  // console.log("Final invoiceData before creation:", invoiceData); // DEBUG
 
   // Check if client is actually set
   if (!invoiceData.client) {
@@ -207,7 +155,7 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
   const newInvoice = await Invoice.create({
     ...invoiceData,
     case: caseId,
-    client: invoiceData.client, // Ensure this is set
+    client: invoiceData.client,
   });
 
   res.status(201).json({
@@ -286,20 +234,8 @@ exports.deleteInvoice = catchAsync(async (req, res, next) => {
   }
 
   // Check if invoice has payments
-  const Payment = require("../models/paymentModel");
   const paymentCount = await Payment.countDocuments({ invoice: invoice._id });
 
-  // ✅ REPLACE THIS EXISTING CODE:
-  if (paymentCount > 0) {
-    return next(
-      new AppError(
-        "Cannot delete invoice with existing payments. Please void the invoice instead.",
-        400
-      )
-    );
-  }
-
-  // ✅ WITH THIS ENHANCED VERSION:
   if (paymentCount > 0) {
     return next(
       new AppError(
@@ -325,6 +261,16 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
 
   if (!invoice) {
     return next(new AppError("No invoice found with that ID", 404));
+  }
+
+  // Authorization check: clients can only download their own invoices
+  if (
+    req.user.role === "client" &&
+    invoice.client._id.toString() !== req.user.id
+  ) {
+    return next(
+      new AppError("You are not authorized to download this invoice", 403)
+    );
   }
 
   // Get payment history
@@ -369,17 +315,31 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
 
 // Get total amount due across all invoices
 exports.getTotalAmountDueOnInvoice = catchAsync(async (req, res, next) => {
-  const result = await Invoice.aggregate([
-    {
-      $group: {
-        _id: null,
-        totalAmountDue: { $sum: "$balance" },
-        totalInvoiceAmount: { $sum: "$total" },
-        totalPaid: { $sum: "$amountPaid" },
-        invoiceCount: { $sum: 1 },
-      },
+  let matchStage = {};
+
+  // Role-based filtering: clients can only see their own totals
+  if (req.user.role === "client") {
+    const mongoose = require("mongoose");
+    matchStage.client = new mongoose.Types.ObjectId(req.user.id);
+  }
+
+  const pipeline = [];
+
+  if (Object.keys(matchStage).length > 0) {
+    pipeline.push({ $match: matchStage });
+  }
+
+  pipeline.push({
+    $group: {
+      _id: null,
+      totalAmountDue: { $sum: "$balance" },
+      totalInvoiceAmount: { $sum: "$total" },
+      totalPaid: { $sum: "$amountPaid" },
+      invoiceCount: { $sum: 1 },
     },
-  ]);
+  });
+
+  const result = await Invoice.aggregate(pipeline);
 
   const summary = result[0] || {
     totalAmountDue: 0,
@@ -401,14 +361,21 @@ exports.getInvoicesByStatus = catchAsync(async (req, res, next) => {
 
   const skip = (page - 1) * limit;
 
-  const invoices = await Invoice.find({ status })
+  let filter = { status };
+
+  // Role-based filtering: clients can only see their own invoices
+  if (req.user.role === "client") {
+    filter.client = req.user.id;
+  }
+
+  const invoices = await Invoice.find(filter)
     .populate("client", "firstName lastName email")
     .populate("case", "firstParty secondParty suitNo")
     .sort({ dueDate: 1 })
     .skip(skip)
     .limit(parseInt(limit));
 
-  const total = await Invoice.countDocuments({ status });
+  const total = await Invoice.countDocuments(filter);
 
   res.status(200).json({
     message: "success",
@@ -428,20 +395,24 @@ exports.getOverdueInvoices = catchAsync(async (req, res, next) => {
   const { page = 1, limit = 10 } = req.query;
   const skip = (page - 1) * limit;
 
-  const overdueInvoices = await Invoice.find({
+  let filter = {
     status: "overdue",
     balance: { $gt: 0 },
-  })
+  };
+
+  // Role-based filtering: clients can only see their own overdue invoices
+  if (req.user.role === "client") {
+    filter.client = req.user.id;
+  }
+
+  const overdueInvoices = await Invoice.find(filter)
     .populate("client", "firstName lastName email phone")
     .populate("case", "firstParty secondParty suitNo")
     .sort({ dueDate: 1 })
     .skip(skip)
     .limit(parseInt(limit));
 
-  const total = await Invoice.countDocuments({
-    status: "overdue",
-    balance: { $gt: 0 },
-  });
+  const total = await Invoice.countDocuments(filter);
 
   res.status(200).json({
     message: "success",
@@ -469,7 +440,6 @@ exports.checkOverdueInvoices = catchAsync(async (req, res, next) => {
 
   // Optional: Return info about what was updated
   if (res) {
-    // Only if called via HTTP route
     res.status(200).json({
       message: "Overdue invoices checked",
       data: {
@@ -481,6 +451,7 @@ exports.checkOverdueInvoices = catchAsync(async (req, res, next) => {
 
   return result;
 });
+
 // Send/issue invoice
 exports.sendInvoice = catchAsync(async (req, res, next) => {
   const invoice = await Invoice.findById(req.params.id);
@@ -500,9 +471,6 @@ exports.sendInvoice = catchAsync(async (req, res, next) => {
   invoice.status = "sent";
   invoice.issueDate = new Date();
   await invoice.save();
-
-  // Here you would typically send email notification
-  // await sendInvoiceEmail(invoice);
 
   res.status(200).json({
     message: "Invoice sent successfully",

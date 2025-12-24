@@ -13,7 +13,6 @@ import moment from "moment";
 import ButtonWithIcon from "../components/ButtonWithIcon";
 import { formatDate } from "../utils/formatDate";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import { useAdminHook } from "../hooks/useAdminHook";
 import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBar from "../components/SearchBar";
 import { deleteData } from "../redux/features/delete/deleteSlice";
@@ -34,8 +33,11 @@ const InvoiceList = () => {
   );
 
   const dispatch = useDispatch();
-  const { isClient, isSuperOrAdmin } = useAdminHook();
+  // const { isClient, isSuperOrAdmin } = useAdminHook();
   const { user } = useSelector((state) => state.auth);
+  // const isClient = user?.data?.role === "client";
+  const isSuperOrAdmin =
+    user?.data?.role === "super-admin" || user?.data?.role === "admin";
   const loggedInClientId = user?.data?.id;
   useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
@@ -87,9 +89,9 @@ const InvoiceList = () => {
     [invoices?.data]
   );
 
-  const filteredInvoiceForClient = searchResults.filter(
-    (item) => item.client?.id === loggedInClientId
-  );
+  // const filteredInvoiceForClient = searchResults.filter(
+  //   (item) => item.client?.id === loggedInClientId
+  // );
 
   // handle delete
   const deleteInvoice = async (id) => {
@@ -379,7 +381,7 @@ const InvoiceList = () => {
             <Table
               className="font-medium font-poppins"
               columns={columns}
-              dataSource={isClient ? filteredInvoiceForClient : searchResults}
+              dataSource={searchResults}
               rowKey="_id"
               scroll={{ x: 1200 }}
               pagination={{

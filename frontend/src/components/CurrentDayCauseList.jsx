@@ -12,6 +12,7 @@ import {
   ClockIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
+import { capitalizeWords } from "../utils/capitalise";
 
 const { Text, Title } = Typography;
 
@@ -204,7 +205,9 @@ const CurrentDayCauseList = () => {
                 <div className="grid grid-cols-1 gap-2 mb-3">
                   <div className="flex items-center gap-2 text-xs text-gray-600">
                     <FaLocationArrow className="w-3 h-3 text-purple-500" />
-                    <span className="font-medium">{item.court}</span>
+                    <span className="font-medium">
+                      {capitalizeWords(item.court)}
+                    </span>
                   </div>
 
                   <div className="flex items-center gap-2 text-xs text-gray-600">

@@ -45,6 +45,10 @@ const LoginWithCode = () => {
   const hasAutoSubmitted = useRef(false);
   const lastSubmittedCode = useRef("");
 
+  // ✅ NEW: Prevent repeated success toast
+  const hasShownSuccessToast = useRef(false);
+  const isNavigating = useRef(false);
+
   const { loginCode } = userLoginCode;
 
   // Countdown timer for resend
@@ -104,22 +108,34 @@ const LoginWithCode = () => {
     lastSubmittedCode.current = loginCode;
 
     try {
-      // ✅ The thunk will handle fetching fresh user data
       await dispatch(loginWithCode({ code, email })).unwrap();
     } catch (error) {
       // Reset on error so user can retry
       lastSubmittedCode.current = "";
       hasAutoSubmitted.current = false;
+      hasShownSuccessToast.current = false; // ✅ Reset success flag on error
     }
   };
 
-  // ✅ Redirect user to dashboard if login is successful
+  // ✅ FIXED: Redirect user to dashboard if login is successful (ONLY ONCE)
   useEffect(() => {
-    if (isSuccess && isLoggedIn) {
-      // User data is already fetched in the loginWithCode thunk
+    if (
+      isSuccess &&
+      isLoggedIn &&
+      !hasShownSuccessToast.current &&
+      !isNavigating.current
+    ) {
+      // Mark that we're showing the toast and navigating
+      hasShownSuccessToast.current = true;
+      isNavigating.current = true;
+
       toast.success("Login successful!");
-      navigate("/dashboard");
-      dispatch(RESET());
+
+      // Small delay to ensure toast is visible before navigation
+      setTimeout(() => {
+        navigate("/dashboard");
+        dispatch(RESET());
+      }, 100);
     }
   }, [isSuccess, isLoggedIn, navigate, dispatch]);
 
@@ -137,18 +153,14 @@ const LoginWithCode = () => {
     }
   };
 
-  // ✅ FIXED: Auto-submit when 6 digits are entered (only once)
+  // ✅ Auto-submit when 6 digits are entered (only once)
   useEffect(() => {
-    // Only auto-submit if:
-    // 1. Code is 6 digits
-    // 2. Not currently loading
-    // 3. Haven't already auto-submitted this code
-    // 4. This code is different from last submitted
     if (
       loginCode.length === 6 &&
       !isLoading &&
       !hasAutoSubmitted.current &&
-      lastSubmittedCode.current !== loginCode
+      lastSubmittedCode.current !== loginCode &&
+      !isNavigating.current // ✅ Don't auto-submit if already navigating
     ) {
       console.log("Auto-submitting code:", loginCode);
       hasAutoSubmitted.current = true;
@@ -224,7 +236,7 @@ const LoginWithCode = () => {
                 className="text-center text-2xl font-bold tracking-widest h-14"
                 autoFocus
                 autoComplete="one-time-code"
-                disabled={isLoading}
+                disabled={isLoading || isNavigating.current}
               />
             </Form.Item>
 
@@ -246,7 +258,9 @@ const LoginWithCode = () => {
                 type="primary"
                 htmlType="submit"
                 loading={isLoading}
-                disabled={loginCode.length !== 6 || isLoading}
+                disabled={
+                  loginCode.length !== 6 || isLoading || isNavigating.current
+                }
                 size="large"
                 block
                 icon={<LoginOutlined />}
@@ -266,7 +280,7 @@ const LoginWithCode = () => {
                 type="link"
                 onClick={reSendUserLoginCode}
                 loading={resendLoading}
-                disabled={countdown > 0 || isLoading}
+                disabled={countdown > 0 || isLoading || isNavigating.current}
                 icon={<ReloadOutlined />}
                 className="p-0 h-auto">
                 Resend Verification Code
@@ -284,7 +298,7 @@ const LoginWithCode = () => {
                 <Button
                   type="text"
                   icon={<ArrowLeftOutlined />}
-                  disabled={isLoading}>
+                  disabled={isLoading || isNavigating.current}>
                   Back to Login
                 </Button>
               </Link>

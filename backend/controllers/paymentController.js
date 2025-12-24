@@ -3,163 +3,6 @@ const Invoice = require("../models/invoiceModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
-// const setRedisCache = require("../utils/setRedisCache");
-// const Case = require("../models/caseModel");
-
-// exports.createPayment = catchAsync(async (req, res, next) => {
-//   const {
-//     invoice: invoiceFromBody,
-//     invoiceId,
-//     amount,
-//     method,
-//     reference,
-//     notes,
-//     client: clientFromBody,
-//     clientId,
-//     case: caseFromBody,
-//     caseId,
-//   } = req.body;
-
-//   // Use whichever format was provided
-//   const invoice_id = invoiceFromBody || invoiceId;
-//   const client_id = clientFromBody || clientId;
-//   const case_id = caseFromBody || caseId;
-
-//   // Validate required fields
-//   if (!invoice_id || !amount || !method) {
-//     const missing = [];
-//     if (!invoice_id) missing.push("invoice (or invoiceId)");
-//     if (!amount) missing.push("amount");
-//     if (!method) missing.push("method");
-
-//     return next(
-//       new AppError(`Missing required fields: ${missing.join(", ")}`, 400)
-//     );
-//   }
-
-//   // Find invoice with case and client populated
-//   const invoice = await Invoice.findById(invoice_id)
-//     .populate("case")
-//     .populate("client");
-
-//   if (!invoice) {
-//     return next(new AppError("No invoice found with that ID", 404));
-//   }
-
-//   // Check invoice status
-//   if (invoice.status === "cancelled" || invoice.status === "void") {
-//     return next(new AppError("Cannot make payment to cancelled invoice", 400));
-//   }
-
-//   // Validate relationships if IDs are provided
-//   if (case_id && invoice.case && invoice.case._id.toString() !== case_id) {
-//     return next(new AppError("Case does not match the invoice case", 400));
-//   }
-
-//   if (
-//     client_id &&
-//     invoice.client &&
-//     invoice.client._id.toString() !== client_id
-//   ) {
-//     return next(new AppError("Client does not match the invoice client", 400));
-//   }
-
-//   // Validate amount
-//   if (amount <= 0) {
-//     return next(new AppError("Payment amount must be greater than zero", 400));
-//   }
-
-//   // Check for overpayment
-//   const remainingBalance = invoice.balance;
-//   if (amount > remainingBalance) {
-//     return next(
-//       new AppError(
-//         `Payment amount (${amount}) exceeds remaining balance (${remainingBalance})`,
-//         400
-//       )
-//     );
-//   }
-
-//   // ✅ NO TRANSACTION - Just regular save operations
-//   try {
-//     // Create payment record
-//     const payment = new Payment({
-//       invoice: invoice_id,
-//       client: invoice.client._id,
-//       case: invoice.case ? invoice.case._id : undefined,
-//       amount,
-//       method,
-//       reference: reference || "",
-//       notes: notes || "",
-//       paymentDate: new Date(),
-//       status: "completed",
-//     });
-
-//     await payment.save();
-
-//     // ✅ UPDATE INVOICE AMOUNTS AND STATUS CORRECTLY
-//     invoice.amountPaid = (invoice.amountPaid || 0) + amount;
-
-//     // ✅ RECALCULATE BALANCE (CRITICAL FIX)
-//     invoice.balance = invoice.total - invoice.amountPaid;
-
-//     // ✅ UPDATE INVOICE STATUS BASED ON NEW BALANCE AND DATES
-//     const today = new Date();
-//     const dueDate = new Date(invoice.dueDate);
-
-//     if (invoice.balance <= 0) {
-//       invoice.status = "paid";
-//     } else if (invoice.balance < invoice.total) {
-//       invoice.status = "partially_paid";
-//     } else if (dueDate < today) {
-//       invoice.status = "overdue";
-//     } else if (invoice.status === "draft") {
-//       invoice.status = "sent";
-//     }
-//     // If none of the above, keep current status
-
-//     // ✅ UPDATE CALCULATED FIELDS
-//     invoice.paymentProgress = (invoice.amountPaid / invoice.total) * 100;
-//     invoice.isOverdue = invoice.status === "overdue";
-//     invoice.daysOverdue = invoice.isOverdue
-//       ? Math.floor((today - dueDate) / (1000 * 60 * 60 * 24))
-//       : 0;
-
-//     await invoice.save();
-
-//     // Populate the response
-//     await payment.populate(
-//       "invoice",
-//       "invoiceNumber title total balance status amountPaid paymentProgress isOverdue daysOverdue"
-//     );
-//     await payment.populate("client", "firstName lastName email");
-//     if (payment.case) {
-//       await payment.populate("case", "firstParty secondParty suitNo");
-//     }
-
-//     res.status(201).json({
-//       message: "Payment created successfully",
-//       data: {
-//         payment,
-//         updatedInvoice: {
-//           id: invoice._id,
-//           invoiceNumber: invoice.invoiceNumber,
-//           total: invoice.total,
-//           amountPaid: invoice.amountPaid,
-//           balance: invoice.balance,
-//           status: invoice.status,
-//           paymentProgress: invoice.paymentProgress,
-//           isOverdue: invoice.isOverdue,
-//           daysOverdue: invoice.daysOverdue,
-//         },
-//       },
-//     });
-//   } catch (error) {
-//     // If payment was created but invoice update failed, you'd need manual cleanup
-//     // For production with replica set, use transactions instead
-//     throw error;
-//   }
-// });
 
 exports.createPayment = catchAsync(async (req, res, next) => {
   const {
@@ -201,6 +44,19 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     return next(new AppError("No invoice found with that ID", 404));
   }
 
+  // ✅ NEW: Authorization check - clients can only make payments for their own invoices
+  if (
+    req.user.role === "client" &&
+    invoice.client._id.toString() !== req.user.id
+  ) {
+    return next(
+      new AppError(
+        "You are not authorized to make payment for this invoice",
+        403
+      )
+    );
+  }
+
   // Check invoice status
   if (invoice.status === "cancelled" || invoice.status === "void") {
     return next(new AppError("Cannot make payment to cancelled invoice", 400));
@@ -236,7 +92,7 @@ exports.createPayment = catchAsync(async (req, res, next) => {
   }
 
   try {
-    // ✅ CREATE PAYMENT FIRST
+    // CREATE PAYMENT FIRST
     const payment = new Payment({
       invoice: invoice_id,
       client: invoice.client._id,
@@ -251,20 +107,19 @@ exports.createPayment = catchAsync(async (req, res, next) => {
 
     await payment.save();
 
-    // ✅ UPDATE INVOICE USING findByIdAndUpdate TO ENSURE IT SAVES
+    // UPDATE INVOICE USING findByIdAndUpdate TO ENSURE IT SAVES
     const updatedInvoice = await Invoice.findByIdAndUpdate(
       invoice_id,
       {
-        $inc: { amountPaid: amount }, // Atomic increment
+        $inc: { amountPaid: amount },
         $set: {
           balance: invoice.total - (invoice.amountPaid + amount),
-          // Status will be updated in pre-save middleware or here
         },
       },
-      { new: true, runValidators: true } // Return updated document
+      { new: true, runValidators: true }
     );
 
-    // ✅ MANUALLY RECALCULATE STATUS FOR UPDATED INVOICE
+    // MANUALLY RECALCULATE STATUS FOR UPDATED INVOICE
     const today = new Date();
     const dueDate = new Date(updatedInvoice.dueDate);
     const newBalance = updatedInvoice.total - updatedInvoice.amountPaid;
@@ -280,7 +135,7 @@ exports.createPayment = catchAsync(async (req, res, next) => {
       newStatus = "sent";
     }
 
-    // ✅ FINAL UPDATE WITH STATUS AND CALCULATED FIELDS
+    // FINAL UPDATE WITH STATUS AND CALCULATED FIELDS
     const finalInvoice = await Invoice.findByIdAndUpdate(
       invoice_id,
       {
@@ -299,7 +154,7 @@ exports.createPayment = catchAsync(async (req, res, next) => {
       { new: true }
     );
 
-    // ✅ POPULATE PAYMENT WITH FRESH DATA
+    // POPULATE PAYMENT WITH FRESH DATA
     await payment.populate(
       "invoice",
       "invoiceNumber title total balance status amountPaid paymentProgress isOverdue daysOverdue"
@@ -331,6 +186,7 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     return next(new AppError("Failed to create payment", 500));
   }
 });
+
 // Get all payments with filtering and pagination
 exports.getAllPayments = catchAsync(async (req, res, next) => {
   const {
@@ -347,8 +203,15 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
 
   let filter = {};
 
+  // ✅ NEW: Role-based filtering - clients can only see their own payments
+  if (req.user.role === "client") {
+    filter.client = req.user.id;
+  } else if (clientId) {
+    // Admins can filter by specific client
+    filter.client = clientId;
+  }
+
   // Build filter
-  if (clientId) filter.client = clientId;
   if (caseId) filter.case = caseId;
   if (invoiceId) filter.invoice = invoiceId;
   if (method) filter.method = method;
@@ -372,9 +235,6 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
 
   const total = await Payment.countDocuments(filter);
 
-  // set redis cache
-  // setRedisCache("payments", payments, 1200);
-
   res.status(200).json({
     message: "success",
     results: payments.length,
@@ -397,6 +257,16 @@ exports.getPayment = catchAsync(async (req, res, next) => {
 
   if (!payment) {
     return next(new AppError("Payment not found", 404));
+  }
+
+  // ✅ NEW: Authorization check - clients can only view their own payments
+  if (
+    req.user.role === "client" &&
+    payment.client._id.toString() !== req.user.id
+  ) {
+    return next(
+      new AppError("You are not authorized to view this payment", 403)
+    );
   }
 
   res.status(200).json({
@@ -488,6 +358,13 @@ exports.totalPaymentOnCase = catchAsync(async (req, res, next) => {
     return res.status(400).json({ message: "Invalid case ID" });
   }
 
+  // ✅ NEW: Authorization check - clients can only view their own payment totals
+  if (req.user.role === "client" && req.user.id !== clientId) {
+    return next(
+      new AppError("You are not authorized to view these payment totals", 403)
+    );
+  }
+
   const totalPaymentSum = await Payment.aggregate([
     {
       $match: {
@@ -509,9 +386,6 @@ exports.totalPaymentOnCase = catchAsync(async (req, res, next) => {
       ? totalPaymentSum[0]
       : { totalAmount: 0, paymentCount: 0 };
 
-  // set redis cache
-  // setRedisCache(`paymentOnCase:${clientId}${caseId}`, result, 1200);
-
   res.status(200).json({
     message: "success",
     fromCache: false,
@@ -525,6 +399,13 @@ exports.totalPaymentClient = catchAsync(async (req, res, next) => {
 
   if (!mongoose.Types.ObjectId.isValid(clientId)) {
     return res.status(400).json({ message: "Invalid client ID" });
+  }
+
+  // ✅ NEW: Authorization check - clients can only view their own totals
+  if (req.user.role === "client" && req.user.id !== clientId) {
+    return next(
+      new AppError("You are not authorized to view these payment totals", 403)
+    );
   }
 
   const totalPaymentSum = await Payment.aggregate([
@@ -546,8 +427,6 @@ exports.totalPaymentClient = catchAsync(async (req, res, next) => {
     totalPaymentSum.length > 0
       ? totalPaymentSum[0]
       : { totalAmount: 0, paymentCount: 0 };
-
-  // setRedisCache(`paymentByClient:${clientId}`, result, 1200);
 
   res.status(200).json({
     message: "success",
@@ -595,9 +474,6 @@ exports.paymentEachClient = catchAsync(async (req, res, next) => {
     },
   ]);
 
-  // set redis cache
-  // setRedisCache("paymentByEachClient", totalPaymentSumByClient, 1200);
-
   res.status(200).json({
     message: "success",
     fromCache: false,
@@ -616,14 +492,21 @@ exports.totalPaymentsByMonthAndYear = catchAsync(async (req, res, next) => {
   const endDate = new Date(startDate);
   endDate.setMonth(endDate.getMonth() + 1);
 
+  // ✅ NEW: Role-based filtering for clients
+  let matchStage = {
+    paymentDate: {
+      $gte: startDate,
+      $lt: endDate,
+    },
+  };
+
+  if (req.user.role === "client") {
+    matchStage.client = new mongoose.Types.ObjectId(req.user.id);
+  }
+
   const totalPayments = await Payment.aggregate([
     {
-      $match: {
-        paymentDate: {
-          $gte: startDate,
-          $lt: endDate,
-        },
-      },
+      $match: matchStage,
     },
     {
       $group: {
@@ -650,8 +533,6 @@ exports.totalPaymentsByMonthAndYear = catchAsync(async (req, res, next) => {
           year: parseInt(year, 10),
         };
 
-  // setRedisCache(`paymentMonthAndYear:${year}${month}`, result, 1200);
-
   res.status(200).json({
     message: "success",
     fromCache: false,
@@ -663,14 +544,21 @@ exports.totalPaymentsByMonthAndYear = catchAsync(async (req, res, next) => {
 exports.totalPaymentsByMonthInYear = catchAsync(async (req, res, next) => {
   const { year } = req.params;
 
+  // ✅ NEW: Role-based filtering for clients
+  let matchStage = {
+    paymentDate: {
+      $gte: new Date(`${year}-01-01`),
+      $lt: new Date(`${parseInt(year) + 1}-01-01`),
+    },
+  };
+
+  if (req.user.role === "client") {
+    matchStage.client = new mongoose.Types.ObjectId(req.user.id);
+  }
+
   const totalPayments = await Payment.aggregate([
     {
-      $match: {
-        paymentDate: {
-          $gte: new Date(`${year}-01-01`),
-          $lt: new Date(`${parseInt(year) + 1}-01-01`),
-        },
-      },
+      $match: matchStage,
     },
     {
       $group: {
@@ -692,9 +580,6 @@ exports.totalPaymentsByMonthInYear = catchAsync(async (req, res, next) => {
     },
   ]);
 
-  // set redis cache
-  // setRedisCache(`paymentMonthInYear:${year}`, totalPayments, 1200);
-
   res.status(200).json({
     message: "success",
     data: totalPayments,
@@ -705,14 +590,21 @@ exports.totalPaymentsByMonthInYear = catchAsync(async (req, res, next) => {
 exports.totalPaymentsByYear = catchAsync(async (req, res, next) => {
   const { year } = req.params;
 
+  // ✅ NEW: Role-based filtering for clients
+  let matchStage = {
+    paymentDate: {
+      $gte: new Date(`${year}-01-01`),
+      $lt: new Date(`${parseInt(year) + 1}-01-01`),
+    },
+  };
+
+  if (req.user.role === "client") {
+    matchStage.client = new mongoose.Types.ObjectId(req.user.id);
+  }
+
   const totalPayments = await Payment.aggregate([
     {
-      $match: {
-        paymentDate: {
-          $gte: new Date(`${year}-01-01`),
-          $lt: new Date(`${parseInt(year) + 1}-01-01`),
-        },
-      },
+      $match: matchStage,
     },
     {
       $group: {
@@ -737,9 +629,6 @@ exports.totalPaymentsByYear = catchAsync(async (req, res, next) => {
           year: parseInt(year, 10),
         };
 
-  // set redis cache
-  // setRedisCache(`paymentByYear:${year}`, result, 1200);
-
   res.status(200).json({
     message: "success",
     fromCache: false,
@@ -748,16 +637,21 @@ exports.totalPaymentsByYear = catchAsync(async (req, res, next) => {
 });
 
 // Get total outstanding balance across all invoices
-
 exports.getTotalBalance = catchAsync(async (req, res, next) => {
+  // ✅ NEW: Role-based filtering for clients
+  let matchStage = {
+    status: {
+      $nin: ["draft", "cancelled", "void"],
+    },
+  };
+
+  if (req.user.role === "client") {
+    matchStage.client = new mongoose.Types.ObjectId(req.user.id);
+  }
+
   const results = await Invoice.aggregate([
     {
-      $match: {
-        // ✅ Only include non-cancelled invoices
-        status: {
-          $nin: ["draft", "cancelled", "void"],
-        },
-      },
+      $match: matchStage,
     },
     {
       $group: {
@@ -766,7 +660,6 @@ exports.getTotalBalance = catchAsync(async (req, res, next) => {
         totalInvoices: { $sum: 1 },
         totalAmount: { $sum: "$total" },
         totalPaid: { $sum: "$amountPaid" },
-        // Additional useful metrics:
         overdueBalance: {
           $sum: {
             $cond: [{ $eq: ["$status", "overdue"] }, "$balance", 0],
@@ -807,13 +700,20 @@ exports.getTotalBalance = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     message: "success",
-    data: summary, // ✅ Return as object, not array
+    data: summary,
   });
 });
 
 // Get payment by client in respect of a case
 exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
   const { clientId, caseId } = req.params;
+
+  // ✅ NEW: Authorization check - clients can only view their own payments
+  if (req.user.role === "client" && req.user.id !== clientId) {
+    return next(
+      new AppError("You are not authorized to view these payments", 403)
+    );
+  }
 
   const payments = await Payment.find({
     client: clientId,
@@ -835,9 +735,6 @@ exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
     0
   );
 
-  // set redis cache
-  // setRedisCache(`paymentByClientAndCase:${clientId}${caseId}`, payments, 1200);
-
   res.status(200).json({
     message: "success",
     result: payments.length,
@@ -852,6 +749,12 @@ exports.getPaymentStatistics = catchAsync(async (req, res, next) => {
   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const startOfYear = new Date(today.getFullYear(), 0, 1);
 
+  // ✅ NEW: Role-based filtering for clients
+  let baseFilter = {};
+  if (req.user.role === "client") {
+    baseFilter.client = new mongoose.Types.ObjectId(req.user.id);
+  }
+
   const [
     totalPayments,
     monthlyPayments,
@@ -861,6 +764,7 @@ exports.getPaymentStatistics = catchAsync(async (req, res, next) => {
   ] = await Promise.all([
     // Total payments
     Payment.aggregate([
+      ...(Object.keys(baseFilter).length > 0 ? [{ $match: baseFilter }] : []),
       {
         $group: {
           _id: null,
@@ -873,6 +777,7 @@ exports.getPaymentStatistics = catchAsync(async (req, res, next) => {
     Payment.aggregate([
       {
         $match: {
+          ...baseFilter,
           paymentDate: { $gte: startOfMonth },
         },
       },
@@ -888,6 +793,7 @@ exports.getPaymentStatistics = catchAsync(async (req, res, next) => {
     Payment.aggregate([
       {
         $match: {
+          ...baseFilter,
           paymentDate: { $gte: startOfYear },
         },
       },
@@ -901,6 +807,7 @@ exports.getPaymentStatistics = catchAsync(async (req, res, next) => {
     ]),
     // Payments by method
     Payment.aggregate([
+      ...(Object.keys(baseFilter).length > 0 ? [{ $match: baseFilter }] : []),
       {
         $group: {
           _id: "$method",
@@ -910,7 +817,7 @@ exports.getPaymentStatistics = catchAsync(async (req, res, next) => {
       },
     ]),
     // Recent payments
-    Payment.find()
+    Payment.find(baseFilter)
       .populate("invoice", "invoiceNumber title")
       .populate("client", "firstName lastName")
       .sort({ paymentDate: -1 })
@@ -931,22 +838,29 @@ exports.getPaymentStatistics = catchAsync(async (req, res, next) => {
   });
 });
 
-// In your paymentController.js
+// Get payment summary
 exports.getPaymentSummary = catchAsync(async (req, res, next) => {
   const { year = new Date().getFullYear() } = req.query;
 
   const startDate = new Date(`${year}-01-01`);
   const endDate = new Date(`${parseInt(year) + 1}-01-01`);
 
+  // ✅ NEW: Role-based filtering for clients
+  let matchStage = {
+    paymentDate: {
+      $gte: startDate,
+      $lt: endDate,
+    },
+    status: "completed",
+  };
+
+  if (req.user.role === "client") {
+    matchStage.client = new mongoose.Types.ObjectId(req.user.id);
+  }
+
   const results = await Payment.aggregate([
     {
-      $match: {
-        paymentDate: {
-          $gte: startDate,
-          $lt: endDate,
-        },
-        status: "completed",
-      },
+      $match: matchStage,
     },
     {
       $group: {

@@ -1,83 +1,81 @@
 const express = require("express");
 const paymentController = require("../controllers/paymentController");
 const { protect, restrictTo } = require("../controllers/authController");
-// const cacheMiddleware = require("../utils/cacheMiddleware");
 
 const router = express.Router();
 
+// Protect all routes - authentication required
 router.use(protect);
-router.use(restrictTo("super-admin", "admin"));
 
-// Create a new payment
-router.post(
-  "/",
-  // cacheMiddleware(() => "payments"),
-  paymentController.createPayment
-);
+// ✅ ROUTES ACCESSIBLE TO CLIENTS (controller handles filtering/authorization)
+// Create a new payment - clients can pay their own invoices
+router.post("/", paymentController.createPayment);
+
+// Get all payments - clients see only their own
 router.get("/", paymentController.getAllPayments);
 
+// Get payment statistics - clients see only their own stats
 router.get("/statistics", paymentController.getPaymentSummary);
-router.get(
-  "/paymentEachClient",
-  // cacheMiddleware(() => "paymentByEachClient"),
-  paymentController.paymentEachClient
-);
-router.get(
-  "/totalBalance",
-  // cacheMiddleware(() => "totalBalance"),
-  paymentController.getTotalBalance
-);
 
-// Get all payments for a specific client and case
-// Route to get total payments for a specific month and year
+// Get total balance - clients see only their own balance
+router.get("/totalBalance", paymentController.getTotalBalance);
+
+// Get total payments for a specific month and year - clients see only their own
 router.get(
   "/totalPayments/:year/:month",
-  // cacheMiddleware(
-  // (req) => `paymentMonthAndYear:${req.params.year}${req.params.month}`
-  // ),
-
   paymentController.totalPaymentsByMonthAndYear
 );
 
-// Route to get total payments for an entire year
-router.get(
-  "/totalPayments/:year",
-  // cacheMiddleware((req) => `paymentByYear:${req.params.year}`),
-  paymentController.totalPaymentsByYear
-);
+// Get total payments for an entire year - clients see only their own
+router.get("/totalPayments/:year", paymentController.totalPaymentsByYear);
+
+// Get payments for specific client and case - clients can only view their own
 router.get(
   "/client/:clientId/case/:caseId",
-  // cacheMiddleware(
-  //   (req) => `paymentByClientAndCase:${req.params.clientId}${req.params.caseId}`
-  // ),
   paymentController.getPaymentsByClientAndCase
 );
 
+// Get payment totals for client and case - clients can only view their own
 router.get(
   "/totalPaymentSum/client/:clientId/case/:caseId",
-  // cacheMiddleware(
-  //   (req) => `paymentOnCase:${req.params.clientId}${req.params.caseId}`
-  // ),
   paymentController.totalPaymentOnCase
 );
+
+// Get payment totals for a client - clients can only view their own
 router.get(
   "/totalPaymentSum/client/:clientId",
-  // cacheMiddleware((req) => `paymentByClient:${req.params.clientId}`),
   paymentController.totalPaymentClient
 );
 
-// get payment received in each month of a year
+// Get payment received in each month of a year - clients see only their own
 router.get(
   "/totalPaymentsByMonthInYear/:year",
-  // cacheMiddleware((req) => `paymentMonthInYear:${req.params.year}`),
   paymentController.totalPaymentsByMonthInYear
 );
 
-// Get a specific payment by ID
+// Get a specific payment by ID - clients can only view their own
 router.get("/:paymentId", paymentController.getPayment);
-// Update a payment by ID
-router.put("/:paymentId", paymentController.updatePayment);
-// Delete a payment by ID
-router.delete("/:paymentId", paymentController.deletePayment);
+
+// ✅ ADMIN-ONLY ROUTES
+// Get all payments made by each client - admin only
+router.get(
+  "/paymentEachClient",
+  restrictTo("super-admin", "admin"),
+  paymentController.paymentEachClient
+);
+
+// Update a payment by ID - admin only
+router.put(
+  "/:paymentId",
+  restrictTo("super-admin", "admin"),
+  paymentController.updatePayment
+);
+
+// Delete a payment by ID - admin only
+router.delete(
+  "/:paymentId",
+  restrictTo("super-admin", "admin"),
+  paymentController.deletePayment
+);
 
 module.exports = router;

@@ -247,7 +247,7 @@ function App() {
             path="billings"
             element={
               <ShowOnlyVerifiedUser>
-                <BillingAndPaymentsRoute element={<InvoiceList />} />
+                <InvoiceList />
               </ShowOnlyVerifiedUser>
             }
           />
