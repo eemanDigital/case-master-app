@@ -206,9 +206,11 @@ const Dashboard = () => {
 
       <ShowOnlyVerifiedUser>
         <div className="flex items-center justify-between space-x-4 mb-2">
-          <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
-            {user?.data?.firstName}'s Dashboard
-          </h1>
+          {!isClient && (
+            <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
+              {user?.data?.firstName}'s Dashboard
+            </h1>
+          )}
           {isAdminOrHr && <LeaveNotification />}
         </div>
 

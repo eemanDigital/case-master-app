@@ -391,12 +391,6 @@ const ClientCaseDashboard = () => {
               <h1 className="text-3xl md:text-4xl font-bold text-gray-900">
                 Client Dashboard
               </h1>
-              {stats.duplicateCount > 0 && (
-                <Tooltip
-                  title={`You have ${stats.totalReports} total reports for ${stats.totalCases} unique cases. ${stats.duplicateCount} duplicate reports merged.`}>
-                  <InfoCircleOutlined className="text-blue-500 cursor-help" />
-                </Tooltip>
-              )}
             </div>
             <p className="text-gray-600 m-0 text-lg">
               Welcome back,{" "}

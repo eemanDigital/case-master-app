@@ -10,6 +10,7 @@ import useTextShorten from "../hooks/useTextShorten";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import SearchBar from "../components/SearchBar";
 import ButtonWithIcon from "../components/ButtonWithIcon";
+import GoBackButton from "../components/GoBackButton";
 
 const NoteList = () => {
   const { fetchData, loading, error, notes } = useDataGetterHook();
@@ -86,6 +87,7 @@ const NoteList = () => {
 
   return (
     <div className="max-w-7xl mx-auto font-poppins">
+      <GoBackButton />
       <div className="flex flex-col md:flex-row justify-between items-center mb-4 ">
         <h1 className="text-3xl font-bold text-gray-800 mb-3">Your Notes</h1>
 

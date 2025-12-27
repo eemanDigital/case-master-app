@@ -212,7 +212,7 @@ const SideBar = ({ isMobile, closeDrawer }) => {
   return (
     <div className="h-full flex flex-col">
       <div className="logo-vertical py-4">
-        {!isClient ? (
+        {!isClient && (
           <div className="flex justify-center items-center">
             <Link to="profile" onClick={isMobile ? closeDrawer : undefined}>
               <img
@@ -222,12 +222,6 @@ const SideBar = ({ isMobile, closeDrawer }) => {
               />
             </Link>
           </div>
-        ) : (
-          <Link to="profile" onClick={isMobile ? closeDrawer : undefined}>
-            <h1 className="text-gray-300 hover:text-gray-500 font-bold text-center">
-              {shortenText(user?.data?.firstName, 10)}
-            </h1>
-          </Link>
         )}
       </div>
       <Menu
