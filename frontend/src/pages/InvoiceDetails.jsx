@@ -40,6 +40,7 @@ import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import { useDownloadPdfHandler } from "../hooks/useDownloadPdfHandler";
 import CreatePaymentForm from "./CreatePaymentForm";
+import { useSelector } from "react-redux";
 
 const { Title, Text } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
@@ -62,6 +63,9 @@ const getPaymentStatus = (invoice) => {
 const InvoiceDetails = () => {
   const { id } = useParams();
   const { dataFetcher, data, loading, error } = useDataFetch();
+  const { user } = useSelector((state) => state.auth);
+  const isClient = user?.data?.role === "client";
+
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const {
     handleDownloadPdf,
@@ -190,9 +194,11 @@ const InvoiceDetails = () => {
 
           <div className="flex gap-3 flex-wrap">
             {/* Record Payment Button */}
+
             {invoice?.status !== "paid" &&
               invoice?.status !== "draft" &&
-              invoice?.status !== "cancelled" && (
+              invoice?.status !== "cancelled" &&
+              !isClient && (
                 <Button
                   type="primary"
                   icon={<PlusOutlined />}
@@ -220,13 +226,15 @@ const InvoiceDetails = () => {
             </Button>
 
             {/* Update Invoice Button */}
-            <Link to={`../billings/invoices/${invoice?._id}/update`}>
-              <Button
-                icon={<EditOutlined />}
-                className="border-blue-300 text-blue-600 hover:text-blue-700">
-                Update Invoice
-              </Button>
-            </Link>
+            {!isClient && (
+              <Link to={`../billings/invoices/${invoice?._id}/update`}>
+                <Button
+                  icon={<EditOutlined />}
+                  className="border-blue-300 text-blue-600 hover:text-blue-700">
+                  Update Invoice
+                </Button>
+              </Link>
+            )}
 
             {/* Add Payment Modal (always rendered, controlled by state) */}
             <Modal
