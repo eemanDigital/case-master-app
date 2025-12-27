@@ -3,12 +3,12 @@ import { useState, useMemo, useCallback, memo } from "react";
 import {
   Tag,
   Avatar,
-  Space,
   Typography,
   Tooltip,
   Button,
   Empty,
   Badge,
+  Collapse,
 } from "antd";
 import {
   CalendarOutlined,
@@ -18,23 +18,26 @@ import {
   MailOutlined,
   EnvironmentOutlined,
   FileTextOutlined,
-  DownOutlined,
-  UpOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { decode } from "html-entities";
 import { capitalizeWords } from "../../utils/capitalise";
 
-const { Title, Text, Paragraph } = Typography;
+const { Text, Paragraph } = Typography;
+const { Panel } = Collapse;
 
-// Memoized detail item component
-const DetailItem = memo(({ icon, label, value }) => (
-  <div className="flex items-start gap-2 min-w-0">
-    <div className="mt-1 flex-shrink-0">{icon}</div>
-    <div className="min-w-0 flex-1 overflow-hidden">
-      <Text className="text-xs text-gray-500 block truncate">{label}</Text>
-      <Text className="text-sm font-medium block break-words leading-tight">
-        {value}
+// Memoized detail item with improved mobile layout
+const DetailItem = memo(({ icon, label, value, fullWidth = false }) => (
+  <div
+    className={`flex items-start gap-2 ${
+      fullWidth ? "col-span-2" : ""
+    } min-w-0`}>
+    <div className="mt-1 flex-shrink-0 text-gray-400">{icon}</div>
+    <div className="min-w-0 flex-1">
+      <Text className="text-xs text-gray-500 block mb-0.5">{label}</Text>
+      <Text className="text-sm font-semibold text-gray-900 block break-words leading-snug">
+        {value || "N/A"}
       </Text>
     </div>
   </div>
@@ -42,47 +45,35 @@ const DetailItem = memo(({ icon, label, value }) => (
 
 DetailItem.displayName = "DetailItem";
 
-// Memoized legal team member component
-const LegalTeamMember = memo(({ officer, idx }) => (
-  <div
-    key={idx}
-    className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 cursor-pointer">
+// Memoized legal team member with mobile-optimized layout
+const LegalTeamMember = memo(({ officer }) => (
+  <div className="flex items-center gap-3 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl hover:shadow-sm transition-all">
     <Avatar
       src={officer.photo}
-      size="default"
+      size={40}
       className="border-2 border-white shadow-sm flex-shrink-0">
       {officer.firstName?.[0]}
       {officer.lastName?.[0]}
     </Avatar>
     <div className="flex-1 min-w-0">
-      <Text strong className="block truncate text-sm">
+      <Text strong className="block truncate text-sm text-gray-900">
         {officer.firstName} {officer.lastName}
       </Text>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
+      <div className="flex items-center gap-2 mt-1">
         {officer.email && (
           <Tooltip title={officer.email}>
-            <div className="flex items-center gap-1 min-w-0">
-              <MailOutlined className="text-gray-400 text-xs flex-shrink-0" />
-              <Text className="text-xs text-gray-600 truncate max-w-[120px] sm:max-w-xs">
-                {officer.email}
-              </Text>
-            </div>
+            <MailOutlined className="text-gray-400 text-xs" />
           </Tooltip>
         )}
         {officer.phone && (
           <Tooltip title={officer.phone}>
-            <div className="flex items-center gap-1 min-w-0">
-              <PhoneOutlined className="text-gray-400 text-xs flex-shrink-0" />
-              <Text className="text-xs text-gray-600 whitespace-nowrap">
-                {officer.phone}
-              </Text>
-            </div>
+            <PhoneOutlined className="text-gray-400 text-xs" />
           </Tooltip>
         )}
       </div>
     </div>
     {officer.role && (
-      <Tag color="blue" size="small" className="flex-shrink-0 mt-2 sm:mt-0">
+      <Tag color="blue" className="flex-shrink-0 m-0">
         {officer.role}
       </Tag>
     )}
@@ -97,13 +88,13 @@ const UpcomingCasesComponent = ({
   highlightToday = false,
   showTime = true,
 }) => {
-  const [expandedCase, setExpandedCase] = useState(null);
+  const [activeKey, setActiveKey] = useState([]);
 
-  // Optimized utility functions with useCallback
+  // Utility functions
   const formatContent = useCallback((html) => {
     if (!html) return "";
     const decoded = decode(html);
-    return decoded.replace(/<[^>]*>/g, " ").substring(0, 150) + "...";
+    return decoded.replace(/<[^>]*>/g, " ").substring(0, 120) + "...";
   }, []);
 
   const getPartyNames = useCallback((caseItem) => {
@@ -128,20 +119,17 @@ const UpcomingCasesComponent = ({
     };
   }, []);
 
-  // FIXED: Time formatting logic
   const formatDate = useCallback((dateString) => {
     if (!dateString) return { date: "N/A", time: "", fullDate: "N/A" };
 
     try {
       const date = new Date(dateString);
-
-      // Check if time is midnight (00:00:00), if so, force 9:00 AM
       const hours = date.getHours();
       const minutes = date.getMinutes();
-      const isMidnight = hours === 0 && minutes === 0;
 
-      if (isMidnight) {
-        date.setHours(9, 0, 0, 0); // Set to 9 AM Court time
+      // Default to 9:00 AM if midnight
+      if (hours === 0 && minutes === 0) {
+        date.setHours(9, 0, 0, 0);
       }
 
       return {
@@ -165,7 +153,6 @@ const UpcomingCasesComponent = ({
     }
   }, []);
 
-  // FIXED: Date comparison logic (strips time to ensure accuracy)
   const isToday = useCallback((dateString) => {
     if (!dateString) return false;
     const today = new Date();
@@ -180,23 +167,22 @@ const UpcomingCasesComponent = ({
     }
   }, []);
 
-  // FIXED: Logic for "Past" vs "Upcoming"
   const getTimeRemaining = useCallback((dateString) => {
     if (!dateString) return "";
 
     try {
       const today = new Date();
-      today.setHours(0, 0, 0, 0); // Reset today's time to midnight
+      today.setHours(0, 0, 0, 0);
 
       const caseDate = new Date(dateString);
-      caseDate.setHours(0, 0, 0, 0); // Reset case time to midnight
+      caseDate.setHours(0, 0, 0, 0);
 
       const diffMs = caseDate.getTime() - today.getTime();
       const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
       if (diffDays === 0) return "Today";
       if (diffDays === 1) return "Tomorrow";
-      if (diffDays < 0) return "Past"; // Handle past dates
+      if (diffDays < 0) return "Past";
       if (diffDays > 1 && diffDays <= 7) return `In ${diffDays} days`;
       if (diffDays > 7) return `In ${Math.ceil(diffDays / 7)} weeks`;
 
@@ -206,7 +192,7 @@ const UpcomingCasesComponent = ({
     }
   }, []);
 
-  // Sort cases by date with memoization
+  // Sort cases by date
   const sortedCases = useMemo(() => {
     return [...cases].sort((a, b) => {
       const dateA = new Date(a.adjournedDate || 0);
@@ -215,274 +201,223 @@ const UpcomingCasesComponent = ({
     });
   }, [cases]);
 
-  // Toggle expand handler
-  const toggleExpand = useCallback((caseId) => {
-    setExpandedCase((prev) => (prev === caseId ? null : caseId));
-  }, []);
-
   if (!cases || cases.length === 0) {
     return (
       <Empty
         image={Empty.PRESENTED_IMAGE_SIMPLE}
-        description="No upcoming cases scheduled"
-        className="py-12"
+        description="No upcoming cases"
+        className="py-8"
       />
     );
   }
 
   return (
     <div className="space-y-3">
-      {sortedCases.map((caseItem, index) => {
-        const dateInfo = formatDate(caseItem.adjournedDate);
-        const todayCase = isToday(caseItem.adjournedDate);
-        const timeRemaining = getTimeRemaining(caseItem.adjournedDate);
-        const { caseTitle } = getPartyNames(caseItem);
-        const formattedContent = formatContent(caseItem.update);
-        const caseId = caseItem._id || `case-${index}`;
-        const isExpanded = expandedCase === caseId;
+      <Collapse
+        activeKey={activeKey}
+        onChange={setActiveKey}
+        ghost
+        expandIconPosition="end"
+        className="case-collapse-modern">
+        {sortedCases.map((caseItem, index) => {
+          const dateInfo = formatDate(caseItem.adjournedDate);
+          const todayCase = isToday(caseItem.adjournedDate);
+          const timeRemaining = getTimeRemaining(caseItem.adjournedDate);
+          const { caseTitle } = getPartyNames(caseItem);
+          const formattedContent = formatContent(caseItem.update);
+          const caseId = caseItem._id || `case-${index}`;
 
-        return (
-          <motion.div
-            key={caseId}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.2, delay: index * 0.05 }}>
-            <div
-              className={`
-                rounded-xl border transition-all duration-200
-                ${
-                  isExpanded
-                    ? "bg-blue-50 border-blue-300 shadow-md"
-                    : "bg-white border-gray-200 hover:border-blue-200 hover:shadow-sm"
-                }
-                ${
-                  todayCase && highlightToday
-                    ? "border-l-4 border-l-red-500"
-                    : ""
-                }
-                ${compact ? "p-3" : "p-4"}
-              `}>
-              {/* Main Case Info - Clickable */}
-              <div
-                className="cursor-pointer"
-                onClick={() => toggleExpand(caseId)}>
-                <div className="flex flex-row items-start justify-between gap-3">
-                  {/* Left side - Case Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start gap-3 mb-3">
-                      {/* Date Box */}
-                      <div
-                        className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 transition-colors ${
-                          todayCase ? "bg-red-100" : "bg-blue-100"
-                        }`}>
-                        {todayCase ? (
-                          <ClockCircleOutlined className="text-red-600" />
-                        ) : (
-                          <CalendarOutlined className="text-blue-600" />
+          return (
+            <Panel
+              key={caseId}
+              header={
+                <motion.div
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                  className={`p-4 rounded-2xl border-2 transition-all ${
+                    todayCase && highlightToday
+                      ? "border-red-300 bg-gradient-to-r from-red-50 to-pink-50"
+                      : "border-gray-100 bg-white hover:border-blue-200"
+                  }`}>
+                  {/* Header Content */}
+                  <div className="flex items-start gap-3">
+                    {/* Icon */}
+                    <div
+                      className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${
+                        todayCase
+                          ? "bg-red-500 text-white"
+                          : "bg-blue-500 text-white"
+                      }`}>
+                      {todayCase ? (
+                        <ClockCircleOutlined className="text-lg" />
+                      ) : (
+                        <CalendarOutlined className="text-lg" />
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      {/* Title Row */}
+                      <div className="flex flex-wrap items-center gap-2 mb-2">
+                        <Text
+                          strong
+                          className="text-base text-gray-900 font-bold">
+                          {caseItem.caseReported?.suitNo ||
+                            `Case #${index + 1}`}
+                        </Text>
+                        {todayCase && (
+                          <Tag
+                            color="red"
+                            className="m-0 text-xs font-bold animate-pulse">
+                            TODAY
+                          </Tag>
+                        )}
+                        {timeRemaining && !todayCase && (
+                          <Tag color="blue" className="m-0 text-xs font-medium">
+                            {timeRemaining}
+                          </Tag>
                         )}
                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        {/* Tags and Title */}
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <Title
-                            level={compact ? 5 : 4}
-                            className="m-0 text-gray-900 whitespace-nowrap">
-                            {caseItem.caseReported?.suitNo ||
-                              `Case #${index + 1}`}
-                          </Title>
-                          <Space size={4} wrap>
-                            {todayCase && (
-                              <Tag
-                                color="red"
-                                className="text-xs font-semibold">
-                                TODAY
-                              </Tag>
-                            )}
-                            {timeRemaining && !todayCase && (
-                              <Tag color="blue" className="text-xs font-medium">
-                                {timeRemaining}
-                              </Tag>
-                            )}
-                          </Space>
+                      {/* Case Title */}
+                      <Text className="text-sm text-gray-700 block mb-3 font-medium">
+                        {caseTitle}
+                      </Text>
+
+                      {/* Quick Info Grid - Mobile Optimized */}
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div className="flex items-center gap-2">
+                          <CalendarOutlined className="text-gray-400" />
+                          <span className="text-gray-700 font-medium">
+                            {dateInfo.date}
+                          </span>
                         </div>
-                        <Text className="text-gray-700 font-medium block truncate">
-                          {caseTitle}
-                        </Text>
+                        {showTime && (
+                          <div className="flex items-center gap-2">
+                            <ClockCircleOutlined className="text-gray-400" />
+                            <span className="text-gray-700 font-medium">
+                              {dateInfo.time}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 col-span-2">
+                          <BankOutlined className="text-gray-400" />
+                          <span className="text-gray-700 font-medium truncate">
+                            {capitalizeWords(
+                              caseItem.caseReported?.courtName
+                            ) || "Not specified"}
+                          </span>
+                        </div>
                       </div>
                     </div>
-
-                    {/* Details Grid - Responsive Fixes */}
-                    <div
-                      className={`grid ${
-                        compact
-                          ? "grid-cols-1 sm:grid-cols-2"
-                          : "grid-cols-1 xs:grid-cols-2 md:grid-cols-4"
-                      } gap-y-3 gap-x-4`}>
+                  </div>
+                </motion.div>
+              }
+              className="mb-3"
+              style={{
+                border: "none",
+                background: "transparent",
+              }}>
+              {/* Expanded Content */}
+              <div className="p-4 bg-gradient-to-br from-gray-50 to-white rounded-2xl border border-gray-100 mt-2">
+                <div className="space-y-5">
+                  {/* Case Details Grid */}
+                  <div>
+                    <Text strong className="text-sm text-gray-700 block mb-3">
+                      Case Information
+                    </Text>
+                    <div className="grid grid-cols-2 gap-4">
                       <DetailItem
-                        icon={
-                          <CalendarOutlined className="text-gray-400 text-sm" />
-                        }
-                        label="Date"
-                        value={dateInfo.date}
-                      />
-                      {showTime && (
-                        <DetailItem
-                          icon={
-                            <ClockCircleOutlined className="text-gray-400 text-sm" />
-                          }
-                          label="Time"
-                          value={dateInfo.time}
-                        />
-                      )}
-                      <DetailItem
-                        icon={
-                          <BankOutlined className="text-gray-400 text-sm" />
-                        }
-                        label="Court"
-                        value={
-                          capitalizeWords(caseItem.caseReported?.courtName) ||
-                          "Not specified"
-                        }
-                      />
-                      <DetailItem
-                        icon={
-                          <FileTextOutlined className="text-gray-400 text-sm" />
-                        }
+                        icon={<FileTextOutlined />}
                         label="Purpose"
                         value={caseItem.adjournedFor || "Hearing"}
                       />
+                      <DetailItem
+                        icon={<BankOutlined />}
+                        label="Court No."
+                        value={caseItem.caseReported?.courtNo}
+                      />
+                      <DetailItem
+                        icon={<EnvironmentOutlined />}
+                        label="Location"
+                        value={caseItem.caseReported?.location}
+                      />
+                      <DetailItem
+                        icon={<CalendarOutlined />}
+                        label="State"
+                        value={caseItem.caseReported?.state}
+                      />
                     </div>
                   </div>
 
-                  {/* Right side - Expand/Collapse Icon */}
-                  <div className="flex flex-col items-center flex-shrink-0 pl-2">
+                  {/* Latest Update */}
+                  {caseItem.update && (
+                    <div>
+                      <Text strong className="text-sm text-gray-700 block mb-2">
+                        Latest Update
+                      </Text>
+                      <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3">
+                        <Paragraph className="text-sm text-gray-700 mb-0">
+                          {formattedContent}
+                        </Paragraph>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Legal Team */}
+                  {caseItem.caseReported?.accountOfficer?.length > 0 && (
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <Text strong className="text-sm text-gray-700">
+                          Legal Team
+                        </Text>
+                        <Badge
+                          count={caseItem.caseReported.accountOfficer.length}
+                          style={{
+                            backgroundColor: "#3b82f6",
+                          }}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        {caseItem.caseReported.accountOfficer.map(
+                          (officer, idx) => (
+                            <LegalTeamMember
+                              key={officer._id || idx}
+                              officer={officer}
+                            />
+                          )
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-2 pt-2 border-t border-gray-200">
                     <Button
-                      type="text"
+                      type="primary"
                       size="small"
-                      icon={
-                        isExpanded ? (
-                          <UpOutlined className="text-gray-600" />
-                        ) : (
-                          <DownOutlined className="text-gray-400" />
-                        )
-                      }
-                      className="hover:bg-blue-50"
-                    />
+                      className="flex-1 h-9 rounded-lg font-medium"
+                      style={{
+                        background:
+                          "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                        border: "none",
+                      }}>
+                      View Full Details
+                    </Button>
+                    <Button
+                      size="small"
+                      className="h-9 rounded-lg font-medium"
+                      icon={<PhoneOutlined />}>
+                      Contact
+                    </Button>
                   </div>
                 </div>
               </div>
-
-              {/* Expanded Details */}
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className="mt-4 pt-4 border-t border-gray-200 overflow-hidden">
-                    <div className="space-y-4">
-                      {/* Case Details Section */}
-                      <div>
-                        <Text
-                          strong
-                          className="text-gray-700 text-sm mb-3 block">
-                          Case Details
-                        </Text>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          <div className="space-y-3">
-                            <div>
-                              <Text className="text-xs text-gray-500 block">
-                                Case Type
-                              </Text>
-                              <Text className="text-sm font-medium">
-                                {caseItem.caseReported?.caseType || "Civil"}
-                              </Text>
-                            </div>
-                            <div>
-                              <Text className="text-xs text-gray-500 block">
-                                Location
-                              </Text>
-                              <div className="flex items-center gap-1">
-                                <EnvironmentOutlined className="text-gray-400 text-xs" />
-                                <Text className="text-sm font-medium">
-                                  {caseItem.caseReported?.location || "N/A"}
-                                </Text>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="space-y-3">
-                            <div>
-                              <Text className="text-xs text-gray-500 block">
-                                Court Number
-                              </Text>
-                              <Text className="text-sm font-medium">
-                                {caseItem.caseReported?.courtNo || "N/A"}
-                              </Text>
-                            </div>
-                            <div>
-                              <Text className="text-xs text-gray-500 block">
-                                State
-                              </Text>
-                              <Text className="text-sm font-medium">
-                                {caseItem.caseReported?.state || "N/A"}
-                              </Text>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Case Update Preview */}
-                      {caseItem.update && (
-                        <div>
-                          <Text
-                            strong
-                            className="text-gray-700 text-sm mb-2 block">
-                            Latest Update
-                          </Text>
-                          <Paragraph className="text-gray-600 text-sm bg-gray-50 p-3 rounded-lg max-h-32 overflow-y-auto mb-0">
-                            {formattedContent}
-                          </Paragraph>
-                        </div>
-                      )}
-
-                      {/* Legal Team */}
-                      {caseItem.caseReported?.accountOfficer?.length > 0 && (
-                        <div>
-                          <div className="flex items-center justify-between mb-3">
-                            <Text strong className="text-gray-700 text-sm">
-                              Assigned Legal Team
-                            </Text>
-                            <Badge
-                              count={
-                                caseItem.caseReported.accountOfficer.length
-                              }
-                              color="blue"
-                              showZero
-                            />
-                          </div>
-                          <div className="space-y-2">
-                            {caseItem.caseReported.accountOfficer.map(
-                              (officer, idx) => (
-                                <LegalTeamMember
-                                  key={officer._id || idx}
-                                  officer={officer}
-                                  idx={idx}
-                                />
-                              )
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        );
-      })}
+            </Panel>
+          );
+        })}
+      </Collapse>
     </div>
   );
 };

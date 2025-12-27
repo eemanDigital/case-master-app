@@ -5,10 +5,8 @@ import { Provider } from "react-redux";
 import { store } from "./redux/store/store.js";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import AuthContextProvider from "./context/authContext.jsx";
-
-// import "antd/dist/antd.css"; // Import Ant Design CSS here
-import "./index.css";
 import "./ClientDashboard.css";
+import "./index.css";
 
 import PhotoContextProvider from "./context/photoContext.jsx";
 import { DataFetcherContext } from "./context/dataFetcherContext.jsx";

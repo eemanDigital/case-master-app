@@ -7,6 +7,7 @@ const { generatePdf } = require("../utils/generatePdf");
 const Payment = require("../models/paymentModel");
 
 // Get all invoices with advanced pagination and filtering
+// Get all invoices with advanced pagination and filtering
 exports.getAllInvoices = catchAsync(async (req, res, next) => {
   const {
     page = 1,
@@ -21,8 +22,11 @@ exports.getAllInvoices = catchAsync(async (req, res, next) => {
   let filter = {};
 
   // Role-based filtering: clients can only see their own invoices
+  // AND clients cannot see draft invoices
   if (req.user.role === "client") {
     filter.client = req.user.id;
+    // Exclude draft invoices for clients
+    filter.status = { $ne: "draft" };
   } else if (client) {
     // Admins can filter by specific client
     filter.client = client;
@@ -37,9 +41,18 @@ exports.getAllInvoices = catchAsync(async (req, res, next) => {
     ];
   }
 
-  // Status filter
+  // Status filter - but override for clients if they try to filter for drafts
   if (status) {
+    // If client is trying to see drafts, prevent it
+    if (req.user.role === "client" && status === "draft") {
+      return next(new AppError("Clients cannot view draft invoices", 403));
+    }
     filter.status = status;
+  } else if (req.user.role === "client") {
+    // For clients without status filter, ensure we exclude drafts
+    if (!filter.status) {
+      filter.status = { $ne: "draft" };
+    }
   }
 
   // Case filter
@@ -82,13 +95,18 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
   }
 
   // Authorization check: clients can only view their own invoices
-  if (
-    req.user.role === "client" &&
-    invoice.client._id.toString() !== req.user.id
-  ) {
-    return next(
-      new AppError("You are not authorized to view this invoice", 403)
-    );
+  if (req.user.role === "client") {
+    // Check if client owns this invoice
+    if (invoice.client._id.toString() !== req.user.id) {
+      return next(
+        new AppError("You are not authorized to view this invoice", 403)
+      );
+    }
+
+    // Additional check: clients cannot view draft invoices
+    if (invoice.status === "draft") {
+      return next(new AppError("You cannot view draft invoices", 403));
+    }
   }
 
   // Get payment history

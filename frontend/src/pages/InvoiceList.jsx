@@ -38,7 +38,7 @@ const InvoiceList = () => {
   // const isClient = user?.data?.role === "client";
   const isSuperOrAdmin =
     user?.data?.role === "super-admin" || user?.data?.role === "admin";
-  const loggedInClientId = user?.data?.id;
+
   useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
   // fetch data

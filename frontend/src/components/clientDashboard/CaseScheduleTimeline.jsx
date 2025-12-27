@@ -1,5 +1,5 @@
 import PropTypes from "prop-types";
-import { useState, useMemo, useCallback, memo, useEffect } from "react";
+import { useState, useMemo, useCallback, memo } from "react";
 import {
   Timeline,
   Card,
@@ -14,6 +14,8 @@ import {
   Spin,
   Input,
   DatePicker,
+  Badge,
+  Drawer,
 } from "antd";
 import {
   CalendarOutlined,
@@ -23,6 +25,8 @@ import {
   DownloadOutlined,
   SearchOutlined,
   EyeOutlined,
+  TeamOutlined,
+  CloseOutlined,
 } from "@ant-design/icons";
 import { motion } from "framer-motion";
 
@@ -30,16 +34,15 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-// Memoized timeline dot component
+// Memoized timeline dot with gradient design
 const TimelineDot = memo(({ color }) => {
-  const bgColorClass =
-    {
-      red: "bg-red-500",
-      orange: "bg-orange-500",
-      blue: "bg-blue-500",
-      green: "bg-green-500",
-      gray: "bg-gray-500",
-    }[color] || "bg-gray-500";
+  const gradients = {
+    red: "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)",
+    orange: "linear-gradient(135deg, #f97316 0%, #ea580c 100%)",
+    blue: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+    green: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+    gray: "linear-gradient(135deg, #6b7280 0%, #4b5563 100%)",
+  };
 
   return (
     <motion.div
@@ -47,8 +50,9 @@ const TimelineDot = memo(({ color }) => {
       animate={{ scale: 1 }}
       transition={{ duration: 0.3 }}>
       <div
-        className={`w-8 h-8 rounded-full flex items-center justify-center border-2 border-white shadow-md ${bgColorClass}`}>
-        <CalendarOutlined className="text-white text-xs" />
+        className="w-10 h-10 rounded-full flex items-center justify-center shadow-lg border-2 border-white"
+        style={{ background: gradients[color] || gradients.gray }}>
+        <CalendarOutlined className="text-white text-base" />
       </div>
     </motion.div>
   );
@@ -56,24 +60,47 @@ const TimelineDot = memo(({ color }) => {
 
 TimelineDot.displayName = "TimelineDot";
 
-// Memoized case card component
+// Memoized case card with modern design
 const CaseCard = memo(
   ({ caseItem, index, dateInfo, timelineColor, isPast }) => {
-    // Format time to show Nigeria time (9am instead of 12am)
     const formatNigeriaTime = (dateString) => {
       try {
         const date = new Date(dateString);
+        const hours = date.getHours();
+        const minutes = date.getMinutes();
+
+        // Default to 9:00 AM if midnight
+        if (hours === 0 && minutes === 0) {
+          date.setHours(9, 0, 0, 0);
+        }
+
         return date.toLocaleTimeString("en-US", {
           hour: "2-digit",
           minute: "2-digit",
           timeZone: "Africa/Lagos",
         });
       } catch {
-        return "Invalid Time";
+        return "9:00 AM";
       }
     };
 
     const nigeriaTime = formatNigeriaTime(caseItem.adjournedDate);
+
+    const gradients = {
+      red: "linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)",
+      orange: "linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)",
+      blue: "linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)",
+      green: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)",
+      gray: "linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%)",
+    };
+
+    const borderColors = {
+      red: "#ef4444",
+      orange: "#f97316",
+      blue: "#3b82f6",
+      green: "#10b981",
+      gray: "#6b7280",
+    };
 
     return (
       <motion.div
@@ -81,95 +108,136 @@ const CaseCard = memo(
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.3, delay: index * 0.05 }}>
         <Card
-          className={`timeline-card ${
-            isPast ? "bg-gray-50" : "bg-white"
-          } hover:shadow-lg transition-all duration-200 border-l-4 ${
-            timelineColor === "red"
-              ? "border-l-red-500"
-              : timelineColor === "orange"
-              ? "border-l-orange-500"
-              : timelineColor === "blue"
-              ? "border-l-blue-500"
-              : timelineColor === "green"
-              ? "border-l-green-500"
-              : "border-l-gray-500"
+          className={`hover:shadow-2xl transition-all duration-300 border-0 rounded-2xl overflow-hidden ${
+            isPast ? "opacity-70" : ""
           }`}
-          size="small">
-          <div className="space-y-3">
+          style={{
+            background: gradients[timelineColor],
+            borderLeft: `4px solid ${borderColors[timelineColor]}`,
+          }}>
+          <div className="space-y-4">
             {/* Header */}
-            <div className="flex items-start justify-between">
+            <div className="flex flex-col sm:flex-row items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                <Title level={5} className="m-0 mb-1 truncate">
-                  {caseItem.caseReported?.suitNo || `Case #${index + 1}`}
-                </Title>
-                <Text className="text-gray-600 text-sm block truncate">
+                <div className="flex items-center gap-2 mb-2">
+                  <Title level={5} className="m-0 text-gray-900 font-bold">
+                    {caseItem.caseReported?.suitNo || `Case #${index + 1}`}
+                  </Title>
+                  <Tag
+                    color={timelineColor}
+                    className="m-0 px-3 py-1 rounded-lg font-semibold">
+                    {dateInfo.relative}
+                  </Tag>
+                </div>
+                <Text className="text-sm text-gray-700 block font-medium">
                   {caseItem.caseReported?.firstParty?.name?.[0]?.name ||
                     "Plaintiff"}{" "}
-                  vs{" "}
+                  <span className="text-gray-500">vs</span>{" "}
                   {caseItem.caseReported?.secondParty?.name?.[0]?.name ||
                     "Defendant"}
                 </Text>
               </div>
-              <Tag color={timelineColor} className="ml-2 flex-shrink-0">
-                {dateInfo.relative}
-              </Tag>
             </div>
 
-            {/* Date and Time */}
-            <div className="flex items-center justify-between text-sm bg-gray-50 p-2 rounded-lg">
-              <div className="flex items-center gap-2">
-                <CalendarOutlined className="text-gray-400" />
-                <Text className="font-medium">{dateInfo.date}</Text>
+            {/* Date and Time - Mobile Optimized */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white/60 backdrop-blur-sm p-3 rounded-xl border border-white/40">
+                <div className="flex items-center gap-2 mb-1">
+                  <CalendarOutlined
+                    style={{ color: borderColors[timelineColor] }}
+                  />
+                  <Text className="text-xs text-gray-500">Date</Text>
+                </div>
+                <Text strong className="text-sm text-gray-900 block">
+                  {dateInfo.date}
+                </Text>
               </div>
-              <div className="flex items-center gap-2">
-                <ClockCircleOutlined className="text-gray-400" />
-                <Text className="font-medium">{nigeriaTime}</Text>
+              <div className="bg-white/60 backdrop-blur-sm p-3 rounded-xl border border-white/40">
+                <div className="flex items-center gap-2 mb-1">
+                  <ClockCircleOutlined
+                    style={{ color: borderColors[timelineColor] }}
+                  />
+                  <Text className="text-xs text-gray-500">Time</Text>
+                </div>
+                <Text strong className="text-sm text-gray-900 block">
+                  {nigeriaTime}
+                </Text>
               </div>
             </div>
 
-            {/* Details */}
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div>
-                <Text className="text-gray-500 block mb-1">Court</Text>
-                <div className="flex items-center gap-1">
-                  <BankOutlined className="text-gray-400 text-xs" />
-                  <Text strong className="truncate">
-                    {caseItem.caseReported?.courtName || "N/A"}
-                  </Text>
+            {/* Case Details */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-white/60 backdrop-blur-sm p-3 rounded-xl border border-white/40">
+                <div className="flex items-start gap-2">
+                  <BankOutlined
+                    className="text-base mt-0.5"
+                    style={{ color: borderColors[timelineColor] }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <Text className="text-xs text-gray-500 block">Court</Text>
+                    <Text
+                      strong
+                      className="text-sm text-gray-900 block break-words">
+                      {caseItem.caseReported?.courtName || "N/A"}
+                    </Text>
+                  </div>
                 </div>
               </div>
-              <div>
-                <Text className="text-gray-500 block mb-1">Purpose</Text>
-                <Text strong className="truncate">
-                  {caseItem.adjournedFor || "Hearing"}
-                </Text>
+              <div className="bg-white/60 backdrop-blur-sm p-3 rounded-xl border border-white/40">
+                <div className="flex items-start gap-2">
+                  <EyeOutlined
+                    className="text-base mt-0.5"
+                    style={{ color: borderColors[timelineColor] }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <Text className="text-xs text-gray-500 block">Purpose</Text>
+                    <Text
+                      strong
+                      className="text-sm text-gray-900 block break-words">
+                      {caseItem.adjournedFor || "Hearing"}
+                    </Text>
+                  </div>
+                </div>
               </div>
             </div>
 
             {/* Legal Team Preview */}
             {caseItem.caseReported?.accountOfficer?.length > 0 && (
-              <div className="pt-2 border-t border-gray-200">
-                <Text className="text-gray-500 text-sm block mb-2">
-                  Legal Team
-                </Text>
+              <div className="bg-white/60 backdrop-blur-sm p-3 rounded-xl border border-white/40">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <TeamOutlined
+                      style={{ color: borderColors[timelineColor] }}
+                    />
+                    <Text className="text-xs text-gray-500 font-medium">
+                      Legal Team
+                    </Text>
+                  </div>
+                  <Badge
+                    count={caseItem.caseReported.accountOfficer.length}
+                    style={{
+                      backgroundColor: borderColors[timelineColor],
+                    }}
+                  />
+                </div>
                 <div className="flex items-center -space-x-2">
                   {caseItem.caseReported.accountOfficer
-                    .slice(0, 3)
+                    .slice(0, 4)
                     .map((officer, idx) => (
                       <Avatar
                         key={officer._id || idx}
                         src={officer.photo}
-                        size="small"
-                        className="border-2 border-white shadow-sm">
+                        size={32}
+                        className="border-2 border-white shadow-md">
                         {officer.firstName?.[0]}
                         {officer.lastName?.[0]}
                       </Avatar>
                     ))}
-                  {caseItem.caseReported.accountOfficer.length > 3 && (
+                  {caseItem.caseReported.accountOfficer.length > 4 && (
                     <Avatar
-                      size="small"
-                      className="bg-gray-200 text-gray-600 border-2 border-white">
-                      +{caseItem.caseReported.accountOfficer.length - 3}
+                      size={32}
+                      className="bg-gray-600 text-white border-2 border-white shadow-md">
+                      +{caseItem.caseReported.accountOfficer.length - 4}
                     </Avatar>
                   )}
                 </div>
@@ -177,12 +245,20 @@ const CaseCard = memo(
             )}
 
             {/* Actions */}
-            <div className="flex gap-2 pt-2">
-              <Button size="small" type="primary" className="flex-1">
+            <div className="flex gap-2 pt-3 border-t border-white/40">
+              <Button
+                type="primary"
+                className="flex-1 h-10 rounded-xl font-medium"
+                style={{
+                  background: `linear-gradient(135deg, ${borderColors[timelineColor]} 0%, ${borderColors[timelineColor]}dd 100%)`,
+                  border: "none",
+                }}>
                 View Details
               </Button>
-              <Button size="small" icon={<DownloadOutlined />}>
-                Download
+              <Button
+                icon={<DownloadOutlined />}
+                className="h-10 px-4 rounded-xl">
+                Export
               </Button>
             </div>
           </div>
@@ -201,15 +277,15 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
   const [dateRange, setDateRange] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [filterDrawerOpen, setFilterDrawerOpen] = useState(false);
 
-  const pageSize = 10; // Show 10 cases per page
+  const pageSize = 10;
 
-  // Utility functions with Nigeria timezone
+  // Utility functions
   const getTimelineColor = useCallback((dateString) => {
     const date = new Date(dateString);
     const now = new Date();
 
-    // Convert to Nigeria timezone for accurate comparison
     const nigeriaDate = new Date(
       date.toLocaleString("en-US", { timeZone: "Africa/Lagos" })
     );
@@ -217,7 +293,6 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
       now.toLocaleString("en-US", { timeZone: "Africa/Lagos" })
     );
 
-    // Set both dates to start of day for comparison
     nigeriaDate.setHours(0, 0, 0, 0);
     nigeriaNow.setHours(0, 0, 0, 0);
 
@@ -261,7 +336,6 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
       now.toLocaleString("en-US", { timeZone: "Africa/Lagos" })
     );
 
-    // Set both dates to start of day
     date.setHours(0, 0, 0, 0);
     nigeriaNow.setHours(0, 0, 0, 0);
 
@@ -277,9 +351,9 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
     return `In ${Math.floor(diffDays / 30)} months`;
   }, []);
 
-  // Filtered and sorted cases with pagination
-  const { filteredCases, totalPages } = useMemo(() => {
-    if (isLoading) return { filteredCases: [], totalPages: 0 };
+  // Filtered and sorted cases
+  const { filteredCases, totalPages, totalCases } = useMemo(() => {
+    if (isLoading) return { filteredCases: [], totalPages: 0, totalCases: 0 };
 
     let filtered = [...cases];
 
@@ -303,7 +377,7 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
       });
     }
 
-    // Filter by court
+    // Court filter
     if (courtFilter !== "all") {
       filtered = filtered.filter(
         (caseItem) => caseItem.caseReported?.courtName === courtFilter
@@ -320,7 +394,7 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
       });
     }
 
-    // Filter by view mode
+    // View mode filter
     const now = new Date();
     const nigeriaNow = new Date(
       now.toLocaleString("en-US", { timeZone: "Africa/Lagos" })
@@ -352,15 +426,15 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
       (a, b) => new Date(a.adjournedDate) - new Date(b.adjournedDate)
     );
 
-    // Calculate pagination
-    const totalPages = Math.ceil(filtered.length / pageSize);
+    const totalCases = filtered.length;
+    const totalPages = Math.ceil(totalCases / pageSize);
     const startIndex = (currentPage - 1) * pageSize;
     const paginatedCases = filtered.slice(startIndex, startIndex + pageSize);
 
     return {
       filteredCases: paginatedCases,
       totalPages,
-      totalCases: filtered.length,
+      totalCases,
     };
   }, [
     cases,
@@ -372,7 +446,7 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
     isLoading,
   ]);
 
-  // Get unique courts for filter
+  // Get unique courts
   const courtOptions = useMemo(() => {
     const courts = new Set(
       cases.map((c) => c.caseReported?.courtName).filter(Boolean)
@@ -383,7 +457,7 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
   // Handlers
   const handleViewModeChange = useCallback((value) => {
     setViewMode(value);
-    setCurrentPage(1); // Reset to first page when filter changes
+    setCurrentPage(1);
   }, []);
 
   const handleCourtFilterChange = useCallback((value) => {
@@ -403,122 +477,169 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
 
   const handlePageChange = useCallback((page) => {
     setCurrentPage(page);
-    // Scroll to top when page changes
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
-
-  // Simulate loading for large datasets
-  useEffect(() => {
-    if (cases.length > 50) {
-      setIsLoading(true);
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [cases]);
 
   if (!cases || cases.length === 0) {
     return (
       <Empty
         image={Empty.PRESENTED_IMAGE_SIMPLE}
         description="No scheduled cases"
-        className="py-12"
+        className="py-16"
       />
     );
   }
+
+  // Filter content component
+  const FilterContent = () => (
+    <div className="space-y-4">
+      <div>
+        <Text className="text-sm font-medium text-gray-700 block mb-2">
+          Search
+        </Text>
+        <Input
+          placeholder="Search cases..."
+          prefix={<SearchOutlined />}
+          value={searchTerm}
+          onChange={handleSearchChange}
+          size="large"
+          allowClear
+        />
+      </div>
+
+      <div>
+        <Text className="text-sm font-medium text-gray-700 block mb-2">
+          Date Range
+        </Text>
+        <RangePicker
+          onChange={handleDateRangeChange}
+          className="w-full"
+          size="large"
+          allowClear
+        />
+      </div>
+
+      <div>
+        <Text className="text-sm font-medium text-gray-700 block mb-2">
+          View Mode
+        </Text>
+        <Select
+          value={viewMode}
+          onChange={handleViewModeChange}
+          className="w-full"
+          size="large">
+          <Option value="upcoming">Upcoming Cases</Option>
+          <Option value="past">Past Cases</Option>
+          <Option value="all">All Cases</Option>
+        </Select>
+      </div>
+
+      <div>
+        <Text className="text-sm font-medium text-gray-700 block mb-2">
+          Court
+        </Text>
+        <Select
+          value={courtFilter}
+          onChange={handleCourtFilterChange}
+          className="w-full"
+          size="large">
+          <Option value="all">All Courts</Option>
+          {courtOptions.map((court, index) => (
+            <Option key={index} value={court}>
+              {court}
+            </Option>
+          ))}
+        </Select>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
       {/* Filters */}
       {showFilters && (
-        <Card className="shadow-sm">
-          <div className="flex flex-col gap-4">
-            {/* First row: Search and date range */}
-            <div className="flex flex-col md:flex-row gap-4">
-              <Input
-                placeholder="Search cases by suit no, party names, or purpose..."
-                prefix={<SearchOutlined />}
-                value={searchTerm}
-                onChange={handleSearchChange}
-                className="flex-1"
-                size="large"
-                allowClear
-              />
-              <RangePicker
-                onChange={handleDateRangeChange}
-                className="min-w-[250px]"
-                size="large"
-                allowClear
-              />
-            </div>
-
-            {/* Second row: Mode and court filters */}
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-              <Space size="middle" className="flex-wrap">
-                <Select
-                  value={viewMode}
-                  onChange={handleViewModeChange}
-                  className="min-w-[140px]"
-                  size="large">
-                  <Option value="upcoming">
-                    <Space>
-                      <FilterOutlined />
-                      Upcoming
-                    </Space>
-                  </Option>
-                  <Option value="past">
-                    <Space>
-                      <FilterOutlined />
-                      Past Cases
-                    </Space>
-                  </Option>
-                  <Option value="all">
-                    <Space>
-                      <FilterOutlined />
-                      All Cases
-                    </Space>
-                  </Option>
-                </Select>
-
-                <Select
-                  value={courtFilter}
-                  onChange={handleCourtFilterChange}
-                  placeholder="Filter by Court"
-                  className="min-w-[180px]"
-                  size="large">
-                  <Option value="all">All Courts</Option>
-                  {courtOptions.map((court, index) => (
-                    <Option key={index} value={court}>
-                      {court}
-                    </Option>
-                  ))}
-                </Select>
-              </Space>
-
-              <div className="flex gap-3">
-                <Button
-                  icon={<DownloadOutlined />}
+        <>
+          {/* Desktop Filters */}
+          <Card className="shadow-sm border-0 rounded-2xl hidden md:block">
+            <div className="space-y-4">
+              <div className="flex flex-col md:flex-row gap-4">
+                <Input
+                  placeholder="Search by case number, parties, or purpose..."
+                  prefix={<SearchOutlined />}
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+                  className="flex-1"
                   size="large"
-                  className="shadow-sm">
-                  Export
-                </Button>
-                <Button
-                  icon={<EyeOutlined />}
+                  allowClear
+                />
+                <RangePicker
+                  onChange={handleDateRangeChange}
+                  className="min-w-[280px]"
                   size="large"
-                  type="primary"
-                  className="shadow-sm">
-                  Full Calendar View
-                </Button>
+                  allowClear
+                />
+              </div>
+
+              <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+                <Space size="middle" className="flex-wrap">
+                  <Select
+                    value={viewMode}
+                    onChange={handleViewModeChange}
+                    className="w-[160px]"
+                    size="large">
+                    <Option value="upcoming">Upcoming</Option>
+                    <Option value="past">Past Cases</Option>
+                    <Option value="all">All Cases</Option>
+                  </Select>
+
+                  <Select
+                    value={courtFilter}
+                    onChange={handleCourtFilterChange}
+                    placeholder="Filter by Court"
+                    className="w-[200px]"
+                    size="large">
+                    <Option value="all">All Courts</Option>
+                    {courtOptions.map((court, index) => (
+                      <Option key={index} value={court}>
+                        {court}
+                      </Option>
+                    ))}
+                  </Select>
+                </Space>
+
+                <div className="flex items-center gap-3">
+                  <Button
+                    icon={<DownloadOutlined />}
+                    size="large"
+                    className="h-10 rounded-xl">
+                    Export Schedule
+                  </Button>
+                </div>
               </div>
             </div>
+          </Card>
+
+          {/* Mobile Filter Button */}
+          <div className="md:hidden">
+            <Button
+              size="large"
+              icon={<FilterOutlined />}
+              onClick={() => setFilterDrawerOpen(true)}
+              className="w-full h-12 rounded-xl font-medium"
+              style={{
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                color: "white",
+                border: "none",
+              }}>
+              Filters ({totalCases} cases)
+            </Button>
           </div>
-        </Card>
+        </>
       )}
 
       {/* Loading state */}
       {isLoading ? (
-        <div className="flex justify-center items-center py-12">
+        <div className="flex justify-center items-center py-16">
           <Spin size="large" tip="Loading cases..." />
         </div>
       ) : (
@@ -527,7 +648,7 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
           {filteredCases.length > 0 ? (
             <>
               <div className="relative">
-                <Timeline mode="alternate" className="case-timeline">
+                <Timeline mode="alternate" className="case-timeline-modern">
                   {filteredCases.map((caseItem, index) => {
                     const dateInfo = formatDate(caseItem.adjournedDate);
                     const timelineColor = getTimelineColor(
@@ -569,23 +690,22 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 mt-6 p-4 bg-gray-50 rounded-lg">
-                  <Text className="text-gray-600">
-                    Showing {(currentPage - 1) * pageSize + 1}-
-                    {Math.min(currentPage * pageSize, filteredCases.totalCases)}{" "}
-                    of {filteredCases.totalCases} cases
+                <div className="flex flex-col items-center gap-4 mt-8 p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-2xl">
+                  <Text className="text-sm text-gray-600">
+                    Page {currentPage} of {totalPages} • Showing{" "}
+                    {(currentPage - 1) * pageSize + 1}-
+                    {Math.min(currentPage * pageSize, totalCases)} of{" "}
+                    {totalCases} cases
                   </Text>
                   <Pagination
                     current={currentPage}
-                    total={filteredCases.totalCases}
+                    total={totalCases}
                     pageSize={pageSize}
                     onChange={handlePageChange}
                     showSizeChanger={false}
                     showQuickJumper
                     responsive
-                    showTotal={(total, range) =>
-                      `${range[0]}-${range[1]} of ${total} cases`
-                    }
+                    className="flex-wrap justify-center"
                   />
                 </div>
               )}
@@ -593,12 +713,40 @@ const CaseScheduleTimeline = ({ cases, showFilters = false }) => {
           ) : (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="No cases match the selected filters"
-              className="py-12"
+              description={
+                <div className="py-8">
+                  <p className="text-gray-600 text-base mb-3">
+                    No cases match your filters
+                  </p>
+                  <Button
+                    type="primary"
+                    onClick={() => {
+                      setSearchTerm("");
+                      setDateRange([]);
+                      setCourtFilter("all");
+                      setViewMode("upcoming");
+                    }}
+                    className="rounded-lg">
+                    Clear all filters
+                  </Button>
+                </div>
+              }
+              className="py-16"
             />
           )}
         </>
       )}
+
+      {/* Mobile Filter Drawer */}
+      <Drawer
+        title="Filters & Sort"
+        placement="right"
+        onClose={() => setFilterDrawerOpen(false)}
+        open={filterDrawerOpen}
+        closeIcon={<CloseOutlined />}
+        width={320}>
+        <FilterContent />
+      </Drawer>
     </div>
   );
 };
