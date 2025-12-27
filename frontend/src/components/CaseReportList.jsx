@@ -26,7 +26,6 @@ import {
   UserOutlined,
   FileTextOutlined,
   MoreOutlined,
-  SendOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
 import { motion } from "framer-motion";
@@ -44,8 +43,10 @@ import { useDownloadPdfHandler } from "../hooks/useDownloadPdfHandler";
 import SendCaseReport from "./SendCaseReport";
 import { ShowStaff } from "./protect/Protect";
 import ArchiveIcon from "./ArchiveIcon";
+import { decode } from "html-entities";
+import DOMPurify from "dompurify";
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
 // Memoized Report Card Component
@@ -62,6 +63,16 @@ const ReportCard = memo(
     loadingPdf,
   }) => {
     const [expanded, setExpanded] = useState(false);
+
+    // Add this helper function
+    const sanitizeAndDecodeContent = (html) => {
+      if (!html) return "";
+      const decoded = decode(html); // Decode HTML entities
+      return DOMPurify.sanitize(decoded, {
+        ALLOWED_TAGS: ["p", "br", "strong", "b", "em", "i", "u", "span"],
+        ALLOWED_ATTR: ["style"],
+      });
+    };
 
     // Create action menu for mobile
     const actionMenu = (
@@ -159,14 +170,9 @@ const ReportCard = memo(
                   Report Details
                 </Text>
               </div>
-              <div
-                className={`text-gray-700 leading-relaxed text-sm sm:text-base ${
-                  !expanded ? "line-clamp-3" : ""
-                }`}>
-                {expanded
-                  ? report?.update
-                  : shortenText(report?.update, 200, report._id)}
-              </div>
+              <p className="text-gray-700 leading-relaxed text-sm sm:text-base">
+                {shortenText(report?.update, 400, report._id)}
+              </p>
               {report?.update?.length > 200 && (
                 <Button
                   type="link"
@@ -434,52 +440,48 @@ const CaseReportList = ({
     : filterReportForClient(reports, clientId);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 py-6">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center justify-between">
-              <Title
-                level={2}
-                className="text-xl sm:text-2xl font-bold text-gray-900 m-0">
-                {title}
-              </Title>
-              <ArchiveIcon
-                toolTipName="View Deleted Reports"
-                link="soft-deleted-items"
-              />
-            </div>
-
-            {!hideButtons && isStaff && (
-              <Link to="add-report" className="w-full sm:w-auto">
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  size="large"
-                  className="w-full sm:w-auto shadow-sm">
-                  Add New Report
-                </Button>
-              </Link>
-            )}
-          </div>
-
-          {/* Search Bar */}
-          <div className="mt-4">
-            <CaseReportSearchBar
-              onFiltersChange={handleFiltersChange}
-              onReset={handleResetFilters}
-              filters={filters}
-              loading={loading}
-              searchPlaceholder="Search reports or filter by case..."
-              showCaseSearch={true}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center justify-between">
+            <Title
+              level={2}
+              className="text-2xl sm:text-3xl font-bold text-gray-900 m-0">
+              {title}
+            </Title>
+            <ArchiveIcon
+              toolTipName="View Deleted Reports"
+              link="soft-deleted-items"
             />
           </div>
+
+          {!hideButtons && isStaff && (
+            <Link to="add-report" className="w-full sm:w-auto">
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                size="large"
+                className="w-full sm:w-auto shadow-sm">
+                Add New Report
+              </Button>
+            </Link>
+          )}
         </div>
+
+        {/* Search Bar */}
+        <CaseReportSearchBar
+          onFiltersChange={handleFiltersChange}
+          onReset={handleResetFilters}
+          filters={filters}
+          loading={loading}
+          searchPlaceholder="Search reports or filter by case..."
+          showCaseSearch={true}
+        />
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-12">
