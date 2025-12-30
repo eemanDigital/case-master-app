@@ -96,7 +96,7 @@ const userSchema = new mongoose.Schema(
         values: ["user", "super-admin", "admin", "secretary", "hr", "client"],
         message: "Select a valid role.",
       },
-      default: "user",
+      default: "staff",
     },
 
     position: {
@@ -186,6 +186,13 @@ const userSchema = new mongoose.Schema(
       default: [],
     },
 
+    isStaff: {
+      type: Boolean,
+      default: function () {
+        return this.role !== "client";
+      },
+    },
+
     isActive: {
       type: Boolean,
       default: true,
@@ -235,8 +242,7 @@ userSchema.methods.correctPassword = async function (
 };
 
 userSchema.pre(/^find/, function (next) {
-  // this points to the current query
-  this.find({ active: { $ne: false } });
+  this.find({ isActive: { $ne: false }, isDeleted: { $ne: true } });
   next();
 });
 

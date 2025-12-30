@@ -65,6 +65,7 @@ import SoftDeletedReportsArchive from "./pages/SoftDeletedReportsArchive.jsx";
 import InvoiceList from "./pages/InvoiceList.jsx";
 import AddClientForm from "./components/AddClientForm.jsx";
 import DocumentsList from "./components/DocumentsList.jsx";
+import StatusUserList from "./pages/StatusUserList.jsx";
 
 // Enable axios credentials
 axios.defaults.withCredentials = true;
@@ -140,6 +141,16 @@ function App() {
               <ShowOnlyVerifiedUser>
                 <ProtectedRoute isStaffRoute={true}>
                   <StaffList />
+                </ProtectedRoute>
+              </ShowOnlyVerifiedUser>
+            }
+          />
+          <Route
+            path="staff-status"
+            element={
+              <ShowOnlyVerifiedUser>
+                <ProtectedRoute isStaffRoute={true}>
+                  <StatusUserList />
                 </ProtectedRoute>
               </ShowOnlyVerifiedUser>
             }

@@ -13,7 +13,7 @@ import avatar from "../assets/avatar.png";
 import { useRemovePhoto } from "../hooks/useRemovePhoto";
 
 import { logout, RESET } from "../redux/features/auth/authSlice";
-import { shortenText } from "../utils/shortenText";
+// import { shortenText } from "../utils/shortenText";
 
 const SideBar = ({ isMobile, closeDrawer }) => {
   const { remove } = useRemovePhoto();
@@ -50,11 +50,15 @@ const SideBar = ({ isMobile, closeDrawer }) => {
     else if (path.includes("/dashboard/staff/leave-application")) {
       setSelectedKeys(["leave-application"]);
       setOpenKeys(["staff-management"]); // ✅ Keep parent open
+    } else if (path.includes("/dashboard/staff-status")) {
+      setSelectedKeys(["staff-status"]);
+      setOpenKeys(["staff-management"]);
     } else if (path.includes("/dashboard/staff/leave-balance")) {
       setSelectedKeys(["leave-balance"]);
       setOpenKeys(["staff-management"]);
     } else if (path.includes("/dashboard/staff")) {
       setSelectedKeys(["staff-list"]);
+
       setOpenKeys(["staff-management"]);
     }
     // Cause List
@@ -130,6 +134,10 @@ const SideBar = ({ isMobile, closeDrawer }) => {
         {
           key: "staff-list",
           label: <Link to="staff">Staff List</Link>,
+        },
+        {
+          key: "staff-status",
+          label: <Link to="staff-status">Staff by Status</Link>,
         },
         {
           key: "leave-application",

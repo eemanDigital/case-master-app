@@ -30,6 +30,7 @@ import CurrentDayCauseList from "./CurrentDayCauseList";
 import VerifyAccountNotice from "./VerifyAccountNotice";
 import QuickActionsPanel from "./QuickActionsPanel";
 import ClientCaseDashboard from "./clientDashboard/ClientCaseDashboard";
+import StatusUserList from "../pages/StatusUserList";
 
 export const PaymentFiltersContext = createContext();
 

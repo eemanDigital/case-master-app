@@ -1,70 +1,155 @@
+import React, { memo, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Pagination, Row, Card, Empty, Alert, Tag, Statistic, Col } from "antd";
+import {
+  Pagination,
+  Row,
+  Card,
+  Empty,
+  Alert,
+  Statistic,
+  Col,
+  Spin,
+  Tag,
+} from "antd";
 import {
   PlusOutlined,
   TeamOutlined,
   UserOutlined,
   SafetyCertificateOutlined,
   CrownOutlined,
+  CheckCircleOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import { useUserList } from "../hooks/useUserList";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useSelector } from "react-redux";
 import ButtonWithIcon from "../components/ButtonWithIcon";
-// import PageErrorAlert from "../components/PageErrorAlert";
 import StaffSearchBar from "../components/StaffSearchBar";
 import UserListTable from "../components/UserListTable";
 import ActiveFilters from "../components/ActiveFilters";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import useUsersCount from "../hooks/useUsersCount";
 
-const StaffList = () => {
+const StaffList = memo(() => {
   useRedirectLogoutUser("/users/login");
   const { user } = useSelector((state) => state.auth);
   const { isAdminOrHr, isSuperOrAdmin, isStaff } = useAdminHook();
 
+  // ✅ Use fixed hook with "staff" filter
   const {
     filteredList: staffList,
     filters,
     currentPage,
     itemsPerPage,
-    // isError,
-    users,
-    // message,
+    totalRecords,
+    totalPages,
     loading,
+    paginationData,
+    statistics, // ✅ Get statistics directly from hook
     handleFiltersChange,
     resetFilters,
     removeUser,
     handlePageChange,
-  } = useUserList("staff");
+  } = useUserList("staff"); // ✅ Pass "staff" role
 
-  // Calculate staff statistics
-  const staffStats = {
-    total: staffList.length,
-    active: staffList.filter((staff) => staff.isActive).length,
-    verified: staffList.filter((staff) => staff.isVerified).length,
-    lawyers: staffList.filter((staff) => staff.isLawyer).length,
-    admins: staffList.filter((staff) =>
-      ["admin", "super-admin"].includes(staff.role)
-    ).length,
+  console.log("✅ StaffList - Data:", {
+    staffListLength: staffList.length,
+    totalRecords,
+    totalPages,
+    currentPage,
+    paginationData,
+    statistics, // Debug log statistics
+  });
+
+  // ✅ Calculate statistics from the API response
+  const usersCount = useUsersCount({
+    statistics, // ✅ Use statistics directly from hook (FIXED)
+    data: staffList,
+  });
+
+  console.log("📊 usersCount:", usersCount); // Debug log
+
+  // ✅ Safely extract values from usersCount object
+  const getUsersCountValue = (key, defaultValue = 0) => {
+    if (!usersCount || typeof usersCount !== "object") return defaultValue;
+
+    // If usersCount is a number, return it
+    if (typeof usersCount === "number") return usersCount;
+
+    // If usersCount is an object with nested structure
+    if (usersCount[key] !== undefined) return usersCount[key];
+
+    // Try to get from breakdown if available
+    if (usersCount.breakdown && usersCount.breakdown[key] !== undefined) {
+      return usersCount.breakdown[key];
+    }
+
+    // Try common keys
+    const commonKeys = {
+      staff: ["staff", "totalStaff", "staffCount"],
+      totalActiveUsers: [
+        "totalActiveUsers",
+        "active",
+        "activeUsers",
+        "totalActive",
+      ],
+      lawyerCount: ["lawyerCount", "lawyers", "lawyer"],
+      adminsCount: ["adminsCount", "admins", "adminCount"],
+      hr: ["hr", "hrCount"],
+      secretary: ["secretary", "secretaries", "secretaryCount"],
+      clientCount: ["clientCount", "clients", "totalClients"],
+      verifiedUsers: ["verifiedUsers", "verified"],
+      inactiveUsers: ["inactiveUsers", "inactive"],
+    };
+
+    if (commonKeys[key]) {
+      for (const altKey of commonKeys[key]) {
+        if (usersCount[altKey] !== undefined) {
+          return usersCount[altKey];
+        }
+      }
+    }
+
+    return defaultValue;
   };
 
-  const handleFilterRemove = (key) => {
-    const newFilters = { ...filters };
-    delete newFilters[key];
-    handleFiltersChange(newFilters);
-  };
+  // ✅ Extract specific values
+  const staffCount = getUsersCountValue("staff");
+  const activeCount = getUsersCountValue("totalActiveUsers");
+  const lawyerCount = getUsersCountValue("lawyerCount");
+  const adminsCount = getUsersCountValue("adminsCount");
+  const hrCount = getUsersCountValue("hr");
+  const secretaryCount = getUsersCountValue("secretary");
+  const clientCount = getUsersCountValue("clientCount");
+  const verifiedCount = getUsersCountValue("verifiedUsers");
+  const inactiveCount = getUsersCountValue("inactiveUsers");
 
-  // Regular staff can only see their own profile
-  const getFilteredStaffData = () => {
+  // ✅ Filter staff for current user if regular staff
+  const filteredStaff = useMemo(() => {
     if (isStaff && !isAdminOrHr && !isSuperOrAdmin && user) {
-      return staffList.filter(
-        (staff) => staff._id === user._id || staff._id === user.data?._id
-      );
+      const userId = user._id || user.data?._id;
+      return staffList.filter((staff) => staff._id === userId);
     }
     return staffList;
-  };
+  }, [isStaff, isAdminOrHr, isSuperOrAdmin, user, staffList]);
 
-  const filteredStaff = getFilteredStaffData();
+  const handleFilterRemove = useCallback(
+    (key) => {
+      const newFilters = { ...filters };
+      delete newFilters[key];
+      handleFiltersChange(newFilters);
+    },
+    [filters, handleFiltersChange]
+  );
+
+  const paginationText = useCallback(
+    (total) => {
+      const start = (currentPage - 1) * itemsPerPage + 1;
+      const end = Math.min(currentPage * itemsPerPage, total);
+      return `Showing ${start}-${end} of ${total} staff members`;
+    },
+    [currentPage, itemsPerPage]
+  );
 
   // Show limited access for regular staff
   if (
@@ -96,7 +181,7 @@ const StaffList = () => {
               <Link
                 to={`/dashboard/staff/${user?._id || user?.data?._id}/details`}>
                 <ButtonWithIcon
-                  icon={<UserOutlined />}
+                  icon={<EyeOutlined />}
                   text="View My Profile"
                   type="primary"
                 />
@@ -111,7 +196,7 @@ const StaffList = () => {
   return (
     <div className="min-h-screen bg-gray-50 py-6">
       <div className="max-w-7xl mx-auto px-4">
-        {/* Header Section */}
+        {/* Header */}
         <div className="mb-8">
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
             <div>
@@ -126,11 +211,10 @@ const StaffList = () => {
               </p>
             </div>
 
-            {/* Add User Button - Only for Admin/HR/SuperAdmin */}
+            {/* Add Staff Button */}
             {(isAdminOrHr || isSuperOrAdmin) && (
               <Link to="add-user">
                 <ButtonWithIcon
-                  onClick={() => {}}
                   icon={<PlusOutlined className="mr-2" />}
                   text="Add Staff Member"
                   type="primary"
@@ -141,7 +225,7 @@ const StaffList = () => {
             )}
           </div>
 
-          {/* Access Notice for Regular Staff */}
+          {/* Access Notice */}
           {isStaff && !isAdminOrHr && !isSuperOrAdmin && (
             <Alert
               message="Limited Access"
@@ -154,55 +238,80 @@ const StaffList = () => {
           )}
         </div>
 
-        {/* Statistics Cards - Only for Admin/HR/SuperAdmin */}
+        {/* Statistics Cards */}
         {(isAdminOrHr || isSuperOrAdmin) && (
           <Row gutter={[16, 16]} className="mb-6">
-            <Col xs={24} sm={8} md={6}>
-              <Card className="text-center shadow-sm hover:shadow-md transition-shadow">
+            <Col xs={24} sm={12} md={4}>
+              <Card className="text-center shadow-sm hover:shadow-md transition-shadow h-full">
                 <Statistic
                   title="Total Staff"
-                  value={staffStats.total}
+                  value={staffCount}
                   prefix={<TeamOutlined className="text-blue-500" />}
-                  valueStyle={{ color: "#1890ff" }}
+                  valueStyle={{ color: "#1890ff", fontSize: "1.5rem" }}
                 />
               </Card>
             </Col>
-            <Col xs={24} sm={8} md={6}>
-              <Card className="text-center shadow-sm hover:shadow-md transition-shadow">
+
+            <Col xs={24} sm={12} md={4}>
+              <Card className="text-center shadow-sm hover:shadow-md transition-shadow h-full">
                 <Statistic
                   title="Active"
-                  value={staffStats.active}
-                  prefix={<UserOutlined className="text-green-500" />}
-                  valueStyle={{ color: "#52c41a" }}
+                  value={activeCount}
+                  prefix={<CheckCircleOutlined className="text-green-500" />}
+                  valueStyle={{ color: "#52c41a", fontSize: "1.5rem" }}
                 />
               </Card>
             </Col>
-            <Col xs={24} sm={8} md={6}>
-              <Card className="text-center shadow-sm hover:shadow-md transition-shadow">
+
+            <Col xs={24} sm={12} md={4}>
+              <Card className="text-center shadow-sm hover:shadow-md transition-shadow h-full">
                 <Statistic
                   title="Lawyers"
-                  value={staffStats.lawyers}
+                  value={lawyerCount}
                   prefix={
                     <SafetyCertificateOutlined className="text-purple-500" />
                   }
-                  valueStyle={{ color: "#722ed1" }}
+                  valueStyle={{ color: "#722ed1", fontSize: "1.5rem" }}
                 />
               </Card>
             </Col>
-            <Col xs={24} sm={8} md={6}>
-              <Card className="text-center shadow-sm hover:shadow-md transition-shadow">
+
+            <Col xs={24} sm={12} md={4}>
+              <Card className="text-center shadow-sm hover:shadow-md transition-shadow h-full">
                 <Statistic
                   title="Admins"
-                  value={staffStats.admins}
+                  value={adminsCount}
                   prefix={<CrownOutlined className="text-orange-500" />}
-                  valueStyle={{ color: "#fa8c16" }}
+                  valueStyle={{ color: "#fa8c16", fontSize: "1.5rem" }}
+                />
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={12} md={4}>
+              <Card className="text-center shadow-sm hover:shadow-md transition-shadow h-full">
+                <Statistic
+                  title="HR"
+                  value={hrCount}
+                  prefix={<UserOutlined className="text-red-500" />}
+                  valueStyle={{ color: "#f5222d", fontSize: "1.5rem" }}
+                />
+              </Card>
+            </Col>
+
+            <Col xs={24} sm={12} md={4}>
+              <Card className="text-center shadow-sm hover:shadow-md transition-shadow h-full">
+                <Statistic
+                  title="Secretaries"
+                  value={secretaryCount}
+                  prefix={<UserOutlined className="text-green-500" />}
+                  valueStyle={{ color: "#13c2c2", fontSize: "1.5rem" }}
                 />
               </Card>
             </Col>
           </Row>
         )}
 
-        {/* Search and Filters - Available for all staff but with different capabilities */}
+        {/* Search and Filters */}
         <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6 p-6 bg-white rounded-lg shadow-sm border">
           <div className="w-full lg:w-96">
             <StaffSearchBar
@@ -211,23 +320,40 @@ const StaffList = () => {
               loading={loading}
               searchPlaceholder="Search staff by name, email, position..."
               showUserFilters={true}
-              disabled={!isAdminOrHr && !isSuperOrAdmin} // Regular staff can search but not filter
+              disabled={!isAdminOrHr && !isSuperOrAdmin}
             />
           </div>
 
-          {/* Quick Stats for all staff */}
-          <div className="flex gap-4 text-sm text-gray-600">
-            <Tag color="blue">Total: {filteredStaff.length}</Tag>
-            <Tag color="green">
-              Active: {filteredStaff.filter((s) => s.isActive).length}
+          {/* Quick Stats */}
+          <div className="flex flex-wrap gap-3">
+            <Tag color="blue" className="px-3 py-1 text-sm font-medium">
+              <TeamOutlined className="mr-1" />
+              Staff: {staffCount}
+            </Tag>
+            <Tag color="green" className="px-3 py-1 text-sm font-medium">
+              <CheckCircleOutlined className="mr-1" />
+              Active: {activeCount}
+            </Tag>
+            <Tag color="orange" className="px-3 py-1 text-sm font-medium">
+              <UserOutlined className="mr-1" />
+              Inactive: {inactiveCount}
             </Tag>
             {(isAdminOrHr || isSuperOrAdmin) && (
-              <Tag color="purple">Lawyers: {staffStats.lawyers}</Tag>
+              <>
+                <Tag color="purple" className="px-3 py-1 text-sm font-medium">
+                  <SafetyCertificateOutlined className="mr-1" />
+                  Lawyers: {lawyerCount}
+                </Tag>
+                <Tag color="gold" className="px-3 py-1 text-sm font-medium">
+                  <CheckCircleOutlined className="mr-1" />
+                  Verified: {verifiedCount}
+                </Tag>
+              </>
             )}
           </div>
         </div>
 
-        {/* Active Filters - Only for Admin/HR/SuperAdmin */}
+        {/* Active Filters */}
         {(isAdminOrHr || isSuperOrAdmin) && Object.keys(filters).length > 0 && (
           <ActiveFilters
             filters={filters}
@@ -237,25 +363,46 @@ const StaffList = () => {
         )}
 
         {/* Main Content */}
+        <Card
+          className="shadow-sm border-0 relative"
+          bodyStyle={{ padding: 0 }}>
+          {/* Loading Overlay */}
+          {loading && (
+            <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
+              <Spin size="large" tip="Loading staff..." />
+            </div>
+          )}
 
-        <Card className="shadow-sm border-0" bodyStyle={{ padding: 0 }}>
+          {/* Info Banner */}
+          {!loading && filteredStaff.length > 0 && (
+            <div className="px-6 py-3 bg-blue-50 border-b border-blue-100">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between text-sm gap-2">
+                <span className="text-blue-700">
+                  <strong>Current Page:</strong> Showing {filteredStaff.length}{" "}
+                  of {totalRecords} staff members
+                </span>
+                <span className="text-blue-600">
+                  <strong>Status:</strong> {activeCount} active •{" "}
+                  {inactiveCount} inactive
+                </span>
+              </div>
+            </div>
+          )}
+
           <UserListTable
             dataSource={filteredStaff}
             loading={loading}
-            onDelete={isSuperOrAdmin ? removeUser : null} // Only super-admin can delete
-            showActions={isAdminOrHr || isSuperOrAdmin} // Admin/HR can perform actions
+            onDelete={isSuperOrAdmin ? removeUser : null}
+            showActions={isAdminOrHr || isSuperOrAdmin}
             showRole={true}
             showPosition={true}
             showLawyer={true}
             userType="staff"
             basePath="/dashboard/staff"
-            showEdit={isAdminOrHr || isSuperOrAdmin} // Only admins can edit
-            showDelete={isSuperOrAdmin} // Only super-admin can delete
-            showView={true} // Everyone can view
           />
 
           {/* Empty State */}
-          {filteredStaff.length === 0 && !loading && (
+          {!loading && filteredStaff.length === 0 && (
             <div className="p-12 text-center">
               <Empty
                 description={
@@ -265,13 +412,20 @@ const StaffList = () => {
                         ? "No Staff Found"
                         : "No Staff Members"}
                     </h3>
-                    <p className="text-gray-500">
+                    <p className="text-gray-500 mb-2">
                       {Object.keys(filters).length > 0
                         ? "No staff members match your current filters. Try adjusting your search criteria."
                         : isAdminOrHr || isSuperOrAdmin
                         ? "No staff members have been added yet. Start by adding your first team member."
                         : "No staff members found in the directory."}
                     </p>
+                    {/* Show system stats */}
+                    {Object.keys(filters).length > 0 && (
+                      <p className="text-blue-600 text-sm mt-3">
+                        System has {staffCount} total staff members (
+                        {activeCount} active, {inactiveCount} inactive)
+                      </p>
+                    )}
                   </div>
                 }
               />
@@ -297,20 +451,19 @@ const StaffList = () => {
         </Card>
 
         {/* Pagination */}
-        {filteredStaff.length > 0 && (
-          <Row justify="center" style={{ marginTop: 24 }}>
+        {totalRecords > 0 && (
+          <Row justify="center" className="mt-6">
             <Pagination
               current={currentPage}
-              total={users?.pagination?.totalRecords || filteredStaff.length}
+              total={totalRecords}
               pageSize={itemsPerPage}
               onChange={handlePageChange}
               onShowSizeChange={handlePageChange}
               showSizeChanger
               showQuickJumper
-              showTotal={(total, range) =>
-                `Showing ${range[0]}-${range[1]} of ${total} staff members`
-              }
+              showTotal={paginationText}
               pageSizeOptions={["10", "20", "50", "100"]}
+              disabled={loading}
               className="pagination-custom"
             />
           </Row>
@@ -318,6 +471,7 @@ const StaffList = () => {
       </div>
     </div>
   );
-};
+});
 
+StaffList.displayName = "StaffList";
 export default StaffList;

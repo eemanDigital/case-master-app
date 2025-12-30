@@ -1,4 +1,4 @@
-// utils/queryBuilder.js - Fixed with partial text matching
+// utils/queryBuilder.js - FIXED VERSION
 class QueryBuilder {
   static buildMongooseFilter(queryParams, modelConfig = {}) {
     const {
@@ -6,7 +6,7 @@ class QueryBuilder {
       filterableFields = [],
       defaultSort = "-createdAt",
       dateField = "createdAt",
-      textFilterFields = [], // ✅ NEW: Fields that should use partial matching
+      textFilterFields = [],
     } = modelConfig;
 
     let filter = {};
@@ -19,12 +19,12 @@ class QueryBuilder {
       }));
     }
 
-    // CASE ID FILTER - Filter by specific case ID
+    // CASE ID FILTER
     if (caseId) {
       filter.caseReported = caseId;
     }
 
-    // CASE SEARCH FILTER - Search for cases and get their reports
+    // CASE SEARCH FILTER
     if (caseSearch) {
       filter.caseSearch = caseSearch;
     }
@@ -48,15 +48,21 @@ class QueryBuilder {
       filter[dateField] = dateFilter;
     }
 
-    // ✅ Handle other filterable fields with smart matching
+    // Handle other filterable fields with smart matching
     filterableFields.forEach((field) => {
-      // Skip date-related fields as they're handled above
-      if (field === "startDate" || field === "endDate" || field === dateField) {
+      // Skip special fields
+      if (
+        field === "startDate" ||
+        field === "endDate" ||
+        field === dateField ||
+        field === "includeDeleted" ||
+        field === "onlyDeleted"
+      ) {
         return;
       }
 
       if (filters[field] !== undefined && filters[field] !== "") {
-        // ✅ Use partial matching for text fields
+        // Use partial matching for text fields
         if (textFilterFields.includes(field) || this.isTextField(field)) {
           filter[field] = {
             $regex: filters[field].trim(),
@@ -67,28 +73,28 @@ class QueryBuilder {
         else if (Array.isArray(filters[field])) {
           filter[field] = { $in: filters[field] };
         }
-        // Exact match for other fields (IDs, enums, etc.)
+        // Exact match for other fields
         else {
           filter[field] = filters[field];
         }
       }
     });
 
-    // Special handling for soft deletion
+    // ✅ CRITICAL FIX: Handle soft deletion properly
+    // Note: The actual isDeleted filter is applied in the service layer
+    // This just marks that these filters were present
     if (filters.includeDeleted === "true") {
-      // Include all records
+      filter.__includeDeleted = true; // Marker for service layer
     } else if (filters.onlyDeleted === "true") {
-      filter.isDeleted = true;
-    } else {
-      filter.isDeleted = { $ne: true };
+      filter.__onlyDeleted = true; // Marker for service layer
     }
+    // Default is handled in service layer
 
     return filter;
   }
 
   /**
-   * ✅ Determine if a field should use text matching
-   * Common text fields that should use partial matching
+   * Determine if a field should use text matching
    */
   static isTextField(fieldName) {
     const textFieldPatterns = [
@@ -104,10 +110,15 @@ class QueryBuilder {
       "title",
       "subject",
       "ref",
-      "docRef",
+      "docref",
       "update",
-      "adjournedFor",
-      "clientEmail",
+      "adjourned",
+      "clientemail",
+      "position",
+      "practice",
+      "location",
+      "court",
+      "state",
     ];
 
     const lowerField = fieldName.toLowerCase();
@@ -132,18 +143,16 @@ class QueryBuilder {
   }
 
   static buildPopulate(populateQuery) {
-    if (!populateQuery) return "";
-    return populateQuery.split(",").map((path) => ({ path: path.trim() }));
-  }
-
-  // Updated buildPopulate to return an array of populate objects
-  static buildPopulate(populateQuery) {
     if (!populateQuery) return [];
     return populateQuery.split(",").map((path) => ({ path: path.trim() }));
   }
 
   static sanitizeCriteria(criteria) {
     const sanitized = { ...criteria };
+
+    // Remove marker fields
+    delete sanitized.__includeDeleted;
+    delete sanitized.__onlyDeleted;
 
     Object.keys(sanitized).forEach((key) => {
       if (typeof sanitized[key] === "object" && sanitized[key] !== null) {
@@ -176,26 +185,36 @@ class QueryBuilder {
    */
   static debugFilter(filter, modelName = "Unknown") {
     console.log(`\n🔍 [QueryBuilder] Filter for ${modelName}:`);
-    console.log(JSON.stringify(filter, null, 2));
+
+    // Create clean filter for logging (remove markers)
+    const cleanFilter = { ...filter };
+    delete cleanFilter.__includeDeleted;
+    delete cleanFilter.__onlyDeleted;
+
+    console.log(JSON.stringify(cleanFilter, null, 2));
 
     // Log date ranges in human-readable format
-    Object.keys(filter).forEach((key) => {
-      if (filter[key] && typeof filter[key] === "object") {
-        if (filter[key].$gte || filter[key].$lte) {
+    Object.keys(cleanFilter).forEach((key) => {
+      if (cleanFilter[key] && typeof cleanFilter[key] === "object") {
+        if (cleanFilter[key].$gte || cleanFilter[key].$lte) {
           console.log(`\n📅 Date Range for ${key}:`);
-          if (filter[key].$gte) {
-            console.log(`   From: ${filter[key].$gte.toISOString()}`);
+          if (cleanFilter[key].$gte) {
+            console.log(`   From: ${cleanFilter[key].$gte.toISOString()}`);
           }
-          if (filter[key].$lte) {
-            console.log(`   To:   ${filter[key].$lte.toISOString()}`);
+          if (cleanFilter[key].$lte) {
+            console.log(`   To:   ${cleanFilter[key].$lte.toISOString()}`);
           }
         }
-        if (filter[key].$regex) {
+        if (cleanFilter[key].$regex) {
           console.log(`\n🔤 Text Search for ${key}:`);
-          console.log(`   Pattern: "${filter[key].$regex}" (case-insensitive)`);
+          console.log(
+            `   Pattern: "${cleanFilter[key].$regex}" (case-insensitive)`
+          );
         }
       }
     });
+
+    console.log(); // Empty line for readability
   }
 }
 

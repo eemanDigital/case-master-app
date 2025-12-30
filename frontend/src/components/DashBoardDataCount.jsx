@@ -95,26 +95,27 @@ const DashboardCard = ({
   );
 };
 
+DashboardCard.displayName = "DashboardCard";
+
 const DashBoardDataCount = ({
   cases,
   staff,
   lawyerCount,
   clientCount,
-  // ✅ NEW PROPS for optimized backend
   totalCases = null,
   activeCases = null,
   dashboardStats = null,
   loading = false,
   trends = {},
 }) => {
-  // console.log("DashboardDataCount Props:", {
-  //   cases,
-  //   staff,
-  //   lawyerCount,
-  //   clientCount,
-  //   totalCases,
-  //   activeCases,
-  // });
+  console.log("DashboardDataCount Props:", {
+    cases,
+    staff,
+    lawyerCount,
+    clientCount,
+    totalCases,
+    activeCases,
+  });
 
   // ✅ Calculate effective values with new props as priority
   const effectiveTotalCases =
@@ -242,6 +243,8 @@ const DashBoardDataCount = ({
     </div>
   );
 };
+
+DashBoardDataCount.displayName = "DashBoardDataCount";
 
 DashBoardDataCount.propTypes = {
   // Original props
