@@ -9,6 +9,7 @@ import {
   DatePicker,
   Typography,
   Tooltip,
+  Checkbox,
 } from "antd";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import useModal from "../hooks/useModal";
@@ -33,17 +34,24 @@ const EventForm = () => {
     useModal();
   const [form] = Form.useForm();
 
-  // const handleSubmit = useCallback(
-  const handleSubmission = useCallback((result) => {
-    if (result?.error) {
-      // Handle Error here
-    } else {
-      // Handle Success here
-      // form.resetFields();
-    }
-  }, []);
+  const handleSubmission = useCallback(
+    (result) => {
+      if (result?.error) {
+        // Handle Error here
+        toast.error(
+          result?.error?.message || "Failed to create event. Please try again."
+        );
+      } else {
+        // Handle Success here
+        toast.success("Event created successfully!");
+        form.resetFields();
+        handleCancel(); // Close the modal
+      }
+    },
+    [form, handleCancel]
+  );
 
-  // / fetch users
+  // fetch users
   useEffect(() => {
     dispatch(getUsers());
   }, [dispatch]);
@@ -51,87 +59,88 @@ const EventForm = () => {
   const handleSubmit = useCallback(
     async (values) => {
       try {
-        // Extract user IDs from values.assignedTo
-        const participantIds = values.participants || []; // Ensure it's an array
+        // Extract the sendNotification flag
+        const { sendNotification, ...eventData } = values;
 
-        // Find corresponding user objects from the users state
-        const participants = users?.data?.filter((user) =>
-          participantIds.includes(user._id)
-        );
-
-        // Map user objects to their email addresses
-        const sendToEmails = participants?.map((user) => user.email);
-        const participantNames = participants?.map((user) => {
-          const lastName = user.lastName || "";
-          const secondName = user.secondName || "";
-          return `${user.firstName} ${lastName || secondName} (${
-            user.position || "client"
-          })`;
-        });
-
-        // Function to format date and time
-        const formatDateTime = (date) => {
-          return moment(date).format("MMMM D, YYYY [at] h:mm A");
-        };
-
-        // Function to format time only
-        const formatTime = (date) => {
-          return moment(date).format("h:mm A");
-        };
-
-        // Prepare email data
-        const emailData = {
-          subject: "Office Event - A.T. Lukman & Co.",
-          send_to: sendToEmails,
-          reply_to: "noreply@gmail.com",
-          template: "events",
-          url: "dashboard/events",
-          context: {
-            sendersName: user?.data?.firstName,
-            sendersPosition: user?.data?.position,
-            title: values.title,
-            startDateTime: formatDateTime(values.start),
-            endDateTime: formatDateTime(values.end),
-            startTime: formatTime(values.start),
-            endTime: formatTime(values.end),
-            participants: participantNames,
-            description: values.description,
-            location: values.location,
-          },
-        };
+        // Extract user IDs from values.participants
+        const participantIds = eventData.participants || []; // Ensure it's an array
 
         // Post data
-        const result = await dataFetcher("events", "post", values);
-        // await fetchData("", "tasks");
+        const result = await dataFetcher("events", "post", eventData);
         handleSubmission(result);
 
-        // Send email if emailData is provided
-        if (!result?.error && emailData) {
-          await dispatch(sendAutomatedCustomEmail(emailData));
+        // Only send email if sendNotification is true and there are participants
+        if (!result?.error && sendNotification && participantIds.length > 0) {
+          // Find corresponding user objects from the users state
+          const participants = users?.data?.filter((user) =>
+            participantIds.includes(user._id)
+          );
+
+          // Map user objects to their email addresses
+          const sendToEmails = participants?.map((user) => user.email);
+          const participantNames = participants?.map((user) => {
+            const lastName = user.lastName || "";
+            const secondName = user.secondName || "";
+            return `${user.firstName} ${lastName || secondName} (${
+              user.position || "client"
+            })`;
+          });
+
+          // Function to format date and time
+          const formatDateTime = (date) => {
+            return moment(date).format("MMMM D, YYYY [at] h:mm A");
+          };
+
+          // Function to format time only
+          const formatTime = (date) => {
+            return moment(date).format("h:mm A");
+          };
+
+          // Prepare email data
+          const emailData = {
+            subject: "Office Event - A.T. Lukman & Co.",
+            send_to: sendToEmails,
+            reply_to: "noreply@gmail.com",
+            template: "events",
+            url: "dashboard/events",
+            context: {
+              sendersName: user?.data?.firstName,
+              sendersPosition: user?.data?.position,
+              title: eventData.title,
+              startDateTime: formatDateTime(eventData.start),
+              endDateTime: formatDateTime(eventData.end),
+              startTime: formatTime(eventData.start),
+              endTime: formatTime(eventData.end),
+              participants: participantNames,
+              description: eventData.description,
+              location: eventData.location,
+            },
+          };
+
+          // Send email
+          try {
+            await dispatch(sendAutomatedCustomEmail(emailData));
+          } catch (emailError) {
+            console.error("Email sending failed:", emailError);
+            toast.warning(
+              "Event created successfully, but failed to send email notifications."
+            );
+          }
         }
-        // form.resetFields();
       } catch (err) {
         console.error(err);
+        toast.error("An unexpected error occurred. Please try again.");
       }
     },
     [dataFetcher, handleSubmission, user, users, dispatch]
   );
-  async (values) => {
-    try {
-      const result = await dataFetcher("events", "post", values);
-      handleSubmission(result);
-      form.resetFields();
-    } catch (err) {
-      console.error(err);
-    }
-  },
-    [form, handleSubmission];
 
   const onSubmit = useCallback(async () => {
     let values;
     try {
       values = await form.validateFields();
     } catch (errorInfo) {
+      toast.error("Please fill in all required fields correctly.");
       return;
     }
     await handleSubmit(values);
@@ -144,10 +153,12 @@ const EventForm = () => {
     }
   }, [emailSent, msg]);
 
-  // Show error message when an error occurs
-  if (error) {
-    toast.error("An error occurred. Please try again.");
-  }
+  // Show error message when dataFetch error occurs
+  useEffect(() => {
+    if (error) {
+      toast.error(error?.message || "An error occurred. Please try again.");
+    }
+  }, [error]);
 
   return (
     <>
@@ -172,7 +183,10 @@ const EventForm = () => {
           layout="vertical"
           form={form}
           name="create_event_form"
-          className="flex flex-col gap-6">
+          className="flex flex-col gap-6"
+          initialValues={{
+            sendNotification: true, // Default to checked
+          }}>
           <Form.Item
             name="title"
             label="Title"
@@ -230,6 +244,10 @@ const EventForm = () => {
               { max: 200, message: "Location cannot exceed 200 characters" },
             ]}>
             <Input placeholder="Enter the location" />
+          </Form.Item>
+
+          <Form.Item name="sendNotification" valuePropName="checked">
+            <Checkbox>Send email notification to participants</Checkbox>
           </Form.Item>
 
           <Form.Item>

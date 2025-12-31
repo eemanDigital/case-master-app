@@ -4,6 +4,7 @@ import {
   PlusOutlined,
   UserAddOutlined,
   PaperClipOutlined,
+  MailOutlined,
 } from "@ant-design/icons";
 import {
   taskPriorityOptions,
@@ -26,6 +27,7 @@ import {
   Collapse,
   Upload,
   message,
+  Checkbox,
 } from "antd";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
@@ -48,7 +50,6 @@ const { Panel } = Collapse;
 const CreateTaskForm = () => {
   const { casesOptions } = useCaseSelectOptions();
   const { userData } = useUserSelectOptions();
-  // const { clientOptions } = useClientSelectOptions();
   const { fetchData } = useDataGetterHook();
   const dispatch = useDispatch();
   const { users, user } = useSelector((state) => state.auth);
@@ -60,26 +61,14 @@ const CreateTaskForm = () => {
   const [form] = Form.useForm();
   const [selectedAssignees, setSelectedAssignees] = useState([]);
   const [referenceDocuments, setReferenceDocuments] = useState([]);
+
   const {
     dataFetcher,
     loading: loadingData,
     error: dataError,
   } = useDataFetch();
 
-  // Handle form submission
-  const handleSubmission = useCallback(
-    (result) => {
-      if (result?.error) {
-        // Handle Error here
-      } else {
-        // Handle Success here
-        form.resetFields();
-        setSelectedAssignees([]);
-        setReferenceDocuments([]);
-      }
-    },
-    [form]
-  );
+  console.log(userData);
 
   // Fetch users
   useEffect(() => {
@@ -91,12 +80,12 @@ const CreateTaskForm = () => {
     setSelectedAssignees(value || []);
   };
 
-  // Handle document upload success
-  // const handleDocumentUploadSuccess = (uploadedFiles) => {
-  //   const newDocIds = uploadedFiles.files.map((file) => file._id);
-  //   setReferenceDocuments((prev) => [...prev, ...newDocIds]);
-  //   toast.success(`Added ${uploadedFiles.files.length} reference document(s)`);
-  // };
+  // Reset form and state
+  const resetFormAndState = () => {
+    form.resetFields();
+    setSelectedAssignees([]);
+    setReferenceDocuments([]);
+  };
 
   // Handle form submission
   const handleSubmit = useCallback(
@@ -107,21 +96,40 @@ const CreateTaskForm = () => {
           title: values.title,
           description: values.description || "",
           instruction: values.instruction,
-          caseToWorkOn: values.caseToWorkOn || [],
-          customCaseReference: values.customCaseReference || "",
+          createdBy: user?.data?._id || user?._id, // Required by schema
+          // Only include caseToWorkOn if a case is selected
+          ...(values.caseToWorkOn && { caseToWorkOn: [values.caseToWorkOn] }),
+          // Only include customCaseReference if provided
+          ...(values.customCaseReference && {
+            customCaseReference: values.customCaseReference,
+          }),
           startDate: values.startDate ? values.startDate.toDate() : null,
           dueDate: values.dueDate ? values.dueDate.toDate() : new Date(),
           taskPriority: values.taskPriority || "medium",
           status: values.status || "pending",
           category: values.category || "other",
           estimatedEffort: values.estimatedEffort || 0,
-          tags: values.tags
-            ? values.tags.split(",").map((tag) => tag.trim())
-            : [],
+          tags:
+            values.tags && Array.isArray(values.tags)
+              ? values.tags.map((tag) => tag.trim())
+              : [],
           dependencies: values.dependencies || [],
           isTemplate: values.isTemplate || false,
           templateName: values.templateName || "",
           referenceDocuments: referenceDocuments || [],
+          // Add recurrence if specified
+          ...(values.recurrencePattern &&
+            values.recurrencePattern !== "none" && {
+              recurrence: {
+                pattern: values.recurrencePattern,
+                ...(values.recurrenceEndDate && {
+                  endAfter: values.recurrenceEndDate.toDate(),
+                }),
+                ...(values.recurrenceOccurrences && {
+                  occurrences: values.recurrenceOccurrences,
+                }),
+              },
+            }),
           // New fields structure
           assignees: [
             // Add the creator as primary assignee
@@ -144,75 +152,79 @@ const CreateTaskForm = () => {
           ],
         };
 
-        // Post data to create task - FIXED: Use the correct data structure
+        // Post data to create task
         const result = await dataFetcher("tasks", "POST", taskData);
 
         if (result?.error) {
           toast.error(result.error || "Failed to create task");
+          // DON'T reset form on error - user keeps their data
           return;
         }
 
         // Refresh tasks list
         await fetchData("tasks", "tasks");
 
-        // Get all assigned users for email notification
-        const assignedUserIds = [
-          user?.data?._id || user?._id,
-          ...(selectedAssignees || []),
-        ];
-
-        const assignedUsers = users?.data?.filter((user) =>
-          assignedUserIds.includes(user._id)
-        );
-        const sendToEmails = assignedUsers?.map((user) => user.email) || [];
-
-        // Prepare email data
-        const emailData = {
-          subject: "New Task Assigned - A.T. Lukman & Co.",
-          send_to: sendToEmails,
-          send_from: user?.data?.email || user?.email,
-          reply_to: "noreply@atlukman.com",
-          template: "taskAssignment",
-          url: "/dashboard/tasks",
-          context: {
-            sendersName: `${user?.data?.firstName || user?.firstName} ${
-              user?.data?.lastName || user?.lastName
-            }`,
-            sendersPosition: user?.data?.position || user?.position || "",
-            title: values.title,
-            dueDate: formatDate(values.dueDate),
-            instruction: values.instruction,
-            taskPriority: values.taskPriority,
-            category: values.category,
-            estimatedEffort: values.estimatedEffort,
-            recipients: assignedUsers
-              ?.filter((u) => u._id !== (user?.data?._id || user?._id))
-              .map((u) => `${u.firstName} ${u.lastName}`)
-              .join(", "),
-          },
-        };
-
-        // Send email notification if successful
-        if (sendToEmails.length > 0) {
+        // Send email notification if checkbox was checked
+        if (values.sendEmailNotification && selectedAssignees.length > 0) {
           try {
-            await dispatch(sendAutomatedCustomEmail(emailData));
+            // Get all assigned users for email notification
+            const assignedUserIds = [
+              user?.data?._id || user?._id,
+              ...(selectedAssignees || []),
+            ];
+
+            const assignedUsers = users?.data?.filter((user) =>
+              assignedUserIds.includes(user._id)
+            );
+            const sendToEmails = assignedUsers?.map((user) => user.email) || [];
+
+            // Prepare email data
+            const emailData = {
+              subject: "New Task Assigned - A.T. Lukman & Co.",
+              send_to: sendToEmails,
+              send_from: user?.data?.email || user?.email,
+              reply_to: "noreply@atlukman.com",
+              template: "taskAssignment",
+              url: "/dashboard/tasks",
+              context: {
+                sendersName: `${user?.data?.firstName || user?.firstName} ${
+                  user?.data?.lastName || user?.lastName
+                }`,
+                sendersPosition: user?.data?.position || user?.position || "",
+                title: values.title,
+                dueDate: formatDate(values.dueDate),
+                instruction: values.instruction,
+                taskPriority: values.taskPriority,
+                category: values.category,
+                estimatedEffort: values.estimatedEffort,
+                recipients: assignedUsers
+                  ?.filter((u) => u._id !== (user?.data?._id || user?._id))
+                  .map((u) => `${u.firstName} ${u.lastName}`)
+                  .join(", "),
+              },
+            };
+
+            // Send email notification
+            if (sendToEmails.length > 0) {
+              await dispatch(sendAutomatedCustomEmail(emailData));
+              toast.success("Task created and email notifications sent!");
+            }
           } catch (emailError) {
             console.error("Email sending error:", emailError);
             toast.warning("Task created but email notification failed.");
           }
+        } else {
+          // Show success message without email
+          toast.success("Task created successfully!");
         }
 
-        // Reset form and close modal
-        form.resetFields();
-        setSelectedAssignees([]);
-        setReferenceDocuments([]);
+        // Only reset form and close modal if successful
+        resetFormAndState();
         handleCancel();
-
-        // Show success message
-        toast.success("Task created successfully!");
       } catch (err) {
         console.error("Task creation error:", err);
         toast.error("Failed to create task. Please try again.");
+        // DON'T reset form on error - user keeps their data
       }
     },
     [
@@ -235,17 +247,11 @@ const CreateTaskForm = () => {
       values = await form.validateFields();
     } catch (errorInfo) {
       console.log("Validation failed:", errorInfo);
+      toast.error("Please fill in all required fields");
       return;
     }
     await handleSubmit(values);
   }, [form, handleSubmit]);
-
-  // Email success
-  useEffect(() => {
-    if (emailSent) {
-      toast.success(msg);
-    }
-  }, [emailSent, msg]);
 
   // DataFetcher error
   useEffect(() => {
@@ -285,6 +291,12 @@ const CreateTaskForm = () => {
       : "Unknown User";
   };
 
+  // Custom modal cancel handler
+  const handleModalCancel = () => {
+    resetFormAndState();
+    handleCancel();
+  };
+
   return (
     <>
       <ButtonWithIcon
@@ -298,11 +310,11 @@ const CreateTaskForm = () => {
         style={{ top: 20 }}
         title={<Title level={3}>Create New Task</Title>}
         open={open}
-        onCancel={handleCancel}
+        onCancel={handleModalCancel}
         confirmLoading={confirmLoading}
         className="modal-container"
         footer={[
-          <Button key="cancel" onClick={handleCancel}>
+          <Button key="cancel" onClick={handleModalCancel}>
             Cancel
           </Button>,
           <Button
@@ -458,54 +470,42 @@ const CreateTaskForm = () => {
 
               {/* Selected Assignees Preview */}
               {selectedAssignees.length > 0 && (
-                <Alert
-                  message={`Assigned to ${selectedAssignees.length} user(s)`}
-                  description={
-                    <Space wrap>
-                      {selectedAssignees.map((userId) => (
-                        <Tag key={userId} icon={<UserAddOutlined />}>
-                          {getUserDisplayName(userId)}
-                          {getRoleBadge(userId)}
-                        </Tag>
-                      ))}
-                    </Space>
-                  }
-                  type="info"
-                  showIcon
-                  className="mb-4"
-                />
+                <>
+                  <Alert
+                    message={`Assigned to ${selectedAssignees.length} user(s)`}
+                    description={
+                      <Space wrap>
+                        {selectedAssignees.map((userId) => (
+                          <Tag key={userId} icon={<UserAddOutlined />}>
+                            {getUserDisplayName(userId)}
+                            {getRoleBadge(userId)}
+                          </Tag>
+                        ))}
+                      </Space>
+                    }
+                    type="info"
+                    showIcon
+                    className="mb-4"
+                  />
+
+                  {/* Email Notification Checkbox */}
+                  <Form.Item
+                    name="sendEmailNotification"
+                    valuePropName="checked"
+                    initialValue={false}>
+                    <Checkbox>
+                      <Space>
+                        <MailOutlined />
+                        <span>
+                          Send email notification to all assigned users
+                        </span>
+                      </Space>
+                    </Checkbox>
+                  </Form.Item>
+                </>
               )}
             </Panel>
           </Collapse>
-
-          {/* Reference Documents Section */}
-          {/* <Collapse ghost size="small">
-            <Panel
-              header={
-                <Space>
-                  <PaperClipOutlined />
-                  <span>Reference Documents (Optional)</span>
-                </Space>
-              }
-              key="documents">
-              <div className="mb-4">
-                <TaskFileUploader
-                  taskId={null} // No taskId yet, will be set after creation
-                  onUploadSuccess={handleDocumentUploadSuccess}
-                  uploadType="reference"
-                />
-
-                {referenceDocuments.length > 0 && (
-                  <Alert
-                    message={`${referenceDocuments.length} document(s) will be attached`}
-                    type="success"
-                    showIcon
-                    className="mt-4"
-                  />
-                )}
-              </div>
-            </Panel>
-          </Collapse> */}
 
           {/* Advanced Options */}
           <Collapse ghost size="small">
@@ -623,19 +623,6 @@ const CreateTaskForm = () => {
               </div>
             </Panel>
           </Collapse>
-
-          {/* Form Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button onClick={handleCancel}>Cancel</Button>
-            <Button
-              type="primary"
-              loading={loadingData}
-              onClick={onSubmit}
-              className="blue-btn"
-              icon={<PlusOutlined />}>
-              Create Task
-            </Button>
-          </div>
         </Form>
       </Modal>
     </>

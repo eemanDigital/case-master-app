@@ -214,10 +214,10 @@ const Dashboard = () => {
           )}
           {isAdminOrHr && <LeaveNotification />}
         </div>
+        <QuickActionsPanel />
 
         <ShowStaff>
           <ScrollingEvents />
-          <QuickActionsPanel />
         </ShowStaff>
 
         {isClient && <ClientCaseDashboard />}
