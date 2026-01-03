@@ -15,8 +15,7 @@ router.post("/", paymentController.createPayment);
 router.get("/", paymentController.getAllPayments);
 
 // Get payment statistics - clients see only their own stats
-router.get("/statistics", paymentController.getPaymentSummary);
-
+router.get("/stats/", paymentController.getComprehensiveStats);
 // Get total balance - clients see only their own balance
 router.get("/totalBalance", paymentController.getTotalBalance);
 

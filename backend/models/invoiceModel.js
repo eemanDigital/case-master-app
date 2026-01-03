@@ -296,7 +296,12 @@ invoiceSchema.pre("save", function (next) {
   this.services.forEach((service) => {
     switch (service.billingMethod) {
       case "hourly":
-        service.amount = service.hours * service.rate;
+        service.amount =
+          service.hours > 0
+            ? service.hours * service.rate
+            : service.fixedAmount > 0
+            ? service.fixedAmount
+            : 0;
         break;
       case "fixed_fee":
         service.amount = service.fixedAmount;
@@ -305,9 +310,6 @@ invoiceSchema.pre("save", function (next) {
         service.amount = service.quantity * service.unitPrice;
         break;
       case "contingency":
-        // Contingency fees are usually calculated separately
-        service.amount = service.fixedAmount || 0;
-        break;
       case "retainer":
         service.amount = service.fixedAmount || 0;
         break;
@@ -319,6 +321,7 @@ invoiceSchema.pre("save", function (next) {
     (sum, service) => sum + (service.amount || 0),
     0
   );
+
   const expensesTotal = this.expenses.reduce(
     (sum, expense) => sum + (expense.amount || 0),
     0
@@ -327,12 +330,23 @@ invoiceSchema.pre("save", function (next) {
   // Calculate subtotal (services + expenses + previous balance)
   this.subtotal = servicesTotal + expensesTotal + (this.previousBalance || 0);
 
-  // Apply discount
+  // Apply discount - FIXED LOGIC
   let discountAmount = 0;
-  if (this.discountType === "percentage" && this.discount > 0) {
-    discountAmount = this.subtotal * (this.discount / 100);
-  } else if (this.discountType === "fixed" && this.discount > 0) {
-    discountAmount = this.discount;
+
+  // Check if discount should be applied
+  if (this.discount && this.discount > 0) {
+    if (this.discountType === "percentage") {
+      discountAmount = this.subtotal * (this.discount / 100);
+    } else if (this.discountType === "fixed" || this.discountType === "none") {
+      // If discountType is "none" but discount value exists, treat it as fixed amount
+      discountAmount = this.discount;
+      // Auto-set discountType to "fixed" if it was "none"
+      if (this.discountType === "none" && this.discount > 0) {
+        this.discountType = "fixed";
+      }
+    }
+    // Ensure discount doesn't exceed subtotal
+    discountAmount = Math.min(discountAmount, this.subtotal);
   }
 
   // Calculate taxable amount (after discount)
@@ -344,13 +358,8 @@ invoiceSchema.pre("save", function (next) {
   // Calculate final total
   this.total = taxableAmount + this.taxAmount;
 
-  // Calculate total paid from payments array
-  this.amountPaid = this.payments
-    .filter((payment) => payment.status === "completed")
-    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
-
   // Calculate balance
-  this.balance = Math.max(0, this.total - this.amountPaid);
+  this.balance = Math.max(0, this.total - (this.amountPaid || 0));
 
   // Auto-update status
   if (
@@ -377,7 +386,6 @@ invoiceSchema.pre("save", function (next) {
 
   next();
 });
-
 // Static methods
 invoiceSchema.statics.generateInvoiceNumber = async function () {
   const count = await this.countDocuments();
