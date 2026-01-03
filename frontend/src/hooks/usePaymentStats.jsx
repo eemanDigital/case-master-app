@@ -1,4 +1,4 @@
-// hooks/usePaymentStats.js
+// hooks/usePaymentStats.js - COMPLETE FIXED VERSION
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useDataFetch } from "./useDataFetch";
 
@@ -8,7 +8,7 @@ export const usePaymentStats = (options = {}) => {
     month,
     range = "month",
     refreshInterval = 60000, // 1 minute
-    autoRefresh = true,
+    autoRefresh = false, // Changed to false by default to avoid unnecessary calls
   } = options;
 
   const [stats, setStats] = useState(null);
@@ -22,14 +22,17 @@ export const usePaymentStats = (options = {}) => {
       try {
         setLoading(true);
         const queryParams = new URLSearchParams();
+
+        // Always include range parameter
+        queryParams.append("range", range);
+
+        // Optional parameters
         if (year) queryParams.append("year", year);
         if (month) queryParams.append("month", month);
-        if (range) queryParams.append("range", range);
         if (forceRefresh) queryParams.append("forceRefresh", "true");
 
-        const url = `payments/stats${
-          queryParams.toString() ? `?${queryParams.toString()}` : ""
-        }`;
+        const url = `payments/stats?${queryParams.toString()}`;
+        console.log("Fetching stats with URL:", url);
 
         const result = await dataFetcher(url, "GET");
         console.log("Fetched payment stats:", result);

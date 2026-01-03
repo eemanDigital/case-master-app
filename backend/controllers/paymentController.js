@@ -1,891 +1,3 @@
-// const Payment = require("../models/paymentModel");
-// const Invoice = require("../models/invoiceModel");
-// const AppError = require("../utils/appError");
-// const catchAsync = require("../utils/catchAsync");
-// const mongoose = require("mongoose");
-
-// exports.createPayment = catchAsync(async (req, res, next) => {
-//   const {
-//     invoice: invoiceFromBody,
-//     invoiceId,
-//     amount,
-//     method,
-//     reference,
-//     notes,
-//     client: clientFromBody,
-//     clientId,
-//     case: caseFromBody,
-//     caseId,
-//   } = req.body;
-
-//   // Use whichever format was provided
-//   const invoice_id = invoiceFromBody || invoiceId;
-//   const client_id = clientFromBody || clientId;
-//   const case_id = caseFromBody || caseId;
-
-//   // Validate required fields
-//   if (!invoice_id || !amount || !method) {
-//     const missing = [];
-//     if (!invoice_id) missing.push("invoice (or invoiceId)");
-//     if (!amount) missing.push("amount");
-//     if (!method) missing.push("method");
-
-//     return next(
-//       new AppError(`Missing required fields: ${missing.join(", ")}`, 400)
-//     );
-//   }
-
-//   // Find invoice with case and client populated
-//   const invoice = await Invoice.findById(invoice_id)
-//     .populate("case")
-//     .populate("client");
-
-//   if (!invoice) {
-//     return next(new AppError("No invoice found with that ID", 404));
-//   }
-
-//   // ✅ NEW: Authorization check - clients can only make payments for their own invoices
-//   if (
-//     req.user.role === "client" &&
-//     invoice.client._id.toString() !== req.user.id
-//   ) {
-//     return next(
-//       new AppError(
-//         "You are not authorized to make payment for this invoice",
-//         403
-//       )
-//     );
-//   }
-
-//   // Check invoice status
-//   if (invoice.status === "cancelled" || invoice.status === "void") {
-//     return next(new AppError("Cannot make payment to cancelled invoice", 400));
-//   }
-
-//   // Validate relationships if IDs are provided
-//   if (case_id && invoice.case && invoice.case._id.toString() !== case_id) {
-//     return next(new AppError("Case does not match the invoice case", 400));
-//   }
-
-//   if (
-//     client_id &&
-//     invoice.client &&
-//     invoice.client._id.toString() !== client_id
-//   ) {
-//     return next(new AppError("Client does not match the invoice client", 400));
-//   }
-
-//   // Validate amount
-//   if (amount <= 0) {
-//     return next(new AppError("Payment amount must be greater than zero", 400));
-//   }
-
-//   // Check for overpayment
-//   const remainingBalance = invoice.balance;
-//   if (amount > remainingBalance) {
-//     return next(
-//       new AppError(
-//         `Payment amount (${amount}) exceeds remaining balance (${remainingBalance})`,
-//         400
-//       )
-//     );
-//   }
-
-//   try {
-//     // CREATE PAYMENT FIRST
-//     const payment = new Payment({
-//       invoice: invoice_id,
-//       client: invoice.client._id,
-//       case: invoice.case ? invoice.case._id : undefined,
-//       amount,
-//       method,
-//       reference: reference || "",
-//       notes: notes || "",
-//       paymentDate: new Date(),
-//       status: "completed",
-//     });
-
-//     await payment.save();
-
-//     // UPDATE INVOICE USING findByIdAndUpdate TO ENSURE IT SAVES
-//     const updatedInvoice = await Invoice.findByIdAndUpdate(
-//       invoice_id,
-//       {
-//         $inc: { amountPaid: amount },
-//         $set: {
-//           balance: invoice.total - (invoice.amountPaid + amount),
-//         },
-//       },
-//       { new: true, runValidators: true }
-//     );
-
-//     // MANUALLY RECALCULATE STATUS FOR UPDATED INVOICE
-//     const today = new Date();
-//     const dueDate = new Date(updatedInvoice.dueDate);
-//     const newBalance = updatedInvoice.total - updatedInvoice.amountPaid;
-
-//     let newStatus = updatedInvoice.status;
-//     if (newBalance <= 0) {
-//       newStatus = "paid";
-//     } else if (newBalance < updatedInvoice.total) {
-//       newStatus = "partially_paid";
-//     } else if (dueDate < today) {
-//       newStatus = "overdue";
-//     } else if (updatedInvoice.status === "draft") {
-//       newStatus = "sent";
-//     }
-
-//     // FINAL UPDATE WITH STATUS AND CALCULATED FIELDS
-//     const finalInvoice = await Invoice.findByIdAndUpdate(
-//       invoice_id,
-//       {
-//         $set: {
-//           status: newStatus,
-//           balance: newBalance,
-//           paymentProgress:
-//             (updatedInvoice.amountPaid / updatedInvoice.total) * 100,
-//           isOverdue: newStatus === "overdue",
-//           daysOverdue:
-//             newStatus === "overdue"
-//               ? Math.floor((today - dueDate) / (1000 * 60 * 60 * 24))
-//               : 0,
-//         },
-//       },
-//       { new: true }
-//     );
-
-//     // POPULATE PAYMENT WITH FRESH DATA
-//     await payment.populate(
-//       "invoice",
-//       "invoiceNumber title total balance status amountPaid paymentProgress isOverdue daysOverdue"
-//     );
-//     await payment.populate("client", "firstName lastName email");
-//     if (payment.case) {
-//       await payment.populate("case", "firstParty secondParty suitNo");
-//     }
-
-//     res.status(201).json({
-//       message: "Payment created successfully",
-//       data: {
-//         payment,
-//         updatedInvoice: {
-//           id: finalInvoice._id,
-//           invoiceNumber: finalInvoice.invoiceNumber,
-//           total: finalInvoice.total,
-//           amountPaid: finalInvoice.amountPaid,
-//           balance: finalInvoice.balance,
-//           status: finalInvoice.status,
-//           paymentProgress: finalInvoice.paymentProgress,
-//           isOverdue: finalInvoice.isOverdue,
-//           daysOverdue: finalInvoice.daysOverdue,
-//         },
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Payment creation error:", error);
-//     return next(new AppError("Failed to create payment", 500));
-//   }
-// });
-
-// // Get all payments with filtering and pagination
-// exports.getAllPayments = catchAsync(async (req, res, next) => {
-//   const {
-//     page = 1,
-//     limit = 10,
-//     clientId,
-//     caseId,
-//     invoiceId,
-//     startDate,
-//     endDate,
-//     method,
-//     sort = "-paymentDate",
-//   } = req.query;
-
-//   let filter = {};
-
-//   // ✅ NEW: Role-based filtering - clients can only see their own payments
-//   if (req.user.role === "client") {
-//     filter.client = req.user.id;
-//   } else if (clientId) {
-//     // Admins can filter by specific client
-//     filter.client = clientId;
-//   }
-
-//   // Build filter
-//   if (caseId) filter.case = caseId;
-//   if (invoiceId) filter.invoice = invoiceId;
-//   if (method) filter.method = method;
-
-//   // Date range filter
-//   if (startDate || endDate) {
-//     filter.paymentDate = {};
-//     if (startDate) filter.paymentDate.$gte = new Date(startDate);
-//     if (endDate) filter.paymentDate.$lte = new Date(endDate);
-//   }
-
-//   const skip = (page - 1) * limit;
-
-//   const payments = await Payment.find(filter)
-//     .populate("invoice", "invoiceNumber title total status")
-//     .populate("client", "firstName lastName email")
-//     .populate("case", "firstParty secondParty suitNo")
-//     .sort(sort)
-//     .skip(skip)
-//     .limit(parseInt(limit));
-
-//   const total = await Payment.countDocuments(filter);
-
-//   res.status(200).json({
-//     message: "success",
-//     results: payments.length,
-//     data: payments,
-//     pagination: {
-//       current: parseInt(page),
-//       total: Math.ceil(total / limit),
-//       limit: parseInt(limit),
-//       totalRecords: total,
-//     },
-//   });
-// });
-
-// // Get a specific payment
-// exports.getPayment = catchAsync(async (req, res, next) => {
-//   const payment = await Payment.findById(req.params.paymentId)
-//     .populate("invoice", "invoiceNumber title total status dueDate")
-//     .populate("client", "firstName lastName email phone")
-//     .populate("case", "firstParty secondParty suitNo caseStatus");
-
-//   if (!payment) {
-//     return next(new AppError("Payment not found", 404));
-//   }
-
-//   // ✅ NEW: Authorization check - clients can only view their own payments
-//   if (
-//     req.user.role === "client" &&
-//     payment.client._id.toString() !== req.user.id
-//   ) {
-//     return next(
-//       new AppError("You are not authorized to view this payment", 403)
-//     );
-//   }
-
-//   res.status(200).json({
-//     message: "success",
-//     fromCache: false,
-//     data: payment,
-//   });
-// });
-
-// // Update a payment
-// exports.updatePayment = catchAsync(async (req, res, next) => {
-//   const payment = await Payment.findById(req.params.paymentId);
-
-//   if (!payment) {
-//     return next(new AppError("Payment not found", 404));
-//   }
-
-//   // If amount is being updated, we need to adjust the invoice
-//   if (req.body.amount && req.body.amount !== payment.amount) {
-//     const invoice = await Invoice.findById(payment.invoice);
-//     if (!invoice) {
-//       return next(new AppError("Associated invoice not found", 404));
-//     }
-
-//     // Calculate the difference
-//     const amountDifference = req.body.amount - payment.amount;
-
-//     // Validate new amount doesn't exceed invoice total
-//     if (invoice.amountPaid + amountDifference > invoice.total) {
-//       return next(
-//         new AppError("Payment amount would exceed invoice total", 400)
-//       );
-//     }
-
-//     // Update invoice amount
-//     invoice.amountPaid += amountDifference;
-//     await invoice.save();
-//   }
-
-//   // Update payment
-//   const updatedPayment = await Payment.findByIdAndUpdate(
-//     req.params.paymentId,
-//     req.body,
-//     { new: true, runValidators: true }
-//   )
-//     .populate("invoice", "invoiceNumber title total")
-//     .populate("client", "firstName lastName")
-//     .populate("case", "firstParty secondParty suitNo");
-
-//   res.status(200).json({
-//     message: "success",
-//     data: updatedPayment,
-//   });
-// });
-
-// // Delete a payment
-// exports.deletePayment = catchAsync(async (req, res, next) => {
-//   const payment = await Payment.findById(req.params.paymentId);
-
-//   if (!payment) {
-//     return next(new AppError("Payment not found", 404));
-//   }
-
-//   // Adjust the invoice amount
-//   const invoice = await Invoice.findById(payment.invoice);
-//   if (invoice) {
-//     invoice.amountPaid -= payment.amount;
-//     await invoice.save();
-//   }
-
-//   await Payment.findByIdAndDelete(req.params.paymentId);
-
-//   res.status(200).json({
-//     message: "Payment deleted successfully",
-//     data: null,
-//   });
-// });
-
-// // Get total payment based on case and client
-// exports.totalPaymentOnCase = catchAsync(async (req, res, next) => {
-//   const clientId = req.params.clientId;
-//   const caseId = req.params.caseId;
-
-//   if (!mongoose.Types.ObjectId.isValid(clientId)) {
-//     return res.status(400).json({ message: "Invalid client ID" });
-//   }
-
-//   if (!mongoose.Types.ObjectId.isValid(caseId)) {
-//     return res.status(400).json({ message: "Invalid case ID" });
-//   }
-
-//   // ✅ NEW: Authorization check - clients can only view their own payment totals
-//   if (req.user.role === "client" && req.user.id !== clientId) {
-//     return next(
-//       new AppError("You are not authorized to view these payment totals", 403)
-//     );
-//   }
-
-//   const totalPaymentSum = await Payment.aggregate([
-//     {
-//       $match: {
-//         client: new mongoose.Types.ObjectId(clientId),
-//         case: new mongoose.Types.ObjectId(caseId),
-//       },
-//     },
-//     {
-//       $group: {
-//         _id: null,
-//         totalAmount: { $sum: "$amount" },
-//         paymentCount: { $sum: 1 },
-//       },
-//     },
-//   ]);
-
-//   const result =
-//     totalPaymentSum.length > 0
-//       ? totalPaymentSum[0]
-//       : { totalAmount: 0, paymentCount: 0 };
-
-//   res.status(200).json({
-//     message: "success",
-//     fromCache: false,
-//     data: result,
-//   });
-// });
-
-// // Get all payment made by a client
-// exports.totalPaymentClient = catchAsync(async (req, res, next) => {
-//   const clientId = req.params.clientId;
-
-//   if (!mongoose.Types.ObjectId.isValid(clientId)) {
-//     return res.status(400).json({ message: "Invalid client ID" });
-//   }
-
-//   // ✅ NEW: Authorization check - clients can only view their own totals
-//   if (req.user.role === "client" && req.user.id !== clientId) {
-//     return next(
-//       new AppError("You are not authorized to view these payment totals", 403)
-//     );
-//   }
-
-//   const totalPaymentSum = await Payment.aggregate([
-//     {
-//       $match: {
-//         client: new mongoose.Types.ObjectId(clientId),
-//       },
-//     },
-//     {
-//       $group: {
-//         _id: null,
-//         totalAmount: { $sum: "$amount" },
-//         paymentCount: { $sum: 1 },
-//       },
-//     },
-//   ]);
-
-//   const result =
-//     totalPaymentSum.length > 0
-//       ? totalPaymentSum[0]
-//       : { totalAmount: 0, paymentCount: 0 };
-
-//   res.status(200).json({
-//     message: "success",
-//     fromCache: false,
-//     data: result,
-//   });
-// });
-
-// // Get all payments made by each client
-// exports.paymentEachClient = catchAsync(async (req, res, next) => {
-//   const totalPaymentSumByClient = await Payment.aggregate([
-//     {
-//       $group: {
-//         _id: "$client",
-//         totalAmount: { $sum: "$amount" },
-//         paymentCount: { $sum: 1 },
-//         lastPayment: { $max: "$paymentDate" },
-//       },
-//     },
-//     {
-//       $lookup: {
-//         from: "users",
-//         localField: "_id",
-//         foreignField: "_id",
-//         as: "client",
-//       },
-//     },
-//     {
-//       $unwind: "$client",
-//     },
-//     {
-//       $project: {
-//         _id: 1,
-//         totalAmount: 1,
-//         paymentCount: 1,
-//         lastPayment: 1,
-//         "client._id": 1,
-//         "client.firstName": 1,
-//         "client.lastName": 1,
-//         "client.email": 1,
-//       },
-//     },
-//     {
-//       $sort: { totalAmount: -1 },
-//     },
-//   ]);
-
-//   res.status(200).json({
-//     message: "success",
-//     fromCache: false,
-//     data: totalPaymentSumByClient,
-//   });
-// });
-
-// // Get payments by month year
-// exports.totalPaymentsByMonthAndYear = catchAsync(async (req, res, next) => {
-//   const { year, month } = req.params;
-
-//   // Ensure month is in the correct format (two digits)
-//   const formattedMonth = month.padStart(2, "0");
-
-//   const startDate = new Date(`${year}-${formattedMonth}-01`);
-//   const endDate = new Date(startDate);
-//   endDate.setMonth(endDate.getMonth() + 1);
-
-//   // ✅ NEW: Role-based filtering for clients
-//   let matchStage = {
-//     paymentDate: {
-//       $gte: startDate,
-//       $lt: endDate,
-//     },
-//   };
-
-//   if (req.user.role === "client") {
-//     matchStage.client = new mongoose.Types.ObjectId(req.user.id);
-//   }
-
-//   const totalPayments = await Payment.aggregate([
-//     {
-//       $match: matchStage,
-//     },
-//     {
-//       $group: {
-//         _id: null,
-//         totalAmount: { $sum: "$amount" },
-//         paymentCount: { $sum: 1 },
-//       },
-//     },
-//     {
-//       $addFields: {
-//         month: parseInt(month, 10),
-//         year: parseInt(year, 10),
-//       },
-//     },
-//   ]);
-
-//   const result =
-//     totalPayments.length > 0
-//       ? totalPayments[0]
-//       : {
-//           totalAmount: 0,
-//           paymentCount: 0,
-//           month: parseInt(month, 10),
-//           year: parseInt(year, 10),
-//         };
-
-//   res.status(200).json({
-//     message: "success",
-//     fromCache: false,
-//     data: result,
-//   });
-// });
-
-// // Total payment each month in a year
-// exports.totalPaymentsByMonthInYear = catchAsync(async (req, res, next) => {
-//   const { year } = req.params;
-
-//   // ✅ NEW: Role-based filtering for clients
-//   let matchStage = {
-//     paymentDate: {
-//       $gte: new Date(`${year}-01-01`),
-//       $lt: new Date(`${parseInt(year) + 1}-01-01`),
-//     },
-//   };
-
-//   if (req.user.role === "client") {
-//     matchStage.client = new mongoose.Types.ObjectId(req.user.id);
-//   }
-
-//   const totalPayments = await Payment.aggregate([
-//     {
-//       $match: matchStage,
-//     },
-//     {
-//       $group: {
-//         _id: { month: { $month: "$paymentDate" } },
-//         totalAmount: { $sum: "$amount" },
-//         paymentCount: { $sum: 1 },
-//       },
-//     },
-//     {
-//       $sort: { "_id.month": 1 },
-//     },
-//     {
-//       $project: {
-//         _id: 0,
-//         month: "$_id.month",
-//         totalAmount: 1,
-//         paymentCount: 1,
-//       },
-//     },
-//   ]);
-
-//   res.status(200).json({
-//     message: "success",
-//     data: totalPayments,
-//   });
-// });
-
-// // Payment made within a year
-// exports.totalPaymentsByYear = catchAsync(async (req, res, next) => {
-//   const { year } = req.params;
-
-//   // ✅ NEW: Role-based filtering for clients
-//   let matchStage = {
-//     paymentDate: {
-//       $gte: new Date(`${year}-01-01`),
-//       $lt: new Date(`${parseInt(year) + 1}-01-01`),
-//     },
-//   };
-
-//   if (req.user.role === "client") {
-//     matchStage.client = new mongoose.Types.ObjectId(req.user.id);
-//   }
-
-//   const totalPayments = await Payment.aggregate([
-//     {
-//       $match: matchStage,
-//     },
-//     {
-//       $group: {
-//         _id: null,
-//         totalAmount: { $sum: "$amount" },
-//         paymentCount: { $sum: 1 },
-//       },
-//     },
-//     {
-//       $addFields: {
-//         year: parseInt(year, 10),
-//       },
-//     },
-//   ]);
-
-//   const result =
-//     totalPayments.length > 0
-//       ? totalPayments[0]
-//       : {
-//           totalAmount: 0,
-//           paymentCount: 0,
-//           year: parseInt(year, 10),
-//         };
-
-//   res.status(200).json({
-//     message: "success",
-//     fromCache: false,
-//     data: result,
-//   });
-// });
-
-// // Get total outstanding balance across all invoices
-// exports.getTotalBalance = catchAsync(async (req, res, next) => {
-//   // ✅ NEW: Role-based filtering for clients
-//   let matchStage = {
-//     status: {
-//       $nin: ["draft", "cancelled", "void"],
-//     },
-//   };
-
-//   if (req.user.role === "client") {
-//     matchStage.client = new mongoose.Types.ObjectId(req.user.id);
-//   }
-
-//   const results = await Invoice.aggregate([
-//     {
-//       $match: matchStage,
-//     },
-//     {
-//       $group: {
-//         _id: null,
-//         totalBalance: { $sum: "$balance" },
-//         totalInvoices: { $sum: 1 },
-//         totalAmount: { $sum: "$total" },
-//         totalPaid: { $sum: "$amountPaid" },
-//         overdueBalance: {
-//           $sum: {
-//             $cond: [{ $eq: ["$status", "overdue"] }, "$balance", 0],
-//           },
-//         },
-//         overdueCount: {
-//           $sum: {
-//             $cond: [{ $eq: ["$status", "overdue"] }, 1, 0],
-//           },
-//         },
-//         paidInvoices: {
-//           $sum: {
-//             $cond: [{ $eq: ["$status", "paid"] }, 1, 0],
-//           },
-//         },
-//         partiallyPaidInvoices: {
-//           $sum: {
-//             $cond: [{ $eq: ["$status", "partially_paid"] }, 1, 0],
-//           },
-//         },
-//       },
-//     },
-//   ]);
-
-//   const summary =
-//     results.length > 0
-//       ? results[0]
-//       : {
-//           totalBalance: 0,
-//           totalInvoices: 0,
-//           totalAmount: 0,
-//           totalPaid: 0,
-//           overdueBalance: 0,
-//           overdueCount: 0,
-//           paidInvoices: 0,
-//           partiallyPaidInvoices: 0,
-//         };
-
-//   res.status(200).json({
-//     message: "success",
-//     data: summary,
-//   });
-// });
-
-// // Get payment by client in respect of a case
-// exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
-//   const { clientId, caseId } = req.params;
-
-//   // ✅ NEW: Authorization check - clients can only view their own payments
-//   if (req.user.role === "client" && req.user.id !== clientId) {
-//     return next(
-//       new AppError("You are not authorized to view these payments", 403)
-//     );
-//   }
-
-//   const payments = await Payment.find({
-//     client: clientId,
-//     case: caseId,
-//   })
-//     .populate("invoice", "invoiceNumber title total status")
-//     .populate("client", "firstName lastName email")
-//     .populate("case", "firstParty secondParty suitNo")
-//     .sort({ paymentDate: -1 });
-
-//   if (!payments || payments.length === 0) {
-//     return next(
-//       new AppError("No payments found for this client and case", 404)
-//     );
-//   }
-
-//   const totalPayment = payments.reduce(
-//     (sum, payment) => sum + payment.amount,
-//     0
-//   );
-
-//   res.status(200).json({
-//     message: "success",
-//     result: payments.length,
-//     totalPayment: totalPayment,
-//     data: payments,
-//   });
-// });
-
-// // Get payment statistics dashboard
-// exports.getPaymentStatistics = catchAsync(async (req, res, next) => {
-//   const today = new Date();
-//   const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-//   const startOfYear = new Date(today.getFullYear(), 0, 1);
-
-//   // ✅ NEW: Role-based filtering for clients
-//   let baseFilter = {};
-//   if (req.user.role === "client") {
-//     baseFilter.client = new mongoose.Types.ObjectId(req.user.id);
-//   }
-
-//   const [
-//     totalPayments,
-//     monthlyPayments,
-//     yearlyPayments,
-//     paymentsByMethod,
-//     recentPayments,
-//   ] = await Promise.all([
-//     // Total payments
-//     Payment.aggregate([
-//       ...(Object.keys(baseFilter).length > 0 ? [{ $match: baseFilter }] : []),
-//       {
-//         $group: {
-//           _id: null,
-//           totalAmount: { $sum: "$amount" },
-//           count: { $sum: 1 },
-//         },
-//       },
-//     ]),
-//     // This month payments
-//     Payment.aggregate([
-//       {
-//         $match: {
-//           ...baseFilter,
-//           paymentDate: { $gte: startOfMonth },
-//         },
-//       },
-//       {
-//         $group: {
-//           _id: null,
-//           totalAmount: { $sum: "$amount" },
-//           count: { $sum: 1 },
-//         },
-//       },
-//     ]),
-//     // This year payments
-//     Payment.aggregate([
-//       {
-//         $match: {
-//           ...baseFilter,
-//           paymentDate: { $gte: startOfYear },
-//         },
-//       },
-//       {
-//         $group: {
-//           _id: null,
-//           totalAmount: { $sum: "$amount" },
-//           count: { $sum: 1 },
-//         },
-//       },
-//     ]),
-//     // Payments by method
-//     Payment.aggregate([
-//       ...(Object.keys(baseFilter).length > 0 ? [{ $match: baseFilter }] : []),
-//       {
-//         $group: {
-//           _id: "$method",
-//           totalAmount: { $sum: "$amount" },
-//           count: { $sum: 1 },
-//         },
-//       },
-//     ]),
-//     // Recent payments
-//     Payment.find(baseFilter)
-//       .populate("invoice", "invoiceNumber title")
-//       .populate("client", "firstName lastName")
-//       .sort({ paymentDate: -1 })
-//       .limit(10),
-//   ]);
-
-//   const statistics = {
-//     total: totalPayments[0] || { totalAmount: 0, count: 0 },
-//     monthly: monthlyPayments[0] || { totalAmount: 0, count: 0 },
-//     yearly: yearlyPayments[0] || { totalAmount: 0, count: 0 },
-//     byMethod: paymentsByMethod,
-//     recent: recentPayments,
-//   };
-
-//   res.status(200).json({
-//     message: "success",
-//     data: statistics,
-//   });
-// });
-
-// // Get payment summary
-// exports.getPaymentSummary = catchAsync(async (req, res, next) => {
-//   const { year = new Date().getFullYear() } = req.query;
-
-//   const startDate = new Date(`${year}-01-01`);
-//   const endDate = new Date(`${parseInt(year) + 1}-01-01`);
-
-//   // ✅ NEW: Role-based filtering for clients
-//   let matchStage = {
-//     paymentDate: {
-//       $gte: startDate,
-//       $lt: endDate,
-//     },
-//     status: "completed",
-//   };
-
-//   if (req.user.role === "client") {
-//     matchStage.client = new mongoose.Types.ObjectId(req.user.id);
-//   }
-
-//   const results = await Payment.aggregate([
-//     {
-//       $match: matchStage,
-//     },
-//     {
-//       $group: {
-//         _id: null,
-//         totalAmount: { $sum: "$amount" },
-//         paymentCount: { $sum: 1 },
-//         year: { $first: year },
-//       },
-//     },
-//   ]);
-
-//   const summary =
-//     results.length > 0
-//       ? results[0]
-//       : {
-//           totalAmount: 0,
-//           paymentCount: 0,
-//           year: parseInt(year),
-//         };
-
-//   res.status(200).json({
-//     message: "success",
-//     data: summary,
-//   });
-// });
 const Payment = require("../models/paymentModel");
 const Invoice = require("../models/invoiceModel");
 const AppError = require("../utils/appError");
@@ -893,231 +5,7 @@ const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
 
 // ✅ NEW: CONSOLIDATED COMPREHENSIVE STATISTICS ENDPOINT
-// This replaces multiple endpoints with one efficient call
-exports.getPaymentStatistics = catchAsync(async (req, res, next) => {
-  const { year = new Date().getFullYear() } = req.query;
 
-  const today = new Date();
-  const startOfYear = new Date(year, 0, 1);
-  const endOfYear = new Date(parseInt(year) + 1, 0, 1);
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-  // Base filter for role-based access
-  let baseFilter = {};
-  if (req.user.role === "client") {
-    baseFilter.client = new mongoose.Types.ObjectId(req.user.id);
-  }
-
-  // Run all aggregations in parallel for best performance
-  const [
-    totalStats,
-    monthlyStats,
-    yearlyStats,
-    paymentsByMethod,
-    paymentsByMonth,
-    recentPayments,
-    invoiceStats,
-  ] = await Promise.all([
-    // 1. ALL-TIME TOTAL PAYMENTS
-    Payment.aggregate([
-      { $match: { ...baseFilter, status: "completed" } },
-      {
-        $group: {
-          _id: null,
-          totalAmount: { $sum: "$amount" },
-          count: { $sum: 1 },
-          avgPayment: { $avg: "$amount" },
-        },
-      },
-    ]),
-
-    // 2. CURRENT MONTH PAYMENTS
-    Payment.aggregate([
-      {
-        $match: {
-          ...baseFilter,
-          status: "completed",
-          paymentDate: { $gte: startOfMonth },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalAmount: { $sum: "$amount" },
-          count: { $sum: 1 },
-          avgPayment: { $avg: "$amount" },
-        },
-      },
-    ]),
-
-    // 3. CURRENT YEAR PAYMENTS
-    Payment.aggregate([
-      {
-        $match: {
-          ...baseFilter,
-          status: "completed",
-          paymentDate: { $gte: startOfYear, $lt: endOfYear },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalAmount: { $sum: "$amount" },
-          count: { $sum: 1 },
-          avgPayment: { $avg: "$amount" },
-        },
-      },
-    ]),
-
-    // 4. PAYMENTS GROUPED BY METHOD
-    Payment.aggregate([
-      { $match: { ...baseFilter, status: "completed" } },
-      {
-        $group: {
-          _id: "$method",
-          totalAmount: { $sum: "$amount" },
-          count: { $sum: 1 },
-          avgAmount: { $avg: "$amount" },
-        },
-      },
-      { $sort: { totalAmount: -1 } },
-    ]),
-
-    // 5. PAYMENTS BY MONTH FOR CURRENT YEAR
-    Payment.aggregate([
-      {
-        $match: {
-          ...baseFilter,
-          status: "completed",
-          paymentDate: { $gte: startOfYear, $lt: endOfYear },
-        },
-      },
-      {
-        $group: {
-          _id: { month: { $month: "$paymentDate" } },
-          totalAmount: { $sum: "$amount" },
-          paymentCount: { $sum: 1 },
-        },
-      },
-      { $sort: { "_id.month": 1 } },
-      {
-        $project: {
-          _id: 0,
-          month: "$_id.month",
-          totalAmount: 1,
-          paymentCount: 1,
-        },
-      },
-    ]),
-
-    // 6. RECENT PAYMENTS (Last 10)
-    Payment.find({ ...baseFilter, status: "completed" })
-      .populate("invoice", "invoiceNumber title total")
-      .populate("client", "firstName lastName email")
-      .populate("case", "firstParty secondParty suitNo")
-      .sort({ paymentDate: -1 })
-      .limit(10)
-      .lean(),
-
-    // 7. INVOICE BALANCE STATS
-    Invoice.aggregate([
-      {
-        $match: {
-          ...(req.user.role === "client"
-            ? { client: new mongoose.Types.ObjectId(req.user.id) }
-            : {}),
-          status: { $nin: ["draft", "cancelled", "void"] },
-        },
-      },
-      {
-        $group: {
-          _id: null,
-          totalBalance: { $sum: "$balance" },
-          totalInvoiceAmount: { $sum: "$total" },
-          totalPaid: { $sum: "$amountPaid" },
-          totalInvoices: { $sum: 1 },
-          overdueBalance: {
-            $sum: { $cond: [{ $eq: ["$status", "overdue"] }, "$balance", 0] },
-          },
-          overdueCount: {
-            $sum: { $cond: [{ $eq: ["$status", "overdue"] }, 1, 0] },
-          },
-          paidCount: {
-            $sum: { $cond: [{ $eq: ["$status", "paid"] }, 1, 0] },
-          },
-          partiallyPaidCount: {
-            $sum: { $cond: [{ $eq: ["$status", "partially_paid"] }, 1, 0] },
-          },
-          unpaidCount: {
-            $sum: { $cond: [{ $eq: ["$status", "sent"] }, 1, 0] },
-          },
-        },
-      },
-    ]),
-  ]);
-
-  // Format the response with defaults for empty results
-  const statistics = {
-    // Summary stats
-    total: totalStats[0] || { totalAmount: 0, count: 0, avgPayment: 0 },
-    monthly: monthlyStats[0] || { totalAmount: 0, count: 0, avgPayment: 0 },
-    yearly: yearlyStats[0] || { totalAmount: 0, count: 0, avgPayment: 0 },
-
-    // Payment methods breakdown
-    byMethod: paymentsByMethod,
-
-    // Monthly breakdown for charts
-    monthlyBreakdown: paymentsByMonth,
-
-    // Recent activity
-    recent: recentPayments,
-
-    // Invoice/Balance stats
-    invoices: invoiceStats[0] || {
-      totalBalance: 0,
-      totalInvoiceAmount: 0,
-      totalPaid: 0,
-      totalInvoices: 0,
-      overdueBalance: 0,
-      overdueCount: 0,
-      paidCount: 0,
-      partiallyPaidCount: 0,
-      unpaidCount: 0,
-    },
-
-    // Calculated insights
-    insights: {
-      paymentRate: invoiceStats[0]
-        ? (invoiceStats[0].totalPaid / invoiceStats[0].totalInvoiceAmount) * 100
-        : 0,
-      monthlyGrowth:
-        yearlyStats[0] && monthlyStats[0]
-          ? (monthlyStats[0].totalAmount / (yearlyStats[0].totalAmount / 12) -
-              1) *
-            100
-          : 0,
-      mostUsedMethod: paymentsByMethod[0]?._id || "N/A",
-      overduePercentage:
-        invoiceStats[0] && invoiceStats[0].totalInvoices > 0
-          ? (invoiceStats[0].overdueCount / invoiceStats[0].totalInvoices) * 100
-          : 0,
-    },
-
-    // Metadata
-    meta: {
-      year: parseInt(year),
-      currentMonth: today.getMonth() + 1,
-      generatedAt: today.toISOString(),
-    },
-  };
-
-  res.status(200).json({
-    message: "success",
-    data: statistics,
-  });
-});
-
-// Keep individual endpoints for backwards compatibility or specific use cases
 // But mark them as deprecated and recommend using getPaymentStatistics instead
 
 exports.createPayment = catchAsync(async (req, res, next) => {
@@ -1877,12 +765,13 @@ const NodeCache = require("node-cache");
 const statsCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // 5 minute cache
 
 // 📊 COMPREHENSIVE PAYMENT & INVOICE STATISTICS
+
 exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
   const {
     year = new Date().getFullYear(),
     month,
     forceRefresh = false,
-    range = "month", // month, quarter, year, all
+    range = "month",
   } = req.query;
 
   const userId = req.user.id;
@@ -1909,17 +798,90 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Date ranges
-  const startOfToday = new Date(today.setHours(0, 0, 0, 0));
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const startOfYear = new Date(today.getFullYear(), 0, 1);
-  const startOfQuarter = new Date(
-    today.getFullYear(),
-    Math.floor(today.getMonth() / 3) * 3,
-    1
+  // ✅ CALCULATE DATE RANGES BASED ON 'RANGE' PARAMETER
+  let startDate,
+    endDate = new Date();
+  const now = new Date();
+
+  switch (range) {
+    case "today":
+      startDate = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        0,
+        0,
+        0,
+        0
+      );
+      endDate = new Date(
+        now.getFullYear(),
+        now.getMonth(),
+        now.getDate(),
+        23,
+        59,
+        59,
+        999
+      );
+      break;
+    case "week":
+      const weekStart = new Date(now);
+      weekStart.setDate(now.getDate() - now.getDay());
+      weekStart.setHours(0, 0, 0, 0);
+      startDate = weekStart;
+      break;
+    case "month":
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+      break;
+    case "quarter":
+      const quarterMonth = Math.floor(now.getMonth() / 3) * 3;
+      startDate = new Date(now.getFullYear(), quarterMonth, 1, 0, 0, 0, 0);
+      break;
+    case "year":
+      startDate = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+      break;
+    case "last30":
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 30);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    case "last90":
+      startDate = new Date(now);
+      startDate.setDate(now.getDate() - 90);
+      startDate.setHours(0, 0, 0, 0);
+      break;
+    default:
+      startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
+  }
+
+  console.log(
+    `Fetching stats for range: ${range}, from ${startDate} to ${endDate}`
   );
-  const last30Days = new Date(new Date().setDate(today.getDate() - 30));
-  const last90Days = new Date(new Date().setDate(today.getDate() - 90));
+
+  // Time-based helpers for aggregations
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    0,
+    0,
+    0,
+    0
+  );
+  const startOfMonth = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    1,
+    0,
+    0,
+    0,
+    0
+  );
+  const startOfYear = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+  const last30Days = new Date(now);
+  last30Days.setDate(now.getDate() - 30);
+  const last90Days = new Date(now);
+  last90Days.setDate(now.getDate() - 90);
 
   // Base filter based on user role
   const baseFilter =
@@ -1927,29 +889,14 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
       ? { client: new mongoose.Types.ObjectId(userId) }
       : {};
 
-  // Helper for date range filter
-  const getDateRangeFilter = (rangeType) => {
-    switch (rangeType) {
-      case "today":
-        return { $gte: startOfToday };
-      case "week":
-        const startOfWeek = new Date(
-          today.setDate(today.getDate() - today.getDay())
-        );
-        return { $gte: startOfWeek };
-      case "month":
-        return { $gte: startOfMonth };
-      case "quarter":
-        return { $gte: startOfQuarter };
-      case "year":
-        return { $gte: startOfYear };
-      case "last30":
-        return { $gte: last30Days };
-      case "last90":
-        return { $gte: last90Days };
-      default:
-        return { $gte: startOfMonth };
-    }
+  // ✅ DATE FILTER FOR INVOICES (use createdAt for filtering invoice creation)
+  const invoiceDateFilter = {
+    createdAt: { $gte: startDate, $lte: endDate },
+  };
+
+  // ✅ DATE FILTER FOR PAYMENTS (use paymentDate)
+  const paymentDateFilter = {
+    paymentDate: { $gte: startDate, $lte: endDate },
   };
 
   try {
@@ -1985,19 +932,21 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
       // 10. CASE FINANCIAL SUMMARY (if applicable)
       caseFinancials,
     ] = await Promise.all([
-      // 1. FINANCIAL SUMMARY
+      // 1. FINANCIAL SUMMARY - ✅ WITH DATE FILTER
       Invoice.aggregate([
-        { $match: baseFilter },
+        {
+          $match: {
+            ...baseFilter,
+            ...invoiceDateFilter,
+          },
+        },
         {
           $group: {
             _id: null,
-            // Invoice Totals
             totalInvoiceAmount: { $sum: "$total" },
             totalAmountDue: { $sum: "$balance" },
             totalAmountPaid: { $sum: "$amountPaid" },
             totalInvoices: { $sum: 1 },
-
-            // Averages
             avgInvoiceAmount: { $avg: "$total" },
             avgPaymentTime: {
               $avg: {
@@ -2006,15 +955,13 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
                   {
                     $divide: [
                       { $subtract: ["$updatedAt", "$issueDate"] },
-                      1000 * 60 * 60 * 24, // Convert to days
+                      1000 * 60 * 60 * 24,
                     ],
                   },
                   0,
                 ],
               },
             },
-
-            // Performance Metrics
             collectionRate: {
               $avg: {
                 $multiply: [{ $divide: ["$amountPaid", "$total"] }, 100],
@@ -2024,12 +971,16 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         },
       ]),
 
-      // 2. INVOICE ANALYTICS
+      // 2. INVOICE ANALYTICS - ✅ WITH DATE FILTER
       Invoice.aggregate([
-        { $match: baseFilter },
+        {
+          $match: {
+            ...baseFilter,
+            ...invoiceDateFilter,
+          },
+        },
         {
           $facet: {
-            // Status Breakdown
             byStatus: [
               {
                 $group: {
@@ -2042,8 +993,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
               },
               { $sort: { count: -1 } },
             ],
-
-            // Monthly Invoice Count
             monthlyCount: [
               {
                 $group: {
@@ -2058,8 +1007,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
               { $sort: { "_id.year": -1, "_id.month": -1 } },
               { $limit: 6 },
             ],
-
-            // Top Invoices by Amount
             topInvoices: [
               { $match: { total: { $gt: 0 } } },
               { $sort: { total: -1 } },
@@ -2080,17 +1027,17 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         },
       ]),
 
-      // 3. PAYMENT ANALYTICS
+      // 3. PAYMENT ANALYTICS - ✅ WITH DATE FILTER
       Payment.aggregate([
         {
           $match: {
             ...baseFilter,
             status: "completed",
+            ...paymentDateFilter,
           },
         },
         {
           $facet: {
-            // Overall Payment Stats
             summary: [
               {
                 $group: {
@@ -2100,8 +1047,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
                   avgPayment: { $avg: "$amount" },
                   maxPayment: { $max: "$amount" },
                   minPayment: { $min: "$amount" },
-
-                  // Time-based aggregations
                   todayPayments: {
                     $sum: {
                       $cond: [
@@ -2141,14 +1086,7 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
                 },
               },
             ],
-
-            // Daily Payment Trends
             dailyTrends: [
-              {
-                $match: {
-                  paymentDate: { $gte: last30Days },
-                },
-              },
               {
                 $group: {
                   _id: {
@@ -2170,11 +1108,12 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         },
       ]),
 
-      // 4. OVERDUE ANALYSIS
+      // 4. OVERDUE ANALYSIS - ✅ WITH DATE FILTER
       Invoice.aggregate([
         {
           $match: {
             ...baseFilter,
+            ...invoiceDateFilter,
             status: "overdue",
             balance: { $gt: 0 },
           },
@@ -2186,8 +1125,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
             totalAmount: { $sum: "$balance" },
             avgOverdueDays: { $avg: "$daysOverdue" },
             maxOverdueDays: { $max: "$daysOverdue" },
-
-            // Overdue by age buckets
             overdue0to30: {
               $sum: {
                 $cond: [{ $lte: ["$daysOverdue", 30] }, 1, 0],
@@ -2230,12 +1167,13 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         },
       ]),
 
-      // 5. PAYMENT METHOD DISTRIBUTION
+      // 5. PAYMENT METHOD DISTRIBUTION - ✅ WITH DATE FILTER
       Payment.aggregate([
         {
           $match: {
             ...baseFilter,
             status: "completed",
+            ...paymentDateFilter,
           },
         },
         {
@@ -2249,7 +1187,7 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         { $sort: { totalAmount: -1 } },
       ]),
 
-      // 6. MONTHLY TRENDS (last 12 months)
+      // 6. MONTHLY TRENDS (last 12 months) - Always last 12 months regardless of filter
       Payment.aggregate([
         {
           $match: {
@@ -2311,12 +1249,12 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         },
       ]),
 
-      // 7. TOP PERFORMING DATA
+      // 7. TOP PERFORMING DATA - ✅ WITH DATE FILTER
       Promise.all([
         // Top Invoices
-        Invoice.find(baseFilter)
+        Invoice.find({ ...baseFilter, ...invoiceDateFilter })
           .sort({ total: -1 })
-          .limit(3)
+          .limit(5)
           .populate("client", "firstName lastName email")
           .populate("case", "suitNo firstParty secondParty")
           .lean(),
@@ -2324,7 +1262,12 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         // Top Paying Clients (admin only)
         userRole !== "client"
           ? Payment.aggregate([
-              { $match: { status: "completed" } },
+              {
+                $match: {
+                  status: "completed",
+                  ...paymentDateFilter,
+                },
+              },
               {
                 $group: {
                   _id: "$client",
@@ -2364,30 +1307,36 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
           : Promise.resolve([]),
       ]),
 
-      // 8. RECENT ACTIVITY
+      // 8. RECENT ACTIVITY - ✅ WITH DATE FILTER
       Promise.all([
         // Recent Payments
         Payment.find({
           ...baseFilter,
           status: "completed",
+          ...paymentDateFilter,
         })
           .sort({ paymentDate: -1 })
-          .limit(5)
+          .limit(10)
           .populate("invoice", "invoiceNumber title total")
           .populate("client", "firstName lastName")
           .lean(),
 
         // Recent Invoices
-        Invoice.find(baseFilter)
+        Invoice.find({ ...baseFilter, ...invoiceDateFilter })
           .sort({ createdAt: -1 })
-          .limit(5)
+          .limit(10)
           .populate("client", "firstName lastName")
           .lean(),
       ]),
 
-      // 9. CLIENT PAYMENT BEHAVIOR (admin only)
+      // 9. CLIENT PAYMENT BEHAVIOR (admin only) - ✅ WITH DATE FILTER
       userRole !== "client"
         ? Invoice.aggregate([
+            {
+              $match: {
+                ...invoiceDateFilter,
+              },
+            },
             {
               $group: {
                 _id: "$client",
@@ -2448,11 +1397,12 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
           ])
         : Promise.resolve([]),
 
-      // 10. CASE FINANCIAL SUMMARY
+      // 10. CASE FINANCIAL SUMMARY - ✅ WITH DATE FILTER
       Invoice.aggregate([
         {
           $match: {
             ...baseFilter,
+            ...invoiceDateFilter,
             case: { $ne: null },
           },
         },
@@ -2472,7 +1422,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
 
     // Format the response
     const formattedStats = {
-      // Summary Cards Data
       summary: {
         financial: financialSummary[0] || {
           totalInvoiceAmount: 0,
@@ -2504,9 +1453,18 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
           overdue61to90: 0,
           overdue90Plus: 0,
         },
+        outstanding: {
+          count:
+            invoiceAnalytics[0]?.byStatus?.find((s) => s._id === "sent")
+              ?.count || 0,
+        },
+        paid: {
+          count:
+            invoiceAnalytics[0]?.byStatus?.find((s) => s._id === "paid")
+              ?.count || 0,
+        },
       },
 
-      // Analytics Data
       analytics: {
         invoices: {
           byStatus: invoiceAnalytics[0]?.byStatus || [],
@@ -2533,39 +1491,34 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         },
       },
 
-      // Top Performers
       topPerformers: {
         topInvoices: topData[0] || [],
         topClients: topData[1] || [],
       },
 
-      // Recent Activity
       recentActivity: {
         payments: recentActivity[0] || [],
         invoices: recentActivity[1] || [],
       },
 
-      // Client Insights (admin only)
       clientInsights: clientBehavior || [],
-
-      // Case Financials
       caseFinancials: caseFinancials || [],
 
-      // KPIs and Metrics
       kpis: {
         collectionRate: financialSummary[0]?.collectionRate || 0,
         avgPaymentDays: financialSummary[0]?.avgPaymentTime || 0,
-        paymentSuccessRate: 95, // Could be calculated from payment attempts
-        invoiceConversionRate: 85, // Draft to Paid conversion
+        paymentSuccessRate: 95,
+        invoiceConversionRate: 85,
       },
 
-      // Metadata
       metadata: {
         generatedAt: new Date().toISOString(),
         period: {
           year: parseInt(year),
           month: month ? parseInt(month) : null,
           range: range,
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString(),
           currentYear,
           currentMonth,
         },
