@@ -16,9 +16,7 @@ import LatestCaseReports from "./LatestCaseReports";
 import TodoList from "./TodoList";
 import ScrollingEvents from "./ScrollingEvents";
 import CurrentTasksTracker from "./CurrentTasksTracker";
-import CurrentMonthIncomeCharts from "./CurrentMonthIncomeChart";
-import MonthlyIncomeChart from "./MonthlyIncomeChart";
-import TotalOutstandingBalanceCharts from "./TotalOutstandingBalanceCharts";
+
 import {
   ShowAdminComponent,
   ShowOnlyVerifiedUser,
@@ -31,6 +29,7 @@ import VerifyAccountNotice from "./VerifyAccountNotice";
 import QuickActionsPanel from "./QuickActionsPanel";
 import ClientCaseDashboard from "./clientDashboard/ClientCaseDashboard";
 import StatusUserList from "../pages/StatusUserList";
+import PaymentDashboard from "./PaymentDashboard";
 
 export const PaymentFiltersContext = createContext();
 
@@ -39,34 +38,10 @@ const Dashboard = () => {
 
   const { user } = useSelector((state) => state.auth);
   const userId = user?.data?._id;
-  const year = new Date().getFullYear();
-  const currentMonth = new Date().getMonth() + 1;
-
-  const [yearMonth, setYearMonth] = useState(year);
-  const [yearEachMonth, setYearEachMonth] = useState(year);
-  const [month, setMonth] = useState(currentMonth);
 
   const hasInitialized = useRef(false);
 
   const { error: userError, dataFetcher: dataFetcherUser } = useDataFetch();
-  const {
-    data: fetchedYearData,
-    loading: fetchLoadingYear,
-    error: fetchErrorYear,
-    dataFetcher: dataFetcherYear,
-  } = useDataFetch();
-  const {
-    data: fetchedMonthData,
-    loading: fetchLoadingMonth,
-    error: fetchErrorMonth,
-    dataFetcher: dataFetcherMonth,
-  } = useDataFetch();
-  const {
-    data: fetchedEachMonthDataInYear,
-    loading: fetchLoadingEachMonth,
-    error: fetchErrorEachMonth,
-    dataFetcher: dataFetcherEachMonth,
-  } = useDataFetch();
 
   const {
     fetchData,
@@ -74,7 +49,7 @@ const Dashboard = () => {
     users,
     tasks,
     reports,
-    totalBalanceOnPayments,
+
     accountOfficerAggregates,
     dashboardStats,
     error: dataError,
@@ -99,31 +74,13 @@ const Dashboard = () => {
             { endpoint: "reports", key: "reports" },
             { endpoint: "tasks", key: "tasks" },
             { endpoint: "reports/upcoming", key: "causeList" },
-            {
-              endpoint: "payments/totalBalance",
-              key: "totalBalanceOnPayments",
-            },
+
             {
               endpoint: "cases/account-officers/aggregate",
               key: "accountOfficerAggregates",
             },
           ]),
         ]);
-
-        // Fetch payment data for admin users only
-        if (isAdminOrHr) {
-          await Promise.all([
-            dataFetcherYear(`payments/totalPayments/${year}`, "GET"),
-            dataFetcherMonth(
-              `payments/totalPayments/${yearMonth}/${month}`,
-              "GET"
-            ),
-            dataFetcherEachMonth(
-              `payments/totalPaymentsByMonthInYear/${yearEachMonth}`,
-              "GET"
-            ),
-          ]);
-        }
       } catch (error) {
         console.error("Dashboard initialization error:", error);
       }
@@ -201,8 +158,7 @@ const Dashboard = () => {
   if (userError) return <Alert message={userError} type="error" showIcon />;
 
   return (
-    <PaymentFiltersContext.Provider
-      value={{ setYearEachMonth, setYearMonth, setMonth }}>
+    <>
       {!isVerified && <VerifyAccountNotice />}
 
       <ShowOnlyVerifiedUser>
@@ -333,48 +289,9 @@ const Dashboard = () => {
                     )}
 
                     <ShowAdminComponent>
-                      {fetchLoadingMonth ? (
-                        <Skeleton.Node
-                          active
-                          style={{ width: "100%", height: 300 }}
-                        />
-                      ) : (
-                        <CurrentMonthIncomeCharts
-                          data={{
-                            ...fetchedMonthData?.data,
-                            month: String(fetchedMonthData?.data?.month),
-                          }}
-                          loading={fetchLoadingMonth}
-                          error={fetchErrorMonth}
-                        />
-                      )}
-
-                      {fetchLoadingYear ? (
-                        <Skeleton.Node
-                          active
-                          style={{ width: "100%", height: 300 }}
-                        />
-                      ) : (
-                        <TotalOutstandingBalanceCharts
-                          paymentData={fetchedYearData?.data}
-                          balanceData={totalBalanceOnPayments}
-                          loading={fetchLoadingYear}
-                          error={fetchErrorYear}
-                        />
-                      )}
-
-                      {fetchLoadingEachMonth ? (
-                        <Skeleton.Node
-                          active
-                          style={{ width: "100%", height: 300 }}
-                        />
-                      ) : (
-                        <MonthlyIncomeChart
-                          data={fetchedEachMonthDataInYear?.data}
-                          loading={fetchLoadingEachMonth}
-                          error={fetchErrorEachMonth}
-                        />
-                      )}
+                      <div className="col-span-1 md:col-span-2 lg:col-span-3">
+                        <PaymentDashboard />
+                      </div>
                     </ShowAdminComponent>
                   </div>
                 </div>
@@ -439,7 +356,7 @@ const Dashboard = () => {
           </>
         )}
       </ShowOnlyVerifiedUser>
-    </PaymentFiltersContext.Provider>
+    </>
   );
 };
 
