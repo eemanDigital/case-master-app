@@ -1,222 +1,182 @@
-import { useDispatch, useSelector } from "react-redux";
-import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { getUsers } from "../redux/features/auth/authSlice";
+import { useEffect, useState, useCallback, useMemo } from "react";
+import { useDataFetch } from "./useDataFetch";
 
 const useUserSelectOptions = (options = {}) => {
   const {
-    includeInactive = false, // Include inactive users
-    includeClients = false, // Include client users
-    filterRole = null, // Filter by specific role (e.g., 'staff', 'lawyer')
-    forceRefresh = false, // Force refresh data
+    type = "staff", // 'staff' | 'clients' | 'lawyers' | 'admins' | 'all'
+    includeInactive = false,
+    autoFetch = true, // Auto-fetch on mount
+    fetchAll = false, // Fetch all categories at once
   } = options;
 
-  const { users, usersLoading, usersLastFetched } = useSelector(
-    (state) => state.auth
-  );
-  const dispatch = useDispatch();
-  const hasFetchedRef = useRef(false);
-  const [lastRefresh, setLastRefresh] = useState(0);
+  const { dataFetcher, data, error, loading } = useDataFetch();
+  const [lastFetched, setLastFetched] = useState(null);
 
-  // Function to fetch users
-  const fetchUsers = useCallback(
-    (force = false) => {
+  // Memoize the fetch function
+  const fetchOptions = useCallback(
+    async (force = false) => {
       const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
       const now = Date.now();
 
-      // Check if we should fetch
-      const shouldFetch =
-        force ||
-        (!users?.data?.length && !usersLoading && !hasFetchedRef.current) ||
-        (usersLastFetched && now - usersLastFetched > CACHE_DURATION);
-
-      if (shouldFetch) {
-        console.log(
-          "🔄 useUserSelectOptions: Fetching users",
-          force ? "(forced)" : "(cache miss)"
-        );
-        hasFetchedRef.current = true;
-        setLastRefresh(now);
-        dispatch(getUsers());
-        return true;
+      // Check cache
+      if (!force && lastFetched && now - lastFetched < CACHE_DURATION && data) {
+        console.log("📦 Using cached select options");
+        return data;
       }
 
-      return false;
+      try {
+        const endpoint = fetchAll
+          ? "users/select-options/all"
+          : "users/select-options";
+
+        // Build query params
+        const params = new URLSearchParams();
+        if (fetchAll) {
+          params.append("includeInactive", includeInactive.toString());
+        } else {
+          params.append("type", type);
+          params.append("includeInactive", includeInactive.toString());
+        }
+
+        const fullEndpoint = `${endpoint}?${params.toString()}`;
+
+        console.log("🔄 Fetching select options:", fullEndpoint);
+
+        // Use dataFetcher from useDataFetch hook
+        const response = await dataFetcher(fullEndpoint, "GET");
+
+        if (response?.data) {
+          console.log("✅ Select options fetched:", response);
+          setLastFetched(now);
+          return response.data;
+        }
+
+        // Handle error case
+        if (response?.error) {
+          console.error("❌ Error fetching select options:", response.error);
+          throw new Error(response.error);
+        }
+      } catch (err) {
+        console.error("❌ Error in fetchOptions:", err);
+        throw err;
+      }
     },
-    [dispatch, users?.data?.length, usersLoading, usersLastFetched]
+    [type, includeInactive, fetchAll, lastFetched, data, dataFetcher]
   );
 
-  // Initial fetch
+  // Auto-fetch on mount
   useEffect(() => {
-    fetchUsers(forceRefresh);
-  }, [fetchUsers, forceRefresh]);
+    if (autoFetch) {
+      fetchOptions();
+    }
+  }, [autoFetch, fetchOptions]);
 
-  // Memoize calculations with proper filtering
-  const { userData, allUsers, adminOptions, lawyersOptions, filteredUsers } =
-    useMemo(() => {
-      const userList = Array.isArray(users?.data) ? users.data : [];
+  // Manual refresh
+  const refresh = useCallback(() => {
+    return fetchOptions(true);
+  }, [fetchOptions]);
 
-      // Apply filters
-      let filteredList = userList;
-
-      // Filter by role if specified
-      if (filterRole === "staff") {
-        filteredList = userList.filter((user) => user.role !== "client");
-      } else if (filterRole === "client") {
-        filteredList = userList.filter((user) => user.role === "client");
-      } else if (filterRole) {
-        filteredList = userList.filter((user) => user.role === filterRole);
-      }
-
-      // Filter inactive users unless explicitly included
-      if (!includeInactive) {
-        filteredList = filteredList.filter((user) => user.isActive !== false);
-      }
-
-      // Filter clients unless explicitly included
-      if (!includeClients) {
-        filteredList = filteredList.filter((user) => user.role !== "client");
-      }
-
-      // Create userData for Select components
-      const userData = filteredList.map((user) => {
-        // Build display name
-        let displayName = user.firstName || "";
-        if (user.lastName) displayName += ` ${user.lastName}`;
-        if (!user.isActive) displayName += " (Inactive)";
-        if (user.role === "client") displayName += " (Client)";
-
-        return {
-          value: user._id,
-          label: displayName,
-          data: {
-            // Include additional data for filtering in the UI
-            role: user.role,
-            isActive: user.isActive,
-            isLawyer: user.isLawyer,
-            position: user.position,
-            email: user.email,
-          },
-        };
-      });
-
-      // All users (including clients and inactive if specified)
-      const allUsers = (
-        includeClients && includeInactive ? userList : filteredList
-      ).map((user) => ({
-        value: user._id,
-        label: `${user.firstName} ${user.lastName || ""} (${
-          user.position || user.role
-        })`,
-        data: {
-          role: user.role,
-          isActive: user.isActive,
-          isLawyer: user.isLawyer,
-        },
-      }));
-
-      // Admin options (super-admin, admin, hr)
-      const adminOptions = userList
-        .filter((user) => ["super-admin", "admin", "hr"].includes(user.role))
-        .map((user) => ({
-          value: user.email,
-          label: `${user.firstName} ${user.lastName} (${user.role})`,
-        }));
-
-      // Lawyers options
-      const lawyersOptions = userList
-        .filter((user) => user.isLawyer === true)
-        .map((user) => ({
-          value: user._id,
-          label: `${user.firstName} ${user.lastName} ${
-            user.practiceArea ? `(${user.practiceArea})` : ""
-          }`,
-        }));
-
-      console.log("📊 useUserSelectOptions - Filtered results:", {
-        totalUsers: userList.length,
-        filteredCount: filteredList.length,
-        userDataCount: userData.length,
-        includeInactive,
-        includeClients,
-        filterRole,
-      });
-
-      return {
-        userData,
-        allUsers,
-        adminOptions,
-        lawyersOptions,
-        filteredUsers: filteredList,
-        rawUsers: userList,
-      };
-    }, [users?.data, includeInactive, includeClients, filterRole]);
-
-  // Function to manually refresh data
-  const refreshUsers = useCallback(() => {
-    fetchUsers(true);
-  }, [fetchUsers]);
-
-  // Function to get user by ID
+  // Helper functions
   const getUserById = useCallback(
     (id) => {
-      const userList = Array.isArray(users?.data) ? users.data : [];
-      return userList.find((user) => user._id === id);
+      if (!data?.data) return null;
+
+      const userData = data.data;
+
+      if (fetchAll) {
+        // Search across all categories
+        const allUsers = Object.values(userData).flat();
+        return allUsers.find((u) => u.value === id);
+      }
+
+      return Array.isArray(userData)
+        ? userData.find((u) => u.value === id)
+        : null;
     },
-    [users?.data]
+    [data, fetchAll]
   );
 
-  // Function to get users by role
-  const getUsersByRole = useCallback(
-    (role, includeInactive = false) => {
-      const userList = Array.isArray(users?.data) ? users.data : [];
-      return userList.filter((user) => {
-        const roleMatch = role ? user.role === role : true;
-        const activeMatch = includeInactive ? true : user.isActive !== false;
-        return roleMatch && activeMatch;
-      });
+  const filterByRole = useCallback(
+    (role) => {
+      if (!data?.data) return [];
+
+      const userData = data.data;
+
+      if (fetchAll) {
+        return userData.all?.filter((u) => u.role === role) || [];
+      }
+
+      return Array.isArray(userData)
+        ? userData.filter((u) => u.role === role)
+        : [];
     },
-    [users?.data]
+    [data, fetchAll]
   );
+
+  // Return appropriate data structure
+  const returnData = useMemo(() => {
+    if (!data?.data) {
+      return fetchAll
+        ? {
+            staff: [],
+            clients: [],
+            lawyers: [],
+            admins: [],
+            hr: [],
+            all: [],
+          }
+        : [];
+    }
+
+    const userData = data.data;
+
+    if (fetchAll) {
+      // Return all categories
+      return {
+        staff: userData?.staff || [],
+        clients: userData?.clients || [],
+        lawyers: userData?.lawyers || [],
+        admins: userData?.admins || [],
+        hr: userData?.hr || [],
+        all: userData?.all || [],
+      };
+    }
+
+    // Return single category
+    return Array.isArray(userData) ? userData : [];
+  }, [data, fetchAll]);
 
   return {
-    // Main data arrays for Select components
-    userData, // Filtered users for general selection
-    allUsers, // All users (with more info)
-    adminOptions, // Admin users for email selection
-    lawyersOptions, // Lawyer users
+    // Main data
+    data: returnData,
 
-    // Raw data
-    filteredUsers, // Filtered user objects
-    rawUsers: users?.data || [], // All raw user data
+    // Specific arrays (when fetchAll is true)
+    ...(fetchAll && {
+      staff: data?.data?.staff || [],
+      clients: data?.data?.clients || [],
+      lawyers: data?.data?.lawyers || [],
+      admins: data?.data?.admins || [],
+      hr: data?.data?.hr || [],
+      allUsers: data?.data?.all || [],
+    }),
 
-    // Metadata
-    loading: usersLoading,
-    lastFetched: usersLastFetched,
-    lastRefresh,
-    totalCount: users?.data?.length || 0,
-    filteredCount: filteredUsers?.length || 0,
+    // State
+    loading,
+    error,
+    lastFetched,
 
     // Functions
-    refreshUsers,
+    refresh,
+    fetchOptions,
     getUserById,
-    getUsersByRole,
+    filterByRole,
 
     // Stats
-    stats: useMemo(() => {
-      const userList = Array.isArray(users?.data) ? users.data : [];
-      return {
-        total: userList.length,
-        active: userList.filter((u) => u.isActive !== false).length,
-        inactive: userList.filter((u) => u.isActive === false).length,
-        staff: userList.filter((u) => u.role !== "client").length,
-        clients: userList.filter((u) => u.role === "client").length,
-        lawyers: userList.filter((u) => u.isLawyer === true).length,
-        admins: userList.filter((u) =>
-          ["admin", "super-admin"].includes(u.role)
-        ).length,
-        hr: userList.filter((u) => u.role === "hr").length,
-      };
-    }, [users?.data]),
+    count: fetchAll
+      ? data?.data?.all?.length || 0
+      : Array.isArray(data?.data)
+      ? data.data.length
+      : 0,
   };
 };
 

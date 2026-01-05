@@ -13,17 +13,14 @@ import createMaxLengthRule from "../utils/createMaxLengthRule";
 import GoBackButton from "../components/GoBackButton";
 import { doc_type } from "../data/options";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
-import { useSelector } from "react-redux";
 
 const { Title } = Typography;
 
 const DocumentRecord = () => {
   const [formData, setFormData] = useState({});
-  const { userData } = useUserSelectOptions();
-  // const { user } = useSelector((state) => state.auth);
-  // const currentUerName = user?.data?.firstName + " " + user?.data?.lastName;
-
-  // console.log(currentUerName);
+  const { staff: userData } = useUserSelectOptions({
+    fetchAll: true,
+  });
 
   const { form, onSubmit, loading } = useHandleSubmit(
     "documentRecord",

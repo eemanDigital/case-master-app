@@ -13,7 +13,7 @@ import {
   Alert,
 } from "antd";
 import useModal from "../hooks/useModal";
-import moment from "moment";
+// import moment from "moment";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import { useDispatch, useSelector } from "react-redux";
 import { getUsers } from "../redux/features/auth/authSlice";
@@ -27,16 +27,20 @@ import { useDataFetch } from "../hooks/useDataFetch";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import ButtonWithIcon from "./ButtonWithIcon";
 
-const { Option } = Select;
-
 const CreateLeaveBalanceForm = () => {
   const [form] = Form.useForm();
   const dispatch = useDispatch();
   const { users, user } = useSelector((state) => state.auth);
   const { open, handleCancel, showModal } = useModal();
-  const { userData } = useUserSelectOptions();
+  const {
+    data: staffOptions,
+    loading: laodingStaff,
+    error,
+  } = useUserSelectOptions();
   const { data, error: dataError, loading, dataFetcher } = useDataFetch();
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+
+  console.log(staffOptions, "Staff Options");
 
   useEffect(() => {
     dispatch(getUsers());
@@ -217,7 +221,7 @@ const CreateLeaveBalanceForm = () => {
                   ]}>
                   <Select
                     placeholder="Select employee"
-                    options={userData}
+                    options={staffOptions}
                     allowClear
                     showSearch
                     optionFilterProp="label"

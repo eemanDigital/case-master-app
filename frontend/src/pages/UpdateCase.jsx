@@ -54,9 +54,14 @@ const UpdateCase = () => {
     "/dashboard/cases"
   );
 
-  const { userData } = useUserSelectOptions();
-  const { clientOptions } = useClientSelectOptions();
-
+  const {
+    clients,
+    lawyers,
+    // loading,
+    // error
+  } = useUserSelectOptions({
+    fetchAll: true,
+  });
   // filter options for the select field
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
@@ -699,7 +704,7 @@ const UpdateCase = () => {
                 <Select
                   mode="multiple"
                   placeholder="Select account officer"
-                  options={userData}
+                  options={lawyers}
                   allowClear
                 />
               </Form.Item>
@@ -711,7 +716,7 @@ const UpdateCase = () => {
                 initialValue={formData?.client?._id}>
                 <Select
                   placeholder="Select client..."
-                  options={clientOptions}
+                  options={clients}
                   allowClear
                 />
               </Form.Item>

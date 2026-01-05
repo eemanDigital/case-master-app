@@ -10,12 +10,12 @@ const {
   sendAutomatedEmail,
   getSingleUser,
   sendAutomatedCustomEmail,
-  // ✅ NEW: Status-based endpoints
+  getUserSelectOptions,
+  getAllSelectOptions,
   getStaffByStatus,
   getClientsByStatus,
   getAllUsersByStatus,
   getStatusStatistics,
-  // ✅ NEW: Statistics endpoints
   getUserStatistics,
   getStaffStatistics,
   getClientStatistics,
@@ -53,11 +53,11 @@ const router = express.Router();
 // User signup with admin restriction
 router.post(
   "/register",
-  protect, // Ensure the user is authenticated
-  restrictTo("admin", "super-admin"), // Ensure the user has the correct role
-  uploadUserPhoto, // Handle file uploads
-  resizeUserPhoto, // Resize the uploaded photo
-  register // Handle the registration logic
+  protect,
+  restrictTo("admin", "super-admin"),
+  uploadUserPhoto,
+  resizeUserPhoto,
+  register
 );
 
 // User login
@@ -101,75 +101,13 @@ router.post("/sendAutomatedEmail", sendAutomatedEmail);
 router.post("/sendAutomatedCustomEmail", sendAutomatedCustomEmail);
 
 // ============================================
-// USER MANAGEMENT ROUTES
+// ✅ USER SELECT OPTIONS ROUTES (BEFORE /:id)
 // ============================================
-
-// Get all users with filters
-router.get("/", getUsers);
-
-// Get single user (current user)
-router.get("/getUser", getUser);
-
-// Get user by ID
-router.get("/:id", getSingleUser);
-
-// Update user profile
-router.patch("/updateUser", uploadUserPhoto, resizeUserPhoto, updateUser);
-
-// Admin upgrade user (restricted)
-router.patch(
-  "/upgradeUser/:id",
-  restrictTo("admin", "super-admin"),
-  upgradeUser
-);
-
-// Soft delete user (restricted)
-router.delete(
-  "/soft-delete/:id",
-  restrictTo("admin", "super-admin"),
-  softDeleteItem({ model: User, modelName: "User" })
-);
+router.get("/select-options/all", getAllSelectOptions);
+router.get("/select-options", getUserSelectOptions);
 
 // ============================================
-// FILTERED USER ROUTES
-// ============================================
-
-// Get users by role
-router.get("/role/:role", getUsersByRole);
-
-// Get users by status (legacy - uses query param)
-router.get("/status/:status", getUsersByStatus);
-
-// Get active users (legacy - active only)
-router.get("/active", getActiveUsers);
-
-// ============================================
-// ✅ ENHANCED STATUS-BASED ROUTES
-// ============================================
-
-// Get staff by active/inactive status
-router.get(
-  "/staff/status/:status", // :status = "active" or "inactive"
-  restrictTo("admin", "super-admin", "hr"),
-  getStaffByStatus
-);
-
-// Get clients by active/inactive status
-router.get(
-  "/clients/status/:status", // :status = "active" or "inactive"
-  restrictTo("admin", "super-admin", "hr"),
-  getClientsByStatus
-);
-
-// Get all users (staff + clients) by status
-router.get(
-  "/all/status/:status", // :status = "active" or "inactive"
-  restrictTo("admin", "super-admin", "hr"),
-  getAllUsersByStatus
-);
-
-// ============================================
-// ✅ STATISTICS ROUTES
+// ✅ STATISTICS ROUTES (BEFORE /:id)
 // ============================================
 
 // Get general user statistics
@@ -201,7 +139,45 @@ router.get(
 );
 
 // ============================================
-// ✅ ENHANCED FILTERING ROUTES (Optional)
+// ✅ ENHANCED STATUS-BASED ROUTES (BEFORE /:id)
+// ============================================
+
+// Get staff by active/inactive status
+router.get(
+  "/staff/status/:status",
+  restrictTo("admin", "super-admin", "hr"),
+  getStaffByStatus
+);
+
+// Get clients by active/inactive status
+router.get(
+  "/clients/status/:status",
+  restrictTo("admin", "super-admin", "hr"),
+  getClientsByStatus
+);
+
+// Get all users (staff + clients) by status
+router.get(
+  "/all/status/:status",
+  restrictTo("admin", "super-admin", "hr"),
+  getAllUsersByStatus
+);
+
+// ============================================
+// FILTERED USER ROUTES (BEFORE /:id)
+// ============================================
+
+// Get users by role
+router.get("/role/:role", getUsersByRole);
+
+// Get users by status (legacy - uses query param)
+router.get("/status/:status", getUsersByStatus);
+
+// Get active users (legacy - active only)
+router.get("/active", getActiveUsers);
+
+// ============================================
+// ✅ ENHANCED FILTERING ROUTES (BEFORE /:id)
 // ============================================
 
 // Combined filter route (role + status)
@@ -209,8 +185,6 @@ router.get(
   "/filter/combined",
   restrictTo("admin", "super-admin", "hr"),
   (req, res, next) => {
-    // This uses the existing getUsers controller with query params
-    // Example: /api/v1/users/filter/combined?role=staff&isActive=false
     return getUsers(req, res, next);
   }
 );
@@ -232,6 +206,37 @@ router.get(
     req.params.status = "inactive";
     return getClientsByStatus(req, res, next);
   }
+);
+
+// ============================================
+// USER MANAGEMENT ROUTES
+// ============================================
+
+// ⚠️ IMPORTANT: Get all users - MUST BE BEFORE /:id
+router.get("/", getUsers);
+
+// Get single user (current user)
+router.get("/getUser", getUser);
+
+// ⚠️ CRITICAL: This MUST come AFTER all specific routes above
+// Get user by ID - THIS SHOULD BE LAST among GET routes
+router.get("/:id", getSingleUser);
+
+// Update user profile
+router.patch("/updateUser", uploadUserPhoto, resizeUserPhoto, updateUser);
+
+// Admin upgrade user (restricted)
+router.patch(
+  "/upgradeUser/:id",
+  restrictTo("admin", "super-admin"),
+  upgradeUser
+);
+
+// Soft delete user (restricted)
+router.delete(
+  "/soft-delete/:id",
+  restrictTo("admin", "super-admin"),
+  softDeleteItem({ model: User, modelName: "User" })
 );
 
 module.exports = router;

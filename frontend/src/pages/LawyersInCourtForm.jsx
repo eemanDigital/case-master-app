@@ -34,7 +34,13 @@ const LawyersInCourtForm = ({ reportId, onSuccess }) => {
   const [loading, setLoading] = useState(true);
   const [visible, setVisible] = useState(false);
   const [currentLawyers, setCurrentLawyers] = useState([]);
-  const { userData } = useUserSelectOptions();
+  const {
+    lawyers,
+    loading: loadLawyer,
+    error,
+  } = useUserSelectOptions({
+    fetchAll: true,
+  });
   const {
     form,
     onSubmit,
@@ -85,7 +91,6 @@ const LawyersInCourtForm = ({ reportId, onSuccess }) => {
   };
 
   // Debug: Log the userData to see the actual structure
-  console.log("User Data:", userData);
 
   // Format user options for the Select component
   const formatUserOptions = (users) => {
@@ -121,7 +126,7 @@ const LawyersInCourtForm = ({ reportId, onSuccess }) => {
   };
 
   // Get the actual options for the Select component
-  const lawyerOptions = formatUserOptions(userData);
+  const lawyerOptions = formatUserOptions(lawyers);
 
   return (
     <div className="w-full">

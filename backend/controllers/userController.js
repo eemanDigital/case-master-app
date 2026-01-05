@@ -949,4 +949,162 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
   }
 });
 
+/**
+ * ✅ Get users for select dropdowns (lightweight, unpaginated)
+ * Query params:
+ * - type: 'staff' | 'clients' | 'lawyers' | 'admins' | 'all'
+ * - includeInactive: 'true' | 'false' (default: false)
+ */
+exports.getUserSelectOptions = catchAsync(async (req, res, next) => {
+  const { type = "staff", includeInactive = "false" } = req.query;
+
+  // Build filter based on type
+  let filter = {
+    isDeleted: { $ne: true },
+  };
+
+  // Only include active users by default
+  if (includeInactive !== "true") {
+    filter.isActive = true;
+  }
+
+  // Apply type filter
+  switch (type) {
+    case "staff":
+      filter.role = { $ne: "client" };
+      break;
+    case "clients":
+      filter.role = "client";
+      break;
+    case "lawyers":
+      filter.isLawyer = true;
+      filter.role = { $ne: "client" };
+      break;
+    case "admins":
+      filter.role = { $in: ["admin", "super-admin"] };
+      break;
+    case "hr":
+      filter.role = "hr";
+      break;
+    case "all":
+      // No additional role filter
+      break;
+    default:
+      filter.role = { $ne: "client" };
+  }
+
+  // Fetch only necessary fields for select options
+  const users = await User.find(filter)
+    .select(
+      "firstName lastName middleName email role position isLawyer practiceArea isActive"
+    )
+    .sort({ firstName: 1 })
+    .lean();
+
+  // Format for select dropdowns
+  const options = users.map((user) => {
+    let displayName = user.firstName || "";
+    if (user.lastName) displayName += ` ${user.lastName}`;
+    if (user.middleName) displayName += ` ${user.middleName}`;
+
+    // Add context to display name
+    if (!user.isActive) displayName += " (Inactive)";
+    if (user.role === "client") displayName += " (Client)";
+    if (user.position) displayName += ` - ${user.position}`;
+
+    return {
+      value: user._id,
+      label: displayName.trim(),
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      isLawyer: user.isLawyer,
+      position: user.position,
+      practiceArea: user.practiceArea,
+    };
+  });
+
+  res.status(200).json({
+    success: true,
+    message: `${type} options fetched successfully`,
+    data: options,
+    count: options.length,
+  });
+});
+
+/**
+ * ✅ Get multiple select option types in one request (for efficiency) no pagination
+ */
+exports.getAllSelectOptions = catchAsync(async (req, res, next) => {
+  const { includeInactive = "false" } = req.query;
+
+  const baseFilter = {
+    isDeleted: { $ne: true },
+  };
+
+  if (includeInactive !== "true") {
+    baseFilter.isActive = true;
+  }
+
+  // Fetch all users once with minimal fields
+  const allUsers = await User.find(baseFilter)
+    .select(
+      "firstName lastName middleName email role position isLawyer practiceArea isActive"
+    )
+    .sort({ firstName: 1 })
+    .lean();
+
+  // Helper function to format user
+  const formatUser = (user) => {
+    let displayName = user.firstName || "";
+    if (user.lastName) displayName += ` ${user.lastName}`;
+    if (user.middleName) displayName += ` ${user.middleName}`;
+    if (!user.isActive) displayName += " (Inactive)";
+    if (user.position) displayName += ` - ${user.position}`;
+
+    return {
+      value: user._id,
+      label: displayName.trim(),
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      isLawyer: user.isLawyer,
+      position: user.position,
+      practiceArea: user.practiceArea,
+    };
+  };
+
+  // Categorize users
+  const options = {
+    staff: allUsers.filter((u) => u.role !== "client").map(formatUser),
+
+    clients: allUsers.filter((u) => u.role === "client").map(formatUser),
+
+    lawyers: allUsers
+      .filter((u) => u.isLawyer === true && u.role !== "client")
+      .map(formatUser),
+
+    admins: allUsers
+      .filter((u) => ["admin", "super-admin"].includes(u.role))
+      .map(formatUser),
+
+    hr: allUsers.filter((u) => u.role === "hr").map(formatUser),
+
+    all: allUsers.map(formatUser),
+  };
+
+  res.status(200).json({
+    success: true,
+    message: "All select options fetched successfully",
+    data: options,
+    counts: {
+      staff: options.staff.length,
+      clients: options.clients.length,
+      lawyers: options.lawyers.length,
+      admins: options.admins.length,
+      hr: options.hr.length,
+      total: options.all.length,
+    },
+  });
+});
 module.exports = exports;

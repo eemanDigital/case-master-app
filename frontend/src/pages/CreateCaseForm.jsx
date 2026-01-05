@@ -37,8 +37,10 @@ import createMaxLengthRule from "../utils/createMaxLengthRule";
 
 const CreateCaseForm = () => {
   const [formData, setFormData] = useState(caseInitialValue);
-  const { userData } = useUserSelectOptions();
-  const { clientOptions } = useClientSelectOptions();
+  const { clients, lawyers } = useUserSelectOptions({
+    fetchAll: true,
+  });
+  // const { clientOptions } = useClientSelectOptions();
   const { form, onSubmit, loading } = useHandleSubmit(
     "cases",
     "post",
@@ -466,7 +468,7 @@ const CreateCaseForm = () => {
               <Select
                 mode="multiple"
                 placeholder="Select account officer"
-                options={userData}
+                options={lawyers}
                 allowClear
                 className="w-full"
               />
@@ -479,7 +481,7 @@ const CreateCaseForm = () => {
               initialValue={formData?.client}>
               <Select
                 placeholder="Select client..."
-                options={clientOptions}
+                options={clients}
                 allowClear
                 className="w-full"
               />

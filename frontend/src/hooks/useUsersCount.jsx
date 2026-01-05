@@ -119,12 +119,12 @@ const useUsersCount = (data) => {
         fromAPI: true,
       };
 
-      console.log("✅ useUsersCount - Processed API stats:", {
-        inputStats: statistics,
-        output: resultObj,
-        activeType: typeof activeStats,
-        inactiveType: typeof inactiveStats,
-      });
+      // console.log("✅ useUsersCount - Processed API stats:", {
+      //   inputStats: statistics,
+      //   output: resultObj,
+      //   activeType: typeof activeStats,
+      //   inactiveType: typeof inactiveStats,
+      // });
 
       return resultObj;
     }

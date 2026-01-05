@@ -1,11 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-import {
-  PlusOutlined,
-  UserAddOutlined,
-  PaperClipOutlined,
-  MailOutlined,
-} from "@ant-design/icons";
+import { PlusOutlined, UserAddOutlined, MailOutlined } from "@ant-design/icons";
 import {
   taskPriorityOptions,
   taskCategoryOptions,
@@ -33,7 +28,7 @@ import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import useModal from "../hooks/useModal";
 import { SelectInputs } from "../components/DynamicInputs";
-import useClientSelectOptions from "../hooks/useClientSelectOptions";
+
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useDispatch, useSelector } from "react-redux";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
@@ -41,7 +36,6 @@ import { getUsers } from "../redux/features/auth/authSlice";
 import { formatDate } from "../utils/formatDate";
 import { toast } from "react-toastify";
 import ButtonWithIcon from "../components/ButtonWithIcon";
-import TaskFileUploader from "../components/TaskFileUploader";
 
 const { TextArea } = Input;
 const { Title } = Typography;
@@ -49,11 +43,10 @@ const { Panel } = Collapse;
 
 const CreateTaskForm = () => {
   const { casesOptions } = useCaseSelectOptions();
-  const { userData } = useUserSelectOptions();
+  const { data: userData } = useUserSelectOptions();
   const { fetchData } = useDataGetterHook();
   const dispatch = useDispatch();
   const { users, user } = useSelector((state) => state.auth);
-  const { emailSent, msg } = useSelector((state) => state.email);
 
   // Modal hooks
   const { open, confirmLoading, showModal, handleOk, handleCancel } =

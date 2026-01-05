@@ -33,16 +33,18 @@ const TaskQuickActions = ({ task, onUpdate, canModifyTask }) => {
   const [cancelForm] = Form.useForm();
 
   const { dataFetcher } = useDataFetch();
-  const { userData, allUsers } = useUserSelectOptions();
-
-  // Filter clients from allUsers (users with role 'client')
-  const clientOptions = allUsers.filter((user) => {
-    const userRole = user.label.toLowerCase();
-    return userRole.includes("client") || user.value.includes("client");
+  const { staff, clients } = useUserSelectOptions({
+    fetchAll: true,
   });
 
+  // Filter clients from allUsers (users with role 'client')
+  // const clientOptions = allUsers.filter((user) => {
+  //   const userRole = user.label.toLowerCase();
+  //   return userRole.includes("client") || user.value.includes("client");
+  // });
+
   // Get staff options (non-clients)
-  const staffOptions = userData;
+  // const staffOptions = userData;
 
   const handleUpdateAssignment = async (values) => {
     try {
@@ -208,7 +210,7 @@ const TaskQuickActions = ({ task, onUpdate, canModifyTask }) => {
               placeholder="Select staff members"
               optionLabelProp="label"
               allowClear
-              options={userData}
+              options={sta}
             />
           </Form.Item>
 
@@ -237,7 +239,7 @@ const TaskQuickActions = ({ task, onUpdate, canModifyTask }) => {
               placeholder="Select a client"
               optionLabelProp="label"
               allowClear>
-              {clientOptions.map((client) => (
+              {clients.map((client) => (
                 <Option
                   key={client.value}
                   value={client.value}

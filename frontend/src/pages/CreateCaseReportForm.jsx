@@ -29,9 +29,12 @@ const CreateCaseReportForm = () => {
   const [showClientWarning, setShowClientWarning] = useState(false);
 
   const { casesOptions, casesData } = useCaseSelectOptions();
-  const { userData, lawyersOptions } = useUserSelectOptions();
+
   const { clientEmailsOption } = useClientSelectOptions();
+  const { data: staffOptions, loading, error } = useUserSelectOptions();
   const navigate = useNavigate();
+
+  // console.log("📝 CreateCaseReportForm: Rendered", userData);
 
   const {
     onSubmit,
@@ -219,7 +222,8 @@ const CreateCaseReportForm = () => {
               ]}>
               <Select
                 placeholder="Select reporter"
-                options={userData}
+                options={staffOptions}
+                isLoading={loading}
                 allowClear
                 showSearch
                 optionFilterProp="label"
@@ -341,7 +345,7 @@ const CreateCaseReportForm = () => {
             <Select
               mode="multiple"
               placeholder="Select lawyers present in court..."
-              options={lawyersOptions || []}
+              // options={lawyers || []}
               allowClear
               showSearch
               optionFilterProp="label"
