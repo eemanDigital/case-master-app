@@ -18,17 +18,21 @@ import {
 } from "antd";
 import { invoiceOptions } from "../data/options";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
-import useClientSelectOptions from "../hooks/useClientSelectOptions";
 import moment from "moment";
 import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
 import useHandleSubmit from "../hooks/useHandleSubmit";
 import GoBackButton from "../components/GoBackButton";
+import useUserSelectOptions from "../hooks/useUserSelectOptions";
 
 const { TextArea } = Input;
 
 const UpdateInvoice = () => {
   const { casesOptions, loading: casesLoading } = useCaseSelectOptions();
-  const { clientOptions, loading: clientsLoading } = useClientSelectOptions();
+  const { data: clientOptions, loading: clientsLoading } = useUserSelectOptions(
+    {
+      type: "clients",
+    }
+  );
   const { id } = useParams();
 
   // for navigation from page to page

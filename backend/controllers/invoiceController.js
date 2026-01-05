@@ -185,13 +185,20 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
 // Update invoice data
 exports.updateInvoice = catchAsync(async (req, res, next) => {
   const { case: caseId, client: clientId, ...updateData } = req.body;
+  const { id } = req.params;
 
   // Find existing invoice
-  const invoice = await Invoice.findById(req.params.id);
-  if (!invoice) {
-  const invoice = await Invoice.findById(req.params.id);
+  const invoice = await Invoice.findById(id);
   if (!invoice) {
     return next(new AppError("No invoice found with that ID", 404));
+  }
+
+  // Check if invoice is editable (not in certain statuses)
+  const nonEditableStatuses = ["paid", "cancelled", "void"];
+  if (nonEditableStatuses.includes(invoice.status)) {
+    return next(
+      new AppError(`Cannot edit invoice with status: ${invoice.status}`, 400)
+    );
   }
 
   // Validate case and client relationships if changing
@@ -217,7 +224,10 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
 
     invoice.case = caseId;
 
-    invoice.case = caseId;
+    // Also set client from case if clientId not provided
+    if (!clientId && caseData.client) {
+      invoice.client = caseData.client._id;
+    }
   }
 
   // Validate client exists if changing
@@ -226,10 +236,14 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
     if (!clientData) {
       return next(new AppError("No client found with that ID", 404));
     }
+    // Ensure it's actually a client
+    if (clientData.role !== "client") {
+      return next(new AppError("Selected user is not a client", 400));
+    }
     invoice.client = clientId;
   }
 
-  // Update other fields manually
+  // Update fields
   const fieldsToUpdate = [
     "title",
     "description",
@@ -257,7 +271,7 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
     }
   });
 
-  // Handle services updates - ensure they have proper structure
+  // Handle services updates
   if (updateData.services) {
     invoice.services = updateData.services.map((service) => ({
       description: service.description || "",
@@ -286,23 +300,30 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
     }));
   }
 
-  // IMPORTANT: If status is being updated to 'sent' and invoice is draft, set issueDate
+  // Set issueDate when status changes from draft to sent
   if (updateData.status === "sent" && invoice.status === "draft") {
     invoice.issueDate = new Date();
   }
 
-  // Validate that we can't change status from paid/cancelled/void without special handling
+  // Validate status transitions
   if (updateData.status) {
-    const prohibitedTransitions = {
-      paid: ["draft", "sent", "overdue"],
-      cancelled: ["draft", "sent", "overdue", "partially_paid", "paid"],
-      void: ["draft", "sent", "overdue", "partially_paid", "paid"],
+    const validTransitions = {
+      draft: ["sent"],
+      sent: ["overdue", "partially_paid", "paid", "cancelled"],
+      overdue: ["partially_paid", "paid", "cancelled"],
+      partially_paid: ["paid"],
+      paid: [], // Cannot change from paid
+      cancelled: [], // Cannot change from cancelled
+      void: [], // Cannot change from void
     };
 
-    if (prohibitedTransitions[invoice.status]?.includes(updateData.status)) {
+    const allowedNextStatuses = validTransitions[invoice.status] || [];
+    if (!allowedNextStatuses.includes(updateData.status)) {
       return next(
         new AppError(
-          `Cannot change status from ${invoice.status} to ${updateData.status}`,
+          `Cannot change status from ${invoice.status} to ${
+            updateData.status
+          }. Allowed transitions: ${allowedNextStatuses.join(", ") || "none"}`,
           400
         )
       );
@@ -311,19 +332,22 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
     invoice.status = updateData.status;
   }
 
-  // SAVE the invoice to trigger pre-save middleware
+  // Save invoice
   await invoice.save();
 
   // Populate the saved invoice
   const updatedInvoice = await Invoice.findById(invoice._id)
-    .populate("client", "firstName lastName email phone address")
-    .populate("case", "firstParty secondParty suitNo caseStatus")
-    .populate("timekeeper", "firstName lastName email")
-    .populate("billingAttorney", "firstName lastName email");
+    .populate("client", "firstName lastName email phone address company")
+    .populate(
+      "case",
+      "firstParty secondParty suitNo caseStatus matterReference"
+    )
+    .populate("timekeeper", "firstName lastName email position")
+    .populate("billingAttorney", "firstName lastName email position");
 
   res.status(200).json({
-    message: "success",
-    data: updatedInvoice,
+    success: true,
+    message: "Invoice updated successfully",
     data: updatedInvoice,
   });
 });

@@ -17,13 +17,14 @@ import {
   Space,
 } from "antd";
 
-import { invoiceOptions } from "../data/options";
+// import { invoiceOptions } from "../data/options";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
-import useClientSelectOptions from "../hooks/useClientSelectOptions";
+// import useClientSelectOptions from "../hooks/useClientSelectOptions";
 import { invoiceInitialValue } from "../utils/initialValues";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import useHandleSubmit from "../hooks/useHandleSubmit";
 import GoBackButton from "./GoBackButton";
+import useUserSelectOptions from "../hooks/useUserSelectOptions";
 const { TextArea } = Input;
 
 const CreateInvoiceForm = () => {
@@ -31,7 +32,11 @@ const CreateInvoiceForm = () => {
   const [formData, setFormData] = useState(invoiceInitialValue);
   const [publishOnSave, setPublishOnSave] = useState(false);
   const { casesOptions } = useCaseSelectOptions();
-  const { clientOptions } = useClientSelectOptions();
+  const { data: clientOptions, loading: clientsLoading } = useUserSelectOptions(
+    {
+      type: "clients",
+    }
+  );
   const navigate = useNavigate();
 
   const { form, onSubmit, loading, data } = useHandleSubmit("invoices", "post");
