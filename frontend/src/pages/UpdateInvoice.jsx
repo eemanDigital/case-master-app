@@ -168,7 +168,8 @@ const UpdateInvoice = () => {
               <Form.Item
                 name="case"
                 label="Case"
-                rules={[{ required: true, message: "Please select a case" }]}>
+                // rules={[{ required: true, message: "Please select a case" }]}
+              >
                 <Select
                   placeholder="Select case"
                   showSearch
