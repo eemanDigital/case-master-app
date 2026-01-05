@@ -90,8 +90,6 @@ const LawyersInCourtForm = ({ reportId, onSuccess }) => {
     }
   };
 
-  // Debug: Log the userData to see the actual structure
-
   // Format user options for the Select component
   const formatUserOptions = (users) => {
     if (!users || !Array.isArray(users)) return [];

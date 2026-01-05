@@ -189,6 +189,8 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
   // Find existing invoice
   const invoice = await Invoice.findById(req.params.id);
   if (!invoice) {
+  const invoice = await Invoice.findById(req.params.id);
+  if (!invoice) {
     return next(new AppError("No invoice found with that ID", 404));
   }
 
@@ -212,6 +214,8 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
         )
       );
     }
+
+    invoice.case = caseId;
 
     invoice.case = caseId;
   }
@@ -240,10 +244,10 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
     "taxRate",
     "paymentTerms",
     "notes",
+    "previousBalance",
     "internalNotes",
     "matterReference",
     "timekeeper",
-    "previousBalance",
     "billingAttorney",
   ];
 
@@ -319,6 +323,7 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     message: "success",
+    data: updatedInvoice,
     data: updatedInvoice,
   });
 });

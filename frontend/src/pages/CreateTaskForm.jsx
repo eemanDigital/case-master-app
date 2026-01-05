@@ -61,8 +61,6 @@ const CreateTaskForm = () => {
     error: dataError,
   } = useDataFetch();
 
-  console.log(userData);
-
   // Fetch users
   useEffect(() => {
     dispatch(getUsers());
