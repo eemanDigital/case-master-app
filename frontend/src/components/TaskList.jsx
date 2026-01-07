@@ -386,7 +386,7 @@ const TaskList = () => {
             {
               key: "edit",
               label: (
-                <Link to={`#${record.id}/update`}>
+                <Link to={`${record?.id}/update`}>
                   <Space>
                     <EditOutlined />
                     Edit Task
@@ -436,7 +436,7 @@ const TaskList = () => {
 
             {hasEditPermission && (
               <Tooltip title="Edit Task">
-                <Link to={`#${record.id}/update`}>
+                <Link to={`${record.id}/update`}>
                   <Button
                     type="text"
                     icon={<EditOutlined />}

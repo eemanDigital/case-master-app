@@ -282,7 +282,7 @@ exports.addReferenceDocuments = catchAsync(async (req, res, next) => {
     "referenceDocuments"
   );
 
-  res.status(200).json({
+  res.status(204).json({
     status: "success",
     message: "Documents added to task successfully",
     data: updatedTask,

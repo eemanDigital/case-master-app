@@ -72,7 +72,7 @@ import useFileManager from "../hooks/useFileManager";
 import TaskAttachmentsCard from "../components/TaskAttachmentsCard ";
 
 const { Title, Text, Paragraph } = Typography;
-const { TabPane } = Tabs;
+
 const { useBreakpoint } = Grid;
 const { Panel } = Collapse;
 

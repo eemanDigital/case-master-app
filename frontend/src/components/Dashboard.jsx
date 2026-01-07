@@ -15,7 +15,7 @@ import DashBoardDataCount from "./DashBoardDataCount";
 import LatestCaseReports from "./LatestCaseReports";
 import TodoList from "./TodoList";
 import ScrollingEvents from "./ScrollingEvents";
-import CurrentTasksTracker from "./CurrentTasksTracker";
+import TaskDashboardCard from "./TaskDashboardCard";
 
 import {
   ShowAdminComponent,
@@ -28,7 +28,7 @@ import CurrentDayCauseList from "./CurrentDayCauseList";
 import VerifyAccountNotice from "./VerifyAccountNotice";
 import QuickActionsPanel from "./QuickActionsPanel";
 import ClientCaseDashboard from "./clientDashboard/ClientCaseDashboard";
-import StatusUserList from "../pages/StatusUserList";
+
 import PaymentDashboard from "./PaymentDashboard";
 
 export const PaymentFiltersContext = createContext();
@@ -235,17 +235,19 @@ const Dashboard = () => {
                 </div>
 
                 <div className="w-full px-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="border-t border-gray-300 my-8">
+                    {" "}
                     {dataLoading.tasks ? (
                       <Skeleton active paragraph={{ rows: 6 }} />
                     ) : (
-                      <CurrentTasksTracker
-                        tasks={tasks?.data?.tasks || []}
+                      <TaskDashboardCard
+                        tasks={tasks?.data || []}
                         userId={userId}
                       />
                     )}
-
-                    <TodoList />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* <TodoList /> */}
 
                     {dataLoading.dashboardStats ? (
                       <Skeleton.Node
@@ -278,27 +280,17 @@ const Dashboard = () => {
                         data={effectiveMonthlyNewCases}
                       />
                     )}
-
-                    {dataLoading.dashboardStats ? (
-                      <Skeleton.Node
-                        active
-                        style={{ width: "100%", height: 300 }}
-                      />
-                    ) : (
-                      <CaseCountsByYearChart data={effectiveYearlyNewCases} />
-                    )}
-
-                    <ShowAdminComponent>
-                      <div className="col-span-1 md:col-span-2 lg:col-span-3">
-                        <PaymentDashboard />
-                      </div>
-                    </ShowAdminComponent>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
+              {dataLoading.dashboardStats ? (
+                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
+              ) : (
+                <CaseCountsByYearChart data={effectiveYearlyNewCases} />
+              )}
               {dataLoading.dashboardStats ? (
                 <Skeleton.Node active style={{ width: "100%", height: 300 }} />
               ) : (
@@ -353,6 +345,12 @@ const Dashboard = () => {
                 />
               )}
             </div>
+
+            <ShowAdminComponent>
+              <div className="col-span-1 mt-4 md:col-span-2 lg:col-span-3">
+                <PaymentDashboard />
+              </div>
+            </ShowAdminComponent>
           </>
         )}
       </ShowOnlyVerifiedUser>

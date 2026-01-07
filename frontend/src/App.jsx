@@ -66,6 +66,8 @@ import InvoiceList from "./pages/InvoiceList.jsx";
 import AddClientForm from "./components/AddClientForm.jsx";
 import DocumentsList from "./components/DocumentsList.jsx";
 import StatusUserList from "./pages/StatusUserList.jsx";
+import EditTaskForm from "./pages/EditTaskForm.jsx";
+import CreateTaskForm from "./pages/CreateTaskForm.jsx";
 
 // Enable axios credentials
 axios.defaults.withCredentials = true;
@@ -239,8 +241,11 @@ function App() {
               </ShowOnlyVerifiedUser>
             }
           />
+          <Route path="tasks/add-task" element={<CreateTaskForm />} />
 
           <Route path="tasks/:id/details" element={<TaskDetails />} />
+
+          <Route path="tasks/:id/update" element={<EditTaskForm />} />
 
           <Route
             path="clients"
