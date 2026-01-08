@@ -20,6 +20,7 @@ import {
   Statistic,
   Drawer,
   Empty,
+  Collapse,
 } from "antd";
 import {
   DeleteOutlined,
@@ -34,7 +35,6 @@ import {
   SyncOutlined,
   UserOutlined,
   FileTextOutlined,
-  MenuOutlined,
 } from "@ant-design/icons";
 import CreateTaskForm from "../pages/CreateTaskForm";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -63,7 +63,6 @@ const TaskList = () => {
   const loggedInClientId = user?.data?._id;
   const { isSuperOrAdmin, isStaff, isClient } = useAdminHook();
   const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   // State for filters and search
   const [searchText, setSearchText] = useState("");
@@ -439,11 +438,23 @@ const TaskList = () => {
                 />
               ),
             },
+            {
+              title: "Actions",
+              key: "task-actions",
+              width: 200,
+              render: (_, record) => (
+                <TaskActions
+                  task={record}
+                  userId={user?.data?._id}
+                  onTaskUpdate={() => fetchData("tasks", "tasks")}
+                />
+              ),
+            },
           ]
         : []),
       {
-        title: "Actions",
-        key: "actions",
+        title: "More Actions",
+        key: "more-actions",
         width: isMobile ? 80 : 150,
         fixed: "right",
         render: (_, record) => {
@@ -554,7 +565,7 @@ const TaskList = () => {
     ]
   );
 
-  // Mobile-optimized TaskCard component
+  // Mobile-optimized TaskCard component with better spacing
   const TaskCard = useCallback(
     ({ task }) => {
       if (!task) return null;
@@ -624,105 +635,175 @@ const TaskList = () => {
         <Card
           className="task-card h-full hover:shadow-lg transition-all duration-200 border border-gray-200"
           size="small"
-          bodyStyle={{ padding: isMobile ? "12px" : "16px" }}>
-          <div className="flex justify-between items-start mb-3 gap-2">
+          bodyStyle={{ padding: isMobile ? "16px" : "20px" }}>
+          {/* Header: Status and Priority Tags */}
+          <div className="flex justify-between items-start mb-4 gap-2">
             <Tag
               color={statusConfig.color}
               icon={statusConfig.icon}
-              className="text-xs">
+              className="text-xs px-2 py-1">
               {statusConfig.text}
             </Tag>
             <Tag
               color={getPriorityColor(task.taskPriority)}
-              className="capitalize text-xs">
+              className="capitalize text-xs px-2 py-1">
               {task.taskPriority || "N/A"}
             </Tag>
           </div>
 
-          <Link to={`${task.id}/details`} className="block mb-2">
-            <h3 className="font-semibold text-gray-800 hover:text-blue-600 line-clamp-2 mb-1 text-sm md:text-base">
+          {/* Task Title */}
+          <Link to={`${task.id}/details`} className="block mb-3">
+            <h3 className="font-semibold text-gray-800 hover:text-blue-600 line-clamp-2 text-base md:text-lg leading-tight">
               {task.title || "Untitled Task"}
             </h3>
           </Link>
 
+          {/* Task Description */}
           {task.description && (
-            <p className="text-xs md:text-sm text-gray-600 line-clamp-2 mb-3">
+            <p className="text-sm text-gray-600 line-clamp-2 mb-4 leading-relaxed">
               {task.description}
             </p>
           )}
 
-          <div className="space-y-2 text-xs text-gray-500 mb-3">
-            <div className="flex items-center gap-1">
-              <UserOutlined className="flex-shrink-0" />
-              <span className="truncate">
-                {task.assignees?.length > 0
-                  ? `${task.assignees.length} assignee${
-                      task.assignees.length > 1 ? "s" : ""
-                    }`
-                  : "Unassigned"}
+          {/* Assignees and Due Date Info */}
+          <div className="space-y-3 mb-4 pb-4 border-b border-gray-200">
+            <div className="flex items-center gap-2 text-sm">
+              <UserOutlined className="flex-shrink-0 text-gray-400" />
+              <span className="text-gray-700 truncate">
+                {task.assignees?.length > 0 ? (
+                  <>
+                    <strong>{task.assignees.length}</strong> assignee
+                    {task.assignees.length > 1 ? "s" : ""}
+                  </>
+                ) : (
+                  <span className="text-gray-400">Unassigned</span>
+                )}
               </span>
             </div>
 
-            <div className="flex items-center gap-1">
-              <ClockCircleOutlined className="flex-shrink-0" />
+            <div className="flex items-center gap-2 text-sm">
+              <ClockCircleOutlined className="flex-shrink-0 text-gray-400" />
               <span
                 className={
                   task.isOverdue
-                    ? "text-red-500 font-semibold truncate"
-                    : "truncate"
+                    ? "text-red-600 font-semibold"
+                    : "text-gray-700"
                 }>
-                Due: {formatDate(task.dueDate)}
+                {task.isOverdue && "⚠️ "}
+                {formatDate(task.dueDate)}
+                {task.isOverdue && " (Overdue)"}
               </span>
             </div>
+
+            {task.referenceDocuments?.length > 0 && (
+              <div className="flex items-center gap-2 text-sm">
+                <FileTextOutlined className="flex-shrink-0 text-gray-400" />
+                <span className="text-gray-700">
+                  {task.referenceDocuments.length} document
+                  {task.referenceDocuments.length > 1 ? "s" : ""}
+                </span>
+              </div>
+            )}
           </div>
 
-          <div className="flex justify-between items-center pt-2 border-t">
-            <Space size="small" className="flex-wrap">
+          {/* Task Status Flow - Collapsible for mobile */}
+          <Collapse
+            ghost
+            size="small"
+            className="mb-3 task-status-collapse"
+            items={[
+              {
+                key: "status",
+                label: (
+                  <span className="text-sm font-medium text-gray-700">
+                    Status Management
+                  </span>
+                ),
+                children: (
+                  <div className="py-2">
+                    <TaskStatusFlow
+                      task={task}
+                      userId={user?.data?._id}
+                      onStatusChange={() => fetchData("tasks", "tasks")}
+                    />
+                  </div>
+                ),
+              },
+            ]}
+          />
+
+          {/* Task Actions - Collapsible for mobile */}
+          <Collapse
+            ghost
+            size="small"
+            className="mb-4 task-actions-collapse"
+            items={[
+              {
+                key: "actions",
+                label: (
+                  <span className="text-sm font-medium text-gray-700">
+                    Task Operations
+                  </span>
+                ),
+                children: (
+                  <div className="py-2">
+                    <TaskActions
+                      task={task}
+                      userId={user?.data?._id}
+                      onTaskUpdate={() => fetchData("tasks", "tasks")}
+                    />
+                  </div>
+                ),
+              },
+            ]}
+          />
+
+          {/* Action Buttons Footer */}
+          <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+            <Space size="middle" className="flex-wrap">
               <Link to={`${task.id}/details`}>
                 <Button
-                  type="link"
-                  size="small"
-                  icon={<EyeOutlined />}
-                  className="p-0 h-auto">
-                  {!isMobile && "View"}
+                  type="primary"
+                  size={isMobile ? "small" : "middle"}
+                  icon={<EyeOutlined />}>
+                  {isMobile ? "View" : "View Details"}
                 </Button>
               </Link>
 
               {hasEditPermission && (
                 <Link to={`${task.id}/update`}>
                   <Button
-                    type="link"
-                    size="small"
-                    icon={<EditOutlined />}
-                    className="p-0 h-auto">
-                    {!isMobile && "Edit"}
+                    size={isMobile ? "small" : "middle"}
+                    icon={<EditOutlined />}>
+                    Edit
                   </Button>
                 </Link>
               )}
             </Space>
 
-            <Space size="small">
-              {task.referenceDocuments?.length > 0 && (
-                <Badge
-                  count={task.referenceDocuments.length}
-                  size="small"
-                  showZero={false}>
-                  <FileTextOutlined className="text-gray-400" />
-                </Badge>
-              )}
-
-              <Dropdown
-                menu={{ items: cardMenuItems }}
-                placement="topRight"
-                trigger={["click"]}>
-                <Button type="text" size="small" icon={<MoreOutlined />} />
-              </Dropdown>
-            </Space>
+            <Dropdown
+              menu={{ items: cardMenuItems }}
+              placement="bottomRight"
+              trigger={["click"]}>
+              <Button
+                type="text"
+                size={isMobile ? "small" : "middle"}
+                icon={<MoreOutlined />}
+              />
+            </Dropdown>
           </div>
         </Card>
       );
     },
-    [getStatusConfig, getPriorityColor, canEdit, isMobile, deleteTask]
+    [
+      getStatusConfig,
+      getPriorityColor,
+      canEdit,
+      isMobile,
+      deleteTask,
+      user?.data?._id,
+      fetchData,
+    ]
   );
 
   // Filter drawer for mobile

@@ -1,0 +1,556 @@
+/* ============================================
+   TASK LIST - ENHANCED RESPONSIVE STYLES
+   ============================================ */
+
+/* Container */
+.task-list-container {
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+/* ============================================
+   TASK CARDS - IMPROVED SPACING
+   ============================================ */
+
+.task-card {
+  border-radius: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: white;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.task-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
+  border-color: #1890ff;
+}
+
+/* Card body spacing */
+.task-card .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Collapsible sections */
+.task-status-collapse .ant-collapse-header,
+.task-actions-collapse .ant-collapse-header {
+  padding: 8px 12px !important;
+  background-color: #f5f5f5;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  transition: all 0.2s;
+}
+
+.task-status-collapse .ant-collapse-header:hover,
+.task-actions-collapse .ant-collapse-header:hover {
+  background-color: #e6f7ff;
+}
+
+.task-status-collapse .ant-collapse-content,
+.task-actions-collapse .ant-collapse-content {
+  border-radius: 6px;
+  background-color: #fafafa;
+}
+
+/* Better tag spacing */
+.task-card .ant-tag {
+  margin: 0;
+  padding: 4px 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Task title styling */
+.task-card h3 {
+  margin: 0;
+  line-height: 1.4;
+  transition: color 0.2s;
+}
+
+/* Description text */
+.task-card p {
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* Info items */
+.task-card .space-y-3 > div {
+  padding: 8px 0;
+}
+
+/* Action buttons */
+.task-card .ant-btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.task-card .ant-btn-primary {
+  box-shadow: 0 2px 4px rgba(24, 144, 255, 0.2);
+}
+
+.task-card .ant-btn-primary:hover {
+  box-shadow: 0 4px 8px rgba(24, 144, 255, 0.3);
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   MOBILE OPTIMIZATIONS
+   ============================================ */
+
+@media (max-width: 768px) {
+  .task-card {
+    border-radius: 8px;
+  }
+
+  .task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .task-card .ant-tag {
+    padding: 2px 8px;
+    font-size: 11px;
+  }
+
+  .task-card h3 {
+    font-size: 14px;
+    line-height: 1.3;
+  }
+
+  .task-card p {
+    font-size: 12px;
+  }
+
+  /* More compact collapse on mobile */
+  .task-status-collapse .ant-collapse-header,
+  .task-actions-collapse .ant-collapse-header {
+    padding: 6px 10px !important;
+    font-size: 12px;
+  }
+
+  /* Adjust button sizes on mobile */
+  .task-card .ant-btn-small {
+    padding: 0 8px;
+    font-size: 12px;
+    height: 28px;
+  }
+}
+
+/* ============================================
+   TABLE VIEW OPTIMIZATIONS
+   ============================================ */
+
+.task-table .ant-table {
+  font-size: 14px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.task-table .ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+  padding: 12px 16px;
+}
+
+.task-table .ant-table-tbody > tr > td {
+  padding: 12px 16px;
+}
+
+.task-table .ant-table-tbody > tr:hover {
+  background-color: #f5f9ff;
+}
+
+/* Table title cell */
+.task-title-cell {
+  max-width: 250px;
+  min-width: 150px;
+}
+
+.task-title-cell a {
+  display: block;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.task-title-cell a:hover {
+  color: #1890ff;
+}
+
+@media (max-width: 768px) {
+  .task-table .ant-table {
+    font-size: 12px;
+  }
+
+  .task-table .ant-table-thead > tr > th,
+  .task-table .ant-table-tbody > tr > td {
+    padding: 8px 4px;
+  }
+
+  .task-title-cell {
+    max-width: 150px;
+    min-width: 100px;
+  }
+}
+
+/* ============================================
+   STATISTICS CARDS
+   ============================================ */
+
+.ant-statistic {
+  padding: 4px 0;
+}
+
+.ant-statistic-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8c8c8c;
+  margin-bottom: 4px;
+}
+
+.ant-statistic-content {
+  font-weight: 700;
+}
+
+@media (max-width: 768px) {
+  .ant-statistic-title {
+    font-size: 10px;
+  }
+
+  .ant-statistic-content {
+    font-size: 18px;
+  }
+}
+
+/* ============================================
+   FILTER DRAWER
+   ============================================ */
+
+.filter-drawer .ant-drawer-body {
+  padding: 20px;
+}
+
+.filter-drawer .ant-select,
+.filter-drawer .ant-btn {
+  border-radius: 6px;
+}
+
+/* ============================================
+   LOADING & EMPTY STATES
+   ============================================ */
+
+.task-loading-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.task-empty-state {
+  padding: 60px 20px;
+}
+
+@media (max-width: 768px) {
+  .task-empty-state {
+    padding: 40px 16px;
+  }
+}
+
+/* ============================================
+   TOAST NOTIFICATIONS - MOBILE
+   ============================================ */
+
+@media (max-width: 768px) {
+  .Toastify__toast-container--top-center {
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100% - 32px);
+    max-width: 400px;
+    padding: 0;
+  }
+
+  .Toastify__toast {
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 14px;
+  }
+}
+
+/* ============================================
+   SCROLLBAR STYLING
+   ============================================ */
+
+.task-table::-webkit-scrollbar {
+  height: 8px;
+}
+
+.task-table::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.task-table::-webkit-scrollbar-thumb {
+  background: #bbb;
+  border-radius: 10px;
+}
+
+.task-table::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+.task-card:focus-within {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+  border-radius: 12px;
+}
+
+/* Keyboard navigation */
+.task-card a:focus,
+.task-card button:focus {
+  outline: 2px solid #1890ff;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .task-card,
+  .task-card:hover,
+  .ant-btn,
+  .task-title-cell a {
+    transition: none;
+    transform: none;
+  }
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+
+@media print {
+  .task-list-container {
+    padding: 0;
+    background: white;
+  }
+
+  .task-card {
+    break-inside: avoid;
+    box-shadow: none;
+    border: 1px solid #ddd;
+    page-break-inside: avoid;
+  }
+
+  .task-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  /* Hide interactive elements */
+  .ant-btn,
+  .ant-dropdown-trigger,
+  .ant-collapse-header,
+  button {
+    display: none !important;
+  }
+
+  /* Show collapsed content */
+  .ant-collapse-content {
+    display: block !important;
+    height: auto !important;
+  }
+
+  .ant-collapse-content-box {
+    padding: 8px !important;
+  }
+}
+
+/* ============================================
+   GRID LAYOUT IMPROVEMENTS
+   ============================================ */
+
+/* Ensure consistent card heights in grid */
+.grid > .task-card {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Better gap handling */
+@media (min-width: 640px) {
+  .grid {
+    gap: 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    gap: 20px;
+  }
+}
+
+/* ============================================
+   ANIMATION UTILITIES
+   ============================================ */
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.task-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Stagger animation for card grid */
+.grid > .task-card:nth-child(1) {
+  animation-delay: 0s;
+}
+.grid > .task-card:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.grid > .task-card:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.grid > .task-card:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.grid > .task-card:nth-child(5) {
+  animation-delay: 0.2s;
+}
+.grid > .task-card:nth-child(6) {
+  animation-delay: 0.25s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-card {
+    animation: none;
+  }
+}
+
+/* ============================================
+   BADGE & TAG IMPROVEMENTS
+   ============================================ */
+
+.ant-badge {
+  font-size: 11px;
+}
+
+.ant-tag {
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 2px 10px;
+}
+
+/* Status-specific colors */
+.ant-tag[color="red"] {
+  background-color: #fff1f0;
+  border-color: #ffccc7;
+  color: #cf1322;
+}
+
+.ant-tag[color="green"] {
+  background-color: #f6ffed;
+  border-color: #b7eb8f;
+  color: #389e0d;
+}
+
+.ant-tag[color="blue"] {
+  background-color: #e6f7ff;
+  border-color: #91d5ff;
+  color: #096dd9;
+}
+
+.ant-tag[color="orange"] {
+  background-color: #fff7e6;
+  border-color: #ffd591;
+  color: #d46b08;
+}
+
+/* ============================================
+   BORDER & DIVIDER IMPROVEMENTS
+   ============================================ */
+
+.border-b,
+.border-t {
+  border-color: #e8e8e8 !important;
+}
+
+/* Softer borders on cards */
+.task-card {
+  border-color: #e8e8e8;
+}
+
+.task-card:hover {
+  border-color: #40a9ff;
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   ============================================ */
+
+/* Better text truncation */
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+/* Ensure icons are properly sized */
+.anticon {
+  vertical-align: -0.125em;
+}
+
+/* ============================================
+   DARK MODE SUPPORT (Optional)
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  /* Uncomment to enable dark mode support */
+  /*
+  .task-list-container {
+    background-color: #141414;
+  }
+
+  .task-card {
+    background-color: #1f1f1f;
+    border-color: #303030;
+  }
+
+  .task-card h3 {
+    color: #e8e8e8;
+  }
+
+  .task-card p {
+    color: #a8a8a8;
+  }
+
+  .task-card:hover {
+    border-color: #177ddc;
+  }
+  */
+}

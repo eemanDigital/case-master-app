@@ -1,4 +1,3 @@
-// components/TaskDetails.js
 import { useEffect, useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import {
@@ -8,18 +7,12 @@ import {
   Typography,
   Tag,
   Space,
-  Button,
-  Progress,
   Tabs,
   List,
   Badge,
-  Tooltip,
   Row,
   Col,
   Grid,
-  Dropdown,
-  Statistic,
-  Descriptions,
   Collapse,
   Timeline,
   Avatar,
@@ -35,27 +28,23 @@ import {
   SyncOutlined,
   PaperClipOutlined,
   EyeOutlined,
-  DownloadOutlined,
-  ReloadOutlined,
-  MoreOutlined,
   InfoCircleOutlined,
   MailOutlined,
   HistoryOutlined,
   FileDoneOutlined,
-  ArrowLeftOutlined,
   SettingOutlined,
   FolderOpenOutlined,
   TagOutlined,
   LinkOutlined,
   ScheduleOutlined,
-  FileSyncOutlined,
   ToolOutlined,
   DatabaseOutlined,
   NumberOutlined,
   FieldTimeOutlined,
   StopOutlined,
   CheckSquareOutlined,
-  PhoneOutlined,
+  ExclamationCircleOutlined,
+  FileSearchOutlined,
 } from "@ant-design/icons";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
@@ -65,17 +54,132 @@ import TaskResponse from "../components/TaskResponse";
 import { useSelector } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
-import GoBackButton from "../components/GoBackButton";
+// import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import AddEventToCalender from "../components/AddEventToCalender";
 import TaskFileUploader from "../components/TaskFileUploader";
 import useFileManager from "../hooks/useFileManager";
 import TaskAttachmentsCard from "../components/TaskAttachmentsCard ";
 
-const { Title, Text, Paragraph } = Typography;
+import TaskDetailItem, {
+  CaseDetailItem,
+} from "../components/tasks/TaskDetailItem";
+import TaskReviewActions from "../components/tasks/TaskReviewActions";
+import TaskStatusTracker from "../components/tasks/TaskStatusTracker";
+import AssigneesSection from "../components/tasks/AssigneesSection";
+import TaskDetailsHeader from "../components/tasks/TaskDetailsHeader";
+import TaskMetricsCard from "../components/tasks/TaskMetricsCard";
 
+const { Title, Text, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
 const { Panel } = Collapse;
+
+// Configuration helpers
+const getPriorityConfig = (priority) => {
+  const configs = {
+    urgent: { color: "red", text: "URGENT", icon: <FlagOutlined /> },
+    high: { color: "orange", text: "HIGH", icon: <FlagOutlined /> },
+    medium: { color: "blue", text: "MEDIUM", icon: <FlagOutlined /> },
+    low: { color: "green", text: "LOW", icon: <FlagOutlined /> },
+  };
+  return configs[priority?.toLowerCase()] || configs.medium;
+};
+
+const getStatusConfig = (status, isOverdue) => {
+  if (isOverdue) {
+    return {
+      color: "red",
+      icon: <ClockCircleOutlined />,
+      text: "OVERDUE",
+      badge: "error",
+    };
+  }
+
+  const configs = {
+    completed: {
+      color: "green",
+      icon: <CheckCircleOutlined />,
+      text: "COMPLETED",
+      badge: "success",
+    },
+    "in-progress": {
+      color: "blue",
+      icon: <SyncOutlined spin />,
+      text: "IN PROGRESS",
+      badge: "processing",
+    },
+    "under-review": {
+      color: "orange",
+      icon: <FileSearchOutlined />,
+      text: "UNDER REVIEW",
+      badge: "warning",
+    },
+    pending: {
+      color: "default",
+      icon: <ClockCircleOutlined />,
+      text: "PENDING",
+      badge: "default",
+    },
+    rejected: {
+      color: "red",
+      icon: <ExclamationCircleOutlined />,
+      text: "NEEDS REVISION",
+      badge: "error",
+    },
+    cancelled: {
+      color: "default",
+      icon: <StopOutlined />,
+      text: "CANCELLED",
+      badge: "default",
+    },
+    overdue: {
+      color: "red",
+      icon: <ClockCircleOutlined />,
+      text: "OVERDUE",
+      badge: "error",
+    },
+  };
+
+  return configs[status?.toLowerCase()] || configs.pending;
+};
+
+const getCategoryConfig = (category) => {
+  const configs = {
+    "legal-research": {
+      color: "purple",
+      icon: <FileTextOutlined />,
+      label: "Legal Research",
+    },
+    "document-drafting": {
+      color: "blue",
+      icon: <FileTextOutlined />,
+      label: "Document Drafting",
+    },
+    "client-meeting": {
+      color: "green",
+      icon: <TeamOutlined />,
+      label: "Client Meeting",
+    },
+    "court-filing": {
+      color: "red",
+      icon: <FolderOpenOutlined />,
+      label: "Court Filing",
+    },
+    discovery: { color: "orange", icon: <EyeOutlined />, label: "Discovery" },
+    correspondence: {
+      color: "cyan",
+      icon: <MailOutlined />,
+      label: "Correspondence",
+    },
+    administrative: {
+      color: "gray",
+      icon: <SettingOutlined />,
+      label: "Administrative",
+    },
+    other: { color: "default", icon: <ToolOutlined />, label: "Other" },
+  };
+  return configs[category] || configs.other;
+};
 
 const TaskDetails = () => {
   const { dataFetcher, data, loading, error: dataError } = useDataFetch();
@@ -83,14 +187,10 @@ const TaskDetails = () => {
   const { user } = useSelector((state) => state.auth);
   const task = data?.data;
   const currentUser = user?.data?._id;
-  const isAssignedBy = task?.createdBy?._id === currentUser;
   const [activeTab, setActiveTab] = useState("overview");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const screens = useBreakpoint();
 
-  console.log("Task Data:", task);
-
-  // Use the new useFileManager hook
   const fileManager = useFileManager("Task", id, {
     enableNotifications: true,
     autoFetch: true,
@@ -107,7 +207,8 @@ const TaskDetails = () => {
     [task, currentUser]
   );
 
-  // Manual refresh function
+  const isTaskCreator = task?.createdBy?._id === currentUser;
+
   const refreshTask = () => {
     setRefreshTrigger((prev) => prev + 1);
     fileManager.refreshFiles();
@@ -117,140 +218,8 @@ const TaskDetails = () => {
     dataFetcher(`tasks/${id}`, "GET");
   }, [id, dataFetcher, refreshTrigger]);
 
-  const handleUploadSuccess = () => {
-    refreshTask();
-  };
-
   const handleTaskResponse = () => {
     refreshTask();
-  };
-
-  // Status and priority configurations
-  const getPriorityConfig = (priority) => {
-    const configs = {
-      urgent: { color: "red", text: "URGENT", icon: <FlagOutlined /> },
-      high: { color: "orange", text: "HIGH", icon: <FlagOutlined /> },
-      medium: { color: "blue", text: "MEDIUM", icon: <FlagOutlined /> },
-      low: { color: "green", text: "LOW", icon: <FlagOutlined /> },
-    };
-    return (
-      configs[priority?.toLowerCase()] || {
-        color: "blue",
-        text: "MEDIUM",
-        icon: <FlagOutlined />,
-      }
-    );
-  };
-
-  const getStatusConfig = (status, isOverdue) => {
-    if (isOverdue) {
-      return {
-        color: "red",
-        icon: <ClockCircleOutlined />,
-        text: "OVERDUE",
-        badge: "error",
-      };
-    }
-
-    const configs = {
-      completed: {
-        color: "green",
-        icon: <CheckCircleOutlined />,
-        text: "COMPLETED",
-        badge: "success",
-      },
-      "in-progress": {
-        color: "blue",
-        icon: <SyncOutlined spin />,
-        text: "IN PROGRESS",
-        badge: "processing",
-      },
-      "under-review": {
-        color: "orange",
-        icon: <EyeOutlined />,
-        text: "UNDER REVIEW",
-        badge: "warning",
-      },
-      pending: {
-        color: "default",
-        icon: <ClockCircleOutlined />,
-        text: "PENDING",
-        badge: "default",
-      },
-      cancelled: {
-        color: "default",
-        icon: <StopOutlined />,
-        text: "CANCELLED",
-        badge: "default",
-      },
-      overdue: {
-        color: "red",
-        icon: <ClockCircleOutlined />,
-        text: "OVERDUE",
-        badge: "error",
-      },
-    };
-
-    return (
-      configs[status?.toLowerCase()] || {
-        color: "default",
-        icon: <ClockCircleOutlined />,
-        text: status,
-        badge: "default",
-      }
-    );
-  };
-
-  const getCategoryConfig = (category) => {
-    const configs = {
-      "legal-research": {
-        color: "purple",
-        icon: <FileTextOutlined />,
-        label: "Legal Research",
-      },
-      "document-drafting": {
-        color: "blue",
-        icon: <FileTextOutlined />,
-        label: "Document Drafting",
-      },
-      "client-meeting": {
-        color: "green",
-        icon: <TeamOutlined />,
-        label: "Client Meeting",
-      },
-      "court-filing": {
-        color: "red",
-        icon: <FolderOpenOutlined />,
-        label: "Court Filing",
-      },
-      discovery: { color: "orange", icon: <EyeOutlined />, label: "Discovery" },
-      correspondence: {
-        color: "cyan",
-        icon: <MailOutlined />,
-        label: "Correspondence",
-      },
-      administrative: {
-        color: "gray",
-        icon: <SettingOutlined />,
-        label: "Administrative",
-      },
-      other: { color: "default", icon: <ToolOutlined />, label: "Other" },
-    };
-    return configs[category] || configs.other;
-  };
-
-  const getRoleConfig = (role) => {
-    const configs = {
-      primary: { color: "gold", label: "Primary", icon: <UserOutlined /> },
-      collaborator: {
-        color: "blue",
-        label: "Collaborator",
-        icon: <TeamOutlined />,
-      },
-      reviewer: { color: "purple", label: "Reviewer", icon: <EyeOutlined /> },
-      viewer: { color: "green", label: "Viewer", icon: <UserOutlined /> },
-    };
-    return configs[role] || configs.collaborator;
   };
 
   // Calculate time metrics
@@ -290,12 +259,12 @@ const TaskDetails = () => {
     );
   }
 
-  // Get all configurations
+  // Get configurations
   const statusConfig = getStatusConfig(task?.status, timeMetrics.isOverdue);
   const priorityConfig = getPriorityConfig(task?.taskPriority);
   const categoryConfig = getCategoryConfig(task?.category);
 
-  // Calculate overall progress from responses
+  // Calculate overall progress
   const calculateOverallProgress = () => {
     if (!task?.taskResponses || task.taskResponses.length === 0) return 0;
 
@@ -308,7 +277,7 @@ const TaskDetails = () => {
 
   const overallProgress = calculateOverallProgress();
 
-  // Get total time spent from responses
+  // Calculate time spent
   const getTotalTimeSpent = () => {
     if (!task?.taskResponses || task.taskResponses.length === 0) return 0;
 
@@ -324,73 +293,6 @@ const TaskDetails = () => {
     estimatedEffortHours > 0
       ? Math.round((totalTimeSpentHours / estimatedEffortHours) * 100)
       : 0;
-
-  // Mobile-friendly detail item
-  const DetailItem = ({ icon, label, value, span = 1, children }) => (
-    <Col xs={24} sm={12} lg={span === 2 ? 12 : 8} xl={span === 2 ? 12 : 6}>
-      <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg h-full">
-        <span className="text-blue-500 mt-1">{icon}</span>
-        <div className="flex-1 min-w-0">
-          <Text strong className="text-xs text-gray-500 block mb-1">
-            {label}
-          </Text>
-          {children ? (
-            children
-          ) : (
-            <Text className="text-sm block">{value || "N/A"}</Text>
-          )}
-        </div>
-      </div>
-    </Col>
-  );
-
-  // Action buttons
-  const actionButtons = (
-    <Space
-      direction={screens.xs ? "vertical" : "horizontal"}
-      size="small"
-      className="w-full">
-      {/* Reference Documents Upload */}
-      <TaskFileUploader
-        taskId={task?._id}
-        uploadType="reference"
-        buttonText={screens.xs ? "Reference" : "Add Reference Docs"}
-        buttonProps={{
-          type: "primary",
-          icon: <PaperClipOutlined />,
-          size: screens.xs ? "small" : "middle",
-        }}
-        onUploadSuccess={handleUploadSuccess}
-      />
-
-      {/* Response Documents Upload - Only for assignees */}
-      {isAssignedToCurrentUser && (
-        <TaskFileUploader
-          taskId={task?._id}
-          uploadType="response"
-          buttonText={screens.xs ? "Response" : "Add Response Docs"}
-          buttonProps={{
-            type: "dashed",
-            icon: <FileTextOutlined />,
-            size: screens.xs ? "small" : "middle",
-          }}
-          onUploadSuccess={handleUploadSuccess}
-        />
-      )}
-
-      <AddEventToCalender
-        title={`Task: ${task?.title}`}
-        description={`${task?.description || task?.instruction}\n\nPriority: ${
-          task?.taskPriority
-        }\nCategory: ${task?.category}`}
-        startDate={task?.startDate || task?.dateCreated}
-        endDate={task?.dueDate}
-        buttonProps={{
-          size: screens.xs ? "small" : "middle",
-        }}
-      />
-    </Space>
-  );
 
   // Task Metrics
   const taskMetrics = [
@@ -429,135 +331,76 @@ const TaskDetails = () => {
     },
   ];
 
-  // Assignees by role
-  const assigneesByRole = {
-    primary: task?.assignees?.filter((a) => a.role === "primary") || [],
-    collaborator:
-      task?.assignees?.filter((a) => a.role === "collaborator") || [],
-    reviewer: task?.assignees?.filter((a) => a.role === "reviewer") || [],
-    viewer: task?.assignees?.filter((a) => a.role === "viewer") || [],
-  };
+  // Action buttons component
+  const actionButtons = (
+    <Space
+      direction={screens.xs ? "vertical" : "horizontal"}
+      size="small"
+      className="w-full">
+      {/* Task Review Actions */}
+      <TaskReviewActions
+        task={task}
+        userId={currentUser}
+        onStatusChange={refreshTask}
+        onReviewComplete={refreshTask}
+        screens={screens}
+      />
 
-  // Client assignees
-  const clientAssignees = task?.assignees?.filter((a) => a.isClient) || [];
-  const teamAssignees = task?.assignees?.filter((a) => !a.isClient) || [];
+      {/* Reference Documents Upload */}
+      <TaskFileUploader
+        taskId={task?._id}
+        uploadType="reference"
+        buttonText={screens.xs ? "Reference" : "Add Reference Docs"}
+        buttonProps={{
+          type: "default",
+          icon: <PaperClipOutlined />,
+          size: screens.xs ? "small" : "middle",
+        }}
+        onUploadSuccess={refreshTask}
+      />
+
+      {/* Add to Calendar */}
+      <AddEventToCalender
+        title={`Task: ${task?.title}`}
+        description={`${task?.description || task?.instruction}\n\nPriority: ${
+          task?.taskPriority
+        }\nCategory: ${task?.category}`}
+        startDate={task?.startDate || task?.dateCreated}
+        endDate={task?.dueDate}
+        buttonProps={{
+          size: screens.xs ? "small" : "middle",
+        }}
+      />
+    </Space>
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto py-4 px-4 max-w-7xl">
         {/* Header Section */}
+        <TaskDetailsHeader
+          task={task}
+          loading={loading}
+          screens={screens}
+          refreshTask={refreshTask}
+          statusConfig={statusConfig}
+          priorityConfig={priorityConfig}
+          categoryConfig={categoryConfig}
+          overallProgress={overallProgress}
+          timeMetrics={timeMetrics}
+          actionButtons={actionButtons}
+          isTemplate={task?.isTemplate}
+        />
+        {/* Task Metrics */}
+        <TaskMetricsCard taskMetrics={taskMetrics} screens={screens} />
+
+        {/* Status Tracker */}
         <Card className="mb-6 shadow-sm border-0">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-3">
-                <GoBackButton />
-                <Button
-                  icon={<ReloadOutlined />}
-                  onClick={refreshTask}
-                  loading={loading}
-                  size="small">
-                  {screens.xs ? "" : "Refresh"}
-                </Button>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                <Tag icon={categoryConfig.icon} color={categoryConfig.color}>
-                  {categoryConfig.label}
-                </Tag>
-                <Badge
-                  status={statusConfig.badge}
-                  text={
-                    <Text strong className="text-sm">
-                      {statusConfig.icon} {statusConfig.text}
-                    </Text>
-                  }
-                />
-                <Tag color={priorityConfig.color} className="text-xs">
-                  {priorityConfig.icon} {priorityConfig.text} PRIORITY
-                </Tag>
-                {task?.isTemplate && (
-                  <Tag color="purple" icon={<FileSyncOutlined />}>
-                    Template
-                  </Tag>
-                )}
-              </div>
-
-              <Title
-                level={screens.xs ? 3 : 2}
-                className="m-0 mb-2 line-clamp-2 break-words">
-                {task?.title}
-              </Title>
-
-              {task?.description && (
-                <Paragraph
-                  ellipsis={{ rows: 2, expandable: true, symbol: "more" }}
-                  className="text-gray-600 mb-4">
-                  {task.description}
-                </Paragraph>
-              )}
-
-              {/* Progress Bar */}
-              <div className="mb-4">
-                <div className="flex justify-between items-center mb-2">
-                  <Text strong className="text-sm">
-                    Overall Progress
-                  </Text>
-                  <Text strong className="text-sm">
-                    {overallProgress}%
-                  </Text>
-                </div>
-                <Progress
-                  percent={overallProgress}
-                  status={
-                    task?.status === "completed"
-                      ? "success"
-                      : timeMetrics.isOverdue
-                      ? "exception"
-                      : "active"
-                  }
-                  strokeColor={
-                    task?.status === "completed"
-                      ? "#52c41a"
-                      : timeMetrics.isOverdue
-                      ? "#ff4d4f"
-                      : priorityConfig.color
-                  }
-                  size={screens.xs ? "small" : "default"}
-                />
-              </div>
-
-              {/* Quick Stats */}
-              <Row gutter={[8, 8]} className="mb-4">
-                {taskMetrics.map((metric, index) => (
-                  <Col xs={12} sm={6} key={index}>
-                    <Card size="small" className="text-center h-full">
-                      <div
-                        className="text-xl font-semibold mb-1"
-                        style={{ color: metric.color }}>
-                        {metric.value}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {metric.label}
-                      </div>
-                      {metric.subValue && (
-                        <div className="text-xs text-gray-400 mt-1">
-                          {metric.subValue}
-                        </div>
-                      )}
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            </div>
-
-            {/* Action Buttons - Desktop */}
-            {!screens.xs && (
-              <div className="flex-shrink-0">{actionButtons}</div>
-            )}
-          </div>
-
-          {/* Action Buttons - Mobile (full width) */}
-          {screens.xs && <div className="mt-4">{actionButtons}</div>}
+          <TaskStatusTracker
+            task={task}
+            userId={currentUser}
+            onStatusChange={refreshTask}
+          />
         </Card>
 
         {/* Main Content */}
@@ -577,8 +420,8 @@ const TaskDetails = () => {
                 ),
                 children: (
                   <div className="py-4">
-                    {/* Show TaskResponseForm only to assignees who are NOT the task creator */}
-                    {isAssignedToCurrentUser && !isAssignedBy && (
+                    {/* Show TaskResponseForm for assignees who are not the creator */}
+                    {isAssignedToCurrentUser && !isTaskCreator && (
                       <Card size="small" className="mb-6">
                         <TaskResponseForm
                           taskId={task?._id}
@@ -589,12 +432,12 @@ const TaskDetails = () => {
 
                     {/* Task Details Grid */}
                     <Row gutter={[16, 16]} className="mb-6">
-                      <DetailItem
+                      <TaskDetailItem
                         icon={<CalendarOutlined />}
                         label="Date Created"
                         value={formatDate(task?.dateCreated)}
                       />
-                      <DetailItem
+                      <TaskDetailItem
                         icon={<ScheduleOutlined />}
                         label="Start Date"
                         value={
@@ -603,7 +446,7 @@ const TaskDetails = () => {
                             : "Not set"
                         }
                       />
-                      <DetailItem
+                      <TaskDetailItem
                         icon={<ClockCircleOutlined />}
                         label="Due Date"
                         children={
@@ -621,7 +464,7 @@ const TaskDetails = () => {
                           </Space>
                         }
                       />
-                      <DetailItem
+                      <TaskDetailItem
                         icon={<CheckSquareOutlined />}
                         label="Actual Completion"
                         value={
@@ -631,7 +474,7 @@ const TaskDetails = () => {
                         }
                       />
 
-                      <DetailItem
+                      <TaskDetailItem
                         icon={<UserOutlined />}
                         label="Created By"
                         span={2}
@@ -659,29 +502,7 @@ const TaskDetails = () => {
                       />
 
                       {/* Related Case */}
-                      <DetailItem
-                        icon={<LinkOutlined />}
-                        label="Related Case(s)"
-                        span={2}
-                        children={
-                          task?.caseToWorkOn?.length > 0 ? (
-                            <Space direction="vertical" size={2}>
-                              {task.caseToWorkOn.map((caseItem, index) => (
-                                <Tag
-                                  key={index}
-                                  color="blue"
-                                  icon={<FolderOpenOutlined />}>
-                                  {caseItem.suitNo || caseItem._id}
-                                </Tag>
-                              ))}
-                            </Space>
-                          ) : task?.customCaseReference ? (
-                            <Tag color="orange">{task.customCaseReference}</Tag>
-                          ) : (
-                            "No case linked"
-                          )
-                        }
-                      />
+                      <CaseDetailItem task={task} screens={screens} />
                     </Row>
 
                     {/* Instructions Section */}
@@ -703,333 +524,11 @@ const TaskDetails = () => {
                     </Collapse>
 
                     {/* Assignees Section */}
-                    <Collapse
-                      ghost
-                      className="mb-6"
-                      defaultActiveKey={["assignees"]}>
-                      <Panel
-                        header={
-                          <Space className="w-full">
-                            <TeamOutlined />
-                            <Text strong className="truncate">
-                              Assignees & Roles
-                            </Text>
-                            <Badge
-                              count={
-                                teamAssignees.length + clientAssignees.length
-                              }
-                              style={{ backgroundColor: "#1890ff" }}
-                              className="flex-shrink-0"
-                            />
-                          </Space>
-                        }
-                        key="assignees">
-                        <Row gutter={[16, 16]}>
-                          {/* Team Assignees */}
-                          <Col xs={24} lg={12}>
-                            <Card
-                              size="small"
-                              title={
-                                <div className="flex items-center justify-between">
-                                  <span className="text-sm font-medium truncate">
-                                    Team Members
-                                  </span>
-                                  <Badge
-                                    count={teamAssignees.length}
-                                    size="small"
-                                  />
-                                </div>
-                              }
-                              bodyStyle={{ padding: "12px 0" }}>
-                              <List
-                                size="small"
-                                dataSource={teamAssignees}
-                                renderItem={(assignee) => {
-                                  const user = assignee.user;
-                                  const roleConfig = getRoleConfig(
-                                    assignee.role
-                                  );
-                                  return (
-                                    <List.Item
-                                      className="px-4 hover:bg-gray-50 transition-colors"
-                                      style={{ padding: "8px 16px" }}>
-                                      <div className="flex items-start w-full">
-                                        {/* Avatar */}
-                                        <div className="flex-shrink-0 mr-3">
-                                          <Avatar
-                                            size={32}
-                                            src={user?.photo}
-                                            className="border border-gray-200">
-                                            {user?.firstName?.[0]}
-                                            {user?.lastName?.[0]}
-                                          </Avatar>
-                                        </div>
-
-                                        {/* Content */}
-                                        <div className="flex-1 min-w-0">
-                                          {/* Name and Role - Mobile optimized */}
-                                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                                            <Text
-                                              strong
-                                              className="truncate text-sm sm:text-base"
-                                              title={`${user?.firstName} ${user?.lastName}`}>
-                                              {user?.firstName} {user?.lastName}
-                                            </Text>
-
-                                            <div className="flex flex-wrap gap-1">
-                                              <Tag
-                                                size="small"
-                                                color={roleConfig.color}
-                                                icon={roleConfig.icon}
-                                                className="text-xs px-1.5 py-0.5 truncate max-w-[120px]">
-                                                <span className="truncate inline-block max-w-full">
-                                                  {roleConfig.label}
-                                                </span>
-                                              </Tag>
-
-                                              {/* Mobile-only role badge */}
-                                              <div className="sm:hidden inline-flex">
-                                                <Text
-                                                  type="secondary"
-                                                  className="text-xs px-2 py-0.5 bg-gray-100 rounded truncate max-w-[80px]"
-                                                  title={
-                                                    user?.position || user?.role
-                                                  }>
-                                                  {user?.position?.substring(
-                                                    0,
-                                                    10
-                                                  ) ||
-                                                    user?.role?.substring(
-                                                      0,
-                                                      10
-                                                    )}
-                                                  {user?.position?.length >
-                                                    10 ||
-                                                  user?.role?.length > 10
-                                                    ? "..."
-                                                    : ""}
-                                                </Text>
-                                              </div>
-                                            </div>
-                                          </div>
-
-                                          {/* Position/Description */}
-                                          <div className="hidden sm:block">
-                                            <Text
-                                              type="secondary"
-                                              className="text-xs truncate block"
-                                              title={
-                                                user?.position || user?.role
-                                              }>
-                                              {user?.position || user?.role}
-                                            </Text>
-                                          </div>
-
-                                          {/* Assigned By - Responsive */}
-                                          <div className="mt-1">
-                                            <Text
-                                              type="secondary"
-                                              className="text-xs truncate block"
-                                              title={`Assigned by: ${
-                                                assignee.assignedBy
-                                                  ?.firstName || "Unknown"
-                                              }`}>
-                                              Assigned by:{" "}
-                                              <span className="font-medium">
-                                                {assignee.assignedBy
-                                                  ?.firstName || "Unknown"}
-                                              </span>
-                                            </Text>
-                                          </div>
-
-                                          {/* Email on mobile */}
-                                          <div className="sm:hidden mt-1">
-                                            {user?.email && (
-                                              <Text
-                                                type="secondary"
-                                                className="text-xs truncate block"
-                                                title={user.email}>
-                                                {user.email}
-                                              </Text>
-                                            )}
-                                          </div>
-                                        </div>
-
-                                        {/* Email on desktop */}
-                                        <div className="hidden sm:block flex-shrink-0 ml-3">
-                                          {user?.email && (
-                                            <Tooltip title={user.email}>
-                                              <Text
-                                                type="secondary"
-                                                className="text-xs truncate block max-w-[120px]">
-                                                {user.email}
-                                              </Text>
-                                            </Tooltip>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </List.Item>
-                                  );
-                                }}
-                              />
-                            </Card>
-                          </Col>
-
-                          {/* Client Assignees */}
-                          {clientAssignees.length > 0 && (
-                            <Col xs={24} lg={12}>
-                              <Card
-                                size="small"
-                                title={
-                                  <div className="flex items-center justify-between">
-                                    <span className="text-sm font-medium truncate">
-                                      Client Contacts
-                                    </span>
-                                    <Badge
-                                      count={clientAssignees.length}
-                                      size="small"
-                                      color="green"
-                                    />
-                                  </div>
-                                }
-                                bodyStyle={{ padding: "12px 0" }}>
-                                <List
-                                  size="small"
-                                  dataSource={clientAssignees}
-                                  renderItem={(assignee) => {
-                                    const user = assignee.user;
-                                    return (
-                                      <List.Item
-                                        className="px-4 hover:bg-gray-50 transition-colors"
-                                        style={{ padding: "8px 16px" }}>
-                                        <div className="flex items-start w-full">
-                                          {/* Avatar */}
-                                          <div className="flex-shrink-0 mr-3">
-                                            <Avatar
-                                              size={32}
-                                              src={user?.photo}
-                                              className="border border-gray-200 bg-green-50">
-                                              {user?.firstName?.[0]}
-                                              {user?.lastName?.[0]}
-                                            </Avatar>
-                                          </div>
-
-                                          {/* Content */}
-                                          <div className="flex-1 min-w-0">
-                                            {/* Name and Client Tag - Mobile optimized */}
-                                            <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                                              <Text
-                                                strong
-                                                className="truncate text-sm sm:text-base"
-                                                title={`${user?.firstName} ${user?.lastName}`}>
-                                                {user?.firstName}{" "}
-                                                {user?.lastName}
-                                              </Text>
-
-                                              <Tag
-                                                size="small"
-                                                color="green"
-                                                className="text-xs px-1.5 py-0.5 truncate max-w-[80px]">
-                                                <span className="truncate inline-block max-w-full">
-                                                  Client
-                                                </span>
-                                              </Tag>
-                                            </div>
-
-                                            {/* Email - Always visible but layout differs */}
-                                            <div className="flex items-center gap-2">
-                                              <Text
-                                                type="secondary"
-                                                className="text-xs truncate flex-1 min-w-0"
-                                                title={user?.email}>
-                                                {user?.email}
-                                              </Text>
-
-                                              {/* Quick actions on mobile */}
-                                              <div className="sm:hidden flex gap-1">
-                                                {user?.phone && (
-                                                  <Tooltip title="Call">
-                                                    <Button
-                                                      type="text"
-                                                      size="small"
-                                                      icon={<PhoneOutlined />}
-                                                      className="text-blue-500"
-                                                      onClick={() =>
-                                                        (window.location.href = `tel:${user.phone}`)
-                                                      }
-                                                    />
-                                                  </Tooltip>
-                                                )}
-                                                {user?.email && (
-                                                  <Tooltip title="Email">
-                                                    <Button
-                                                      type="text"
-                                                      size="small"
-                                                      icon={<MailOutlined />}
-                                                      className="text-green-500"
-                                                      onClick={() =>
-                                                        (window.location.href = `mailto:${user.email}`)
-                                                      }
-                                                    />
-                                                  </Tooltip>
-                                                )}
-                                              </div>
-                                            </div>
-
-                                            {/* Phone on desktop */}
-                                            {user?.phone && (
-                                              <div className="hidden sm:block mt-1">
-                                                <Text
-                                                  type="secondary"
-                                                  className="text-xs truncate block"
-                                                  title={user.phone}>
-                                                  <PhoneOutlined className="mr-1" />
-                                                  {user.phone}
-                                                </Text>
-                                              </div>
-                                            )}
-                                          </div>
-
-                                          {/* Actions on desktop */}
-                                          <div className="hidden sm:flex flex-shrink-0 ml-3 gap-1">
-                                            {user?.phone && (
-                                              <Tooltip title="Call">
-                                                <Button
-                                                  type="text"
-                                                  size="small"
-                                                  icon={<PhoneOutlined />}
-                                                  className="text-blue-500"
-                                                  onClick={() =>
-                                                    (window.location.href = `tel:${user.phone}`)
-                                                  }
-                                                />
-                                              </Tooltip>
-                                            )}
-                                            {user?.email && (
-                                              <Tooltip title="Email">
-                                                <Button
-                                                  type="text"
-                                                  size="small"
-                                                  icon={<MailOutlined />}
-                                                  className="text-green-500"
-                                                  onClick={() =>
-                                                    (window.location.href = `mailto:${user.email}`)
-                                                  }
-                                                />
-                                              </Tooltip>
-                                            )}
-                                          </div>
-                                        </div>
-                                      </List.Item>
-                                    );
-                                  }}
-                                />
-                              </Card>
-                            </Col>
-                          )}
-                        </Row>
-                      </Panel>
-                    </Collapse>
+                    <AssigneesSection
+                      task={task}
+                      currentUser={currentUser}
+                      screens={screens}
+                    />
 
                     {/* Tags and Dependencies */}
                     {(task?.tags?.length > 0 ||
@@ -1112,6 +611,7 @@ const TaskDetails = () => {
                 children: (
                   <div className="py-4">
                     <TaskAttachmentsCard
+                      taskId={task?._id}
                       fileManager={fileManager}
                       showUploadSection={true}
                       onUploadClick={() => console.log("Open upload modal")}
@@ -1168,6 +668,41 @@ const TaskDetails = () => {
                           </Text>
                         </Timeline.Item>
                       ))}
+
+                      {task?.status === "under-review" &&
+                        task?.submittedForReviewAt && (
+                          <Timeline.Item
+                            color="orange"
+                            label={formatDate(task.submittedForReviewAt)}>
+                            <Text strong>Submitted for Review</Text>
+                            <br />
+                            <Text type="secondary">Awaiting approval</Text>
+                          </Timeline.Item>
+                        )}
+
+                      {task?.reviewedAt && (
+                        <Timeline.Item
+                          color={task?.status === "completed" ? "green" : "red"}
+                          label={formatDate(task.reviewedAt)}>
+                          <Text strong>
+                            {task?.status === "completed"
+                              ? "Approved"
+                              : "Returned for Revision"}
+                          </Text>
+                          <br />
+                          <Text type="secondary">
+                            by {task?.reviewedBy?.firstName || "Reviewer"}
+                          </Text>
+                          {task?.reviewComment && (
+                            <>
+                              <br />
+                              <Text type="secondary">
+                                Feedback: {task.reviewComment}
+                              </Text>
+                            </>
+                          )}
+                        </Timeline.Item>
+                      )}
 
                       {task?.actualCompletionDate && (
                         <Timeline.Item

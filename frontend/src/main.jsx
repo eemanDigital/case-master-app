@@ -6,6 +6,7 @@ import { store } from "./redux/store/store.js";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import AuthContextProvider from "./context/authContext.jsx";
 import "./ClientDashboard.css";
+import "../../frontend/src/components/tasks/TaskList.css";
 import "./index.css";
 
 import PhotoContextProvider from "./context/photoContext.jsx";
