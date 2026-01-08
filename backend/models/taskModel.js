@@ -215,6 +215,7 @@ const taskSchema = new mongoose.Schema(
         "under-review",
         "completed",
         "cancelled",
+        "rejected",
         "overdue",
       ],
       default: "pending",
@@ -285,6 +286,47 @@ const taskSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    // Review & completion tracking
+    submittedForReviewAt: Date,
+    lastSubmittedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    reviewedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    reviewedAt: Date,
+    reviewComment: String,
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+    forceCompletedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    forceCompletedAt: Date,
+    forceCompletionComment: String,
+
+    // History/audit trail
+    history: [
+      {
+        action: String,
+        description: String,
+        by: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        timestamp: {
+          type: Date,
+          default: Date.now,
+        },
+        changes: mongoose.Schema.Types.Mixed,
+        metadata: mongoose.Schema.Types.Mixed,
+      },
+    ],
   },
   {
     timestamps: true,
@@ -324,6 +366,56 @@ taskSchema.virtual("overallProgress").get(function () {
 
   return Math.round(totalProgress / this.taskResponses.length);
 });
+
+// Add these instance methods to your taskSchema methods:
+taskSchema.methods.addHistoryEntry = async function (entry) {
+  this.history.push({
+    ...entry,
+    timestamp: new Date(),
+  });
+  return this.save();
+};
+
+taskSchema.methods.canSubmitForReview = function (userId) {
+  const userAssignment = this.assignees.find(
+    (a) => a.user.toString() === userId.toString()
+  );
+
+  if (!userAssignment) return false;
+
+  // Only allow submission if task is in progress or rejected
+  return ["in-progress", "rejected"].includes(this.status);
+};
+
+taskSchema.methods.canReview = function (userId) {
+  // User can review if they created the task
+  if (this.createdBy.toString() === userId.toString()) {
+    return true;
+  }
+
+  // Or if they assigned the task (check assignees where assignedBy matches)
+  const userAssignment = this.assignees.find(
+    (a) => a.assignedBy && a.assignedBy.toString() === userId.toString()
+  );
+
+  return !!userAssignment;
+};
+
+// Check if task is ready for review
+taskSchema.methods.isReadyForReview = function () {
+  return this.status === "in-progress" || this.status === "rejected";
+};
+
+// Check if task is under review
+taskSchema.methods.isUnderReview = function () {
+  return this.status === "under-review";
+};
+
+// Get the latest response
+taskSchema.methods.getLatestResponse = function () {
+  if (this.taskResponses.length === 0) return null;
+  return this.taskResponses[this.taskResponses.length - 1];
+};
 
 // Indexes for better performance
 taskSchema.index({ status: 1, dueDate: 1 });

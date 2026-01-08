@@ -1002,3 +1002,366 @@ exports.getTasksByAssignee = catchAsync(async (req, res, next) => {
     data: tasks,
   });
 });
+
+// Submit task for review (Assignee action)
+exports.submitTaskForReview = catchAsync(async (req, res, next) => {
+  const taskId = req.params.taskId;
+  const { comment, documentIds = [] } = req.body;
+
+  const task = await Task.findById(taskId);
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  // Check if user is assigned to this task
+  const isAssigned = task.isUserAssigned(req.user.id);
+  if (!isAssigned) {
+    return next(new AppError("You are not assigned to this task", 403));
+  }
+
+  // Check current status - only allow submission from "in-progress"
+  if (task.status !== "in-progress" && task.status !== "rejected") {
+    return next(
+      new AppError(
+        `Task cannot be submitted for review from ${task.status} status`,
+        400
+      )
+    );
+  }
+
+  // Update task status
+  task.status = "under-review";
+  task.submittedForReviewAt = new Date();
+  task.lastSubmittedBy = req.user.id;
+
+  // Create a task response entry for this submission
+  const responseData = {
+    submittedBy: req.user.id,
+    status: "under-review",
+    comment: comment || "Task submitted for review",
+    documents: documentIds,
+    submittedAt: new Date(),
+  };
+
+  await task.addResponse(responseData);
+
+  // Create history entry
+  await task.addHistoryEntry({
+    action: "submitted_for_review",
+    description: "Task submitted for review and approval",
+    by: req.user.id,
+    changes: { status: "under-review" },
+  });
+
+  await task.save();
+
+  // Populate and return updated task
+  const updatedTask = await Task.findById(taskId)
+    .populate("createdBy", "firstName lastName email position")
+    .populate("assignees.user", "firstName lastName email position")
+    .populate({
+      path: "taskResponses.submittedBy",
+      select: "firstName lastName email position",
+    })
+    .populate("lastSubmittedBy", "firstName lastName email position");
+
+  res.status(200).json({
+    status: "success",
+    message: "Task submitted for review successfully",
+    data: updatedTask,
+  });
+});
+
+// Review task and mark as completed (Task Giver action)
+exports.reviewTask = catchAsync(async (req, res, next) => {
+  const taskId = req.params.taskId;
+  const { approve, reviewComment, rating, sendNotification = true } = req.body;
+
+  if (approve === undefined) {
+    return next(new AppError("Approve status is required", 400));
+  }
+
+  const task = await Task.findById(taskId)
+    .populate("createdBy", "firstName lastName email")
+    .populate("assignees.user", "firstName lastName email");
+
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  // Check if user is the task creator/assigner
+  const isCreator = task.createdBy._id.toString() === req.user.id;
+  const isAssignedBy = task.assignees.some(
+    (assignee) =>
+      assignee.assignedBy && assignee.assignedBy.toString() === req.user.id
+  );
+
+  if (!isCreator && !isAssignedBy) {
+    return next(
+      new AppError("Only task creator/assigner can review tasks", 403)
+    );
+  }
+
+  // Check if task is in review status
+  if (task.status !== "under-review") {
+    return next(new AppError("Task is not currently under review", 400));
+  }
+
+  // Update task based on review decision
+  const previousStatus = task.status;
+
+  if (approve) {
+    // Approve and mark as completed
+    task.status = "completed";
+    task.completedAt = new Date();
+    task.completionPercentage = 100;
+    task.reviewedBy = req.user.id;
+    task.reviewedAt = new Date();
+    task.reviewComment = reviewComment;
+    task.rating = rating;
+
+    // Mark the latest response as approved
+    if (task.taskResponses.length > 0) {
+      const latestResponse = task.taskResponses[task.taskResponses.length - 1];
+      latestResponse.approved = true;
+      latestResponse.reviewedBy = req.user.id;
+      latestResponse.reviewedAt = new Date();
+      latestResponse.reviewComment = reviewComment;
+    }
+  } else {
+    // Reject and return for revision
+    task.status = "rejected";
+    task.reviewedBy = req.user.id;
+    task.reviewedAt = new Date();
+    task.reviewComment = reviewComment;
+
+    // Mark the latest response as rejected
+    if (task.taskResponses.length > 0) {
+      const latestResponse = task.taskResponses[task.taskResponses.length - 1];
+      latestResponse.approved = false;
+      latestResponse.reviewedBy = req.user.id;
+      latestResponse.reviewedAt = new Date();
+      latestResponse.reviewComment = reviewComment;
+    }
+  }
+
+  // Create history entry
+  await task.addHistoryEntry({
+    action: approve ? "approved" : "rejected",
+    description: approve
+      ? "Task approved and marked as completed"
+      : "Task returned for revision",
+    by: req.user.id,
+    changes: {
+      status: task.status,
+      rating,
+      reviewComment,
+      previousStatus,
+    },
+  });
+
+  await task.save();
+
+  // Send email notification if requested
+  if (sendNotification) {
+    try {
+      // Get assignee's email
+      const assignee = task.assignees[0]?.user;
+      if (assignee?.email) {
+        const emailData = {
+          subject: approve
+            ? `Task Approved: ${task.title}`
+            : `Task Requires Revision: ${task.title}`,
+          send_to: assignee.email,
+          reply_to: "noreply@atlukman.com",
+          template: approve ? "taskApproved" : "taskRevision",
+          url: "/dashboard/tasks",
+          context: {
+            recipient: `${assignee.firstName} ${assignee.lastName}`,
+            taskTitle: task.title,
+            reviewer: `${req.user.firstName} ${req.user.lastName}`,
+            reviewComment: reviewComment,
+            rating: rating,
+            completionDate: task.completedAt
+              ? formatDate(task.completedAt)
+              : null,
+          },
+        };
+
+        // You need to import your email service
+        // await dispatch(sendAutomatedCustomEmail(emailData));
+      }
+    } catch (emailError) {
+      console.error("Failed to send email notification:", emailError);
+      // Don't fail the request if email fails
+    }
+  }
+
+  // Populate and return updated task
+  const updatedTask = await Task.findById(taskId)
+    .populate("createdBy", "firstName lastName email position")
+    .populate("assignees.user", "firstName lastName email position")
+    .populate("reviewedBy", "firstName lastName email position")
+    .populate({
+      path: "taskResponses.submittedBy",
+      select: "firstName lastName email position",
+    })
+    .populate({
+      path: "taskResponses.reviewedBy",
+      select: "firstName lastName email position",
+    });
+
+  res.status(200).json({
+    status: "success",
+    message: approve
+      ? "Task approved and marked as completed"
+      : "Task returned for revision",
+    data: updatedTask,
+  });
+});
+
+// Force mark task as complete (Admin/Task Giver action)
+exports.forceCompleteTask = catchAsync(async (req, res, next) => {
+  const taskId = req.params.taskId;
+  const { completionComment, completionPercentage = 100 } = req.body;
+
+  const task = await Task.findById(taskId);
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  // Check permissions
+  const isCreator = task.createdBy.toString() === req.user.id;
+  const isAdmin = ["admin", "super-admin"].includes(req.user.role);
+
+  if (!isCreator && !isAdmin) {
+    return next(
+      new AppError("Only task creator or admin can force complete tasks", 403)
+    );
+  }
+
+  // Update task
+  const previousStatus = task.status;
+  task.status = "completed";
+  task.completedAt = new Date();
+  task.completionPercentage = completionPercentage;
+  task.forceCompletedBy = req.user.id;
+  task.forceCompletedAt = new Date();
+  task.forceCompletionComment = completionComment;
+
+  // Create history entry
+  await task.addHistoryEntry({
+    action: "force_completed",
+    description: "Task force marked as completed",
+    by: req.user.id,
+    changes: {
+      status: "completed",
+      previousStatus,
+      completionPercentage,
+      forceCompletedBy: req.user.id,
+    },
+  });
+
+  await task.save();
+
+  // Populate and return updated task
+  const updatedTask = await Task.findById(taskId)
+    .populate("createdBy", "firstName lastName email position")
+    .populate("assignees.user", "firstName lastName email position")
+    .populate("forceCompletedBy", "firstName lastName email position");
+
+  res.status(200).json({
+    status: "success",
+    message: "Task force marked as completed",
+    data: updatedTask,
+  });
+});
+
+// Get tasks pending review (for task givers)
+exports.getTasksPendingReview = catchAsync(async (req, res, next) => {
+  const {
+    createdByMe = "false",
+    assignedToMe = "false",
+    page = 1,
+    limit = 20,
+  } = req.query;
+
+  const filter = {
+    status: "under-review",
+    isDeleted: { $ne: true },
+  };
+
+  // If user wants tasks created by them
+  if (createdByMe === "true") {
+    filter.createdBy = req.user.id;
+  }
+
+  // If user wants tasks assigned to them (they are reviewers)
+  if (assignedToMe === "true") {
+    filter["assignees.user"] = req.user.id;
+    filter["assignees.role"] = { $in: ["primary", "reviewer"] };
+  }
+
+  // Pagination
+  const skip = (page - 1) * limit;
+
+  const [tasks, total] = await Promise.all([
+    Task.find(filter)
+      .populate("createdBy", "firstName lastName email position")
+      .populate("assignees.user", "firstName lastName email position")
+      .populate("lastSubmittedBy", "firstName lastName email position")
+      .populate(
+        "caseToWorkOn",
+        "suitNo firstParty.name secondParty.name caseStatus"
+      )
+      .sort({ submittedForReviewAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit)),
+    Task.countDocuments(filter),
+  ]);
+
+  res.status(200).json({
+    status: "success",
+    results: tasks.length,
+    data: tasks,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      pages: Math.ceil(total / limit),
+    },
+  });
+});
+
+// Get task history/audit trail
+exports.getTaskHistory = catchAsync(async (req, res, next) => {
+  const taskId = req.params.taskId;
+
+  const task = await Task.findById(taskId);
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  // Check if user has access to this task
+  const isAssigned = task.isUserAssigned(req.user.id);
+  const isCreator = task.createdBy.toString() === req.user.id;
+
+  if (!isAssigned && !isCreator) {
+    return next(new AppError("You do not have access to this task", 403));
+  }
+
+  // Assuming you have a TaskHistory model or history array in Task model
+  // This implementation assumes Task has a history array
+  const history = task.history || [];
+
+  // If you have a separate TaskHistory model:
+  // const history = await TaskHistory.find({ task: taskId })
+  //   .populate('by', 'firstName lastName email')
+  //   .sort('-timestamp');
+
+  res.status(200).json({
+    status: "success",
+    results: history.length,
+    data: history,
+  });
+});

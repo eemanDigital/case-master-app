@@ -15,6 +15,10 @@ router.route("/").get(taskController.getTasks).post(taskController.createTask);
 router.route("/my-tasks").get(taskController.getMyTasks);
 
 router.route("/overdue").get(taskController.getOverdueTasks);
+// routes/taskRoutes.js (add these after existing routes)
+
+// Get tasks pending review
+router.route("/pending-review").get(taskController.getTasksPendingReview);
 
 router
   .route("/:taskId")
@@ -24,6 +28,17 @@ router
 
 // Task documents
 router.route("/:taskId/documents").get(taskController.getTaskDocuments);
+// Submit task for review (for assignees)
+router.route("/:taskId/submit-review").put(taskController.submitTaskForReview);
+
+// Review task (for task giver)
+router.route("/:taskId/review").post(taskController.reviewTask);
+
+// Get task history/audit trail
+router.route("/:taskId/history").get(taskController.getTaskHistory);
+
+// Force mark task as complete (admin/task giver)
+router.route("/:taskId/force-complete").post(taskController.forceCompleteTask);
 
 // ✅ CORRECTED: Use ONLY the file upload route for reference-documents
 router.route("/:taskId/reference-documents").post(
