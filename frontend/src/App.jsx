@@ -308,20 +308,16 @@ function App() {
 
   return (
     <>
-      {isLoading ? (
-        <LoadingSpinner />
-      ) : (
-        <>
-          <RouterProvider router={router} />
-          <ToastContainer
-            hideProgressBar={true}
-            autoClose={4000}
-            toastStyle={{
-              fontSize: "14px",
-            }}
-          />
-        </>
-      )}
+      <>
+        <RouterProvider router={router} />
+        <ToastContainer
+          hideProgressBar={true}
+          autoClose={4000}
+          toastStyle={{
+            fontSize: "14px",
+          }}
+        />
+      </>
     </>
   );
 }
