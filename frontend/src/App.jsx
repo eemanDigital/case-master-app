@@ -41,7 +41,7 @@ import { useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getLoginStatus, getUser } from "./redux/features/auth/authSlice.js";
 import { setLoading } from "./redux/features/loader/loadingSlice.js";
-import LoadingSpinner from "./components/LoadingSpinner.jsx";
+
 import ForgotPassword from "./pages/ForgotPassword.jsx";
 import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
 import LoginWithCode from "./components/LoginWithCode.jsx";
