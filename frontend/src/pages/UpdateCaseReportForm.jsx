@@ -64,6 +64,8 @@ const UpdateCaseReportForm = ({ reportId, onClose }) => {
       const caseReportedId = formData?.caseReported?._id || "";
       const reportedById = formData?.reportedBy?._id || "";
 
+      // console.log(formData, reportedById);
+
       // Set selected case for auto-fill logic
       if (caseReportedId) {
         const selectedCaseData = casesData?.find(
@@ -149,6 +151,7 @@ const UpdateCaseReportForm = ({ reportId, onClose }) => {
   };
 
   const handleFormSubmit = async (values) => {
+    console.log(form);
     try {
       const formattedValues = {
         ...values,

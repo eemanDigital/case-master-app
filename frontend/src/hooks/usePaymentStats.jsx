@@ -32,10 +32,10 @@ export const usePaymentStats = (options = {}) => {
         if (forceRefresh) queryParams.append("forceRefresh", "true");
 
         const url = `payments/stats?${queryParams.toString()}`;
-        console.log("Fetching stats with URL:", url);
+        // console.log("Fetching stats with URL:", url);
 
         const result = await dataFetcher(url, "GET");
-        console.log("Fetched payment stats:", result);
+        // console.log("Fetched payment stats:", result);
 
         if (result?.data) {
           setStats(result.data);

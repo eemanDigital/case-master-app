@@ -46,7 +46,7 @@ const useUserSelectOptions = (options = {}) => {
         const response = await dataFetcher(fullEndpoint, "GET");
 
         if (response?.data) {
-          console.log("✅ Select options fetched:", response);
+          // console.log("✅ Select options fetched:", response);
           setLastFetched(now);
           return response.data;
         }

@@ -128,7 +128,7 @@ const CreateCaseReportForm = () => {
         // FIXED: Use dayjs objects or null for DatePicker initial values
         date: dayjs(), // Current date as dayjs object
         adjournedDate: null, // Explicitly set to null if no initial value
-        reportedBy: `${user?.data?.firstName} ${user?.data?.lastName}`,
+        reportedBy: `${user?.data?._id} ${user?.data?._id}`,
       }}>
       <Card
         title="Create Case Report"
