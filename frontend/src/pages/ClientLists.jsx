@@ -13,16 +13,12 @@ import {
 } from "antd";
 import {
   PlusOutlined,
-  TeamOutlined,
   UserOutlined,
   CheckCircleOutlined,
-  EyeOutlined,
-  MailOutlined,
-  PhoneOutlined,
 } from "@ant-design/icons";
 import { useUserList } from "../hooks/useUserList"; // ✅ Using fixed hook
 import { useAdminHook } from "../hooks/useAdminHook";
-import { useSelector } from "react-redux";
+
 import ButtonWithIcon from "../components/ButtonWithIcon";
 import StaffSearchBar from "../components/StaffSearchBar";
 import UserListTable from "../components/UserListTable";
@@ -33,7 +29,7 @@ import useUsersCount from "../hooks/useUsersCount";
 const ClientList = memo(() => {
   useRedirectLogoutUser("/users/login");
   // const { user } = useSelector((state) => state.auth);
-  const { isAdminOrHr, isSuperOrAdmin, isStaff } = useAdminHook();
+  const { isAdminOrHr, isSuperOrAdmin } = useAdminHook();
 
   // ✅ Use fixed hook with "client" filter
   const {
@@ -42,9 +38,9 @@ const ClientList = memo(() => {
     currentPage,
     itemsPerPage,
     totalRecords,
-    totalPages,
+
     loading,
-    paginationData,
+
     users, // For statistics fallback
     handleFiltersChange,
     resetFilters,
@@ -52,15 +48,15 @@ const ClientList = memo(() => {
     handlePageChange,
   } = useUserList("client"); // ✅ Pass "client" role
 
-  console.log("✅ ClientList - Data:", {
-    clientList,
-    clientListLength: clientList.length,
-    totalRecords,
-    totalPages,
-    currentPage,
-    itemsPerPage,
-    paginationData,
-  });
+  // console.log("✅ ClientList - Data:", {
+  //   clientList,
+  //   clientListLength: clientList.length,
+  //   totalRecords,
+  //   totalPages,
+  //   currentPage,
+  //   itemsPerPage,
+  //   paginationData,
+  // });
 
   // ✅ Calculate statistics from the API response
   const usersCount = useUsersCount({
@@ -106,7 +102,7 @@ const ClientList = memo(() => {
 
             {/* Add Client Button */}
             {(isAdminOrHr || isSuperOrAdmin) && (
-              <Link to="add-user">
+              <Link to="/dashboard/clients/add-client">
                 <ButtonWithIcon
                   icon={<PlusOutlined className="mr-2" />}
                   text="Add Client"
