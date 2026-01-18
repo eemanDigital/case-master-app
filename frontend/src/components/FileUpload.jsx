@@ -2,7 +2,7 @@
 import PropTypes from "prop-types";
 import { useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { Button, Modal, Upload, message, Form, Input, Select, Tag } from "antd";
+import { Button, Modal, Upload, message, Form, Input, Select } from "antd";
 import {
   UploadOutlined,
   DeleteOutlined,
@@ -46,7 +46,7 @@ const FileUploader = ({
   const [uploading, setUploading] = useState(false);
 
   const { open, showModal, handleOk, handleCancel } = useModal();
-  const { dataFetcher, loading, error } = useDataFetch();
+  const { dataFetcher } = useDataFetch();
 
   const handleUpload = async (values) => {
     if (fileList.length === 0) {
@@ -67,6 +67,7 @@ const FileUploader = ({
       // Append metadata
       formData.append("category", values.category || category);
       formData.append("entityType", entityType);
+
       // Only append entityId if it's provided and valid
       if (entityId && entityId !== "null" && entityId !== "undefined") {
         formData.append("entityId", entityId);
@@ -85,6 +86,14 @@ const FileUploader = ({
         formData.append("uploadType", uploadType);
       }
 
+      console.log("📤 Uploading files:", {
+        fileCount: fileList.length,
+        category: values.category || category,
+        entityType,
+        entityId,
+      });
+
+      // ✅ FIX: Proper response handling
       const response = await dataFetcher(
         "files/upload-multiple",
         "post",
@@ -92,21 +101,65 @@ const FileUploader = ({
         { "Content-Type": "multipart/form-data" }
       );
 
-      if (response) {
-        toast.success(`Successfully uploaded ${fileList.length} file(s)`);
-        form.resetFields();
-        setFileList([]);
-        handleCancel();
+      console.log("✅ Upload response:", response);
 
-        if (onUploadSuccess) {
-          onUploadSuccess(response.data.files);
-        }
+      // ✅ FIX: Validate response structure
+      if (!response) {
+        throw new Error("No response received from server");
+      }
+
+      // ✅ FIX: Check for success status
+      if (response.status !== "success") {
+        throw new Error(response.message || "Upload failed");
+      }
+
+      // ✅ FIX: Validate data structure
+      if (!response.data || !response.data.files) {
+        throw new Error("Invalid response format from server");
+      }
+
+      const uploadedFiles = response.data.files;
+
+      // ✅ FIX: Check if any files were uploaded
+      if (!Array.isArray(uploadedFiles) || uploadedFiles.length === 0) {
+        throw new Error("No files were uploaded successfully");
+      }
+
+      // ✅ Success notification
+      toast.success(`Successfully uploaded ${uploadedFiles.length} file(s)`, {
+        autoClose: 3000,
+      });
+
+      // Reset form and close modal
+      form.resetFields();
+      setFileList([]);
+      handleCancel();
+
+      // Call success callback
+      if (onUploadSuccess) {
+        onUploadSuccess(uploadedFiles);
       }
     } catch (err) {
-      console.error("Upload error:", err);
-      const errorMsg = err?.message || "Failed to upload files";
-      toast.error(errorMsg);
+      console.error("❌ Upload error:", err);
 
+      // ✅ FIX: Better error message extraction
+      let errorMsg = "Failed to upload files. Please try again.";
+
+      if (err.response) {
+        // Server responded with error
+        errorMsg =
+          err.response.data?.message || err.response.statusText || errorMsg;
+      } else if (err.message) {
+        // JavaScript error or custom error
+        errorMsg = err.message;
+      }
+
+      // ✅ Show error notification (only once)
+      toast.error(errorMsg, {
+        autoClose: 5000,
+      });
+
+      // Call error callback
       if (onUploadError) {
         onUploadError(err);
       }
@@ -138,6 +191,13 @@ const FileUploader = ({
     setFileList((prev) => prev.filter((file) => file.uid !== fileToRemove.uid));
   };
 
+  const handleModalCancel = () => {
+    // Reset state when closing modal
+    form.resetFields();
+    setFileList([]);
+    handleCancel();
+  };
+
   const draggerProps = {
     name: "files",
     multiple: multiple,
@@ -158,7 +218,7 @@ const FileUploader = ({
       <Modal
         title={`Upload Files to ${entityType}`}
         open={open}
-        onCancel={handleCancel}
+        onCancel={handleModalCancel}
         footer={null}
         width={600}
         destroyOnClose>
@@ -171,7 +231,9 @@ const FileUploader = ({
           <Form.Item label="Select Files">
             <Dragger {...draggerProps}>
               <p className="ant-upload-drag-icon">
-                <UploadOutlined />
+                <UploadOutlined
+                  style={{ fontSize: "48px", color: "#1890ff" }}
+                />
               </p>
               <p className="ant-upload-text">
                 Click or drag files to this area to upload
@@ -186,14 +248,17 @@ const FileUploader = ({
             {/* File List Preview */}
             {fileList.length > 0 && (
               <div className="mt-4 max-h-40 overflow-y-auto">
+                <p className="text-sm font-semibold mb-2">
+                  Selected Files ({fileList.length})
+                </p>
                 {fileList.map((file) => (
                   <div
                     key={file.uid}
-                    className="flex items-center justify-between p-2 border border-gray-200 rounded mb-2">
-                    <div className="flex items-center">
-                      <FileOutlined className="text-blue-500 mr-2" />
-                      <span className="text-sm">{file.name}</span>
-                      <span className="text-xs text-gray-500 ml-2">
+                    className="flex items-center justify-between p-2 border border-gray-200 rounded mb-2 hover:bg-gray-50">
+                    <div className="flex items-center flex-1 min-w-0">
+                      <FileOutlined className="text-blue-500 mr-2 flex-shrink-0" />
+                      <span className="text-sm truncate">{file.name}</span>
+                      <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
                         ({(file.size / 1024 / 1024).toFixed(2)} MB)
                       </span>
                     </div>
@@ -203,6 +268,7 @@ const FileUploader = ({
                       onClick={() => removeFile(file)}
                       disabled={uploading}
                       danger
+                      size="small"
                     />
                   </div>
                 ))}
@@ -216,7 +282,7 @@ const FileUploader = ({
               name="category"
               label="Category"
               rules={[{ required: true, message: "Please select a category" }]}>
-              <Select placeholder="Select category">
+              <Select placeholder="Select category" disabled={uploading}>
                 <Option value="legal">Legal</Option>
                 <Option value="contract">Contract</Option>
                 <Option value="court">Court</Option>
@@ -233,24 +299,26 @@ const FileUploader = ({
 
           {/* Description */}
           {showDescription && (
-            <Form.Item name="description" label="Description">
+            <Form.Item name="description" label="Description (Optional)">
               <Input.TextArea
                 rows={3}
-                placeholder="Enter file description (optional)"
+                placeholder="Enter file description"
                 maxLength={500}
                 showCount
+                disabled={uploading}
               />
             </Form.Item>
           )}
 
           {/* Tags */}
           {showTags && (
-            <Form.Item name="tags" label="Tags">
+            <Form.Item name="tags" label="Tags (Optional)">
               <Select
                 mode="tags"
-                placeholder="Add tags (optional)"
+                placeholder="Add tags"
                 style={{ width: "100%" }}
                 tokenSeparators={[","]}
+                disabled={uploading}
               />
             </Form.Item>
           )}
@@ -258,13 +326,13 @@ const FileUploader = ({
           {/* Action Buttons */}
           <Form.Item className="mb-0">
             <div className="flex justify-end gap-2">
-              <Button onClick={handleCancel} disabled={uploading}>
+              <Button onClick={handleModalCancel} disabled={uploading}>
                 Cancel
               </Button>
               <Button
                 type="primary"
                 htmlType="submit"
-                loading={uploading || loading}
+                loading={uploading}
                 disabled={fileList.length === 0}
                 icon={<UploadOutlined />}>
                 {uploading
@@ -281,7 +349,7 @@ const FileUploader = ({
 
 FileUploader.propTypes = {
   entityType: PropTypes.oneOf(["Case", "Task", "User", "General"]).isRequired,
-  entityId: PropTypes.string.isRequired,
+  entityId: PropTypes.string,
   category: PropTypes.string,
   onUploadSuccess: PropTypes.func,
   onUploadError: PropTypes.func,

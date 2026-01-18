@@ -1,4 +1,3 @@
-
 const express = require("express");
 const Case = require("../models/caseModel.js");
 const {
@@ -21,7 +20,11 @@ const {
   getCasesByAccountOfficerAggregate,
   getCasesByClientAggregate,
 } = require("../controllers/caseController");
-const { protect, restrictTo } = require("../controllers/authController");
+const {
+  protect,
+  restrictTo,
+  checkCaseLimit,
+} = require("../controllers/authController");
 const {
   multerFileUploader,
   uploadToCloudinary,
@@ -76,7 +79,7 @@ router.delete(
 
 // Basic CRUD routes for cases
 router.get("/soft-deleted-cases", getDeletedItems({ model: Case }));
-router.post("/", createCase);
+router.post("/", checkCaseLimit, createCase);
 
 // Document upload route
 router.post(

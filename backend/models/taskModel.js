@@ -93,6 +93,13 @@ const taskResponseSchema = new mongoose.Schema({
 
 const taskSchema = new mongoose.Schema(
   {
+    firmId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Firm",
+      required: true,
+      index: true,
+    },
+
     title: {
       type: String,
       trim: true,
@@ -335,6 +342,12 @@ const taskSchema = new mongoose.Schema(
   }
 );
 
+// Indexes for better performance
+taskSchema.index({ firmId: 1, status: 1, dueDate: 1 });
+taskSchema.index({ firmId: 1, "assignees.user": 1 });
+taskSchema.index({ firmId: 1, caseToWorkOn: 1 });
+taskSchema.index({ firmId: 1, createdBy: 1 });
+
 // Virtual for overdue status
 taskSchema.virtual("isOverdue").get(function () {
   return this.dueDate < new Date() && this.status !== "completed";
@@ -416,14 +429,6 @@ taskSchema.methods.getLatestResponse = function () {
   if (this.taskResponses.length === 0) return null;
   return this.taskResponses[this.taskResponses.length - 1];
 };
-
-// Indexes for better performance
-taskSchema.index({ status: 1, dueDate: 1 });
-taskSchema.index({ "assignees.user": 1, status: 1 });
-taskSchema.index({ caseToWorkOn: 1 });
-taskSchema.index({ createdBy: 1 });
-taskSchema.index({ dueDate: 1 });
-taskSchema.index({ isDeleted: 1 });
 
 // Middleware to handle status updates
 taskSchema.pre("save", function (next) {

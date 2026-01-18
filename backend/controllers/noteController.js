@@ -5,6 +5,7 @@ const AppError = require("../utils/appError"); // Assuming you have an AppError 
 // Create a new note
 exports.createNote = catchAsync(async (req, res, next) => {
   const note = await Note.create({
+    firmId: req.firmId,
     title: req.body.title,
     content: req.body.content,
     user: req.user.id, // Assuming user ID is available in req.user
@@ -19,7 +20,7 @@ exports.createNote = catchAsync(async (req, res, next) => {
 
 // Get all notes for a user
 exports.getNotes = catchAsync(async (req, res, next) => {
-  const notes = await Note.find({ user: req.user.id });
+  const notes = await Note.find({ user: req.user.id, firmId: req.firmId });
   res.status(200).json({
     message: "success",
     data: {
@@ -30,7 +31,7 @@ exports.getNotes = catchAsync(async (req, res, next) => {
 
 // New handler to get a single note by ID
 exports.getNote = catchAsync(async (req, res, next) => {
-  const note = await Note.findById(req.params.id);
+  const note = await Note.findOne({ _id: req.params.id, firmId: req.firmId });
 
   if (!note) {
     return next(new AppError("No note found with that ID", 404));
@@ -67,7 +68,10 @@ exports.updateNote = catchAsync(async (req, res, next) => {
 
 // Delete a note
 exports.deleteNote = catchAsync(async (req, res, next) => {
-  const note = await Note.findByIdAndDelete(req.params.id);
+  const note = await Note.findOneAndDelete({
+    _id: req.params.id,
+    firmId: req.firmId,
+  });
 
   if (!note) {
     return next(new AppError("No note found with that ID", 404));

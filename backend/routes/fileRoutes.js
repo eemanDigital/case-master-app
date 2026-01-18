@@ -6,6 +6,8 @@ const router = express.Router();
 
 // Protect all routes (require authentication)
 router.use(authController.protect);
+// Check storage limit middleware
+router.use(authController.checkStorageLimit);
 
 // Upload routes
 router

@@ -1,4 +1,4 @@
-// services/GenericPaginationService.js - ENHANCED WITH STATISTICS
+// services/GenericPaginationService.js - ENHANCED WITH MULTI-TENANCY
 const QueryBuilder = require("../utils/queryBuilder");
 
 class GenericPaginationService {
@@ -12,12 +12,13 @@ class GenericPaginationService {
       dateField: modelConfig.dateField || "date",
       maxLimit: modelConfig.maxLimit || 100,
       defaultPopulate: modelConfig.defaultPopulate || [],
-      includeStats: modelConfig.includeStats || false, // ✅ NEW: Enable statistics
-      statsFields: modelConfig.statsFields || [], // ✅ NEW: Fields to count
+      includeStats: modelConfig.includeStats || false,
+      statsFields: modelConfig.statsFields || [],
+      requiresFirmId: modelConfig.requiresFirmId !== false, // ✅ NEW: Default true
     };
   }
 
-  async paginate(queryParams = {}, customFilter = {}) {
+  async paginate(queryParams = {}, customFilter = {}, firmId = null) {
     try {
       const {
         page = 1,
@@ -29,9 +30,14 @@ class GenericPaginationService {
         caseId,
         caseSearch,
         debug,
-        includeStats, // ✅ NEW: Enable stats for this query
+        includeStats,
         ...filters
       } = queryParams;
+
+      // ✅ CRITICAL: Enforce firmId for multi-tenancy
+      if (this.config.requiresFirmId && !firmId && !customFilter.firmId) {
+        throw new Error("firmId is required for this operation");
+      }
 
       // Validate and sanitize parameters
       const sanitizedLimit = Math.min(parseInt(limit), this.config.maxLimit);
@@ -43,13 +49,15 @@ class GenericPaginationService {
         this.config
       );
 
+      // ✅ Add firmId to filter if required
       let finalFilter = { ...baseFilter, ...customFilter };
+      if (this.config.requiresFirmId && firmId) {
+        finalFilter.firmId = firmId;
+      }
 
-      // ✅ NEW: Handle "staff" role filter specially
+      // Handle "staff" role filter specially
       if (filters.role === "staff") {
         finalFilter.role = { $ne: "client" };
-        delete finalFilter.role; // Avoid conflict
-        v;
       }
 
       // Handle soft deletion
@@ -65,7 +73,7 @@ class GenericPaginationService {
 
       // Handle case search
       if (caseSearch && !caseId) {
-        const caseIds = await this.findCaseIdsBySearch(caseSearch);
+        const caseIds = await this.findCaseIdsBySearch(caseSearch, firmId);
         if (caseIds.length > 0) {
           finalFilter.caseReported = { $in: caseIds };
         } else {
@@ -78,20 +86,21 @@ class GenericPaginationService {
       if (debug === "true" || process.env.DEBUG_QUERIES === "true") {
         console.log("\n🔍 ================================");
         console.log(`📋 Model: ${this.model.modelName}`);
+        console.log(`🏢 Firm ID: ${firmId || "N/A"}`);
         console.log(`📄 Page: ${sanitizedPage}, Limit: ${sanitizedLimit}`);
         console.log("🎯 Final Filter:");
         console.log(JSON.stringify(finalFilter, null, 2));
       }
 
-      // ✅ NEW: Calculate statistics if enabled
+      // Calculate statistics if enabled
       let statistics = null;
       const shouldIncludeStats =
         includeStats === "true" ||
         this.config.includeStats ||
-        this.model.modelName === "User"; // Always include for User model
+        this.model.modelName === "User";
 
       if (shouldIncludeStats) {
-        statistics = await this.calculateStatistics(finalFilter);
+        statistics = await this.calculateStatistics(finalFilter, firmId);
       }
 
       // Count total records
@@ -171,19 +180,24 @@ class GenericPaginationService {
   }
 
   /**
-   * ✅ NEW: Calculate statistics for User model or other models
+   * Calculate statistics with firm isolation
    */
-  async calculateStatistics(baseFilter = {}) {
+  async calculateStatistics(baseFilter = {}, firmId = null) {
     try {
       // Remove specific filters that should not apply to overall stats
       const statsFilter = { ...baseFilter };
-      delete statsFilter.role; // We want to count all roles
-      delete statsFilter.isActive; // We want to count both active and inactive
-      delete statsFilter.$or; // Remove text search for stats
+      delete statsFilter.role;
+      delete statsFilter.isActive;
+      delete statsFilter.$or;
+
+      // ✅ Ensure firmId is in stats filter
+      if (this.config.requiresFirmId && firmId) {
+        statsFilter.firmId = firmId;
+      }
 
       const modelName = this.model.modelName;
 
-      // ✅ User-specific statistics
+      // User-specific statistics
       if (modelName === "User") {
         const [
           totalCount,
@@ -193,7 +207,6 @@ class GenericPaginationService {
           verifiedStats,
           deletedCount,
         ] = await Promise.all([
-          // Total users (excluding deleted by default)
           this.model.countDocuments(statsFilter),
 
           // Count by role
@@ -215,7 +228,7 @@ class GenericPaginationService {
           // Verified users
           this.model.countDocuments({ ...statsFilter, isVerified: true }),
 
-          // Deleted users (override the filter)
+          // Deleted users
           this.model.countDocuments({
             ...statsFilter,
             isDeleted: true,
@@ -238,10 +251,7 @@ class GenericPaginationService {
           if (stat._id === "client") {
             roles.client = stat.count;
           } else {
-            // All non-client roles count as "staff"
             roles.staff += stat.count;
-
-            // Also count specific roles
             if (roles.hasOwnProperty(stat._id)) {
               roles[stat._id] = stat.count;
             }
@@ -281,7 +291,7 @@ class GenericPaginationService {
         };
       }
 
-      // ✅ Generic statistics for other models
+      // Generic statistics for other models
       else {
         const stats = {
           total: await this.model.countDocuments(statsFilter),
@@ -318,13 +328,13 @@ class GenericPaginationService {
   }
 
   /**
-   * Find case IDs by search term
+   * Find case IDs by search term with firm isolation
    */
-  async findCaseIdsBySearch(searchTerm) {
+  async findCaseIdsBySearch(searchTerm, firmId = null) {
     try {
       const Case = require("../models/caseModel");
 
-      const matchingCases = await Case.find({
+      const query = {
         $or: [
           { "firstParty.name.name": { $regex: searchTerm, $options: "i" } },
           { "secondParty.name.name": { $regex: searchTerm, $options: "i" } },
@@ -332,9 +342,14 @@ class GenericPaginationService {
           { courtNo: { $regex: searchTerm, $options: "i" } },
         ],
         isDeleted: { $ne: true },
-      })
-        .select("_id")
-        .lean();
+      };
+
+      // ✅ Add firmId filter
+      if (firmId) {
+        query.firmId = firmId;
+      }
+
+      const matchingCases = await Case.find(query).select("_id").lean();
 
       return matchingCases.map((caseDoc) => caseDoc._id);
     } catch (error) {
@@ -346,21 +361,25 @@ class GenericPaginationService {
   /**
    * Get reports for a specific case
    */
-  async getReportsByCaseId(caseId, queryParams = {}) {
-    return this.paginate({ ...queryParams, caseId });
+  async getReportsByCaseId(caseId, queryParams = {}, firmId = null) {
+    return this.paginate({ ...queryParams, caseId }, {}, firmId);
   }
 
   /**
    * Search reports by case name/suit number
    */
-  async searchReportsByCase(searchTerm, queryParams = {}) {
-    return this.paginate({ ...queryParams, caseSearch: searchTerm });
+  async searchReportsByCase(searchTerm, queryParams = {}, firmId = null) {
+    return this.paginate(
+      { ...queryParams, caseSearch: searchTerm },
+      {},
+      firmId
+    );
   }
 
   /**
    * Advanced search with criteria
    */
-  async advancedSearch(criteria = {}, options = {}) {
+  async advancedSearch(criteria = {}, options = {}, firmId = null) {
     try {
       const {
         page = 1,
@@ -371,6 +390,11 @@ class GenericPaginationService {
         includeStats,
       } = options;
 
+      // ✅ Enforce firmId
+      if (this.config.requiresFirmId && !firmId) {
+        throw new Error("firmId is required for advanced search");
+      }
+
       const sanitizedLimit = Math.min(parseInt(limit), this.config.maxLimit);
       const sanitizedPage = Math.max(1, parseInt(page));
 
@@ -378,6 +402,11 @@ class GenericPaginationService {
       const populateOptions = QueryBuilder.buildPopulate(populate);
 
       let sanitizedCriteria = QueryBuilder.sanitizeCriteria(criteria);
+
+      // ✅ Add firmId to criteria
+      if (this.config.requiresFirmId && firmId) {
+        sanitizedCriteria.firmId = firmId;
+      }
 
       // Always exclude deleted records unless specified
       if (!sanitizedCriteria.isDeleted && !sanitizedCriteria.includeDeleted) {
@@ -391,7 +420,7 @@ class GenericPaginationService {
       // Calculate statistics if enabled
       let statistics = null;
       if (includeStats === "true" || this.config.includeStats) {
-        statistics = await this.calculateStatistics(sanitizedCriteria);
+        statistics = await this.calculateStatistics(sanitizedCriteria, firmId);
       }
 
       const startIndex = (sanitizedPage - 1) * sanitizedLimit;
@@ -428,7 +457,7 @@ class GenericPaginationService {
   }
 
   /**
-   * ✅ ENHANCED: Format response with statistics
+   * Format response with statistics
    */
   formatResponse(data, totalRecords, page, limit, statistics = null) {
     const totalPages = Math.ceil(totalRecords / limit);
@@ -445,7 +474,6 @@ class GenericPaginationService {
         limit: limit,
         hasNextPage: hasNextPage,
         hasPrevPage: hasPrevPage,
-        // Legacy fields for backward compatibility
         current: page,
         total: totalPages,
         count: data.length,
@@ -456,7 +484,6 @@ class GenericPaginationService {
       },
     };
 
-    // ✅ Add statistics if available
     if (statistics) {
       response.statistics = statistics;
     }

@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const documentRecordSchema = new mongoose.Schema(
   {
+    firmId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Firm",
+      required: [true, "DocumentRecord must belong to a Firm"],
+    },
+
     documentName: {
       type: String,
       required: [true, "please provide document's name"],

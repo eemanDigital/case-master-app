@@ -1,4 +1,4 @@
-// config/modelConfigs.js - FIXED Report configuration
+// config/modelConfigs.js - WITH MULTI-TENANCY
 
 const modelConfigs = {
   Report: {
@@ -28,11 +28,13 @@ const modelConfigs = {
       "endDate",
       "includeDeleted",
       "onlyDeleted",
+      "firmId", // ✅ Added
     ],
     textFilterFields: ["clientEmail", "adjournedFor", "update"],
     defaultSort: "-date",
     dateField: "date",
     maxLimit: 50,
+    requiresFirmId: true, // ✅ NEW: Enforce firmId
     defaultPopulate: [
       {
         path: "caseReported",
@@ -41,8 +43,8 @@ const modelConfigs = {
       },
       {
         path: "documents",
-        select: "_id fileName fileType", // Only minimal fields for lists
-        options: { limit: 3 }, // Only show first 3 documents in lists
+        select: "_id fileName fileType",
+        options: { limit: 3 },
         match: {
           isDeleted: { $ne: true },
           isArchived: { $ne: true },
@@ -52,6 +54,7 @@ const modelConfigs = {
       { path: "lawyersInCourt", select: "firstName lastName middleName" },
     ],
   },
+
   Case: {
     searchableFields: [
       "firstParty.name.name",
@@ -81,11 +84,13 @@ const modelConfigs = {
       "endDate",
       "includeDeleted",
       "onlyDeleted",
+      "firmId", // ✅ Added
     ],
-    textFilterFields: ["courtName", "location", "state"], // ✅ Partial matching
+    textFilterFields: ["courtName", "location", "state"],
     defaultSort: "-filingDate",
     dateField: "filingDate",
     maxLimit: 100,
+    requiresFirmId: true, // ✅ NEW: Enforce firmId
     defaultPopulate: [
       {
         path: "accountOfficer",
@@ -120,11 +125,14 @@ const modelConfigs = {
       "practiceArea",
       "includeDeleted",
       "onlyDeleted",
+      "firmId", // ✅ Added
     ],
-    textFilterFields: ["position", "practiceArea"], // ✅ Partial matching
+    textFilterFields: ["position", "practiceArea"],
     defaultSort: "-createdAt",
     maxLimit: 100,
+    requiresFirmId: true, // ✅ NEW: Enforce firmId
     defaultPopulate: [],
+    includeStats: true, // ✅ Enable statistics for User model
   },
 
   DocumentRecord: {
@@ -145,11 +153,13 @@ const modelConfigs = {
       "endDate",
       "includeDeleted",
       "onlyDeleted",
+      "firmId", // ✅ Added
     ],
-    textFilterFields: ["sender", "docRef"], // ✅ Explicitly define text fields
+    textFilterFields: ["sender", "docRef"],
     defaultSort: "-dateReceived",
     dateField: "dateReceived",
     maxLimit: 50,
+    requiresFirmId: true, // ✅ NEW: Enforce firmId
     defaultPopulate: [
       {
         path: "recipient",
@@ -160,6 +170,85 @@ const modelConfigs = {
         select: "firstName lastName email",
       },
     ],
+  },
+
+  Task: {
+    searchableFields: [
+      "title",
+      "description",
+      "category",
+      "caseToWorkOn.suitNo",
+      "caseToWorkOn.firstParty.name",
+      "caseToWorkOn.secondParty.name",
+    ],
+    filterableFields: [
+      "status",
+      "taskPriority",
+      "category",
+      "assignees.user",
+      "createdBy",
+      "caseToWorkOn",
+      "dueDate",
+      "startDate",
+      "endDate",
+      "includeDeleted",
+      "onlyDeleted",
+      "firmId", // ✅ Added
+    ],
+    textFilterFields: ["title", "description", "category"],
+    defaultSort: "-dateCreated",
+    dateField: "dateCreated",
+    maxLimit: 100,
+    requiresFirmId: true, // ✅ NEW: Enforce firmId
+    defaultPopulate: [
+      { path: "createdBy", select: "firstName lastName email position" },
+      { path: "assignees.user", select: "firstName lastName email position" },
+      {
+        path: "caseToWorkOn",
+        select: "suitNo firstParty.name secondParty.name caseStatus",
+      },
+    ],
+  },
+
+  File: {
+    searchableFields: ["fileName", "originalName", "description", "tags"],
+    filterableFields: [
+      "category",
+      "entityType",
+      "entityId",
+      "uploadedBy",
+      "fileType",
+      "isArchived",
+      "includeDeleted",
+      "onlyDeleted",
+      "firmId", // ✅ Added
+    ],
+    textFilterFields: ["fileName", "description"],
+    defaultSort: "-createdAt",
+    dateField: "createdAt",
+    maxLimit: 100,
+    requiresFirmId: true, // ✅ NEW: Enforce firmId
+    defaultPopulate: [
+      { path: "uploadedBy", select: "firstName lastName email" },
+    ],
+  },
+
+  // ✅ NEW: Firm model config (for super-admin queries)
+  Firm: {
+    searchableFields: ["name", "contact.email", "contact.phone", "subdomain"],
+    filterableFields: [
+      "subscription.status",
+      "subscription.plan",
+      "isActive",
+      "includeDeleted",
+      "onlyDeleted",
+    ],
+    textFilterFields: ["name", "subdomain"],
+    defaultSort: "-createdAt",
+    dateField: "createdAt",
+    maxLimit: 100,
+    requiresFirmId: false, // ✅ Firm queries don't need firmId filter
+    defaultPopulate: [],
   },
 };
 

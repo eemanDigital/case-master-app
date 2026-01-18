@@ -46,6 +46,13 @@ const partyProcessSchema = new mongoose.Schema({
 // Case Schema
 const caseSchema = new mongoose.Schema(
   {
+    firmId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Firm",
+      required: true,
+      index: true,
+    },
+
     firstParty: {
       description: {
         type: String,
@@ -82,7 +89,7 @@ const caseSchema = new mongoose.Schema(
       type: String,
       trim: true,
       required: [true, "Suit number is required"],
-      unique: true,
+
       minlength: [3, "Suit number must be at least 3 characters long"],
     },
     caseOfficeFileNo: {
@@ -281,14 +288,21 @@ const caseSchema = new mongoose.Schema(
   }
 );
 
-caseSchema.index({ isDeleted: 1, active: 1 });
-caseSchema.index({ caseStatus: 1, isDeleted: 1 });
-caseSchema.index({ courtName: 1, isDeleted: 1 });
-caseSchema.index({ accountOfficer: 1, isDeleted: 1 });
-caseSchema.index({ client: 1, isDeleted: 1 });
-caseSchema.index({ filingDate: -1, isDeleted: 1 });
-caseSchema.index({ casePriority: 1, isDeleted: 1 });
-caseSchema.index({ category: 1, isDeleted: 1 });
+// Core multi-tenant uniqueness
+caseSchema.index({ firmId: 1, suitNo: 1 }, { unique: true });
+
+// Core listing & filtering
+caseSchema.index({ firmId: 1, filingDate: -1 });
+caseSchema.index({ firmId: 1, caseStatus: 1 });
+caseSchema.index({ firmId: 1, category: 1 });
+caseSchema.index({ firmId: 1, casePriority: 1 });
+
+// Relationship-based views
+caseSchema.index({ firmId: 1, accountOfficer: 1 });
+caseSchema.index({ firmId: 1, client: 1 });
+
+// Soft delete optimization
+caseSchema.index({ firmId: 1, isDeleted: 1 });
 
 caseSchema.pre(/^find/, function (next) {
   // Populate the accountOfficer field with the firstName and lastName of the user

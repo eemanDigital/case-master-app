@@ -2,6 +2,13 @@ const mongoose = require("mongoose");
 
 const fileSchema = new mongoose.Schema(
   {
+    firmId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Firm",
+      required: true,
+      index: true,
+    },
+
     fileName: {
       type: String,
       required: [true, "File name is required"],
@@ -17,7 +24,6 @@ const fileSchema = new mongoose.Schema(
     s3Key: {
       type: String,
       required: [true, "S3 key is required"],
-      unique: true,
     },
     s3Bucket: {
       type: String,
@@ -130,13 +136,12 @@ const fileSchema = new mongoose.Schema(
 );
 
 // Indexes for better query performance
-fileSchema.index({ uploadedBy: 1, createdAt: -1 });
-fileSchema.index({ entityType: 1, entityId: 1 });
-fileSchema.index({ uploadedBy: 1, category: 1 });
-fileSchema.index({ uploadedBy: 1, isArchived: 1 });
-fileSchema.index({ s3Key: 1 }, { unique: true });
-fileSchema.index({ fileName: "text", description: "text" });
-fileSchema.index({ isDeleted: 1 });
+fileSchema.index({ firmId: 1, createdAt: -1 });
+fileSchema.index({ firmId: 1, uploadedBy: 1 });
+fileSchema.index({ firmId: 1, entityType: 1, entityId: 1 });
+fileSchema.index({ firmId: 1, category: 1 });
+fileSchema.index({ firmId: 1, isArchived: 1 });
+fileSchema.index({ firmId: 1, isDeleted: 1 });
 
 // Virtual for file size in MB
 fileSchema.virtual("fileSizeMB").get(function () {
@@ -188,10 +193,11 @@ fileSchema.methods.incrementDownloadCount = async function () {
 };
 
 // Static methods
-fileSchema.statics.getUserStorageUsage = async function (userId) {
+fileSchema.statics.getUserStorageUsage = async function (firmId, userId) {
   const result = await this.aggregate([
     {
       $match: {
+        firmId: mongoose.Types.ObjectId(firmId),
         uploadedBy: mongoose.Types.ObjectId(userId),
         isDeleted: false,
       },
@@ -214,8 +220,13 @@ fileSchema.statics.getUserStorageUsage = async function (userId) {
   return result[0] || { totalFiles: 0, totalSize: 0, byCategory: [] };
 };
 
-fileSchema.statics.getEntityFiles = async function (entityType, entityId) {
+fileSchema.statics.getEntityFiles = async function (
+  firmId,
+  entityType,
+  entityId
+) {
   return await this.find({
+    firmId,
     entityType,
     entityId,
     isDeleted: false,

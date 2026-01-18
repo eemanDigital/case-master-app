@@ -10,6 +10,9 @@ const casePagination = PaginationServiceFactory.createService(Case);
 
 // Projection configurations for optimized queries
 const CASE_LIST_PROJECTION = {
+  _id: 1,
+  suitNo: 1,
+
   caseNumber: 1,
   caseStatus: 1,
   casePriority: 1,
@@ -31,9 +34,35 @@ const CASE_DETAIL_PROJECTION = {
   updatedAt: 0,
 };
 
+// ✅ Helper function to handle pagination with projection
+const getCasesWithProjection = async (queryParams, customFilter = {}) => {
+  const result = await casePagination.paginate(queryParams, {
+    ...customFilter,
+    firmId: queryParams.firmId || customFilter.firmId,
+  });
+
+  // Apply projection
+  if (result.data && result.data.length > 0) {
+    result.data = result.data.map((caseDoc) => {
+      const projected = {};
+      Object.keys(CASE_LIST_PROJECTION).forEach((key) => {
+        if (caseDoc[key] !== undefined) {
+          projected[key] = caseDoc[key];
+        }
+      });
+      return projected;
+    });
+  }
+
+  return result;
+};
+
 // create new case
 exports.createCase = catchAsync(async (req, res, next) => {
-  const singleCase = await Case.create(req.body);
+  const singleCase = await Case.create({
+    ...req.body,
+    firmId: req.firmId,
+  });
 
   // Invalidate relevant cache entries
   // clearCachePattern('dashboard-stats:*');
@@ -47,11 +76,9 @@ exports.createCase = catchAsync(async (req, res, next) => {
 
 // Get all cases with advanced pagination and optimized projection
 exports.getCases = catchAsync(async (req, res, next) => {
-  const result = await casePagination.paginate(
-    req.query,
-    {},
-    CASE_LIST_PROJECTION
-  );
+  const result = await getCasesWithProjection(req.query, {
+    firmId: req.firmId,
+  });
 
   if (result.data.length === 0) {
     return res.status(200).json({
@@ -77,10 +104,13 @@ exports.searchCases = catchAsync(async (req, res, next) => {
   }
 
   try {
-    const result = await casePagination.advancedSearch(criteria, {
-      ...options,
-      projection: CASE_LIST_PROJECTION,
-    });
+    const result = await casePagination.advancedSearch(
+      { ...criteria, firmId: req.firmId },
+      {
+        ...options,
+        projection: CASE_LIST_PROJECTION,
+      }
+    );
 
     if (result.data.length === 0) {
       return res.status(200).json({
@@ -102,7 +132,7 @@ exports.searchCases = catchAsync(async (req, res, next) => {
 
 // Optimized filtered case routes
 exports.getCasesByStatus = catchAsync(async (req, res, next) => {
-  const customFilter = { caseStatus: req.params.status };
+  const customFilter = { caseStatus: req.params.status, firmId: req.firmId };
   const result = await casePagination.paginate(
     req.query,
     customFilter,
@@ -112,7 +142,10 @@ exports.getCasesByStatus = catchAsync(async (req, res, next) => {
 });
 
 exports.getCasesByAccountOfficer = catchAsync(async (req, res, next) => {
-  const customFilter = { accountOfficer: req.params.accountOfficerId };
+  const customFilter = {
+    accountOfficer: req.params.accountOfficerId,
+    firmId: req.firmId,
+  };
   const result = await casePagination.paginate(
     req.query,
     customFilter,
@@ -122,7 +155,7 @@ exports.getCasesByAccountOfficer = catchAsync(async (req, res, next) => {
 });
 
 exports.getCasesByClient = catchAsync(async (req, res, next) => {
-  const customFilter = { client: req.params.clientId };
+  const customFilter = { client: req.params.clientId, firmId: req.firmId };
   const result = await casePagination.paginate(
     req.query,
     customFilter,
@@ -132,7 +165,7 @@ exports.getCasesByClient = catchAsync(async (req, res, next) => {
 });
 
 exports.getCasesByCourt = catchAsync(async (req, res, next) => {
-  const customFilter = { courtName: req.params.courtName };
+  const customFilter = { courtName: req.params.courtName, firmId: req.firmId };
   const result = await casePagination.paginate(
     req.query,
     customFilter,
@@ -142,7 +175,7 @@ exports.getCasesByCourt = catchAsync(async (req, res, next) => {
 });
 
 exports.getCasesByCategory = catchAsync(async (req, res, next) => {
-  const customFilter = { category: req.params.category };
+  const customFilter = { category: req.params.category, firmId: req.firmId };
   const result = await casePagination.paginate(
     req.query,
     customFilter,
@@ -152,7 +185,10 @@ exports.getCasesByCategory = catchAsync(async (req, res, next) => {
 });
 
 exports.getCasesByPriority = catchAsync(async (req, res, next) => {
-  const customFilter = { casePriority: req.params.priority };
+  const customFilter = {
+    casePriority: req.params.priority,
+    firmId: req.firmId,
+  };
   const result = await casePagination.paginate(
     req.query,
     customFilter,
@@ -162,7 +198,11 @@ exports.getCasesByPriority = catchAsync(async (req, res, next) => {
 });
 
 exports.getActiveCases = catchAsync(async (req, res, next) => {
-  const customFilter = { active: true, isDeleted: { $ne: true } };
+  const customFilter = {
+    active: true,
+    isDeleted: { $ne: true },
+    firmId: req.firmId,
+  };
   const result = await casePagination.paginate(
     req.query,
     customFilter,
@@ -171,87 +211,11 @@ exports.getActiveCases = catchAsync(async (req, res, next) => {
   res.status(200).json(result);
 });
 
-// Optimized single case retrieval with selective population
-// exports.getCase = catchAsync(async (req, res, next) => {
-//   const _id = req.params.caseId;
-//   const data = await Case.findById({ _id })
-//     .populate({
-//       path: "reports",
-//       select: "title reportDate status createdAt", // Only necessary fields
-//       options: { sort: { reportDate: -1 }, limit: 10 }, // Limit to recent reports
-//     })
-//     .populate({
-//       path: "client",
-//       select: "firstName secondName email phone profileImage",
-//     })
-//     .populate({
-//       path: "accountOfficer",
-//       select: "firstName lastName email phone role",
-//     })
-//     .select(CASE_DETAIL_PROJECTION)
-//     .lean(); // Use lean for better performance
-
-//   if (!data) {
-//     return next(new AppError("No case found with that Id", 404));
-//   }
-
-//   // setRedisCache(`singleCase:${req.params.caseId}`, data);
-//   res.status(200).json({
-//     fromCache: false,
-//     data,
-//   });
-// });
-// In your caseController.js - Fix the getCase function
-// exports.getCase = catchAsync(async (req, res, next) => {
-//   const _id = req.params.caseId;
-
-//   const data = await Case.findById({ _id })
-//     .populate({
-//       path: "reports", // ✅ This is the VIRTUAL field
-//       select: "date update adjournedFor adjournedDate clientEmail",
-//       options: { sort: { date: -1 } },
-//       populate: [
-//         {
-//           path: "reportedBy",
-//           select: "firstName lastName middleName",
-//         },
-//         {
-//           path: "lawyersInCourt",
-//           select: "firstName lastName middleName",
-//         },
-//       ],
-//     })
-//     .populate({
-//       path: "client",
-//       select: "firstName secondName email phone profileImage",
-//     })
-//     .populate({
-//       path: "accountOfficer",
-//       select: "firstName lastName email phone role",
-//     })
-//     .select(CASE_DETAIL_PROJECTION);
-
-//   if (!data) {
-//     return next(new AppError("No case found with that Id", 404));
-//   }
-
-//   // ✅ Debug: Check if reports are populated
-//   // console.log("🔍 Case Reports Debug:", {
-//   //   caseId: _id,
-//   //   suitNo: data.suitNo,
-//   //   reportsCount: data.reports ? data.reports.length : 0,
-//   //   reports: data.reports ? data.reports.map((r) => r._id) : "No reports",
-//   // });
-
-//   res.status(200).json({
-//     fromCache: false,
-//     data,
-//   });
-// });
+// Get single case with detailed population
 exports.getCase = catchAsync(async (req, res, next) => {
   const _id = req.params.caseId;
 
-  const data = await Case.findById({ _id })
+  const data = await Case.findOne({ _id, firmId: req.firmId })
     .populate({
       path: "reports",
       select: "date update adjournedFor adjournedDate clientEmail",
@@ -320,11 +284,15 @@ exports.getCase = catchAsync(async (req, res, next) => {
 // Optimized update case
 exports.updateCase = catchAsync(async (req, res, next) => {
   const caseId = req.params.caseId;
-  const updatedCase = await Case.findByIdAndUpdate({ _id: caseId }, req.body, {
-    new: true,
-    runValidators: true,
-    select: CASE_DETAIL_PROJECTION,
-  }).lean();
+  const updatedCase = await Case.findOneAndUpdate(
+    { _id: caseId, firmId: req.firmId },
+    req.body,
+    {
+      new: true,
+      runValidators: true,
+      select: CASE_DETAIL_PROJECTION,
+    }
+  ).lean();
 
   if (!updatedCase) {
     return next(
@@ -344,7 +312,10 @@ exports.updateCase = catchAsync(async (req, res, next) => {
 
 // Soft delete a case
 exports.deleteCase = catchAsync(async (req, res, next) => {
-  const caseData = await Case.findById(req.params.caseId);
+  const caseData = await Case.findOne({
+    _id: req.params.caseId,
+    firmId: req.firmId,
+  });
 
   if (caseData) {
     await caseData.softDelete();
@@ -364,7 +335,7 @@ exports.deleteCase = catchAsync(async (req, res, next) => {
 
 // Single optimized dashboard stats endpoint
 exports.getDashboardStats = catchAsync(async (req, res, next) => {
-  const matchStage = { isDeleted: { $ne: true } };
+  const matchStage = { firmId: req.firmId, isDeleted: { $ne: true } };
 
   // Single aggregation pipeline for all stats
   const dashboardStats = await Case.aggregate([
@@ -578,7 +549,7 @@ exports.getDashboardStats = catchAsync(async (req, res, next) => {
 exports.getCasesByAccountOfficerAggregate = catchAsync(
   async (req, res, next) => {
     const results = await Case.aggregate([
-      { $match: { isDeleted: { $ne: true } } },
+      { $match: { firmId: req.firmId, isDeleted: { $ne: true } } },
       { $unwind: "$accountOfficer" },
       {
         $lookup: {
@@ -695,8 +666,15 @@ exports.getCasesByAccountOfficerAggregate = catchAsync(
 );
 
 exports.getCasesByClientAggregate = catchAsync(async (req, res, next) => {
+  const firmId = req.firmId;
+
   const results = await Case.aggregate([
-    { $match: { isDeleted: { $ne: true } } },
+    {
+      $match: {
+        firmId: firmId,
+        isDeleted: { $ne: true },
+      },
+    },
     { $unwind: "$client" },
     {
       $lookup: {
@@ -749,7 +727,12 @@ exports.getCasesByClientAggregate = catchAsync(async (req, res, next) => {
 // Optimized monthly and yearly cases without heavy parties data
 exports.getMonthlyNewCases = catchAsync(async (req, res, next) => {
   const result = await Case.aggregate([
-    { $match: { isDeleted: { $ne: true } } },
+    {
+      $match: {
+        firmId: req.firmId,
+        isDeleted: { $ne: true },
+      },
+    },
     {
       $group: {
         _id: { $month: "$filingDate" },
@@ -777,7 +760,7 @@ exports.getMonthlyNewCases = catchAsync(async (req, res, next) => {
 
 exports.getYearlyNewCases = catchAsync(async (req, res, next) => {
   const result = await Case.aggregate([
-    { $match: { isDeleted: { $ne: true } } },
+    { $match: { firmId: req.firmId, isDeleted: { $ne: true } } },
     {
       $group: {
         _id: { $year: "$filingDate" },

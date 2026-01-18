@@ -27,6 +27,7 @@ exports.getUsers = catchAsync(async (req, res, next) => {
 
   // ✅ Build custom filter for role(s)
   let customFilter = {
+    firmId: req.firmId,
     isDeleted: { $ne: true },
   };
 
@@ -95,6 +96,7 @@ exports.getUsersByRole = catchAsync(async (req, res, next) => {
   const { role } = req.params;
 
   const customFilter = {
+    firmId: req.firmId,
     role: role,
     isDeleted: { $ne: true },
   };
@@ -150,6 +152,7 @@ exports.getStaffByStatus = catchAsync(async (req, res, next) => {
   const isActive = status.toLowerCase() === "active";
 
   const customFilter = {
+    firmId: req.firmId,
     role: { $ne: "client" }, // Staff = all non-client roles
     isActive: isActive,
     isDeleted: { $ne: true },
@@ -218,6 +221,7 @@ exports.getClientsByStatus = catchAsync(async (req, res, next) => {
   const isActive = status.toLowerCase() === "active";
 
   const customFilter = {
+    firmId: req.firmId,
     role: "client",
     isActive: isActive,
     isDeleted: { $ne: true },
@@ -286,6 +290,7 @@ exports.getAllUsersByStatus = catchAsync(async (req, res, next) => {
   const isActive = status.toLowerCase() === "active";
 
   const customFilter = {
+    firmId: req.firmId,
     isActive: isActive,
     isDeleted: { $ne: true },
   };
@@ -387,6 +392,7 @@ exports.getStatusStatistics = catchAsync(async (req, res, next) => {
     ] = await Promise.all([
       // Active staff
       User.countDocuments({
+        firmId: req.firmId,
         role: { $ne: "client" },
         isActive: true,
         isDeleted: { $ne: true },
@@ -495,6 +501,7 @@ exports.getStatusStatistics = catchAsync(async (req, res, next) => {
 //
 exports.getUsersByStatus = catchAsync(async (req, res, next) => {
   const customFilter = {
+    firmId: req.firmId,
     status: req.params.status,
     isDeleted: { $ne: true },
   };
@@ -517,6 +524,7 @@ exports.getUsersByStatus = catchAsync(async (req, res, next) => {
  */
 exports.getActiveUsers = catchAsync(async (req, res, next) => {
   const customFilter = {
+    firmId: req.firmId,
     isActive: true,
     isDeleted: { $ne: true },
   };
@@ -539,11 +547,14 @@ exports.getActiveUsers = catchAsync(async (req, res, next) => {
  */
 exports.getUserStatistics = catchAsync(async (req, res, next) => {
   // Get statistics without paginated data
-  const result = await userPagination.paginate({
-    page: 1,
-    limit: 1,
-    includeStats: "true",
-  });
+  const result = await userPagination.paginate(
+    {
+      page: 1,
+      limit: 1,
+      includeStats: "true",
+    },
+    { firm: req.firmId }
+  );
 
   res.status(200).json({
     success: true,
@@ -559,6 +570,7 @@ exports.getStaffStatistics = catchAsync(async (req, res, next) => {
   const customFilter = {
     role: { $ne: "client" },
     isDeleted: { $ne: true },
+    firmId: req.firmId,
   };
 
   const result = await userPagination.paginate(
@@ -581,6 +593,7 @@ exports.getStaffStatistics = catchAsync(async (req, res, next) => {
  */
 exports.getClientStatistics = catchAsync(async (req, res, next) => {
   const customFilter = {
+    firm: req.firmId,
     role: "client",
     isDeleted: { $ne: true },
   };
@@ -606,7 +619,10 @@ exports.getClientStatistics = catchAsync(async (req, res, next) => {
  * GET A USER (current user)
  */
 exports.getUser = catchAsync(async (req, res, next) => {
-  const data = await User.findById(req.user._id)
+  const data = await User.findOne({
+    _id: req.user._id,
+    firmId: req.firmId,
+  })
     .populate({
       path: "task",
       select: "-assignedTo",
@@ -631,7 +647,10 @@ exports.getUser = catchAsync(async (req, res, next) => {
  * GET A SINGLE USER (by ID)
  */
 exports.getSingleUser = catchAsync(async (req, res, next) => {
-  const data = await User.findById(req.params.id)
+  const data = await User.findOne({
+    _id: req.user._id,
+    firmId: req.firmId, // ✅ ADD THIS
+  })
     .populate({
       path: "task",
       select: "-assignedTo",
@@ -686,10 +705,14 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 
   if (req.file) filteredBody.photo = req.file.cloudinaryUrl;
 
-  const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
-    new: true,
-    runValidators: true,
-  });
+  const updatedUser = await User.findOneAndUpdate(
+    {
+      _id: req.user.id,
+      firmId: req.firmId,
+    },
+    filteredBody,
+    { new: true, runValidators: true }
+  );
 
   if (!updatedUser) {
     return next(new AppError("User not found", 404));
@@ -711,7 +734,10 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
   const { role, position, isActive } = req.body;
   const { id } = req.params;
 
-  const user = await User.findById(id);
+  const user = await User.findOne({
+    _id: id,
+    firmId: req.firmId,
+  });
 
   if (!user) {
     return next(new AppError("No user found with that ID", 404));
@@ -747,7 +773,10 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
  * DELETE USER (Hard delete)
  */
 exports.deleteUser = catchAsync(async (req, res, next) => {
-  const user = await User.findByIdAndDelete(req.params.id);
+  const user = await User.findOneAndDelete({
+    _id: req.params.id,
+    firmId: req.firmId,
+  });
 
   if (!user) {
     return next(new AppError("No user found with that ID", 404));
@@ -764,7 +793,7 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
  * SOFT DELETE USER
  */
 exports.softDeleteUser = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
+  const user = await User.findOne({ _id: req.params.id, firmId: req.firmId });
 
   if (!user) {
     return next(new AppError("No user found with that ID", 404));
@@ -790,8 +819,10 @@ exports.softDeleteUser = catchAsync(async (req, res, next) => {
  * RESTORE DELETED USER
  */
 exports.restoreUser = catchAsync(async (req, res, next) => {
-  const user = await User.findById(req.params.id);
-
+  const user = await User.findOne({
+    _id: req.params.id,
+    firmId: req.firmId,
+  });
   if (!user) {
     return next(new AppError("No user found with that ID", 404));
   }
@@ -821,7 +852,11 @@ exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
     return next(new AppError("Missing email fields", 400));
   }
 
-  const user = await User.findOne({ email: send_to, isDeleted: { $ne: true } });
+  const user = await User.findOne({
+    firmId: req.firmId,
+    email: send_to,
+    isDeleted: { $ne: true },
+  });
   if (!user) {
     return next(new AppError("No active user found with that email", 404));
   }
@@ -915,6 +950,7 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
     } else {
       user = await User.findOne({
         email: recipientEmail,
+        firmId: req.firmId,
         isDeleted: { $ne: true },
       });
       if (!user) {
@@ -960,6 +996,7 @@ exports.getUserSelectOptions = catchAsync(async (req, res, next) => {
 
   // Build filter based on type
   let filter = {
+    firmId: req.firmId,
     isDeleted: { $ne: true },
   };
 
@@ -1039,6 +1076,7 @@ exports.getAllSelectOptions = catchAsync(async (req, res, next) => {
   const { includeInactive = "false" } = req.query;
 
   const baseFilter = {
+    firmId: req.firmId,
     isDeleted: { $ne: true },
   };
 

@@ -2,6 +2,12 @@ const mongoose = require("mongoose");
 
 const eventSchema = new mongoose.Schema(
   {
+    firmId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Firm",
+      required: true,
+    },
+
     title: {
       type: String,
       required: true,

@@ -4,7 +4,10 @@ const catchAsync = require("../utils/catchAsync");
 
 // create leave
 exports.createLeave = catchAsync(async (req, res, next) => {
-  const newLeave = await LeaveResponse.create(req.body);
+  const newLeave = await LeaveResponse.create({
+    ...req.body,
+    firmId: req.firm._id,
+  });
   res.status(201).json({
     message: "success",
     data: newLeave,
@@ -13,8 +16,8 @@ exports.createLeave = catchAsync(async (req, res, next) => {
 
 //update leave app
 exports.updateLeave = catchAsync(async (req, res, next) => {
-  const updatedLeave = await LeaveResponse.findByIdAndUpdate(
-    req.params.id,
+  const updatedLeave = await LeaveResponse.findOneAndUpdate(
+    { _id: req.params.id, firmId: req.firm._id },
     req.body,
     {
       new: true,
@@ -34,7 +37,10 @@ exports.updateLeave = catchAsync(async (req, res, next) => {
 
 // get leave app
 exports.getLeave = catchAsync(async (req, res, next) => {
-  const leave = await LeaveResponse.findById(req.params.id);
+  const leave = await LeaveResponse.findOne({
+    _id: req.params.id,
+    firmId: req.firm._id,
+  });
 
   if (!leave) {
     return next(new AppError("The leave does not exist", 404));

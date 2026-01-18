@@ -11,6 +11,7 @@ exports.createTask = catchAsync(async (req, res, next) => {
 
   const taskData = {
     createdBy: req.user.id,
+    firmId: req.firmId,
     ...rest,
   };
 
@@ -37,7 +38,10 @@ exports.createTask = catchAsync(async (req, res, next) => {
   }
 
   // Populate the created task
-  const populatedTask = await Task.findById(task._id)
+  const populatedTask = await Task.findOne({
+    _id: task._id,
+    firmId: req.firmId,
+  })
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
     .populate(
@@ -70,8 +74,8 @@ exports.getTasks = catchAsync(async (req, res, next) => {
     isClient,
   } = req.query;
 
-  // Build filter object
-  const filter = {};
+  // Build filter object with firmId
+  const filter = { firmId: req.firmId };
 
   // Handle deleted tasks
   if (onlyDeleted === "true") {
@@ -140,7 +144,10 @@ exports.getTasks = catchAsync(async (req, res, next) => {
 
 // Get single task with full population
 exports.getTask = catchAsync(async (req, res, next) => {
-  const task = await Task.findById(req.params.taskId)
+  const task = await Task.findOne({
+    _id: req.params.taskId,
+    firmId: req.firmId,
+  })
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
     .populate(
@@ -179,19 +186,27 @@ exports.updateTask = catchAsync(async (req, res, next) => {
 
   // Handle reference documents update
   if (updateData.referenceDocuments) {
-    const existingTask = await Task.findById(taskId);
-    if (existingTask) {
-      updateData.referenceDocuments = [
-        ...existingTask.referenceDocuments,
-        ...updateData.referenceDocuments,
-      ];
+    const existingTask = await Task.findOne({
+      _id: taskId,
+      firmId: req.firmId,
+    });
+    if (!existingTask) {
+      return next(new AppError("No task found with that ID", 404));
     }
+    updateData.referenceDocuments = [
+      ...existingTask.referenceDocuments,
+      ...updateData.referenceDocuments,
+    ];
   }
 
-  const updatedTask = await Task.findByIdAndUpdate(taskId, updateData, {
-    new: true,
-    runValidators: true,
-  })
+  const updatedTask = await Task.findOneAndUpdate(
+    { _id: taskId, firmId: req.firmId },
+    updateData,
+    {
+      new: true,
+      runValidators: true,
+    }
+  )
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
     .populate(
@@ -212,7 +227,10 @@ exports.updateTask = catchAsync(async (req, res, next) => {
 
 // Soft delete task
 exports.deleteTask = catchAsync(async (req, res, next) => {
-  const task = await Task.findById(req.params.taskId);
+  const task = await Task.findOne({
+    _id: req.params.taskId,
+    firmId: req.firmId,
+  });
 
   if (!task) {
     return next(new AppError("No task found with that ID", 404));
@@ -250,7 +268,7 @@ exports.addReferenceDocuments = catchAsync(async (req, res, next) => {
     return next(new AppError("Document IDs array is required", 400));
   }
 
-  const task = await Task.findById(taskId);
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -258,6 +276,7 @@ exports.addReferenceDocuments = catchAsync(async (req, res, next) => {
   // Verify documents exist and belong to this task
   const documents = await File.find({
     _id: { $in: documentIds },
+    firmId: req.firmId,
     entityType: "Task",
     entityId: taskId,
   });
@@ -278,18 +297,18 @@ exports.addReferenceDocuments = catchAsync(async (req, res, next) => {
   await task.save();
 
   // Populate and return updated task
-  const updatedTask = await Task.findById(taskId).populate(
-    "referenceDocuments"
-  );
+  const updatedTask = await Task.findOne({
+    _id: taskId,
+    firmId: req.firmId,
+  }).populate("referenceDocuments");
 
-  res.status(204).json({
+  res.status(200).json({
     status: "success",
     message: "Documents added to task successfully",
     data: updatedTask,
   });
 });
 
-// Submit task response with document upload
 // Submit task response with document upload
 exports.submitTaskResponse = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
@@ -301,8 +320,8 @@ exports.submitTaskResponse = catchAsync(async (req, res, next) => {
     timeSpent,
   } = req.body;
 
-  // 1. Find task
-  const task = await Task.findById(taskId);
+  // 1. Find task with firmId
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -310,7 +329,7 @@ exports.submitTaskResponse = catchAsync(async (req, res, next) => {
   // 2. Get authenticated user ID as string
   const userId = req.user.id.toString();
 
-  // 3. ✅ Correct assignment verification
+  // 3. Correct assignment verification
   const isAssigned = task.assignees.some((assignee) => {
     if (!assignee.user) return false;
 
@@ -321,19 +340,6 @@ exports.submitTaskResponse = catchAsync(async (req, res, next) => {
 
     return assignedUserId === userId;
   });
-
-  // ✅ Optional debug (remove in production)
-  console.log("AUTH USER:", userId);
-  console.log(
-    "TASK ASSIGNEES:",
-    task.assignees.map((a) =>
-      a.user
-        ? typeof a.user === "object"
-          ? a.user._id.toString()
-          : a.user.toString()
-        : null
-    )
-  );
 
   if (!isAssigned) {
     return next(new AppError("You are not assigned to this task", 403));
@@ -353,7 +359,7 @@ exports.submitTaskResponse = catchAsync(async (req, res, next) => {
   await task.addResponse(responseData);
 
   // 6. Return populated updated task
-  const updatedTask = await Task.findById(taskId)
+  const updatedTask = await Task.findOne({ _id: taskId, firmId: req.firmId })
     .populate({
       path: "taskResponses.documents",
       match: { isArchived: false },
@@ -376,7 +382,7 @@ exports.reviewTaskResponse = catchAsync(async (req, res, next) => {
   const { taskId, responseIndex } = req.params;
   const { approved, reviewComment } = req.body;
 
-  const task = await Task.findById(taskId);
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -404,7 +410,7 @@ exports.reviewTaskResponse = catchAsync(async (req, res, next) => {
   await task.reviewResponse(parseInt(responseIndex), reviewData);
 
   // Get updated task
-  const updatedTask = await Task.findById(taskId)
+  const updatedTask = await Task.findOne({ _id: taskId, firmId: req.firmId })
     .populate({
       path: "taskResponses.documents",
       match: { isArchived: false },
@@ -427,13 +433,14 @@ exports.reviewTaskResponse = catchAsync(async (req, res, next) => {
 
 // Get user's tasks
 exports.getMyTasks = catchAsync(async (req, res, next) => {
-  const { status, priority, fromDate, toDate, role } = req.query;
+  const { status, priority, fromDate, toDate } = req.query;
 
   const tasks = await Task.getUserTasks(req.user.id, {
     status,
     priority,
     fromDate,
     toDate,
+    firmId: req.firmId,
   })
     .populate("createdBy", "firstName lastName email position")
     .populate(
@@ -451,7 +458,12 @@ exports.getMyTasks = catchAsync(async (req, res, next) => {
 
 // Get overdue tasks
 exports.getOverdueTasks = catchAsync(async (req, res, next) => {
-  const tasks = await Task.getOverdueTasks()
+  const tasks = await Task.find({
+    firmId: req.firmId,
+    dueDate: { $lt: new Date() },
+    status: { $nin: ["completed", "cancelled"] },
+    isDeleted: { $ne: true },
+  })
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
     .populate("caseToWorkOn", "suitNo firstParty.name secondParty.name");
@@ -468,7 +480,7 @@ exports.addAssignee = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
   const { userId, role = "primary", isClient = false } = req.body;
 
-  const task = await Task.findById(taskId);
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -483,7 +495,7 @@ exports.addAssignee = catchAsync(async (req, res, next) => {
 
   await task.addAssignee(userId, role, req.user.id, isClient);
 
-  const updatedTask = await Task.findById(taskId)
+  const updatedTask = await Task.findOne({ _id: taskId, firmId: req.firmId })
     .populate("assignees.user", "firstName lastName email position")
     .populate("createdBy", "firstName lastName email position");
 
@@ -499,7 +511,7 @@ exports.removeAssignee = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
   const { userId } = req.body;
 
-  const task = await Task.findById(taskId);
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -516,7 +528,7 @@ exports.removeAssignee = catchAsync(async (req, res, next) => {
 
   await task.removeAssignee(userId);
 
-  const updatedTask = await Task.findById(taskId)
+  const updatedTask = await Task.findOne({ _id: taskId, firmId: req.firmId })
     .populate("assignees.user", "firstName lastName email position")
     .populate("createdBy", "firstName lastName email position");
 
@@ -531,7 +543,7 @@ exports.removeAssignee = catchAsync(async (req, res, next) => {
 exports.getTaskDocuments = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
 
-  const task = await Task.findById(taskId);
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -540,6 +552,7 @@ exports.getTaskDocuments = catchAsync(async (req, res, next) => {
   const [referenceDocuments, responseDocuments] = await Promise.all([
     // Reference documents
     File.find({
+      firmId: req.firmId,
       entityType: "Task",
       entityId: taskId,
       "metadata.uploadType": "task-reference",
@@ -549,6 +562,7 @@ exports.getTaskDocuments = catchAsync(async (req, res, next) => {
 
     // Response documents
     File.find({
+      firmId: req.firmId,
       entityType: "Task",
       entityId: taskId,
       "metadata.uploadType": "task-response",
@@ -580,7 +594,7 @@ exports.uploadReferenceDocuments = catchAsync(async (req, res, next) => {
     return next(new AppError("Please upload at least one file", 400));
   }
 
-  const task = await Task.findById(taskId);
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -611,6 +625,7 @@ exports.uploadReferenceDocuments = catchAsync(async (req, res, next) => {
 
     // Create file record with both URLs
     const fileRecord = await File.create({
+      firmId: req.firmId,
       fileName: file.originalname,
       originalName: file.originalname,
       s3Key: uploadResult.s3Key,
@@ -655,7 +670,10 @@ exports.uploadReferenceDocuments = catchAsync(async (req, res, next) => {
   await task.save();
 
   // Populate and return updated task
-  const updatedTask = await Task.findById(taskId).populate({
+  const updatedTask = await Task.findOne({
+    _id: taskId,
+    firmId: req.firmId,
+  }).populate({
     path: "referenceDocuments",
     select:
       "fileName fileSize fileUrl presignedUrl description uploadedBy createdAt",
@@ -689,7 +707,7 @@ exports.uploadResponseDocuments = catchAsync(async (req, res, next) => {
     return next(new AppError("Please upload at least one file", 400));
   }
 
-  const task = await Task.findById(taskId);
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -733,6 +751,7 @@ exports.uploadResponseDocuments = catchAsync(async (req, res, next) => {
 
     // Create file record with both URLs
     const fileRecord = await File.create({
+      firmId: req.firmId,
       fileName: file.originalname,
       originalName: file.originalname,
       s3Key: uploadResult.s3Key,
@@ -788,7 +807,7 @@ exports.uploadResponseDocuments = catchAsync(async (req, res, next) => {
   await task.save();
 
   // Populate and return updated task with document URLs
-  const updatedTask = await Task.findById(taskId)
+  const updatedTask = await Task.findOne({ _id: taskId, firmId: req.firmId })
     .populate("referenceDocuments")
     .populate({
       path: "taskResponses.documents",
@@ -816,17 +835,18 @@ exports.uploadResponseDocuments = catchAsync(async (req, res, next) => {
   });
 });
 
-// Generate fresh pre-signed URL for a file (if needed)
+// Generate fresh pre-signed URL for a file
 exports.refreshFileDownloadUrl = catchAsync(async (req, res, next) => {
   const { fileId } = req.params;
 
-  const file = await File.findById(fileId);
+  const file = await File.findOne({ _id: fileId, firmId: req.firmId });
   if (!file) {
     return next(new AppError("File not found", 404));
   }
 
   // Verify the user has access to this file
   const task = await Task.findOne({
+    firmId: req.firmId,
     $or: [
       { referenceDocuments: fileId },
       { "taskResponses.documents": fileId },
@@ -847,10 +867,7 @@ exports.refreshFileDownloadUrl = catchAsync(async (req, res, next) => {
   }
 
   try {
-    // Generate a fresh pre-signed URL
     const newPresignedUrl = await s3Service.getPresignedUrl(file.s3Key, 3600);
-
-    // Update the file record with the new pre-signed URL
     file.presignedUrl = newPresignedUrl;
     await file.save();
 
@@ -870,11 +887,10 @@ exports.refreshFileDownloadUrl = catchAsync(async (req, res, next) => {
 });
 
 // Delete task response
-
 exports.deleteTaskResponse = catchAsync(async (req, res, next) => {
   const { taskId, responseId } = req.params;
 
-  const task = await Task.findById(taskId);
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -911,16 +927,13 @@ exports.deleteTaskResponse = catchAsync(async (req, res, next) => {
     );
   }
 
-  // ACTUALLY REMOVE THE RESPONSE FROM THE ARRAY
+  // Remove the response from the array
   task.taskResponses.splice(responseIndex, 1);
-
-  // Or if you want to keep it for audit, use pull():
-  // task.taskResponses.pull(responseId);
 
   await task.save();
 
   // Get updated task
-  const updatedTask = await Task.findById(taskId)
+  const updatedTask = await Task.findOne({ _id: taskId, firmId: req.firmId })
     .populate({
       path: "taskResponses.submittedBy",
       select: "firstName lastName email position",
@@ -931,7 +944,7 @@ exports.deleteTaskResponse = catchAsync(async (req, res, next) => {
     })
     .populate("createdBy", "firstName lastName email position");
 
-  res.status(204).json({
+  res.status(200).json({
     status: "success",
     message: "Task response deleted successfully",
     data: updatedTask,
@@ -942,7 +955,7 @@ exports.deleteTaskResponse = catchAsync(async (req, res, next) => {
 exports.checkTaskAccess = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
 
-  const task = await Task.findById(taskId);
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -975,6 +988,7 @@ exports.getTasksByAssignee = catchAsync(async (req, res, next) => {
   const { status, priority, fromDate, toDate } = req.query;
 
   let query = {
+    firmId: req.firmId,
     "assignees.user": userId,
     isDeleted: false,
   };
@@ -1008,7 +1022,7 @@ exports.submitTaskForReview = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
   const { comment, documentIds = [] } = req.body;
 
-  const task = await Task.findById(taskId);
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -1056,7 +1070,7 @@ exports.submitTaskForReview = catchAsync(async (req, res, next) => {
   await task.save();
 
   // Populate and return updated task
-  const updatedTask = await Task.findById(taskId)
+  const updatedTask = await Task.findOne({ _id: taskId, firmId: req.firmId })
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
     .populate({
@@ -1081,7 +1095,7 @@ exports.reviewTask = catchAsync(async (req, res, next) => {
     return next(new AppError("Approve status is required", 400));
   }
 
-  const task = await Task.findById(taskId)
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId })
     .populate("createdBy", "firstName lastName email")
     .populate("assignees.user", "firstName lastName email");
 
@@ -1198,7 +1212,7 @@ exports.reviewTask = catchAsync(async (req, res, next) => {
   }
 
   // Populate and return updated task
-  const updatedTask = await Task.findById(taskId)
+  const updatedTask = await Task.findOne({ _id: taskId, firmId: req.firmId })
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
     .populate("reviewedBy", "firstName lastName email position")
@@ -1225,7 +1239,7 @@ exports.forceCompleteTask = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
   const { completionComment, completionPercentage = 100 } = req.body;
 
-  const task = await Task.findById(taskId);
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -1265,7 +1279,7 @@ exports.forceCompleteTask = catchAsync(async (req, res, next) => {
   await task.save();
 
   // Populate and return updated task
-  const updatedTask = await Task.findById(taskId)
+  const updatedTask = await Task.findOne({ _id: taskId, firmId: req.firmId })
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
     .populate("forceCompletedBy", "firstName lastName email position");
@@ -1287,6 +1301,7 @@ exports.getTasksPendingReview = catchAsync(async (req, res, next) => {
   } = req.query;
 
   const filter = {
+    firmId: req.firmId,
     status: "under-review",
     isDeleted: { $ne: true },
   };
@@ -1337,7 +1352,7 @@ exports.getTasksPendingReview = catchAsync(async (req, res, next) => {
 exports.getTaskHistory = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
 
-  const task = await Task.findById(taskId);
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
   if (!task) {
     return next(new AppError("Task not found", 404));
   }
@@ -1350,14 +1365,7 @@ exports.getTaskHistory = catchAsync(async (req, res, next) => {
     return next(new AppError("You do not have access to this task", 403));
   }
 
-  // Assuming you have a TaskHistory model or history array in Task model
-  // This implementation assumes Task has a history array
   const history = task.history || [];
-
-  // If you have a separate TaskHistory model:
-  // const history = await TaskHistory.find({ task: taskId })
-  //   .populate('by', 'firstName lastName email')
-  //   .sort('-timestamp');
 
   res.status(200).json({
     status: "success",

@@ -2,11 +2,18 @@ const mongoose = require("mongoose");
 
 const leaveBalanceSchema = new mongoose.Schema(
   {
+    firmId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Firm",
+      required: true,
+      index: true,
+    },
+
     employee: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: [true, "Employee reference is required"],
-      unique: true,
+
       index: true,
     },
     annualLeaveBalance: {
@@ -60,7 +67,8 @@ const leaveBalanceSchema = new mongoose.Schema(
 );
 
 // Compound index for employee and year
-leaveBalanceSchema.index({ employee: 1, year: 1 }, { unique: true });
+// Change this index
+leaveBalanceSchema.index({ firmId: 1, employee: 1, year: 1 }, { unique: true });
 
 // Virtual for total available leave
 leaveBalanceSchema.virtual("totalAvailableLeave").get(function () {

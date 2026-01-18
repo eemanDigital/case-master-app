@@ -59,10 +59,10 @@ exports.createReport = catchAsync(async (req, res, next) => {
 
   // Check if the case exists and populate the client
   if (caseReported && clientEmail) {
-    const caseData = await Case.findById(caseReported).populate({
-      path: "client",
-      select: "email",
-    });
+    const caseData = await Case.findOne({
+      _id: caseReported,
+      firmId: req.firmId,
+    }).populate({ path: "client", select: "email" });
 
     if (!caseData) {
       return next(new AppError("No case found with that ID", 404));
@@ -80,7 +80,11 @@ exports.createReport = catchAsync(async (req, res, next) => {
   }
 
   // Create a new report associated with the found case
-  const report = await Report.create(req.body);
+  const report = await Report.create({
+    ...req.body,
+    firmId: req.firmId,
+  });
+
   res.status(201).json({
     data: {
       message: "success",
@@ -94,8 +98,9 @@ const reportPagination = PaginationServiceFactory.createService(Report);
 
 // Get all reports with advanced pagination and filtering
 exports.getReports = catchAsync(async (req, res, next) => {
-  const result = await reportPagination.paginate(req.query);
-
+  const result = await reportPagination.paginate(req.query, {
+    firmId: req.firmId,
+  });
   res.status(200).json(result);
 });
 
@@ -112,7 +117,10 @@ exports.searchReports = catchAsync(async (req, res, next) => {
   }
 
   try {
-    const result = await reportPagination.advancedSearch(criteria, options);
+    const result = await reportPagination.advancedSearch(
+      { ...criteria, firmId: req.firmId }, // ✅ ADD THIS
+      options
+    );
     res.status(200).json(result);
   } catch (error) {
     res.status(400).json({
@@ -125,7 +133,7 @@ exports.searchReports = catchAsync(async (req, res, next) => {
 
 // Get reports for a specific case
 exports.getCaseReports = catchAsync(async (req, res, next) => {
-  const customFilter = { caseReported: req.params.caseId };
+  const customFilter = { caseReported: req.params.caseId, firmId: req.firmId };
 
   const result = await reportPagination.paginate(req.query, customFilter);
 
@@ -135,7 +143,7 @@ exports.getCaseReports = catchAsync(async (req, res, next) => {
 // get single report
 exports.getReport = catchAsync(async (req, res, next) => {
   const _id = req.params.reportId;
-  const report = await Report.findById({ _id });
+  const report = await Report.findOne({ _id, firmId: req.firmId });
 
   res.status(200).json({
     message: "success",
@@ -155,7 +163,10 @@ exports.updateCaseReport = catchAsync(async (req, res, next) => {
 
   // Check if the case exists and populate the client
   if (caseReported && clientEmail) {
-    const caseData = await Case.findById(caseReported).populate({
+    const caseData = await Case.findOne({
+      _id: caseReported,
+      firmId: req.firmId,
+    }).populate({
       path: "client",
       select: "email",
     });
@@ -175,7 +186,7 @@ exports.updateCaseReport = catchAsync(async (req, res, next) => {
     }
   }
 
-  const updatedReport = await Report.findByIdAndUpdate(id, req.body, {
+  const updatedReport = await Report.findOneAndUpdate(id, req.body, {
     new: true,
     runValidators: true,
   });
@@ -191,7 +202,10 @@ exports.updateCaseReport = catchAsync(async (req, res, next) => {
 
 // delete report
 exports.deleteReport = catchAsync(async (req, res, next) => {
-  const report = await Report.findByIdAndDelete(req.params.id);
+  const report = await Report.findOneAndDelete({
+    _id: req.params.id,
+    firmId: req.firmId,
+  });
 
   if (!report) {
     return next(new AppError("No report found with that ID", 404));
@@ -234,6 +248,7 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
 
     // Query for reports coming up today
     const reportsToday = await Report.find({
+      firmId: req.firmId,
       adjournedDate: {
         $gte: startOfToday.toDate(),
         $lte: endOfToday.toDate(),
@@ -254,6 +269,7 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
 
     // Get reports for the next week
     const reportsNextWeek = await Report.find({
+      firmId: req.firmId,
       adjournedDate: {
         $gte: startOfNextWeek.toDate(),
         $lt: endOfNextWeek.toDate(),
@@ -264,6 +280,7 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
 
     // Get reports for the current month
     const reportsThisMonth = await Report.find({
+      firmId: req.firmId,
       adjournedDate: {
         $gte: startOfMonth.toDate(),
         $lt: endOfMonth.toDate(),
@@ -310,7 +327,10 @@ exports.getUpcomingMatter = catchAsync(async (req, res, next) => {
 
 // generate reports in pdf format
 exports.generateReportPdf = catchAsync(async (req, res, next) => {
-  const report = await Report.findById(req.params.id);
+  const report = await Report.findOne({
+    _id: req.params.id,
+    firmId: req.firmId,
+  });
   if (!report) {
     return next(new AppError("No report found with that ID", 404));
   }
@@ -344,6 +364,7 @@ exports.generateCauseListWeek = catchAsync(async (req, res, next) => {
   const endOfWeek = moment().endOf("isoWeek"); // End of the current ISO week
 
   const reports = await Report.find({
+    firmId: req.firmId,
     adjournedDate: {
       $gte: startOfWeek.toDate(),
       $lt: endOfWeek.toDate(),
@@ -384,6 +405,7 @@ exports.generateCauseListNextWeek = catchAsync(async (req, res, next) => {
 
   // Get reports for the next week
   const reports = await Report.find({
+    firmId: req.firmId,
     adjournedDate: {
       $gte: startOfNextWeek.toDate(),
       $lt: endOfNextWeek.toDate(),
@@ -427,6 +449,7 @@ exports.generateCauseListMonth = catchAsync(async (req, res, next) => {
 
   // Get reports for the current month
   const reports = await Report.find({
+    firmId: req.firmId,
     adjournedDate: {
       $gte: startOfMonth.toDate(),
       $lt: endOfMonth.toDate(),

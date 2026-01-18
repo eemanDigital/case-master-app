@@ -5,11 +5,20 @@ const bcrypt = require("bcryptjs");
 
 const userSchema = new mongoose.Schema(
   {
+    // ✅ CRITICAL: Add firmId for multi-tenancy
+    firmId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Firm",
+      required: true,
+      index: true, // ✅ Essential for query performance
+    },
+
     firstName: {
       type: String,
       trim: true,
       required: [true, "A user must provide first Name"],
     },
+
     lastName: {
       type: String,
       trim: true,
@@ -21,9 +30,6 @@ const userSchema = new mongoose.Schema(
     secondName: {
       type: String,
       trim: true,
-      // required: function(){
-      //   return this.role === "client"
-      // },
     },
 
     middleName: String,
@@ -31,10 +37,11 @@ const userSchema = new mongoose.Schema(
     email: {
       type: String,
       trim: true,
-      unique: [true, "The email address is taken."],
+      // ❌ Remove global unique constraint
+      // unique: [true, "The email address is taken."],
       lowercase: true,
       required: [true, "a user must provide an email"],
-      validate: [validator.isEmail, "Please, provide a valid email address"], //third party validator
+      validate: [validator.isEmail, "Please, provide a valid email address"],
     },
 
     password: {
@@ -53,12 +60,13 @@ const userSchema = new mongoose.Schema(
           "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
       },
     },
+
     passwordConfirm: {
       type: String,
       trim: true,
       required: [
         function () {
-          return this.isNew || this.isModified("password"); // only required on create and update
+          return this.isNew || this.isModified("password");
         },
         "Please confirm your password",
       ],
@@ -75,6 +83,7 @@ const userSchema = new mongoose.Schema(
       default:
         "https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?t=st=1722072885~exp=1722076485~hmac=fad6e85b55559cb0eff906e5e75cc3ce337bce7edda8da18f4ccdcb02a7442ad&w=740",
     },
+
     gender: {
       type: String,
       enum: ["male", "female"],
@@ -118,7 +127,6 @@ const userSchema = new mongoose.Schema(
         "Para-legal",
         "Other",
       ],
-
       validate: (value) => {
         if (
           !value.match(
@@ -142,6 +150,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+
     phone: {
       type: String,
       trim: true,
@@ -155,18 +164,21 @@ const userSchema = new mongoose.Schema(
         return this.isLawyer === true;
       },
     },
+
     lawSchoolAttended: {
       type: String,
       required: function () {
         return this.isLawyer === true;
       },
     },
+
     universityAttended: {
       type: String,
       required: function () {
         return this.isLawyer === true;
       },
     },
+
     yearOfCall: {
       type: Date,
       required: function () {
@@ -197,22 +209,42 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
-    isDeleted: { type: Boolean, default: false },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+
     deletedAt: Date,
   },
   {
     timestamps: true,
     minimize: false,
-  },
-
-  {
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
   }
-  //   {
-  //     timestamps: true,
-  //   }
 );
+
+/**
+ * ===============================
+ * INDEXES (CRITICAL FOR MULTI-TENANCY)
+ * ===============================
+ */
+
+// ✅ CRITICAL: Compound unique index - email must be unique per firm only
+userSchema.index({ firmId: 1, email: 1 }, { unique: true });
+
+// ✅ Additional indexes for common queries
+userSchema.index({ firmId: 1, role: 1 });
+userSchema.index({ firmId: 1, isActive: 1 });
+userSchema.index({ firmId: 1, isDeleted: 1 });
+userSchema.index({ firmId: 1, isLawyer: 1 });
+
+/**
+ * ===============================
+ * VIRTUAL POPULATE
+ * ===============================
+ */
 
 // virtual populate for tasks
 userSchema.virtual("task", {
@@ -220,11 +252,13 @@ userSchema.virtual("task", {
   foreignField: "assignedTo",
   localField: "_id",
 });
+
 userSchema.virtual("case", {
-  ref: "Task",
+  ref: "Case",
   foreignField: "caseToWorkOn",
   localField: "_id",
 });
+
 // virtuals for user full Name
 userSchema.virtual("fullName").get(function () {
   if (this.middleName) {
@@ -234,17 +268,18 @@ userSchema.virtual("fullName").get(function () {
   }
 });
 
+/**
+ * ===============================
+ * INSTANCE METHODS
+ * ===============================
+ */
+
 userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPassword
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
-
-userSchema.pre(/^find/, function (next) {
-  this.find({ isActive: { $ne: false }, isDeleted: { $ne: true } });
-  next();
-});
 
 userSchema.methods.createPasswordResetToken = function () {
   //generate reset token
@@ -263,6 +298,38 @@ userSchema.methods.createPasswordResetToken = function () {
   return resetToken;
 };
 
+// function to check if password was changed
+userSchema.methods.changePasswordAfter = function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimestamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10
+    );
+    return JWTTimestamp < changedTimestamp;
+  }
+
+  // False means NOT changed
+  return false;
+};
+
+/**
+ * ===============================
+ * PRE-QUERY MIDDLEWARE
+ * ===============================
+ */
+
+// ✅ Filter out inactive and deleted users automatically
+userSchema.pre(/^find/, function (next) {
+  this.find({ isActive: { $ne: false }, isDeleted: { $ne: true } });
+  next();
+});
+
+/**
+ * ===============================
+ * PRE-SAVE MIDDLEWARE
+ * ===============================
+ */
+
 //password hashing middleware
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
@@ -277,22 +344,6 @@ userSchema.pre("save", async function (next) {
   this.passwordConfirm = undefined;
   next();
 });
-
-// function to check if password was changed
-// If the user changed their password after the time represented by 1605105300, the method would return true.
-// If the user has not changed their password since that time, the method would return false
-userSchema.methods.changePasswordAfter = function (JWTTimestamp) {
-  if (this.passwordChangedAt) {
-    const changedTimestamp = parseInt(
-      this.passwordChangedAt.getTime() / 1000,
-      10
-    );
-    return JWTTimestamp < changedTimestamp;
-  }
-
-  // False means NOT changed
-  return false;
-};
 
 const User = mongoose.model("User", userSchema);
 

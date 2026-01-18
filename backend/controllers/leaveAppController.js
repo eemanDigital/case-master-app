@@ -61,6 +61,7 @@ exports.createLeaveApplication = catchAsync(async (req, res, next) => {
     typeOfLeave,
     reason,
     applyTo,
+    firmId: req.firmId,
     daysAppliedFor: leaveDays,
   });
 
@@ -75,7 +76,10 @@ exports.createLeaveApplication = catchAsync(async (req, res, next) => {
  * Get single leave application
  */
 exports.getLeaveApplication = catchAsync(async (req, res, next) => {
-  const leaveApplication = await LeaveApplication.findById(req.params.id);
+  const leaveApplication = await LeaveApplication.findOne(
+    { _id: req.params.id },
+    (firmId = req.firmId)
+  );
 
   if (!leaveApplication) {
     return next(new AppError("Leave application not found", 404));
@@ -139,7 +143,7 @@ exports.getLeaveApplications = catchAsync(async (req, res, next) => {
   const skip = (page - 1) * limit;
 
   const [leaveApplications, total] = await Promise.all([
-    LeaveApplication.find(filter)
+    LeaveApplication.find({ ...filter, firmId: req.firmId })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit)),
@@ -162,7 +166,10 @@ exports.getLeaveApplications = catchAsync(async (req, res, next) => {
 exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
   const { status, responseMessage, daysApproved, startDate, endDate } =
     req.body;
-  const leaveApplication = await LeaveApplication.findById(req.params.id);
+  const leaveApplication = await LeaveApplication.findOne({
+    _id: req.params.id,
+    firmId: req.firmId,
+  });
 
   if (!leaveApplication) {
     return next(new AppError("Leave application not found", 404));
@@ -243,8 +250,8 @@ exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
   }
 
   // Update the application with runValidators: false to avoid validation issues
-  const updatedLeave = await LeaveApplication.findByIdAndUpdate(
-    req.params.id,
+  const updatedLeave = await LeaveApplication.findOneAndUpdate(
+    { _id: req.params.id, firmId: req.firmId },
     updateData,
     { new: true, runValidators: false }
   );
@@ -261,7 +268,10 @@ exports.updateLeaveApplication = catchAsync(async (req, res, next) => {
  */
 exports.cancelLeaveApplication = catchAsync(async (req, res, next) => {
   const { cancellationReason } = req.body;
-  const leaveApplication = await LeaveApplication.findById(req.params.id);
+  const leaveApplication = await LeaveApplication.findOneAndDelete({
+    _id: req.params.id,
+    firmId: req.firmId,
+  });
 
   if (!leaveApplication) {
     return next(new AppError("Leave application not found", 404));
@@ -308,7 +318,10 @@ exports.cancelLeaveApplication = catchAsync(async (req, res, next) => {
  * Delete leave application (soft delete or permanent)
  */
 exports.deleteLeaveApplication = catchAsync(async (req, res, next) => {
-  const leaveApplication = await LeaveApplication.findById(req.params.id);
+  const leaveApplication = await LeaveApplication.findOne({
+    _id: req.params.id,
+    firmId: req.firmId,
+  });
 
   if (!leaveApplication) {
     return next(new AppError("Leave application not found", 404));
@@ -323,7 +336,10 @@ exports.deleteLeaveApplication = catchAsync(async (req, res, next) => {
     );
   }
 
-  await LeaveApplication.findByIdAndDelete(req.params.id);
+  await LeaveApplication.findOneAndDelete({
+    _id: req.params.id,
+    firmId: req.firmId,
+  });
 
   res.status(204).json({
     status: "success",

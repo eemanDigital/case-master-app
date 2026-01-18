@@ -2,6 +2,13 @@ const mongoose = require("mongoose");
 
 const reportSchema = new mongoose.Schema(
   {
+    firmId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Firm",
+      required: true,
+      index: true,
+    },
+
     caseReported: {
       type: mongoose.Schema.ObjectId,
       ref: "Case",
@@ -59,6 +66,10 @@ const reportSchema = new mongoose.Schema(
   }
   // { timestamps: true }
 );
+
+reportSchema.index({ firmId: 1, caseReported: 1 });
+reportSchema.index({ firmId: 1, adjournedDate: 1 });
+reportSchema.index({ firmId: 1, date: -1 });
 
 // populate case and reporter
 reportSchema.pre(/^find/, function (next) {
