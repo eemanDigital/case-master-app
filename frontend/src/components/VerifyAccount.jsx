@@ -66,7 +66,7 @@ import { getUser } from "../redux/features/auth/authSlice";
 import { Result, Button, Spin } from "antd";
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
+const API_URL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api";
 
 const VerifyAccount = () => {
   const { token } = useParams();
@@ -79,7 +79,7 @@ const VerifyAccount = () => {
     const verifyAccount = async () => {
       try {
         const response = await axios.patch(
-          `${API_URL}/users/verify-account/${token}`
+          `${API_URL}/users/verifyUser/${token}`,
         );
 
         if (response.data.success) {
@@ -98,7 +98,7 @@ const VerifyAccount = () => {
         setStatus("error");
         setMessage(
           error.response?.data?.message ||
-            "Verification failed. The link may be invalid or expired."
+            "Verification failed. The link may be invalid or expired.",
         );
       }
     };

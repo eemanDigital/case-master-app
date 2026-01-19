@@ -42,8 +42,6 @@ const CaseList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
 
-  console.log("User info:", cases);
-
   const dispatch = useDispatch();
   useRedirectLogoutUser("/users/login");
 
@@ -75,7 +73,7 @@ const CaseList = () => {
     async (
       newFilters = filters,
       page = currentPage,
-      pageSize = itemsPerPage
+      pageSize = itemsPerPage,
     ) => {
       try {
         const queryString = buildQueryString(newFilters, {
@@ -89,7 +87,7 @@ const CaseList = () => {
         console.error("Error fetching cases:", err);
       }
     },
-    [buildQueryString, fetchData, filters, currentPage, itemsPerPage]
+    [buildQueryString, fetchData, filters, currentPage, itemsPerPage],
   );
 
   // Initial load
@@ -124,7 +122,7 @@ const CaseList = () => {
       setCurrentPage(1);
       await fetchCases(newFilters, 1, itemsPerPage);
     },
-    [fetchCases, itemsPerPage]
+    [fetchCases, itemsPerPage],
   );
 
   // Reset filters
@@ -140,7 +138,7 @@ const CaseList = () => {
       await dispatch(deleteData(`cases/soft-delete/${id}`));
       await fetchCases(filters, currentPage, itemsPerPage);
     },
-    [dispatch, fetchCases, filters, currentPage, itemsPerPage]
+    [dispatch, fetchCases, filters, currentPage, itemsPerPage],
   );
 
   // Handle delete notifications
@@ -178,7 +176,7 @@ const CaseList = () => {
       ];
 
       const isClientCase = possibleClientIds.some(
-        (id) => id && (id === clientId || id._id === clientId)
+        (id) => id && (id === clientId || id._id === clientId),
       );
 
       // Debug log for first few cases
@@ -187,7 +185,7 @@ const CaseList = () => {
         console.log("Client ID to match:", clientId);
         console.log(
           "Possible client IDs found:",
-          possibleClientIds.filter(Boolean)
+          possibleClientIds.filter(Boolean),
         );
         console.log("Match found:", isClientCase);
       }
@@ -207,7 +205,7 @@ const CaseList = () => {
       "Filtered cases for client:",
       filtered.length,
       "of",
-      searchResults.length
+      searchResults.length,
     );
     return filtered;
   }, [isStaff, searchResults, clientId, filterCasesByClient]);
@@ -223,7 +221,7 @@ const CaseList = () => {
         await fetchCases(filters, page, pageSize);
       }
     },
-    [fetchCases, filters, itemsPerPage]
+    [fetchCases, filters, itemsPerPage],
   );
 
   // Table columns
@@ -311,10 +309,10 @@ const CaseList = () => {
               text === "active"
                 ? "green"
                 : text === "pending"
-                ? "orange"
-                : text === "closed"
-                ? "red"
-                : "blue"
+                  ? "orange"
+                  : text === "closed"
+                    ? "red"
+                    : "blue"
             }
             className="capitalize">
             {text}
@@ -372,7 +370,7 @@ const CaseList = () => {
         fixed: "right",
       },
     ],
-    [isStaff, deleteCase]
+    [isStaff, deleteCase],
   );
 
   if (loading.cases) return <LoadingSpinner />;
@@ -425,7 +423,7 @@ const CaseList = () => {
                     className="bg-blue-100 border-blue-300">
                     {key}: {value}
                   </Tag>
-                )
+                ),
             )}
             <Button
               type="link"
@@ -463,8 +461,8 @@ const CaseList = () => {
                   Object.keys(filters).length > 0
                     ? "No cases found matching your filters"
                     : isStaff
-                    ? "No cases found"
-                    : "You don't have any assigned cases"
+                      ? "No cases found"
+                      : "You don't have any assigned cases"
                 }>
                 {Object.keys(filters).length > 0 ? (
                   <Button type="primary" onClick={resetFilters}>

@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useRef, useMemo } from "react";
+import { useEffect, createContext, useRef, useMemo } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -38,6 +38,7 @@ const Dashboard = () => {
 
   const { user } = useSelector((state) => state.auth);
   const userId = user?.data?._id;
+  const lawFirmName = user?.data?.firmId.name;
 
   const hasInitialized = useRef(false);
 
@@ -92,67 +93,67 @@ const Dashboard = () => {
   // ✅ Memoize expensive computations
   const dashboardData = useMemo(
     () => dashboardStats?.data || {},
-    [dashboardStats]
+    [dashboardStats],
   );
 
   const effectiveCasesByStatus = useMemo(
     () => dashboardData.casesByStatus || [],
-    [dashboardData.casesByStatus]
+    [dashboardData.casesByStatus],
   );
 
   const effectiveCasesByCourt = useMemo(
     () => dashboardData.casesByCourt || [],
-    [dashboardData.casesByCourt]
+    [dashboardData.casesByCourt],
   );
 
   const effectiveCasesByNature = useMemo(
     () => dashboardData.casesByNature || [],
-    [dashboardData.casesByNature]
+    [dashboardData.casesByNature],
   );
 
   const effectiveCasesByRating = useMemo(
     () => dashboardData.casesByRating || [],
-    [dashboardData.casesByRating]
+    [dashboardData.casesByRating],
   );
 
   const effectiveCasesByMode = useMemo(
     () => dashboardData.casesByMode || [],
-    [dashboardData.casesByMode]
+    [dashboardData.casesByMode],
   );
 
   const effectiveCasesByCategory = useMemo(
     () => dashboardData.casesByCategory || [],
-    [dashboardData.casesByCategory]
+    [dashboardData.casesByCategory],
   );
 
   const effectiveCasesByClient = useMemo(
     () => dashboardData.casesByClient || [],
-    [dashboardData.casesByClient]
+    [dashboardData.casesByClient],
   );
 
   const effectiveCasesByAccountOfficer = useMemo(
     () => dashboardData.casesByAccountOfficer || [],
-    [dashboardData.casesByAccountOfficer]
+    [dashboardData.casesByAccountOfficer],
   );
 
   const effectiveMonthlyNewCases = useMemo(
     () => dashboardData.monthlyNewCases || [],
-    [dashboardData.monthlyNewCases]
+    [dashboardData.monthlyNewCases],
   );
 
   const effectiveYearlyNewCases = useMemo(
     () => dashboardData.yearlyNewCases || [],
-    [dashboardData.yearlyNewCases]
+    [dashboardData.yearlyNewCases],
   );
 
   const totalCases = useMemo(
     () => dashboardData.totalCases || 0,
-    [dashboardData.totalCases]
+    [dashboardData.totalCases],
   );
 
   const activeCases = useMemo(
     () => dashboardData.activeCases || 0,
-    [dashboardData.activeCases]
+    [dashboardData.activeCases],
   );
 
   if (userError) return <Alert message={userError} type="error" showIcon />;
@@ -162,11 +163,28 @@ const Dashboard = () => {
       {!isVerified && <VerifyAccountNotice />}
 
       <ShowOnlyVerifiedUser>
-        <div className="flex items-center justify-between space-x-4 mb-2">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6 mb-6">
           {!isClient && (
-            <h1 className="text-2xl font-bold text-gray-800 tracking-wide">
-              {user?.data?.firstName}'s Dashboard
-            </h1>
+            <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+              <div className="flex items-center gap-3">
+                <div className="hidden md:block w-1 h-8 bg-gradient-to-b from-blue-500 to-indigo-600 rounded-full"></div>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
+                  <span className="bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                    {user?.data?.firstName}'s Dashboard
+                  </span>
+                </h1>
+              </div>
+
+              <div className="flex items-center gap-2 ml-0 md:ml-4">
+                <div className="text-gray-500 hidden md:block">•</div>
+                <div className="flex items-center gap-2 px-3 py-1 bg-blue-50 rounded-full border border-blue-100">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                  <p className="text-sm font-medium text-blue-700">
+                    {lawFirmName}
+                  </p>
+                </div>
+              </div>
+            </div>
           )}
           {isAdminOrHr && <LeaveNotification />}
         </div>

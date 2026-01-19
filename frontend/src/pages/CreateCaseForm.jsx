@@ -37,7 +37,7 @@ import createMaxLengthRule from "../utils/createMaxLengthRule";
 
 const CreateCaseForm = () => {
   const [formData, setFormData] = useState(caseInitialValue);
-  const { clients, lawyers } = useUserSelectOptions({
+  const { clients, staff } = useUserSelectOptions({
     fetchAll: true,
   });
   // const { clientOptions } = useClientSelectOptions();
@@ -47,7 +47,7 @@ const CreateCaseForm = () => {
     undefined,
     undefined,
     undefined,
-    "/dashboard/cases"
+    "/dashboard/cases",
   ); // custom hook to handle form submission
 
   // filter options
@@ -145,7 +145,7 @@ const CreateCaseForm = () => {
                         <Form.List name={[field.name, "name"]}>
                           {(
                             subFields,
-                            { add: addName, remove: removeName }
+                            { add: addName, remove: removeName },
                           ) => (
                             <div className="space-y-2">
                               {subFields.map((subField) => (
@@ -187,7 +187,7 @@ const CreateCaseForm = () => {
                         <Form.List name={[field.name, "processesFiled"]}>
                           {(
                             subFields,
-                            { add: addProcess, remove: removeProcess }
+                            { add: addProcess, remove: removeProcess },
                           ) => (
                             <div className="space-y-2">
                               {subFields.map((subField) => (
@@ -468,7 +468,7 @@ const CreateCaseForm = () => {
               <Select
                 mode="multiple"
                 placeholder="Select account officer"
-                options={lawyers}
+                options={staff}
                 allowClear
                 className="w-full"
               />

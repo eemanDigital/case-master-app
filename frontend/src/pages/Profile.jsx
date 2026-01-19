@@ -21,12 +21,14 @@ const Profile = () => {
   useRedirectLogoutUser("/users/login");
 
   const { user, isError, isLoading, message } = useSelector(
-    (state) => state.auth
+    (state) => state.auth,
   );
   const isClient = user?.data?.role === "client";
   if (isLoading) return <LoadingSpinner />;
   if (isError)
     return <PageErrorAlert errorCondition={isError} errorMessage={message} />;
+
+  console.log("User Data:", user);
 
   const position =
     user?.data?.position === "Other"
