@@ -24,15 +24,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 /**
  * ===============================
- * FIRM REGISTRATION (NEW)
- * ===============================
- *
- * Register a new law firm with admin user
- * This creates both the Firm and the admin User in a transaction
- */
-/**
- * ===============================
- * FIRM REGISTRATION (FIXED)
+ * FIRM REGISTRATION
  * ===============================
  */
 exports.registerFirm = catchAsync(async (req, res, next) => {
@@ -49,7 +41,7 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
     email,
     password,
     passwordConfirm,
-    plan = "FREE", // ✅ NEW: Allow plan selection during registration
+    plan = "FREE",
   } = req.body;
 
   // 1) Validate required fields
@@ -64,7 +56,7 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
 
   if (password !== passwordConfirm) {
     return next(
-      new AppError("Password and passwordConfirm must be the same", 400)
+      new AppError("Password and passwordConfirm must be the same", 400),
     );
   }
 
@@ -73,8 +65,8 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         "Subdomain can only contain lowercase letters, numbers, and hyphens",
-        400
-      )
+        400,
+      ),
     );
   }
 
@@ -86,7 +78,7 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
     }
   }
 
-  // ✅ 5) Validate and set plan limits
+  // 5) Plan configuration
   const planConfig = {
     FREE: {
       users: 1,
@@ -103,13 +95,13 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
     PRO: {
       users: 10,
       storageGB: 100,
-      casesPerMonth: Infinity, // Unlimited
+      casesPerMonth: 999999, // Unlimited
       trialDays: 14,
     },
     ENTERPRISE: {
-      users: Infinity, // Unlimited
-      storageGB: Infinity, // Unlimited
-      casesPerMonth: Infinity, // Unlimited
+      users: 999999, // Unlimited
+      storageGB: 999999, // Unlimited
+      casesPerMonth: 999999, // Unlimited
       trialDays: 30,
     },
   };
@@ -122,7 +114,7 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
   const limits = planConfig[selectedPlan];
 
   try {
-    // ✅ 6) Create Firm with proper plan limits
+    // 6) Create Firm with CORRECT limits
     const trialEndDate = new Date();
     trialEndDate.setDate(trialEndDate.getDate() + limits.trialDays);
 
@@ -144,14 +136,11 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
         status: "TRIAL",
         trialEndsAt: trialEndDate,
       },
-      // ✅ Set limits based on selected plan
       limits: {
-        users: limits.users === Infinity ? 999999 : limits.users,
-        storageGB: limits.storageGB === Infinity ? 999999 : limits.storageGB,
-        casesPerMonth:
-          limits.casesPerMonth === Infinity ? 999999 : limits.casesPerMonth,
+        users: limits.users,
+        storageGB: limits.storageGB,
+        casesPerMonth: limits.casesPerMonth,
       },
-      // ✅ Initialize usage tracking
       usage: {
         currentUserCount: 1, // Admin user will be created
         storageUsedGB: 0,
@@ -167,7 +156,7 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
     const ua = parser(req.headers["user-agent"]);
     const userAgent = [ua.ua];
 
-    // 8) Create Admin User
+    // 8) Create Admin User with new schema
     const userData = {
       firmId,
       firstName,
@@ -175,14 +164,24 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
       email: email.toLowerCase(),
       password,
       passwordConfirm,
+      userType: "super-admin",
       role: "super-admin",
       position: "Managing Partner",
       address: address || "Not provided",
       phone: phone || "+234",
       gender: req.body.gender || "male",
       isVerified: false,
-      isLawyer: req.body.isLawyer || false,
+      isActive: true,
       userAgent,
+      // Admin details
+      adminDetails: {
+        adminLevel: "firm",
+        canManageUsers: true,
+        canManageCases: true,
+        canManageBilling: true,
+        canViewReports: true,
+        systemAccessLevel: "full",
+      },
     };
 
     const newUser = await User.create(userData);
@@ -220,7 +219,7 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
       console.error("Failed to send verification email:", emailError);
     }
 
-    // 10) Send success response with plan details
+    // 10) Send success response
     res.status(201).json({
       status: "success",
       message:
@@ -243,6 +242,7 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
           lastName: newUser.lastName,
           email: newUser.email,
           role: newUser.role,
+          userType: newUser.userType,
         },
       },
     });
@@ -260,71 +260,190 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
   }
 });
 
-// function to implement user signup
+/**
+ * ===============================
+ * USER REGISTRATION (for admin creating users)
+ * ===============================
+ */
 exports.register = catchAsync(async (req, res, next) => {
-  const { email, password, passwordConfirm } = req.body;
+  const { email, password, passwordConfirm, userType } = req.body;
 
-  if (!email || !password || !passwordConfirm) {
-    return next(
-      new AppError("Please, provide email and passwords fields", 400)
-    );
+  if (!email || !password || !passwordConfirm || !userType) {
+    return next(new AppError("Please provide all required fields", 400));
   }
 
   if (password.length < 8) {
-    return next(new AppError("Password must be at lease 8 characters", 400));
+    return next(new AppError("Password must be at least 8 characters", 400));
   }
 
   if (password !== passwordConfirm) {
     return next(
-      new AppError("Password and passwordConfirm must be the same", 400)
+      new AppError("Password and passwordConfirm must be the same", 400),
     );
   }
-  // check if user exist
-  let existingEmail = await User.findOne({ email });
 
-  if (existingEmail) {
-    return next(new AppError("email already exist", 400));
+  // Check if user exists within the same firm
+  let existingUser = await User.findOne({
+    email: email.toLowerCase(),
+    firmId: req.firmId,
+  });
+
+  if (existingUser) {
+    return next(
+      new AppError("User with this email already exists in your firm", 400),
+    );
   }
 
-  // get user agent
-  const ua = parser(req.headers["user-agent"]); // get user-agent header
+  // Get user agent
+  const ua = parser(req.headers["user-agent"]);
   const userAgent = [ua.ua];
 
-  // extract file for photo
+  // Extract file for photo
   const filename = req.file ? req.file.filename : null;
 
-  await User.create({
+  // Build user data based on userType
+  const userData = {
+    firmId: req.firmId,
     firstName: req.body.firstName,
     lastName: req.body.lastName,
-    secondName: req.body.secondName, //for client
-    middleName: req.body.middleName,
-    email: req.body.email,
+    email: req.body.email.toLowerCase(),
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
     photo: filename,
     address: req.body.address,
-    role: req.body.role,
+    userType: req.body.userType,
+    phone: req.body.phone || "+234",
     gender: req.body.gender,
     bio: req.body.bio,
-    position: req.body.position,
-    annualLeaveEntitled: req.body.annualLeaveEntitled,
-    phone: req.body.phone,
-    yearOfCall: req.body.yearOfCall,
-    otherPosition: req.body.otherPosition,
-    practiceArea: req.body.practiceArea,
-    universityAttended: req.body.universityAttended,
-    lawSchoolAttended: req.body.lawSchoolAttended,
-    isVerified: req.body.isVerified,
-    isLawyer: req.body.isLawyer,
-    isActive: req.body.isActive,
-    userAgent: userAgent,
-  });
+    isVerified: false,
+    isActive: true,
+    userAgent,
+    createdBy: req.user._id,
+  };
 
-  // createSendToken(user, 201, res);
-  res.status(201).json({ message: "User Registered Successfully" });
+  // ✅ Explicitly set unused type-specific fields to undefined
+  if (req.body.userType !== "staff") {
+    userData.staffDetails = undefined;
+  }
+  if (req.body.userType !== "client") {
+    userData.clientDetails = undefined;
+  }
+  if (req.body.userType !== "lawyer") {
+    userData.lawyerDetails = undefined;
+  }
+  if (!["admin", "super-admin"].includes(req.body.userType)) {
+    userData.adminDetails = undefined;
+  }
+
+  // Add type-specific fields
+  switch (userType) {
+    case "client":
+      userData.role = "client";
+      userData.clientDetails = {
+        company: req.body.company,
+        industry: req.body.industry,
+        clientCategory: req.body.clientCategory || "individual",
+        preferredContactMethod: req.body.preferredContactMethod || "email",
+        billingAddress: req.body.billingAddress,
+        referralSource: req.body.referralSource,
+      };
+      break;
+
+    case "staff":
+      userData.role = req.body.role || "staff";
+      userData.position = req.body.position;
+      userData.staffDetails = {
+        department: req.body.department,
+        designation: req.body.designation,
+        employmentType: req.body.employmentType || "full-time",
+        workSchedule: req.body.workSchedule || "9-5",
+      };
+      break;
+
+    case "lawyer":
+      userData.role = "lawyer";
+      userData.position = req.body.position || "Associate";
+      userData.isLawyer = true;
+      userData.lawyerDetails = {
+        barNumber: req.body.barNumber,
+        barAssociation: req.body.barAssociation,
+        yearOfCall: req.body.yearOfCall,
+        practiceAreas: req.body.practiceAreas || [],
+        hourlyRate: req.body.hourlyRate || 0,
+        specialization: req.body.specialization,
+        lawSchool: {
+          name: req.body.lawSchoolAttended,
+          graduationYear: req.body.lawSchoolGraduationYear,
+        },
+        undergraduateSchool: {
+          name: req.body.universityAttended,
+          graduationYear: req.body.universityGraduationYear,
+        },
+      };
+      userData.professionalInfo = {
+        bio: req.body.bio,
+      };
+      break;
+
+    case "admin":
+      userData.role = "admin";
+      userData.position = req.body.position || "Administrator";
+      userData.adminDetails = {
+        adminLevel: req.body.adminLevel || "firm",
+        canManageUsers: req.body.canManageUsers || false,
+        canManageCases: req.body.canManageCases || false,
+        canManageBilling: req.body.canManageBilling || false,
+        canViewReports: req.body.canViewReports || false,
+      };
+      break;
+  }
+
+  const newUser = await User.create(userData);
+
+  // Send verification email
+  try {
+    const vToken = crypto.randomBytes(32).toString("hex") + newUser._id;
+    const hashedToken = hashToken(vToken);
+
+    await new Token({
+      userId: newUser._id,
+      verificationToken: hashedToken,
+      createAt: Date.now(),
+      expiresAt: Date.now() + 24 * 60 * 60 * 1000,
+    }).save();
+
+    const verificationURL = `${process.env.FRONTEND_URL}/dashboard/verify-account/${vToken}`;
+
+    const subject = `Welcome to ${req.firm?.name || "CaseMaster"}`;
+    const send_to = newUser.email;
+    const send_from = process.env.SENDINBLUE_EMAIL;
+    const reply_to = "noreply@casemaster.ng";
+    const template = "verifyEmail";
+    const context = {
+      name: newUser.firstName,
+      firmName: req.firm?.name || "Your Firm",
+      link: verificationURL,
+      companyName: "CaseMaster",
+      position: newUser.position || newUser.userType,
+    };
+
+    await sendMail(subject, send_to, send_from, reply_to, template, context);
+  } catch (emailError) {
+    console.error("Failed to send verification email:", emailError);
+  }
+
+  res.status(201).json({
+    status: "success",
+    message: "User registered successfully. Verification email sent.",
+    data: newUser,
+  });
 });
 
-// // login user handler
+/**
+ * ===============================
+ * USER LOGIN
+ * ===============================
+ */
 exports.login = catchAsync(async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -334,43 +453,54 @@ exports.login = catchAsync(async (req, res, next) => {
   }
 
   // 2) Check if user exists and select password
-  const user = await User.findOne({ email }).select("+password");
+  const user = await User.findOne({ email: email.toLowerCase() }).select(
+    "+password",
+  );
   if (!user) {
     return next(new AppError("Incorrect email or password", 401));
   }
 
-  // Disallow login for deleted accounts (all roles)
+  // 3) Disallow login for deleted accounts
   if (user.isDeleted === true) {
     return next(
-      new AppError("This account has been deleted and cannot log in")
+      new AppError("This account has been deleted and cannot log in", 401),
     );
   }
 
-  // Disallow login for inactive staff, but allow inactive clients
-  if (user.isActive === false && user.role !== "client") {
+  // 4) Disallow login for inactive users (except clients - they might be inactive but need access)
+  if (user.isActive === false && user.userType !== "client") {
     return next(
-      new AppError("You are no longer eligible to login to this account")
+      new AppError(
+        "Your account is currently inactive. Please contact your administrator.",
+        401,
+      ),
     );
   }
 
-  // 3) Check if password is correct
+  // 5) Check if password is correct
   const isPasswordCorrect = await user.correctPassword(password, user.password);
   if (!isPasswordCorrect) {
     return next(new AppError("Incorrect email or password", 401));
   }
 
-  // 4) Trigger 2FA for unknown user agent
+  // 6) Check if user is verified (optional for clients, required for staff/lawyers/admins)
+  if (!user.isVerified && user.userType !== "client") {
+    return next(
+      new AppError("Please verify your email address before logging in", 401),
+    );
+  }
+
+  // 7) Trigger 2FA for unknown user agent
   const currentUserAgent = parser(req.headers["user-agent"]).ua;
   const isAllowedAgent = user.userAgent.includes(currentUserAgent);
 
   if (!isAllowedAgent) {
     const loginCode = Math.floor(100000 + Math.random() * 900000);
-
     console.log(loginCode);
 
     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
 
-    await Token.findOneAndDelete({ userId: user._id });
+    await Token.deleteMany({ userId: user._id });
 
     await new Token({
       userId: user._id,
@@ -379,22 +509,28 @@ exports.login = catchAsync(async (req, res, next) => {
       expiresAt: Date.now() + 60 * 60 * 1000,
     }).save();
 
-    // Send the loginCode securely via email or SMS to the user
-    console.log(req.cookies);
-
     return next(
       new AppError(
         "New Browser or device detected. A verification code has been sent to your email.",
-        400
-      )
+        400,
+      ),
     );
   }
 
-  // 5) Send token to client
+  // 8) Update last login
+  user.lastLogin = new Date();
+  user.loginCount = (user.loginCount || 0) + 1;
+  await user.save({ validateBeforeSave: false });
+
+  // 9) Send token to client
   createSendToken(user, 200, res);
 });
 
-// Fixed sendLoginCode function
+/**
+ * ===============================
+ * SEND LOGIN CODE (2FA)
+ * ===============================
+ */
 exports.sendLoginCode = catchAsync(async (req, res, next) => {
   const { email } = req.params;
 
@@ -402,12 +538,12 @@ exports.sendLoginCode = catchAsync(async (req, res, next) => {
     return next(new AppError("Email is required", 400));
   }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) {
     return next(new AppError("No user found with this email address", 404));
   }
 
-  // Generate new code instead of relying on existing token
+  // Generate new code
   const loginCode = Math.floor(100000 + Math.random() * 900000).toString();
   console.log("🔐 New Login Code:", loginCode);
 
@@ -454,13 +590,17 @@ exports.sendLoginCode = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         "Failed to send verification code. Please try again later.",
-        500
-      )
+        500,
+      ),
     );
   }
 });
 
-// Fixed loginWithCode function
+/**
+ * ===============================
+ * LOGIN WITH CODE (2FA)
+ * ===============================
+ */
 exports.loginWithCode = catchAsync(async (req, res, next) => {
   const { email } = req.params;
   const { loginCode } = req.body;
@@ -469,7 +609,7 @@ exports.loginWithCode = catchAsync(async (req, res, next) => {
     return next(new AppError("Please enter a valid 6-digit code", 400));
   }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) {
     return next(new AppError("User not found", 404));
   }
@@ -482,7 +622,7 @@ exports.loginWithCode = catchAsync(async (req, res, next) => {
 
   if (!userToken) {
     return next(
-      new AppError("Verification code expired. Please request a new one.", 400)
+      new AppError("Verification code expired. Please request a new one.", 400),
     );
   }
 
@@ -507,8 +647,12 @@ exports.loginWithCode = catchAsync(async (req, res, next) => {
 
   if (!user.userAgent.includes(currentUserAgent)) {
     user.userAgent.push(currentUserAgent);
-    await user.save({ validateBeforeSave: false });
   }
+
+  // Update last login
+  user.lastLogin = new Date();
+  user.loginCount = (user.loginCount || 0) + 1;
+  await user.save({ validateBeforeSave: false });
 
   // Clean up used token
   await Token.deleteMany({ userId: user._id });
@@ -516,19 +660,26 @@ exports.loginWithCode = catchAsync(async (req, res, next) => {
   createSendToken(user, 200, res);
 });
 
-// logout handler
+/**
+ * ===============================
+ * LOGOUT
+ * ===============================
+ */
 exports.logout = (req, res) => {
   res.cookie("jwt", "", {
     expires: new Date(0),
     httpOnly: true,
     secure: process.env.NODE_ENV === "production" ? true : false,
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
-    // sameSite: "none",
   });
   res.status(200).json({ status: "success" });
 };
 
-// protect access handler
+/**
+ * ===============================
+ * PROTECT MIDDLEWARE
+ * ===============================
+ */
 exports.protect = catchAsync(async (req, res, next) => {
   // 1) Getting token and check if it's there
   let token;
@@ -543,7 +694,7 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   if (!token) {
     return next(
-      new AppError("You are not logged in! Please log in to get access.", 401)
+      new AppError("You are not logged in! Please log in to get access.", 401),
     );
   }
 
@@ -554,29 +705,39 @@ exports.protect = catchAsync(async (req, res, next) => {
   const currentUser = await User.findById(verified.id);
   if (!currentUser) {
     return next(
-      new AppError("The user belonging to this token no longer exists.", 401)
+      new AppError("The user belonging to this token no longer exists.", 401),
     );
   }
 
   // 4) Check if user is suspended
-  if (currentUser.role === "suspended") {
+  if (currentUser.status === "suspended") {
     return next(
       new AppError(
         "Your account has been suspended, please contact the admin.",
-        400
-      )
+        400,
+      ),
     );
   }
 
   // 5) Check if user changed password after the token was issued
   if (currentUser.changePasswordAfter(verified.iat)) {
     return next(
-      new AppError("User recently changed password! Please log in again.", 401)
+      new AppError("User recently changed password! Please log in again.", 401),
     );
   }
-  // 6) Attach firmId and firm to req if applicable
+
+  // 6) Check if user is deleted
+  if (currentUser.isDeleted) {
+    return next(
+      new AppError(
+        "This account has been deleted and cannot access the system.",
+        401,
+      ),
+    );
+  }
+
+  // 7) Attach firmId and firm to req if applicable
   if (currentUser.firmId) {
-    const Firm = require("../models/firmModel");
     const firm = await Firm.findById(currentUser.firmId);
 
     if (!firm || !firm.isActive) {
@@ -596,20 +757,43 @@ exports.protect = catchAsync(async (req, res, next) => {
   next();
 });
 
+/**
+ * ===============================
+ * RESTRICT TO ROLES
+ * ===============================
+ */
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
-    // roles ['admin', 'super-admin']. role='user'
     if (!roles.includes(req.user.role)) {
       return next(
-        new AppError("You do not have permission to perform this action", 403)
+        new AppError("You do not have permission to perform this action", 403),
       );
     }
-
     next();
   };
 };
 
-// check verified user
+/**
+ * ===============================
+ * RESTRICT TO USER TYPES
+ * ===============================
+ */
+exports.restrictToUserTypes = (...userTypes) => {
+  return (req, res, next) => {
+    if (!userTypes.includes(req.user.userType)) {
+      return next(
+        new AppError("You do not have permission to perform this action", 403),
+      );
+    }
+    next();
+  };
+};
+
+/**
+ * ===============================
+ * CHECK VERIFIED USER
+ * ===============================
+ */
 exports.isVerified = catchAsync(async (req, res, next) => {
   if (req.user && req.user.isVerified) {
     return next();
@@ -618,8 +802,11 @@ exports.isVerified = catchAsync(async (req, res, next) => {
   }
 });
 
-// // CHECK LOGIN STATUS
-
+/**
+ * ===============================
+ * CHECK LOGIN STATUS
+ * ===============================
+ */
 exports.isLoggedIn = async (req, res) => {
   const token = req.cookies.jwt;
   if (!token) {
@@ -641,29 +828,30 @@ exports.isLoggedIn = async (req, res) => {
   }
 };
 
-// forgot password handler
+/**
+ * ===============================
+ * FORGOT PASSWORD
+ * ===============================
+ */
 exports.forgotPassword = catchAsync(async (req, res, next) => {
   const { email } = req.body;
-  // 1) Get user based on POSTed email
-  // console.log(`Searching for user with email: ${email}`);
 
   if (!email) {
     return next(new AppError("Please provide your email address.", 400));
   }
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: email.toLowerCase() });
   if (!user) {
     return next(new AppError("There is no user with email address.", 404));
   }
 
-  // 2) Generate the random reset token
-  //Check for user token and delete if found
+  // Check for user token and delete if found
   const token = await Token.findOne({ userId: user._id });
   if (token) {
     await token.deleteOne();
   }
 
-  // Create a new verification token
+  // Create a new reset token
   const rToken = crypto.randomBytes(32).toString("hex") + user._id;
   const hashedToken = hashToken(rToken);
 
@@ -675,7 +863,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour
   }).save();
 
-  // Create the verification URL
+  // Create the reset URL
   const resetURL = `${process.env.FRONTEND_URL}/resetPassword/${rToken}`;
 
   // Prepare email details
@@ -684,49 +872,79 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   const send_from = process.env.SENDINBLUE_EMAIL;
   const reply_to = "noreply@gmail.com";
   const template = "forgotPassword";
-  const context = { name: user.firstName, link: resetURL };
+  const context = {
+    name: user.firstName,
+    link: resetURL,
+    firmName: user.firmId
+      ? (await Firm.findById(user.firmId))?.name
+      : "CaseMaster",
+  };
 
   try {
-    // Send the verification email
     await sendMail(subject, send_to, send_from, reply_to, template, context);
-
-    // Proceed to the next middleware
     res.status(200).json({ message: "Reset Email Sent" });
   } catch (err) {
     return next(
-      new AppError("There was an error sending the email. Try again later!"),
-      500
+      new AppError(
+        "There was an error sending the email. Try again later!",
+        500,
+      ),
     );
   }
 });
 
-// Reset password handler
+/**
+ * ===============================
+ * RESET PASSWORD
+ * ===============================
+ */
 exports.resetPassword = catchAsync(async (req, res, next) => {
-  // get params
   const { resetToken } = req.params;
-
   const { password } = req.body;
-  // hash token sent from frontend
+
+  // Hash token sent from frontend
   const hashedToken = hashToken(resetToken);
-  // get token from database
+
+  // Get token from database
   const userToken = await Token.findOne({
     resetToken: hashedToken,
-    expiresAt: { $gt: Date.now() }, //get if it has not expired
+    expiresAt: { $gt: Date.now() },
   });
 
   if (!userToken) {
     return next(new AppError("Invalid or expired token", 404));
   }
-  // find user
-  const user = await User.findOne({ _id: userToken.userId });
-  // reset password
+
+  // Find user
+  const user = await User.findOne({ _id: userToken.userId }).select(
+    "+password",
+  );
+
+  // Reset password
   user.password = password;
+  user.passwordConfirm = password;
+  user.passwordChangedAt = Date.now();
+
   await user.save({ validateBeforeSave: false });
 
-  res.status(200).json({ message: "Password Reset successful, please login" });
+  // Delete the used token
+  await Token.deleteMany({ userId: user._id });
+
+  res.status(200).json({
+    message: "Password Reset successful, please login",
+    user: {
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+    },
+  });
 });
 
-// // CHANGE PASSWORD HANDLER
+/**
+ * ===============================
+ * CHANGE PASSWORD
+ * ===============================
+ */
 exports.changePassword = catchAsync(async (req, res, next) => {
   // 1) Get user from collection
   const user = await User.findById(req.user.id).select("+password");
@@ -735,22 +953,39 @@ exports.changePassword = catchAsync(async (req, res, next) => {
   if (!(await user.correctPassword(req.body.passwordCurrent, user.password))) {
     return next(new AppError("Your current password is incorrect.", 401));
   }
+
   // 3) If so, update password
   user.password = req.body.password;
   user.passwordConfirm = req.body.passwordConfirm;
-  await user.save({ validateBeforeSave: false });
-  // User.findByIdAndUpdate will NOT work as intended!
+  user.passwordChangedAt = Date.now();
 
-  res.status(200).json({ message: "Password Changed" });
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json({
+    message: "Password Changed Successfully",
+    user: {
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+    },
+  });
 });
 
-// send verification email
+/**
+ * ===============================
+ * SEND VERIFICATION EMAIL
+ * ===============================
+ */
 exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
-  const { email } = req.params; // Assuming the new user's email is passed in the request body
-  //
-  const user = await User.findOne({ email }); // Find the user in the database
+  const { email } = req.params;
 
-  //
+  const user = await User.findOne({
+    email: email.toLowerCase(),
+    firmId: req.firmId,
+  });
+
+  const firm = await Firm.findById(req.firmId);
+
   if (!user) {
     return next(new AppError("User does not exist", 404));
   }
@@ -759,10 +994,8 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
     return next(new AppError("User already verified", 400));
   }
 
-  const existingToken = await Token.findOne({ userId: user._id });
-  if (existingToken) {
-    await existingToken.deleteOne();
-  }
+  // Delete existing tokens
+  await Token.deleteMany({ userId: user._id });
 
   const vToken = crypto.randomBytes(32).toString("hex") + user._id;
   const hashedToken = hashToken(vToken);
@@ -775,7 +1008,7 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
   }).save();
 
   const verificationURL = `${process.env.FRONTEND_URL}/dashboard/verify-account/${vToken}`;
-  console.log(verificationURL);
+
   const subject = "Verify Your Account - CaseMaster";
   const send_to = user.email;
   const send_from = process.env.SENDINBLUE_EMAIL;
@@ -784,71 +1017,100 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
   const context = {
     name: user.firstName,
     link: verificationURL,
-    companyName: process.env.COMPANY_NAME || "A.T Lukman & Co",
-    password: process.env.TEMP_PASSWORD,
+    companyName: firm?.name || "CaseMaster",
+    position: user.position || user.userType,
   };
 
   try {
     await sendMail(subject, send_to, send_from, reply_to, template, context);
-    return res.status(200).json({ message: "Verification Email Sent" });
+    return res.status(200).json({
+      message: "Verification Email Sent",
+      user: {
+        id: user._id,
+        email: user.email,
+        firstName: user.firstName,
+      },
+    });
   } catch (error) {
     return next(new AppError("Email sending failed", 400));
   }
 });
 
-// verify user
+/**
+ * ===============================
+ * VERIFY USER
+ * ===============================
+ */
 exports.verifyUser = catchAsync(async (req, res, next) => {
   const { verificationToken } = req.params;
-  // hash token sent from frontend
+
+  // Hash token sent from frontend
   const hashedToken = hashToken(verificationToken);
-  // get token from database
+
+  // Get token from database
   const userToken = await Token.findOne({
     verificationToken: hashedToken,
-    expiresAt: { $gt: Date.now() }, //get if it has not expired
+    expiresAt: { $gt: Date.now() },
   });
 
   if (!userToken) {
     return next(new AppError("Invalid or expired token", 404));
   }
-  // find user
+
+  // Find user
   const user = await User.findOne({ _id: userToken.userId });
 
-  // check if user is already verified
+  // Check if user is already verified
   if (user.isVerified) {
     return next(new AppError("User already verified", 400));
   }
-  // if not verified,then verify user
+
+  // Verify user
   user.isVerified = true;
+  user.status = "active";
   await user.save({ validateBeforeSave: false });
 
-  res.status(200).json({ message: "Account verification successful" });
+  // Delete the used token
+  await Token.deleteMany({ userId: user._id });
+
+  res.status(200).json({
+    message: "Account verification successful",
+    user: {
+      id: user._id,
+      email: user.email,
+      firstName: user.firstName,
+      isVerified: user.isVerified,
+    },
+  });
 });
 
-// login with google
+/**
+ * ===============================
+ * LOGIN WITH GOOGLE
+ * ===============================
+ */
 exports.loginWithGoogle = catchAsync(async (req, res, next) => {
   const { userToken } = req.body;
 
-  // verify token received from the frontend
+  // Verify token received from the frontend
   const ticket = await client.verifyIdToken({
     idToken: userToken,
     audience: process.env.GOOGLE_CLIENT_ID,
   });
 
-  // get payload
+  // Get payload
   const payload = ticket.getPayload();
-
   const { email } = payload;
 
-  // check if user exist
-  const user = await User.findOne({ email });
+  // Check if user exists
+  const user = await User.findOne({ email: email.toLowerCase() });
 
-  // check if user exist
   if (!user) {
-    next(new AppError("You have not been registered as a user", 403));
+    return next(new AppError("You have not been registered as a user", 403));
   }
 
-  // Trigger user 2FA auth for unknown user agent
-  const ua = parser(req.headers["user-agent"]); // Get user-agent header
+  // Trigger 2FA for unknown user agent
+  const ua = parser(req.headers["user-agent"]);
   const currentUserAgent = ua.ua;
 
   const allowedAgent = user.userAgent.includes(currentUserAgent);
@@ -857,63 +1119,65 @@ exports.loginWithGoogle = catchAsync(async (req, res, next) => {
     // Generate 6 digit code
     const loginCode = Math.floor(100000 + Math.random() * 900000);
     console.log(loginCode);
+
     // Encrypt loginCode
     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
 
     // Check for existing token and delete if found
-    const userToken = await Token.findOne({ userId: user._id });
-    if (userToken) {
-      await userToken.deleteOne();
-    }
+    await Token.deleteMany({ userId: user._id });
 
-    // Save the new token to the database
+    // Save new token
     await new Token({
       userId: user._id,
       loginToken: encryptedLoginCode,
       createAt: Date.now(),
-      expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour
+      expiresAt: Date.now() + 60 * 60 * 1000,
     }).save();
 
     return next(new AppError("New Browser or device detected", 400));
   }
 
+  // Update last login
+  user.lastLogin = new Date();
+  user.loginCount = (user.loginCount || 0) + 1;
+  await user.save({ validateBeforeSave: false });
+
   createSendToken(user, 200, res);
 });
 
-// controllers/authController.js
-
-// Add at the end of the file:
-
+/**
+ * ===============================
+ * FIRM LIMIT CHECKERS
+ * ===============================
+ */
 exports.checkUserLimit = catchAsync(async (req, res, next) => {
-  const Firm = require("../models/firmModel");
   const firm = await Firm.findById(req.firmId);
 
   if (!firm) {
     return next(new AppError("Firm not found", 404));
   }
 
-  // ✅ Count active, non-deleted users
+  // Count active, non-deleted users
   const currentUserCount = await User.countDocuments({
     firmId: req.firmId,
     isActive: true,
     isDeleted: { $ne: true },
   });
 
-  // ✅ Check against firm limits (not usage.currentUserCount)
+  // Check against firm limits
   if (currentUserCount >= firm.limits.users) {
-    const planDetails = firm.getPlanDetails();
     return next(
       new AppError(
-        `Your ${planDetails.name} plan has reached the maximum number of users (${firm.limits.users}). Please upgrade your plan to add more users.`,
-        403
-      )
+        `Your plan has reached the maximum number of users (${firm.limits.users}). Please upgrade your plan to add more users.`,
+        403,
+      ),
     );
   }
 
   next();
 });
+
 exports.checkCaseLimit = catchAsync(async (req, res, next) => {
-  const Firm = require("../models/firmModel");
   const firm = await Firm.findById(req.firmId);
 
   if (!firm) {
@@ -924,8 +1188,8 @@ exports.checkCaseLimit = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         `Your firm has reached the monthly case limit (${firm.limits.casesPerMonth}). Please upgrade your plan.`,
-        403
-      )
+        403,
+      ),
     );
   }
 
@@ -933,7 +1197,6 @@ exports.checkCaseLimit = catchAsync(async (req, res, next) => {
 });
 
 exports.checkStorageLimit = catchAsync(async (req, res, next) => {
-  const Firm = require("../models/firmModel");
   const firm = await Firm.findById(req.firmId);
 
   if (!firm) {
@@ -946,8 +1209,8 @@ exports.checkStorageLimit = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         `Your firm has reached the storage limit (${firm.limits.storageGB}GB). Please upgrade your plan.`,
-        403
-      )
+        403,
+      ),
     );
   }
 
@@ -955,15 +1218,15 @@ exports.checkStorageLimit = catchAsync(async (req, res, next) => {
 });
 
 /**
- * ✅ NEW: Update firm user count after creating user
- * Call this AFTER creating a new user
+ * ===============================
+ * UPDATE FIRM USER COUNT
+ * ===============================
  */
 exports.updateFirmUserCount = catchAsync(async (req, res, next) => {
   if (!req.firmId) {
     return next();
   }
 
-  const Firm = require("../models/firmModel");
   const firm = await Firm.findById(req.firmId);
 
   if (firm) {
@@ -979,3 +1242,60 @@ exports.updateFirmUserCount = catchAsync(async (req, res, next) => {
 
   next();
 });
+
+/**
+ * ===============================
+ * GET CURRENT USER PROFILE
+ * ===============================
+ */
+exports.getCurrentUser = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.user.id)
+    .populate("firmId", "name subdomain logo")
+    .select("-password -passwordConfirm");
+
+  if (!user) {
+    return next(new AppError("User not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: user,
+  });
+});
+
+/**
+ * ===============================
+ * UPDATE CURRENT USER PROFILE
+ * ===============================
+ */
+exports.updateCurrentUser = catchAsync(async (req, res, next) => {
+  // 1) Filter out unwanted fields that are not allowed to be updated
+  const filteredBody = { ...req.body };
+
+  // Remove fields that should not be updated
+  delete filteredBody.role;
+  delete filteredBody.userType;
+  delete filteredBody.isVerified;
+  delete filteredBody.isActive;
+  delete filteredBody.isDeleted;
+  delete filteredBody.password;
+  delete filteredBody.passwordConfirm;
+
+  // 2) Handle photo upload
+  if (req.file) {
+    filteredBody.photo = req.file.filename;
+  }
+
+  // 3) Update user
+  const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
+    new: true,
+    runValidators: true,
+  }).select("-password -passwordConfirm");
+
+  res.status(200).json({
+    status: "success",
+    data: updatedUser,
+  });
+});
+
+module.exports = exports;

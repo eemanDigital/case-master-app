@@ -4,6 +4,13 @@ const Schema = mongoose.Schema;
 
 const paymentSchema = new Schema(
   {
+    firmId: {
+      type: Schema.Types.ObjectId,
+      ref: "Firm",
+      required: true,
+      index: true, // ✅ Add index for performance
+    },
+
     invoice: {
       type: Schema.Types.ObjectId,
       ref: "Invoice",
@@ -52,7 +59,7 @@ const paymentSchema = new Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // Indexes for performance

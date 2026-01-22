@@ -4,11 +4,17 @@ const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const mongoose = require("mongoose");
 
-// ✅ NEW: CONSOLIDATED COMPREHENSIVE STATISTICS ENDPOINT
-
-// But mark them as deprecated and recommend using getPaymentStatistics instead
+// ✅ Multi-tenant helper
+const getFirmId = (req) => {
+  if (!req.user || !req.firmId) {
+    throw new AppError("Firm context not found. Please authenticate.", 401);
+  }
+  return req.firmId;
+};
 
 exports.createPayment = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req); // ✅ Get firmId
+
   const {
     invoice: invoiceFromBody,
     invoiceId,
@@ -33,16 +39,23 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     if (!method) missing.push("method");
 
     return next(
-      new AppError(`Missing required fields: ${missing.join(", ")}`, 400)
+      new AppError(`Missing required fields: ${missing.join(", ")}`, 400),
     );
   }
 
-  const invoice = await Invoice.findById(invoice_id)
+  // ✅ Query invoice with firmId
+  const invoice = await Invoice.findOne({
+    _id: invoice_id,
+    firmId,
+    isDeleted: { $ne: true },
+  })
     .populate("case")
     .populate("client");
 
   if (!invoice) {
-    return next(new AppError("No invoice found with that ID", 404));
+    return next(
+      new AppError("No invoice found with that ID in your firm", 404),
+    );
   }
 
   if (
@@ -52,8 +65,8 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         "You are not authorized to make payment for this invoice",
-        403
-      )
+        403,
+      ),
     );
   }
 
@@ -82,13 +95,15 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         `Payment amount (${amount}) exceeds remaining balance (${remainingBalance})`,
-        400
-      )
+        400,
+      ),
     );
   }
 
   try {
+    // ✅ Create payment with firmId
     const payment = new Payment({
+      firmId, // ✅ Add firmId
       invoice: invoice_id,
       client: invoice.client._id,
       case: invoice.case ? invoice.case._id : undefined,
@@ -110,7 +125,7 @@ exports.createPayment = catchAsync(async (req, res, next) => {
           balance: invoice.total - (invoice.amountPaid + amount),
         },
       },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     const today = new Date();
@@ -143,12 +158,12 @@ exports.createPayment = catchAsync(async (req, res, next) => {
               : 0,
         },
       },
-      { new: true }
+      { new: true },
     );
 
     await payment.populate(
       "invoice",
-      "invoiceNumber title total balance status amountPaid paymentProgress isOverdue daysOverdue"
+      "invoiceNumber title total balance status amountPaid paymentProgress isOverdue daysOverdue",
     );
     await payment.populate("client", "firstName lastName email");
     if (payment.case) {
@@ -179,6 +194,8 @@ exports.createPayment = catchAsync(async (req, res, next) => {
 });
 
 exports.getAllPayments = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req); // ✅ Get firmId
+
   const {
     page = 1,
     limit = 10,
@@ -191,7 +208,8 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
     sort = "-paymentDate",
   } = req.query;
 
-  let filter = {};
+  // ✅ Start with firmId filter
+  let filter = { firmId };
 
   if (req.user.role === "client") {
     filter.client = req.user.id;
@@ -235,13 +253,18 @@ exports.getAllPayments = catchAsync(async (req, res, next) => {
 });
 
 exports.getPayment = catchAsync(async (req, res, next) => {
-  const payment = await Payment.findById(req.params.paymentId)
+  const firmId = getFirmId(req); // ✅ Get firmId
+
+  const payment = await Payment.findOne({
+    _id: req.params.paymentId,
+    firmId, // ✅ Filter by firmId
+  })
     .populate("invoice", "invoiceNumber title total status dueDate")
     .populate("client", "firstName lastName email phone")
     .populate("case", "firstParty secondParty suitNo caseStatus");
 
   if (!payment) {
-    return next(new AppError("Payment not found", 404));
+    return next(new AppError("Payment not found in your firm", 404));
   }
 
   if (
@@ -249,7 +272,7 @@ exports.getPayment = catchAsync(async (req, res, next) => {
     payment.client._id.toString() !== req.user.id
   ) {
     return next(
-      new AppError("You are not authorized to view this payment", 403)
+      new AppError("You are not authorized to view this payment", 403),
     );
   }
 
@@ -261,23 +284,34 @@ exports.getPayment = catchAsync(async (req, res, next) => {
 });
 
 exports.updatePayment = catchAsync(async (req, res, next) => {
-  const payment = await Payment.findById(req.params.paymentId);
+  const firmId = getFirmId(req); // ✅ Get firmId
+
+  const payment = await Payment.findOne({
+    _id: req.params.paymentId,
+    firmId, // ✅ Filter by firmId
+  });
 
   if (!payment) {
-    return next(new AppError("Payment not found", 404));
+    return next(new AppError("Payment not found in your firm", 404));
   }
 
   if (req.body.amount && req.body.amount !== payment.amount) {
-    const invoice = await Invoice.findById(payment.invoice);
+    const invoice = await Invoice.findOne({
+      _id: payment.invoice,
+      firmId, // ✅ Filter by firmId
+    });
+
     if (!invoice) {
-      return next(new AppError("Associated invoice not found", 404));
+      return next(
+        new AppError("Associated invoice not found in your firm", 404),
+      );
     }
 
     const amountDifference = req.body.amount - payment.amount;
 
     if (invoice.amountPaid + amountDifference > invoice.total) {
       return next(
-        new AppError("Payment amount would exceed invoice total", 400)
+        new AppError("Payment amount would exceed invoice total", 400),
       );
     }
 
@@ -288,7 +322,7 @@ exports.updatePayment = catchAsync(async (req, res, next) => {
   const updatedPayment = await Payment.findByIdAndUpdate(
     req.params.paymentId,
     req.body,
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   )
     .populate("invoice", "invoiceNumber title total")
     .populate("client", "firstName lastName")
@@ -301,13 +335,22 @@ exports.updatePayment = catchAsync(async (req, res, next) => {
 });
 
 exports.deletePayment = catchAsync(async (req, res, next) => {
-  const payment = await Payment.findById(req.params.paymentId);
+  const firmId = getFirmId(req); // ✅ Get firmId
+
+  const payment = await Payment.findOne({
+    _id: req.params.paymentId,
+    firmId, // ✅ Filter by firmId
+  });
 
   if (!payment) {
-    return next(new AppError("Payment not found", 404));
+    return next(new AppError("Payment not found in your firm", 404));
   }
 
-  const invoice = await Invoice.findById(payment.invoice);
+  const invoice = await Invoice.findOne({
+    _id: payment.invoice,
+    firmId, // ✅ Filter by firmId
+  });
+
   if (invoice) {
     invoice.amountPaid -= payment.amount;
     await invoice.save();
@@ -321,9 +364,8 @@ exports.deletePayment = catchAsync(async (req, res, next) => {
   });
 });
 
-// DEPRECATED: Use getPaymentStatistics instead
-// Kept for backwards compatibility
 exports.totalPaymentOnCase = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req); // ✅ Get firmId
   const clientId = req.params.clientId;
   const caseId = req.params.caseId;
 
@@ -337,13 +379,14 @@ exports.totalPaymentOnCase = catchAsync(async (req, res, next) => {
 
   if (req.user.role === "client" && req.user.id !== clientId) {
     return next(
-      new AppError("You are not authorized to view these payment totals", 403)
+      new AppError("You are not authorized to view these payment totals", 403),
     );
   }
 
   const totalPaymentSum = await Payment.aggregate([
     {
       $match: {
+        firmId: new mongoose.Types.ObjectId(firmId), // ✅ Filter by firmId
         client: new mongoose.Types.ObjectId(clientId),
         case: new mongoose.Types.ObjectId(caseId),
       },
@@ -369,8 +412,8 @@ exports.totalPaymentOnCase = catchAsync(async (req, res, next) => {
   });
 });
 
-// DEPRECATED: Use getPaymentStatistics instead
 exports.totalPaymentClient = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req); // ✅ Get firmId
   const clientId = req.params.clientId;
 
   if (!mongoose.Types.ObjectId.isValid(clientId)) {
@@ -379,13 +422,14 @@ exports.totalPaymentClient = catchAsync(async (req, res, next) => {
 
   if (req.user.role === "client" && req.user.id !== clientId) {
     return next(
-      new AppError("You are not authorized to view these payment totals", 403)
+      new AppError("You are not authorized to view these payment totals", 403),
     );
   }
 
   const totalPaymentSum = await Payment.aggregate([
     {
       $match: {
+        firmId: new mongoose.Types.ObjectId(firmId), // ✅ Filter by firmId
         client: new mongoose.Types.ObjectId(clientId),
       },
     },
@@ -411,7 +455,14 @@ exports.totalPaymentClient = catchAsync(async (req, res, next) => {
 });
 
 exports.paymentEachClient = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req); // ✅ Get firmId
+
   const totalPaymentSumByClient = await Payment.aggregate([
+    {
+      $match: {
+        firmId: new mongoose.Types.ObjectId(firmId), // ✅ Filter by firmId
+      },
+    },
     {
       $group: {
         _id: "$client",
@@ -455,8 +506,8 @@ exports.paymentEachClient = catchAsync(async (req, res, next) => {
   });
 });
 
-// DEPRECATED: Use getPaymentStatistics with year query param instead
 exports.totalPaymentsByMonthAndYear = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req); // ✅ Get firmId
   const { year, month } = req.params;
 
   const formattedMonth = month.padStart(2, "0");
@@ -466,6 +517,7 @@ exports.totalPaymentsByMonthAndYear = catchAsync(async (req, res, next) => {
   endDate.setMonth(endDate.getMonth() + 1);
 
   let matchStage = {
+    firmId: new mongoose.Types.ObjectId(firmId), // ✅ Filter by firmId
     paymentDate: {
       $gte: startDate,
       $lt: endDate,
@@ -512,11 +564,12 @@ exports.totalPaymentsByMonthAndYear = catchAsync(async (req, res, next) => {
   });
 });
 
-// DEPRECATED: Use getPaymentStatistics instead - returns monthlyBreakdown
 exports.totalPaymentsByMonthInYear = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req); // ✅ Get firmId
   const { year } = req.params;
 
   let matchStage = {
+    firmId: new mongoose.Types.ObjectId(firmId), // ✅ Filter by firmId
     paymentDate: {
       $gte: new Date(`${year}-01-01`),
       $lt: new Date(`${parseInt(year) + 1}-01-01`),
@@ -557,11 +610,12 @@ exports.totalPaymentsByMonthInYear = catchAsync(async (req, res, next) => {
   });
 });
 
-// DEPRECATED: Use getPaymentStatistics instead
 exports.totalPaymentsByYear = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req); // ✅ Get firmId
   const { year } = req.params;
 
   let matchStage = {
+    firmId: new mongoose.Types.ObjectId(firmId), // ✅ Filter by firmId
     paymentDate: {
       $gte: new Date(`${year}-01-01`),
       $lt: new Date(`${parseInt(year) + 1}-01-01`),
@@ -606,9 +660,11 @@ exports.totalPaymentsByYear = catchAsync(async (req, res, next) => {
   });
 });
 
-// DEPRECATED: Use getPaymentStatistics instead - returns invoices stats
 exports.getTotalBalance = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req); // ✅ Get firmId
+
   let matchStage = {
+    firmId: new mongoose.Types.ObjectId(firmId), // ✅ Filter by firmId
     status: {
       $nin: ["draft", "cancelled", "void"],
     },
@@ -674,15 +730,17 @@ exports.getTotalBalance = catchAsync(async (req, res, next) => {
 });
 
 exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req); // ✅ Get firmId
   const { clientId, caseId } = req.params;
 
   if (req.user.role === "client" && req.user.id !== clientId) {
     return next(
-      new AppError("You are not authorized to view these payments", 403)
+      new AppError("You are not authorized to view these payments", 403),
     );
   }
 
   const payments = await Payment.find({
+    firmId, // ✅ Filter by firmId
     client: clientId,
     case: caseId,
   })
@@ -693,13 +751,13 @@ exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
 
   if (!payments || payments.length === 0) {
     return next(
-      new AppError("No payments found for this client and case", 404)
+      new AppError("No payments found for this client and case", 404),
     );
   }
 
   const totalPayment = payments.reduce(
     (sum, payment) => sum + payment.amount,
-    0
+    0,
   );
 
   res.status(200).json({
@@ -710,14 +768,15 @@ exports.getPaymentsByClientAndCase = catchAsync(async (req, res, next) => {
   });
 });
 
-// DEPRECATED: Use getPaymentStatistics instead
 exports.getPaymentSummary = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req); // ✅ Get firmId
   const { year = new Date().getFullYear() } = req.query;
 
   const startDate = new Date(`${year}-01-01`);
   const endDate = new Date(`${parseInt(year) + 1}-01-01`);
 
   let matchStage = {
+    firmId: new mongoose.Types.ObjectId(firmId), // ✅ Filter by firmId
     paymentDate: {
       $gte: startDate,
       $lt: endDate,
@@ -758,15 +817,13 @@ exports.getPaymentSummary = catchAsync(async (req, res, next) => {
   });
 });
 
-//
-// paymentController.js - Enhanced Comprehensive Stats
-
+// ✅ COMPREHENSIVE STATS WITH FIRMID
 const NodeCache = require("node-cache");
-const statsCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // 5 minute cache
-
-// 📊 COMPREHENSIVE PAYMENT & INVOICE STATISTICS
+const statsCache = new NodeCache({ stdTTL: 300, checkperiod: 60 });
 
 exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req); // ✅ Get firmId first
+
   const {
     year = new Date().getFullYear(),
     month,
@@ -780,12 +837,10 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth() + 1;
 
-  // Create cache key
-  const cacheKey = `stats:${userRole}:${userId}:${year}:${
+  const cacheKey = `stats:${firmId}:${userRole}:${userId}:${year}:${
     month || "all"
-  }:${range}`;
+  }:${range}`; // ✅ Include firmId in cache key
 
-  // Return cached data if available and not forcing refresh
   if (!forceRefresh) {
     const cachedStats = statsCache.get(cacheKey);
     if (cachedStats) {
@@ -798,7 +853,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
     }
   }
 
-  // ✅ CALCULATE DATE RANGES BASED ON 'RANGE' PARAMETER
   let startDate,
     endDate = new Date();
   const now = new Date();
@@ -812,7 +866,7 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         0,
         0,
         0,
-        0
+        0,
       );
       endDate = new Date(
         now.getFullYear(),
@@ -821,7 +875,7 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         23,
         59,
         59,
-        999
+        999,
       );
       break;
     case "week":
@@ -854,11 +908,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
       startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
   }
 
-  console.log(
-    `Fetching stats for range: ${range}, from ${startDate} to ${endDate}`
-  );
-
-  // Time-based helpers for aggregations
   const startOfToday = new Date(
     now.getFullYear(),
     now.getMonth(),
@@ -866,7 +915,7 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
     0,
     0,
     0,
-    0
+    0,
   );
   const startOfMonth = new Date(
     now.getFullYear(),
@@ -875,7 +924,7 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
     0,
     0,
     0,
-    0
+    0,
   );
   const startOfYear = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
   const last30Days = new Date(now);
@@ -883,61 +932,43 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
   const last90Days = new Date(now);
   last90Days.setDate(now.getDate() - 90);
 
-  // Base filter based on user role
+  // ✅ Base filter with firmId
   const baseFilter =
     userRole === "client"
-      ? { client: new mongoose.Types.ObjectId(userId) }
-      : {};
+      ? {
+          firmId: new mongoose.Types.ObjectId(firmId),
+          client: new mongoose.Types.ObjectId(userId),
+        }
+      : { firmId: new mongoose.Types.ObjectId(firmId) };
 
-  // ✅ DATE FILTER FOR INVOICES (use createdAt for filtering invoice creation)
   const invoiceDateFilter = {
     createdAt: { $gte: startDate, $lte: endDate },
   };
 
-  // ✅ DATE FILTER FOR PAYMENTS (use paymentDate)
   const paymentDateFilter = {
     paymentDate: { $gte: startDate, $lte: endDate },
   };
 
   try {
-    // Parallel execution for optimal performance
     const [
-      // 1. OVERALL FINANCIAL SUMMARY
       financialSummary,
-
-      // 2. INVOICE ANALYTICS
       invoiceAnalytics,
-
-      // 3. PAYMENT ANALYTICS
       paymentAnalytics,
-
-      // 4. OVERDUE ANALYSIS
       overdueAnalysis,
-
-      // 5. PAYMENT METHOD DISTRIBUTION
       paymentMethods,
-
-      // 6. MONTHLY TRENDS (last 12 months)
       monthlyTrends,
-
-      // 7. TOP PERFORMING DATA
       topData,
-
-      // 8. RECENT ACTIVITY
       recentActivity,
-
-      // 9. CLIENT PAYMENT BEHAVIOR (admin only)
       clientBehavior,
-
-      // 10. CASE FINANCIAL SUMMARY (if applicable)
       caseFinancials,
     ] = await Promise.all([
-      // 1. FINANCIAL SUMMARY - ✅ WITH DATE FILTER
+      // All aggregations now include firmId in baseFilter
       Invoice.aggregate([
         {
           $match: {
             ...baseFilter,
             ...invoiceDateFilter,
+            isDeleted: { $ne: true }, // ✅ Exclude deleted
           },
         },
         {
@@ -971,12 +1002,12 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         },
       ]),
 
-      // 2. INVOICE ANALYTICS - ✅ WITH DATE FILTER
       Invoice.aggregate([
         {
           $match: {
             ...baseFilter,
             ...invoiceDateFilter,
+            isDeleted: { $ne: true },
           },
         },
         {
@@ -1027,7 +1058,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         },
       ]),
 
-      // 3. PAYMENT ANALYTICS - ✅ WITH DATE FILTER
       Payment.aggregate([
         {
           $match: {
@@ -1108,7 +1138,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         },
       ]),
 
-      // 4. OVERDUE ANALYSIS - ✅ WITH DATE FILTER
       Invoice.aggregate([
         {
           $match: {
@@ -1116,6 +1145,7 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
             ...invoiceDateFilter,
             status: "overdue",
             balance: { $gt: 0 },
+            isDeleted: { $ne: true },
           },
         },
         {
@@ -1167,7 +1197,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         },
       ]),
 
-      // 5. PAYMENT METHOD DISTRIBUTION - ✅ WITH DATE FILTER
       Payment.aggregate([
         {
           $match: {
@@ -1187,7 +1216,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         { $sort: { totalAmount: -1 } },
       ]),
 
-      // 6. MONTHLY TRENDS (last 12 months) - Always last 12 months regardless of filter
       Payment.aggregate([
         {
           $match: {
@@ -1249,21 +1277,23 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
         },
       ]),
 
-      // 7. TOP PERFORMING DATA - ✅ WITH DATE FILTER
       Promise.all([
-        // Top Invoices
-        Invoice.find({ ...baseFilter, ...invoiceDateFilter })
+        Invoice.find({
+          ...baseFilter,
+          ...invoiceDateFilter,
+          isDeleted: { $ne: true },
+        })
           .sort({ total: -1 })
           .limit(5)
           .populate("client", "firstName lastName email")
           .populate("case", "suitNo firstParty secondParty")
           .lean(),
 
-        // Top Paying Clients (admin only)
         userRole !== "client"
           ? Payment.aggregate([
               {
                 $match: {
+                  firmId: new mongoose.Types.ObjectId(firmId),
                   status: "completed",
                   ...paymentDateFilter,
                 },
@@ -1307,9 +1337,7 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
           : Promise.resolve([]),
       ]),
 
-      // 8. RECENT ACTIVITY - ✅ WITH DATE FILTER
       Promise.all([
-        // Recent Payments
         Payment.find({
           ...baseFilter,
           status: "completed",
@@ -1321,20 +1349,24 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
           .populate("client", "firstName lastName")
           .lean(),
 
-        // Recent Invoices
-        Invoice.find({ ...baseFilter, ...invoiceDateFilter })
+        Invoice.find({
+          ...baseFilter,
+          ...invoiceDateFilter,
+          isDeleted: { $ne: true },
+        })
           .sort({ createdAt: -1 })
           .limit(10)
           .populate("client", "firstName lastName")
           .lean(),
       ]),
 
-      // 9. CLIENT PAYMENT BEHAVIOR (admin only) - ✅ WITH DATE FILTER
       userRole !== "client"
         ? Invoice.aggregate([
             {
               $match: {
+                firmId: new mongoose.Types.ObjectId(firmId),
                 ...invoiceDateFilter,
+                isDeleted: { $ne: true },
               },
             },
             {
@@ -1397,13 +1429,13 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
           ])
         : Promise.resolve([]),
 
-      // 10. CASE FINANCIAL SUMMARY - ✅ WITH DATE FILTER
       Invoice.aggregate([
         {
           $match: {
             ...baseFilter,
             ...invoiceDateFilter,
             case: { $ne: null },
+            isDeleted: { $ne: true },
           },
         },
         {
@@ -1420,7 +1452,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
       ]),
     ]);
 
-    // Format the response
     const formattedStats = {
       summary: {
         financial: financialSummary[0] || {
@@ -1523,6 +1554,7 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
           currentMonth,
         },
         userRole,
+        firmId: firmId.toString(), // ✅ Include firmId in metadata
         totalRecords: {
           invoices: financialSummary[0]?.totalInvoices || 0,
           payments: paymentAnalytics[0]?.summary?.[0]?.paymentCount || 0,
@@ -1531,7 +1563,6 @@ exports.getComprehensiveStats = catchAsync(async (req, res, next) => {
       },
     };
 
-    // Cache the result
     statsCache.set(cacheKey, formattedStats);
 
     res.status(200).json({

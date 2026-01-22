@@ -1,3 +1,5 @@
+// models/invoiceModel.js
+
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
 
@@ -13,7 +15,6 @@ const serviceSchema = new Schema({
     required: true,
     default: "hourly",
   },
-  // For hourly billing
   hours: {
     type: Number,
     default: 0,
@@ -24,13 +25,11 @@ const serviceSchema = new Schema({
     default: 0,
     min: 0,
   },
-  // For fixed fee billing
   fixedAmount: {
     type: Number,
     default: 0,
     min: 0,
   },
-  // For item-based billing (court appearances, document prep, etc.)
   quantity: {
     type: Number,
     default: 1,
@@ -41,7 +40,6 @@ const serviceSchema = new Schema({
     default: 0,
     min: 0,
   },
-  // Calculated amount (auto-calculated)
   amount: {
     type: Number,
     default: 0,
@@ -128,6 +126,12 @@ const paymentSchema = new Schema({
 
 const invoiceSchema = new Schema(
   {
+    firmId: {
+      type: Schema.Types.ObjectId,
+      ref: "Firm",
+      required: true,
+      index: true, // ✅ Add index for performance
+    },
     invoiceNumber: {
       type: String,
       unique: true,
@@ -142,25 +146,17 @@ const invoiceSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Case",
     },
-
-    // Basic Info
     title: {
       type: String,
       required: [true, "Invoice title is required"],
       maxlength: 100,
     },
     description: String,
-
-    // Billing Period (for retainer/hourly invoices)
     billingPeriodStart: Date,
     billingPeriodEnd: Date,
-
-    // Line Items
     services: [serviceSchema],
     expenses: [expenseSchema],
     payments: [paymentSchema],
-
-    // Dates
     issueDate: {
       type: Date,
       default: Date.now,
@@ -169,8 +165,6 @@ const invoiceSchema = new Schema(
       type: Date,
       required: true,
     },
-
-    // Financial Summary
     subtotal: {
       type: Number,
       default: 0,
@@ -187,8 +181,6 @@ const invoiceSchema = new Schema(
       default: "none",
     },
     discountReason: String,
-
-    // Tax Configuration
     taxRate: {
       type: Number,
       default: 0,
@@ -200,8 +192,6 @@ const invoiceSchema = new Schema(
       default: 0,
       min: 0,
     },
-
-    // Final Amounts
     total: {
       type: Number,
       default: 0,
@@ -217,14 +207,10 @@ const invoiceSchema = new Schema(
       default: 0,
       min: 0,
     },
-
-    // Previous Balance (for matters with ongoing billing)
     previousBalance: {
       type: Number,
       default: 0,
     },
-
-    // Status & Metadata
     status: {
       type: String,
       enum: [
@@ -238,19 +224,29 @@ const invoiceSchema = new Schema(
       ],
       default: "draft",
     },
-
-    // Payment Instructions
     paymentTerms: String,
     notes: String,
-    internalNotes: String, // For law firm internal use
-
-    // Legal Specific Fields
+    internalNotes: String,
     matterReference: String,
     timekeeper: {
       type: Schema.Types.ObjectId,
       ref: "User",
     },
     billingAttorney: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
+    deletedAt: Date,
+    deletedBy: {
       type: Schema.Types.ObjectId,
       ref: "User",
     },
@@ -262,7 +258,7 @@ const invoiceSchema = new Schema(
   }
 );
 
-// Virtuals
+// ✅ Virtuals
 invoiceSchema.virtual("isOverdue").get(function () {
   return (
     (this.status === "sent" || this.status === "partially_paid") &&
@@ -282,17 +278,19 @@ invoiceSchema.virtual("daysOverdue").get(function () {
   return Math.floor((today - dueDate) / (1000 * 60 * 60 * 24));
 });
 
-// Pre-validate hook for invoice number
+// ✅ Pre-validate hook for firm-specific invoice number
 invoiceSchema.pre("validate", async function (next) {
   if (this.isNew && !this.invoiceNumber) {
-    this.invoiceNumber = await this.constructor.generateInvoiceNumber();
+    this.invoiceNumber = await this.constructor.generateInvoiceNumber(
+      this.firmId
+    );
   }
   next();
 });
 
-// Pre-save middleware for comprehensive calculations
+// ✅ Pre-save middleware
 invoiceSchema.pre("save", function (next) {
-  // Calculate service amounts based on billing method
+  // Calculate service amounts
   this.services.forEach((service) => {
     switch (service.billingMethod) {
       case "hourly":
@@ -327,38 +325,25 @@ invoiceSchema.pre("save", function (next) {
     0
   );
 
-  // Calculate subtotal (services + expenses + previous balance)
   this.subtotal = servicesTotal + expensesTotal + (this.previousBalance || 0);
 
-  // Apply discount - FIXED LOGIC
+  // Apply discount
   let discountAmount = 0;
-
-  // Check if discount should be applied
   if (this.discount && this.discount > 0) {
     if (this.discountType === "percentage") {
       discountAmount = this.subtotal * (this.discount / 100);
     } else if (this.discountType === "fixed" || this.discountType === "none") {
-      // If discountType is "none" but discount value exists, treat it as fixed amount
       discountAmount = this.discount;
-      // Auto-set discountType to "fixed" if it was "none"
       if (this.discountType === "none" && this.discount > 0) {
         this.discountType = "fixed";
       }
     }
-    // Ensure discount doesn't exceed subtotal
     discountAmount = Math.min(discountAmount, this.subtotal);
   }
 
-  // Calculate taxable amount (after discount)
   const taxableAmount = Math.max(0, this.subtotal - discountAmount);
-
-  // Calculate tax
   this.taxAmount = taxableAmount * ((this.taxRate || 0) / 100);
-
-  // Calculate final total
   this.total = taxableAmount + this.taxAmount;
-
-  // Calculate balance
   this.balance = Math.max(0, this.total - (this.amountPaid || 0));
 
   // Auto-update status
@@ -386,19 +371,31 @@ invoiceSchema.pre("save", function (next) {
 
   next();
 });
-// Static methods
-invoiceSchema.statics.generateInvoiceNumber = async function () {
-  const count = await this.countDocuments();
+
+// ✅ Static methods with firm isolation
+invoiceSchema.statics.generateInvoiceNumber = async function (firmId) {
+  const firm = await mongoose.model("Firm").findById(firmId);
+  const firmPrefix = firm?.invoicePrefix || "INV";
   const year = new Date().getFullYear();
-  return `INV-${year}-${(count + 1).toString().padStart(4, "0")}`;
+
+  const count = await this.countDocuments({
+    firmId,
+    createdAt: {
+      $gte: new Date(`${year}-01-01`),
+      $lt: new Date(`${year + 1}-01-01`),
+    },
+  });
+
+  return `${firmPrefix}-${year}-${(count + 1).toString().padStart(4, "0")}`;
 };
 
-// Instance methods
+// ✅ Instance methods
 invoiceSchema.methods.addPayment = async function (paymentData) {
   const Payment = mongoose.model("Payment");
 
   const payment = new Payment({
     ...paymentData,
+    firmId: this.firmId,
     invoice: this._id,
     client: this.client,
     case: this.case,
@@ -406,7 +403,6 @@ invoiceSchema.methods.addPayment = async function (paymentData) {
 
   await payment.save();
 
-  // Add to payments array and recalculate
   this.payments.push(payment);
   await this.save();
 
@@ -434,12 +430,21 @@ invoiceSchema.methods.applyDiscount = function (
   return this.save();
 };
 
-// Indexes for performance
-invoiceSchema.index({ client: 1, status: 1 });
-invoiceSchema.index({ dueDate: 1 });
-invoiceSchema.index({ invoiceNumber: 1 }, { unique: true });
-invoiceSchema.index({ issueDate: 1 });
-invoiceSchema.index({ timekeeper: 1 });
-invoiceSchema.index({ status: 1, dueDate: 1 });
+// ✅ Soft delete method
+invoiceSchema.methods.softDelete = function (deletedBy) {
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  this.deletedBy = deletedBy;
+  return this.save();
+};
+
+// ✅ Indexes for multi-tenant performance
+invoiceSchema.index({ firmId: 1, invoiceNumber: 1 }, { unique: true });
+invoiceSchema.index({ firmId: 1, client: 1, status: 1 });
+invoiceSchema.index({ firmId: 1, dueDate: 1 });
+invoiceSchema.index({ firmId: 1, status: 1, dueDate: 1 });
+invoiceSchema.index({ firmId: 1, isDeleted: 1 });
+invoiceSchema.index({ firmId: 1, case: 1 });
+invoiceSchema.index({ firmId: 1, createdBy: 1 });
 
 module.exports = mongoose.model("Invoice", invoiceSchema);

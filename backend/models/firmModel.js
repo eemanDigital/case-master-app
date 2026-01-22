@@ -116,7 +116,7 @@ const firmSchema = new mongoose.Schema(
 
       status: {
         type: String,
-        enum: ["ACTIVE", "EXPIRED", "TRIAL", "SUSPENDED"], // ✅ Added SUSPENDED
+        enum: ["ACTIVE", "EXPIRED", "TRIAL", "SUSPENDED"],
         default: "TRIAL",
       },
 
@@ -203,9 +203,9 @@ const firmSchema = new mongoose.Schema(
  */
 firmSchema.index({ subdomain: 1 });
 firmSchema.index({ "subscription.status": 1 });
-firmSchema.index({ "subscription.expiresAt": 1 }); // ✅ For expiry checks
+firmSchema.index({ "subscription.expiresAt": 1 });
 firmSchema.index({ isActive: 1 });
-firmSchema.index({ deletedAt: 1 }); // ✅ For soft delete queries
+firmSchema.index({ deletedAt: 1 });
 
 /**
  * ======================

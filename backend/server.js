@@ -13,6 +13,16 @@ const cookieParser = require("cookie-parser");
 
 // Route imports
 const userRouter = require("./routes/userRoutes");
+const {
+  matterRouter,
+  litigationRouter,
+  corporateRouter,
+} = require("./routes/mattersRoute");
+const propertyRouter = require("./routes/propertyRoutes");
+const retainerRouter = require("./routes/retainerRoutes");
+const advisoryRouter = require("./routes/advisoryRoutes");
+const generalRouter = require("./routes/generalRoutes");
+const calendarRoutes = require("./routes/calenderRoutes");
 const caseRouter = require("./routes/caseRoutes");
 const taskRouter = require("./routes/taskRoutes");
 const reportRouter = require("./routes/caseReportRoute");
@@ -121,7 +131,7 @@ app.use(
         imgSrc: ["'self'", "data:", "https:"],
       },
     },
-  })
+  }),
 );
 
 // CORS configuration
@@ -135,7 +145,7 @@ app.use(
     methods: ["GET", "POST", "PATCH", "DELETE", "PUT"],
     credentials: true,
     optionsSuccessStatus: 200,
-  })
+  }),
 );
 
 // Body parsers
@@ -159,7 +169,7 @@ app.use(
       "difficulty",
       "price",
     ],
-  })
+  }),
 );
 
 // Serve static files
@@ -218,7 +228,7 @@ const strictAuthLimiter = rateLimit({
   skipSuccessfulRequests: true, // Don't count successful logins
   handler: (req, res) => {
     console.log(
-      `🔒 Auth rate limit hit: ${req.method} ${req.path} from ${req.ip}`
+      `🔒 Auth rate limit hit: ${req.method} ${req.path} from ${req.ip}`,
     );
     res.status(429).json({
       success: false,
@@ -238,7 +248,7 @@ const twoFactorLimiter = rateLimit({
   },
   handler: (req, res) => {
     console.log(
-      `🔐 2FA rate limit hit: ${req.method} ${req.path} from ${req.ip}`
+      `🔐 2FA rate limit hit: ${req.method} ${req.path} from ${req.ip}`,
     );
     res.status(429).json({
       success: false,
@@ -299,6 +309,14 @@ app.get("/health", (req, res) => {
 
 // API routes
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/matters", matterRouter);
+app.use("/api/v1/litigation", litigationRouter);
+app.use("/api/v1/corporate", corporateRouter);
+app.use("/api/v1/properties", propertyRouter);
+app.use("/api/v1/retainers", retainerRouter);
+app.use("/api/v1/advisory", advisoryRouter);
+app.use("/api/v1/general", generalRouter);
+app.use("/api/v1/calendar", calendarRoutes);
 app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/reports", reportRouter);
@@ -388,7 +406,7 @@ if (isProduction) {
 // Database connection strings
 const DB_PROD = process.env.DATABASE?.replace(
   "<PASSWORD>",
-  process.env.DATABASE_PASSWORD
+  process.env.DATABASE_PASSWORD,
 );
 
 const DB_DEV =
@@ -413,12 +431,12 @@ const connectWithRetry = async (retries = 5, delay = 5000) => {
       retryReads: true,
     });
     console.log(
-      `✅ Database connected (${isProduction ? "production" : "development"})`
+      `✅ Database connected (${isProduction ? "production" : "development"})`,
     );
   } catch (err) {
     console.error(
       `❌ Database connection failed (attempt ${6 - retries}/5):`,
-      err.message
+      err.message,
     );
 
     if (retries > 0) {

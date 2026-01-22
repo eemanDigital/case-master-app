@@ -1,4 +1,4 @@
-// controllers/userController.js - ENHANCED WITH ROLE FILTERING
+// controllers/userController.js - UPDATED FOR NEW USER MODEL
 
 const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
@@ -6,15 +6,17 @@ const AppError = require("../utils/appError");
 const filterObj = require("../utils/filterObj");
 const sendMail = require("../utils/email");
 const PaginationServiceFactory = require("../services/PaginationServiceFactory");
+const Firm = require("../models/firmModel");
 
 // Create pagination service for User model
 const userPagination = PaginationServiceFactory.createService(User);
 
 /**
- * ✅ ENHANCED: Get all users with role filtering support
+ * ✅ ENHANCED: Get all users with role and userType filtering support
  *
  * Query params:
- * - role: single role or comma-separated roles (e.g., "client" or "staff,admin,hr")
+ * - role: single role or comma-separated roles
+ * - userType: single userType or comma-separated userTypes
  * - page, limit, search, etc.
  */
 exports.getUsers = catchAsync(async (req, res, next) => {
@@ -25,7 +27,7 @@ exports.getUsers = catchAsync(async (req, res, next) => {
     console.log("\n🔍 [getUsers] Request Query:", req.query);
   }
 
-  // ✅ Build custom filter for role(s)
+  // ✅ Build custom filter
   let customFilter = {
     firmId: req.firmId,
     isDeleted: { $ne: true },
@@ -34,16 +36,19 @@ exports.getUsers = catchAsync(async (req, res, next) => {
   // Handle role filtering
   if (req.query.role) {
     const roles = req.query.role.split(",").map((r) => r.trim());
+    customFilter.role = roles.length === 1 ? roles[0] : { $in: roles };
+  }
 
-    if (roles.length === 1) {
-      customFilter.role = roles[0];
-    } else {
-      customFilter.role = { $in: roles };
-    }
+  // Handle userType filtering
+  if (req.query.userType) {
+    const userTypes = req.query.userType.split(",").map((t) => t.trim());
+    customFilter.userType =
+      userTypes.length === 1 ? userTypes[0] : { $in: userTypes };
+  }
 
-    if (debug) {
-      console.log("🎭 Role filter applied:", customFilter.role);
-    }
+  // Handle isLawyer filtering
+  if (req.query.isLawyer) {
+    customFilter.isLawyer = req.query.isLawyer === "true";
   }
 
   // Handle deleted items filter
@@ -59,7 +64,7 @@ exports.getUsers = catchAsync(async (req, res, next) => {
       ...req.query,
       includeStats: "true",
     },
-    customFilter
+    customFilter,
   );
 
   if (debug) {
@@ -109,7 +114,7 @@ exports.getUsersByRole = catchAsync(async (req, res, next) => {
 
   const result = await userPagination.paginate(
     { ...req.query, includeStats: "true" },
-    customFilter
+    customFilter,
   );
 
   res.status(200).json({
@@ -132,12 +137,119 @@ exports.getUsersByRole = catchAsync(async (req, res, next) => {
 });
 
 /**
- * Get users by status
+ * ✅ Get users by userType
  */
+exports.getUsersByUserType = catchAsync(async (req, res, next) => {
+  const { userType } = req.params;
+
+  // Validate userType
+  const validUserTypes = ["client", "staff", "lawyer", "admin", "super-admin"];
+  if (!validUserTypes.includes(userType)) {
+    return next(
+      new AppError(
+        `Invalid user type. Must be one of: ${validUserTypes.join(", ")}`,
+        400,
+      ),
+    );
+  }
+
+  const customFilter = {
+    firmId: req.firmId,
+    userType: userType,
+    isDeleted: { $ne: true },
+  };
+
+  if (req.query.includeDeleted === "true") {
+    delete customFilter.isDeleted;
+  } else if (req.query.onlyDeleted === "true") {
+    customFilter.isDeleted = true;
+  }
+
+  const result = await userPagination.paginate(
+    { ...req.query, includeStats: "true" },
+    customFilter,
+  );
+
+  res.status(200).json({
+    success: true,
+    message:
+      result.data.length === 0
+        ? `No ${userType}s found`
+        : `${userType}s fetched successfully`,
+    data: result.data,
+    pagination: result.pagination,
+    statistics: result.statistics,
+  });
+});
+
+/**
+ * ✅ Get all lawyers
+ */
+exports.getAllLawyers = catchAsync(async (req, res, next) => {
+  const customFilter = {
+    firmId: req.firmId,
+    userType: "lawyer",
+    isDeleted: { $ne: true },
+  };
+
+  if (req.query.includeDeleted === "true") {
+    delete customFilter.isDeleted;
+  } else if (req.query.onlyDeleted === "true") {
+    customFilter.isDeleted = true;
+  }
+
+  const result = await userPagination.paginate(
+    { ...req.query, includeStats: "true" },
+    customFilter,
+  );
+
+  res.status(200).json({
+    success: true,
+    message:
+      result.data.length === 0
+        ? "No lawyers found"
+        : "Lawyers fetched successfully",
+    data: result.data,
+    pagination: result.pagination,
+    statistics: result.statistics,
+  });
+});
+
+/**
+ * ✅ Get all clients
+ */
+exports.getAllClients = catchAsync(async (req, res, next) => {
+  const customFilter = {
+    firmId: req.firmId,
+    userType: "client",
+    isDeleted: { $ne: true },
+  };
+
+  if (req.query.includeDeleted === "true") {
+    delete customFilter.isDeleted;
+  } else if (req.query.onlyDeleted === "true") {
+    customFilter.isDeleted = true;
+  }
+
+  const result = await userPagination.paginate(
+    { ...req.query, includeStats: "true" },
+    customFilter,
+  );
+
+  res.status(200).json({
+    success: true,
+    message:
+      result.data.length === 0
+        ? "No clients found"
+        : "Clients fetched successfully",
+    data: result.data,
+    pagination: result.pagination,
+    statistics: result.statistics,
+  });
+});
 
 /**
  * ✅ PROFESSIONAL: Get staff by status (active/inactive)
- * Query: ?status=active or ?status=inactive
  */
 exports.getStaffByStatus = catchAsync(async (req, res, next) => {
   const { status } = req.params;
@@ -153,7 +265,7 @@ exports.getStaffByStatus = catchAsync(async (req, res, next) => {
 
   const customFilter = {
     firmId: req.firmId,
-    role: { $ne: "client" }, // Staff = all non-client roles
+    userType: { $in: ["staff", "lawyer", "admin", "super-admin"] }, // All non-client types
     isActive: isActive,
     isDeleted: { $ne: true },
   };
@@ -168,7 +280,7 @@ exports.getStaffByStatus = catchAsync(async (req, res, next) => {
   if (debug) {
     console.log(
       `🔍 [getStaffByStatus] Filtering ${status} staff:`,
-      customFilter
+      customFilter,
     );
   }
 
@@ -176,24 +288,16 @@ exports.getStaffByStatus = catchAsync(async (req, res, next) => {
     {
       ...req.query,
       includeStats: "true",
-      // Ensure we don't override the status filter
       ...(req.query.isActive && delete req.query.isActive),
     },
-    customFilter
+    customFilter,
   );
 
   res.status(200).json({
     success: true,
     message: `${isActive ? "Active" : "Inactive"} staff fetched successfully`,
     data: result.data,
-    pagination: {
-      currentPage: result.pagination.currentPage,
-      totalPages: result.pagination.totalPages,
-      totalRecords: result.pagination.totalRecords,
-      limit: result.pagination.limit,
-      hasNextPage: result.pagination.hasNextPage,
-      hasPrevPage: result.pagination.hasPrevPage,
-    },
+    pagination: result.pagination,
     statistics: result.statistics,
     statusSummary: {
       status: status,
@@ -206,15 +310,13 @@ exports.getStaffByStatus = catchAsync(async (req, res, next) => {
 
 /**
  * ✅ PROFESSIONAL: Get clients by status (active/inactive)
- * Query: ?status=active or ?status=inactive
  */
 exports.getClientsByStatus = catchAsync(async (req, res, next) => {
   const { status } = req.params;
   const debug =
     process.env.DEBUG_QUERIES === "true" || req.query.debug === "true";
 
-  // Validate status parameter
-  if (!["active", "active", "inactive"].includes(status.toLowerCase())) {
+  if (!["active", "inactive"].includes(status.toLowerCase())) {
     return next(new AppError("Status must be 'active' or 'inactive'", 400));
   }
 
@@ -222,12 +324,11 @@ exports.getClientsByStatus = catchAsync(async (req, res, next) => {
 
   const customFilter = {
     firmId: req.firmId,
-    role: "client",
+    userType: "client",
     isActive: isActive,
     isDeleted: { $ne: true },
   };
 
-  // Handle query overrides
   if (req.query.includeDeleted === "true") {
     delete customFilter.isDeleted;
   } else if (req.query.onlyDeleted === "true") {
@@ -237,7 +338,7 @@ exports.getClientsByStatus = catchAsync(async (req, res, next) => {
   if (debug) {
     console.log(
       `🔍 [getClientsByStatus] Filtering ${status} clients:`,
-      customFilter
+      customFilter,
     );
   }
 
@@ -245,24 +346,16 @@ exports.getClientsByStatus = catchAsync(async (req, res, next) => {
     {
       ...req.query,
       includeStats: "true",
-      // Ensure we don't override the status filter
       ...(req.query.isActive && delete req.query.isActive),
     },
-    customFilter
+    customFilter,
   );
 
   res.status(200).json({
     success: true,
     message: `${isActive ? "Active" : "Inactive"} clients fetched successfully`,
     data: result.data,
-    pagination: {
-      currentPage: result.pagination.currentPage,
-      totalPages: result.pagination.totalPages,
-      totalRecords: result.pagination.totalRecords,
-      limit: result.pagination.limit,
-      hasNextPage: result.pagination.hasNextPage,
-      hasPrevPage: result.pagination.hasPrevPage,
-    },
+    pagination: result.pagination,
     statistics: result.statistics,
     statusSummary: {
       status: status,
@@ -274,15 +367,13 @@ exports.getClientsByStatus = catchAsync(async (req, res, next) => {
 });
 
 /**
- * ✅ PROFESSIONAL: Get all users by status (mixed staff & clients)
- * Useful for admin dashboard showing all inactive users across system
+ * ✅ PROFESSIONAL: Get all users by status
  */
 exports.getAllUsersByStatus = catchAsync(async (req, res, next) => {
   const { status } = req.params;
   const debug =
     process.env.DEBUG_QUERIES === "true" || req.query.debug === "true";
 
-  // Validate status parameter
   if (!["active", "inactive"].includes(status.toLowerCase())) {
     return next(new AppError("Status must be 'active' or 'inactive'", 400));
   }
@@ -295,27 +386,23 @@ exports.getAllUsersByStatus = catchAsync(async (req, res, next) => {
     isDeleted: { $ne: true },
   };
 
-  // Handle query overrides
-  if (req.query.includeDeleted === "true") {
-    delete customFilter.isDeleted;
-  } else if (req.query.onlyDeleted === "true") {
-    customFilter.isDeleted = true;
+  // Allow userType filtering within the status
+  if (req.query.userType) {
+    const userTypes = req.query.userType.split(",").map((t) => t.trim());
+    customFilter.userType =
+      userTypes.length === 1 ? userTypes[0] : { $in: userTypes };
   }
 
-  // Allow role filtering within the status
+  // Allow role filtering
   if (req.query.role) {
     const roles = req.query.role.split(",").map((r) => r.trim());
-    if (roles.length === 1) {
-      customFilter.role = roles[0];
-    } else {
-      customFilter.role = { $in: roles };
-    }
+    customFilter.role = roles.length === 1 ? roles[0] : { $in: roles };
   }
 
   if (debug) {
     console.log(
       `🔍 [getAllUsersByStatus] Filtering ${status} users:`,
-      customFilter
+      customFilter,
     );
   }
 
@@ -323,29 +410,28 @@ exports.getAllUsersByStatus = catchAsync(async (req, res, next) => {
     {
       ...req.query,
       includeStats: "true",
-      // Ensure we don't override the status filter
       ...(req.query.isActive && delete req.query.isActive),
     },
-    customFilter
+    customFilter,
   );
 
   // Enhanced statistics with breakdown
   let enhancedStats = result.statistics || {};
   if (result.data.length > 0) {
-    // Calculate role breakdown within this status
+    const userTypeBreakdown = result.data.reduce((acc, user) => {
+      acc[user.userType] = (acc[user.userType] || 0) + 1;
+      return acc;
+    }, {});
+
     const roleBreakdown = result.data.reduce((acc, user) => {
-      if (user.role === "client") {
-        acc.clients = (acc.clients || 0) + 1;
-      } else {
-        acc.staff = (acc.staff || 0) + 1;
-        acc[user.role] = (acc[user.role] || 0) + 1;
-      }
+      acc[user.role] = (acc[user.role] || 0) + 1;
       return acc;
     }, {});
 
     enhancedStats = {
       ...enhancedStats,
-      statusBreakdown: roleBreakdown,
+      userTypeBreakdown,
+      roleBreakdown,
     };
   }
 
@@ -353,14 +439,7 @@ exports.getAllUsersByStatus = catchAsync(async (req, res, next) => {
     success: true,
     message: `${isActive ? "Active" : "Inactive"} users fetched successfully`,
     data: result.data,
-    pagination: {
-      currentPage: result.pagination.currentPage,
-      totalPages: result.pagination.totalPages,
-      totalRecords: result.pagination.totalRecords,
-      limit: result.pagination.limit,
-      hasNextPage: result.pagination.hasNextPage,
-      hasPrevPage: result.pagination.hasPrevPage,
-    },
+    pagination: result.pagination,
     statistics: enhancedStats,
     statusSummary: {
       status: status,
@@ -374,7 +453,6 @@ exports.getAllUsersByStatus = catchAsync(async (req, res, next) => {
 
 /**
  * ✅ PROFESSIONAL: Get status statistics (aggregated counts)
- * Returns counts of active/inactive for both staff and clients
  */
 exports.getStatusStatistics = catchAsync(async (req, res, next) => {
   const debug =
@@ -383,101 +461,127 @@ exports.getStatusStatistics = catchAsync(async (req, res, next) => {
   try {
     // Get counts in parallel for efficiency
     const [
-      activeStaffCount,
-      inactiveStaffCount,
-      activeClientCount,
-      inactiveClientCount,
-      totalStaffCount,
-      totalClientCount,
+      activeClients,
+      inactiveClients,
+      activeStaff,
+      inactiveStaff,
+      activeLawyers,
+      inactiveLawyers,
+      activeAdmins,
+      inactiveAdmins,
     ] = await Promise.all([
-      // Active staff
-      User.countDocuments({
-        firmId: req.firmId,
-        role: { $ne: "client" },
-        isActive: true,
-        isDeleted: { $ne: true },
-      }),
-      // Inactive staff
-      User.countDocuments({
-        role: { $ne: "client" },
-        isActive: false,
-        isDeleted: { $ne: true },
-      }),
       // Active clients
       User.countDocuments({
-        role: "client",
+        firmId: req.firmId,
+        userType: "client",
         isActive: true,
         isDeleted: { $ne: true },
       }),
       // Inactive clients
       User.countDocuments({
-        role: "client",
+        firmId: req.firmId,
+        userType: "client",
         isActive: false,
         isDeleted: { $ne: true },
       }),
-      // Total staff (for verification)
+      // Active staff
       User.countDocuments({
-        role: { $ne: "client" },
+        firmId: req.firmId,
+        userType: "staff",
+        isActive: true,
         isDeleted: { $ne: true },
       }),
-      // Total clients (for verification)
+      // Inactive staff
       User.countDocuments({
-        role: "client",
+        firmId: req.firmId,
+        userType: "staff",
+        isActive: false,
+        isDeleted: { $ne: true },
+      }),
+      // Active lawyers
+      User.countDocuments({
+        firmId: req.firmId,
+        userType: "lawyer",
+        isActive: true,
+        isDeleted: { $ne: true },
+      }),
+      // Inactive lawyers
+      User.countDocuments({
+        firmId: req.firmId,
+        userType: "lawyer",
+        isActive: false,
+        isDeleted: { $ne: true },
+      }),
+      // Active admins (including super-admin)
+      User.countDocuments({
+        firmId: req.firmId,
+        userType: { $in: ["admin", "super-admin"] },
+        isActive: true,
+        isDeleted: { $ne: true },
+      }),
+      // Inactive admins
+      User.countDocuments({
+        firmId: req.firmId,
+        userType: { $in: ["admin", "super-admin"] },
+        isActive: false,
         isDeleted: { $ne: true },
       }),
     ]);
 
-    // Verify counts match
-    const staffVerification =
-      totalStaffCount === activeStaffCount + inactiveStaffCount;
-    const clientVerification =
-      totalClientCount === activeClientCount + inactiveClientCount;
+    const totalClients = activeClients + inactiveClients;
+    const totalStaff = activeStaff + inactiveStaff;
+    const totalLawyers = activeLawyers + inactiveLawyers;
+    const totalAdmins = activeAdmins + inactiveAdmins;
 
     const statistics = {
-      staff: {
-        active: activeStaffCount,
-        inactive: inactiveStaffCount,
-        total: totalStaffCount,
-        activePercentage:
-          totalStaffCount > 0
-            ? Math.round((activeStaffCount / totalStaffCount) * 100)
-            : 0,
-        verification: staffVerification ? "valid" : "mismatch",
-      },
-      clients: {
-        active: activeClientCount,
-        inactive: inactiveClientCount,
-        total: totalClientCount,
-        activePercentage:
-          totalClientCount > 0
-            ? Math.round((activeClientCount / totalClientCount) * 100)
-            : 0,
-        verification: clientVerification ? "valid" : "mismatch",
-      },
-      overall: {
-        totalActive: activeStaffCount + activeClientCount,
-        totalInactive: inactiveStaffCount + inactiveClientCount,
-        grandTotal: totalStaffCount + totalClientCount,
-        overallActivePercentage:
-          totalStaffCount + totalClientCount > 0
-            ? Math.round(
-                ((activeStaffCount + activeClientCount) /
-                  (totalStaffCount + totalClientCount)) *
-                  100
-              )
-            : 0,
+      byUserType: {
+        clients: {
+          active: activeClients,
+          inactive: inactiveClients,
+          total: totalClients,
+          activePercentage:
+            totalClients > 0
+              ? Math.round((activeClients / totalClients) * 100)
+              : 0,
+        },
+        staff: {
+          active: activeStaff,
+          inactive: inactiveStaff,
+          total: totalStaff,
+          activePercentage:
+            totalStaff > 0 ? Math.round((activeStaff / totalStaff) * 100) : 0,
+        },
+        lawyers: {
+          active: activeLawyers,
+          inactive: inactiveLawyers,
+          total: totalLawyers,
+          activePercentage:
+            totalLawyers > 0
+              ? Math.round((activeLawyers / totalLawyers) * 100)
+              : 0,
+        },
+        admins: {
+          active: activeAdmins,
+          inactive: inactiveAdmins,
+          total: totalAdmins,
+          activePercentage:
+            totalAdmins > 0
+              ? Math.round((activeAdmins / totalAdmins) * 100)
+              : 0,
+        },
       },
       summary: {
-        totalUsers: totalStaffCount + totalClientCount,
-        totalActive: activeStaffCount + activeClientCount,
-        totalInactive: inactiveStaffCount + inactiveClientCount,
-        staffRatio:
-          totalStaffCount > 0
-            ? Math.round((activeStaffCount / totalStaffCount) * 100)
-            : 0,
-        clientRatio:
-          totalClientCount > 0
-            ? Math.round((activeClientCount / totalClientCount) * 100)
+        totalUsers: totalClients + totalStaff + totalLawyers + totalAdmins,
+        totalActive: activeClients + activeStaff + activeLawyers + activeAdmins,
+        totalInactive:
+          inactiveClients + inactiveStaff + inactiveLawyers + inactiveAdmins,
+        overallActivePercentage:
+          totalClients + totalStaff + totalLawyers + totalAdmins > 0
+            ? Math.round(
+                ((activeClients + activeStaff + activeLawyers + activeAdmins) /
+                  (totalClients + totalStaff + totalLawyers + totalAdmins)) *
+                  100,
+              )
             : 0,
       },
       timestamp: new Date().toISOString(),
@@ -498,7 +602,9 @@ exports.getStatusStatistics = catchAsync(async (req, res, next) => {
   }
 });
 
-//
+/**
+ * Get users by status
+ */
 exports.getUsersByStatus = catchAsync(async (req, res, next) => {
   const customFilter = {
     firmId: req.firmId,
@@ -508,7 +614,7 @@ exports.getUsersByStatus = catchAsync(async (req, res, next) => {
 
   const result = await userPagination.paginate(
     { ...req.query, includeStats: "true" },
-    customFilter
+    customFilter,
   );
 
   res.status(200).json({
@@ -531,7 +637,7 @@ exports.getActiveUsers = catchAsync(async (req, res, next) => {
 
   const result = await userPagination.paginate(
     { ...req.query, includeStats: "true" },
-    customFilter
+    customFilter,
   );
 
   res.status(200).json({
@@ -543,17 +649,16 @@ exports.getActiveUsers = catchAsync(async (req, res, next) => {
 });
 
 /**
- * ✅ NEW: Get user statistics only (no data)
+ * ✅ Get user statistics only (no data)
  */
 exports.getUserStatistics = catchAsync(async (req, res, next) => {
-  // Get statistics without paginated data
   const result = await userPagination.paginate(
     {
       page: 1,
       limit: 1,
       includeStats: "true",
     },
-    { firm: req.firmId }
+    { firmId: req.firmId, isDeleted: { $ne: true } },
   );
 
   res.status(200).json({
@@ -563,14 +668,13 @@ exports.getUserStatistics = catchAsync(async (req, res, next) => {
 });
 
 /**
- * ✅ NEW: Get staff-specific statistics
- * Returns stats for staff members only (excluding clients)
+ * ✅ Get staff-specific statistics
  */
 exports.getStaffStatistics = catchAsync(async (req, res, next) => {
   const customFilter = {
-    role: { $ne: "client" },
-    isDeleted: { $ne: true },
     firmId: req.firmId,
+    userType: { $in: ["staff", "lawyer", "admin", "super-admin"] },
+    isDeleted: { $ne: true },
   };
 
   const result = await userPagination.paginate(
@@ -579,7 +683,7 @@ exports.getStaffStatistics = catchAsync(async (req, res, next) => {
       limit: 1,
       includeStats: "true",
     },
-    customFilter
+    customFilter,
   );
 
   res.status(200).json({
@@ -589,12 +693,12 @@ exports.getStaffStatistics = catchAsync(async (req, res, next) => {
 });
 
 /**
- * ✅ NEW: Get client-specific statistics
+ * ✅ Get client-specific statistics
  */
 exports.getClientStatistics = catchAsync(async (req, res, next) => {
   const customFilter = {
-    firm: req.firmId,
-    role: "client",
+    firmId: req.firmId,
+    userType: "client",
     isDeleted: { $ne: true },
   };
 
@@ -604,7 +708,7 @@ exports.getClientStatistics = catchAsync(async (req, res, next) => {
       limit: 1,
       includeStats: "true",
     },
-    customFilter
+    customFilter,
   );
 
   res.status(200).json({
@@ -612,8 +716,6 @@ exports.getClientStatistics = catchAsync(async (req, res, next) => {
     statistics: result.statistics,
   });
 });
-
-// ... rest of your existing controller methods remain the same ...
 
 /**
  * GET A USER (current user)
@@ -626,6 +728,10 @@ exports.getUser = catchAsync(async (req, res, next) => {
     .populate({
       path: "task",
       select: "-assignedTo",
+    })
+    .populate({
+      path: "firmId",
+      select: "name address contact.email logo",
     })
     .lean();
 
@@ -648,12 +754,16 @@ exports.getUser = catchAsync(async (req, res, next) => {
  */
 exports.getSingleUser = catchAsync(async (req, res, next) => {
   const data = await User.findOne({
-    _id: req.user._id,
-    firmId: req.firmId, // ✅ ADD THIS
+    _id: req.params.id,
+    firmId: req.firmId,
   })
     .populate({
       path: "task",
       select: "-assignedTo",
+    })
+    .populate({
+      path: "firmId",
+      select: "name address contact.email logo",
     })
     .lean();
 
@@ -665,9 +775,17 @@ exports.getSingleUser = catchAsync(async (req, res, next) => {
     return next(new AppError("This user account has been deleted", 404));
   }
 
+  // Hide sensitive information based on user role
+  const safeData = { ...data };
+  if (req.user.role !== "super-admin" && req.user.role !== "admin") {
+    delete safeData.adminDetails;
+    delete safeData.lawyerDetails?.hourlyRate;
+    delete safeData.lawyerDetails?.retainerFee;
+  }
+
   res.status(200).json({
     success: true,
-    data,
+    data: safeData,
   });
 });
 
@@ -679,29 +797,58 @@ exports.updateUser = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         "This route is not for password updates. Please use /updateMyPassword.",
-        400
-      )
+        400,
+      ),
     );
   }
 
-  const filteredBody = filterObj(
-    req.body,
-    "email",
+  // Filter allowed fields
+  const allowedFields = [
     "firstName",
     "lastName",
-    "secondName",
     "middleName",
+    "email",
     "photo",
     "address",
-    "bio",
+    "gender",
+    "dateOfBirth",
     "phone",
-    "yearOfCall",
-    "otherPosition",
-    "practiceArea",
-    "universityAttended",
-    "lawSchoolAttended",
-    "isActive"
-  );
+    "bio",
+    "isActive",
+    "preferences",
+  ];
+
+  const filteredBody = filterObj(req.body, ...allowedFields);
+
+  // Add type-specific fields based on userType
+  const user = await User.findById(req.user.id);
+  if (user) {
+    switch (user.userType) {
+      case "client":
+        if (req.body.clientDetails) {
+          filteredBody.clientDetails = req.body.clientDetails;
+        }
+        break;
+      case "staff":
+        if (req.body.staffDetails) {
+          filteredBody.staffDetails = req.body.staffDetails;
+        }
+        break;
+      case "lawyer":
+        if (req.body.lawyerDetails) {
+          filteredBody.lawyerDetails = req.body.lawyerDetails;
+        }
+        if (req.body.professionalInfo) {
+          filteredBody.professionalInfo = req.body.professionalInfo;
+        }
+        break;
+      case "admin":
+        if (req.body.adminDetails) {
+          filteredBody.adminDetails = req.body.adminDetails;
+        }
+        break;
+    }
+  }
 
   if (req.file) filteredBody.photo = req.file.cloudinaryUrl;
 
@@ -711,7 +858,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
       firmId: req.firmId,
     },
     filteredBody,
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   );
 
   if (!updatedUser) {
@@ -731,9 +878,10 @@ exports.updateUser = catchAsync(async (req, res, next) => {
  * UPDATE USER PROFILE BY ADMIN
  */
 exports.upgradeUser = catchAsync(async (req, res, next) => {
-  const { role, position, isActive } = req.body;
   const { id } = req.params;
+  const { userType, role, position, isActive, ...otherFields } = req.body;
 
+  // Find the user
   const user = await User.findOne({
     _id: id,
     firmId: req.firmId,
@@ -747,17 +895,66 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
     return next(new AppError("Cannot update a deleted user account", 400));
   }
 
-  if (user.role !== "client") {
-    user.role = role;
-    user.position = position;
-    user.isActive = isActive;
-  } else {
-    if (role || position) {
-      return next(
-        new AppError("Clients can only have their active status updated.", 400)
-      );
+  // Check permission
+  if (req.user.role === "admin" && user.role === "super-admin") {
+    return next(new AppError("Admins cannot update super-admin accounts", 403));
+  }
+
+  // Update userType and role (only if different)
+  if (userType && userType !== user.userType) {
+    user.userType = userType;
+    // Auto-set role based on userType
+    if (userType === "client") {
+      user.role = "client";
+      user.position = null;
+    } else if (userType === "lawyer") {
+      user.role = "lawyer";
+      user.isLawyer = true;
+    } else if (userType === "admin") {
+      user.role = role || "admin";
+    } else if (userType === "staff") {
+      user.role = role || "staff";
     }
+  }
+
+  // Update other fields
+  if (role && user.userType !== "client") {
+    user.role = role;
+  }
+
+  if (position && user.userType !== "client") {
+    user.position = position;
+  }
+
+  if (typeof isActive !== "undefined") {
     user.isActive = isActive;
+  }
+
+  // Update type-specific details
+  if (req.body.clientDetails && user.userType === "client") {
+    user.clientDetails = { ...user.clientDetails, ...req.body.clientDetails };
+  }
+
+  if (req.body.staffDetails && user.userType === "staff") {
+    user.staffDetails = { ...user.staffDetails, ...req.body.staffDetails };
+  }
+
+  if (req.body.lawyerDetails && user.userType === "lawyer") {
+    user.lawyerDetails = { ...user.lawyerDetails, ...req.body.lawyerDetails };
+  }
+
+  if (
+    req.body.adminDetails &&
+    (user.userType === "admin" || user.userType === "super-admin")
+  ) {
+    user.adminDetails = { ...user.adminDetails, ...req.body.adminDetails };
+  }
+
+  if (req.body.professionalInfo) {
+    user.professionalInfo = {
+      ...user.professionalInfo,
+      ...req.body.professionalInfo,
+    };
   }
 
   await user.save({ validateBeforeSave: false });
@@ -806,6 +1003,7 @@ exports.softDeleteUser = catchAsync(async (req, res, next) => {
   user.isDeleted = true;
   user.deletedAt = new Date();
   user.isActive = false;
+  user.deletedBy = req.user._id;
   await user.save({ validateBeforeSave: false });
 
   res.status(200).json({
@@ -823,6 +1021,7 @@ exports.restoreUser = catchAsync(async (req, res, next) => {
     _id: req.params.id,
     firmId: req.firmId,
   });
+
   if (!user) {
     return next(new AppError("No user found with that ID", 404));
   }
@@ -833,6 +1032,7 @@ exports.restoreUser = catchAsync(async (req, res, next) => {
 
   user.isDeleted = false;
   user.deletedAt = null;
+  user.deletedBy = null;
   await user.save({ validateBeforeSave: false });
 
   res.status(200).json({
@@ -857,6 +1057,7 @@ exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
     email: send_to,
     isDeleted: { $ne: true },
   });
+
   if (!user) {
     return next(new AppError("No active user found with that email", 404));
   }
@@ -866,6 +1067,7 @@ exports.sendAutomatedEmail = catchAsync(async (req, res, next) => {
   const baseContext = {
     ...context,
     name: user.firstName,
+    userType: user.userType,
     link: `${process.env.FRONTEND_URL}/${url}`,
   };
 
@@ -922,6 +1124,7 @@ const sanitizeForEmail = (maybeEncodedHtml) => {
  */
 exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
   const { send_to, reply_to, template, subject, url, context } = req.body;
+  const firm = await Firm.findById(req.firmId);
 
   if (!send_to || !reply_to || !template || !subject) {
     return next(new AppError("Missing email fields", 400));
@@ -934,7 +1137,7 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
     ...context,
     link: `${process.env.FRONTEND_URL}/${url}`,
     year: new Date().getFullYear(),
-    companyName: process.env.COMPANY_NAME || "A.T Lukman & Co",
+    companyName: firm.name,
   };
 
   if (template === "caseReport" && baseContext.update) {
@@ -953,13 +1156,17 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
         firmId: req.firmId,
         isDeleted: { $ne: true },
       });
+
       if (!user) {
         throw new AppError(
           `No active user found with email: ${recipientEmail}`,
-          404
+          404,
         );
       }
+
       fullContext.name = user.firstName;
+      fullContext.userType = user.userType;
+      fullContext.position = user.position;
     }
 
     const send_from = process.env.SENDINBLUE_EMAIL;
@@ -970,7 +1177,7 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
       send_from,
       reply_to,
       template,
-      fullContext
+      fullContext,
     );
   };
 
@@ -989,51 +1196,54 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
  * ✅ Get users for select dropdowns (lightweight, unpaginated)
  * Query params:
  * - type: 'staff' | 'clients' | 'lawyers' | 'admins' | 'all'
+ * - userType: specific userType filter
  * - includeInactive: 'true' | 'false' (default: false)
  */
 exports.getUserSelectOptions = catchAsync(async (req, res, next) => {
-  const { type = "staff", includeInactive = "false" } = req.query;
+  const { type = "staff", userType, includeInactive = "false" } = req.query;
 
-  // Build filter based on type
+  // Build filter
   let filter = {
     firmId: req.firmId,
     isDeleted: { $ne: true },
   };
 
-  // Only include active users by default
   if (includeInactive !== "true") {
     filter.isActive = true;
   }
 
   // Apply type filter
-  switch (type) {
-    case "staff":
-      filter.role = { $ne: "client" };
-      break;
-    case "clients":
-      filter.role = "client";
-      break;
-    case "lawyers":
-      filter.isLawyer = true;
-      filter.role = { $ne: "client" };
-      break;
-    case "admins":
-      filter.role = { $in: ["admin", "super-admin"] };
-      break;
-    case "hr":
-      filter.role = "hr";
-      break;
-    case "all":
-      // No additional role filter
-      break;
-    default:
-      filter.role = { $ne: "client" };
+  if (userType) {
+    filter.userType = userType;
+  } else {
+    switch (type) {
+      case "staff":
+        filter.userType = { $in: ["staff", "lawyer", "admin", "super-admin"] };
+        break;
+      case "clients":
+        filter.userType = "client";
+        break;
+      case "lawyers":
+        filter.userType = "lawyer";
+        break;
+      case "admins":
+        filter.userType = { $in: ["admin", "super-admin"] };
+        break;
+      case "hr":
+        filter.role = "hr";
+        break;
+      case "all":
+        // No additional filter
+        break;
+      default:
+        filter.userType = { $in: ["staff", "lawyer", "admin", "super-admin"] };
+    }
   }
 
-  // Fetch only necessary fields for select options
+  // Fetch only necessary fields
   const users = await User.find(filter)
     .select(
-      "firstName lastName middleName email role position isLawyer practiceArea isActive"
+      "firstName lastName middleName email role userType position isLawyer practiceArea isActive lawyerDetails.practiceAreas",
     )
     .sort({ firstName: 1 })
     .lean();
@@ -1046,18 +1256,23 @@ exports.getUserSelectOptions = catchAsync(async (req, res, next) => {
 
     // Add context to display name
     if (!user.isActive) displayName += " (Inactive)";
-    if (user.role === "client") displayName += " (Client)";
     if (user.position) displayName += ` - ${user.position}`;
+
+    // Add user type indicator for clarity
+    if (user.userType === "client") displayName += " (Client)";
+    if (user.userType === "lawyer") displayName += " (Lawyer)";
 
     return {
       value: user._id,
       label: displayName.trim(),
       email: user.email,
       role: user.role,
+      userType: user.userType,
       isActive: user.isActive,
       isLawyer: user.isLawyer,
       position: user.position,
       practiceArea: user.practiceArea,
+      lawyerPracticeAreas: user.lawyerDetails?.practiceAreas || [],
     };
   });
 
@@ -1070,7 +1285,7 @@ exports.getUserSelectOptions = catchAsync(async (req, res, next) => {
 });
 
 /**
- * ✅ Get multiple select option types in one request (for efficiency) no pagination
+ * ✅ Get multiple select option types in one request
  */
 exports.getAllSelectOptions = catchAsync(async (req, res, next) => {
   const { includeInactive = "false" } = req.query;
@@ -1084,10 +1299,10 @@ exports.getAllSelectOptions = catchAsync(async (req, res, next) => {
     baseFilter.isActive = true;
   }
 
-  // Fetch all users once with minimal fields
+  // Fetch all users once
   const allUsers = await User.find(baseFilter)
     .select(
-      "firstName lastName middleName email role position isLawyer practiceArea isActive"
+      "firstName lastName middleName email role userType position isLawyer practiceArea isActive lawyerDetails.practiceAreas",
     )
     .sort({ firstName: 1 })
     .lean();
@@ -1105,39 +1320,36 @@ exports.getAllSelectOptions = catchAsync(async (req, res, next) => {
       label: displayName.trim(),
       email: user.email,
       role: user.role,
+      userType: user.userType,
       isActive: user.isActive,
       isLawyer: user.isLawyer,
       position: user.position,
       practiceArea: user.practiceArea,
+      lawyerPracticeAreas: user.lawyerDetails?.practiceAreas || [],
     };
   };
 
-  // Categorize users
+  // Categorize users by userType
   const options = {
-    staff: allUsers.filter((u) => u.role !== "client").map(formatUser),
-
-    clients: allUsers.filter((u) => u.role === "client").map(formatUser),
-
-    lawyers: allUsers
-      .filter((u) => u.isLawyer === true && u.role !== "client")
-      .map(formatUser),
-
+    clients: allUsers.filter((u) => u.userType === "client").map(formatUser),
+    staff: allUsers.filter((u) => u.userType === "staff").map(formatUser),
+    lawyers: allUsers.filter((u) => u.userType === "lawyer").map(formatUser),
     admins: allUsers
-      .filter((u) => ["admin", "super-admin"].includes(u.role))
+      .filter((u) => u.userType === "admin" || u.userType === "super-admin")
       .map(formatUser),
-
-    hr: allUsers.filter((u) => u.role === "hr").map(formatUser),
-
     all: allUsers.map(formatUser),
   };
+
+  // Add role-based categories for backward compatibility
+  options.hr = allUsers.filter((u) => u.role === "hr").map(formatUser);
 
   res.status(200).json({
     success: true,
     message: "All select options fetched successfully",
     data: options,
     counts: {
-      staff: options.staff.length,
       clients: options.clients.length,
+      staff: options.staff.length,
       lawyers: options.lawyers.length,
       admins: options.admins.length,
       hr: options.hr.length,
@@ -1145,4 +1357,5 @@ exports.getAllSelectOptions = catchAsync(async (req, res, next) => {
     },
   });
 });
+
 module.exports = exports;
