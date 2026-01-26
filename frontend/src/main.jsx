@@ -4,13 +4,13 @@ import App from "./App.jsx";
 import { Provider } from "react-redux";
 import { store } from "./redux/store/store.js";
 import { GoogleOAuthProvider } from "@react-oauth/google";
-import AuthContextProvider from "./context/authContext.jsx";
+import AuthContextProvider from "./contexts/authContext.jsx";
 import "./ClientDashboard.css";
 import "../../frontend/src/components/tasks/TaskList.css";
 import "./index.css";
 
-import PhotoContextProvider from "./context/photoContext.jsx";
-import { DataFetcherContext } from "./context/dataFetcherContext.jsx";
+import PhotoContextProvider from "./contexts/photoContext.jsx";
+import { DataFetcherContext } from "./contexts/dataFetcherContext.jsx";
 import ReportDataProvider from "../providers/ReportDataProvider.jsx";
 
 const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID; //google oauth client id
@@ -30,5 +30,5 @@ ReactDOM.createRoot(document.getElementById("root")).render(
         </AuthContextProvider>
       </GoogleOAuthProvider>
     </Provider>
-  </React.StrictMode>
+  </React.StrictMode>,
 );

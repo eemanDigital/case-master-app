@@ -9,6 +9,82 @@ export const statusOptions = [
   { label: "Lost", value: "lost" },
 ];
 
+export const clientCategoryOptions = [
+  { value: "individual", label: "Individual" },
+  { value: "corporate", label: "Corporate" },
+  { value: "government", label: "Government" },
+  { value: "ngo", label: "NGO / Non-Profit" },
+];
+
+export const contactMethodOptions = [
+  { value: "email", label: "Email" },
+  { value: "phone", label: "Phone Call" },
+  { value: "whatsapp", label: "WhatsApp" },
+  { value: "in-person", label: "In Person" },
+];
+
+// Employment Type Options
+export const employmentTypeOptions = [
+  { value: "full-time", label: "Full Time" },
+  { value: "part-time", label: "Part Time" },
+  { value: "contract", label: "Contract" },
+  { value: "intern", label: "Intern" },
+];
+
+// Work Schedule Options
+export const workScheduleOptions = [
+  { value: "9-5", label: "9 – 5" },
+  { value: "flexible", label: "Flexible" },
+  { value: "shift", label: "Shift" },
+  { value: "remote", label: "Remote" },
+  { value: "hybrid", label: "Hybrid" },
+];
+
+export const genderOptions = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+];
+export const positionOptions = [
+  { value: "junior associate", label: "Junior Associate" },
+  { value: "senior associate", label: "Senior Associate" },
+  { value: "partner", label: "Partner" },
+  { value: "intern", label: "Intern" },
+];
+
+export const languageProficiencyOptions = [
+  { value: "basic", label: "Basic" },
+  { value: "intermediate", label: "Intermediate" },
+  { value: "fluent", label: "Fluent" },
+  { value: "native", label: "Native" },
+];
+
+export const practiceAreasOptions = [
+  { value: "corporate", label: "Corporate Law" },
+  { value: "criminal", label: "Criminal Law" },
+  { value: "family", label: "Family Law" },
+  { value: "real-estate", label: "Real Estate" },
+  { value: "intellectual-property", label: "Intellectual Property" },
+  { value: "tax", label: "Tax Law" },
+  { value: "labor", label: "Labour & Employment" },
+  { value: "immigration", label: "Immigration" },
+  { value: "bankruptcy", label: "Bankruptcy & Insolvency" },
+  { value: "personal-injury", label: "Personal Injury" },
+  { value: "estate-planning", label: "Estate Planning" },
+  { value: "other", label: "Other" },
+];
+
+export const systemAccessLevelOptions = [
+  { value: "full", label: "Full Access" },
+  { value: "restricted", label: "Restricted Access" },
+  { value: "view-only", label: "View Only" },
+];
+
+export const adminLevelOptions = [
+  { value: "system", label: "System Level" },
+  { value: "firm", label: "Firm Level" },
+  { value: "department", label: "Department Level" },
+];
+
 // Court names options
 export const courtOptions = [
   { label: "Select Court", value: " " },
@@ -152,6 +228,51 @@ export const paymentStatusOptions = [
   { value: "pending", label: "Pending" },
   { value: "failed", label: "Failed" },
   { value: "refunded", label: "Refunded" },
+];
+export const userStatusOptions = [
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "suspended", label: "Suspended" },
+  { value: "pending", label: "Pending Verification" },
+];
+export const staffDepartmentOptions = [
+  { value: "hr", label: "Human Resources" },
+  { value: "finance", label: "Finance" },
+  { value: "it", label: "IT / Technology" },
+  { value: "administration", label: "Administration" },
+  { value: "support", label: "Support" },
+  { value: "other", label: "Other" },
+];
+export const roleOptions = [
+  { value: "client", label: "Client" },
+  { value: "staff", label: "Staff" },
+  { value: "lawyer", label: "Lawyer" },
+  { value: "secretary", label: "Secretary" },
+  { value: "hr", label: "HR" },
+  { value: "admin", label: "Administrator" },
+  { value: "super-admin", label: "Super Administrator" },
+];
+export const userTypeOptions = [
+  {
+    value: "client",
+    label: "Client",
+    description: "Individuals or organizations receiving legal services",
+  },
+  {
+    value: "staff",
+    label: "Staff",
+    description: "Non-lawyer employees of the firm",
+  },
+  {
+    value: "lawyer",
+    label: "Lawyer",
+    description: "Legal practitioners in the firm",
+  },
+  {
+    value: "admin",
+    label: "Administrator",
+    description: "System or firm administrators",
+  },
 ];
 
 export const positions = [

@@ -1,3 +1,4 @@
+// pages/StaffList.jsx
 import React, { memo, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -10,6 +11,8 @@ import {
   Col,
   Spin,
   Tag,
+  Space,
+  Button,
 } from "antd";
 import {
   PlusOutlined,
@@ -19,6 +22,7 @@ import {
   CrownOutlined,
   CheckCircleOutlined,
   EyeOutlined,
+  FilterOutlined,
 } from "@ant-design/icons";
 import { useUserList } from "../hooks/useUserList";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -35,7 +39,6 @@ const StaffList = memo(() => {
   const { user } = useSelector((state) => state.auth);
   const { isAdminOrHr, isSuperOrAdmin, isStaff } = useAdminHook();
 
-  // ✅ Use fixed hook with "staff" filter
   const {
     filteredList: staffList,
     filters,
@@ -45,86 +48,60 @@ const StaffList = memo(() => {
     totalPages,
     loading,
     paginationData,
-    statistics, // ✅ Get statistics directly from hook
+    statistics,
     handleFiltersChange,
     resetFilters,
     removeUser,
     handlePageChange,
-  } = useUserList("staff"); // ✅ Pass "staff" role
+  } = useUserList("staff");
 
-  console.log("✅ StaffList - Data:", {
-    staffListLength: staffList.length,
-    totalRecords,
-    totalPages,
-    currentPage,
-    paginationData,
-    statistics, // Debug log statistics
-  });
-
-  // ✅ Calculate statistics from the API response
+  // Extract statistics with safe fallbacks
   const usersCount = useUsersCount({
-    statistics, // ✅ Use statistics directly from hook (FIXED)
+    statistics,
     data: staffList,
   });
 
-  console.log("📊 usersCount:", usersCount); // Debug log
+  const getUsersCountValue = useCallback(
+    (key, defaultValue = 0) => {
+      if (!usersCount || typeof usersCount !== "object") return defaultValue;
+      if (typeof usersCount === "number") return usersCount;
+      if (usersCount[key] !== undefined) return usersCount[key];
+      if (usersCount.breakdown?.[key] !== undefined) {
+        return usersCount.breakdown[key];
+      }
 
-  // ✅ Safely extract values from usersCount object
-  const getUsersCountValue = (key, defaultValue = 0) => {
-    if (!usersCount || typeof usersCount !== "object") return defaultValue;
+      const commonKeys = {
+        staff: ["staff", "totalStaff", "staffCount"],
+        totalActiveUsers: ["totalActiveUsers", "active", "activeUsers"],
+        lawyerCount: ["lawyerCount", "lawyers", "lawyer"],
+        adminsCount: ["adminsCount", "admins", "adminCount"],
+        hr: ["hr", "hrCount"],
+        secretary: ["secretary", "secretaries"],
+        clientCount: ["clientCount", "clients"],
+        verifiedUsers: ["verifiedUsers", "verified"],
+        inactiveUsers: ["inactiveUsers", "inactive"],
+      };
 
-    // If usersCount is a number, return it
-    if (typeof usersCount === "number") return usersCount;
-
-    // If usersCount is an object with nested structure
-    if (usersCount[key] !== undefined) return usersCount[key];
-
-    // Try to get from breakdown if available
-    if (usersCount.breakdown && usersCount.breakdown[key] !== undefined) {
-      return usersCount.breakdown[key];
-    }
-
-    // Try common keys
-    const commonKeys = {
-      staff: ["staff", "totalStaff", "staffCount"],
-      totalActiveUsers: [
-        "totalActiveUsers",
-        "active",
-        "activeUsers",
-        "totalActive",
-      ],
-      lawyerCount: ["lawyerCount", "lawyers", "lawyer"],
-      adminsCount: ["adminsCount", "admins", "adminCount"],
-      hr: ["hr", "hrCount"],
-      secretary: ["secretary", "secretaries", "secretaryCount"],
-      clientCount: ["clientCount", "clients", "totalClients"],
-      verifiedUsers: ["verifiedUsers", "verified"],
-      inactiveUsers: ["inactiveUsers", "inactive"],
-    };
-
-    if (commonKeys[key]) {
-      for (const altKey of commonKeys[key]) {
-        if (usersCount[altKey] !== undefined) {
-          return usersCount[altKey];
+      if (commonKeys[key]) {
+        for (const altKey of commonKeys[key]) {
+          if (usersCount[altKey] !== undefined) return usersCount[altKey];
         }
       }
-    }
+      return defaultValue;
+    },
+    [usersCount],
+  );
 
-    return defaultValue;
-  };
-
-  // ✅ Extract specific values
   const staffCount = getUsersCountValue("staff");
   const activeCount = getUsersCountValue("totalActiveUsers");
   const lawyerCount = getUsersCountValue("lawyerCount");
   const adminsCount = getUsersCountValue("adminsCount");
   const hrCount = getUsersCountValue("hr");
   const secretaryCount = getUsersCountValue("secretary");
-  const clientCount = getUsersCountValue("clientCount");
   const verifiedCount = getUsersCountValue("verifiedUsers");
   const inactiveCount = getUsersCountValue("inactiveUsers");
 
-  // ✅ Filter staff for current user if regular staff
+  // Filter staff for regular users
   const filteredStaff = useMemo(() => {
     if (isStaff && !isAdminOrHr && !isSuperOrAdmin && user) {
       const userId = user._id || user.data?._id;
@@ -139,19 +116,19 @@ const StaffList = memo(() => {
       delete newFilters[key];
       handleFiltersChange(newFilters);
     },
-    [filters, handleFiltersChange]
+    [filters, handleFiltersChange],
   );
 
   const paginationText = useCallback(
     (total) => {
       const start = (currentPage - 1) * itemsPerPage + 1;
       const end = Math.min(currentPage * itemsPerPage, total);
-      return `Showing ${start}-${end} of ${total} staff members`;
+      return `${start}-${end} of ${total}`;
     },
-    [currentPage, itemsPerPage]
+    [currentPage, itemsPerPage],
   );
 
-  // Show limited access for regular staff
+  // Limited access view for staff
   if (
     isStaff &&
     !isAdminOrHr &&
@@ -160,226 +137,335 @@ const StaffList = memo(() => {
     !loading
   ) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4">
-          <Card className="text-center shadow-lg">
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-700 mb-2">
-                    Limited Staff Access
-                  </h3>
-                  <p className="text-gray-500">
-                    As staff, you can only view your own profile. You cannot see
-                    other staff members' information.
-                  </p>
-                </div>
-              }
-            />
-            <div className="mt-6">
-              <Link
-                to={`/dashboard/staff/${user?._id || user?.data?._id}/details`}>
-                <ButtonWithIcon
-                  icon={<EyeOutlined />}
-                  text="View My Profile"
-                  type="primary"
-                />
-              </Link>
-            </div>
-          </Card>
-        </div>
+      <div className="min-h-screen bg-gray-50 py-4 px-4">
+        <Card className="max-w-2xl mx-auto text-center shadow-md">
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+            description={
+              <Space direction="vertical" size="small">
+                <h3 className="text-base md:text-lg font-semibold text-gray-700">
+                  Limited Staff Access
+                </h3>
+                <p className="text-sm text-gray-500">
+                  You can only view your own profile. Contact HR for directory
+                  access.
+                </p>
+              </Space>
+            }
+          />
+          <div className="mt-6">
+            <Link
+              to={`/dashboard/staff/${user?._id || user?.data?._id}/details`}>
+              <Button
+                type="primary"
+                icon={<EyeOutlined />}
+                size="large"
+                block
+                className="max-w-xs mx-auto">
+                View My Profile
+              </Button>
+            </Link>
+          </div>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-6">
-      <div className="max-w-7xl mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-                <TeamOutlined className="text-blue-500" />
-                Staff Management
-              </h1>
-              <p className="text-gray-600 mt-2">
-                {isAdminOrHr || isSuperOrAdmin
-                  ? "Manage all staff accounts, roles, and permissions"
-                  : "View staff directory and team information"}
-              </p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+        {/* Mobile Header */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            {/* Title Row */}
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-800 flex items-center gap-2 truncate">
+                  <TeamOutlined className="text-blue-500 flex-shrink-0" />
+                  <span className="truncate">Staff</span>
+                </h1>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1 line-clamp-2">
+                  {isAdminOrHr || isSuperOrAdmin
+                    ? "Manage team accounts and permissions"
+                    : "View staff directory"}
+                </p>
+              </div>
+
+              {/* Add Button - Desktop */}
+              {(isAdminOrHr || isSuperOrAdmin) && (
+                <Link to="add-user" className="hidden sm:block flex-shrink-0">
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    size="large"
+                    className="bg-blue-600 hover:bg-blue-700">
+                    <span className="hidden lg:inline ml-1">Add Staff</span>
+                  </Button>
+                </Link>
+              )}
             </div>
 
-            {/* Add Staff Button */}
+            {/* Mobile Add Button */}
             {(isAdminOrHr || isSuperOrAdmin) && (
-              <Link to="add-user">
-                <ButtonWithIcon
-                  icon={<PlusOutlined className="mr-2" />}
-                  text="Add Staff Member"
+              <Link to="add-user" className="sm:hidden">
+                <Button
                   type="primary"
+                  icon={<PlusOutlined />}
                   size="large"
-                  className="bg-blue-600 hover:bg-blue-700 border-0"
-                />
+                  block
+                  className="bg-blue-600">
+                  Add Staff Member
+                </Button>
               </Link>
             )}
           </div>
 
-          {/* Access Notice */}
+          {/* Limited Access Alert */}
           {isStaff && !isAdminOrHr && !isSuperOrAdmin && (
             <Alert
               message="Limited Access"
-              description="You can view your own profile and basic staff directory. Administrative functions are restricted."
+              description="Basic directory access only. Administrative functions restricted."
               type="info"
               showIcon
               closable
-              className="mb-6"
+              className="mt-4 text-xs sm:text-sm"
             />
           )}
         </div>
 
-        {/* Statistics Cards */}
+        {/* Statistics - Mobile Optimized */}
         {(isAdminOrHr || isSuperOrAdmin) && (
-          <Row gutter={[16, 16]} className="mb-6">
-            <Col xs={24} sm={12} md={4}>
-              <Card className="text-center shadow-sm hover:shadow-md transition-shadow h-full">
-                <Statistic
-                  title="Total Staff"
-                  value={staffCount}
-                  prefix={<TeamOutlined className="text-blue-500" />}
-                  valueStyle={{ color: "#1890ff", fontSize: "1.5rem" }}
-                />
-              </Card>
-            </Col>
+          <div className="mb-4 sm:mb-6">
+            {/* Mobile: 2 columns */}
+            <Row gutter={[8, 8]} className="sm:hidden">
+              <Col span={12}>
+                <Card size="small" className="text-center">
+                  <Statistic
+                    title={<span className="text-xs">Staff</span>}
+                    value={staffCount}
+                    prefix={<TeamOutlined className="text-blue-500" />}
+                    valueStyle={{ fontSize: "1.25rem", color: "#1890ff" }}
+                  />
+                </Card>
+              </Col>
+              <Col span={12}>
+                <Card size="small" className="text-center">
+                  <Statistic
+                    title={<span className="text-xs">Active</span>}
+                    value={activeCount}
+                    prefix={<CheckCircleOutlined className="text-green-500" />}
+                    valueStyle={{ fontSize: "1.25rem", color: "#52c41a" }}
+                  />
+                </Card>
+              </Col>
+              <Col span={12}>
+                <Card size="small" className="text-center">
+                  <Statistic
+                    title={<span className="text-xs">Lawyers</span>}
+                    value={lawyerCount}
+                    prefix={
+                      <SafetyCertificateOutlined className="text-purple-500" />
+                    }
+                    valueStyle={{ fontSize: "1.25rem", color: "#722ed1" }}
+                  />
+                </Card>
+              </Col>
+              <Col span={12}>
+                <Card size="small" className="text-center">
+                  <Statistic
+                    title={<span className="text-xs">Admins</span>}
+                    value={adminsCount}
+                    prefix={<CrownOutlined className="text-orange-500" />}
+                    valueStyle={{ fontSize: "1.25rem", color: "#fa8c16" }}
+                  />
+                </Card>
+              </Col>
+            </Row>
 
-            <Col xs={24} sm={12} md={4}>
-              <Card className="text-center shadow-sm hover:shadow-md transition-shadow h-full">
-                <Statistic
-                  title="Active"
-                  value={activeCount}
-                  prefix={<CheckCircleOutlined className="text-green-500" />}
-                  valueStyle={{ color: "#52c41a", fontSize: "1.5rem" }}
-                />
-              </Card>
-            </Col>
+            {/* Tablet: 3 columns */}
+            <Row
+              gutter={[12, 12]}
+              className="hidden sm:grid md:hidden grid-cols-3">
+              <Col>
+                <Card className="text-center">
+                  <Statistic
+                    title="Staff"
+                    value={staffCount}
+                    prefix={<TeamOutlined className="text-blue-500" />}
+                    valueStyle={{ fontSize: "1.5rem", color: "#1890ff" }}
+                  />
+                </Card>
+              </Col>
+              <Col>
+                <Card className="text-center">
+                  <Statistic
+                    title="Active"
+                    value={activeCount}
+                    prefix={<CheckCircleOutlined className="text-green-500" />}
+                    valueStyle={{ fontSize: "1.5rem", color: "#52c41a" }}
+                  />
+                </Card>
+              </Col>
+              <Col>
+                <Card className="text-center">
+                  <Statistic
+                    title="Lawyers"
+                    value={lawyerCount}
+                    prefix={
+                      <SafetyCertificateOutlined className="text-purple-500" />
+                    }
+                    valueStyle={{ fontSize: "1.5rem", color: "#722ed1" }}
+                  />
+                </Card>
+              </Col>
+            </Row>
 
-            <Col xs={24} sm={12} md={4}>
-              <Card className="text-center shadow-sm hover:shadow-md transition-shadow h-full">
-                <Statistic
-                  title="Lawyers"
-                  value={lawyerCount}
-                  prefix={
-                    <SafetyCertificateOutlined className="text-purple-500" />
-                  }
-                  valueStyle={{ color: "#722ed1", fontSize: "1.5rem" }}
-                />
-              </Card>
-            </Col>
-
-            <Col xs={24} sm={12} md={4}>
-              <Card className="text-center shadow-sm hover:shadow-md transition-shadow h-full">
-                <Statistic
-                  title="Admins"
-                  value={adminsCount}
-                  prefix={<CrownOutlined className="text-orange-500" />}
-                  valueStyle={{ color: "#fa8c16", fontSize: "1.5rem" }}
-                />
-              </Card>
-            </Col>
-
-            <Col xs={24} sm={12} md={4}>
-              <Card className="text-center shadow-sm hover:shadow-md transition-shadow h-full">
-                <Statistic
-                  title="HR"
-                  value={hrCount}
-                  prefix={<UserOutlined className="text-red-500" />}
-                  valueStyle={{ color: "#f5222d", fontSize: "1.5rem" }}
-                />
-              </Card>
-            </Col>
-
-            <Col xs={24} sm={12} md={4}>
-              <Card className="text-center shadow-sm hover:shadow-md transition-shadow h-full">
-                <Statistic
-                  title="Secretaries"
-                  value={secretaryCount}
-                  prefix={<UserOutlined className="text-green-500" />}
-                  valueStyle={{ color: "#13c2c2", fontSize: "1.5rem" }}
-                />
-              </Card>
-            </Col>
-          </Row>
+            {/* Desktop: 6 columns */}
+            <Row gutter={[16, 16]} className="hidden md:flex">
+              <Col xs={24} sm={12} md={4}>
+                <Card className="text-center hover:shadow-md transition-shadow">
+                  <Statistic
+                    title="Total Staff"
+                    value={staffCount}
+                    prefix={<TeamOutlined className="text-blue-500" />}
+                    valueStyle={{ color: "#1890ff", fontSize: "1.5rem" }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} md={4}>
+                <Card className="text-center hover:shadow-md transition-shadow">
+                  <Statistic
+                    title="Active"
+                    value={activeCount}
+                    prefix={<CheckCircleOutlined className="text-green-500" />}
+                    valueStyle={{ color: "#52c41a", fontSize: "1.5rem" }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} md={4}>
+                <Card className="text-center hover:shadow-md transition-shadow">
+                  <Statistic
+                    title="Lawyers"
+                    value={lawyerCount}
+                    prefix={
+                      <SafetyCertificateOutlined className="text-purple-500" />
+                    }
+                    valueStyle={{ color: "#722ed1", fontSize: "1.5rem" }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} md={4}>
+                <Card className="text-center hover:shadow-md transition-shadow">
+                  <Statistic
+                    title="Admins"
+                    value={adminsCount}
+                    prefix={<CrownOutlined className="text-orange-500" />}
+                    valueStyle={{ color: "#fa8c16", fontSize: "1.5rem" }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} md={4}>
+                <Card className="text-center hover:shadow-md transition-shadow">
+                  <Statistic
+                    title="HR"
+                    value={hrCount}
+                    prefix={<UserOutlined className="text-red-500" />}
+                    valueStyle={{ color: "#f5222d", fontSize: "1.5rem" }}
+                  />
+                </Card>
+              </Col>
+              <Col xs={24} sm={12} md={4}>
+                <Card className="text-center hover:shadow-md transition-shadow">
+                  <Statistic
+                    title="Secretaries"
+                    value={secretaryCount}
+                    prefix={<UserOutlined className="text-cyan-500" />}
+                    valueStyle={{ color: "#13c2c2", fontSize: "1.5rem" }}
+                  />
+                </Card>
+              </Col>
+            </Row>
+          </div>
         )}
 
-        {/* Search and Filters */}
-        <div className="flex flex-col lg:flex-row justify-between items-center gap-4 mb-6 p-6 bg-white rounded-lg shadow-sm border">
-          <div className="w-full lg:w-96">
+        {/* Search & Filters - Mobile Optimized */}
+        <Card
+          className="mb-4 sm:mb-6"
+          bodyStyle={{ padding: "12px" }}
+          size="small">
+          <Space direction="vertical" size="small" className="w-full">
+            {/* Search Bar */}
             <StaffSearchBar
               onFiltersChange={handleFiltersChange}
               filters={filters}
               loading={loading}
-              searchPlaceholder="Search staff by name, email, position..."
+              searchPlaceholder="Search staff..."
               showUserFilters={true}
               disabled={!isAdminOrHr && !isSuperOrAdmin}
             />
-          </div>
 
-          {/* Quick Stats */}
-          <div className="flex flex-wrap gap-3">
-            <Tag color="blue" className="px-3 py-1 text-sm font-medium">
-              <TeamOutlined className="mr-1" />
-              Staff: {staffCount}
-            </Tag>
-            <Tag color="green" className="px-3 py-1 text-sm font-medium">
-              <CheckCircleOutlined className="mr-1" />
-              Active: {activeCount}
-            </Tag>
-            <Tag color="orange" className="px-3 py-1 text-sm font-medium">
-              <UserOutlined className="mr-1" />
-              Inactive: {inactiveCount}
-            </Tag>
-            {(isAdminOrHr || isSuperOrAdmin) && (
-              <>
-                <Tag color="purple" className="px-3 py-1 text-sm font-medium">
-                  <SafetyCertificateOutlined className="mr-1" />
-                  Lawyers: {lawyerCount}
+            {/* Quick Stats Tags - Scrollable on mobile */}
+            <div className="overflow-x-auto pb-1">
+              <Space size="small" className="whitespace-nowrap">
+                <Tag color="blue" className="text-xs sm:text-sm">
+                  <TeamOutlined className="mr-1" />
+                  {staffCount}
                 </Tag>
-                <Tag color="gold" className="px-3 py-1 text-sm font-medium">
+                <Tag color="green" className="text-xs sm:text-sm">
                   <CheckCircleOutlined className="mr-1" />
-                  Verified: {verifiedCount}
+                  {activeCount}
                 </Tag>
-              </>
-            )}
-          </div>
-        </div>
+                <Tag color="orange" className="text-xs sm:text-sm">
+                  <UserOutlined className="mr-1" />
+                  {inactiveCount}
+                </Tag>
+                {(isAdminOrHr || isSuperOrAdmin) && (
+                  <>
+                    <Tag color="purple" className="text-xs sm:text-sm">
+                      <SafetyCertificateOutlined className="mr-1" />
+                      {lawyerCount}
+                    </Tag>
+                    <Tag color="gold" className="text-xs sm:text-sm">
+                      <CheckCircleOutlined className="mr-1" />
+                      {verifiedCount}
+                    </Tag>
+                  </>
+                )}
+              </Space>
+            </div>
+          </Space>
+        </Card>
 
         {/* Active Filters */}
         {(isAdminOrHr || isSuperOrAdmin) && Object.keys(filters).length > 0 && (
-          <ActiveFilters
-            filters={filters}
-            onFilterRemove={handleFilterRemove}
-            onClearAll={resetFilters}
-          />
+          <div className="mb-4">
+            <ActiveFilters
+              filters={filters}
+              onFilterRemove={handleFilterRemove}
+              onClearAll={resetFilters}
+            />
+          </div>
         )}
 
         {/* Main Content */}
         <Card
-          className="shadow-sm border-0 relative"
-          bodyStyle={{ padding: 0 }}>
+          className="shadow-sm relative"
+          bodyStyle={{ padding: 0 }}
+          size="small">
           {/* Loading Overlay */}
           {loading && (
             <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
-              <Spin size="large" tip="Loading staff..." />
+              <Spin size="large" tip="Loading..." />
             </div>
           )}
 
-          {/* Info Banner */}
+          {/* Info Banner - Mobile Optimized */}
           {!loading && filteredStaff.length > 0 && (
-            <div className="px-6 py-3 bg-blue-50 border-b border-blue-100">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between text-sm gap-2">
+            <div className="px-3 sm:px-4 py-2 sm:py-3 bg-blue-50 border-b">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs sm:text-sm">
                 <span className="text-blue-700">
-                  <strong>Current Page:</strong> Showing {filteredStaff.length}{" "}
-                  of {totalRecords} staff members
+                  <strong>Page:</strong> {filteredStaff.length} of{" "}
+                  {totalRecords}
                 </span>
                 <span className="text-blue-600">
                   <strong>Status:</strong> {activeCount} active •{" "}
@@ -389,6 +475,7 @@ const StaffList = memo(() => {
             </div>
           )}
 
+          {/* Table */}
           <UserListTable
             dataSource={filteredStaff}
             loading={loading}
@@ -403,46 +490,44 @@ const StaffList = memo(() => {
 
           {/* Empty State */}
           {!loading && filteredStaff.length === 0 && (
-            <div className="p-12 text-center">
+            <div className="p-6 sm:p-12 text-center">
               <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
                 description={
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                  <Space direction="vertical" size="small">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-700">
                       {Object.keys(filters).length > 0
                         ? "No Staff Found"
-                        : "No Staff Members"}
+                        : "No Staff"}
                     </h3>
-                    <p className="text-gray-500 mb-2">
+                    <p className="text-xs sm:text-sm text-gray-500">
                       {Object.keys(filters).length > 0
-                        ? "No staff members match your current filters. Try adjusting your search criteria."
+                        ? "Try adjusting filters"
                         : isAdminOrHr || isSuperOrAdmin
-                        ? "No staff members have been added yet. Start by adding your first team member."
-                        : "No staff members found in the directory."}
+                          ? "Add your first team member"
+                          : "No staff in directory"}
                     </p>
-                    {/* Show system stats */}
                     {Object.keys(filters).length > 0 && (
-                      <p className="text-blue-600 text-sm mt-3">
-                        System has {staffCount} total staff members (
-                        {activeCount} active, {inactiveCount} inactive)
+                      <p className="text-blue-600 text-xs mt-2">
+                        System: {staffCount} total ({activeCount} active)
                       </p>
                     )}
-                  </div>
+                  </Space>
                 }
               />
               {Object.keys(filters).length > 0 ? (
-                <ButtonWithIcon
-                  onClick={resetFilters}
-                  text="Clear All Filters"
-                  className="mt-4"
-                />
+                <Button onClick={resetFilters} className="mt-4">
+                  Clear Filters
+                </Button>
               ) : (
                 (isAdminOrHr || isSuperOrAdmin) && (
-                  <Link to="add-user" className="mt-4 inline-block">
-                    <ButtonWithIcon
-                      icon={<PlusOutlined />}
-                      text="Add First Staff Member"
+                  <Link to="add-user">
+                    <Button
                       type="primary"
-                    />
+                      icon={<PlusOutlined />}
+                      className="mt-4">
+                      Add First Staff
+                    </Button>
                   </Link>
                 )
               )}
@@ -450,9 +535,9 @@ const StaffList = memo(() => {
           )}
         </Card>
 
-        {/* Pagination */}
+        {/* Pagination - Mobile Optimized */}
         {totalRecords > 0 && (
-          <Row justify="center" className="mt-6">
+          <div className="mt-4 sm:mt-6">
             <Pagination
               current={currentPage}
               total={totalRecords}
@@ -460,13 +545,15 @@ const StaffList = memo(() => {
               onChange={handlePageChange}
               onShowSizeChange={handlePageChange}
               showSizeChanger
-              showQuickJumper
+              showQuickJumper={false} // Disabled on mobile for space
               showTotal={paginationText}
-              pageSizeOptions={["10", "20", "50", "100"]}
+              pageSizeOptions={["10", "20", "50"]}
               disabled={loading}
-              className="pagination-custom"
+              size="small"
+              className="text-center"
+              responsive
             />
-          </Row>
+          </div>
         )}
       </div>
     </div>

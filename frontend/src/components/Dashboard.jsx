@@ -13,7 +13,7 @@ import { useSelector } from "react-redux";
 import useUsersCount from "../hooks/useUsersCount";
 import DashBoardDataCount from "./DashBoardDataCount";
 import LatestCaseReports from "./LatestCaseReports";
-import TodoList from "./TodoList";
+// import TodoList from "./TodoList";
 import ScrollingEvents from "./ScrollingEvents";
 import TaskDashboardCard from "./TaskDashboardCard";
 
@@ -37,6 +37,8 @@ const Dashboard = () => {
   useRedirectLogoutUser("/users/login");
 
   const { user } = useSelector((state) => state.auth);
+
+  console.log(user)
   const userId = user?.data?._id;
   const lawFirmName = user?.data?.firmId.name;
 

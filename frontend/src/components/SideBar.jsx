@@ -2,246 +2,427 @@ import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Menu } from "antd";
-import { RxDashboard } from "react-icons/rx";
-import { IoBriefcaseSharp, IoHelpCircleOutline } from "react-icons/io5";
-import { TbLogout2, TbReport } from "react-icons/tb";
-import { FaFile, FaMoneyBill, FaTasks, FaUsers } from "react-icons/fa";
-import { AiOutlineSchedule } from "react-icons/ai";
-import { FaHandshake } from "react-icons/fa6";
-import avatar from "../assets/avatar.png";
-import { useRemovePhoto } from "../hooks/useRemovePhoto";
-
+import {
+  Menu,
+  Avatar,
+  Typography,
+  Space,
+  Badge,
+  Divider,
+  Tooltip,
+} from "antd";
+import {
+  DashboardOutlined,
+  FileTextOutlined,
+  BankOutlined,
+  TeamOutlined,
+  CalendarOutlined,
+  CheckSquareOutlined,
+  UserOutlined,
+  FileOutlined,
+  DollarOutlined,
+  QuestionCircleOutlined,
+  LogoutOutlined,
+  SettingOutlined,
+  BellOutlined,
+  AppstoreOutlined,
+  CrownOutlined,
+  SafetyCertificateOutlined,
+  HomeOutlined,
+} from "@ant-design/icons";
 import { logout, RESET } from "../redux/features/auth/authSlice";
-// import { shortenText } from "../utils/shortenText";
+import { useTheme } from "../providers/ThemeProvider";
+import { useAdminHook } from "../hooks/useAdminHook";
 
-const SideBar = ({ isMobile, closeDrawer }) => {
-  const { remove } = useRemovePhoto();
+const { Text } = Typography;
+
+const SideBar = ({
+  isMobile,
+  closeDrawer,
+  collapsed,
+  isDarkMode: propDarkMode,
+}) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const location = useLocation(); // ✅ Get current location
+  const location = useLocation();
   const { user } = useSelector((state) => state.auth);
+  const { isDarkMode, toggleTheme } = useTheme();
+  const { isAdminOrHr, isSuperOrAdmin, userData } = useAdminHook();
 
-  const isClient = user?.data?.role === "client";
-  const isUser = user?.data?.role === "user";
   const [selectedKeys, setSelectedKeys] = useState(["dashboard"]);
-  const [openKeys, setOpenKeys] = useState([]); // ✅ For submenu state
+  const [openKeys, setOpenKeys] = useState([]);
 
-  // ✅ CRITICAL: Sync selectedKeys with current URL path
+  // Sync selectedKeys with current URL path
   useEffect(() => {
     const path = location.pathname;
 
-    // Dashboard
     if (path === "/dashboard" || path === "/") {
       setSelectedKeys(["dashboard"]);
       setOpenKeys([]);
-    }
-    // Cases (including detail pages like /cases/:id/details)
-    else if (path.includes("/dashboard/cases")) {
+    } else if (path.includes("/dashboard/matters")) {
+      setSelectedKeys(["matters"]);
+      setOpenKeys([]);
+    } else if (path.includes("/dashboard/cases")) {
       setSelectedKeys(["cases"]);
       setOpenKeys([]);
-    }
-    // Case Reports
-    else if (path.includes("/dashboard/case-reports")) {
-      setSelectedKeys(["case-reports"]);
+    } else if (path.includes("/dashboard/case-reports")) {
+      setSelectedKeys(["reports"]);
       setOpenKeys([]);
-    }
-    // Staff Management submenu items
-    else if (path.includes("/dashboard/staff/leave-application")) {
-      setSelectedKeys(["leave-application"]);
-      setOpenKeys(["staff-management"]); // ✅ Keep parent open
-    } else if (path.includes("/dashboard/staff-status")) {
-      setSelectedKeys(["staff-status"]);
-      setOpenKeys(["staff-management"]);
-    } else if (path.includes("/dashboard/staff/leave-balance")) {
-      setSelectedKeys(["leave-balance"]);
-      setOpenKeys(["staff-management"]);
     } else if (path.includes("/dashboard/staff")) {
-      setSelectedKeys(["staff-list"]);
-
-      setOpenKeys(["staff-management"]);
-    }
-    // Cause List
-    else if (path.includes("/dashboard/cause-list")) {
+      if (path.includes("/leave")) {
+        setSelectedKeys(["leave"]);
+        setOpenKeys(["staff"]);
+      } else {
+        setSelectedKeys(["staff"]);
+        setOpenKeys([]);
+      }
+    } else if (path.includes("/dashboard/cause-list")) {
       setSelectedKeys(["cause-list"]);
       setOpenKeys([]);
-    }
-    // Tasks
-    else if (path.includes("/dashboard/tasks")) {
+    } else if (path.includes("/dashboard/tasks")) {
       setSelectedKeys(["tasks"]);
       setOpenKeys([]);
-    }
-    // Clients
-    else if (path.includes("/dashboard/clients")) {
+    } else if (path.includes("/dashboard/clients")) {
       setSelectedKeys(["clients"]);
       setOpenKeys([]);
-    }
-    // Documents
-    else if (path.includes("/dashboard/documents")) {
+    } else if (path.includes("/dashboard/documents")) {
       setSelectedKeys(["documents"]);
       setOpenKeys([]);
-    }
-    // Billings
-    else if (path.includes("/dashboard/billings")) {
+    } else if (path.includes("/dashboard/billings")) {
       setSelectedKeys(["billings"]);
       setOpenKeys([]);
-    }
-    // Contact
-    else if (path.includes("/dashboard/contact-dev")) {
-      setSelectedKeys(["contact-dev"]);
+    } else if (path.includes("/dashboard/contact-dev")) {
+      setSelectedKeys(["support"]);
       setOpenKeys([]);
-    }
-    // Profile or other pages
-    else if (path.includes("/dashboard/profile")) {
-      setSelectedKeys([]); // Don't highlight anything
+    } else if (path.includes("/dashboard/profile")) {
+      setSelectedKeys(["profile"]);
       setOpenKeys([]);
-    }
-    // Default
-    else {
+    } else {
       setSelectedKeys(["dashboard"]);
       setOpenKeys([]);
     }
-  }, [location.pathname]); // ✅ Re-run whenever URL changes
+  }, [location.pathname]);
 
   const handleLogout = async () => {
     dispatch(RESET());
     await dispatch(logout());
-    remove();
     navigate("/users/login");
   };
 
+  // Navigation items with improved icons and structure
   const navItems = [
     {
       key: "dashboard",
-      icon: <RxDashboard />,
-      label: <Link to="/dashboard">Dashboard</Link>,
+      icon: <DashboardOutlined className="text-lg" />,
+      label: "Dashboard",
+      path: "/dashboard",
+    },
+    {
+      key: "matters",
+      icon: <FileTextOutlined className="text-lg" />,
+      label: "Matters",
+      path: "/dashboard/matters",
     },
     {
       key: "cases",
-      icon: <IoBriefcaseSharp />,
-      label: <Link to="cases">Cases</Link>,
+      icon: <BankOutlined className="text-lg" />,
+      label: "Cases",
+      path: "/dashboard/cases",
     },
     {
-      key: "case-reports",
-      icon: <TbReport />,
-      label: <Link to="case-reports">Case Reports</Link>,
+      key: "reports",
+      icon: <FileTextOutlined className="text-lg" />,
+      label: "Reports",
+      path: "/dashboard/case-reports",
     },
     {
-      key: "staff-management",
-      icon: <FaUsers />,
-      label: "Staff Management", // ✅ Fixed: Not a link, just label
+      key: "staff",
+      icon: <TeamOutlined className="text-lg" />,
+      label: "Staff",
       children: [
         {
-          key: "staff-list",
-          label: <Link to="staff">Staff List</Link>,
+          key: "staff-directory",
+          label: "Staff Directory",
+          path: "/dashboard/staff",
         },
         {
           key: "staff-status",
-          label: <Link to="staff-status">Staff by Status</Link>,
+          label: "Staff Status",
+          path: "/dashboard/staff-status",
         },
         {
-          key: "leave-application",
-          label: <Link to="staff/leave-application">Leave Applications</Link>,
-        },
-        {
-          key: "leave-balance",
-          label: <Link to="staff/leave-balance">Leave Balance</Link>,
+          key: "leave",
+          label: "Leave Management",
+          children: [
+            {
+              key: "leave-applications",
+              label: "Applications",
+              path: "/dashboard/staff/leave-application",
+            },
+            {
+              key: "leave-balance",
+              label: "Leave Balance",
+              path: "/dashboard/staff/leave-balance",
+            },
+          ],
         },
       ],
     },
     {
       key: "cause-list",
-      icon: <AiOutlineSchedule />,
-      label: <Link to="cause-list">Cause List</Link>,
+      icon: <CalendarOutlined className="text-lg" />,
+      label: "Cause List",
+      path: "/dashboard/cause-list",
     },
     {
       key: "tasks",
-      icon: <FaTasks />,
-      label: <Link to="tasks">{isClient ? "Message" : "Tasks"}</Link>,
+      icon: <CheckSquareOutlined className="text-lg" />,
+      label: "Tasks",
+      path: "/dashboard/tasks",
     },
     {
       key: "clients",
-      icon: <FaHandshake />,
-      label: <Link to="clients">Clients</Link>,
+      icon: <UserOutlined className="text-lg" />,
+      label: "Clients",
+      path: "/dashboard/clients",
     },
     {
       key: "documents",
-      icon: <FaFile />,
-      label: <Link to="documents">Documents</Link>,
+      icon: <FileOutlined className="text-lg" />,
+      label: "Documents",
+      path: "/dashboard/documents",
     },
     {
       key: "billings",
-      icon: <FaMoneyBill />,
-      label: <Link to="billings">Billings</Link>,
+      icon: <DollarOutlined className="text-lg" />,
+      label: "Billing",
+      path: "/dashboard/billings",
     },
     {
-      key: "contact-dev",
-      icon: <IoHelpCircleOutline />,
-      label: <Link to="contact-dev">Contact</Link>,
-    },
-    {
-      key: "logout",
-      icon: <TbLogout2 />,
-      label: (
-        <span onClick={handleLogout} className="cursor-pointer">
-          Logout
-        </span>
-      ), // ✅ Fixed: Use span instead of Link for onClick
+      key: "support",
+      icon: <QuestionCircleOutlined className="text-lg" />,
+      label: "Support",
+      path: "/dashboard/contact-dev",
     },
   ];
 
-  // Filter out nav items based on user type
-  const filteredNavItems = navItems.filter((item) => {
-    if (
-      isClient &&
-      (item.key === "staff-management" ||
-        item.key === "cause-list" ||
-        item.key === "documents")
-    )
-      return false;
-    if (isUser && item.key === "billings") return false;
-    return true;
-  });
+  const formatMenuItems = (items) => {
+    return items.map((item) => {
+      if (item.children) {
+        return {
+          key: item.key,
+          icon: item.icon,
+          label: item.label,
+          children: formatMenuItems(item.children),
+        };
+      }
 
-  // Handle menu click
+      return {
+        key: item.key,
+        icon: item.icon,
+        label: collapsed && !isMobile ? (
+          <Tooltip title={item.label} placement="right">
+            <Link to={item.path} onClick={closeDrawer}>
+              {item.label}
+            </Link>
+          </Tooltip>
+        ) : (
+          <Link to={item.path} onClick={isMobile && closeDrawer ? closeDrawer : undefined}>
+            {item.label}
+          </Link>
+        ),
+      };
+    });
+  };
+
   const handleMenuClick = (e) => {
-    // Don't manually set selectedKeys here
-    // Let the useEffect handle it based on URL
     if (isMobile && closeDrawer) {
       closeDrawer();
     }
   };
 
-  // ✅ Handle submenu open/close
   const handleOpenChange = (keys) => {
     setOpenKeys(keys);
   };
 
-  return (
-    <div className="h-full flex flex-col">
-      <div className="logo-vertical py-4">
-        {!isClient && (
-          <div className="flex justify-center items-center">
-            <Link to="profile" onClick={isMobile ? closeDrawer : undefined}>
-              <img
-                src={user?.data?.photo ? user.data.photo : avatar}
-                alt={`${user?.data?.firstName}'s profile image`}
-                className="object-cover object-right-top h-14 w-14 rounded-full border-2 border-blue-500"
-              />
-            </Link>
+  // User info section
+  const renderUserInfo = () => (
+    <div
+      className={`p-4 border-b transition-colors duration-300 ${
+        isDarkMode ? "border-gray-700" : "border-gray-200"
+      }`}
+    >
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative">
+          <Avatar
+            size={collapsed ? 40 : 64}
+            src={userData?.photo}
+            icon={<UserOutlined />}
+            className={`border-2 shadow-lg ${
+              isDarkMode ? "border-blue-500" : "border-blue-400"
+            }`}
+          />
+          {userData?.isActive && (
+            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+          )}
+        </div>
+
+        {!collapsed && (
+          <>
+            <div className="text-center">
+              <Text
+                strong
+                className={`block text-sm ${
+                  isDarkMode ? "text-gray-100" : "text-gray-800"
+                }`}
+              >
+                {userData?.firstName} {userData?.lastName}
+              </Text>
+              <Text
+                type="secondary"
+                className={`text-xs ${
+                  isDarkMode ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
+                {userData?.position || userData?.role}
+              </Text>
+            </div>
+
+            {/* Quick Stats */}
+            <div className="flex items-center justify-center gap-3 w-full">
+              <div className="text-center">
+                <Badge count={3} size="small" offset={[-5, 0]}>
+                  <Avatar
+                    size="small"
+                    icon={<BellOutlined />}
+                    className={`cursor-pointer ${
+                      isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                    }`}
+                    onClick={() => navigate("/dashboard/notifications")}
+                  />
+                </Badge>
+              </div>
+              <div className="text-center">
+                <Avatar
+                  size="small"
+                  icon={<SettingOutlined />}
+                  className={`cursor-pointer ${
+                    isDarkMode ? "bg-gray-700" : "bg-gray-100"
+                  }`}
+                  onClick={() => {
+                    navigate("/dashboard/settings");
+                    if (isMobile && closeDrawer) closeDrawer();
+                  }}
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  // App Logo Section
+  const renderLogo = () => (
+    <div
+      className={`p-4 border-b transition-colors duration-300 ${
+        isDarkMode ? "border-gray-700" : "border-gray-200"
+      }`}
+    >
+      <div className="flex items-center justify-center gap-2">
+        <div
+          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-300 ${
+            isDarkMode ? "bg-blue-600" : "bg-blue-500"
+          }`}
+        >
+          <HomeOutlined className="text-white" />
+        </div>
+
+        {!collapsed && (
+          <div>
+            <Text strong className="text-white text-base font-bold">
+              LawFlow
+            </Text>
+            <Text type="secondary" className="text-gray-400 text-xs block">
+              Legal Suite
+            </Text>
           </div>
         )}
       </div>
-      <Menu
-        theme="dark"
-        mode="inline"
-        selectedKeys={selectedKeys}
-        openKeys={openKeys} // ✅ Control which submenus are open
-        items={filteredNavItems}
-        onClick={handleMenuClick}
-        onOpenChange={handleOpenChange} // ✅ Handle submenu state
-        className="flex-grow"
-      />
+    </div>
+  );
+
+  return (
+    <div
+      className={`h-full flex flex-col transition-colors duration-300 ${
+        isDarkMode ? "bg-gray-900" : "bg-gray-800"
+      }`}
+      style={{
+        background: isDarkMode
+          ? "linear-gradient(180deg, #1a2236 0%, #111827 100%)"
+          : "linear-gradient(180deg, #1e293b 0%, #0f172a 100%)",
+      }}
+    >
+      {/* Logo */}
+      {renderLogo()}
+
+      {/* User Info */}
+      {renderUserInfo()}
+
+      {/* Navigation Menu */}
+      <div className="flex-grow overflow-auto py-4">
+        <Menu
+          theme="dark"
+          mode="inline"
+          selectedKeys={selectedKeys}
+          openKeys={openKeys}
+          items={formatMenuItems(navItems)}
+          onClick={handleMenuClick}
+          onOpenChange={handleOpenChange}
+          className="border-0 px-2"
+          inlineCollapsed={collapsed}
+          style={{
+            backgroundColor: "transparent",
+            borderRight: "none",
+          }}
+        />
+      </div>
+
+      {/* Logout Section */}
+      <div
+        className={`p-4 border-t transition-colors duration-300 ${
+          isDarkMode ? "border-gray-700" : "border-gray-700"
+        }`}
+      >
+        <Menu
+          theme="dark"
+          mode="inline"
+          className="border-0"
+          style={{ backgroundColor: "transparent" }}
+        >
+          <Menu.Item
+            key="logout"
+            icon={<LogoutOutlined className="text-lg" />}
+            danger
+            onClick={handleLogout}
+            className={collapsed ? "text-center" : ""}
+          >
+            {!collapsed && "Logout"}
+          </Menu.Item>
+        </Menu>
+
+        {/* App Info */}
+        {!collapsed && (
+          <div className="mt-4 text-center">
+            <Text
+              type="secondary"
+              className="text-gray-400 text-xs block"
+            >
+              v2.1.0 • Professional
+            </Text>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
@@ -249,6 +430,8 @@ const SideBar = ({ isMobile, closeDrawer }) => {
 SideBar.propTypes = {
   isMobile: PropTypes.bool.isRequired,
   closeDrawer: PropTypes.func,
+  collapsed: PropTypes.bool,
+  isDarkMode: PropTypes.bool,
 };
 
 export default SideBar;

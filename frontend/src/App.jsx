@@ -4,7 +4,9 @@ import {
   Route,
   RouterProvider,
 } from "react-router-dom";
+import { ConfigProvider, Spin } from "antd";
 import HomeLayout from "./components/HomeLayout";
+import { ThemeProvider } from "./providers/ThemeProvider";
 import Dashboard from "./components/Dashboard.jsx";
 import DashboardLayout from "./components/DashboardLayout.jsx";
 import CaseList from "./pages/CaseList.jsx";
@@ -68,14 +70,104 @@ import DocumentsList from "./components/DocumentsList.jsx";
 import StatusUserList from "./pages/StatusUserList.jsx";
 import EditTaskForm from "./pages/EditTaskForm.jsx";
 import CreateTaskForm from "./pages/CreateTaskForm.jsx";
+import MatterListView from "./components/matters/MatterListView.jsx";
+import MatterDetails from "./pages/matters/MatterDetails.jsx";
+import MatterForm from "./components/matters/MatterForm/MatterForm.jsx";
 
 // Enable axios credentials
 axios.defaults.withCredentials = true;
 
+// Custom antd theme configuration
+const getAntdTheme = (isDarkMode) => ({
+  token: {
+    colorPrimary: isDarkMode ? "#3b82f6" : "#2563eb",
+    colorInfo: isDarkMode ? "#3b82f6" : "#2563eb",
+    colorSuccess: isDarkMode ? "#10b981" : "#059669",
+    colorWarning: isDarkMode ? "#f59e0b" : "#d97706",
+    colorError: isDarkMode ? "#ef4444" : "#dc2626",
+    fontFamily: "'Poppins', sans-serif",
+    borderRadius: 8,
+    colorBgContainer: isDarkMode ? "#1f2937" : "#ffffff",
+    colorBgElevated: isDarkMode ? "#1f2937" : "#ffffff",
+    colorBgLayout: isDarkMode ? "#111827" : "#f3f4f6",
+    colorText: isDarkMode ? "#f9fafb" : "#111827",
+    colorTextSecondary: isDarkMode ? "#d1d5db" : "#6b7280",
+    colorBorder: isDarkMode ? "#4b5563" : "#d1d5db",
+    colorBorderSecondary: isDarkMode ? "#374151" : "#e5e7eb",
+  },
+  components: {
+    Layout: {
+      colorBgHeader: isDarkMode ? "#1f2937" : "#ffffff",
+      colorBgBody: isDarkMode ? "#111827" : "#f3f4f6",
+    },
+    Card: {
+      colorBgContainer: isDarkMode ? "#1f2937" : "#ffffff",
+      borderRadius: 12,
+      boxShadow: isDarkMode
+        ? "0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px 0 rgba(0, 0, 0, 0.2)"
+        : "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+    },
+    Button: {
+      borderRadius: 8,
+    },
+    Input: {
+      colorBgContainer: isDarkMode ? "#1f2937" : "#ffffff",
+      borderRadius: 8,
+    },
+    Select: {
+      colorBgContainer: isDarkMode ? "#1f2937" : "#ffffff",
+      borderRadius: 8,
+    },
+    Table: {
+      colorBgContainer: isDarkMode ? "#1f2937" : "#ffffff",
+      colorText: isDarkMode ? "#d1d5db" : "#111827",
+      headerColor: isDarkMode ? "#9ca3af" : "#6b7280",
+      headerBg: isDarkMode ? "#111827" : "#f9fafb",
+      rowHoverBg: isDarkMode ? "#374151" : "#f3f4f6",
+      borderColor: isDarkMode ? "#374151" : "#e5e7eb",
+    },
+    Menu: {
+      colorBgContainer: isDarkMode ? "#1f2937" : "#001529",
+      colorItemBg: isDarkMode ? "#1f2937" : "#001529",
+      colorItemBgSelected: isDarkMode ? "#1e40af" : "#1890ff",
+      colorItemText: isDarkMode ? "#d1d5db" : "#ffffff",
+      colorItemTextSelected: isDarkMode ? "#ffffff" : "#ffffff",
+    },
+    Modal: {
+      colorBgMask: isDarkMode ? "rgba(0, 0, 0, 0.7)" : "rgba(0, 0, 0, 0.45)",
+      colorBgElevated: isDarkMode ? "#1f2937" : "#ffffff",
+    },
+    Drawer: {
+      colorBgElevated: isDarkMode ? "#1f2937" : "#ffffff",
+    },
+    Form: {
+      labelColor: isDarkMode ? "#d1d5db" : "#374151",
+    },
+    DatePicker: {
+      colorBgContainer: isDarkMode ? "#1f2937" : "#ffffff",
+    },
+    TimePicker: {
+      colorBgContainer: isDarkMode ? "#1f2937" : "#ffffff",
+    },
+    Upload: {
+      colorBgContainer: isDarkMode ? "#1f2937" : "#ffffff",
+    },
+    Tag: {
+      colorBgContainer: isDarkMode ? "#374151" : "#f3f4f6",
+    },
+  },
+});
+
+// Loading component
+const LoadingScreen = () => (
+  <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-50">
+    <Spin size="large" />
+  </div>
+);
+
 function App() {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.loading);
-  // const isLoggedIn = useSelector((state) => state.auth.isLoggedIn);
   const hasInitialized = useRef(false);
 
   useEffect(() => {
@@ -147,6 +239,29 @@ function App() {
               </ShowOnlyVerifiedUser>
             }
           />
+          <Route
+            path="matters"
+            element={
+              <ShowOnlyVerifiedUser>
+                <ProtectedRoute isStaffRoute={true}>
+                  <MatterListView />
+                </ProtectedRoute>
+              </ShowOnlyVerifiedUser>
+            }
+          />
+          <Route
+            path="matters/create"
+            element={
+              <ShowOnlyVerifiedUser>
+                <ProtectedRoute isStaffRoute={true}>
+                  <MatterForm />
+                </ProtectedRoute>
+              </ShowOnlyVerifiedUser>
+            }
+          />
+
+          <Route path="matters/:id" element={<MatterDetails />} />
+
           <Route
             path="staff-status"
             element={
@@ -302,23 +417,50 @@ function App() {
             element={<DocumentRecordDetails />}
           />
         </Route>
-      </Route>
-    )
+      </Route>,
+    ),
   );
 
+  // Theme-aware ToastContainer
+  const ThemeAwareToastContainer = () => {
+    const isDarkMode = useSelector((state) => state.theme?.isDarkMode) || false;
+
+    return (
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme={isDarkMode ? "dark" : "light"}
+        toastStyle={{
+          fontSize: "14px",
+          fontFamily: "'Poppins', sans-serif",
+          borderRadius: "8px",
+        }}
+      />
+    );
+  };
+
   return (
-    <>
-      <>
-        <RouterProvider router={router} />
-        <ToastContainer
-          hideProgressBar={true}
-          autoClose={4000}
-          toastStyle={{
-            fontSize: "14px",
-          }}
-        />
-      </>
-    </>
+    <ThemeProvider>
+      {({ isDarkMode }) => (
+        <ConfigProvider theme={getAntdTheme(isDarkMode)}>
+          {isLoading ? (
+            <LoadingScreen />
+          ) : (
+            <>
+              <RouterProvider router={router} />
+              <ThemeAwareToastContainer />
+            </>
+          )}
+        </ConfigProvider>
+      )}
+    </ThemeProvider>
   );
 }
 

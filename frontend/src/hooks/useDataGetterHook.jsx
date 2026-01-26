@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { DataContext } from "../context/dataFetcherContext";
+import { DataContext } from "../contexts/dataFetcherContext";
 
 // export const useDataGetterHook = () => {
 //   const context = useContext(DataContext);
@@ -18,7 +18,7 @@ export const useDataGetterHook = () => {
 
   if (!context) {
     throw new Error(
-      "useDataGetterHook must be used within a DataFetcherContext"
+      "useDataGetterHook must be used within a DataFetcherContext",
     );
   }
 

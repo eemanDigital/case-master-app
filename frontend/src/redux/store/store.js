@@ -3,6 +3,7 @@ import authReducer from "../features/auth/authSlice";
 import loadingReducer from "../features/loader/loadingSlice";
 import emailReducer from "../features/emails/emailSlice";
 import deleteReducer from "../features/delete/deleteSlice";
+import matterReducer from "../features/matter/matterSlice";
 // import appDataReducer from "../features/appData/appDataSlice";
 
 export const store = configureStore({
@@ -11,6 +12,7 @@ export const store = configureStore({
     loading: loadingReducer,
     email: emailReducer,
     delete: deleteReducer,
+    matter: matterReducer,
     // appData: appDataReducer,
   },
 });

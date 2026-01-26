@@ -1,415 +1,247 @@
-import React from "react";
-import {
-  Form,
-  Input,
-  Select,
-  Checkbox,
-  Button,
-  DatePicker,
-  Typography,
-  Alert,
-} from "antd";
+// pages/AddUserForm.jsx - COMPLETE FIX
+import React, { useState, useCallback, useMemo } from "react";
+import { Form, Button, Card, Steps, Alert, Space, Tag } from "antd";
+import { UserOutlined, TeamOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
-import {
-  register,
-  sendVerificationMail,
-} from "../redux/features/auth/authSlice";
-import { gender, positions, roles } from "../data/options";
+import { register, sendVerificationMail } from "../redux/features/auth/authSlice";
+import { userTypeOptions } from "../data/options";
+import { formatPhoneNumber } from "../utils/validation";
+import { prepareUserData } from "../utils/userDataHelper";
 
-const { Title } = Typography;
-const { TextArea } = Input;
+// Step Components
+import UserTypeStep from "../components/user-forms/steps/UserTypeStep";
+import BasicInfoStep from "../components/user-forms/steps/BasicInfoStep";
+import AccountStep from "../components/user-forms/steps/AccountStep";
+import ProfessionalStep from "../components/user-forms/steps/ProfessionalStep";
+import PrivilegesStep from "../components/user-forms/steps/PrivilegesStep";
 
-const SignUp = () => {
+const { Step } = Steps;
+
+const STEP_CONFIG = [
+  { key: "userType", title: "User Type", icon: <UserOutlined /> },
+  { key: "basic", title: "Basic Info", icon: <UserOutlined /> },
+  { key: "account", title: "Account", icon: <UserOutlined /> },
+  { key: "professional", title: "Professional", icon: <UserOutlined /> },
+  { key: "privileges", title: "Privileges", icon: <UserOutlined /> },
+];
+
+const AddUserForm = () => {
   const [form] = Form.useForm();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { isLoading } = useSelector((state) => state.auth);
+  const { isLoading, error } = useSelector((state) => state.auth);
 
-  const onFinish = async (values) => {
-    await dispatch(register(values));
-    await dispatch(sendVerificationMail(values.email));
-    navigate("/dashboard/staff");
-  };
+  const [currentStep, setCurrentStep] = useState(0);
+  const [selectedUserType, setSelectedUserType] = useState("staff");
 
-  // Custom validator for year of call (should be in the past)
-  const validateYearOfCall = (_, value) => {
-    if (!value) return Promise.resolve();
+  // Step field validation map
+  const STEP_FIELDS = useMemo(
+    () => ({
+      0: ["userType"],
+      1: ["firstName", "lastName", "email", "phone", "address", "gender"],
+      2: ["password", "passwordConfirm"],
+      3: [], // Professional step - conditional fields
+      4: [], // Privileges step - optional
+    }),
+    []
+  );
 
-    const selectedYear = value.year();
-    const currentYear = new Date().getFullYear();
+  // ✅ Handle form submission - Get ALL form values
+  const handleSubmit = useCallback(
+    async (values) => {
+      try {
+        // ✅ CRITICAL: Get ALL form values, not just current step
+        const allFormValues = form.getFieldsValue(true);
+        
+        console.log("🔍 All Form Values:", allFormValues); // Debug log
 
-    if (selectedYear > currentYear) {
-      return Promise.reject(new Error("Year of call cannot be in the future"));
+        if (allFormValues.phone) {
+          allFormValues.phone = formatPhoneNumber(allFormValues.phone);
+        }
+
+        const userData = prepareUserData(allFormValues);
+        
+        console.log("📦 Prepared User Data:", userData); // Debug log
+
+        const result = await dispatch(register(userData));
+
+        if (result.error) {
+          console.error("❌ Registration Error:", result.error);
+          return;
+        }
+
+        await dispatch(sendVerificationMail(allFormValues.email));
+
+        // Only reset form on success
+        form.resetFields();
+
+        navigate("/dashboard/staff", {
+          state: {
+            message: `Successfully added ${allFormValues.userType}: ${allFormValues.firstName} ${allFormValues.lastName}`,
+            userType: allFormValues.userType,
+          },
+        });
+      } catch (err) {
+        console.error("Registration failed:", err);
+      }
+    },
+    [dispatch, navigate, form]
+  );
+
+  // Navigation handlers
+  const handleNext = useCallback(() => {
+    const stepFields = STEP_FIELDS[currentStep];
+
+    if (stepFields && stepFields.length > 0) {
+      form
+        .validateFields(stepFields)
+        .then(() => {
+          setCurrentStep((prev) => prev + 1);
+        })
+        .catch((errorInfo) => {
+          console.log("Validation errors:", errorInfo);
+        });
+    } else {
+      setCurrentStep((prev) => prev + 1);
     }
+  }, [currentStep, form, STEP_FIELDS]);
 
-    if (selectedYear < 1900) {
-      return Promise.reject(new Error("Please enter a valid year"));
+  const handlePrevious = useCallback(() => {
+    setCurrentStep((prev) => Math.max(0, prev - 1));
+  }, []);
+
+  const handleUserTypeSelect = useCallback(
+    (userType) => {
+      setSelectedUserType(userType);
+      form.setFieldsValue({ userType });
+    },
+    [form]
+  );
+
+  // Render current step content
+  const renderStepContent = useMemo(() => {
+    switch (currentStep) {
+      case 0:
+        return (
+          <UserTypeStep
+            userTypeOptions={userTypeOptions}
+            selectedUserType={selectedUserType}
+            onSelect={handleUserTypeSelect}
+          />
+        );
+      case 1:
+        return <BasicInfoStep />;
+      case 2:
+        return <AccountStep />;
+      case 3:
+        return <ProfessionalStep selectedUserType={selectedUserType} />;
+      case 4:
+        return <PrivilegesStep selectedUserType={selectedUserType} />;
+      default:
+        return null;
     }
-
-    return Promise.resolve();
-  };
+  }, [currentStep, selectedUserType, handleUserTypeSelect]);
 
   return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <div className="relative py-3 px-4 sm:max-w-xl md:max-w-2xl lg:max-w-4xl xl:max-w-6xl mx-auto w-full">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-300 to-blue-600 shadow-lg transform -skew-y-6 sm:skew-y-0 sm:-rotate-6 sm:rounded-3xl"></div>
-        <div className="relative px-4 py-10 bg-white shadow-lg sm:rounded-3xl sm:p-10 md:p-20">
-          <Title level={2} className="text-center mb-8 text-gray-800">
-            Add Staff
-          </Title>
-
-          <Form
-            form={form}
-            name="register"
-            onFinish={onFinish}
-            layout="vertical"
-            className="space-y-6"
-            scrollToFirstError>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              {/* Personal Information */}
-              <Form.Item
-                name="firstName"
-                label="First Name"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please input your first name!",
-                  },
-                  {
-                    min: 2,
-                    message: "First name must be at least 2 characters",
-                  },
-                ]}>
-                <Input placeholder="First Name" />
-              </Form.Item>
-
-              <Form.Item
-                name="lastName"
-                label="Last Name"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please input your last name!",
-                  },
-                  {
-                    min: 2,
-                    message: "Last name must be at least 2 characters",
-                  },
-                ]}>
-                <Input placeholder="Last Name" />
-              </Form.Item>
-
-              <Form.Item name="middleName" label="Middle Name">
-                <Input placeholder="Middle Name" />
-              </Form.Item>
-
-              <Form.Item
-                name="email"
-                label="Email"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please input your email!",
-                  },
-                  {
-                    type: "email",
-                    message: "Please enter a valid email!",
-                  },
-                ]}>
-                <Input placeholder="Email" />
-              </Form.Item>
-
-              {/* Password Fields */}
-              <Form.Item
-                name="password"
-                label="Password"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please enter your password",
-                  },
-                  {
-                    pattern:
-                      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/,
-                    message:
-                      "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
-                  },
-                ]}>
-                <Input.Password
-                  placeholder="Password"
-                  iconRender={(visible) =>
-                    visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
-                  }
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="passwordConfirm"
-                label="Confirm Password"
-                dependencies={["password"]}
-                rules={[
-                  {
-                    required: true,
-                    message: "Please confirm your password",
-                  },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (!value || getFieldValue("password") === value) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(
-                        new Error("The two passwords do not match!")
-                      );
-                    },
-                  }),
-                ]}>
-                <Input.Password
-                  placeholder="Confirm Password"
-                  iconRender={(visible) =>
-                    visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
-                  }
-                />
-              </Form.Item>
-
-              {/* Lawyer Checkbox */}
-              <Form.Item
-                name="isLawyer"
-                valuePropName="checked"
-                className="sm:col-span-2">
-                <Checkbox>Is User A Lawyer</Checkbox>
-              </Form.Item>
-
-              {/* Lawyer-Specific Fields - Conditionally Required */}
-              <Form.Item
-                noStyle
-                shouldUpdate={(prevValues, currentValues) =>
-                  prevValues.isLawyer !== currentValues.isLawyer
-                }>
-                {({ getFieldValue }) =>
-                  getFieldValue("isLawyer") && (
-                    <Alert
-                      message="Lawyer Information Required"
-                      description="Please fill in all lawyer-specific fields below"
-                      type="info"
-                      showIcon
-                      className="mb-4 sm:col-span-2"
-                    />
-                  )
-                }
-              </Form.Item>
-
-              <Form.Item
-                name="yearOfCall"
-                label="Year of Call to Bar"
-                rules={[
-                  ({ getFieldValue }) => ({
-                    required: getFieldValue("isLawyer"),
-                    message: "Year of call is required for lawyers",
-                  }),
-                  {
-                    validator: validateYearOfCall,
-                  },
-                ]}>
-                <DatePicker
-                  className="w-full"
-                  picker="year"
-                  placeholder="Select year of call"
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="practiceArea"
-                label="Practice Area"
-                rules={[
-                  ({ getFieldValue }) => ({
-                    required: getFieldValue("isLawyer"),
-                    message: "Practice area is required for lawyers",
-                  }),
-                  {
-                    min: 3,
-                    message: "Practice area must be at least 3 characters",
-                  },
-                ]}>
-                <Input placeholder="e.g. Intellectual Property Law, Corporate Law, etc." />
-              </Form.Item>
-
-              <Form.Item
-                name="universityAttended"
-                label="University Attended"
-                rules={[
-                  ({ getFieldValue }) => ({
-                    required: getFieldValue("isLawyer"),
-                    message: "University attended is required for lawyers",
-                  }),
-                  {
-                    min: 3,
-                    message: "Please enter a valid university name",
-                  },
-                ]}>
-                <Input placeholder="e.g. University of Ilorin, University of Lagos, etc." />
-              </Form.Item>
-
-              <Form.Item
-                name="lawSchoolAttended"
-                label="Law School Attended"
-                rules={[
-                  ({ getFieldValue }) => ({
-                    required: getFieldValue("isLawyer"),
-                    message: "Law school attended is required for lawyers",
-                  }),
-                  {
-                    min: 3,
-                    message: "Please enter a valid law school name",
-                  },
-                ]}>
-                <Input placeholder="e.g. Nigerian Law School, Abuja, Kano Law School, etc." />
-              </Form.Item>
-
-              {/* Contact Information */}
-              <Form.Item
-                name="phone"
-                label="Phone Contact"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please input your phone number!",
-                  },
-                  {
-                    pattern: /^[+]?[\d\s\-()]+$/,
-                    message: "Please enter a valid phone number",
-                  },
-                  {
-                    min: 10,
-                    message: "Phone number must be at least 10 digits",
-                  },
-                ]}>
-                <Input placeholder="Phone Contact" />
-              </Form.Item>
-
-              <Form.Item
-                name="address"
-                label="Address"
-                className="sm:col-span-2"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please input your address!",
-                  },
-                  {
-                    min: 10,
-                    message: "Address must be at least 10 characters",
-                  },
-                ]}>
-                <Input placeholder="No.2, Maitama Close, Abuja" />
-              </Form.Item>
-
-              {/* Professional Information */}
-              <Form.Item
-                name="position"
-                label="Position"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please select your position!",
-                  },
-                ]}>
-                <Select options={positions} placeholder="Select position" />
-              </Form.Item>
-
-              <Form.Item
-                name="gender"
-                label="Gender"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please select your gender!",
-                  },
-                ]}>
-                <Select options={gender} placeholder="Select gender" />
-              </Form.Item>
-
-              <Form.Item
-                name="role"
-                label="Role"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please select your role!",
-                  },
-                ]}>
-                <Select options={roles} placeholder="Select role" />
-              </Form.Item>
-
-              {/* Conditional Other Position Field */}
-              <Form.Item
-                noStyle
-                shouldUpdate={(prevValues, currentValues) =>
-                  prevValues.position !== currentValues.position
-                }>
-                {({ getFieldValue }) =>
-                  getFieldValue("position") === "Other" ? (
-                    <Form.Item
-                      name="otherPosition"
-                      label="Specify Other Position"
-                      rules={[
-                        {
-                          required: true,
-                          message: "Please specify the other position!",
-                        },
-                        {
-                          min: 2,
-                          message: "Position must be at least 2 characters",
-                        },
-                      ]}>
-                      <Input placeholder="Specify Position" />
-                    </Form.Item>
-                  ) : null
-                }
-              </Form.Item>
-
-              {/* Additional Fields */}
-              <Form.Item
-                name="annualLeaveEntitled"
-                label="Annual Leave Entitled (Days)">
-                <Input type="number" min="0" max="365" placeholder="e.g. 21" />
-              </Form.Item>
-
-              <Form.Item
-                name="bio"
-                label="Bio"
-                className="sm:col-span-2"
-                rules={[
-                  {
-                    max: 500,
-                    message: "Bio must not exceed 500 characters",
-                  },
-                ]}>
-                <TextArea
-                  rows={4}
-                  placeholder="Short bio about the staff"
-                  showCount
-                  maxLength={500}
-                />
-              </Form.Item>
-            </div>
-
-            <Form.Item className="text-center">
-              <Button
-                type="primary"
-                htmlType="submit"
-                size="large"
-                className="w-full sm:w-64 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition duration-150 ease-in-out"
-                loading={isLoading}>
-                {isLoading ? "Adding Staff..." : "Add Staff"}
-              </Button>
-            </Form.Item>
-          </Form>
+    <div className="max-w-6xl mx-auto px-4 py-8">
+      <Card>
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-bold mb-2">
+            <TeamOutlined className="mr-3" />
+            Add New User
+          </h2>
+          <p className="text-gray-500">
+            Register a new user with appropriate role and permissions
+          </p>
         </div>
-      </div>
+
+        {error && (
+          <Alert
+            message="Registration Error"
+            description={error}
+            type="error"
+            showIcon
+            closable
+            className="mb-6"
+          />
+        )}
+
+        <Steps current={currentStep} className="mb-8">
+          {STEP_CONFIG.map((step) => (
+            <Step key={step.key} title={step.title} icon={step.icon} />
+          ))}
+        </Steps>
+
+        <Form
+          form={form}
+          onFinish={handleSubmit}
+          layout="vertical"
+          initialValues={{
+            userType: "staff",
+            isActive: true,
+            clientCategory: "individual",
+            preferredContactMethod: "email",
+            employmentType: "full-time",
+            workSchedule: "9-5",
+            role: "staff",
+            hasAdminPrivileges: false,
+            hasLawyerPrivileges: false,
+            hasHrPrivileges: false,
+            additionalRoles: [],
+          }}
+          preserve={true}
+          scrollToFirstError
+        >
+          {/* ✅ Hidden fields to preserve userType selection */}
+          <Form.Item name="userType" hidden>
+            <input type="hidden" />
+          </Form.Item>
+
+          {renderStepContent}
+
+          <div className="mt-8 pt-6 border-t">
+            <Space className="w-full justify-between">
+              <Button
+                onClick={handlePrevious}
+                disabled={currentStep === 0}
+                size="large"
+              >
+                Previous
+              </Button>
+
+              {currentStep < STEP_CONFIG.length - 1 ? (
+                <Button type="primary" onClick={handleNext} size="large">
+                  Next Step
+                </Button>
+              ) : (
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  size="large"
+                  loading={isLoading}
+                >
+                  {isLoading
+                    ? "Adding User..."
+                    : `Add ${selectedUserType.charAt(0).toUpperCase() + selectedUserType.slice(1)}`}
+                </Button>
+              )}
+            </Space>
+          </div>
+        </Form>
+
+        <div className="mt-6 text-center">
+          <Tag color="blue" icon={<UserOutlined />}>
+            Currently Adding:{" "}
+            <strong>
+              {selectedUserType.charAt(0).toUpperCase() +
+                selectedUserType.slice(1)}
+            </strong>
+          </Tag>
+        </div>
+      </Card>
     </div>
   );
 };
 
-export default SignUp;
+export default AddUserForm;
