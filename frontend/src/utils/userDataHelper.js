@@ -1,4 +1,5 @@
-// utils/userDataHelper.js - UPDATED WITH LOGGING
+// utils/userDataHelper.js - VERIFY THIS IS CORRECT
+
 export const prepareUserData = (values) => {
   console.log("🔧 prepareUserData - Input values:", values);
 
@@ -13,52 +14,24 @@ export const prepareUserData = (values) => {
     phone: values.phone,
     address: values.address,
     gender: values.gender,
-    dateOfBirth: values.dateOfBirth?.format ? values.dateOfBirth.format("YYYY-MM-DD") : values.dateOfBirth,
+    dateOfBirth: values.dateOfBirth?.format
+      ? values.dateOfBirth.format("YYYY-MM-DD")
+      : values.dateOfBirth,
     isActive: values.isActive ?? true,
     position: values.position,
+    role: values.role || values.userType,
+    isLawyer: values.hasLawyerPrivileges || values.userType === "lawyer",
+    additionalRoles: values.additionalRoles || [],
   };
 
-  // ✅ Handle multiple roles/privileges
-  const additionalRoles = [];
-
-  // Base role from userType
-  if (values.userType === "client") {
-    baseData.role = "client";
-  } else if (values.userType === "lawyer" || values.hasLawyerPrivileges) {
-    baseData.role = "lawyer";
-    baseData.isLawyer = true;
-  } else if (values.userType === "admin") {
-    baseData.role = "admin";
-  } else if (values.userType === "super-admin") {
-    baseData.role = "super-admin";
-  } else {
-    baseData.role = values.role || "staff";
-  }
-
-  // ✅ Add admin privileges if granted
-  if (values.hasAdminPrivileges && values.userType !== "admin" && values.userType !== "super-admin") {
-    additionalRoles.push("admin");
-    baseData.adminDetails = {
-      adminLevel: "firm",
-      canManageUsers: values.canManageUsers || false,
-      canManageCases: values.canManageCases || false,
-      canManageBilling: values.canManageBilling || false,
-      canViewReports: values.canViewReports || false,
-      systemAccessLevel: values.systemAccessLevel || "restricted",
+  // ✅ Build professionalInfo object
+  if (values.bio) {
+    baseData.professionalInfo = {
+      bio: values.bio,
     };
   }
 
-  // ✅ Add HR privileges if granted
-  if (values.hasHrPrivileges && values.role !== "hr") {
-    additionalRoles.push("hr");
-  }
-
-  // Store additional roles
-  if (additionalRoles.length > 0) {
-    baseData.additionalRoles = additionalRoles;
-  }
-
-  // Add type-specific data
+  // Add type-specific data AS NESTED OBJECTS
   switch (values.userType) {
     case "client":
       baseData.clientDetails = {
@@ -86,10 +59,13 @@ export const prepareUserData = (values) => {
       break;
 
     case "lawyer":
+      // ✅ CRITICAL: Send as complete nested object
       baseData.lawyerDetails = {
         barNumber: values.barNumber,
         barAssociation: values.barAssociation,
-        yearOfCall: values.yearOfCall?.format ? values.yearOfCall.format("YYYY-MM-DD") : values.yearOfCall,
+        yearOfCall: values.yearOfCall?.format
+          ? values.yearOfCall.format("YYYY-MM-DD")
+          : values.yearOfCall,
         practiceAreas: values.practiceAreas,
         hourlyRate: parseFloat(values.hourlyRate) || 0,
         specialization: values.specialization,
@@ -108,14 +84,8 @@ export const prepareUserData = (values) => {
           partnershipPercentage: values.partnershipPercentage,
         }),
       };
-      baseData.professionalInfo = {
-        bio: values.bio,
-        ...(values.education && { education: values.education }),
-        ...(values.workExperience && {
-          workExperience: values.workExperience,
-        }),
-      };
-      console.log("✅ Added lawyer details");
+
+      console.log("✅ Added lawyer details:", baseData.lawyerDetails);
       break;
 
     case "admin":
@@ -131,19 +101,53 @@ export const prepareUserData = (values) => {
       break;
   }
 
-  // ✅ If hasLawyerPrivileges is true but userType is not lawyer, add lawyer details
+  // ✅ If hasLawyerPrivileges is true but userType is not lawyer
   if (values.hasLawyerPrivileges && values.userType !== "lawyer") {
     baseData.isLawyer = true;
-    additionalRoles.push("lawyer");
+    if (!baseData.additionalRoles.includes("lawyer")) {
+      baseData.additionalRoles.push("lawyer");
+    }
+
     baseData.lawyerDetails = {
       barNumber: values.barNumber,
       barAssociation: values.barAssociation,
-      yearOfCall: values.yearOfCall?.format ? values.yearOfCall.format("YYYY-MM-DD") : values.yearOfCall,
+      yearOfCall: values.yearOfCall?.format
+        ? values.yearOfCall.format("YYYY-MM-DD")
+        : values.yearOfCall,
       practiceAreas: values.practiceAreas,
       hourlyRate: parseFloat(values.hourlyRate) || 0,
       specialization: values.specialization,
+      lawSchool: {
+        name: values.lawSchoolAttended,
+        graduationYear: values.lawSchoolGraduationYear,
+        degree: values.lawSchoolDegree,
+      },
+      undergraduateSchool: {
+        name: values.universityAttended,
+        graduationYear: values.universityGraduationYear,
+        degree: values.universityDegree,
+      },
     };
     console.log("✅ Added lawyer privileges to non-lawyer user");
+  }
+
+  // ✅ Add admin privileges
+  if (
+    values.hasAdminPrivileges &&
+    !["admin", "super-admin"].includes(values.userType)
+  ) {
+    if (!baseData.additionalRoles.includes("admin")) {
+      baseData.additionalRoles.push("admin");
+    }
+
+    baseData.adminDetails = {
+      adminLevel: "firm",
+      canManageUsers: values.canManageUsers || false,
+      canManageCases: values.canManageCases || false,
+      canManageBilling: values.canManageBilling || false,
+      canViewReports: values.canViewReports || false,
+      systemAccessLevel: values.systemAccessLevel || "restricted",
+    };
   }
 
   console.log("📦 Final prepared data:", baseData);

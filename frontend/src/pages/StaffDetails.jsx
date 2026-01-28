@@ -50,25 +50,25 @@ const StaffDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  
+
   // Use updated hooks
-  const { 
-    isAdminOrHr, 
-    isSuperOrAdmin, 
+  const {
+    isAdminOrHr,
+    isSuperOrAdmin,
     userData: currentUserData,
     hasRole,
     canManageUsers,
     canViewReports,
     isAdmin,
-    isLawyer: isCurrentUserLawyer
+    isLawyer: isCurrentUserLawyer,
   } = useAdminHook();
-  
+
   const { isLawyer: currentUserIsLawyer } = useLawyerHook();
-  
+
   const loggedInUserId = currentUserData?._id || user?.data?._id || user?._id;
-  
+
   const { dataFetcher, data, loading, error } = useDataFetch();
-  
+
   useRedirectLogoutUser("/users/login");
 
   useEffect(() => {
@@ -83,12 +83,12 @@ const StaffDetails = () => {
   // Get effective roles from user model
   const getEffectiveRoles = () => {
     if (!staffData) return [];
-    
+
     // Use the method from user model if available
     if (staffData.allRoles) {
       return staffData.allRoles;
     }
-    
+
     // Fallback to manual calculation
     const roles = [staffData.role];
     if (staffData.additionalRoles && staffData.additionalRoles.length > 0) {
@@ -100,27 +100,35 @@ const StaffDetails = () => {
   // Get user capabilities
   const getUserCapabilities = () => {
     if (!staffData) return [];
-    
+
     const capabilities = [];
-    
+
     // Lawyer capabilities
-    if (staffData.isLawyer || staffData.role === "lawyer" || staffData.userType === "lawyer") {
+    if (
+      staffData.isLawyer ||
+      staffData.role === "lawyer" ||
+      staffData.userType === "lawyer"
+    ) {
       capabilities.push("Lawyer");
     }
-    
+
     // Admin capabilities
     if (staffData.adminDetails) {
-      if (staffData.adminDetails.canManageUsers) capabilities.push("User Management");
-      if (staffData.adminDetails.canManageCases) capabilities.push("Case Management");
-      if (staffData.adminDetails.canManageBilling) capabilities.push("Billing Management");
-      if (staffData.adminDetails.canViewReports) capabilities.push("Report Access");
+      if (staffData.adminDetails.canManageUsers)
+        capabilities.push("User Management");
+      if (staffData.adminDetails.canManageCases)
+        capabilities.push("Case Management");
+      if (staffData.adminDetails.canManageBilling)
+        capabilities.push("Billing Management");
+      if (staffData.adminDetails.canViewReports)
+        capabilities.push("Report Access");
     }
-    
+
     // Department-based capabilities
     if (staffData.staffDetails?.department) {
       capabilities.push(`${staffData.staffDetails.department} Department`);
     }
-    
+
     return capabilities;
   };
 
@@ -135,8 +143,7 @@ const StaffDetails = () => {
           icon={<ArrowLeftOutlined />}
           onClick={() => navigate(-1)}
           className="mb-4"
-          type="text"
-        >
+          type="text">
           <span className="hidden sm:inline ml-1">Back</span>
         </Button>
 
@@ -161,8 +168,7 @@ const StaffDetails = () => {
           <div className="flex-1 text-center sm:text-left min-w-0 w-full">
             <Title
               level={window.innerWidth < 640 ? 3 : 2}
-              className="!mb-2 truncate"
-            >
+              className="!mb-2 truncate">
               {staffData?.firstName} {staffData?.lastName}
               {staffData?.middleName && ` ${staffData.middleName}`}
             </Title>
@@ -171,26 +177,27 @@ const StaffDetails = () => {
             <div className="flex flex-wrap justify-center sm:justify-start gap-2 mb-3">
               <Tag
                 color="blue"
-                className="px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-full"
-              >
-                {staffData?.userType ? staffData.userType.replace("-", " ").toUpperCase() : "USER"}
+                className="px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-full">
+                {staffData?.userType
+                  ? staffData.userType.replace("-", " ").toUpperCase()
+                  : "USER"}
               </Tag>
-              
+
               {staffData?.position && (
                 <Tag
                   color="green"
-                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-full"
-                >
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-full">
                   {staffData.position}
                 </Tag>
               )}
-              
-              {(staffData?.isLawyer || staffData?.role === "lawyer" || staffData?.userType === "lawyer") && (
+
+              {(staffData?.isLawyer ||
+                staffData?.role === "lawyer" ||
+                staffData?.userType === "lawyer") && (
                 <Tag
                   icon={<SafetyCertificateOutlined />}
                   color="purple"
-                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-full"
-                >
+                  className="px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold rounded-full">
                   Lawyer
                 </Tag>
               )}
@@ -202,35 +209,29 @@ const StaffDetails = () => {
                 <Tag
                   icon={<CheckCircleOutlined />}
                   color="success"
-                  className="text-xs sm:text-sm"
-                >
+                  className="text-xs sm:text-sm">
                   Active
                 </Tag>
               ) : (
                 <Tag
                   icon={<CloseCircleOutlined />}
                   color="error"
-                  className="text-xs sm:text-sm"
-                >
+                  className="text-xs sm:text-sm">
                   Inactive
                 </Tag>
               )}
-              
+
               {staffData?.isVerified && (
                 <Tag
                   icon={<SafetyCertificateOutlined />}
                   color="cyan"
-                  className="text-xs sm:text-sm ml-2"
-                >
+                  className="text-xs sm:text-sm ml-2">
                   Verified
                 </Tag>
               )}
-              
+
               {staffData?.status && staffData.status !== "active" && (
-                <Tag
-                  color="orange"
-                  className="text-xs sm:text-sm ml-2"
-                >
+                <Tag color="orange" className="text-xs sm:text-sm ml-2">
                   {staffData.status}
                 </Tag>
               )}
@@ -288,21 +289,18 @@ const StaffDetails = () => {
           <span>Contact Information</span>
         </Space>
       }
-      className="mb-4 sm:mb-6 shadow-md"
-    >
+      className="mb-4 sm:mb-6 shadow-md">
       <Descriptions
         column={{ xs: 1, sm: 1, md: 2 }}
         size={window.innerWidth < 640 ? "small" : "middle"}
-        labelStyle={{ fontWeight: 600 }}
-      >
+        labelStyle={{ fontWeight: 600 }}>
         <Descriptions.Item
           label={
             <Space size="small">
               <MailOutlined className="text-blue-600" />
               <span className="text-xs sm:text-sm">Email</span>
             </Space>
-          }
-        >
+          }>
           <Text className="text-xs sm:text-sm break-all">
             {staffData?.email}
           </Text>
@@ -314,8 +312,7 @@ const StaffDetails = () => {
               <PhoneOutlined className="text-green-600" />
               <span className="text-xs sm:text-sm">Phone</span>
             </Space>
-          }
-        >
+          }>
           <Text className="text-xs sm:text-sm">
             {staffData?.phone || "Not provided"}
           </Text>
@@ -328,8 +325,7 @@ const StaffDetails = () => {
               <span className="text-xs sm:text-sm">Address</span>
             </Space>
           }
-          span={2}
-        >
+          span={2}>
           <Text className="text-xs sm:text-sm">
             {staffData?.address || "Not provided"}
           </Text>
@@ -342,8 +338,7 @@ const StaffDetails = () => {
                 <UserOutlined className="text-purple-600" />
                 <span className="text-xs sm:text-sm">Gender</span>
               </Space>
-            }
-          >
+            }>
             <Text className="text-xs sm:text-sm capitalize">
               {staffData.gender}
             </Text>
@@ -357,8 +352,7 @@ const StaffDetails = () => {
                 <CalendarOutlined className="text-pink-600" />
                 <span className="text-xs sm:text-sm">Date of Birth</span>
               </Space>
-            }
-          >
+            }>
             <Text className="text-xs sm:text-sm">
               {formatDate(staffData.dateOfBirth)}
             </Text>
@@ -378,11 +372,9 @@ const StaffDetails = () => {
               ellipsis={{
                 rows: 3,
                 expandable: true,
-                symbol: (expanded) =>
-                  expanded ? "Show less" : "Read more",
+                symbol: (expanded) => (expanded ? "Show less" : "Read more"),
               }}
-              className="text-xs sm:text-sm text-gray-700"
-            >
+              className="text-xs sm:text-sm text-gray-700">
               {staffData.bio}
             </Paragraph>
           </div>
@@ -392,7 +384,7 @@ const StaffDetails = () => {
   );
 
   const renderAdditionalRoles = () => {
-    if (!staffData?.additionalRoles || staffData.additionalRoles.length === 0) 
+    if (!staffData?.additionalRoles || staffData.additionalRoles.length === 0)
       return null;
 
     return (
@@ -403,17 +395,19 @@ const StaffDetails = () => {
             <span>Additional Roles & Privileges</span>
           </Space>
         }
-        className="mb-4 sm:mb-6 shadow-md"
-      >
+        className="mb-4 sm:mb-6 shadow-md">
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
             {staffData.additionalRoles.map((role, index) => (
-              <Tag key={index} color="indigo" className="px-3 py-1 text-xs sm:text-sm">
+              <Tag
+                key={index}
+                color="indigo"
+                className="px-3 py-1 text-xs sm:text-sm">
                 {role}
               </Tag>
             ))}
           </div>
-          
+
           <Text type="secondary" className="text-xs sm:text-sm block">
             <InfoCircleOutlined className="mr-1" />
             This user has multiple role assignments beyond their primary role.
@@ -424,15 +418,15 @@ const StaffDetails = () => {
   };
 
   const renderProfessionalInfo = () => {
-    const hasLawyerDetails = 
-      staffData?.isLawyer || 
-      staffData?.role === "lawyer" || 
-      staffData?.userType === "lawyer" || 
+    const hasLawyerDetails =
+      staffData?.isLawyer ||
+      staffData?.role === "lawyer" ||
+      staffData?.userType === "lawyer" ||
       staffData?.lawyerDetails;
-    
+
     const hasStaffDetails = staffData?.staffDetails;
 
-    if (!hasLawyerDetails && !hasStaffDetails && !staffData?.adminDetails) 
+    if (!hasLawyerDetails && !hasStaffDetails && !staffData?.adminDetails)
       return null;
 
     return (
@@ -443,8 +437,7 @@ const StaffDetails = () => {
             <span>Professional Information</span>
           </Space>
         }
-        className="mb-4 sm:mb-6 shadow-md"
-      >
+        className="mb-4 sm:mb-6 shadow-md">
         {/* Lawyer Details */}
         {hasLawyerDetails && staffData.lawyerDetails && (
           <>
@@ -458,12 +451,12 @@ const StaffDetails = () => {
 
               <Descriptions
                 column={{ xs: 1, sm: 2 }}
-                size={window.innerWidth < 640 ? "small" : "middle"}
-              >
+                size={window.innerWidth < 640 ? "small" : "middle"}>
                 {staffData.lawyerDetails.barNumber && (
                   <Descriptions.Item
-                    label={<span className="text-xs sm:text-sm">Bar Number</span>}
-                  >
+                    label={
+                      <span className="text-xs sm:text-sm">Bar Number</span>
+                    }>
                     <Text className="text-xs sm:text-sm">
                       {staffData.lawyerDetails.barNumber}
                     </Text>
@@ -472,8 +465,9 @@ const StaffDetails = () => {
 
                 {staffData.lawyerDetails.yearOfCall && (
                   <Descriptions.Item
-                    label={<span className="text-xs sm:text-sm">Year of Call</span>}
-                  >
+                    label={
+                      <span className="text-xs sm:text-sm">Year of Call</span>
+                    }>
                     <Text className="text-xs sm:text-sm">
                       {formatDate(staffData.lawyerDetails.yearOfCall)}
                     </Text>
@@ -483,9 +477,12 @@ const StaffDetails = () => {
                 {staffData.lawyerDetails.practiceAreas &&
                   staffData.lawyerDetails.practiceAreas.length > 0 && (
                     <Descriptions.Item
-                      label={<span className="text-xs sm:text-sm">Practice Areas</span>}
-                      span={2}
-                    >
+                      label={
+                        <span className="text-xs sm:text-sm">
+                          Practice Areas
+                        </span>
+                      }
+                      span={2}>
                       <div className="flex flex-wrap gap-1 sm:gap-2">
                         {staffData.lawyerDetails.practiceAreas.map((area) => (
                           <Tag key={area} color="purple" className="text-xs">
@@ -498,34 +495,38 @@ const StaffDetails = () => {
 
                 {staffData.lawyerDetails.specialization && (
                   <Descriptions.Item
-                    label={<span className="text-xs sm:text-sm">Specialization</span>}
-                    span={2}
-                  >
+                    label={
+                      <span className="text-xs sm:text-sm">Specialization</span>
+                    }
+                    span={2}>
                     <Text className="text-xs sm:text-sm">
                       {staffData.lawyerDetails.specialization}
                     </Text>
                   </Descriptions.Item>
                 )}
-                
+
                 {staffData.lawyerDetails.hourlyRate && (
                   <Descriptions.Item
-                    label={<span className="text-xs sm:text-sm">Hourly Rate</span>}
-                  >
+                    label={
+                      <span className="text-xs sm:text-sm">Hourly Rate</span>
+                    }>
                     <Text className="text-xs sm:text-sm">
                       ${staffData.lawyerDetails.hourlyRate}/hour
                     </Text>
                   </Descriptions.Item>
                 )}
-                
+
                 {staffData.lawyerDetails.isPartner && (
                   <Descriptions.Item
-                    label={<span className="text-xs sm:text-sm">Partnership Status</span>}
-                  >
+                    label={
+                      <span className="text-xs sm:text-sm">
+                        Partnership Status
+                      </span>
+                    }>
                     <Tag color="gold" className="text-xs">
                       Partner
-                      {staffData.lawyerDetails.partnershipPercentage && 
-                        ` (${staffData.lawyerDetails.partnershipPercentage}%)`
-                      }
+                      {staffData.lawyerDetails.partnershipPercentage &&
+                        ` (${staffData.lawyerDetails.partnershipPercentage}%)`}
                     </Tag>
                   </Descriptions.Item>
                 )}
@@ -585,12 +586,12 @@ const StaffDetails = () => {
 
             <Descriptions
               column={{ xs: 1, sm: 2 }}
-              size={window.innerWidth < 640 ? "small" : "middle"}
-            >
+              size={window.innerWidth < 640 ? "small" : "middle"}>
               {staffData.staffDetails.employeeId && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Employee ID</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Employee ID</span>
+                  }>
                   <Text code className="text-xs sm:text-sm">
                     {staffData.staffDetails.employeeId}
                   </Text>
@@ -599,8 +600,9 @@ const StaffDetails = () => {
 
               {staffData.staffDetails.department && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Department</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Department</span>
+                  }>
                   <Tag color="blue" className="text-xs">
                     {staffData.staffDetails.department}
                   </Tag>
@@ -609,8 +611,9 @@ const StaffDetails = () => {
 
               {staffData.staffDetails.designation && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Designation</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Designation</span>
+                  }>
                   <Text className="text-xs sm:text-sm">
                     {staffData.staffDetails.designation}
                   </Text>
@@ -619,8 +622,9 @@ const StaffDetails = () => {
 
               {staffData.staffDetails.employmentType && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Employment Type</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Employment Type</span>
+                  }>
                   <Tag color="green" className="text-xs capitalize">
                     {staffData.staffDetails.employmentType}
                   </Tag>
@@ -629,8 +633,9 @@ const StaffDetails = () => {
 
               {staffData.staffDetails.workSchedule && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Work Schedule</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Work Schedule</span>
+                  }>
                   <Text className="text-xs sm:text-sm">
                     {staffData.staffDetails.workSchedule}
                   </Text>
@@ -639,21 +644,21 @@ const StaffDetails = () => {
 
               {staffData.staffDetails.dateOfJoining && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Date Joined</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Date Joined</span>
+                  }>
                   <Text className="text-xs sm:text-sm">
                     {formatDate(staffData.staffDetails.dateOfJoining)}
                   </Text>
                 </Descriptions.Item>
               )}
-              
+
               {staffData.staffDetails.reportingTo && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Reports To</span>}
-                >
-                  <Text className="text-xs sm:text-sm">
-                    Manager
-                  </Text>
+                  label={
+                    <span className="text-xs sm:text-sm">Reports To</span>
+                  }>
+                  <Text className="text-xs sm:text-sm">Manager</Text>
                 </Descriptions.Item>
               )}
             </Descriptions>
@@ -715,19 +720,23 @@ const StaffDetails = () => {
                   <Text className="text-xs sm:text-sm">Report Access</Text>
                 </div>
               )}
-              
+
               {staffData.adminDetails.adminLevel && (
                 <div className="col-span-full mt-2">
-                  <Text strong className="text-xs sm:text-sm">Admin Level: </Text>
+                  <Text strong className="text-xs sm:text-sm">
+                    Admin Level:{" "}
+                  </Text>
                   <Tag color="blue" className="text-xs ml-2">
                     {staffData.adminDetails.adminLevel}
                   </Tag>
                 </div>
               )}
-              
+
               {staffData.adminDetails.systemAccessLevel && (
                 <div className="col-span-full mt-1">
-                  <Text strong className="text-xs sm:text-sm">Access Level: </Text>
+                  <Text strong className="text-xs sm:text-sm">
+                    Access Level:{" "}
+                  </Text>
                   <Tag color="green" className="text-xs ml-2">
                     {staffData.adminDetails.systemAccessLevel}
                   </Tag>
@@ -742,14 +751,11 @@ const StaffDetails = () => {
 
   const renderUserTypeSpecificInfo = () => {
     if (!staffData?.userType) return null;
-    
+
     switch (staffData.userType) {
       case "client":
         return (
-          <Card
-            title="Client Information"
-            className="mb-4 sm:mb-6 shadow-md"
-          >
+          <Card title="Client Information" className="mb-4 sm:mb-6 shadow-md">
             <Alert
               message="Client Profile"
               description="This is a client account. Different information would be displayed here."
@@ -774,10 +780,10 @@ const StaffDetails = () => {
 
   // Determine what the current user can view
   const canViewFullDetails = isAdminOrHr || isSuperOrAdmin || isCurrentUser;
-  const canViewProfessionalInfo = 
-    canViewFullDetails || 
-    hasRole("staff") || 
-    hasRole("lawyer") || 
+  const canViewProfessionalInfo =
+    canViewFullDetails ||
+    hasRole("staff") ||
+    hasRole("lawyer") ||
     (currentUserIsLawyer && staffData?.userType === "staff");
 
   if (loading) {

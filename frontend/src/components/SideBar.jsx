@@ -2,15 +2,7 @@ import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Menu,
-  Avatar,
-  Typography,
-  Space,
-  Badge,
-  Divider,
-  Tooltip,
-} from "antd";
+import { Menu, Avatar, Typography, Space, Badge, Divider, Tooltip } from "antd";
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -220,17 +212,20 @@ const SideBar = ({
       return {
         key: item.key,
         icon: item.icon,
-        label: collapsed && !isMobile ? (
-          <Tooltip title={item.label} placement="right">
-            <Link to={item.path} onClick={closeDrawer}>
+        label:
+          collapsed && !isMobile ? (
+            <Tooltip title={item.label} placement="right">
+              <Link to={item.path} onClick={closeDrawer}>
+                {item.label}
+              </Link>
+            </Tooltip>
+          ) : (
+            <Link
+              to={item.path}
+              onClick={isMobile && closeDrawer ? closeDrawer : undefined}>
               {item.label}
             </Link>
-          </Tooltip>
-        ) : (
-          <Link to={item.path} onClick={isMobile && closeDrawer ? closeDrawer : undefined}>
-            {item.label}
-          </Link>
-        ),
+          ),
       };
     });
   };
@@ -250,8 +245,7 @@ const SideBar = ({
     <div
       className={`p-4 border-b transition-colors duration-300 ${
         isDarkMode ? "border-gray-700" : "border-gray-200"
-      }`}
-    >
+      }`}>
       <div className="flex flex-col items-center gap-3">
         <div className="relative">
           <Avatar
@@ -274,16 +268,14 @@ const SideBar = ({
                 strong
                 className={`block text-sm ${
                   isDarkMode ? "text-gray-100" : "text-gray-800"
-                }`}
-              >
+                }`}>
                 {userData?.firstName} {userData?.lastName}
               </Text>
               <Text
                 type="secondary"
                 className={`text-xs ${
                   isDarkMode ? "text-gray-400" : "text-gray-500"
-                }`}
-              >
+                }`}>
                 {userData?.position || userData?.role}
               </Text>
             </div>
@@ -327,21 +319,19 @@ const SideBar = ({
     <div
       className={`p-4 border-b transition-colors duration-300 ${
         isDarkMode ? "border-gray-700" : "border-gray-200"
-      }`}
-    >
+      }`}>
       <div className="flex items-center justify-center gap-2">
         <div
           className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-300 ${
             isDarkMode ? "bg-blue-600" : "bg-blue-500"
-          }`}
-        >
+          }`}>
           <HomeOutlined className="text-white" />
         </div>
 
         {!collapsed && (
           <div>
             <Text strong className="text-white text-base font-bold">
-              LawFlow
+              LawMaster
             </Text>
             <Text type="secondary" className="text-gray-400 text-xs block">
               Legal Suite
@@ -361,8 +351,7 @@ const SideBar = ({
         background: isDarkMode
           ? "linear-gradient(180deg, #1a2236 0%, #111827 100%)"
           : "linear-gradient(180deg, #1e293b 0%, #0f172a 100%)",
-      }}
-    >
+      }}>
       {/* Logo */}
       {renderLogo()}
 
@@ -392,21 +381,18 @@ const SideBar = ({
       <div
         className={`p-4 border-t transition-colors duration-300 ${
           isDarkMode ? "border-gray-700" : "border-gray-700"
-        }`}
-      >
+        }`}>
         <Menu
           theme="dark"
           mode="inline"
           className="border-0"
-          style={{ backgroundColor: "transparent" }}
-        >
+          style={{ backgroundColor: "transparent" }}>
           <Menu.Item
             key="logout"
             icon={<LogoutOutlined className="text-lg" />}
             danger
             onClick={handleLogout}
-            className={collapsed ? "text-center" : ""}
-          >
+            className={collapsed ? "text-center" : ""}>
             {!collapsed && "Logout"}
           </Menu.Item>
         </Menu>
@@ -414,10 +400,7 @@ const SideBar = ({
         {/* App Info */}
         {!collapsed && (
           <div className="mt-4 text-center">
-            <Text
-              type="secondary"
-              className="text-gray-400 text-xs block"
-            >
+            <Text type="secondary" className="text-gray-400 text-xs block">
               v2.1.0 • Professional
             </Text>
           </div>

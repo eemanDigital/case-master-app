@@ -1,171 +1,233 @@
-// matterSlice.js (updated to match routes)
-
+// features/matter/matterSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import matterService from "./matterService";
+import { message } from "antd";
 
 const initialState = {
   matters: [],
-  matter: null,
+  currentMatter: null,
   stats: null,
   isLoading: false,
   isError: false,
   isSuccess: false,
   message: "",
-  totalPages: 1,
-  currentPage: 1,
-  totalItems: 0,
+  // Pagination
+  pagination: {
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 1,
+  },
+  // Filters
+  filters: {
+    status: "",
+    matterType: "",
+    priority: "",
+    search: "",
+    client: "",
+    accountOfficer: "",
+  },
+  // Validation errors from API
+  validationErrors: {},
 };
 
-// Create new matter
+// Async Thunks
 export const createMatter = createAsyncThunk(
   "matter/create",
-  async (matterData, thunkAPI) => {
+  async (matterData, { rejectWithValue }) => {
     try {
-      const token = thunkAPI.getState().auth.user?.token;
-      return await matterService.createMatter(matterData, token);
+      const response = await matterService.createMatter(matterData);
+      return response;
     } catch (error) {
-      const message =
-        (error.response &&
-          error.response.data &&
-          error.response.data.message) ||
-        error.message ||
-        error.toString();
-      return thunkAPI.rejectWithValue(message);
+      // Handle validation errors specifically
+      if (error.response?.status === 400) {
+        return rejectWithValue({
+          message: "Validation failed",
+          errors: error.response.data.errors || {},
+        });
+      }
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create matter",
+      );
     }
   },
 );
 
-// Get all matters with pagination
 export const getMatters = createAsyncThunk(
   "matter/getAll",
-  async (filters, thunkAPI) => {
+  async (params = {}, { rejectWithValue }) => {
     try {
-      const token = thunkAPI.getState().auth.user?.token;
-      return await matterService.getAllMatters(filters, token);
+      const response = await matterService.getAllMatters(params);
+      return response;
     } catch (error) {
-      const message =
-        (error.response &&
-          error.response.data &&
-          error.response.data.message) ||
-        error.message ||
-        error.toString();
-      return thunkAPI.rejectWithValue(message);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch matters",
+      );
     }
   },
 );
 
-// Get single matter
 export const getMatter = createAsyncThunk(
   "matter/get",
-  async (matterId, thunkAPI) => {
+  async (matterId, { rejectWithValue }) => {
     try {
-      const token = thunkAPI.getState().auth.user?.token;
-      return await matterService.getMatter(matterId, token);
+      const response = await matterService.getMatter(matterId);
+      return response;
     } catch (error) {
-      const message =
-        (error.response &&
-          error.response.data &&
-          error.response.data.message) ||
-        error.message ||
-        error.toString();
-      return thunkAPI.rejectWithValue(message);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch matter",
+      );
     }
   },
 );
 
-// Update matter
 export const updateMatter = createAsyncThunk(
   "matter/update",
-  async ({ matterId, matterData }, thunkAPI) => {
+  async ({ matterId, matterData }, { rejectWithValue }) => {
     try {
-      const token = thunkAPI.getState().auth.user?.token;
-      return await matterService.updateMatter(matterId, matterData, token);
+      const response = await matterService.updateMatter({
+        matterId,
+        matterData,
+      });
+      return response;
     } catch (error) {
-      const message =
-        (error.response &&
-          error.response.data &&
-          error.response.data.message) ||
-        error.message ||
-        error.toString();
-      return thunkAPI.rejectWithValue(message);
+      if (error.response?.status === 400) {
+        return rejectWithValue({
+          message: "Validation failed",
+          errors: error.response.data.errors || {},
+        });
+      }
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update matter",
+      );
     }
   },
 );
 
-// Delete matter
 export const deleteMatter = createAsyncThunk(
   "matter/delete",
-  async (matterId, thunkAPI) => {
+  async (matterId, { rejectWithValue }) => {
     try {
-      const token = thunkAPI.getState().auth.user?.token;
-      return await matterService.deleteMatter(matterId, token);
+      const response = await matterService.deleteMatter(matterId);
+      return response;
     } catch (error) {
-      const message =
-        (error.response &&
-          error.response.data &&
-          error.response.data.message) ||
-        error.message ||
-        error.toString();
-      return thunkAPI.rejectWithValue(message);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete matter",
+      );
     }
   },
 );
 
-// Get stats
 export const getMatterStats = createAsyncThunk(
   "matter/stats",
-  async (_, thunkAPI) => {
+  async (_, { rejectWithValue }) => {
     try {
-      const token = thunkAPI.getState().auth.user?.token;
-      return await matterService.getMatterStats(token);
+      const response = await matterService.getMatterStats();
+      return response;
     } catch (error) {
-      const message =
-        (error.response &&
-          error.response.data &&
-          error.response.data.message) ||
-        error.message ||
-        error.toString();
-      return thunkAPI.rejectWithValue(message);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch stats",
+      );
     }
   },
 );
 
-// Search matters
 export const searchMatters = createAsyncThunk(
   "matter/search",
-  async (searchCriteria, thunkAPI) => {
+  async (searchCriteria, { rejectWithValue }) => {
     try {
-      const token = thunkAPI.getState().auth.user?.token;
-      return await matterService.searchMatters(searchCriteria, token);
+      const response = await matterService.searchMatters(searchCriteria);
+      return response;
     } catch (error) {
-      const message =
-        (error.response &&
-          error.response.data &&
-          error.response.data.message) ||
-        error.message ||
-        error.toString();
-      return thunkAPI.rejectWithValue(message);
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to search matters",
+      );
     }
   },
 );
 
+// Slice
 const matterSlice = createSlice({
   name: "matter",
   initialState,
   reducers: {
+    // ✅ Reset the entire matter state to initial
     resetMatterState: (state) => {
-      state.matter = null;
+      return initialState;
+    },
+
+    // ✅ Reset only the current matter and loading states
+    resetMatter: (state) => {
+      state.currentMatter = null;
+      state.isLoading = false;
+      state.isError = false;
+      state.isSuccess = false;
+      state.message = "";
+      state.validationErrors = {};
+    },
+
+    // ✅ Reset only the validation errors
+    resetValidationErrors: (state) => {
+      state.validationErrors = {};
+    },
+
+    // ✅ Reset loading states only
+    resetLoading: (state) => {
       state.isLoading = false;
       state.isError = false;
       state.isSuccess = false;
       state.message = "";
     },
-    resetMattersState: (state) => {
-      return initialState;
+
+    // ✅ Set filters
+    setFilters: (state, action) => {
+      state.filters = { ...state.filters, ...action.payload };
+      state.pagination.page = 1; // Reset to first page on filter change
     },
+
+    // ✅ Clear all filters
+    clearFilters: (state) => {
+      state.filters = initialState.filters;
+    },
+
+    // ✅ Set pagination
+    setPagination: (state, action) => {
+      state.pagination = { ...state.pagination, ...action.payload };
+    },
+
+    // ✅ Clear error message only
     clearError: (state) => {
       state.isError = false;
       state.message = "";
+      state.validationErrors = {};
+    },
+
+    // ✅ Manually set current matter (useful for optimistic updates)
+    setCurrentMatter: (state, action) => {
+      state.currentMatter = action.payload;
+    },
+
+    // ✅ Update matter in list (optimistic updates)
+    updateMatterInList: (state, action) => {
+      const updatedMatter = action.payload;
+      const index = state.matters.findIndex((m) => m._id === updatedMatter._id);
+      if (index !== -1) {
+        state.matters[index] = updatedMatter;
+      }
+    },
+
+    // ✅ Remove matter from list
+    removeMatterFromList: (state, action) => {
+      const matterId = action.payload;
+      state.matters = state.matters.filter((m) => m._id !== matterId);
+      if (state.currentMatter?._id === matterId) {
+        state.currentMatter = null;
+      }
+    },
+
+    // ✅ Add matter to list (for optimistic creation)
+    addMatterToList: (state, action) => {
+      state.matters.unshift(action.payload);
     },
   },
   extraReducers: (builder) => {
@@ -175,21 +237,32 @@ const matterSlice = createSlice({
         state.isLoading = true;
         state.isSuccess = false;
         state.isError = false;
+        state.validationErrors = {};
         state.message = "";
       })
       .addCase(createMatter.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
         if (action.payload.data?.matter) {
-          state.matters.unshift(action.payload.data.matter); // Add to beginning
+          state.matters.unshift(action.payload.data.matter);
         }
         state.message = "Matter created successfully";
+        message.success("Matter created successfully");
       })
       .addCase(createMatter.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
-        state.message = action.payload || "Failed to create matter";
+
+        if (action.payload?.errors) {
+          state.validationErrors = action.payload.errors;
+          state.message = "Please fix the validation errors";
+        } else {
+          state.message = action.payload || "Failed to create matter";
+        }
+
+        message.error(state.message);
       })
+
       // Get All Matters
       .addCase(getMatters.pending, (state) => {
         state.isLoading = true;
@@ -200,62 +273,78 @@ const matterSlice = createSlice({
         state.isSuccess = true;
         state.matters =
           action.payload.data?.matters || action.payload.data || [];
-        state.totalPages = action.payload.totalPages || 1;
-        state.currentPage = action.payload.currentPage || 1;
-        state.totalItems = action.payload.totalItems || 0;
+        state.pagination = action.payload.data?.pagination || state.pagination;
       })
       .addCase(getMatters.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload || "Failed to fetch matters";
+        message.error(state.message);
       })
+
       // Get Single Matter
       .addCase(getMatter.pending, (state) => {
         state.isLoading = true;
-        state.matter = null;
         state.isError = false;
+        state.validationErrors = {};
       })
       .addCase(getMatter.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.matter =
+        state.currentMatter =
           action.payload.data?.matter || action.payload.data || null;
       })
       .addCase(getMatter.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload || "Failed to fetch matter";
+        message.error(state.message);
       })
+
       // Update Matter
       .addCase(updateMatter.pending, (state) => {
         state.isLoading = true;
         state.isSuccess = false;
+        state.validationErrors = {};
       })
       .addCase(updateMatter.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
+
         const updatedMatter =
           action.payload.data?.matter || action.payload.data;
         if (updatedMatter) {
           // Update in matters array
           const index = state.matters.findIndex(
-            (matter) => matter._id === updatedMatter._id,
+            (m) => m._id === updatedMatter._id,
           );
           if (index !== -1) {
             state.matters[index] = updatedMatter;
           }
+
           // Update current matter if it's the same
-          if (state.matter?._id === updatedMatter._id) {
-            state.matter = updatedMatter;
+          if (state.currentMatter?._id === updatedMatter._id) {
+            state.currentMatter = updatedMatter;
           }
         }
+
         state.message = "Matter updated successfully";
+        message.success("Matter updated successfully");
       })
       .addCase(updateMatter.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
-        state.message = action.payload || "Failed to update matter";
+
+        if (action.payload?.errors) {
+          state.validationErrors = action.payload.errors;
+          state.message = "Please fix the validation errors";
+        } else {
+          state.message = action.payload || "Failed to update matter";
+        }
+
+        message.error(state.message);
       })
+
       // Delete Matter
       .addCase(deleteMatter.pending, (state) => {
         state.isLoading = true;
@@ -263,22 +352,24 @@ const matterSlice = createSlice({
       .addCase(deleteMatter.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        const deletedMatterId = action.payload.data?._id || action.meta.arg;
-        if (deletedMatterId) {
-          state.matters = state.matters.filter(
-            (matter) => matter._id !== deletedMatterId,
-          );
-          if (state.matter?._id === deletedMatterId) {
-            state.matter = null;
-          }
+
+        const deletedMatterId = action.meta.arg;
+        state.matters = state.matters.filter((m) => m._id !== deletedMatterId);
+
+        if (state.currentMatter?._id === deletedMatterId) {
+          state.currentMatter = null;
         }
+
         state.message = "Matter deleted successfully";
+        message.success("Matter deleted successfully");
       })
       .addCase(deleteMatter.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload || "Failed to delete matter";
+        message.error(state.message);
       })
+
       // Get Stats
       .addCase(getMatterStats.pending, (state) => {
         state.isLoading = true;
@@ -292,7 +383,9 @@ const matterSlice = createSlice({
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload || "Failed to fetch stats";
+        message.error(state.message);
       })
+
       // Search Matters
       .addCase(searchMatters.pending, (state) => {
         state.isLoading = true;
@@ -306,10 +399,24 @@ const matterSlice = createSlice({
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload || "Failed to search matters";
+        message.error(state.message);
       });
   },
 });
 
-export const { resetMatterState, resetMattersState, clearError } =
-  matterSlice.actions;
+export const {
+  resetMatterState, // ✅ Complete reset
+  resetMatter, // ✅ Reset current matter
+  resetValidationErrors,
+  resetLoading,
+  setFilters,
+  clearFilters,
+  setPagination,
+  clearError,
+  setCurrentMatter,
+  updateMatterInList,
+  removeMatterFromList,
+  addMatterToList,
+} = matterSlice.actions;
+
 export default matterSlice.reducer;

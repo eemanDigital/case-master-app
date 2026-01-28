@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { message, Modal } from "antd";
 import api from "../services/api";
-import { useSelector } from "react-redux";
+// import { useSelector } from "react-redux";
 
 export const useMatters = () => {
   const [matters, setMatters] = useState([]);
@@ -14,7 +14,7 @@ export const useMatters = () => {
   const [filters, setFilters] = useState({});
   const [selectedMatter, setSelectedMatter] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
-  const { user } = useSelector((state) => state.auth);
+  // const { user } = useSelector((state) => state.auth);
 
   // Fetch matters with filters
   const fetchMatters = useCallback(

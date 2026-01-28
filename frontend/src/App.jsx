@@ -73,6 +73,7 @@ import CreateTaskForm from "./pages/CreateTaskForm.jsx";
 import MatterListView from "./components/matters/MatterListView.jsx";
 import MatterDetails from "./pages/matters/MatterDetails.jsx";
 import MatterForm from "./components/matters/MatterForm/MatterForm.jsx";
+import MatterFormContainer from "./components/matters/MatterForm/MatterFormContainer.jsx";
 
 // Enable axios credentials
 axios.defaults.withCredentials = true;
@@ -254,7 +255,7 @@ function App() {
             element={
               <ShowOnlyVerifiedUser>
                 <ProtectedRoute isStaffRoute={true}>
-                  <MatterForm />
+                  <MatterFormContainer />
                 </ProtectedRoute>
               </ShowOnlyVerifiedUser>
             }

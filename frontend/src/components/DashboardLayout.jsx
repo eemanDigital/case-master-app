@@ -192,8 +192,7 @@ const DashboardLayout = () => {
             type="primary"
             block
             ghost
-            onClick={() => navigate("/dashboard/notifications")}
-          >
+            onClick={() => navigate("/dashboard/notifications")}>
             View All Notifications
           </Button>
         </div>
@@ -213,8 +212,7 @@ const DashboardLayout = () => {
       style={{
         maxWidth: "100vw",
         overflow: "hidden",
-      }}
-    >
+      }}>
       {/* Desktop Sidebar */}
       {!isMobile && (
         <div
@@ -224,8 +222,7 @@ const DashboardLayout = () => {
           style={{
             background: isDarkMode ? "#1a2236" : "#ffffff",
             boxShadow: "0 0 20px rgba(0, 0, 0, 0.08)",
-          }}
-        >
+          }}>
           <SideBar
             isMobile={isMobile}
             collapsed={collapsed}
@@ -239,16 +236,15 @@ const DashboardLayout = () => {
         className={`transition-all duration-300 ease-out min-h-screen ${
           isMobile ? "ml-0" : collapsed ? "ml-20" : "ml-64"
         }`}
-        ref={fullscreenRef}
-      >
+        ref={fullscreenRef}>
         {/* Modern Header */}
         <Header
           style={{
             padding: "0 24px",
             background: colorBgContainer,
             backdropFilter: "blur(8px)",
-            backgroundColor: isDarkMode 
-              ? "rgba(17, 24, 39, 0.95)" 
+            backgroundColor: isDarkMode
+              ? "rgba(17, 24, 39, 0.95)"
               : "rgba(255, 255, 255, 0.95)",
             borderBottom: `1px solid ${
               isDarkMode ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.06)"
@@ -258,8 +254,7 @@ const DashboardLayout = () => {
             top: 0,
             zIndex: 30,
           }}
-          className="flex items-center justify-between"
-        >
+          className="flex items-center justify-between">
           {/* Left Section */}
           <div className="flex items-center gap-4">
             {/* Menu Toggle */}
@@ -288,8 +283,7 @@ const DashboardLayout = () => {
                 strong
                 className={`text-base ${
                   isDarkMode ? "text-gray-100" : "text-gray-800"
-                }`}
-              >
+                }`}>
                 {getPageTitle(location.pathname)}
               </Text>
             </div>
@@ -324,7 +318,13 @@ const DashboardLayout = () => {
             <Tooltip title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}>
               <Button
                 type="text"
-                icon={isFullscreen ? <FullscreenExitOutlined /> : <FullscreenOutlined />}
+                icon={
+                  isFullscreen ? (
+                    <FullscreenExitOutlined />
+                  ) : (
+                    <FullscreenOutlined />
+                  )
+                }
                 onClick={toggleFullscreen}
                 className="w-10 h-10 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
               />
@@ -358,14 +358,12 @@ const DashboardLayout = () => {
               menu={{ items: notificationItems }}
               trigger={["click"]}
               placement="bottomRight"
-              overlayClassName="w-80 sm:w-96 shadow-xl rounded-lg overflow-hidden"
-            >
+              overlayClassName="w-80 sm:w-96 shadow-xl rounded-lg overflow-hidden">
               <Badge
                 count={notifications}
                 size="small"
                 offset={[-5, 5]}
-                className="cursor-pointer"
-              >
+                className="cursor-pointer">
                 <Button
                   type="text"
                   icon={<BellOutlined className="text-lg" />}
@@ -379,23 +377,20 @@ const DashboardLayout = () => {
               menu={{ items: userMenuItems }}
               trigger={["click"]}
               placement="bottomRight"
-              overlayClassName="w-56 shadow-xl rounded-lg overflow-hidden"
-            >
+              overlayClassName="w-56 shadow-xl rounded-lg overflow-hidden">
               <div className="flex items-center gap-3 cursor-pointer pl-2">
                 <div className="text-right hidden sm:block">
                   <Text
                     strong
                     className={`block text-sm ${
                       isDarkMode ? "text-gray-100" : "text-gray-800"
-                    }`}
-                  >
+                    }`}>
                     {userData?.firstName || "User"}
                   </Text>
                   <Text
                     className={`text-xs ${
                       isDarkMode ? "text-gray-400" : "text-gray-500"
-                    }`}
-                  >
+                    }`}>
                     {userData?.position || userData?.role || "Staff"}
                   </Text>
                 </div>
@@ -408,8 +403,7 @@ const DashboardLayout = () => {
                       ? "border-blue-600 bg-blue-900"
                       : "border-blue-500 bg-blue-100"
                   }`}
-                  style={{ color: isDarkMode ? "#93c5fd" : "#1e40af" }}
-                >
+                  style={{ color: isDarkMode ? "#93c5fd" : "#1e40af" }}>
                   {userData?.firstName?.[0]}
                   {userData?.lastName?.[0]}
                 </Avatar>
@@ -425,8 +419,7 @@ const DashboardLayout = () => {
           }`}
           style={{
             minHeight: "calc(100vh - 96px)",
-          }}
-        >
+          }}>
           {/* Content Container */}
           <div
             className={`rounded-xl shadow-sm border transition-all duration-300 ${
@@ -436,30 +429,26 @@ const DashboardLayout = () => {
             }`}
             style={{
               minHeight: "calc(100vh - 120px)",
-            }}
-          >
+            }}>
             {/* Page Header */}
             <div
               className={`p-6 border-b rounded-t-xl ${
                 isDarkMode
                   ? "border-gray-700 bg-gradient-to-r from-gray-800 to-gray-900"
                   : "border-gray-200 bg-gradient-to-r from-white to-gray-50"
-              }`}
-            >
+              }`}>
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
                   <Text
                     className={`text-2xl font-bold ${
                       isDarkMode ? "text-gray-100" : "text-gray-900"
-                    }`}
-                  >
+                    }`}>
                     {getPageTitle(location.pathname)}
                   </Text>
                   <Text
                     className={`text-sm mt-1 ${
                       isDarkMode ? "text-gray-400" : "text-gray-600"
-                    }`}
-                  >
+                    }`}>
                     {getPageSubtitle(location.pathname)}
                   </Text>
                 </div>
@@ -482,11 +471,10 @@ const DashboardLayout = () => {
             isDarkMode
               ? "border-gray-800 text-gray-500"
               : "border-gray-200 text-gray-600"
-          }`}
-        >
+          }`}>
           <Text className="text-xs">
-            © {new Date().getFullYear()} LawFlow • Legal Practice Management System
-            • v2.1.0
+            © {new Date().getFullYear()} LawMaster • Legal Practice Management
+            System • v2.1.0
           </Text>
         </footer>
       </Layout>
@@ -504,8 +492,7 @@ const DashboardLayout = () => {
           }}
           width={280}
           headerStyle={{ display: "none" }}
-          className="drawer-sidebar"
-        >
+          className="drawer-sidebar">
           <SideBar
             isMobile={isMobile}
             closeDrawer={() => setDrawerVisible(false)}

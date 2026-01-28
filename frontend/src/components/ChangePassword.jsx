@@ -1,5 +1,3 @@
-import React from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Modal, Button, Form, Input, Typography } from "antd";
 import { toast } from "react-toastify";
@@ -11,6 +9,8 @@ import {
   RESET,
 } from "../redux/features/auth/authSlice";
 import { sendAutomatedEmail } from "../redux/features/emails/emailSlice";
+import { useDispatch, useSelector } from "react-redux";
+import React from "react";
 
 const { Title } = Typography;
 
@@ -57,7 +57,7 @@ const ChangePassword = () => {
     }
     if (!regex.test(value)) {
       return Promise.reject(
-        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character!"
+        "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character!",
       );
     }
     return Promise.resolve();
@@ -118,7 +118,7 @@ const ChangePassword = () => {
                     return Promise.resolve();
                   }
                   return Promise.reject(
-                    new Error("The two passwords do not match!")
+                    new Error("The two passwords do not match!"),
                   );
                 },
               }),

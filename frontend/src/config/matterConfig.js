@@ -1,16 +1,16 @@
-// Matter configuration constants
+// Matter configuration constants - ALIGNED WITH BACKEND SCHEMA
 export const MATTER_CONFIG = {
-  // Matter Types
+  // Matter Types - MATCHES BACKEND ENUM
   MATTER_TYPES: [
     { value: "litigation", label: "Litigation", color: "red", icon: "⚖️" },
     { value: "corporate", label: "Corporate", color: "blue", icon: "🏢" },
     { value: "advisory", label: "Advisory", color: "green", icon: "💡" },
-    { value: "property", label: "Property", color: "orange", icon: "🏠" },
     { value: "retainer", label: "Retainer", color: "purple", icon: "📋" },
+    { value: "property", label: "Property", color: "orange", icon: "🏠" },
     { value: "general", label: "General", color: "gray", icon: "📁" },
   ],
 
-  // Status Options
+  // Status Options - MATCHES BACKEND ENUM
   STATUS_OPTIONS: [
     { value: "active", label: "Active", color: "green" },
     { value: "pending", label: "Pending", color: "orange" },
@@ -24,7 +24,7 @@ export const MATTER_CONFIG = {
     { value: "lost", label: "Lost", color: "error" },
   ],
 
-  // Priority Options
+  // Priority Options - MATCHES BACKEND ENUM
   PRIORITY_OPTIONS: [
     { value: "low", label: "Low", color: "gray", level: 1 },
     { value: "medium", label: "Medium", color: "blue", level: 2 },
@@ -32,25 +32,20 @@ export const MATTER_CONFIG = {
     { value: "urgent", label: "Urgent", color: "red", level: 4 },
   ],
 
-  // Billing Types
+  // Categories - MATCHES BACKEND ENUM (Only for litigation matters)
+  CATEGORIES: [
+    { value: "civil", label: "Civil" },
+    { value: "criminal", label: "Criminal" },
+    { value: "n/a", label: "Not Applicable" }, // Default for non-litigation
+  ],
+
+  // Billing Types - MATCHES BACKEND ENUM
   BILLING_TYPES: [
     { value: "hourly", label: "Hourly" },
     { value: "fixed", label: "Fixed Fee" },
     { value: "contingency", label: "Contingency" },
     { value: "retainer", label: "Retainer" },
     { value: "pro-bono", label: "Pro Bono" },
-  ],
-
-  // Categories
-  CATEGORIES: [
-    { value: "civil", label: "Civil" },
-    { value: "criminal", label: "Criminal" },
-    { value: "commercial", label: "Commercial" },
-    { value: "land", label: "Land" },
-    { value: "family", label: "Family" },
-    { value: "labor", label: "Labor" },
-    { value: "constitutional", label: "Constitutional" },
-    { value: "appellate", label: "Appellate" },
   ],
 
   // Currency Options
@@ -61,7 +56,110 @@ export const MATTER_CONFIG = {
     { value: "EUR", label: "€ Euro", symbol: "€" },
   ],
 
-  // Litigation Stages
+  // Nature of Matter options - EXACTLY MATCHES BACKEND ENUM VALUES
+  NATURE_OF_MATTER: {
+    // LITIGATION - Must match backend enum exactly
+    litigation: [
+      // Contract & Civil
+      { value: "contract dispute", label: "Contract Dispute" },
+      { value: "personal injury", label: "Personal Injury" },
+      { value: "real estate", label: "Real Estate" },
+      { value: "land law", label: "Land Law" },
+      { value: "family law", label: "Family Law" },
+      { value: "intellectual property", label: "Intellectual Property" },
+      { value: "employment law", label: "Employment Law" },
+      { value: "bankruptcy", label: "Bankruptcy" },
+      { value: "estate law", label: "Estate Law" },
+      { value: "tortious liability", label: "Tortious Liability" },
+
+      // Specialized Areas
+      { value: "immigration", label: "Immigration" },
+      { value: "maritime", label: "Maritime" },
+      { value: "tax law", label: "Tax Law" },
+      { value: "constitutional law", label: "Constitutional Law" },
+      { value: "environmental law", label: "Environmental Law" },
+      { value: "human rights", label: "Human Rights" },
+      { value: "criminal law", label: "Criminal Law" },
+      { value: "insurance law", label: "Insurance Law" },
+      { value: "consumer protection", label: "Consumer Protection" },
+      { value: "cyber law", label: "Cyber Law" },
+
+      // Election & Political
+      { value: "pre-election", label: "Pre-Election" },
+      { value: "election petition", label: "Election Petition" },
+
+      // Other
+      { value: "other", label: "Other" },
+    ],
+
+    // CORPORATE - Must match backend enum exactly
+    corporate: [
+      { value: "merger and acquisition", label: "Merger & Acquisition" },
+      { value: "corporate governance", label: "Corporate Governance" },
+      { value: "company incorporation", label: "Company Incorporation" },
+      { value: "joint venture", label: "Joint Venture" },
+      { value: "shareholder agreement", label: "Shareholder Agreement" },
+      { value: "securities", label: "Securities" },
+      { value: "banking and finance", label: "Banking & Finance" },
+      { value: "capital markets", label: "Capital Markets" },
+      { value: "private equity", label: "Private Equity" },
+      { value: "venture capital", label: "Venture Capital" },
+      { value: "restructuring", label: "Restructuring" },
+      { value: "insolvency", label: "Insolvency" },
+      { value: "other", label: "Other" },
+    ],
+
+    // ADVISORY - Must match backend enum exactly
+    advisory: [
+      { value: "legal opinion", label: "Legal Opinion" },
+      { value: "regulatory compliance", label: "Regulatory Compliance" },
+      { value: "due diligence", label: "Due Diligence" },
+      { value: "contract review", label: "Contract Review" },
+      { value: "legal research", label: "Legal Research" },
+      { value: "policy development", label: "Policy Development" },
+      { value: "other", label: "Other" },
+    ],
+
+    // PROPERTY - Must match backend enum exactly
+    property: [
+      { value: "property acquisition", label: "Property Acquisition" },
+      { value: "property sale", label: "Property Sale" },
+      { value: "lease agreement", label: "Lease Agreement" },
+      { value: "property development", label: "Property Development" },
+      { value: "land use", label: "Land Use" },
+      { value: "real estate finance", label: "Real Estate Finance" },
+      { value: "other", label: "Other" },
+    ],
+
+    // RETAINER - Must match backend enum exactly
+    retainer: [
+      { value: "general retainer", label: "General Retainer" },
+      { value: "general legal services", label: "General Legal Services" },
+      { value: "notarial services", label: "Notarial Services" },
+      { value: "documentation", label: "Documentation" },
+      { value: "other", label: "Other" },
+    ],
+
+    // GENERAL - Must match backend enum exactly
+    general: [
+      { value: "general retainer", label: "General Retainer" },
+      { value: "general legal services", label: "General Legal Services" },
+      { value: "notarial services", label: "Notarial Services" },
+      { value: "documentation", label: "Documentation" },
+      { value: "other", label: "Other" },
+    ],
+  },
+
+  // Client Types (For reference only - not in Matter schema)
+  CLIENT_TYPES: [
+    { value: "individual", label: "Individual" },
+    { value: "company", label: "Company" },
+    { value: "ngo", label: "NGO" },
+    { value: "government", label: "Government" },
+    { value: "international", label: "International" },
+  ],
+
+  // Litigation Stages (For reference only - may be in LitigationDetail)
   LITIGATION_STAGES: [
     { value: "pre-filing", label: "Pre-Filing" },
     { value: "filed", label: "Filed" },
@@ -76,7 +174,7 @@ export const MATTER_CONFIG = {
     { value: "closed", label: "Closed" },
   ],
 
-  // Corporate Transactions
+  // Corporate Transactions (For reference only - may be in CorporateDetail)
   CORPORATE_TRANSACTIONS: [
     { value: "incorporation", label: "Incorporation" },
     { value: "merger-acquisition", label: "Merger & Acquisition" },
@@ -89,29 +187,7 @@ export const MATTER_CONFIG = {
     { value: "dissolution", label: "Dissolution" },
   ],
 
-  // Advisory Types
-  ADVISORY_TYPES: [
-    { value: "legal-opinion", label: "Legal Opinion" },
-    { value: "regulatory-advice", label: "Regulatory Advice" },
-    { value: "compliance", label: "Compliance" },
-    { value: "risk-assessment", label: "Risk Assessment" },
-    { value: "contract-review", label: "Contract Review" },
-    { value: "policy-development", label: "Policy Development" },
-    { value: "tax-advice", label: "Tax Advice" },
-    { value: "labor-employment", label: "Labor & Employment" },
-    { value: "intellectual-property", label: "Intellectual Property" },
-  ],
-
-  // Client Types
-  CLIENT_TYPES: [
-    { value: "individual", label: "Individual" },
-    { value: "company", label: "Company" },
-    { value: "ngo", label: "NGO" },
-    { value: "government", label: "Government" },
-    { value: "international", label: "International" },
-  ],
-
-  // Property Types
+  // Property Types (For reference only - may be in PropertyDetail)
   PROPERTY_TYPES: [
     { value: "residential", label: "Residential" },
     { value: "commercial", label: "Commercial" },
@@ -121,7 +197,7 @@ export const MATTER_CONFIG = {
     { value: "vacant-land", label: "Vacant Land" },
   ],
 
-  // Property Transactions
+  // Property Transactions (For reference only - may be in PropertyDetail)
   PROPERTY_TRANSACTIONS: [
     { value: "purchase", label: "Purchase" },
     { value: "sale", label: "Sale" },
@@ -133,92 +209,43 @@ export const MATTER_CONFIG = {
     { value: "perfection", label: "Perfection" },
   ],
 
-  // Retainer Types
-  RETAINER_TYPES: [
-    { value: "general", label: "General Retainer" },
-    { value: "special", label: "Special Retainer" },
-    { value: "project-based", label: "Project Based" },
-    { value: "hourly", label: "Hourly" },
-    { value: "fixed-fee", label: "Fixed Fee" },
-    { value: "contingency", label: "Contingency" },
-  ],
-
-  // General Categories
-  GENERAL_CATEGORIES: [
-    { value: "legal-opinion", label: "Legal Opinion" },
-    { value: "document-review", label: "Document Review" },
-    { value: "negotiation", label: "Negotiation" },
-    { value: "compliance", label: "Compliance" },
-    { value: "research", label: "Legal Research" },
-    { value: "drafting", label: "Drafting" },
-    { value: "representation", label: "Representation" },
-    { value: "consultation", label: "Consultation" },
-    { value: "other", label: "Other" },
-  ],
-
-  // Nature of Matter options by type
-  NATURE_OF_MATTER: {
-    litigation: [
-      { value: "breach-of-contract", label: "Breach of Contract" },
-      { value: "tort", label: "Tort" },
-      { value: "recovery-of-debt", label: "Recovery of Debt" },
-      { value: "land-dispute", label: "Land Dispute" },
-      { value: "employment", label: "Employment" },
-      { value: "defamation", label: "Defamation" },
-      { value: "family", label: "Family" },
-      { value: "criminal-defense", label: "Criminal Defense" },
-    ],
-    corporate: [
-      { value: "incorporation", label: "Incorporation" },
-      { value: "merger-acquisition", label: "Merger & Acquisition" },
-      { value: "shareholders-agreement", label: "Shareholders Agreement" },
-      { value: "regulatory-compliance", label: "Regulatory Compliance" },
-      { value: "corporate-governance", label: "Corporate Governance" },
-      { value: "restructuring", label: "Restructuring" },
-    ],
-    advisory: [
-      { value: "legal-opinion", label: "Legal Opinion" },
-      { value: "regulatory-compliance", label: "Regulatory Compliance" },
-      { value: "contract-review", label: "Contract Review" },
-      { value: "due-diligence", label: "Due Diligence" },
-      { value: "risk-assessment", label: "Risk Assessment" },
-      { value: "policy-development", label: "Policy Development" },
-    ],
-    property: [
-      { value: "purchase", label: "Purchase" },
-      { value: "sale", label: "Sale" },
-      { value: "lease", label: "Lease" },
-      { value: "mortgage", label: "Mortgage" },
-      { value: "title-perfection", label: "Title Perfection" },
-      { value: "property-dispute", label: "Property Dispute" },
-    ],
-    retainer: [
-      { value: "general-retainer", label: "General Retainer" },
-      { value: "special-retainer", label: "Special Retainer" },
-      { value: "monthly-retainer", label: "Monthly Retainer" },
-      { value: "annual-retainer", label: "Annual Retainer" },
-    ],
-    general: [
-      { value: "legal-research", label: "Legal Research" },
-      { value: "document-drafting", label: "Document Drafting" },
-      { value: "consultation", label: "Consultation" },
-      { value: "negotiation", label: "Negotiation" },
-      { value: "mediation", label: "Mediation" },
-    ],
-  },
-
-  // Validation Rules
+  // Validation Rules - MATCHES BACKEND SCHEMA
   VALIDATION_RULES: {
-    title: { max: 500, required: true },
-    description: { max: 5000, required: true },
-    generalComment: { max: 5000 },
-    internalNotes: { max: 10000 },
+    title: {
+      max: 500,
+      required: true,
+      message: "Title must be less than 500 characters",
+    },
+    description: {
+      max: 5000,
+      required: true,
+      message: "Description must be less than 5000 characters",
+    },
+    generalComment: {
+      max: 5000,
+      message: "General comment must be less than 5000 characters",
+    },
+    internalNotes: {
+      max: 10000,
+      message: "Internal notes must be less than 10000 characters",
+    },
   },
 
   // Pagination Defaults
   PAGINATION: {
     defaultPageSize: 20,
     pageSizeOptions: [10, 20, 50, 100],
+  },
+
+  // Helper to get nature options for a specific matter type
+  getNatureOptions: (matterType) => {
+    return MATTER_CONFIG.NATURE_OF_MATTER[matterType] || [];
+  },
+
+  // Helper to validate if a nature value is valid for matter type
+  isValidNatureForType: (matterType, natureValue) => {
+    const options = MATTER_CONFIG.NATURE_OF_MATTER[matterType] || [];
+    return options.some((option) => option.value === natureValue);
   },
 };
 
@@ -256,4 +283,31 @@ export const formatCurrency = (amount, currency = "NGN") => {
 export const getMatterTypeIcon = (type) => {
   const typeObj = MATTER_CONFIG.MATTER_TYPES.find((t) => t.value === type);
   return typeObj?.icon || "📄";
+};
+
+// Data transformation utilities to ensure frontend-backend alignment
+export const transformForBackend = (formData) => {
+  const transformed = { ...formData };
+
+  // Ensure category is valid (only for litigation matters)
+  if (transformed.matterType === "litigation") {
+    if (!["civil", "criminal", "n/a"].includes(transformed.category)) {
+      transformed.category = "n/a";
+    }
+  } else {
+    // Non-litigation matters should have category as 'n/a'
+    transformed.category = "n/a";
+  }
+
+  // Ensure natureOfMatter is valid for the selected matterType
+  const validNatures =
+    MATTER_CONFIG.NATURE_OF_MATTER[transformed.matterType] || [];
+  const validNatureValues = validNatures.map((n) => n.value);
+
+  if (!validNatureValues.includes(transformed.natureOfMatter)) {
+    // If invalid, set to first valid option or empty
+    transformed.natureOfMatter = validNatureValues[0] || "";
+  }
+
+  return transformed;
 };
