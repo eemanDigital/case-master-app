@@ -184,8 +184,6 @@ const MatterForm = memo(
           return;
         }
 
-        console.log("Form is valid, processing submission...");
-
         // Process the data
         const transformedValues = {
           title: allFormValues.title?.trim(),

@@ -13,6 +13,7 @@ import { formatMatterForForm } from "../../../utils/mattersFormatter";
 
 const MatterFormContainer = () => {
   const { id } = useParams();
+
   const navigate = useNavigate();
   const dispatch = useDispatch();
 

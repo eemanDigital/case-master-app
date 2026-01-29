@@ -262,6 +262,16 @@ function App() {
           />
 
           <Route path="matters/:id" element={<MatterDetails />} />
+          <Route
+            path="matters/:id/edit"
+            element={
+              <ShowOnlyVerifiedUser>
+                <ProtectedRoute isStaffRoute={true}>
+                  <MatterFormContainer isEditMode={true} />
+                </ProtectedRoute>
+              </ShowOnlyVerifiedUser>
+            }
+          />
 
           <Route
             path="staff-status"
@@ -274,6 +284,7 @@ function App() {
             }
           />
           <Route path="staff/:id/details" element={<StaffDetails />} />
+
           <Route
             path="cases"
             element={

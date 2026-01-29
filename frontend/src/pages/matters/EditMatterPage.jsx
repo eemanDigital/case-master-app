@@ -1,62 +1,55 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, Spin, Alert, Button } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
+import { useDispatch, useSelector } from "react-redux";
 import MatterForm from "../../components/matters/MatterForm";
-import { useMatters } from "../../hooks/useMatters";
+import { getMatter, updateMatter } from "../../features/matter/matterSlice";
 
 const EditMatterPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [initialValues, setInitialValues] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const dispatch = useDispatch();
 
-  const {
-    fetchMatterById,
-    updateMatter,
-    loading: updateLoading,
-  } = useMatters();
+  const { currentMatter, isLoading, isError, message } = useSelector(
+    (state) => state.matter,
+  );
 
+  // Fetch matter once
   useEffect(() => {
-    loadMatter();
-  }, [id]);
-
-  const loadMatter = async () => {
-    try {
-      setLoading(true);
-      const matter = await fetchMatterById(id, true);
-
-      if (matter) {
-        // Transform the data for the form
-        const formValues = {
-          ...matter,
-          client: matter.client?._id,
-          accountOfficer: matter.accountOfficer?.map((officer) => officer._id),
-        };
-
-        setInitialValues(formValues);
-      } else {
-        setError("Matter not found");
-      }
-    } catch (err) {
-      setError("Failed to load matter details");
-      console.error("Error loading matter:", err);
-    } finally {
-      setLoading(false);
+    if (id) {
+      dispatch(getMatter(id));
     }
-  };
+  }, [id, dispatch]);
+
+  // Prepare form values safely
+  const initialValues = useMemo(() => {
+    if (!currentMatter) return null;
+
+    return {
+      ...currentMatter,
+      client: currentMatter.client?._id,
+      accountOfficer: currentMatter.accountOfficer?.map(
+        (officer) => officer._id,
+      ),
+    };
+  }, [currentMatter]);
 
   const handleSubmit = async (data) => {
-    try {
-      await updateMatter(id, data);
-      navigate(`/matters/${id}`);
-    } catch (error) {
-      console.error("Failed to update matter:", error);
-    }
+    if (!currentMatter?._id) return;
+
+    await dispatch(
+      updateMatter({
+        matterId: currentMatter._id,
+        matterData: data,
+      }),
+    ).unwrap();
+
+    navigate(`/matters/${currentMatter._id}`);
   };
 
-  if (loading) {
+  // Loading
+  if (isLoading && !currentMatter) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Spin size="large" />
@@ -64,16 +57,17 @@ const EditMatterPage = () => {
     );
   }
 
-  if (error) {
+  // Error
+  if (isError) {
     return (
       <div className="p-6">
         <Alert
           message="Error"
-          description={error}
+          description={message || "Failed to load matter"}
           type="error"
           showIcon
           action={
-            <Button type="primary" onClick={() => navigate("/matters")}>
+            <Button onClick={() => navigate("/matters")}>
               Back to Matters
             </Button>
           }
@@ -91,17 +85,20 @@ const EditMatterPage = () => {
           className="mb-4">
           Back to Matter
         </Button>
-        <h1 className="text-2xl font-bold text-gray-900">Edit Matter</h1>
+
+        <h1 className="text-2xl font-bold">Edit Matter</h1>
         <p className="text-gray-600">Update the matter details below</p>
       </div>
 
       <Card>
-        <MatterForm
-          initialValues={initialValues}
-          onSubmit={handleSubmit}
-          loading={updateLoading}
-          mode="edit"
-        />
+        {initialValues && (
+          <MatterForm
+            initialValues={initialValues}
+            onSubmit={handleSubmit}
+            loading={isLoading}
+            mode="edit"
+          />
+        )}
       </Card>
     </div>
   );

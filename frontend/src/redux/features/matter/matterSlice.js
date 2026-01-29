@@ -11,6 +11,12 @@ const initialState = {
   isError: false,
   isSuccess: false,
   message: "",
+
+  // Bulk operations
+  selectedMatters: [], // Array of selected matter IDs
+  bulkLoading: false,
+  bulkError: null,
+
   // Pagination
   pagination: {
     page: 1,
@@ -18,6 +24,7 @@ const initialState = {
     total: 0,
     totalPages: 1,
   },
+
   // Filters
   filters: {
     status: "",
@@ -27,11 +34,91 @@ const initialState = {
     client: "",
     accountOfficer: "",
   },
+
   // Validation errors from API
   validationErrors: {},
 };
 
-// Async Thunks
+// ============================================
+// BULK ACTION ASYNC THUNKS
+// ============================================
+
+// Bulk update matters
+export const bulkUpdateMatters = createAsyncThunk(
+  "matter/bulkUpdate",
+  async ({ matterIds, updateData }, { rejectWithValue }) => {
+    try {
+      const response = await matterService.bulkUpdateMatters(
+        matterIds,
+        updateData,
+      );
+      return response;
+    } catch (error) {
+      if (error.response?.status === 400) {
+        return rejectWithValue({
+          message: "Validation failed",
+          errors: error.response.data.errors || {},
+        });
+      }
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update matters",
+      );
+    }
+  },
+);
+
+// Bulk delete matters
+export const bulkDeleteMatters = createAsyncThunk(
+  "matter/bulkDelete",
+  async (matterIds, { rejectWithValue }) => {
+    try {
+      const response = await matterService.bulkDeleteMatters(matterIds);
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete matters",
+      );
+    }
+  },
+);
+
+// Bulk assign account officer
+export const bulkAssignOfficer = createAsyncThunk(
+  "matter/bulkAssignOfficer",
+  async ({ matterIds, officerId }, { rejectWithValue }) => {
+    try {
+      const response = await matterService.bulkAssignOfficer(
+        matterIds,
+        officerId,
+      );
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to assign officer",
+      );
+    }
+  },
+);
+
+// Bulk export matters
+export const bulkExportMatters = createAsyncThunk(
+  "matter/bulkExport",
+  async ({ matterIds, format = "csv" }, { rejectWithValue }) => {
+    try {
+      const response = await matterService.bulkExportMatters(matterIds, format);
+      return response;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to export matters",
+      );
+    }
+  },
+);
+
+// ============================================
+// EXISTING ASYNC THUNKS (Keep these)
+// ============================================
+
 export const createMatter = createAsyncThunk(
   "matter/create",
   async (matterData, { rejectWithValue }) => {
@@ -39,7 +126,6 @@ export const createMatter = createAsyncThunk(
       const response = await matterService.createMatter(matterData);
       return response;
     } catch (error) {
-      // Handle validation errors specifically
       if (error.response?.status === 400) {
         return rejectWithValue({
           message: "Validation failed",
@@ -146,17 +232,18 @@ export const searchMatters = createAsyncThunk(
   },
 );
 
-// Slice
+// ============================================
+// SLICE DEFINITION
+// ============================================
+
 const matterSlice = createSlice({
   name: "matter",
   initialState,
   reducers: {
-    // ✅ Reset the entire matter state to initial
+    // ✅ Existing reducers...
     resetMatterState: (state) => {
       return initialState;
     },
-
-    // ✅ Reset only the current matter and loading states
     resetMatter: (state) => {
       state.currentMatter = null;
       state.isLoading = false;
@@ -165,49 +252,33 @@ const matterSlice = createSlice({
       state.message = "";
       state.validationErrors = {};
     },
-
-    // ✅ Reset only the validation errors
     resetValidationErrors: (state) => {
       state.validationErrors = {};
     },
-
-    // ✅ Reset loading states only
     resetLoading: (state) => {
       state.isLoading = false;
       state.isError = false;
       state.isSuccess = false;
       state.message = "";
     },
-
-    // ✅ Set filters
     setFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
-      state.pagination.page = 1; // Reset to first page on filter change
+      state.pagination.page = 1;
     },
-
-    // ✅ Clear all filters
     clearFilters: (state) => {
       state.filters = initialState.filters;
     },
-
-    // ✅ Set pagination
     setPagination: (state, action) => {
       state.pagination = { ...state.pagination, ...action.payload };
     },
-
-    // ✅ Clear error message only
     clearError: (state) => {
       state.isError = false;
       state.message = "";
       state.validationErrors = {};
     },
-
-    // ✅ Manually set current matter (useful for optimistic updates)
     setCurrentMatter: (state, action) => {
       state.currentMatter = action.payload;
     },
-
-    // ✅ Update matter in list (optimistic updates)
     updateMatterInList: (state, action) => {
       const updatedMatter = action.payload;
       const index = state.matters.findIndex((m) => m._id === updatedMatter._id);
@@ -215,8 +286,6 @@ const matterSlice = createSlice({
         state.matters[index] = updatedMatter;
       }
     },
-
-    // ✅ Remove matter from list
     removeMatterFromList: (state, action) => {
       const matterId = action.payload;
       state.matters = state.matters.filter((m) => m._id !== matterId);
@@ -224,14 +293,214 @@ const matterSlice = createSlice({
         state.currentMatter = null;
       }
     },
-
-    // ✅ Add matter to list (for optimistic creation)
     addMatterToList: (state, action) => {
       state.matters.unshift(action.payload);
+    },
+
+    // ✅ NEW: Bulk Action Selection Reducers
+    selectMatter: (state, action) => {
+      const matterId = action.payload;
+      if (!state.selectedMatters.includes(matterId)) {
+        state.selectedMatters.push(matterId);
+      }
+    },
+
+    deselectMatter: (state, action) => {
+      const matterId = action.payload;
+      state.selectedMatters = state.selectedMatters.filter(
+        (id) => id !== matterId,
+      );
+    },
+
+    toggleSelectMatter: (state, action) => {
+      const matterId = action.payload;
+      const index = state.selectedMatters.indexOf(matterId);
+      if (index > -1) {
+        state.selectedMatters.splice(index, 1);
+      } else {
+        state.selectedMatters.push(matterId);
+      }
+    },
+
+    selectAllMatters: (state, action) => {
+      const matterIds = action.payload || state.matters.map((m) => m._id);
+      state.selectedMatters = [
+        ...new Set([...state.selectedMatters, ...matterIds]),
+      ];
+    },
+
+    selectPageMatters: (state, action) => {
+      // Select all matters in current page
+      const pageMatters = action.payload;
+      state.selectedMatters = [
+        ...new Set([...state.selectedMatters, ...pageMatters]),
+      ];
+    },
+
+    clearSelectedMatters: (state) => {
+      state.selectedMatters = [];
+    },
+
+    setSelectedMatters: (state, action) => {
+      state.selectedMatters = action.payload;
+    },
+
+    // Bulk operations loading states
+    setBulkLoading: (state, action) => {
+      state.bulkLoading = action.payload;
+    },
+
+    setBulkError: (state, action) => {
+      state.bulkError = action.payload;
+    },
+
+    clearBulkError: (state) => {
+      state.bulkError = null;
     },
   },
   extraReducers: (builder) => {
     builder
+      // ================ BULK ACTIONS ================
+
+      // Bulk Update Matters
+      .addCase(bulkUpdateMatters.pending, (state) => {
+        state.bulkLoading = true;
+        state.bulkError = null;
+      })
+      .addCase(bulkUpdateMatters.fulfilled, (state, action) => {
+        state.bulkLoading = false;
+        state.isSuccess = true;
+
+        const updatedMatters =
+          action.payload.data?.matters || action.payload.data || [];
+
+        // Update matters in state
+        updatedMatters.forEach((updatedMatter) => {
+          const index = state.matters.findIndex(
+            (m) => m._id === updatedMatter._id,
+          );
+          if (index !== -1) {
+            state.matters[index] = updatedMatter;
+          }
+
+          // Update current matter if it's the same
+          if (state.currentMatter?._id === updatedMatter._id) {
+            state.currentMatter = updatedMatter;
+          }
+        });
+
+        // Clear selection if option is set
+        if (action.payload.data?.clearSelection) {
+          state.selectedMatters = [];
+        }
+
+        state.message = `Successfully updated ${updatedMatters.length} matters`;
+        message.success(state.message);
+      })
+      .addCase(bulkUpdateMatters.rejected, (state, action) => {
+        state.bulkLoading = false;
+        state.isError = true;
+        state.bulkError = action.payload?.message || "Failed to update matters";
+
+        if (action.payload?.errors) {
+          state.validationErrors = action.payload.errors;
+        }
+
+        message.error(state.bulkError);
+      })
+
+      // Bulk Delete Matters
+      .addCase(bulkDeleteMatters.pending, (state) => {
+        state.bulkLoading = true;
+        state.bulkError = null;
+      })
+      .addCase(bulkDeleteMatters.fulfilled, (state, action) => {
+        state.bulkLoading = false;
+        state.isSuccess = true;
+
+        const deletedMatterIds =
+          action.payload.data?.deletedMatterIds || action.meta.arg || [];
+
+        // Remove deleted matters from state
+        state.matters = state.matters.filter(
+          (m) => !deletedMatterIds.includes(m._id),
+        );
+
+        // Remove from selected matters
+        state.selectedMatters = state.selectedMatters.filter(
+          (id) => !deletedMatterIds.includes(id),
+        );
+
+        // Clear current matter if it was deleted
+        if (deletedMatterIds.includes(state.currentMatter?._id)) {
+          state.currentMatter = null;
+        }
+
+        state.message = `Successfully deleted ${deletedMatterIds.length} matters`;
+        message.success(state.message);
+      })
+      .addCase(bulkDeleteMatters.rejected, (state, action) => {
+        state.bulkLoading = false;
+        state.isError = true;
+        state.bulkError = action.payload || "Failed to delete matters";
+        message.error(state.bulkError);
+      })
+
+      // Bulk Assign Officer
+      .addCase(bulkAssignOfficer.pending, (state) => {
+        state.bulkLoading = true;
+        state.bulkError = null;
+      })
+      .addCase(bulkAssignOfficer.fulfilled, (state, action) => {
+        state.bulkLoading = false;
+        state.isSuccess = true;
+
+        const updatedMatters =
+          action.payload.data?.matters || action.payload.data || [];
+
+        // Update matters with new officer
+        updatedMatters.forEach((updatedMatter) => {
+          const index = state.matters.findIndex(
+            (m) => m._id === updatedMatter._id,
+          );
+          if (index !== -1) {
+            state.matters[index] = updatedMatter;
+          }
+        });
+
+        state.message = `Successfully assigned officer to ${updatedMatters.length} matters`;
+        message.success(state.message);
+      })
+      .addCase(bulkAssignOfficer.rejected, (state, action) => {
+        state.bulkLoading = false;
+        state.isError = true;
+        state.bulkError = action.payload || "Failed to assign officer";
+        message.error(state.bulkError);
+      })
+
+      // Bulk Export Matters
+      .addCase(bulkExportMatters.pending, (state) => {
+        state.bulkLoading = true;
+        state.bulkError = null;
+      })
+      .addCase(bulkExportMatters.fulfilled, (state, action) => {
+        state.bulkLoading = false;
+        state.isSuccess = true;
+
+        const exportCount = action.meta.arg?.matterIds?.length || 0;
+        state.message = `Successfully exported ${exportCount} matters`;
+
+        // Note: File download is handled in the component
+      })
+      .addCase(bulkExportMatters.rejected, (state, action) => {
+        state.bulkLoading = false;
+        state.isError = true;
+        state.bulkError = action.payload || "Failed to export matters";
+        message.error(state.bulkError);
+      })
+
+      // ================ EXISTING CASES ================
+
       // Create Matter
       .addCase(createMatter.pending, (state) => {
         state.isLoading = true;
@@ -404,9 +673,10 @@ const matterSlice = createSlice({
   },
 });
 
+// Export all actions
 export const {
-  resetMatterState, // ✅ Complete reset
-  resetMatter, // ✅ Reset current matter
+  resetMatterState,
+  resetMatter,
   resetValidationErrors,
   resetLoading,
   setFilters,
@@ -417,6 +687,20 @@ export const {
   updateMatterInList,
   removeMatterFromList,
   addMatterToList,
+
+  // Bulk action selectors
+  selectMatter,
+  deselectMatter,
+  toggleSelectMatter,
+  selectAllMatters,
+  selectPageMatters,
+  clearSelectedMatters,
+  setSelectedMatters,
+
+  // Bulk loading states
+  setBulkLoading,
+  setBulkError,
+  clearBulkError,
 } = matterSlice.actions;
 
 export default matterSlice.reducer;

@@ -37,7 +37,6 @@ import {
   FolderOutlined,
   ClockCircleOutlined,
   SafetyOutlined,
-
   CheckCircleOutlined,
   CloseCircleOutlined,
   PhoneOutlined,
@@ -58,7 +57,7 @@ import {
   getStatusColor,
 } from "../../config/matterConfig";
 
-const {TextArea} = Input;
+const { TextArea } = Input;
 
 const { Title, Text, Paragraph } = Typography;
 const { TabPane } = Tabs;
@@ -72,13 +71,13 @@ const MatterDetails = () => {
   const screens = useBreakpoint();
 
   const {
-    matter: matterDetails,
+    currentMatter,
     isLoading,
     isError,
     message: errorMessage,
   } = useSelector((state) => state.matter);
 
-  const matter = matterDetails?.matter;
+  const matter = currentMatter;
 
   const [activeTab, setActiveTab] = useState("overview");
   const [showMoreActions, setShowMoreActions] = useState(false);
