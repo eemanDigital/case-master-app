@@ -49,6 +49,7 @@ const UserSelect = ({
     }
   };
 
+  console.log(users);
   return (
     <Select
       placeholder={placeholder}

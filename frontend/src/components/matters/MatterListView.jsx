@@ -223,7 +223,8 @@ const MatterListView = () => {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `matters-export-${Date.now()}.${format}`;
+        const extension = format === "excel" ? "xlsx" : format;
+        a.download = `matters-export-${Date.now()}.${extension}`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);

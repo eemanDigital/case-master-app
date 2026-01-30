@@ -105,12 +105,16 @@ export const bulkExportMatters = createAsyncThunk(
   "matter/bulkExport",
   async ({ matterIds, format = "csv" }, { rejectWithValue }) => {
     try {
-      const response = await matterService.bulkExportMatters(matterIds, format);
-      return response;
+      const data = await matterService.bulkExportMatters(matterIds, format);
+      return data; // This is now the Blob
     } catch (error) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to export matters",
-      );
+      // If the response is a blob, the error message is inside it
+      if (error.response && error.response.data instanceof Blob) {
+        const text = await error.response.data.text();
+        const errorData = JSON.parse(text);
+        return rejectWithValue(errorData.message || "Failed to export");
+      }
+      return rejectWithValue(error.message || "Failed to export");
     }
   },
 );

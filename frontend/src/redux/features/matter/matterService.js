@@ -117,7 +117,7 @@ const matterService = {
       "/matters/export",
       { matterIds, format },
       {
-        responseType: "blob", // Important for file downloads
+        responseType: "blob",
         headers: {
           Accept:
             format === "pdf"
@@ -128,9 +128,9 @@ const matterService = {
         },
       },
     );
-    return res;
+    // RETURN ONLY DATA
+    return res.data;
   },
-
   // Bulk status change (convenience method)
   bulkChangeStatus: async (matterIds, status) => {
     const res = await API.patch("/matters/bulk-update", {
