@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { EVENT_TYPES } = require("./CalendarEvent.model");
+const { EVENT_TYPES } = require("./calenderEventModel");
 
 // ============================================
 // BLOCKED DATES/TIME SLOTS SCHEMA

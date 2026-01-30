@@ -265,8 +265,21 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
  * USER REGISTRATION (for admin creating users)
  * ===============================
  */
+// controllers/authController.js - REGISTER FUNCTION ONLY (Update in your existing file)
+
+/**
+ * ===============================
+ * USER REGISTRATION (for admin creating users)
+ * ===============================
+ */
+// controllers/authController.js - COMPLETE FIX for professionalInfo
+
+// controllers/authController.js - FIXED to accept nested objects
+
 exports.register = catchAsync(async (req, res, next) => {
   const { email, password, passwordConfirm, userType } = req.body;
+
+  console.log("📥 Register Request Body:", JSON.stringify(req.body, null, 2));
 
   if (!email || !password || !passwordConfirm || !userType) {
     return next(new AppError("Please provide all required fields", 400));
@@ -301,11 +314,12 @@ exports.register = catchAsync(async (req, res, next) => {
   // Extract file for photo
   const filename = req.file ? req.file.filename : null;
 
-  // Build user data based on userType
+  // Build user data
   const userData = {
     firmId: req.firmId,
     firstName: req.body.firstName,
     lastName: req.body.lastName,
+    middleName: req.body.middleName,
     email: req.body.email.toLowerCase(),
     password: req.body.password,
     passwordConfirm: req.body.passwordConfirm,
@@ -314,56 +328,200 @@ exports.register = catchAsync(async (req, res, next) => {
     userType: req.body.userType,
     phone: req.body.phone || "+234",
     gender: req.body.gender,
-    bio: req.body.bio,
+    dateOfBirth: req.body.dateOfBirth,
+    position: req.body.position,
     isVerified: false,
-    isActive: true,
+    isActive: req.body.isActive ?? true,
     userAgent,
     createdBy: req.user._id,
+    additionalRoles: req.body.additionalRoles || [],
+    isLawyer: req.body.isLawyer || req.body.userType === "lawyer" || false,
   };
 
-  // ✅ Explicitly set unused type-specific fields to undefined
-  if (req.body.userType !== "staff") {
-    userData.staffDetails = undefined;
-  }
-  if (req.body.userType !== "client") {
-    userData.clientDetails = undefined;
-  }
-  if (req.body.userType !== "lawyer") {
-    userData.lawyerDetails = undefined;
-  }
-  if (!["admin", "super-admin"].includes(req.body.userType)) {
-    userData.adminDetails = undefined;
+  // ✅ CRITICAL FIX: Handle professionalInfo - accept direct object OR build from fields
+  if (
+    req.body.professionalInfo &&
+    typeof req.body.professionalInfo === "object"
+  ) {
+    // Frontend sent complete object
+    userData.professionalInfo = req.body.professionalInfo;
+  } else {
+    // Build from individual fields (backward compatibility)
+    const professionalInfo = {};
+    if (req.body.bio) professionalInfo.bio = req.body.bio;
+    if (req.body.education) professionalInfo.education = req.body.education;
+    if (req.body.workExperience)
+      professionalInfo.workExperience = req.body.workExperience;
+    if (req.body.publications)
+      professionalInfo.publications = req.body.publications;
+    if (req.body.awards) professionalInfo.awards = req.body.awards;
+    if (req.body.linkedIn || req.body.twitter || req.body.website) {
+      professionalInfo.socialLinks = {
+        linkedIn: req.body.linkedIn,
+        twitter: req.body.twitter,
+        website: req.body.website,
+      };
+    }
+    if (Object.keys(professionalInfo).length > 0) {
+      userData.professionalInfo = professionalInfo;
+    }
   }
 
-  // Add type-specific fields
+  // Handle primary role based on userType
   switch (userType) {
     case "client":
       userData.role = "client";
-      userData.clientDetails = {
-        company: req.body.company,
-        industry: req.body.industry,
-        clientCategory: req.body.clientCategory || "individual",
-        preferredContactMethod: req.body.preferredContactMethod || "email",
-        billingAddress: req.body.billingAddress,
-        referralSource: req.body.referralSource,
-      };
+
+      // ✅ Accept nested object OR build from fields
+      if (
+        req.body.clientDetails &&
+        typeof req.body.clientDetails === "object"
+      ) {
+        userData.clientDetails = req.body.clientDetails;
+      } else {
+        userData.clientDetails = {
+          company: req.body.company,
+          industry: req.body.industry,
+          clientCategory: req.body.clientCategory || "individual",
+          preferredContactMethod: req.body.preferredContactMethod || "email",
+          billingAddress: req.body.billingAddress,
+          referralSource: req.body.referralSource,
+        };
+      }
+
+      userData.staffDetails = undefined;
+      userData.lawyerDetails = undefined;
+      userData.adminDetails = undefined;
       break;
 
     case "staff":
       userData.role = req.body.role || "staff";
-      userData.position = req.body.position;
-      userData.staffDetails = {
-        department: req.body.department,
-        designation: req.body.designation,
-        employmentType: req.body.employmentType || "full-time",
-        workSchedule: req.body.workSchedule || "9-5",
-      };
+
+      // ✅ Accept nested object OR build from fields
+      if (req.body.staffDetails && typeof req.body.staffDetails === "object") {
+        userData.staffDetails = req.body.staffDetails;
+      } else {
+        userData.staffDetails = {
+          department: req.body.department,
+          designation: req.body.designation,
+          employmentType: req.body.employmentType || "full-time",
+          workSchedule: req.body.workSchedule || "9-5",
+          skills: req.body.skills,
+        };
+      }
+
+      userData.clientDetails = undefined;
+
+      if (req.body.hasHrPrivileges) {
+        if (!userData.additionalRoles.includes("hr")) {
+          userData.additionalRoles.push("hr");
+        }
+      }
+
+      if (!req.body.hasLawyerPrivileges) {
+        userData.lawyerDetails = undefined;
+      }
+      if (!req.body.hasAdminPrivileges) {
+        userData.adminDetails = undefined;
+      }
       break;
 
     case "lawyer":
       userData.role = "lawyer";
-      userData.position = req.body.position || "Associate";
       userData.isLawyer = true;
+
+      // ✅ CRITICAL FIX: Accept nested lawyerDetails object OR build from fields
+      if (
+        req.body.lawyerDetails &&
+        typeof req.body.lawyerDetails === "object"
+      ) {
+        console.log("✅ Using nested lawyerDetails object from frontend");
+        userData.lawyerDetails = req.body.lawyerDetails;
+      } else {
+        console.log("⚠️ Building lawyerDetails from individual fields");
+        userData.lawyerDetails = {
+          barNumber: req.body.barNumber,
+          barAssociation: req.body.barAssociation,
+          yearOfCall: req.body.yearOfCall,
+          practiceAreas: req.body.practiceAreas || [],
+          hourlyRate: req.body.hourlyRate || 0,
+          specialization: req.body.specialization,
+          lawSchool: {
+            name: req.body.lawSchoolAttended,
+            graduationYear: req.body.lawSchoolGraduationYear,
+            degree: req.body.lawSchoolDegree,
+          },
+          undergraduateSchool: {
+            name: req.body.universityAttended,
+            graduationYear: req.body.universityGraduationYear,
+            degree: req.body.universityDegree,
+          },
+          isPartner: req.body.isPartner || false,
+          partnershipPercentage: req.body.partnershipPercentage,
+        };
+      }
+
+      userData.clientDetails = undefined;
+      userData.staffDetails = undefined;
+
+      if (!req.body.hasAdminPrivileges) {
+        userData.adminDetails = undefined;
+      }
+      break;
+
+    case "admin":
+      userData.role = "admin";
+
+      // ✅ Accept nested object OR build from fields
+      if (req.body.adminDetails && typeof req.body.adminDetails === "object") {
+        userData.adminDetails = req.body.adminDetails;
+      } else {
+        userData.adminDetails = {
+          adminLevel: req.body.adminLevel || "firm",
+          canManageUsers: req.body.canManageUsers || false,
+          canManageCases: req.body.canManageCases || false,
+          canManageBilling: req.body.canManageBilling || false,
+          canViewReports: req.body.canViewReports || false,
+          systemAccessLevel: req.body.systemAccessLevel || "restricted",
+        };
+      }
+
+      userData.clientDetails = undefined;
+
+      if (!req.body.hasLawyerPrivileges) {
+        userData.lawyerDetails = undefined;
+      }
+      break;
+
+    case "super-admin":
+      userData.role = "super-admin";
+      userData.adminDetails = {
+        adminLevel: "firm",
+        canManageUsers: true,
+        canManageCases: true,
+        canManageBilling: true,
+        canViewReports: true,
+        systemAccessLevel: "full",
+      };
+      userData.clientDetails = undefined;
+      userData.staffDetails = undefined;
+      userData.lawyerDetails = undefined;
+      break;
+  }
+
+  // ✅ Handle additional privileges (multi-role support)
+
+  // If has lawyer privileges but is not primary lawyer
+  if (req.body.hasLawyerPrivileges && userType !== "lawyer") {
+    userData.isLawyer = true;
+    if (!userData.additionalRoles.includes("lawyer")) {
+      userData.additionalRoles.push("lawyer");
+    }
+
+    // ✅ Accept nested object OR build from fields
+    if (req.body.lawyerDetails && typeof req.body.lawyerDetails === "object") {
+      userData.lawyerDetails = req.body.lawyerDetails;
+    } else {
       userData.lawyerDetails = {
         barNumber: req.body.barNumber,
         barAssociation: req.body.barAssociation,
@@ -374,31 +532,73 @@ exports.register = catchAsync(async (req, res, next) => {
         lawSchool: {
           name: req.body.lawSchoolAttended,
           graduationYear: req.body.lawSchoolGraduationYear,
+          degree: req.body.lawSchoolDegree,
         },
         undergraduateSchool: {
           name: req.body.universityAttended,
           graduationYear: req.body.universityGraduationYear,
+          degree: req.body.universityDegree,
         },
       };
-      userData.professionalInfo = {
-        bio: req.body.bio,
-      };
-      break;
+    }
+  }
 
-    case "admin":
-      userData.role = "admin";
-      userData.position = req.body.position || "Administrator";
+  // If has admin privileges but is not primary admin
+  if (
+    req.body.hasAdminPrivileges &&
+    !["admin", "super-admin"].includes(userType)
+  ) {
+    if (!userData.additionalRoles.includes("admin")) {
+      userData.additionalRoles.push("admin");
+    }
+
+    // ✅ Accept nested object OR build from fields
+    if (req.body.adminDetails && typeof req.body.adminDetails === "object") {
+      userData.adminDetails = req.body.adminDetails;
+    } else {
       userData.adminDetails = {
-        adminLevel: req.body.adminLevel || "firm",
+        adminLevel: "firm",
         canManageUsers: req.body.canManageUsers || false,
         canManageCases: req.body.canManageCases || false,
         canManageBilling: req.body.canManageBilling || false,
         canViewReports: req.body.canViewReports || false,
+        systemAccessLevel: req.body.systemAccessLevel || "restricted",
       };
-      break;
+    }
   }
 
+  console.log("📦 Final userData before create:", {
+    userType: userData.userType,
+    role: userData.role,
+    additionalRoles: userData.additionalRoles,
+    hasLawyerDetails: !!userData.lawyerDetails,
+    lawyerDetails: userData.lawyerDetails,
+    hasProfessionalInfo: !!userData.professionalInfo,
+    professionalInfo: userData.professionalInfo,
+  });
+
+  // Create user
   const newUser = await User.create(userData);
+
+  console.log("✅ User created successfully:", {
+    id: newUser._id,
+    userType: newUser.userType,
+    role: newUser.role,
+    lawyerDetails: newUser.lawyerDetails,
+    professionalInfo: newUser.professionalInfo,
+  });
+
+  // Verify what was actually saved
+  const savedUser = await User.findById(newUser._id).lean();
+  console.log("🔍 VERIFICATION - User in DB:", {
+    id: savedUser._id,
+    hasLawyerDetails: !!savedUser.lawyerDetails,
+    lawyerDetailsKeys: savedUser.lawyerDetails
+      ? Object.keys(savedUser.lawyerDetails)
+      : [],
+    barNumber: savedUser.lawyerDetails?.barNumber,
+    professionalInfo: savedUser.professionalInfo,
+  });
 
   // Send verification email
   try {
@@ -419,12 +619,15 @@ exports.register = catchAsync(async (req, res, next) => {
     const send_from = process.env.SENDINBLUE_EMAIL;
     const reply_to = "noreply@casemaster.ng";
     const template = "verifyEmail";
+
+    const roles = newUser.getEffectiveRoles();
     const context = {
       name: newUser.firstName,
       firmName: req.firm?.name || "Your Firm",
       link: verificationURL,
       companyName: "CaseMaster",
       position: newUser.position || newUser.userType,
+      roles: roles.length > 1 ? roles.join(" & ") : roles[0],
     };
 
     await sendMail(subject, send_to, send_from, reply_to, template, context);
@@ -435,7 +638,21 @@ exports.register = catchAsync(async (req, res, next) => {
   res.status(201).json({
     status: "success",
     message: "User registered successfully. Verification email sent.",
-    data: newUser,
+    data: {
+      user: {
+        id: newUser._id,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        email: newUser.email,
+        userType: newUser.userType,
+        role: newUser.role,
+        additionalRoles: newUser.additionalRoles,
+        isLawyer: newUser.isLawyer,
+        effectiveRoles: newUser.getEffectiveRoles(),
+        lawyerDetails: newUser.lawyerDetails,
+        professionalInfo: newUser.professionalInfo,
+      },
+    },
   });
 });
 
@@ -551,6 +768,8 @@ exports.sendLoginCode = catchAsync(async (req, res, next) => {
 
   // Delete any existing tokens
   await Token.deleteMany({ userId: user._id });
+
+  console.log(loginCode);
 
   // Save new token
   await new Token({
@@ -762,9 +981,62 @@ exports.protect = catchAsync(async (req, res, next) => {
  * RESTRICT TO ROLES
  * ===============================
  */
+// controllers/authController.js - UPDATED MIDDLEWARE
+
+/**
+ * ===============================
+ * RESTRICT TO ROLES (UPDATED FOR MULTI-PRIVILEGE)
+ * ===============================
+ */
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    // Super admin has access to everything
+    if (
+      req.user.role === "super-admin" ||
+      req.user.userType === "super-admin"
+    ) {
+      return next();
+    }
+
+    // Check primary role
+    if (roles.includes(req.user.role)) {
+      return next();
+    }
+
+    // ✅ NEW: Check additional roles
+    if (req.user.additionalRoles && req.user.additionalRoles.length > 0) {
+      const hasAdditionalRole = req.user.additionalRoles.some(
+        (additionalRole) => roles.includes(additionalRole),
+      );
+      if (hasAdditionalRole) {
+        return next();
+      }
+    }
+
+    // ✅ NEW: Check isLawyer flag if "lawyer" is in required roles
+    if (roles.includes("lawyer") && req.user.isLawyer === true) {
+      return next();
+    }
+
+    return next(
+      new AppError("You do not have permission to perform this action", 403),
+    );
+  };
+};
+
+/**
+ * ===============================
+ * RESTRICT TO USER TYPES (UPDATED)
+ * ===============================
+ */
+exports.restrictToUserTypes = (...userTypes) => {
+  return (req, res, next) => {
+    // Super admin has access to everything
+    if (req.user.userType === "super-admin") {
+      return next();
+    }
+
+    if (!userTypes.includes(req.user.userType)) {
       return next(
         new AppError("You do not have permission to perform this action", 403),
       );
@@ -775,17 +1047,163 @@ exports.restrictTo = (...roles) => {
 
 /**
  * ===============================
- * RESTRICT TO USER TYPES
+ * NEW: CHECK SPECIFIC PRIVILEGE
  * ===============================
  */
-exports.restrictToUserTypes = (...userTypes) => {
+exports.hasPrivilege = (...privileges) => {
   return (req, res, next) => {
-    if (!userTypes.includes(req.user.userType)) {
+    // Super admin has all privileges
+    if (
+      req.user.role === "super-admin" ||
+      req.user.userType === "super-admin"
+    ) {
+      return next();
+    }
+
+    // Check if user has ANY of the required privileges
+    const hasRequiredPrivilege = privileges.some((privilege) => {
+      // Check primary role
+      if (req.user.role === privilege) return true;
+
+      // Check additional roles
+      if (
+        req.user.additionalRoles &&
+        req.user.additionalRoles.includes(privilege)
+      ) {
+        return true;
+      }
+
+      // Check lawyer flag
+      if (privilege === "lawyer" && req.user.isLawyer === true) return true;
+
+      return false;
+    });
+
+    if (!hasRequiredPrivilege) {
       return next(
         new AppError("You do not have permission to perform this action", 403),
       );
     }
+
     next();
+  };
+};
+
+/**
+ * ===============================
+ * NEW: REQUIRE ALL PRIVILEGES
+ * ===============================
+ */
+exports.requireAllPrivileges = (...privileges) => {
+  return (req, res, next) => {
+    // Super admin has all privileges
+    if (
+      req.user.role === "super-admin" ||
+      req.user.userType === "super-admin"
+    ) {
+      return next();
+    }
+
+    // Get all user's effective roles
+    const userRoles = [req.user.role];
+    if (req.user.additionalRoles && req.user.additionalRoles.length > 0) {
+      userRoles.push(...req.user.additionalRoles);
+    }
+    if (req.user.isLawyer) {
+      userRoles.push("lawyer");
+    }
+
+    // Check if user has ALL required privileges
+    const hasAllPrivileges = privileges.every((privilege) =>
+      userRoles.includes(privilege),
+    );
+
+    if (!hasAllPrivileges) {
+      return next(
+        new AppError(
+          "You do not have all required permissions to perform this action",
+          403,
+        ),
+      );
+    }
+
+    next();
+  };
+};
+
+/**
+ * ===============================
+ * NEW: CHECK ADMIN PERMISSION
+ * ===============================
+ */
+exports.canManageUsers = (req, res, next) => {
+  if (req.user.role === "super-admin") return next();
+
+  if (req.user.adminDetails && req.user.adminDetails.canManageUsers === true) {
+    return next();
+  }
+
+  return next(new AppError("You do not have permission to manage users", 403));
+};
+
+exports.canManageCases = (req, res, next) => {
+  if (req.user.role === "super-admin") return next();
+
+  if (req.user.adminDetails && req.user.adminDetails.canManageCases === true) {
+    return next();
+  }
+
+  return next(new AppError("You do not have permission to manage cases", 403));
+};
+
+exports.canManageBilling = (req, res, next) => {
+  if (req.user.role === "super-admin") return next();
+
+  if (
+    req.user.adminDetails &&
+    req.user.adminDetails.canManageBilling === true
+  ) {
+    return next();
+  }
+
+  return next(
+    new AppError("You do not have permission to manage billing", 403),
+  );
+};
+
+exports.canViewReports = (req, res, next) => {
+  if (req.user.role === "super-admin") return next();
+
+  if (req.user.adminDetails && req.user.adminDetails.canViewReports === true) {
+    return next();
+  }
+
+  return next(new AppError("You do not have permission to view reports", 403));
+};
+
+/**
+ * ===============================
+ * NEW: FLEXIBLE PERMISSION CHECKER
+ * ===============================
+ */
+exports.checkPermission = (permissionChecker) => {
+  return (req, res, next) => {
+    // Super admin bypass
+    if (
+      req.user.role === "super-admin" ||
+      req.user.userType === "super-admin"
+    ) {
+      return next();
+    }
+
+    // Custom permission logic
+    if (permissionChecker(req.user)) {
+      return next();
+    }
+
+    return next(
+      new AppError("You do not have permission to perform this action", 403),
+    );
   };
 };
 

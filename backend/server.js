@@ -13,16 +13,14 @@ const cookieParser = require("cookie-parser");
 
 // Route imports
 const userRouter = require("./routes/userRoutes");
-const {
-  matterRouter,
-  litigationRouter,
-  corporateRouter,
-} = require("./routes/mattersRoute");
+const matterRouter = require("./routes/mattersRoute");
+const corporateRouter = require("./routes/corporateRoutes");
+const litigationRouter = require("./routes/litigationRoutes");
 const propertyRouter = require("./routes/propertyRoutes");
 const retainerRouter = require("./routes/retainerRoutes");
 const advisoryRouter = require("./routes/advisoryRoutes");
 const generalRouter = require("./routes/generalRoutes");
-const calendarRoutes = require("./routes/calenderRoutes");
+const { calendarRouter } = require("./routes/calenderRoutes");
 const caseRouter = require("./routes/caseRoutes");
 const taskRouter = require("./routes/taskRoutes");
 const reportRouter = require("./routes/caseReportRoute");
@@ -316,7 +314,7 @@ app.use("/api/v1/properties", propertyRouter);
 app.use("/api/v1/retainers", retainerRouter);
 app.use("/api/v1/advisory", advisoryRouter);
 app.use("/api/v1/general", generalRouter);
-app.use("/api/v1/calendar", calendarRoutes);
+app.use("/api/v1/calendar", calendarRouter);
 app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
 app.use("/api/v1/reports", reportRouter);

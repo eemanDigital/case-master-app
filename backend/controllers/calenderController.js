@@ -2,7 +2,7 @@ const {
   CalendarEvent,
   EVENT_TYPES,
   EVENT_STATUS,
-} = require("../models/calenderEvent");
+} = require("../models/calenderEventModel");
 const BlockedDate = require("../models/blockedDateModel");
 const Matter = require("../models/matterModel");
 const catchAsync = require("../utils/catchAsync");

@@ -250,6 +250,139 @@ const modelConfigs = {
     requiresFirmId: false, // ✅ Firm queries don't need firmId filter
     defaultPopulate: [],
   },
+
+  // Add these to your existing modelConfigs.js
+
+  Matter: {
+    searchableFields: [
+      "title",
+      "description",
+      "matterNumber",
+      "natureOfMatter",
+    ],
+    filterableFields: [
+      "matterType",
+      "status",
+      "priority",
+      "client",
+      "accountOfficer",
+      "dateOpened",
+      "startDate",
+      "endDate",
+      "includeDeleted",
+      "onlyDeleted",
+      "firmId",
+    ],
+    textFilterFields: ["title", "description", "natureOfMatter"],
+    defaultSort: "-dateOpened",
+    dateField: "dateOpened",
+    maxLimit: 100,
+    requiresFirmId: true,
+    defaultPopulate: [
+      { path: "accountOfficer", select: "firstName lastName email photo" },
+      { path: "client", select: "firstName lastName email phone" },
+    ],
+  },
+
+  LitigationDetail: {
+    searchableFields: ["suitNo", "courtName", "courtLocation"],
+    filterableFields: [
+      "courtName",
+      "state",
+      "currentStage",
+      "judge",
+      "firmId",
+      "startDate",
+      "endDate",
+      "includeDeleted",
+    ],
+    defaultSort: "-filingDate",
+    dateField: "filingDate",
+    maxLimit: 50,
+    requiresFirmId: true,
+  },
+
+  CorporateDetail: {
+    searchableFields: ["companyName", "registrationNumber"],
+    filterableFields: [
+      "companyType",
+      "status",
+      "jurisdiction",
+      "firmId",
+      "startDate",
+      "endDate",
+      "includeDeleted",
+    ],
+    defaultSort: "-incorporationDate",
+    dateField: "incorporationDate",
+    maxLimit: 50,
+    requiresFirmId: true,
+  },
+
+  PropertyDetail: {
+    searchableFields: ["propertyName", "location", "ownerName"],
+    filterableFields: [
+      "propertyType",
+      "status",
+      "location",
+      "firmId",
+      "startDate",
+      "endDate",
+      "includeDeleted",
+    ],
+    defaultSort: "-acquisitionDate",
+    dateField: "acquisitionDate",
+    maxLimit: 50,
+    requiresFirmId: true,
+  },
+
+  AdvisoryDetail: {
+    searchableFields: ["clientName", "projectName"],
+    filterableFields: [
+      "industry",
+      "status",
+      "firmId",
+      "startDate",
+      "endDate",
+      "includeDeleted",
+    ],
+    defaultSort: "-engagementDate",
+    dateField: "engagementDate",
+    maxLimit: 50,
+    requiresFirmId: true,
+  },
+
+  RetainerDetail: {
+    searchableFields: ["clientName", "retainerAgreement"],
+    filterableFields: [
+      "retainerType",
+      "status",
+      "firmId",
+      "startDate",
+      "endDate",
+      "includeDeleted",
+    ],
+    defaultSort: "-startDate",
+    dateField: "startDate",
+    maxLimit: 50,
+    requiresFirmId: true,
+  },
+
+  GeneralDetail: {
+    searchableFields: ["title", "description"],
+    filterableFields: [
+      "category",
+      "status",
+      "firmId",
+      "startDate",
+      "endDate",
+      "includeDeleted",
+    ],
+    defaultSort: "-createdAt",
+    dateField: "createdAt",
+    maxLimit: 50,
+    requiresFirmId: true,
+  },
 };
 
 module.exports = modelConfigs;

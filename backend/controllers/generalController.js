@@ -1,65 +1,235 @@
+const PaginationServiceFactory = require("../services/PaginationServiceFactory");
+const modelConfigs = require("../config/modelConfigs");
 const Matter = require("../models/matterModel");
 const { GeneralDetail } = require("../models/retainerAndGeneralDetailModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 
+// Initialize pagination services
+const matterPaginationService = PaginationServiceFactory.createService(
+  Matter,
+  modelConfigs.Matter,
+);
+
+const generalDetailPaginationService = PaginationServiceFactory.createService(
+  GeneralDetail,
+  modelConfigs.GeneralDetail,
+);
+
 // ============================================
-// GENERAL DETAILS CRUD OPERATIONS
+// GENERAL MATTERS LISTING & PAGINATION
+// ============================================
+
+/**
+ * @desc    Get all general matters with pagination, filtering, and sorting
+ * @route   GET /api/general-matters
+ * @access  Private
+ */
+exports.getAllGeneralMatters = catchAsync(async (req, res, next) => {
+  const {
+    // Standard pagination
+    page = 1,
+    limit = 50,
+    sort = "-dateOpened",
+    populate,
+    select,
+    debug,
+    includeStats,
+
+    // General-specific filters
+    serviceType,
+    status,
+
+    // Search
+    search,
+
+    // Other
+    includeDeleted,
+    onlyDeleted,
+  } = req.query;
+
+  // Add general matter type filter
+  const customFilter = {
+    matterType: "general",
+  };
+
+  // Use matter pagination service
+  const result = await matterPaginationService.paginate(
+    {
+      page,
+      limit,
+      sort,
+      populate,
+      select,
+      debug,
+      includeStats,
+      status,
+      search,
+      includeDeleted,
+      onlyDeleted,
+      serviceType,
+    },
+    customFilter,
+    req.firmId,
+  );
+
+  // Enhance matters with general details if not already populated
+  if (
+    result.data.length > 0 &&
+    (!populate || !populate.includes("generalDetail"))
+  ) {
+    const matterIds = result.data.map((matter) => matter._id);
+    const generalDetails = await GeneralDetail.find({
+      matterId: { $in: matterIds },
+      firmId: req.firmId,
+    }).lean();
+
+    // Map general details to matters
+    const detailsMap = generalDetails.reduce((map, detail) => {
+      map[detail.matterId.toString()] = detail;
+      return map;
+    }, {});
+
+    result.data = result.data.map((matter) => ({
+      ...matter,
+      generalDetail: detailsMap[matter._id.toString()] || null,
+    }));
+  }
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+  });
+});
+
+// ============================================
+// ADVANCED GENERAL SEARCH
+// ============================================
+
+/**
+ * @desc    Advanced search for general matters
+ * @route   POST /api/general-matters/search
+ * @access  Private
+ */
+exports.searchGeneralMatters = catchAsync(async (req, res, next) => {
+  const { criteria = {}, options = {} } = req.body;
+
+  // Add general matter type and firmId to criteria
+  const firmCriteria = {
+    ...criteria,
+    firmId: req.firmId,
+    matterType: "general",
+  };
+
+  // Use advanced search from pagination service
+  const result = await matterPaginationService.advancedSearch(
+    firmCriteria,
+    options,
+    req.firmId,
+  );
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+  });
+});
+
+// ============================================
+// GENERAL DETAILS MANAGEMENT
 // ============================================
 
 /**
  * @desc    Create general details for a matter
- * @route   POST /api/general/:matterId/details
- * @access  Private
+ * @route   POST /api/general-matters/:matterId/details
+ * @access  Private (Admin, Lawyer)
  */
 exports.createGeneralDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const generalData = req.body;
 
-  // 1. Verify matter exists and is general type
-  const matter = await Matter.findOne({
-    _id: matterId,
-    firmId: req.firmId,
-    matterType: "general",
-    isDeleted: false,
-  });
+  // Start transaction
+  const session = await Matter.startSession();
+  session.startTransaction();
 
-  if (!matter) {
-    return next(new AppError("General matter not found", 404));
+  try {
+    // 1. Verify matter exists
+    const matter = await Matter.findOne({
+      _id: matterId,
+      firmId: req.firmId,
+      isDeleted: false,
+    }).session(session);
+
+    if (!matter) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Matter not found", 404));
+    }
+
+    if (matter.matterType !== "general") {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Matter is not a general matter", 400));
+    }
+
+    // 2. Check if general details already exist
+    const existingDetail = await GeneralDetail.findOne({
+      matterId,
+      firmId: req.firmId,
+    }).session(session);
+
+    if (existingDetail) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(
+        new AppError("General details already exist for this matter", 400),
+      );
+    }
+
+    // 3. Create general detail
+    const generalDetail = new GeneralDetail({
+      matterId,
+      firmId: req.firmId,
+      createdBy: req.user._id,
+      ...generalData,
+    });
+
+    await generalDetail.save({ session });
+
+    // 4. Update matter to link general detail
+    matter.generalDetail = generalDetail._id;
+    await matter.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // Populate and return
+    const populatedDetail = await GeneralDetail.findById(
+      generalDetail._id,
+    ).populate({
+      path: "matter",
+      select: "matterNumber title client accountOfficer status priority",
+      populate: [
+        { path: "client", select: "firstName lastName email phone" },
+        { path: "accountOfficer", select: "firstName lastName email photo" },
+      ],
+    });
+
+    res.status(201).json({
+      status: "success",
+      data: {
+        generalDetail: populatedDetail,
+      },
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return next(error);
   }
-
-  // 2. Check if general details already exist
-  const existingDetail = await GeneralDetail.findOne({
-    matterId,
-    firmId: req.firmId,
-  });
-
-  if (existingDetail) {
-    return next(
-      new AppError("General details already exist for this matter", 400),
-    );
-  }
-
-  // 3. Create general detail
-  const generalDetail = new GeneralDetail({
-    matterId,
-    firmId: req.firmId,
-    ...generalData,
-  });
-
-  await generalDetail.save();
-
-  res.status(201).json({
-    status: "success",
-    data: {
-      generalDetail,
-    },
-  });
 });
 
 /**
- * @desc    Get general details for a matter
- * @route   GET /api/general/:matterId/details
+ * @desc    Get general details for a specific matter
+ * @route   GET /api/general-matters/:matterId/details
  * @access  Private
  */
 exports.getGeneralDetails = catchAsync(async (req, res, next) => {
@@ -68,12 +238,56 @@ exports.getGeneralDetails = catchAsync(async (req, res, next) => {
   const generalDetail = await GeneralDetail.findOne({
     matterId,
     firmId: req.firmId,
-  }).populate({
+  })
+    .populate({
+      path: "matter",
+      select:
+        "matterNumber title client accountOfficer status priority dateOpened",
+      populate: [
+        { path: "client", select: "firstName lastName email phone address" },
+        {
+          path: "accountOfficer",
+          select: "firstName lastName email photo role",
+        },
+      ],
+    })
+    .populate("createdBy", "firstName lastName")
+    .populate("lastModifiedBy", "firstName lastName");
+
+  if (!generalDetail) {
+    return next(new AppError("General details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      generalDetail,
+    },
+  });
+});
+
+/**
+ * @desc    Update general details
+ * @route   PATCH /api/general-matters/:matterId/details
+ * @access  Private (Admin, Lawyer)
+ */
+exports.updateGeneralDetails = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const updateData = req.body;
+
+  const generalDetail = await GeneralDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      ...updateData,
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  ).populate({
     path: "matter",
-    select: "matterNumber title client accountOfficer status priority",
+    select: "matterNumber title client accountOfficer",
     populate: [
-      { path: "client", select: "firstName lastName email phone" },
-      { path: "accountOfficer", select: "firstName lastName email photo" },
+      { path: "client", select: "firstName lastName email" },
+      { path: "accountOfficer", select: "firstName lastName email" },
     ],
   });
 
@@ -90,36 +304,9 @@ exports.getGeneralDetails = catchAsync(async (req, res, next) => {
 });
 
 /**
- * @desc    Update general details
- * @route   PATCH /api/general/:matterId/details
- * @access  Private
- */
-exports.updateGeneralDetails = catchAsync(async (req, res, next) => {
-  const { matterId } = req.params;
-  const updateData = req.body;
-
-  const generalDetail = await GeneralDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
-    updateData,
-    { new: true, runValidators: true },
-  );
-
-  if (!generalDetail) {
-    return next(new AppError("General details not found", 404));
-  }
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      generalDetail,
-    },
-  });
-});
-
-/**
- * @desc    Soft delete general details
- * @route   DELETE /api/general/:matterId/details
- * @access  Private
+ * @desc    Delete general details
+ * @route   DELETE /api/general-matters/:matterId/details
+ * @access  Private (Admin, Lawyer)
  */
 exports.deleteGeneralDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
@@ -129,7 +316,7 @@ exports.deleteGeneralDetails = catchAsync(async (req, res, next) => {
     {
       isDeleted: true,
       deletedAt: Date.now(),
-      deletedBy: req.user.id,
+      deletedBy: req.user._id,
     },
     { new: true },
   );
@@ -140,16 +327,17 @@ exports.deleteGeneralDetails = catchAsync(async (req, res, next) => {
     );
   }
 
-  res.status(204).json({
+  res.status(200).json({
     status: "success",
     data: null,
+    message: "General details deleted successfully",
   });
 });
 
 /**
- * @desc    Restore soft-deleted general details
- * @route   PATCH /api/general/:matterId/details/restore
- * @access  Private
+ * @desc    Restore general details
+ * @route   PATCH /api/general-matters/:matterId/details/restore
+ * @access  Private (Admin, Lawyer)
  */
 exports.restoreGeneralDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
@@ -179,78 +367,25 @@ exports.restoreGeneralDetails = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// GENERAL MATTERS LISTING
-// ============================================
-
-/**
- * @desc    Get all general matters
- * @route   GET /api/general
- * @access  Private
- */
-exports.getAllGeneralMatters = catchAsync(async (req, res, next) => {
-  const {
-    serviceType,
-    status,
-    page = 1,
-    limit = 50,
-    sort = "-dateOpened",
-  } = req.query;
-
-  const matterFilter = {
-    firmId: req.firmId,
-    matterType: "general",
-    isDeleted: false,
-  };
-
-  if (status) matterFilter.status = status;
-
-  let matterIds = null;
-  if (serviceType) {
-    const detailFilter = { firmId: req.firmId, serviceType };
-    const generalDetails =
-      await GeneralDetail.find(detailFilter).select("matterId");
-    matterIds = generalDetails.map((d) => d.matterId);
-    matterFilter._id = { $in: matterIds };
-  }
-
-  const skip = (page - 1) * limit;
-
-  const matters = await Matter.find(matterFilter)
-    .sort(sort)
-    .skip(skip)
-    .limit(Number(limit))
-    .populate("accountOfficer", "firstName lastName email photo")
-    .populate("client", "firstName lastName email phone")
-    .populate("generalDetail");
-
-  const total = await Matter.countDocuments(matterFilter);
-
-  res.status(200).json({
-    status: "success",
-    results: matters.length,
-    total,
-    page: Number(page),
-    totalPages: Math.ceil(total / limit),
-    data: { matters },
-  });
-});
-
-// ============================================
 // REQUIREMENTS MANAGEMENT
 // ============================================
 
-/**
- * @desc    Add requirement
- * @route   POST /api/general/:matterId/requirements
- * @access  Private
- */
 exports.addRequirement = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const requirementData = req.body;
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
-    { $push: { specificRequirements: requirementData } },
+    {
+      $push: {
+        specificRequirements: {
+          ...requirementData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
     { new: true, runValidators: true },
   );
 
@@ -260,24 +395,19 @@ exports.addRequirement = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: { generalDetail },
+    data: {
+      generalDetail,
+      newRequirement:
+        generalDetail.specificRequirements[
+          generalDetail.specificRequirements.length - 1
+        ],
+    },
   });
 });
 
-/**
- * @desc    Update requirement status
- * @route   PATCH /api/general/:matterId/requirements/:requirementId
- * @access  Private
- */
 exports.updateRequirement = catchAsync(async (req, res, next) => {
   const { matterId, requirementId } = req.params;
   const updateData = req.body;
-
-  // Build update object using dot notation
-  const updateObject = {};
-  Object.keys(updateData).forEach((key) => {
-    updateObject[`specificRequirements.$.${key}`] = updateData[key];
-  });
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     {
@@ -285,7 +415,17 @@ exports.updateRequirement = catchAsync(async (req, res, next) => {
       firmId: req.firmId,
       "specificRequirements._id": requirementId,
     },
-    { $set: updateObject },
+    {
+      $set: {
+        "specificRequirements.$": {
+          ...updateData,
+          _id: requirementId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
     { new: true, runValidators: true },
   );
 
@@ -293,23 +433,27 @@ exports.updateRequirement = catchAsync(async (req, res, next) => {
     return next(new AppError("Requirement not found", 404));
   }
 
+  const updatedRequirement =
+    generalDetail.specificRequirements.id(requirementId);
+
   res.status(200).json({
     status: "success",
-    data: { generalDetail },
+    data: {
+      generalDetail,
+      updatedRequirement,
+    },
   });
 });
 
-/**
- * @desc    Delete requirement
- * @route   DELETE /api/general/:matterId/requirements/:requirementId
- * @access  Private
- */
 exports.deleteRequirement = catchAsync(async (req, res, next) => {
   const { matterId, requirementId } = req.params;
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
-    { $pull: { specificRequirements: { _id: requirementId } } },
+    {
+      $pull: { specificRequirements: { _id: requirementId } },
+      lastModifiedBy: req.user._id,
+    },
     { new: true },
   );
 
@@ -319,7 +463,10 @@ exports.deleteRequirement = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: { generalDetail },
+    data: {
+      generalDetail,
+      message: "Requirement removed successfully",
+    },
   });
 });
 
@@ -327,18 +474,22 @@ exports.deleteRequirement = catchAsync(async (req, res, next) => {
 // PARTIES MANAGEMENT
 // ============================================
 
-/**
- * @desc    Add party
- * @route   POST /api/general/:matterId/parties
- * @access  Private
- */
 exports.addParty = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const partyData = req.body;
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
-    { $push: { partiesInvolved: partyData } },
+    {
+      $push: {
+        partiesInvolved: {
+          ...partyData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
     { new: true, runValidators: true },
   );
 
@@ -348,24 +499,17 @@ exports.addParty = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: { generalDetail },
+    data: {
+      generalDetail,
+      newParty:
+        generalDetail.partiesInvolved[generalDetail.partiesInvolved.length - 1],
+    },
   });
 });
 
-/**
- * @desc    Update party
- * @route   PATCH /api/general/:matterId/parties/:partyId
- * @access  Private
- */
 exports.updateParty = catchAsync(async (req, res, next) => {
   const { matterId, partyId } = req.params;
   const updateData = req.body;
-
-  // Build update object using dot notation
-  const updateObject = {};
-  Object.keys(updateData).forEach((key) => {
-    updateObject[`partiesInvolved.$.${key}`] = updateData[key];
-  });
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     {
@@ -373,7 +517,17 @@ exports.updateParty = catchAsync(async (req, res, next) => {
       firmId: req.firmId,
       "partiesInvolved._id": partyId,
     },
-    { $set: updateObject },
+    {
+      $set: {
+        "partiesInvolved.$": {
+          ...updateData,
+          _id: partyId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
     { new: true, runValidators: true },
   );
 
@@ -381,23 +535,26 @@ exports.updateParty = catchAsync(async (req, res, next) => {
     return next(new AppError("Party not found", 404));
   }
 
+  const updatedParty = generalDetail.partiesInvolved.id(partyId);
+
   res.status(200).json({
     status: "success",
-    data: { generalDetail },
+    data: {
+      generalDetail,
+      updatedParty,
+    },
   });
 });
 
-/**
- * @desc    Delete party
- * @route   DELETE /api/general/:matterId/parties/:partyId
- * @access  Private
- */
 exports.deleteParty = catchAsync(async (req, res, next) => {
   const { matterId, partyId } = req.params;
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
-    { $pull: { partiesInvolved: { _id: partyId } } },
+    {
+      $pull: { partiesInvolved: { _id: partyId } },
+      lastModifiedBy: req.user._id,
+    },
     { new: true },
   );
 
@@ -407,7 +564,10 @@ exports.deleteParty = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: { generalDetail },
+    data: {
+      generalDetail,
+      message: "Party removed successfully",
+    },
   });
 });
 
@@ -415,18 +575,22 @@ exports.deleteParty = catchAsync(async (req, res, next) => {
 // DELIVERABLES MANAGEMENT
 // ============================================
 
-/**
- * @desc    Add deliverable
- * @route   POST /api/general/:matterId/deliverables
- * @access  Private
- */
 exports.addDeliverable = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const deliverableData = req.body;
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
-    { $push: { expectedDeliverables: deliverableData } },
+    {
+      $push: {
+        expectedDeliverables: {
+          ...deliverableData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
     { new: true, runValidators: true },
   );
 
@@ -436,24 +600,19 @@ exports.addDeliverable = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: { generalDetail },
+    data: {
+      generalDetail,
+      newDeliverable:
+        generalDetail.expectedDeliverables[
+          generalDetail.expectedDeliverables.length - 1
+        ],
+    },
   });
 });
 
-/**
- * @desc    Update deliverable status
- * @route   PATCH /api/general/:matterId/deliverables/:deliverableId
- * @access  Private
- */
 exports.updateDeliverable = catchAsync(async (req, res, next) => {
   const { matterId, deliverableId } = req.params;
   const updateData = req.body;
-
-  // Build update object using dot notation
-  const updateObject = {};
-  Object.keys(updateData).forEach((key) => {
-    updateObject[`expectedDeliverables.$.${key}`] = updateData[key];
-  });
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     {
@@ -461,7 +620,17 @@ exports.updateDeliverable = catchAsync(async (req, res, next) => {
       firmId: req.firmId,
       "expectedDeliverables._id": deliverableId,
     },
-    { $set: updateObject },
+    {
+      $set: {
+        "expectedDeliverables.$": {
+          ...updateData,
+          _id: deliverableId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
     { new: true, runValidators: true },
   );
 
@@ -469,23 +638,27 @@ exports.updateDeliverable = catchAsync(async (req, res, next) => {
     return next(new AppError("Deliverable not found", 404));
   }
 
+  const updatedDeliverable =
+    generalDetail.expectedDeliverables.id(deliverableId);
+
   res.status(200).json({
     status: "success",
-    data: { generalDetail },
+    data: {
+      generalDetail,
+      updatedDeliverable,
+    },
   });
 });
 
-/**
- * @desc    Delete deliverable
- * @route   DELETE /api/general/:matterId/deliverables/:deliverableId
- * @access  Private
- */
 exports.deleteDeliverable = catchAsync(async (req, res, next) => {
   const { matterId, deliverableId } = req.params;
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
-    { $pull: { expectedDeliverables: { _id: deliverableId } } },
+    {
+      $pull: { expectedDeliverables: { _id: deliverableId } },
+      lastModifiedBy: req.user._id,
+    },
     { new: true },
   );
 
@@ -495,7 +668,10 @@ exports.deleteDeliverable = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: { generalDetail },
+    data: {
+      generalDetail,
+      message: "Deliverable removed successfully",
+    },
   });
 });
 
@@ -503,18 +679,22 @@ exports.deleteDeliverable = catchAsync(async (req, res, next) => {
 // DOCUMENTS MANAGEMENT
 // ============================================
 
-/**
- * @desc    Add document requirement
- * @route   POST /api/general/:matterId/documents
- * @access  Private
- */
 exports.addDocument = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const documentData = req.body;
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
-    { $push: { documentsRequired: documentData } },
+    {
+      $push: {
+        documentsRequired: {
+          ...documentData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
     { new: true, runValidators: true },
   );
 
@@ -524,25 +704,19 @@ exports.addDocument = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: { generalDetail },
+    data: {
+      generalDetail,
+      newDocument:
+        generalDetail.documentsRequired[
+          generalDetail.documentsRequired.length - 1
+        ],
+    },
   });
 });
 
-/**
- * @desc    Update document received status
- * @route   PATCH /api/general/:matterId/documents/:documentId
- * @access  Private
- */
 exports.updateDocumentStatus = catchAsync(async (req, res, next) => {
   const { matterId, documentId } = req.params;
   const { isReceived, receivedDate } = req.body;
-
-  // Build update object using dot notation
-  const updateObject = {};
-  if (isReceived !== undefined)
-    updateObject[`documentsRequired.$.isReceived`] = isReceived;
-  if (receivedDate !== undefined)
-    updateObject[`documentsRequired.$.receivedDate`] = receivedDate;
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     {
@@ -550,31 +724,43 @@ exports.updateDocumentStatus = catchAsync(async (req, res, next) => {
       firmId: req.firmId,
       "documentsRequired._id": documentId,
     },
-    { $set: updateObject },
-    { new: true, runValidators: true },
+    {
+      $set: {
+        "documentsRequired.$.isReceived": isReceived,
+        "documentsRequired.$.receivedDate": isReceived
+          ? receivedDate || new Date()
+          : null,
+        "documentsRequired.$.receivedBy": isReceived ? req.user._id : null,
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true },
   );
 
   if (!generalDetail) {
     return next(new AppError("Document not found", 404));
   }
 
+  const updatedDocument = generalDetail.documentsRequired.id(documentId);
+
   res.status(200).json({
     status: "success",
-    data: { generalDetail },
+    data: {
+      generalDetail,
+      updatedDocument,
+    },
   });
 });
 
-/**
- * @desc    Delete document requirement
- * @route   DELETE /api/general/:matterId/documents/:documentId
- * @access  Private
- */
 exports.deleteDocument = catchAsync(async (req, res, next) => {
   const { matterId, documentId } = req.params;
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
-    { $pull: { documentsRequired: { _id: documentId } } },
+    {
+      $pull: { documentsRequired: { _id: documentId } },
+      lastModifiedBy: req.user._id,
+    },
     { new: true },
   );
 
@@ -584,109 +770,299 @@ exports.deleteDocument = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: { generalDetail },
+    data: {
+      generalDetail,
+      message: "Document requirement removed successfully",
+    },
   });
 });
 
 // ============================================
-// GENERAL SERVICE COMPLETION
+// SERVICE COMPLETION
 // ============================================
 
-/**
- * @desc    Mark general service as completed
- * @route   POST /api/general/:matterId/complete
- * @access  Private
- */
 exports.completeGeneralService = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const { completionDate } = req.body;
 
-  const matter = await Matter.findOne({
-    _id: matterId,
-    firmId: req.firmId,
-    matterType: "general",
-    isDeleted: false,
-  });
+  const session = await Matter.startSession();
+  session.startTransaction();
 
-  if (!matter) {
-    return next(new AppError("General matter not found", 404));
+  try {
+    // Update matter
+    const matter = await Matter.findOneAndUpdate(
+      {
+        _id: matterId,
+        firmId: req.firmId,
+        matterType: "general",
+        isDeleted: false,
+      },
+      {
+        status: "completed",
+        actualClosureDate: completionDate || new Date(),
+        lastModifiedBy: req.user._id,
+      },
+      { new: true, runValidators: true, session },
+    );
+
+    if (!matter) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("General matter not found", 404));
+    }
+
+    // Update general detail
+    const generalDetail = await GeneralDetail.findOneAndUpdate(
+      { matterId, firmId: req.firmId },
+      {
+        $set: {
+          actualCompletionDate: completionDate || new Date(),
+          lastModifiedBy: req.user._id,
+        },
+      },
+      { new: true, runValidators: true, session },
+    );
+
+    if (!generalDetail) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("General details not found", 404));
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(200).json({
+      status: "success",
+      message: "General service marked as completed",
+      data: {
+        generalDetail,
+        matter,
+      },
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return next(error);
   }
+});
 
-  // Update general detail
-  const generalDetail = await GeneralDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
-    {
-      actualCompletionDate: completionDate || new Date(),
-    },
-    { new: true, runValidators: true },
+// ============================================
+// STATISTICS & DASHBOARD
+// ============================================
+
+exports.getGeneralStats = catchAsync(async (req, res, next) => {
+  const firmQuery = { firmId: req.firmId, isDeleted: false };
+
+  const [
+    overviewStats,
+    byServiceType,
+    requirementStats,
+    deliverableStats,
+    documentStats,
+    recentMatters,
+  ] = await Promise.all([
+    // Overview statistics
+    Matter.aggregate([
+      {
+        $match: {
+          ...firmQuery,
+          matterType: "general",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalGeneralMatters: { $sum: 1 },
+          activeGeneralMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] },
+          },
+          pendingGeneralMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] },
+          },
+          completedGeneralMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+          },
+        },
+      },
+    ]),
+
+    // By service type
+    GeneralDetail.aggregate([
+      { $match: firmQuery },
+      {
+        $group: {
+          _id: "$serviceType",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]),
+
+    // Requirements statistics
+    GeneralDetail.aggregate([
+      { $match: firmQuery },
+      { $unwind: "$specificRequirements" },
+      {
+        $group: {
+          _id: "$specificRequirements.status",
+          count: { $sum: 1 },
+          completedCount: {
+            $sum: {
+              $cond: [
+                { $eq: ["$specificRequirements.status", "completed"] },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]),
+
+    // Deliverables statistics
+    GeneralDetail.aggregate([
+      { $match: firmQuery },
+      { $unwind: "$expectedDeliverables" },
+      {
+        $group: {
+          _id: "$expectedDeliverables.status",
+          count: { $sum: 1 },
+          overdueCount: {
+            $sum: {
+              $cond: [
+                {
+                  $and: [
+                    {
+                      $in: [
+                        "$expectedDeliverables.status",
+                        ["pending", "in-progress"],
+                      ],
+                    },
+                    { $lt: ["$expectedDeliverables.dueDate", new Date()] },
+                  ],
+                },
+                1,
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]),
+
+    // Documents statistics
+    GeneralDetail.aggregate([
+      { $match: firmQuery },
+      { $unwind: "$documentsRequired" },
+      {
+        $group: {
+          _id: "$documentsRequired.isReceived",
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+
+    // Recent matters (last 30 days)
+    Matter.aggregate([
+      {
+        $match: {
+          ...firmQuery,
+          matterType: "general",
+          dateOpened: {
+            $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$dateOpened" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: -1 } },
+      { $limit: 10 },
+    ]),
+  ]);
+
+  // Calculate totals
+  const pendingRequirements = requirementStats.find((s) => s._id === "pending");
+  const pendingDeliverables = deliverableStats.find(
+    (s) => s._id === "pending" || s._id === "in-progress",
   );
-
-  if (!generalDetail) {
-    return next(new AppError("General details not found", 404));
-  }
-
-  // Update matter status
-  matter.status = "completed";
-  matter.actualClosureDate = generalDetail.actualCompletionDate;
-  await matter.save();
+  const missingDocuments = documentStats.find((s) => s._id === false);
 
   res.status(200).json({
     status: "success",
-    message: "General service marked as completed",
     data: {
-      generalDetail,
-      matter,
+      overview: overviewStats[0] || {
+        totalGeneralMatters: 0,
+        activeGeneralMatters: 0,
+        pendingGeneralMatters: 0,
+        completedGeneralMatters: 0,
+      },
+      byServiceType,
+      requirements: {
+        byStatus: requirementStats,
+        pending: pendingRequirements?.count || 0,
+        completed: requirementStats.reduce(
+          (sum, stat) => sum + (stat.completedCount || 0),
+          0,
+        ),
+      },
+      deliverables: {
+        byStatus: deliverableStats,
+        pending: pendingDeliverables?.count || 0,
+        overdue: deliverableStats.reduce(
+          (sum, stat) => sum + (stat.overdueCount || 0),
+          0,
+        ),
+      },
+      documents: {
+        received: documentStats.find((s) => s._id === true)?.count || 0,
+        missing: missingDocuments?.count || 0,
+      },
+      recentMatters,
     },
   });
 });
 
 // ============================================
-// STATISTICS & REPORTS
+// BULK OPERATIONS
 // ============================================
 
-/**
- * @desc    Get general matter statistics
- * @route   GET /api/general/stats
- * @access  Private
- */
-exports.getGeneralStats = catchAsync(async (req, res, next) => {
-  const firmQuery = { firmId: req.firmId, isDeleted: false };
+exports.bulkUpdateGeneralMatters = catchAsync(async (req, res, next) => {
+  const { matterIds, updates } = req.body;
 
-  const byServiceType = await GeneralDetail.aggregate([
-    { $match: firmQuery },
-    { $group: { _id: "$serviceType", count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-  ]);
+  if (!matterIds || !Array.isArray(matterIds) || matterIds.length === 0) {
+    return next(new AppError("Please provide matter IDs to update", 400));
+  }
 
-  const [pendingDeliverables, pendingRequirements, missingDocuments] =
-    await Promise.all([
-      GeneralDetail.aggregate([
-        { $match: firmQuery },
-        { $unwind: "$expectedDeliverables" },
-        { $match: { "expectedDeliverables.status": "pending" } },
-        { $group: { _id: null, count: { $sum: 1 } } },
-      ]),
-      GeneralDetail.aggregate([
-        { $match: firmQuery },
-        { $unwind: "$specificRequirements" },
-        { $match: { "specificRequirements.status": "pending" } },
-        { $group: { _id: null, count: { $sum: 1 } } },
-      ]),
-      GeneralDetail.aggregate([
-        { $match: firmQuery },
-        { $unwind: "$documentsRequired" },
-        { $match: { "documentsRequired.isReceived": false } },
-        { $group: { _id: null, count: { $sum: 1 } } },
-      ]),
-    ]);
+  if (!updates || Object.keys(updates).length === 0) {
+    return next(new AppError("Please provide updates to apply", 400));
+  }
+
+  const result = await Matter.updateMany(
+    {
+      _id: { $in: matterIds },
+      firmId: req.firmId,
+      matterType: "general",
+    },
+    {
+      ...updates,
+      lastModifiedBy: req.user._id,
+      lastActivityDate: Date.now(),
+    },
+    { runValidators: true },
+  );
 
   res.status(200).json({
     status: "success",
     data: {
-      byServiceType,
-      pendingDeliverables: pendingDeliverables[0]?.count || 0,
-      pendingRequirements: pendingRequirements[0]?.count || 0,
-      missingDocuments: missingDocuments[0]?.count || 0,
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
     },
   });
 });

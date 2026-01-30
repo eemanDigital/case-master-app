@@ -1,65 +1,262 @@
+const PaginationServiceFactory = require("../services/PaginationServiceFactory");
+const modelConfigs = require("../config/modelConfigs");
 const Matter = require("../models/matterModel");
 const { RetainerDetail } = require("../models/retainerAndGeneralDetailModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 
+// Initialize pagination services
+const matterPaginationService = PaginationServiceFactory.createService(
+  Matter,
+  modelConfigs.Matter,
+);
+
+const retainerDetailPaginationService = PaginationServiceFactory.createService(
+  RetainerDetail,
+  modelConfigs.RetainerDetail,
+);
+
 // ============================================
-// RETAINER DETAILS CRUD OPERATIONS
+// RETAINER MATTERS LISTING & PAGINATION
+// ============================================
+
+/**
+ * @desc    Get all retainer matters with pagination, filtering, and sorting
+ * @route   GET /api/retainer-matters
+ * @access  Private
+ */
+exports.getAllRetainerMatters = catchAsync(async (req, res, next) => {
+  const {
+    // Standard pagination
+    page = 1,
+    limit = 50,
+    sort = "-agreementStartDate",
+    populate,
+    select,
+    debug,
+    includeStats,
+
+    // Retainer-specific filters
+    retainerType,
+    status,
+    expiringInDays,
+
+    // Search
+    search,
+
+    // Other
+    includeDeleted,
+    onlyDeleted,
+  } = req.query;
+
+  // Add retainer matter type filter
+  const customFilter = {
+    matterType: "retainer",
+  };
+
+  // Handle expiring filter
+  if (expiringInDays) {
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + Number(expiringInDays));
+
+    // Find retainers expiring in specified days
+    const expiringRetainers = await RetainerDetail.find({
+      firmId: req.firmId,
+      agreementEndDate: {
+        $gte: new Date(),
+        $lte: futureDate,
+      },
+    })
+      .select("matterId")
+      .lean();
+
+    if (expiringRetainers.length > 0) {
+      const matterIds = expiringRetainers.map((r) => r.matterId);
+      customFilter._id = { $in: matterIds };
+    } else {
+      // No expiring retainers found
+      customFilter._id = { $in: [] };
+    }
+  }
+
+  // Use matter pagination service
+  const result = await matterPaginationService.paginate(
+    {
+      page,
+      limit,
+      sort,
+      populate,
+      select,
+      debug,
+      includeStats,
+      status,
+      search,
+      includeDeleted,
+      onlyDeleted,
+      retainerType,
+    },
+    customFilter,
+    req.firmId,
+  );
+
+  // Enhance matters with retainer details if not already populated
+  if (
+    result.data.length > 0 &&
+    (!populate || !populate.includes("retainerDetail"))
+  ) {
+    const matterIds = result.data.map((matter) => matter._id);
+    const retainerDetails = await RetainerDetail.find({
+      matterId: { $in: matterIds },
+      firmId: req.firmId,
+    }).lean();
+
+    // Map retainer details to matters
+    const detailsMap = retainerDetails.reduce((map, detail) => {
+      map[detail.matterId.toString()] = detail;
+      return map;
+    }, {});
+
+    result.data = result.data.map((matter) => ({
+      ...matter,
+      retainerDetail: detailsMap[matter._id.toString()] || null,
+    }));
+  }
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+  });
+});
+
+// ============================================
+// ADVANCED RETAINER SEARCH
+// ============================================
+
+/**
+ * @desc    Advanced search for retainer matters
+ * @route   POST /api/retainer-matters/search
+ * @access  Private
+ */
+exports.searchRetainerMatters = catchAsync(async (req, res, next) => {
+  const { criteria = {}, options = {} } = req.body;
+
+  // Add retainer matter type and firmId to criteria
+  const firmCriteria = {
+    ...criteria,
+    firmId: req.firmId,
+    matterType: "retainer",
+  };
+
+  // Use advanced search from pagination service
+  const result = await matterPaginationService.advancedSearch(
+    firmCriteria,
+    options,
+    req.firmId,
+  );
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+  });
+});
+
+// ============================================
+// RETAINER DETAILS MANAGEMENT
 // ============================================
 
 /**
  * @desc    Create retainer details for a matter
- * @route   POST /api/retainer/:matterId/details
- * @access  Private
+ * @route   POST /api/retainer-matters/:matterId/details
+ * @access  Private (Admin, Lawyer)
  */
 exports.createRetainerDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const retainerData = req.body;
 
-  // 1. Verify matter exists and is retainer type
-  const matter = await Matter.findOne({
-    _id: matterId,
-    firmId: req.firmId,
-    matterType: "retainer",
-    isDeleted: false,
-  });
+  // Start transaction
+  const session = await Matter.startSession();
+  session.startTransaction();
 
-  if (!matter) {
-    return next(new AppError("Retainer matter not found", 404));
+  try {
+    // 1. Verify matter exists
+    const matter = await Matter.findOne({
+      _id: matterId,
+      firmId: req.firmId,
+      isDeleted: false,
+    }).session(session);
+
+    if (!matter) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Matter not found", 404));
+    }
+
+    if (matter.matterType !== "retainer") {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Matter is not a retainer matter", 400));
+    }
+
+    // 2. Check if retainer details already exist
+    const existingDetail = await RetainerDetail.findOne({
+      matterId,
+      firmId: req.firmId,
+    }).session(session);
+
+    if (existingDetail) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(
+        new AppError("Retainer details already exist for this matter", 400),
+      );
+    }
+
+    // 3. Create retainer detail
+    const retainerDetail = new RetainerDetail({
+      matterId,
+      firmId: req.firmId,
+      createdBy: req.user._id,
+      ...retainerData,
+    });
+
+    await retainerDetail.save({ session });
+
+    // 4. Update matter to link retainer detail
+    matter.retainerDetail = retainerDetail._id;
+    matter.expectedClosureDate = retainerDetail.agreementEndDate;
+    await matter.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // Populate and return
+    const populatedDetail = await RetainerDetail.findById(
+      retainerDetail._id,
+    ).populate({
+      path: "matter",
+      select: "matterNumber title client accountOfficer status priority",
+      populate: [
+        { path: "client", select: "firstName lastName email phone" },
+        { path: "accountOfficer", select: "firstName lastName email photo" },
+      ],
+    });
+
+    res.status(201).json({
+      status: "success",
+      data: {
+        retainerDetail: populatedDetail,
+      },
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return next(error);
   }
-
-  // 2. Check if retainer details already exist
-  const existingDetail = await RetainerDetail.findOne({
-    matterId,
-    firmId: req.firmId,
-  });
-
-  if (existingDetail) {
-    return next(
-      new AppError("Retainer details already exist for this matter", 400),
-    );
-  }
-
-  // 3. Create retainer detail
-  const retainerDetail = new RetainerDetail({
-    matterId,
-    firmId: req.firmId,
-    ...retainerData,
-  });
-
-  await retainerDetail.save();
-
-  res.status(201).json({
-    status: "success",
-    data: {
-      retainerDetail,
-    },
-  });
 });
 
 /**
- * @desc    Get retainer details for a matter
- * @route   GET /api/retainer/:matterId/details
+ * @desc    Get retainer details for a specific matter
+ * @route   GET /api/retainer-matters/:matterId/details
  * @access  Private
  */
 exports.getRetainerDetails = catchAsync(async (req, res, next) => {
@@ -68,12 +265,56 @@ exports.getRetainerDetails = catchAsync(async (req, res, next) => {
   const retainerDetail = await RetainerDetail.findOne({
     matterId,
     firmId: req.firmId,
-  }).populate({
+  })
+    .populate({
+      path: "matter",
+      select:
+        "matterNumber title client accountOfficer status priority dateOpened",
+      populate: [
+        { path: "client", select: "firstName lastName email phone address" },
+        {
+          path: "accountOfficer",
+          select: "firstName lastName email photo role",
+        },
+      ],
+    })
+    .populate("createdBy", "firstName lastName")
+    .populate("lastModifiedBy", "firstName lastName");
+
+  if (!retainerDetail) {
+    return next(new AppError("Retainer details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      retainerDetail,
+    },
+  });
+});
+
+/**
+ * @desc    Update retainer details
+ * @route   PATCH /api/retainer-matters/:matterId/details
+ * @access  Private (Admin, Lawyer)
+ */
+exports.updateRetainerDetails = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const updateData = req.body;
+
+  const retainerDetail = await RetainerDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      ...updateData,
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  ).populate({
     path: "matter",
-    select: "matterNumber title client accountOfficer status priority",
+    select: "matterNumber title client accountOfficer",
     populate: [
-      { path: "client", select: "firstName lastName email phone" },
-      { path: "accountOfficer", select: "firstName lastName email photo" },
+      { path: "client", select: "firstName lastName email" },
+      { path: "accountOfficer", select: "firstName lastName email" },
     ],
   });
 
@@ -90,36 +331,9 @@ exports.getRetainerDetails = catchAsync(async (req, res, next) => {
 });
 
 /**
- * @desc    Update retainer details
- * @route   PATCH /api/retainer/:matterId/details
- * @access  Private
- */
-exports.updateRetainerDetails = catchAsync(async (req, res, next) => {
-  const { matterId } = req.params;
-  const updateData = req.body;
-
-  const retainerDetail = await RetainerDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
-    updateData,
-    { new: true, runValidators: true },
-  );
-
-  if (!retainerDetail) {
-    return next(new AppError("Retainer details not found", 404));
-  }
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      retainerDetail,
-    },
-  });
-});
-
-/**
- * @desc    Soft delete retainer details
- * @route   DELETE /api/retainer/:matterId/details
- * @access  Private
+ * @desc    Delete retainer details
+ * @route   DELETE /api/retainer-matters/:matterId/details
+ * @access  Private (Admin, Lawyer)
  */
 exports.deleteRetainerDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
@@ -129,7 +343,7 @@ exports.deleteRetainerDetails = catchAsync(async (req, res, next) => {
     {
       isDeleted: true,
       deletedAt: Date.now(),
-      deletedBy: req.user.id,
+      deletedBy: req.user._id,
     },
     { new: true },
   );
@@ -140,16 +354,17 @@ exports.deleteRetainerDetails = catchAsync(async (req, res, next) => {
     );
   }
 
-  res.status(204).json({
+  res.status(200).json({
     status: "success",
     data: null,
+    message: "Retainer details deleted successfully",
   });
 });
 
 /**
- * @desc    Restore soft-deleted retainer details
- * @route   PATCH /api/retainer/:matterId/details/restore
- * @access  Private
+ * @desc    Restore retainer details
+ * @route   PATCH /api/retainer-matters/:matterId/details/restore
+ * @access  Private (Admin, Lawyer)
  */
 exports.restoreRetainerDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
@@ -179,86 +394,9 @@ exports.restoreRetainerDetails = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// RETAINER LISTING WITH FILTERS
-// ============================================
-
-/**
- * @desc    Get all retainer matters
- * @route   GET /api/retainer
- * @access  Private
- */
-exports.getAllRetainerMatters = catchAsync(async (req, res, next) => {
-  const {
-    retainerType,
-    status,
-    expiringInDays,
-    page = 1,
-    limit = 50,
-    sort = "-agreementStartDate",
-  } = req.query;
-
-  const matterFilter = {
-    firmId: req.firmId,
-    matterType: "retainer",
-    isDeleted: false,
-  };
-
-  if (status) matterFilter.status = status;
-
-  // Filter by retainer-specific fields
-  let matterIds = null;
-  if (retainerType || expiringInDays) {
-    const detailFilter = { firmId: req.firmId };
-    if (retainerType) detailFilter.retainerType = retainerType;
-
-    if (expiringInDays) {
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + Number(expiringInDays));
-      detailFilter.agreementEndDate = {
-        $gte: new Date(),
-        $lte: futureDate,
-      };
-    }
-
-    const retainerDetails =
-      await RetainerDetail.find(detailFilter).select("matterId");
-    matterIds = retainerDetails.map((d) => d.matterId);
-    matterFilter._id = { $in: matterIds };
-  }
-
-  const skip = (page - 1) * limit;
-
-  const matters = await Matter.find(matterFilter)
-    .sort(sort)
-    .skip(skip)
-    .limit(Number(limit))
-    .populate("accountOfficer", "firstName lastName email photo")
-    .populate("client", "firstName lastName email phone")
-    .populate("retainerDetail");
-
-  const total = await Matter.countDocuments(matterFilter);
-
-  res.status(200).json({
-    status: "success",
-    results: matters.length,
-    total,
-    page: Number(page),
-    totalPages: Math.ceil(total / limit),
-    data: {
-      matters,
-    },
-  });
-});
-
-// ============================================
 // SERVICES MANAGEMENT
 // ============================================
 
-/**
- * @desc    Add service to retainer
- * @route   POST /api/retainer/:matterId/services
- * @access  Private
- */
 exports.addService = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const serviceData = req.body;
@@ -266,7 +404,16 @@ exports.addService = catchAsync(async (req, res, next) => {
   const retainerDetail = await RetainerDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      $push: { servicesIncluded: serviceData },
+      $push: {
+        servicesIncluded: {
+          ...serviceData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+          hoursUsed: serviceData.hoursUsed || 0,
+          hoursAllocated: serviceData.hoursAllocated || 0,
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -279,24 +426,17 @@ exports.addService = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       retainerDetail,
+      newService:
+        retainerDetail.servicesIncluded[
+          retainerDetail.servicesIncluded.length - 1
+        ],
     },
   });
 });
 
-/**
- * @desc    Update service
- * @route   PATCH /api/retainer/:matterId/services/:serviceId
- * @access  Private
- */
 exports.updateService = catchAsync(async (req, res, next) => {
   const { matterId, serviceId } = req.params;
   const updateData = req.body;
-
-  // Build update object using dot notation
-  const updateObject = {};
-  Object.keys(updateData).forEach((key) => {
-    updateObject[`servicesIncluded.$.${key}`] = updateData[key];
-  });
 
   const retainerDetail = await RetainerDetail.findOneAndUpdate(
     {
@@ -305,7 +445,15 @@ exports.updateService = catchAsync(async (req, res, next) => {
       "servicesIncluded._id": serviceId,
     },
     {
-      $set: updateObject,
+      $set: {
+        "servicesIncluded.$": {
+          ...updateData,
+          _id: serviceId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -314,19 +462,17 @@ exports.updateService = catchAsync(async (req, res, next) => {
     return next(new AppError("Service not found", 404));
   }
 
+  const updatedService = retainerDetail.servicesIncluded.id(serviceId);
+
   res.status(200).json({
     status: "success",
     data: {
       retainerDetail,
+      updatedService,
     },
   });
 });
 
-/**
- * @desc    Remove service from retainer
- * @route   DELETE /api/retainer/:matterId/services/:serviceId
- * @access  Private
- */
 exports.removeService = catchAsync(async (req, res, next) => {
   const { matterId, serviceId } = req.params;
 
@@ -334,6 +480,7 @@ exports.removeService = catchAsync(async (req, res, next) => {
     { matterId, firmId: req.firmId },
     {
       $pull: { servicesIncluded: { _id: serviceId } },
+      lastModifiedBy: req.user._id,
     },
     { new: true },
   );
@@ -346,6 +493,49 @@ exports.removeService = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       retainerDetail,
+      message: "Service removed successfully",
+    },
+  });
+});
+
+exports.updateServiceHours = catchAsync(async (req, res, next) => {
+  const { matterId, serviceId } = req.params;
+  const { hoursUsed, hoursAllocated } = req.body;
+
+  const updateObject = {};
+  if (hoursUsed !== undefined) {
+    updateObject["servicesIncluded.$.hoursUsed"] = hoursUsed;
+    updateObject["servicesIncluded.$.hoursUpdatedBy"] = req.user._id;
+    updateObject["servicesIncluded.$.hoursUpdatedAt"] = new Date();
+  }
+  if (hoursAllocated !== undefined) {
+    updateObject["servicesIncluded.$.hoursAllocated"] = hoursAllocated;
+  }
+
+  const retainerDetail = await RetainerDetail.findOneAndUpdate(
+    {
+      matterId,
+      firmId: req.firmId,
+      "servicesIncluded._id": serviceId,
+    },
+    {
+      $set: updateObject,
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!retainerDetail) {
+    return next(new AppError("Service not found", 404));
+  }
+
+  const updatedService = retainerDetail.servicesIncluded.id(serviceId);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      retainerDetail,
+      updatedService,
     },
   });
 });
@@ -354,30 +544,23 @@ exports.removeService = catchAsync(async (req, res, next) => {
 // CLIENT REQUESTS MANAGEMENT
 // ============================================
 
-/**
- * @desc    Add client request to retainer
- * @route   POST /api/retainer/:matterId/requests
- * @access  Private
- */
 exports.addRequest = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const requestData = req.body;
 
-  const matter = await Matter.findOne({
-    _id: matterId,
-    firmId: req.firmId,
-    matterType: "retainer",
-    isDeleted: false,
-  });
-
-  if (!matter) {
-    return next(new AppError("Retainer matter not found", 404));
-  }
-
   const retainerDetail = await RetainerDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      $push: { requests: { ...requestData, requestDate: new Date() } },
+      $push: {
+        requests: {
+          ...requestData,
+          requestDate: new Date(),
+          addedBy: req.user._id,
+          status: requestData.status || "pending",
+          priority: requestData.priority || "normal",
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -390,24 +573,14 @@ exports.addRequest = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       retainerDetail,
+      newRequest: retainerDetail.requests[retainerDetail.requests.length - 1],
     },
   });
 });
 
-/**
- * @desc    Update client request status
- * @route   PATCH /api/retainer/:matterId/requests/:requestId
- * @access  Private
- */
 exports.updateRequest = catchAsync(async (req, res, next) => {
   const { matterId, requestId } = req.params;
   const updateData = req.body;
-
-  // Build update object using dot notation
-  const updateObject = {};
-  Object.keys(updateData).forEach((key) => {
-    updateObject[`requests.$.${key}`] = updateData[key];
-  });
 
   const retainerDetail = await RetainerDetail.findOneAndUpdate(
     {
@@ -416,7 +589,19 @@ exports.updateRequest = catchAsync(async (req, res, next) => {
       "requests._id": requestId,
     },
     {
-      $set: updateObject,
+      $set: {
+        "requests.$": {
+          ...updateData,
+          _id: requestId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+          completedAt:
+            updateData.status === "completed"
+              ? updateData.completedAt || new Date()
+              : null,
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -425,19 +610,17 @@ exports.updateRequest = catchAsync(async (req, res, next) => {
     return next(new AppError("Request not found", 404));
   }
 
+  const updatedRequest = retainerDetail.requests.id(requestId);
+
   res.status(200).json({
     status: "success",
     data: {
       retainerDetail,
+      updatedRequest,
     },
   });
 });
 
-/**
- * @desc    Delete client request
- * @route   DELETE /api/retainer/:matterId/requests/:requestId
- * @access  Private
- */
 exports.deleteRequest = catchAsync(async (req, res, next) => {
   const { matterId, requestId } = req.params;
 
@@ -445,6 +628,7 @@ exports.deleteRequest = catchAsync(async (req, res, next) => {
     { matterId, firmId: req.firmId },
     {
       $pull: { requests: { _id: requestId } },
+      lastModifiedBy: req.user._id,
     },
     { new: true },
   );
@@ -457,49 +641,7 @@ exports.deleteRequest = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       retainerDetail,
-    },
-  });
-});
-
-// ============================================
-// SERVICE HOURS MANAGEMENT
-// ============================================
-
-/**
- * @desc    Update hours used for a service
- * @route   PATCH /api/retainer/:matterId/services/:serviceId/hours
- * @access  Private
- */
-exports.updateServiceHours = catchAsync(async (req, res, next) => {
-  const { matterId, serviceId } = req.params;
-  const { hoursUsed, hoursAllocated } = req.body;
-
-  const updateObject = {};
-  if (hoursUsed !== undefined)
-    updateObject[`servicesIncluded.$.hoursUsed`] = hoursUsed;
-  if (hoursAllocated !== undefined)
-    updateObject[`servicesIncluded.$.hoursAllocated`] = hoursAllocated;
-
-  const retainerDetail = await RetainerDetail.findOneAndUpdate(
-    {
-      matterId,
-      firmId: req.firmId,
-      "servicesIncluded._id": serviceId,
-    },
-    {
-      $set: updateObject,
-    },
-    { new: true, runValidators: true },
-  );
-
-  if (!retainerDetail) {
-    return next(new AppError("Service not found", 404));
-  }
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      retainerDetail,
+      message: "Request removed successfully",
     },
   });
 });
@@ -508,22 +650,22 @@ exports.updateServiceHours = catchAsync(async (req, res, next) => {
 // REPORTS & ANALYTICS
 // ============================================
 
-/**
- * @desc    Get hours allocation vs usage summary
- * @route   GET /api/retainer/:matterId/hours-summary
- * @access  Private
- */
 exports.getHoursSummary = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
 
   const retainerDetail = await RetainerDetail.findOne({
     matterId,
     firmId: req.firmId,
-  }).populate({
-    path: "matter",
-    select: "matterNumber title client",
-    populate: { path: "client", select: "firstName lastName email" },
-  });
+  })
+    .populate({
+      path: "matter",
+      select: "matterNumber title client",
+      populate: {
+        path: "client",
+        select: "firstName lastName email companyName",
+      },
+    })
+    .populate("accountOfficer", "firstName lastName email");
 
   if (!retainerDetail) {
     return next(new AppError("Retainer details not found", 404));
@@ -531,13 +673,15 @@ exports.getHoursSummary = catchAsync(async (req, res, next) => {
 
   const summary = retainerDetail.servicesIncluded.map((service) => ({
     serviceType: service.serviceType,
-    hoursAllocated: service.hoursAllocated,
-    hoursUsed: service.hoursUsed,
-    hoursRemaining: service.hoursAllocated - service.hoursUsed,
+    description: service.description,
+    hoursAllocated: service.hoursAllocated || 0,
+    hoursUsed: service.hoursUsed || 0,
+    hoursRemaining: (service.hoursAllocated || 0) - (service.hoursUsed || 0),
     utilizationRate:
       service.hoursAllocated > 0
         ? ((service.hoursUsed / service.hoursAllocated) * 100).toFixed(2)
         : "0.00",
+    lastUpdated: service.hoursUpdatedAt,
   }));
 
   const totalAllocated = retainerDetail.servicesIncluded.reduce(
@@ -548,20 +692,37 @@ exports.getHoursSummary = catchAsync(async (req, res, next) => {
     (sum, s) => sum + (s.hoursUsed || 0),
     0,
   );
+  const utilizationRate =
+    totalAllocated > 0 ? (totalUsed / totalAllocated) * 100 : 0;
 
   res.status(200).json({
     status: "success",
     data: {
       matter: retainerDetail.matter,
+      accountOfficer: retainerDetail.accountOfficer,
       services: summary,
-      totalHours: {
+      totals: {
         allocated: totalAllocated,
         used: totalUsed,
         remaining: totalAllocated - totalUsed,
-        utilizationRate:
-          totalAllocated > 0
-            ? ((totalUsed / totalAllocated) * 100).toFixed(2)
-            : "0.00",
+        utilizationRate: utilizationRate.toFixed(2),
+        utilizationStatus:
+          utilizationRate >= 80
+            ? "high"
+            : utilizationRate >= 50
+              ? "moderate"
+              : "low",
+      },
+      retainerPeriod: {
+        startDate: retainerDetail.agreementStartDate,
+        endDate: retainerDetail.agreementEndDate,
+        daysRemaining: Math.max(
+          0,
+          Math.ceil(
+            (retainerDetail.agreementEndDate - new Date()) /
+              (1000 * 60 * 60 * 24),
+          ),
+        ),
       },
     },
   });
@@ -571,151 +732,390 @@ exports.getHoursSummary = catchAsync(async (req, res, next) => {
 // RETAINER RENEWAL & TERMINATION
 // ============================================
 
-/**
- * @desc    Renew retainer agreement
- * @route   POST /api/retainer/:matterId/renew
- * @access  Private
- */
 exports.renewRetainer = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
-  const { newEndDate, retainerFee, servicesIncluded } = req.body;
+  const { newEndDate, retainerFee, servicesIncluded, renewalNotes } = req.body;
 
-  const matter = await Matter.findOne({
-    _id: matterId,
-    firmId: req.firmId,
-    matterType: "retainer",
-    isDeleted: false,
-  });
+  const session = await Matter.startSession();
+  session.startTransaction();
 
-  if (!matter) {
-    return next(new AppError("Retainer matter not found", 404));
+  try {
+    // Get current retainer
+    const currentRetainer = await RetainerDetail.findOne({
+      matterId,
+      firmId: req.firmId,
+      isDeleted: false,
+    }).session(session);
+
+    if (!currentRetainer) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Retainer details not found", 404));
+    }
+
+    // Archive current retainer
+    currentRetainer.isArchived = true;
+    currentRetainer.archivedAt = new Date();
+    currentRetainer.archivedBy = req.user._id;
+    currentRetainer.renewalNotes = renewalNotes;
+    await currentRetainer.save({ session });
+
+    // Calculate new end date (default 1 year from now)
+    const endDate =
+      newEndDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+
+    // Create new retainer detail
+    const newRetainerDetail = new RetainerDetail({
+      matterId,
+      firmId: req.firmId,
+      retainerType: currentRetainer.retainerType,
+      agreementStartDate: new Date(),
+      agreementEndDate: endDate,
+      servicesIncluded:
+        servicesIncluded ||
+        currentRetainer.servicesIncluded.map((s) => ({
+          serviceType: s.serviceType,
+          description: s.description,
+          hoursAllocated: s.hoursAllocated,
+          hoursUsed: 0, // Reset hours for new term
+        })),
+      scopeDescription: currentRetainer.scopeDescription,
+      retainerFee: retainerFee || currentRetainer.retainerFee,
+      autoRenewal: currentRetainer.autoRenewal,
+      renewalTerms: currentRetainer.renewalTerms,
+      responseTimes: currentRetainer.responseTimes,
+      meetingSchedule: currentRetainer.meetingSchedule,
+      reportingRequirements: currentRetainer.reportingRequirements,
+      terminationClause: currentRetainer.terminationClause,
+      previousRetainerId: currentRetainer._id,
+      renewalNotes,
+      createdBy: req.user._id,
+    });
+
+    await newRetainerDetail.save({ session });
+
+    // Update matter
+    const matter = await Matter.findOneAndUpdate(
+      {
+        _id: matterId,
+        firmId: req.firmId,
+        matterType: "retainer",
+        isDeleted: false,
+      },
+      {
+        status: "active",
+        expectedClosureDate: newRetainerDetail.agreementEndDate,
+        lastModifiedBy: req.user._id,
+        lastActivityDate: new Date(),
+      },
+      { new: true, session },
+    );
+
+    if (!matter) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Retainer matter not found", 404));
+    }
+
+    // Link new retainer to matter
+    matter.retainerDetail = newRetainerDetail._id;
+    await matter.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(200).json({
+      status: "success",
+      message: "Retainer renewed successfully",
+      data: {
+        previousRetainer: currentRetainer,
+        newRetainer: newRetainerDetail,
+        matter,
+      },
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return next(error);
   }
-
-  const retainerDetail = await RetainerDetail.findOne({
-    matterId,
-    firmId: req.firmId,
-  });
-
-  if (!retainerDetail) {
-    return next(new AppError("Retainer details not found", 404));
-  }
-
-  // Archive old retainer
-  retainerDetail.isArchived = true;
-  retainerDetail.archivedAt = new Date();
-  await retainerDetail.save();
-
-  // Create new retainer detail for renewal
-  const newRetainerDetail = new RetainerDetail({
-    matterId,
-    firmId: req.firmId,
-    retainerType: retainerDetail.retainerType,
-    agreementStartDate: new Date(),
-    agreementEndDate:
-      newEndDate || new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // Default 1 year
-    servicesIncluded:
-      servicesIncluded ||
-      retainerDetail.servicesIncluded.map((s) => ({
-        ...s.toObject(),
-        hoursUsed: 0,
-      })),
-    scopeDescription: retainerDetail.scopeDescription,
-    retainerFee: retainerFee || retainerDetail.retainerFee,
-    autoRenewal: retainerDetail.autoRenewal,
-    renewalTerms: retainerDetail.renewalTerms,
-    responseTimes: retainerDetail.responseTimes,
-    meetingSchedule: retainerDetail.meetingSchedule,
-    reportingRequirements: retainerDetail.reportingRequirements,
-    terminationClause: retainerDetail.terminationClause,
-    previousRetainerId: retainerDetail._id,
-  });
-
-  await newRetainerDetail.save();
-
-  // Update matter
-  matter.status = "active";
-  matter.expectedClosureDate = newRetainerDetail.agreementEndDate;
-  matter.lastActivityDate = new Date();
-  await matter.save();
-
-  res.status(200).json({
-    status: "success",
-    message: "Retainer renewed successfully",
-    data: {
-      retainerDetail: newRetainerDetail,
-      matter,
-    },
-  });
 });
 
-/**
- * @desc    Terminate retainer agreement
- * @route   POST /api/retainer/:matterId/terminate
- * @access  Private
- */
 exports.terminateRetainer = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
-  const { terminationReason, terminationDate } = req.body;
+  const { terminationReason, terminationDate, terminationNotes } = req.body;
 
-  const matter = await Matter.findOne({
-    _id: matterId,
-    firmId: req.firmId,
-    matterType: "retainer",
-    isDeleted: false,
-  });
+  const session = await Matter.startSession();
+  session.startTransaction();
 
-  if (!matter) {
-    return next(new AppError("Retainer matter not found", 404));
+  try {
+    // Update retainer detail
+    const retainerDetail = await RetainerDetail.findOneAndUpdate(
+      { matterId, firmId: req.firmId, isDeleted: false },
+      {
+        agreementEndDate: terminationDate || new Date(),
+        terminationReason,
+        terminationDate: terminationDate || new Date(),
+        terminationNotes,
+        terminatedBy: req.user._id,
+        lastModifiedBy: req.user._id,
+      },
+      { new: true, runValidators: true, session },
+    );
+
+    if (!retainerDetail) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Retainer details not found", 404));
+    }
+
+    // Update matter status
+    const matter = await Matter.findOneAndUpdate(
+      {
+        _id: matterId,
+        firmId: req.firmId,
+        matterType: "retainer",
+        isDeleted: false,
+      },
+      {
+        status: "terminated",
+        actualClosureDate: retainerDetail.agreementEndDate,
+        terminationReason,
+        lastModifiedBy: req.user._id,
+        lastActivityDate: new Date(),
+      },
+      { new: true, session },
+    );
+
+    if (!matter) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Retainer matter not found", 404));
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(200).json({
+      status: "success",
+      message: "Retainer terminated successfully",
+      data: {
+        retainerDetail,
+        matter,
+      },
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return next(error);
   }
+});
 
-  const retainerDetail = await RetainerDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
-    {
-      agreementEndDate: terminationDate || new Date(),
-      terminationReason,
-      terminationDate: terminationDate || new Date(),
-    },
-    { new: true, runValidators: true },
-  );
+// ============================================
+// STATISTICS & DASHBOARD
+// ============================================
 
-  if (!retainerDetail) {
-    return next(new AppError("Retainer details not found", 404));
-  }
+exports.getRetainerStats = catchAsync(async (req, res, next) => {
+  const firmQuery = { firmId: req.firmId, isDeleted: false, isArchived: false };
 
-  // Update matter status
-  matter.status = "terminated";
-  matter.actualClosureDate = retainerDetail.agreementEndDate;
-  matter.lastActivityDate = new Date();
-  await matter.save();
+  const [
+    overviewStats,
+    byType,
+    requestsStats,
+    hoursUtilization,
+    revenueStats,
+    expiringSoon,
+  ] = await Promise.all([
+    // Overview statistics
+    Matter.aggregate([
+      {
+        $match: {
+          firmId: req.firmId,
+          matterType: "retainer",
+          isDeleted: false,
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          totalRetainerMatters: { $sum: 1 },
+          activeRetainerMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] },
+          },
+          pendingRetainerMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] },
+          },
+          terminatedRetainerMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "terminated"] }, 1, 0] },
+          },
+          expiredRetainerMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "expired"] }, 1, 0] },
+          },
+        },
+      },
+    ]),
+
+    // By retainer type
+    RetainerDetail.aggregate([
+      { $match: firmQuery },
+      {
+        $group: {
+          _id: "$retainerType",
+          count: { $sum: 1 },
+          totalMonthlyRevenue: {
+            $sum: {
+              $cond: [
+                { $eq: ["$retainerFee.frequency", "monthly"] },
+                "$retainerFee.amount",
+                {
+                  $cond: [
+                    { $eq: ["$retainerFee.frequency", "quarterly"] },
+                    { $divide: ["$retainerFee.amount", 3] },
+                    { $divide: ["$retainerFee.amount", 12] },
+                  ],
+                },
+              ],
+            },
+          },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]),
+
+    // Requests statistics
+    RetainerDetail.aggregate([
+      { $match: firmQuery },
+      { $unwind: "$requests" },
+      {
+        $group: {
+          _id: "$requests.status",
+          count: { $sum: 1 },
+          avgResponseTime: { $avg: "$requests.responseTimeHours" },
+        },
+      },
+    ]),
+
+    // Hours utilization
+    RetainerDetail.aggregate([
+      { $match: firmQuery },
+      { $unwind: "$servicesIncluded" },
+      {
+        $group: {
+          _id: null,
+          totalAllocated: { $sum: "$servicesIncluded.hoursAllocated" },
+          totalUsed: { $sum: "$servicesIncluded.hoursUsed" },
+          avgUtilization: {
+            $avg: {
+              $cond: [
+                { $gt: ["$servicesIncluded.hoursAllocated", 0] },
+                {
+                  $multiply: [
+                    {
+                      $divide: [
+                        "$servicesIncluded.hoursUsed",
+                        "$servicesIncluded.hoursAllocated",
+                      ],
+                    },
+                    100,
+                  ],
+                },
+                0,
+              ],
+            },
+          },
+        },
+      },
+    ]),
+
+    // Revenue statistics
+    RetainerDetail.aggregate([
+      { $match: firmQuery },
+      {
+        $group: {
+          _id: null,
+          totalMonthlyRevenue: {
+            $sum: {
+              $cond: [
+                { $eq: ["$retainerFee.frequency", "monthly"] },
+                "$retainerFee.amount",
+                {
+                  $cond: [
+                    { $eq: ["$retainerFee.frequency", "quarterly"] },
+                    { $divide: ["$retainerFee.amount", 3] },
+                    { $divide: ["$retainerFee.amount", 12] },
+                  ],
+                },
+              ],
+            },
+          },
+          totalAnnualRevenue: {
+            $sum: {
+              $cond: [
+                { $eq: ["$retainerFee.frequency", "monthly"] },
+                { $multiply: ["$retainerFee.amount", 12] },
+                {
+                  $cond: [
+                    { $eq: ["$retainerFee.frequency", "quarterly"] },
+                    { $multiply: ["$retainerFee.amount", 4] },
+                    "$retainerFee.amount",
+                  ],
+                },
+              ],
+            },
+          },
+          avgRetainerValue: { $avg: "$retainerFee.amount" },
+        },
+      },
+    ]),
+
+    // Expiring soon (next 30 days)
+    RetainerDetail.countDocuments({
+      ...firmQuery,
+      agreementEndDate: {
+        $gte: new Date(),
+        $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+    }),
+  ]);
 
   res.status(200).json({
     status: "success",
-    message: "Retainer terminated successfully",
     data: {
-      retainerDetail,
-      matter,
+      overview: overviewStats[0] || {
+        totalRetainerMatters: 0,
+        activeRetainerMatters: 0,
+        pendingRetainerMatters: 0,
+        terminatedRetainerMatters: 0,
+        expiredRetainerMatters: 0,
+      },
+      byType,
+      requests: requestsStats,
+      hours: hoursUtilization[0] || {
+        totalAllocated: 0,
+        totalUsed: 0,
+        avgUtilization: 0,
+      },
+      revenue: revenueStats[0] || {
+        totalMonthlyRevenue: 0,
+        totalAnnualRevenue: 0,
+        avgRetainerValue: 0,
+      },
+      expiringSoon: expiringSoon || 0,
     },
   });
 });
 
-// ============================================
-// DASHBOARD & STATISTICS
-// ============================================
-
-/**
- * @desc    Get expiring retainers
- * @route   GET /api/retainer/expiring
- * @access  Private
- */
 exports.getExpiringRetainers = catchAsync(async (req, res, next) => {
-  const { days = 30 } = req.query;
+  const { days = 30, page = 1, limit = 20 } = req.query;
 
   const futureDate = new Date();
   futureDate.setDate(futureDate.getDate() + Number(days));
 
+  const skip = (page - 1) * limit;
+
   const retainerDetails = await RetainerDetail.find({
     firmId: req.firmId,
     isDeleted: false,
+    isArchived: false,
     agreementEndDate: {
       $gte: new Date(),
       $lte: futureDate,
@@ -724,195 +1124,145 @@ exports.getExpiringRetainers = catchAsync(async (req, res, next) => {
     .populate({
       path: "matter",
       select: "matterNumber title client accountOfficer status priority",
+      match: { isDeleted: false },
       populate: [
-        { path: "client", select: "firstName lastName email phone" },
+        {
+          path: "client",
+          select: "firstName lastName email phone companyName",
+        },
         { path: "accountOfficer", select: "firstName lastName email photo" },
       ],
     })
-    .sort({ agreementEndDate: 1 });
+    .sort({ agreementEndDate: 1 })
+    .skip(skip)
+    .limit(Number(limit));
 
-  const filtered = retainerDetails.filter(
-    (detail) => detail.matter && !detail.matter.isDeleted,
-  );
+  const filtered = retainerDetails.filter((detail) => detail.matter);
+
+  const total = await RetainerDetail.countDocuments({
+    firmId: req.firmId,
+    isDeleted: false,
+    isArchived: false,
+    agreementEndDate: {
+      $gte: new Date(),
+      $lte: futureDate,
+    },
+  });
+
+  // Calculate days remaining
+  const retainersWithDaysRemaining = filtered.map((detail) => ({
+    ...detail.toObject(),
+    daysRemaining: Math.ceil(
+      (detail.agreementEndDate - new Date()) / (1000 * 60 * 60 * 24),
+    ),
+  }));
 
   res.status(200).json({
     status: "success",
     results: filtered.length,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
     data: {
-      retainers: filtered,
+      retainers: retainersWithDaysRemaining,
     },
   });
 });
 
-/**
- * @desc    Get retainer-specific statistics
- * @route   GET /api/retainer/stats
- * @access  Private
- */
-exports.getRetainerStats = catchAsync(async (req, res, next) => {
-  const firmQuery = { firmId: req.firmId, isDeleted: false };
-
-  // By retainer type
-  const byType = await RetainerDetail.aggregate([
-    { $match: firmQuery },
-    {
-      $group: {
-        _id: "$retainerType",
-        count: { $sum: 1 },
-      },
-    },
-    { $sort: { count: -1 } },
-  ]);
-
-  // Active vs expired retainers
-  const [activeRetainers, expiredRetainers] = await Promise.all([
-    RetainerDetail.countDocuments({
-      ...firmQuery,
-      agreementEndDate: { $gte: new Date() },
-    }),
-    RetainerDetail.countDocuments({
-      ...firmQuery,
-      agreementEndDate: { $lt: new Date() },
-    }),
-  ]);
-
-  // Requests statistics
-  const requestsStats = await RetainerDetail.aggregate([
-    { $match: firmQuery },
-    { $unwind: "$requests" },
-    {
-      $group: {
-        _id: "$requests.status",
-        count: { $sum: 1 },
-      },
-    },
-  ]);
-
-  // Hours utilization
-  const hoursUtilization = await RetainerDetail.aggregate([
-    { $match: firmQuery },
-    { $unwind: "$servicesIncluded" },
-    {
-      $group: {
-        _id: null,
-        totalAllocated: { $sum: "$servicesIncluded.hoursAllocated" },
-        totalUsed: { $sum: "$servicesIncluded.hoursUsed" },
-        avgUtilization: {
-          $avg: {
-            $cond: [
-              { $gt: ["$servicesIncluded.hoursAllocated", 0] },
-              {
-                $multiply: [
-                  {
-                    $divide: [
-                      "$servicesIncluded.hoursUsed",
-                      "$servicesIncluded.hoursAllocated",
-                    ],
-                  },
-                  100,
-                ],
-              },
-              0,
-            ],
-          },
-        },
-      },
-    },
-  ]);
-
-  // Revenue projection
-  const revenueStats = await RetainerDetail.aggregate([
-    { $match: firmQuery },
-    {
-      $group: {
-        _id: null,
-        totalMonthlyRevenue: {
-          $sum: {
-            $cond: [
-              { $eq: ["$retainerFee.frequency", "monthly"] },
-              "$retainerFee.amount",
-              {
-                $cond: [
-                  { $eq: ["$retainerFee.frequency", "quarterly"] },
-                  { $divide: ["$retainerFee.amount", 3] },
-                  { $divide: ["$retainerFee.amount", 12] }, // annually
-                ],
-              },
-            ],
-          },
-        },
-        totalAnnualRevenue: {
-          $sum: {
-            $cond: [
-              { $eq: ["$retainerFee.frequency", "monthly"] },
-              { $multiply: ["$retainerFee.amount", 12] },
-              {
-                $cond: [
-                  { $eq: ["$retainerFee.frequency", "quarterly"] },
-                  { $multiply: ["$retainerFee.amount", 4] },
-                  "$retainerFee.amount", // annually
-                ],
-              },
-            ],
-          },
-        },
-      },
-    },
-  ]);
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      byType,
-      activeRetainers,
-      expiredRetainers,
-      requestsByStatus: requestsStats,
-      hoursUtilization: hoursUtilization[0] || {
-        totalAllocated: 0,
-        totalUsed: 0,
-        avgUtilization: 0,
-      },
-      revenue: revenueStats[0] || {
-        totalMonthlyRevenue: 0,
-        totalAnnualRevenue: 0,
-      },
-    },
-  });
-});
-
-/**
- * @desc    Get retainers with pending requests
- * @route   GET /api/retainer/pending-requests
- * @access  Private
- */
 exports.getPendingRequests = catchAsync(async (req, res, next) => {
+  const { page = 1, limit = 20 } = req.query;
+
+  const skip = (page - 1) * limit;
+
   const retainerDetails = await RetainerDetail.find({
     firmId: req.firmId,
     isDeleted: false,
+    isArchived: false,
     "requests.status": "pending",
   })
     .populate({
       path: "matter",
       select: "matterNumber title client accountOfficer priority",
+      match: { isDeleted: false },
       populate: [
-        { path: "client", select: "firstName lastName email" },
+        { path: "client", select: "firstName lastName email companyName" },
         { path: "accountOfficer", select: "firstName lastName email" },
       ],
     })
-    .sort({ "requests.requestDate": 1 });
+    .sort({ "requests.requestDate": 1 })
+    .skip(skip)
+    .limit(Number(limit));
 
-  const filtered = retainerDetails
-    .filter((detail) => detail.matter && !detail.matter.isDeleted)
-    .map((detail) => ({
-      ...detail.toObject(),
-      requests: detail.requests.filter((req) => req.status === "pending"),
-    }));
+  const filtered = retainerDetails.filter((detail) => detail.matter);
+
+  // Extract and flatten pending requests
+  const pendingRequests = [];
+  filtered.forEach((detail) => {
+    detail.requests.forEach((request) => {
+      if (request.status === "pending") {
+        pendingRequests.push({
+          ...request.toObject(),
+          matter: detail.matter,
+          matterId: detail.matterId,
+          retainerDetailId: detail._id,
+        });
+      }
+    });
+  });
+
+  const total = await RetainerDetail.countDocuments({
+    firmId: req.firmId,
+    isDeleted: false,
+    isArchived: false,
+    "requests.status": "pending",
+  });
 
   res.status(200).json({
     status: "success",
-    results: filtered.length,
+    results: pendingRequests.length,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
     data: {
-      retainers: filtered,
+      pendingRequests,
+    },
+  });
+});
+
+// ============================================
+// BULK OPERATIONS
+// ============================================
+
+exports.bulkUpdateRetainerMatters = catchAsync(async (req, res, next) => {
+  const { matterIds, updates } = req.body;
+
+  if (!matterIds || !Array.isArray(matterIds) || matterIds.length === 0) {
+    return next(new AppError("Please provide matter IDs to update", 400));
+  }
+
+  if (!updates || Object.keys(updates).length === 0) {
+    return next(new AppError("Please provide updates to apply", 400));
+  }
+
+  const result = await Matter.updateMany(
+    {
+      _id: { $in: matterIds },
+      firmId: req.firmId,
+      matterType: "retainer",
+    },
+    {
+      ...updates,
+      lastModifiedBy: req.user._id,
+      lastActivityDate: Date.now(),
+    },
+    { runValidators: true },
+  );
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
     },
   });
 });

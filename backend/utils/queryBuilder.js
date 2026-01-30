@@ -208,7 +208,7 @@ class QueryBuilder {
         if (cleanFilter[key].$regex) {
           console.log(`\n🔤 Text Search for ${key}:`);
           console.log(
-            `   Pattern: "${cleanFilter[key].$regex}" (case-insensitive)`
+            `   Pattern: "${cleanFilter[key].$regex}" (case-insensitive)`,
           );
         }
       }

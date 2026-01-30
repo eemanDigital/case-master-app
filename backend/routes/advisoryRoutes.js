@@ -1,119 +1,134 @@
 const express = require("express");
 const advisoryController = require("../controllers/advisoryController");
-const { protect } = require("../controllers/authController");
+const { protect, restrictTo } = require("../controllers/authController");
 
 const advisoryRouter = express.Router();
 
 // Protect all routes
 advisoryRouter.use(protect);
 
-// ============================================
-// ADVISORY DETAILS CRUD
-// ============================================
+// Advisory matters listing & search
+advisoryRouter.get("/", advisoryController.getAllAdvisoryMatters);
+advisoryRouter.post("/search", advisoryController.searchAdvisoryMatters);
 
-advisoryRouter.post(
-  "/:matterId/details",
-  advisoryController.createAdvisoryDetails,
-);
-advisoryRouter.get("/:matterId/details", advisoryController.getAdvisoryDetails);
-advisoryRouter.patch(
-  "/:matterId/details",
-  advisoryController.updateAdvisoryDetails,
-);
-advisoryRouter.delete(
-  "/:matterId/details",
-  advisoryController.deleteAdvisoryDetails,
-);
+// Statistics
+advisoryRouter.get("/stats", advisoryController.getAdvisoryStats);
+
+// Advisory details CRUD
+advisoryRouter
+  .route("/:matterId/details")
+  .get(advisoryController.getAdvisoryDetails)
+  .post(restrictTo("admin", "lawyer"), advisoryController.createAdvisoryDetails)
+  .patch(
+    restrictTo("admin", "lawyer"),
+    advisoryController.updateAdvisoryDetails,
+  )
+  .delete(
+    restrictTo("admin", "lawyer"),
+    advisoryController.deleteAdvisoryDetails,
+  );
+
 advisoryRouter.patch(
   "/:matterId/details/restore",
+  restrictTo("admin", "lawyer"),
   advisoryController.restoreAdvisoryDetails,
 );
 
-// ============================================
-// ADVISORY LISTING & STATISTICS
-// ============================================
-
-advisoryRouter.get("/", advisoryController.getAllAdvisoryMatters);
-advisoryRouter.get("/stats", advisoryController.getAdvisoryStats);
-
-// ============================================
-// RESEARCH QUESTIONS MANAGEMENT
-// ============================================
-
+// Research questions
 advisoryRouter.post(
   "/:matterId/research-questions",
+  restrictTo("admin", "lawyer"),
   advisoryController.addResearchQuestion,
 );
+
 advisoryRouter.patch(
   "/:matterId/research-questions/:questionId",
+  restrictTo("admin", "lawyer"),
   advisoryController.updateResearchQuestion,
 );
+
 advisoryRouter.delete(
   "/:matterId/research-questions/:questionId",
+  restrictTo("admin", "lawyer"),
   advisoryController.deleteResearchQuestion,
 );
 
-// ============================================
-// KEY FINDINGS MANAGEMENT
-// ============================================
-
+// Key findings
 advisoryRouter.post(
   "/:matterId/key-findings",
+  restrictTo("admin", "lawyer"),
   advisoryController.addKeyFinding,
 );
+
 advisoryRouter.patch(
   "/:matterId/key-findings/:findingId",
+  restrictTo("admin", "lawyer"),
   advisoryController.updateKeyFinding,
 );
+
 advisoryRouter.delete(
   "/:matterId/key-findings/:findingId",
+  restrictTo("admin", "lawyer"),
   advisoryController.deleteKeyFinding,
 );
 
-// ============================================
-// OPINION MANAGEMENT
-// ============================================
+// Opinion
+advisoryRouter.patch(
+  "/:matterId/opinion",
+  restrictTo("admin", "lawyer"),
+  advisoryController.updateOpinion,
+);
 
-advisoryRouter.patch("/:matterId/opinion", advisoryController.updateOpinion);
-
-// ============================================
-// RECOMMENDATIONS MANAGEMENT
-// ============================================
-
+// Recommendations
 advisoryRouter.post(
   "/:matterId/recommendations",
+  restrictTo("admin", "lawyer"),
   advisoryController.addRecommendation,
 );
+
 advisoryRouter.patch(
   "/:matterId/recommendations/:recommendationId",
+  restrictTo("admin", "lawyer"),
   advisoryController.updateRecommendation,
 );
+
 advisoryRouter.delete(
   "/:matterId/recommendations/:recommendationId",
+  restrictTo("admin", "lawyer"),
   advisoryController.deleteRecommendation,
 );
 
-// ============================================
-// DELIVERABLES MANAGEMENT
-// ============================================
-
+// Deliverables
 advisoryRouter.post(
   "/:matterId/deliverables",
+  restrictTo("admin", "lawyer"),
   advisoryController.addDeliverable,
 );
+
 advisoryRouter.patch(
   "/:matterId/deliverables/:deliverableId",
+  restrictTo("admin", "lawyer"),
   advisoryController.updateDeliverable,
 );
+
 advisoryRouter.delete(
   "/:matterId/deliverables/:deliverableId",
+  restrictTo("admin", "lawyer"),
   advisoryController.deleteDeliverable,
 );
 
-// ============================================
-// SERVICE COMPLETION
-// ============================================
+// Service completion
+advisoryRouter.post(
+  "/:matterId/complete",
+  restrictTo("admin", "lawyer"),
+  advisoryController.completeAdvisory,
+);
 
-advisoryRouter.post("/:matterId/complete", advisoryController.completeAdvisory);
+// Bulk operations
+advisoryRouter.patch(
+  "/bulk-update",
+  restrictTo("admin", "lawyer"),
+  advisoryController.bulkUpdateAdvisoryMatters,
+);
 
 module.exports = advisoryRouter;

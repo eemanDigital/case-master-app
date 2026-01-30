@@ -1,65 +1,239 @@
+const PaginationServiceFactory = require("../services/PaginationServiceFactory");
+const modelConfigs = require("../config/modelConfigs");
 const Matter = require("../models/matterModel");
 const PropertyDetail = require("../models/propertyDetailModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 
+// Initialize pagination services
+const matterPaginationService = PaginationServiceFactory.createService(
+  Matter,
+  modelConfigs.Matter,
+);
+
+const propertyDetailPaginationService = PaginationServiceFactory.createService(
+  PropertyDetail,
+  modelConfigs.PropertyDetail,
+);
+
 // ============================================
-// PROPERTY DETAILS CRUD OPERATIONS
+// PROPERTY MATTERS LISTING & PAGINATION
+// ============================================
+
+/**
+ * @desc    Get all property matters with pagination, filtering, and sorting
+ * @route   GET /api/property-matters
+ * @access  Private
+ */
+exports.getAllPropertyMatters = catchAsync(async (req, res, next) => {
+  const {
+    // Standard pagination
+    page = 1,
+    limit = 50,
+    sort = "-dateOpened",
+    populate,
+    select,
+    debug,
+    includeStats,
+
+    // Property-specific filters
+    transactionType,
+    state,
+    propertyType,
+    status,
+
+    // Search
+    search,
+
+    // Other
+    includeDeleted,
+    onlyDeleted,
+  } = req.query;
+
+  // Add property matter type filter
+  const customFilter = {
+    matterType: "property",
+  };
+
+  // Use matter pagination service
+  const result = await matterPaginationService.paginate(
+    {
+      page,
+      limit,
+      sort,
+      populate,
+      select,
+      debug,
+      includeStats,
+      status,
+      search,
+      includeDeleted,
+      onlyDeleted,
+      transactionType,
+      state,
+      propertyType,
+    },
+    customFilter,
+    req.firmId,
+  );
+
+  // Enhance matters with property details if not already populated
+  if (
+    result.data.length > 0 &&
+    (!populate || !populate.includes("propertyDetail"))
+  ) {
+    const matterIds = result.data.map((matter) => matter._id);
+    const propertyDetails = await PropertyDetail.find({
+      matterId: { $in: matterIds },
+      firmId: req.firmId,
+    }).lean();
+
+    // Map property details to matters
+    const detailsMap = propertyDetails.reduce((map, detail) => {
+      map[detail.matterId.toString()] = detail;
+      return map;
+    }, {});
+
+    result.data = result.data.map((matter) => ({
+      ...matter,
+      propertyDetail: detailsMap[matter._id.toString()] || null,
+    }));
+  }
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+  });
+});
+
+// ============================================
+// ADVANCED PROPERTY SEARCH
+// ============================================
+
+/**
+ * @desc    Advanced search for property matters
+ * @route   POST /api/property-matters/search
+ * @access  Private
+ */
+exports.searchPropertyMatters = catchAsync(async (req, res, next) => {
+  const { criteria = {}, options = {} } = req.body;
+
+  // Add property matter type and firmId to criteria
+  const firmCriteria = {
+    ...criteria,
+    firmId: req.firmId,
+    matterType: "property",
+  };
+
+  // Use advanced search from pagination service
+  const result = await matterPaginationService.advancedSearch(
+    firmCriteria,
+    options,
+    req.firmId,
+  );
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+  });
+});
+
+// ============================================
+// PROPERTY DETAILS MANAGEMENT
 // ============================================
 
 /**
  * @desc    Create property details for a matter
- * @route   POST /api/property/:matterId/details
- * @access  Private
+ * @route   POST /api/property-matters/:matterId/details
+ * @access  Private (Admin, Lawyer)
  */
 exports.createPropertyDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const propertyData = req.body;
 
-  // 1. Verify matter exists and is property type
-  const matter = await Matter.findOne({
-    _id: matterId,
-    firmId: req.firmId,
-    matterType: "property",
-    isDeleted: false,
-  });
+  // Start transaction
+  const session = await Matter.startSession();
+  session.startTransaction();
 
-  if (!matter) {
-    return next(new AppError("Property matter not found", 404));
+  try {
+    // 1. Verify matter exists
+    const matter = await Matter.findOne({
+      _id: matterId,
+      firmId: req.firmId,
+      isDeleted: false,
+    }).session(session);
+
+    if (!matter) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Matter not found", 404));
+    }
+
+    if (matter.matterType !== "property") {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Matter is not a property matter", 400));
+    }
+
+    // 2. Check if property details already exist
+    const existingDetail = await PropertyDetail.findOne({
+      matterId,
+      firmId: req.firmId,
+    }).session(session);
+
+    if (existingDetail) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(
+        new AppError("Property details already exist for this matter", 400),
+      );
+    }
+
+    // 3. Create property detail
+    const propertyDetail = new PropertyDetail({
+      matterId,
+      firmId: req.firmId,
+      createdBy: req.user._id,
+      ...propertyData,
+    });
+
+    await propertyDetail.save({ session });
+
+    // 4. Update matter to link property detail
+    matter.propertyDetail = propertyDetail._id;
+    await matter.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // Populate and return
+    const populatedDetail = await PropertyDetail.findById(
+      propertyDetail._id,
+    ).populate({
+      path: "matter",
+      select: "matterNumber title client accountOfficer status priority",
+      populate: [
+        { path: "client", select: "firstName lastName email phone" },
+        { path: "accountOfficer", select: "firstName lastName email photo" },
+      ],
+    });
+
+    res.status(201).json({
+      status: "success",
+      data: {
+        propertyDetail: populatedDetail,
+      },
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return next(error);
   }
-
-  // 2. Check if property details already exist
-  const existingDetail = await PropertyDetail.findOne({
-    matterId,
-    firmId: req.firmId,
-  });
-
-  if (existingDetail) {
-    return next(
-      new AppError("Property details already exist for this matter", 400),
-    );
-  }
-
-  // 3. Create property detail
-  const propertyDetail = new PropertyDetail({
-    matterId,
-    firmId: req.firmId,
-    ...propertyData,
-  });
-
-  await propertyDetail.save();
-
-  res.status(201).json({
-    status: "success",
-    data: {
-      propertyDetail,
-    },
-  });
 });
 
 /**
- * @desc    Get property details for a matter
- * @route   GET /api/property/:matterId/details
+ * @desc    Get property details for a specific matter
+ * @route   GET /api/property-matters/:matterId/details
  * @access  Private
  */
 exports.getPropertyDetails = catchAsync(async (req, res, next) => {
@@ -68,12 +242,56 @@ exports.getPropertyDetails = catchAsync(async (req, res, next) => {
   const propertyDetail = await PropertyDetail.findOne({
     matterId,
     firmId: req.firmId,
-  }).populate({
+  })
+    .populate({
+      path: "matter",
+      select:
+        "matterNumber title client accountOfficer status priority dateOpened",
+      populate: [
+        { path: "client", select: "firstName lastName email phone address" },
+        {
+          path: "accountOfficer",
+          select: "firstName lastName email photo role",
+        },
+      ],
+    })
+    .populate("createdBy", "firstName lastName")
+    .populate("lastModifiedBy", "firstName lastName");
+
+  if (!propertyDetail) {
+    return next(new AppError("Property details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      propertyDetail,
+    },
+  });
+});
+
+/**
+ * @desc    Update property details
+ * @route   PATCH /api/property-matters/:matterId/details
+ * @access  Private (Admin, Lawyer)
+ */
+exports.updatePropertyDetails = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const updateData = req.body;
+
+  const propertyDetail = await PropertyDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      ...updateData,
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  ).populate({
     path: "matter",
-    select: "matterNumber title client accountOfficer status priority",
+    select: "matterNumber title client accountOfficer",
     populate: [
-      { path: "client", select: "firstName lastName email phone" },
-      { path: "accountOfficer", select: "firstName lastName email photo" },
+      { path: "client", select: "firstName lastName email" },
+      { path: "accountOfficer", select: "firstName lastName email" },
     ],
   });
 
@@ -90,36 +308,9 @@ exports.getPropertyDetails = catchAsync(async (req, res, next) => {
 });
 
 /**
- * @desc    Update property details
- * @route   PATCH /api/property/:matterId/details
- * @access  Private
- */
-exports.updatePropertyDetails = catchAsync(async (req, res, next) => {
-  const { matterId } = req.params;
-  const updateData = req.body;
-
-  const propertyDetail = await PropertyDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
-    updateData,
-    { new: true, runValidators: true },
-  );
-
-  if (!propertyDetail) {
-    return next(new AppError("Property details not found", 404));
-  }
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      propertyDetail,
-    },
-  });
-});
-
-/**
- * @desc    Soft delete property details
- * @route   DELETE /api/property/:matterId/details
- * @access  Private
+ * @desc    Delete property details
+ * @route   DELETE /api/property-matters/:matterId/details
+ * @access  Private (Admin, Lawyer)
  */
 exports.deletePropertyDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
@@ -129,7 +320,7 @@ exports.deletePropertyDetails = catchAsync(async (req, res, next) => {
     {
       isDeleted: true,
       deletedAt: Date.now(),
-      deletedBy: req.user.id,
+      deletedBy: req.user._id,
     },
     { new: true },
   );
@@ -140,16 +331,17 @@ exports.deletePropertyDetails = catchAsync(async (req, res, next) => {
     );
   }
 
-  res.status(204).json({
+  res.status(200).json({
     status: "success",
     data: null,
+    message: "Property details deleted successfully",
   });
 });
 
 /**
- * @desc    Restore soft-deleted property details
- * @route   PATCH /api/property/:matterId/details/restore
- * @access  Private
+ * @desc    Restore property details
+ * @route   PATCH /api/property-matters/:matterId/details/restore
+ * @access  Private (Admin, Lawyer)
  */
 exports.restorePropertyDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
@@ -179,79 +371,13 @@ exports.restorePropertyDetails = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// PROPERTY LISTING WITH FILTERS
-// ============================================
-
-/**
- * @desc    Get all property matters
- * @route   GET /api/property
- * @access  Private
- */
-exports.getAllPropertyMatters = catchAsync(async (req, res, next) => {
-  const {
-    transactionType,
-    state,
-    propertyType,
-    status,
-    page = 1,
-    limit = 50,
-    sort = "-dateOpened",
-  } = req.query;
-
-  const matterFilter = {
-    firmId: req.firmId,
-    matterType: "property",
-    isDeleted: false,
-  };
-
-  if (status) matterFilter.status = status;
-
-  // Filter by property-specific fields if provided
-  let matterIds = null;
-  if (transactionType || state || propertyType) {
-    const detailFilter = { firmId: req.firmId };
-    if (transactionType) detailFilter.transactionType = transactionType;
-    if (state) detailFilter["properties.state"] = state;
-    if (propertyType) detailFilter["properties.propertyType"] = propertyType;
-
-    const propertyDetails =
-      await PropertyDetail.find(detailFilter).select("matterId");
-    matterIds = propertyDetails.map((d) => d.matterId);
-    matterFilter._id = { $in: matterIds };
-  }
-
-  const skip = (page - 1) * limit;
-
-  const matters = await Matter.find(matterFilter)
-    .sort(sort)
-    .skip(skip)
-    .limit(Number(limit))
-    .populate("accountOfficer", "firstName lastName email photo")
-    .populate("client", "firstName lastName email phone")
-    .populate("propertyDetail");
-
-  const total = await Matter.countDocuments(matterFilter);
-
-  res.status(200).json({
-    status: "success",
-    results: matters.length,
-    total,
-    page: Number(page),
-    totalPages: Math.ceil(total / limit),
-    data: {
-      matters,
-    },
-  });
-});
-
-// ============================================
-// PROPERTY MANAGEMENT OPERATIONS
+// PROPERTIES MANAGEMENT
 // ============================================
 
 /**
  * @desc    Add property to matter
- * @route   POST /api/property/:matterId/properties
- * @access  Private
+ * @route   POST /api/property-matters/:matterId/properties
+ * @access  Private (Admin, Lawyer)
  */
 exports.addProperty = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
@@ -260,7 +386,14 @@ exports.addProperty = catchAsync(async (req, res, next) => {
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      $push: { properties: propertyData },
+      $push: {
+        properties: {
+          ...propertyData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -273,75 +406,82 @@ exports.addProperty = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       propertyDetail,
+      newProperty:
+        propertyDetail.properties[propertyDetail.properties.length - 1],
     },
   });
 });
 
 /**
  * @desc    Update property information
- * @route   PATCH /api/property/:matterId/properties/:index
- * @access  Private
+ * @route   PATCH /api/property-matters/:matterId/properties/:propertyId
+ * @access  Private (Admin, Lawyer)
  */
 exports.updateProperty = catchAsync(async (req, res, next) => {
-  const { matterId, index } = req.params;
+  const { matterId, propertyId } = req.params;
   const propertyData = req.body;
 
-  const propertyDetail = await PropertyDetail.findOne({
-    matterId,
-    firmId: req.firmId,
-  });
+  const propertyDetail = await PropertyDetail.findOneAndUpdate(
+    {
+      matterId,
+      firmId: req.firmId,
+      "properties._id": propertyId,
+    },
+    {
+      $set: {
+        "properties.$": {
+          ...propertyData,
+          _id: propertyId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
 
   if (!propertyDetail) {
-    return next(new AppError("Property details not found", 404));
+    return next(new AppError("Property not found", 404));
   }
 
-  if (index >= propertyDetail.properties.length) {
-    return next(new AppError("Invalid property index", 400));
-  }
-
-  propertyDetail.properties[index] = {
-    ...propertyDetail.properties[index],
-    ...propertyData,
-  };
-
-  await propertyDetail.save();
+  const updatedProperty = propertyDetail.properties.id(propertyId);
 
   res.status(200).json({
     status: "success",
     data: {
       propertyDetail,
+      updatedProperty,
     },
   });
 });
 
 /**
  * @desc    Remove property from matter
- * @route   DELETE /api/property/:matterId/properties/:index
- * @access  Private
+ * @route   DELETE /api/property-matters/:matterId/properties/:propertyId
+ * @access  Private (Admin, Lawyer)
  */
 exports.removeProperty = catchAsync(async (req, res, next) => {
-  const { matterId, index } = req.params;
+  const { matterId, propertyId } = req.params;
 
-  const propertyDetail = await PropertyDetail.findOne({
-    matterId,
-    firmId: req.firmId,
-  });
+  const propertyDetail = await PropertyDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $pull: { properties: { _id: propertyId } },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true },
+  );
 
   if (!propertyDetail) {
     return next(new AppError("Property details not found", 404));
   }
 
-  if (index >= propertyDetail.properties.length) {
-    return next(new AppError("Invalid property index", 400));
-  }
-
-  propertyDetail.properties.splice(index, 1);
-  await propertyDetail.save();
-
   res.status(200).json({
     status: "success",
     data: {
       propertyDetail,
+      message: "Property removed successfully",
     },
   });
 });
@@ -350,11 +490,6 @@ exports.removeProperty = catchAsync(async (req, res, next) => {
 // PAYMENT SCHEDULE MANAGEMENT
 // ============================================
 
-/**
- * @desc    Add payment schedule installment
- * @route   POST /api/property/:matterId/payments
- * @access  Private
- */
 exports.addPayment = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const paymentData = req.body;
@@ -362,7 +497,14 @@ exports.addPayment = catchAsync(async (req, res, next) => {
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      $push: { paymentSchedule: paymentData },
+      $push: {
+        paymentSchedule: {
+          ...paymentData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -375,24 +517,17 @@ exports.addPayment = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       propertyDetail,
+      newPayment:
+        propertyDetail.paymentSchedule[
+          propertyDetail.paymentSchedule.length - 1
+        ],
     },
   });
 });
 
-/**
- * @desc    Update payment schedule installment
- * @route   PATCH /api/property/:matterId/payments/:installmentId
- * @access  Private
- */
 exports.updatePayment = catchAsync(async (req, res, next) => {
   const { matterId, installmentId } = req.params;
   const updateData = req.body;
-
-  // Build update object using dot notation
-  const updateObject = {};
-  Object.keys(updateData).forEach((key) => {
-    updateObject[`paymentSchedule.$.${key}`] = updateData[key];
-  });
 
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     {
@@ -401,7 +536,15 @@ exports.updatePayment = catchAsync(async (req, res, next) => {
       "paymentSchedule._id": installmentId,
     },
     {
-      $set: updateObject,
+      $set: {
+        "paymentSchedule.$": {
+          ...updateData,
+          _id: installmentId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -410,19 +553,17 @@ exports.updatePayment = catchAsync(async (req, res, next) => {
     return next(new AppError("Payment installment not found", 404));
   }
 
+  const updatedPayment = propertyDetail.paymentSchedule.id(installmentId);
+
   res.status(200).json({
     status: "success",
     data: {
       propertyDetail,
+      updatedPayment,
     },
   });
 });
 
-/**
- * @desc    Delete payment installment
- * @route   DELETE /api/property/:matterId/payments/:installmentId
- * @access  Private
- */
 exports.deletePayment = catchAsync(async (req, res, next) => {
   const { matterId, installmentId } = req.params;
 
@@ -430,6 +571,7 @@ exports.deletePayment = catchAsync(async (req, res, next) => {
     { matterId, firmId: req.firmId },
     {
       $pull: { paymentSchedule: { _id: installmentId } },
+      lastModifiedBy: req.user._id,
     },
     { new: true },
   );
@@ -442,19 +584,15 @@ exports.deletePayment = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       propertyDetail,
+      message: "Payment installment removed successfully",
     },
   });
 });
 
 // ============================================
-// DUE DILIGENCE & LEGAL PROCESSES
+// LEGAL PROCESSES MANAGEMENT
 // ============================================
 
-/**
- * @desc    Update title search results
- * @route   PATCH /api/property/:matterId/title-search
- * @access  Private
- */
 exports.updateTitleSearch = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const titleSearchData = req.body;
@@ -462,7 +600,14 @@ exports.updateTitleSearch = catchAsync(async (req, res, next) => {
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      titleSearch: titleSearchData,
+      $set: {
+        titleSearch: {
+          ...titleSearchData,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -479,11 +624,6 @@ exports.updateTitleSearch = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @desc    Update governor's consent status
- * @route   PATCH /api/property/:matterId/governors-consent
- * @access  Private
- */
 exports.updateGovernorsConsent = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const consentData = req.body;
@@ -491,7 +631,14 @@ exports.updateGovernorsConsent = catchAsync(async (req, res, next) => {
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      governorsConsent: consentData,
+      $set: {
+        governorsConsent: {
+          ...consentData,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -508,11 +655,6 @@ exports.updateGovernorsConsent = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @desc    Update contract of sale
- * @route   PATCH /api/property/:matterId/contract-of-sale
- * @access  Private
- */
 exports.updateContractOfSale = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const contractData = req.body;
@@ -520,7 +662,14 @@ exports.updateContractOfSale = catchAsync(async (req, res, next) => {
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      contractOfSale: contractData,
+      $set: {
+        contractOfSale: {
+          ...contractData,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -537,11 +686,6 @@ exports.updateContractOfSale = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @desc    Update lease agreement
- * @route   PATCH /api/property/:matterId/lease-agreement
- * @access  Private
- */
 exports.updateLeaseAgreement = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const leaseData = req.body;
@@ -549,7 +693,14 @@ exports.updateLeaseAgreement = catchAsync(async (req, res, next) => {
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      leaseAgreement: leaseData,
+      $set: {
+        leaseAgreement: {
+          ...leaseData,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -566,11 +717,6 @@ exports.updateLeaseAgreement = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @desc    Record physical inspection results
- * @route   PATCH /api/property/:matterId/physical-inspection
- * @access  Private
- */
 exports.recordPhysicalInspection = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const inspectionData = req.body;
@@ -578,7 +724,14 @@ exports.recordPhysicalInspection = catchAsync(async (req, res, next) => {
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      physicalInspection: inspectionData,
+      $set: {
+        physicalInspection: {
+          ...inspectionData,
+          inspectedBy: req.user._id,
+          inspectionDate: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -599,11 +752,6 @@ exports.recordPhysicalInspection = catchAsync(async (req, res, next) => {
 // CONDITIONS MANAGEMENT
 // ============================================
 
-/**
- * @desc    Add condition to property transaction
- * @route   POST /api/property/:matterId/conditions
- * @access  Private
- */
 exports.addCondition = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const conditionData = req.body;
@@ -611,7 +759,14 @@ exports.addCondition = catchAsync(async (req, res, next) => {
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      $push: { conditions: conditionData },
+      $push: {
+        conditions: {
+          ...conditionData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -624,24 +779,15 @@ exports.addCondition = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       propertyDetail,
+      newCondition:
+        propertyDetail.conditions[propertyDetail.conditions.length - 1],
     },
   });
 });
 
-/**
- * @desc    Update condition status
- * @route   PATCH /api/property/:matterId/conditions/:conditionId
- * @access  Private
- */
 exports.updateCondition = catchAsync(async (req, res, next) => {
   const { matterId, conditionId } = req.params;
   const updateData = req.body;
-
-  // Build update object using dot notation
-  const updateObject = {};
-  Object.keys(updateData).forEach((key) => {
-    updateObject[`conditions.$.${key}`] = updateData[key];
-  });
 
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     {
@@ -650,7 +796,15 @@ exports.updateCondition = catchAsync(async (req, res, next) => {
       "conditions._id": conditionId,
     },
     {
-      $set: updateObject,
+      $set: {
+        "conditions.$": {
+          ...updateData,
+          _id: conditionId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -659,19 +813,17 @@ exports.updateCondition = catchAsync(async (req, res, next) => {
     return next(new AppError("Condition not found", 404));
   }
 
+  const updatedCondition = propertyDetail.conditions.id(conditionId);
+
   res.status(200).json({
     status: "success",
     data: {
       propertyDetail,
+      updatedCondition,
     },
   });
 });
 
-/**
- * @desc    Delete condition
- * @route   DELETE /api/property/:matterId/conditions/:conditionId
- * @access  Private
- */
 exports.deleteCondition = catchAsync(async (req, res, next) => {
   const { matterId, conditionId } = req.params;
 
@@ -679,6 +831,7 @@ exports.deleteCondition = catchAsync(async (req, res, next) => {
     { matterId, firmId: req.firmId },
     {
       $pull: { conditions: { _id: conditionId } },
+      lastModifiedBy: req.user._id,
     },
     { new: true },
   );
@@ -691,140 +844,228 @@ exports.deleteCondition = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       propertyDetail,
+      message: "Condition removed successfully",
     },
   });
 });
 
 // ============================================
-// PROPERTY COMPLETION & CLOSING
+// TRANSACTION COMPLETION
 // ============================================
 
-/**
- * @desc    Record property transaction completion
- * @route   PATCH /api/property/:matterId/completion
- * @access  Private
- */
 exports.recordCompletion = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const { completionDate, registrationNumber } = req.body;
 
-  const matter = await Matter.findOne({
-    _id: matterId,
-    firmId: req.firmId,
-    matterType: "property",
-    isDeleted: false,
-  });
+  const session = await Matter.startSession();
+  session.startTransaction();
 
-  if (!matter) {
-    return next(new AppError("Property matter not found", 404));
-  }
-
-  // Update property detail
-  const propertyDetail = await PropertyDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
-    {
-      deedOfAssignment: {
-        status: "registered",
-        registrationDate: completionDate,
+  try {
+    // Update matter
+    const matter = await Matter.findOneAndUpdate(
+      {
+        _id: matterId,
+        firmId: req.firmId,
+        matterType: "property",
+        isDeleted: false,
       },
-    },
-    { new: true, runValidators: true },
-  );
+      {
+        status: "completed",
+        actualClosureDate: completionDate,
+        lastModifiedBy: req.user._id,
+      },
+      { new: true, runValidators: true, session },
+    );
 
-  // Update matter status
-  matter.status = "completed";
-  matter.actualClosureDate = completionDate;
-  await matter.save();
+    if (!matter) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Property matter not found", 404));
+    }
 
-  res.status(200).json({
-    status: "success",
-    data: {
-      propertyDetail,
-      matter,
-    },
-  });
+    // Update property detail
+    const propertyDetail = await PropertyDetail.findOneAndUpdate(
+      { matterId, firmId: req.firmId },
+      {
+        $set: {
+          deedOfAssignment: {
+            status: "registered",
+            registrationDate: completionDate,
+            registrationNumber: registrationNumber,
+            updatedBy: req.user._id,
+            updatedAt: new Date(),
+          },
+        },
+        lastModifiedBy: req.user._id,
+      },
+      { new: true, runValidators: true, session },
+    );
+
+    if (!propertyDetail) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Property details not found", 404));
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        matter,
+        propertyDetail,
+      },
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return next(error);
+  }
 });
 
 // ============================================
-// STATISTICS & REPORTS
+// STATISTICS & DASHBOARD
 // ============================================
 
-/**
- * @desc    Get property-specific statistics
- * @route   GET /api/property/stats
- * @access  Private
- */
 exports.getPropertyStats = catchAsync(async (req, res, next) => {
   const firmQuery = { firmId: req.firmId, isDeleted: false };
 
-  // By transaction type
-  const byType = await PropertyDetail.aggregate([
-    { $match: firmQuery },
-    {
-      $group: {
-        _id: "$transactionType",
-        count: { $sum: 1 },
-        totalValue: { $sum: "$purchasePrice.amount" },
+  const [
+    overviewStats,
+    typeStats,
+    stateStats,
+    pendingConsents,
+    overduePayments,
+    recentTransactions,
+  ] = await Promise.all([
+    // Overview statistics
+    Matter.aggregate([
+      {
+        $match: {
+          ...firmQuery,
+          matterType: "property",
+        },
       },
-    },
-    { $sort: { count: -1 } },
-  ]);
+      {
+        $group: {
+          _id: null,
+          totalPropertyMatters: { $sum: 1 },
+          activePropertyMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] },
+          },
+          pendingPropertyMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] },
+          },
+          completedPropertyMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+          },
+        },
+      },
+    ]),
 
-  // By state
-  const byState = await PropertyDetail.aggregate([
-    { $match: firmQuery },
-    { $unwind: "$properties" },
-    {
-      $group: {
-        _id: "$properties.state",
-        count: { $sum: 1 },
+    // By transaction type
+    PropertyDetail.aggregate([
+      { $match: firmQuery },
+      {
+        $group: {
+          _id: "$transactionType",
+          count: { $sum: 1 },
+          totalValue: { $sum: "$purchasePrice.amount" },
+          avgValue: { $avg: "$purchasePrice.amount" },
+        },
       },
-    },
-    { $sort: { count: -1 } },
-  ]);
+      { $sort: { count: -1 } },
+    ]),
 
-  // Pending governor's consents
-  const pendingConsents = await PropertyDetail.countDocuments({
-    ...firmQuery,
-    "governorsConsent.status": "pending",
-  });
+    // By state
+    PropertyDetail.aggregate([
+      { $match: firmQuery },
+      { $unwind: "$properties" },
+      {
+        $group: {
+          _id: "$properties.state",
+          count: { $sum: 1 },
+          avgPrice: { $avg: "$purchasePrice.amount" },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+    ]),
 
-  // Overdue payments
-  const overduePayments = await PropertyDetail.aggregate([
-    { $match: firmQuery },
-    { $unwind: "$paymentSchedule" },
-    {
-      $match: {
-        "paymentSchedule.status": "pending",
-        "paymentSchedule.dueDate": { $lte: new Date() },
+    // Pending governor's consents
+    PropertyDetail.countDocuments({
+      ...firmQuery,
+      "governorsConsent.status": "pending",
+    }),
+
+    // Overdue payments
+    PropertyDetail.aggregate([
+      { $match: firmQuery },
+      { $unwind: "$paymentSchedule" },
+      {
+        $match: {
+          "paymentSchedule.status": "pending",
+          "paymentSchedule.dueDate": { $lt: new Date() },
+        },
       },
-    },
-    {
-      $group: {
-        _id: null,
-        count: { $sum: 1 },
-        totalAmount: { $sum: "$paymentSchedule.amount" },
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 },
+          totalAmount: { $sum: "$paymentSchedule.amount" },
+        },
       },
-    },
+    ]),
+
+    // Recent transactions (last 30 days)
+    Matter.aggregate([
+      {
+        $match: {
+          ...firmQuery,
+          matterType: "property",
+          dateOpened: {
+            $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$dateOpened" },
+          },
+          count: { $sum: 1 },
+          totalValue: { $sum: "$propertyDetail.purchasePrice.amount" },
+        },
+      },
+      { $sort: { _id: -1 } },
+      { $limit: 10 },
+    ]),
   ]);
 
   res.status(200).json({
     status: "success",
     data: {
-      byType,
-      byState,
-      pendingConsents,
+      overview: overviewStats[0] || {
+        totalPropertyMatters: 0,
+        activePropertyMatters: 0,
+        pendingPropertyMatters: 0,
+        completedPropertyMatters: 0,
+      },
+      byType: typeStats,
+      byState: stateStats,
+      pendingConsents: pendingConsents || 0,
       overduePayments: overduePayments[0] || { count: 0, totalAmount: 0 },
+      recentTransactions: recentTransactions,
     },
   });
 });
 
-/**
- * @desc    Get all property matters with pending governor's consent
- * @route   GET /api/property/pending-consents
- * @access  Private
- */
 exports.getPendingConsents = catchAsync(async (req, res, next) => {
+  const { page = 1, limit = 20 } = req.query;
+
+  const skip = (page - 1) * limit;
+
   const propertyDetails = await PropertyDetail.find({
     firmId: req.firmId,
     isDeleted: false,
@@ -832,23 +1073,72 @@ exports.getPendingConsents = catchAsync(async (req, res, next) => {
   })
     .populate({
       path: "matter",
-      select: "matterNumber title client accountOfficer status priority",
+      select:
+        "matterNumber title client accountOfficer status priority dateOpened",
+      match: { isDeleted: false },
       populate: [
-        { path: "client", select: "firstName lastName email" },
-        { path: "accountOfficer", select: "firstName lastName email" },
+        { path: "client", select: "firstName lastName email phone" },
+        { path: "accountOfficer", select: "firstName lastName email photo" },
       ],
     })
-    .sort({ "governorsConsent.applicationDate": 1 });
+    .sort({ "governorsConsent.applicationDate": 1 })
+    .skip(skip)
+    .limit(Number(limit));
 
-  const filtered = propertyDetails.filter(
-    (detail) => detail.matter && !detail.matter.isDeleted,
+  const filteredDetails = propertyDetails.filter((detail) => detail.matter);
+
+  const total = await PropertyDetail.countDocuments({
+    firmId: req.firmId,
+    isDeleted: false,
+    "governorsConsent.status": "pending",
+  });
+
+  res.status(200).json({
+    status: "success",
+    results: filteredDetails.length,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
+    data: {
+      matters: filteredDetails,
+    },
+  });
+});
+
+// ============================================
+// BULK OPERATIONS
+// ============================================
+
+exports.bulkUpdatePropertyMatters = catchAsync(async (req, res, next) => {
+  const { matterIds, updates } = req.body;
+
+  if (!matterIds || !Array.isArray(matterIds) || matterIds.length === 0) {
+    return next(new AppError("Please provide matter IDs to update", 400));
+  }
+
+  if (!updates || Object.keys(updates).length === 0) {
+    return next(new AppError("Please provide updates to apply", 400));
+  }
+
+  const result = await Matter.updateMany(
+    {
+      _id: { $in: matterIds },
+      firmId: req.firmId,
+      matterType: "property",
+    },
+    {
+      ...updates,
+      lastModifiedBy: req.user._id,
+      lastActivityDate: Date.now(),
+    },
+    { runValidators: true },
   );
 
   res.status(200).json({
     status: "success",
-    results: filtered.length,
     data: {
-      matters: filtered,
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
     },
   });
 });

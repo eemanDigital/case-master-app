@@ -1,104 +1,124 @@
 const express = require("express");
 const generalController = require("../controllers/generalController");
-const { protect } = require("../controllers/authController");
+const { protect, restrictTo } = require("../controllers/authController");
 
 const generalRouter = express.Router();
 
 // Protect all routes
 generalRouter.use(protect);
 
-// ============================================
-// GENERAL DETAILS CRUD
-// ============================================
+// General matters listing & search
+generalRouter.get("/", generalController.getAllGeneralMatters);
+generalRouter.post("/search", generalController.searchGeneralMatters);
 
-generalRouter.post(
-  "/:matterId/details",
-  generalController.createGeneralDetails,
-);
-generalRouter.get("/:matterId/details", generalController.getGeneralDetails);
-generalRouter.patch(
-  "/:matterId/details",
-  generalController.updateGeneralDetails,
-);
-generalRouter.delete(
-  "/:matterId/details",
-  generalController.deleteGeneralDetails,
-);
+// Statistics
+generalRouter.get("/stats", generalController.getGeneralStats);
+
+// General details CRUD
+generalRouter
+  .route("/:matterId/details")
+  .get(generalController.getGeneralDetails)
+  .post(restrictTo("admin", "lawyer"), generalController.createGeneralDetails)
+  .patch(restrictTo("admin", "lawyer"), generalController.updateGeneralDetails)
+  .delete(
+    restrictTo("admin", "lawyer"),
+    generalController.deleteGeneralDetails,
+  );
+
 generalRouter.patch(
   "/:matterId/details/restore",
+  restrictTo("admin", "lawyer"),
   generalController.restoreGeneralDetails,
 );
 
-// ============================================
-// GENERAL MATTERS LISTING & STATISTICS
-// ============================================
+// Requirements management
+generalRouter.post(
+  "/:matterId/requirements",
+  restrictTo("admin", "lawyer"),
+  generalController.addRequirement,
+);
 
-generalRouter.get("/", generalController.getAllGeneralMatters);
-generalRouter.get("/stats", generalController.getGeneralStats);
-
-// ============================================
-// REQUIREMENTS MANAGEMENT
-// ============================================
-
-generalRouter.post("/:matterId/requirements", generalController.addRequirement);
 generalRouter.patch(
   "/:matterId/requirements/:requirementId",
+  restrictTo("admin", "lawyer"),
   generalController.updateRequirement,
 );
+
 generalRouter.delete(
   "/:matterId/requirements/:requirementId",
+  restrictTo("admin", "lawyer"),
   generalController.deleteRequirement,
 );
 
-// ============================================
-// PARTIES MANAGEMENT
-// ============================================
+// Parties management
+generalRouter.post(
+  "/:matterId/parties",
+  restrictTo("admin", "lawyer"),
+  generalController.addParty,
+);
 
-generalRouter.post("/:matterId/parties", generalController.addParty);
 generalRouter.patch(
   "/:matterId/parties/:partyId",
+  restrictTo("admin", "lawyer"),
   generalController.updateParty,
 );
+
 generalRouter.delete(
   "/:matterId/parties/:partyId",
+  restrictTo("admin", "lawyer"),
   generalController.deleteParty,
 );
 
-// ============================================
-// DELIVERABLES MANAGEMENT
-// ============================================
+// Deliverables management
+generalRouter.post(
+  "/:matterId/deliverables",
+  restrictTo("admin", "lawyer"),
+  generalController.addDeliverable,
+);
 
-generalRouter.post("/:matterId/deliverables", generalController.addDeliverable);
 generalRouter.patch(
   "/:matterId/deliverables/:deliverableId",
+  restrictTo("admin", "lawyer"),
   generalController.updateDeliverable,
 );
+
 generalRouter.delete(
   "/:matterId/deliverables/:deliverableId",
+  restrictTo("admin", "lawyer"),
   generalController.deleteDeliverable,
 );
 
-// ============================================
-// DOCUMENTS MANAGEMENT
-// ============================================
+// Documents management
+generalRouter.post(
+  "/:matterId/documents",
+  restrictTo("admin", "lawyer"),
+  generalController.addDocument,
+);
 
-generalRouter.post("/:matterId/documents", generalController.addDocument);
 generalRouter.patch(
   "/:matterId/documents/:documentId",
+  restrictTo("admin", "lawyer"),
   generalController.updateDocumentStatus,
 );
+
 generalRouter.delete(
   "/:matterId/documents/:documentId",
+  restrictTo("admin", "lawyer"),
   generalController.deleteDocument,
 );
 
-// ============================================
-// SERVICE COMPLETION
-// ============================================
-
+// Service completion
 generalRouter.post(
   "/:matterId/complete",
+  restrictTo("admin", "lawyer"),
   generalController.completeGeneralService,
+);
+
+// Bulk operations
+generalRouter.patch(
+  "/bulk-update",
+  restrictTo("admin", "lawyer"),
+  generalController.bulkUpdateGeneralMatters,
 );
 
 module.exports = generalRouter;

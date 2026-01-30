@@ -19,12 +19,21 @@ const userPagination = PaginationServiceFactory.createService(User);
  * - userType: single userType or comma-separated userTypes
  * - page, limit, search, etc.
  */
+/**
+ * ✅ ENHANCED: Get all users with role and userType filtering support
+ *
+ * Query params:
+ * - role: single role or comma-separated roles OR array format role[$in][0]=value
+ * - userType: single userType or comma-separated userTypes
+ * - page, limit, search, etc.
+ */
 exports.getUsers = catchAsync(async (req, res, next) => {
   const debug =
     process.env.DEBUG_QUERIES === "true" || req.query.debug === "true";
 
   if (debug) {
-    console.log("\n🔍 [getUsers] Request Query:", req.query);
+    console.log("\n🔍 [getUsers] Request Query:", JSON.stringify(req.query, null, 2));
+    console.log("📋 Raw Query Keys:", Object.keys(req.query));
   }
 
   // ✅ Build custom filter
@@ -33,21 +42,98 @@ exports.getUsers = catchAsync(async (req, res, next) => {
     isDeleted: { $ne: true },
   };
 
-  // Handle role filtering
-  if (req.query.role) {
-    const roles = req.query.role.split(",").map((r) => r.trim());
-    customFilter.role = roles.length === 1 ? roles[0] : { $in: roles };
+  // Handle role filtering - COMPLETELY REWRITTEN
+  if (req.query.role !== undefined && req.query.role !== null) {
+    if (debug) {
+      console.log("👤 Role parameter:", {
+        type: typeof req.query.role,
+        value: req.query.role,
+        isArray: Array.isArray(req.query.role),
+        isObject: typeof req.query.role === 'object',
+        keys: typeof req.query.role === 'object' ? Object.keys(req.query.role) : 'N/A'
+      });
+    }
+
+    // Case 1: Simple string (not an object) - e.g., role=admin or role=admin,lawyer
+    if (typeof req.query.role === 'string') {
+      // Check if it's comma-separated
+      if (req.query.role.includes(',')) {
+        const roles = req.query.role.split(",").map((r) => r.trim());
+        customFilter.role = roles.length === 1 ? roles[0] : { $in: roles };
+      } else {
+        // Single role
+        customFilter.role = req.query.role;
+      }
+    }
+    // Case 2: Object with $in property (parsed by Express from role[$in][0]=admin)
+    else if (typeof req.query.role === 'object' && req.query.role !== null && !Array.isArray(req.query.role)) {
+      // Check if it has $in property
+      if (req.query.role.$in !== undefined) {
+        const roles = Array.isArray(req.query.role.$in) ? req.query.role.$in : [req.query.role.$in];
+        customFilter.role = { $in: roles };
+      } 
+      // Check if it's an object with numeric keys like { '0': 'admin', '1': 'lawyer' }
+      else if (Object.keys(req.query.role).every(key => !isNaN(key))) {
+        const roles = Object.values(req.query.role);
+        customFilter.role = { $in: roles };
+      }
+      // Empty object - skip it
+      else if (Object.keys(req.query.role).length === 0) {
+        // Don't add role filter
+      }
+      // Some other object format
+      else {
+        // Try to use it as-is (for MongoDB operators)
+        customFilter.role = req.query.role;
+      }
+    }
+    // Case 3: Array (rare but possible)
+    else if (Array.isArray(req.query.role)) {
+      customFilter.role = req.query.role.length === 1 ? req.query.role[0] : { $in: req.query.role };
+    }
+    // Case 4: Other types (number, boolean) - convert to string
+    else {
+      customFilter.role = String(req.query.role);
+    }
   }
 
-  // Handle userType filtering
-  if (req.query.userType) {
-    const userTypes = req.query.userType.split(",").map((t) => t.trim());
-    customFilter.userType =
-      userTypes.length === 1 ? userTypes[0] : { $in: userTypes };
+  // Handle userType filtering - same pattern
+  if (req.query.userType !== undefined && req.query.userType !== null) {
+    if (debug) {
+      console.log("👤 userType parameter:", {
+        type: typeof req.query.userType,
+        value: req.query.userType
+      });
+    }
+
+    if (typeof req.query.userType === 'string') {
+      if (req.query.userType.includes(',')) {
+        const userTypes = req.query.userType.split(",").map((t) => t.trim());
+        customFilter.userType = userTypes.length === 1 ? userTypes[0] : { $in: userTypes };
+      } else {
+        customFilter.userType = req.query.userType;
+      }
+    } else if (typeof req.query.userType === 'object' && req.query.userType !== null && !Array.isArray(req.query.userType)) {
+      if (req.query.userType.$in !== undefined) {
+        const userTypes = Array.isArray(req.query.userType.$in) ? req.query.userType.$in : [req.query.userType.$in];
+        customFilter.userType = { $in: userTypes };
+      } else if (Object.keys(req.query.userType).every(key => !isNaN(key))) {
+        const userTypes = Object.values(req.query.userType);
+        customFilter.userType = { $in: userTypes };
+      } else if (Object.keys(req.query.userType).length === 0) {
+        // Skip empty object
+      } else {
+        customFilter.userType = req.query.userType;
+      }
+    } else if (Array.isArray(req.query.userType)) {
+      customFilter.userType = req.query.userType.length === 1 ? req.query.userType[0] : { $in: req.query.userType };
+    } else {
+      customFilter.userType = String(req.query.userType);
+    }
   }
 
   // Handle isLawyer filtering
-  if (req.query.isLawyer) {
+  if (req.query.isLawyer !== undefined && req.query.isLawyer !== null) {
     customFilter.isLawyer = req.query.isLawyer === "true";
   }
 
@@ -58,42 +144,70 @@ exports.getUsers = catchAsync(async (req, res, next) => {
     customFilter.isDeleted = true;
   }
 
-  // ✅ Always include statistics
-  const result = await userPagination.paginate(
-    {
-      ...req.query,
-      includeStats: "true",
-    },
-    customFilter,
-  );
+  // Clean up any empty objects in the filter
+  Object.keys(customFilter).forEach(key => {
+    if (customFilter[key] && 
+        typeof customFilter[key] === 'object' && 
+        !Array.isArray(customFilter[key]) && 
+        Object.keys(customFilter[key]).length === 0) {
+      delete customFilter[key];
+    }
+  });
 
   if (debug) {
-    console.log("📊 Results:", {
-      dataCount: result.data.length,
-      totalRecords: result.pagination.totalRecords,
-      currentPage: result.pagination.currentPage,
-    });
+    console.log("🔧 Final Custom Filter:", JSON.stringify(customFilter, null, 2));
   }
 
-  res.status(200).json({
-    success: true,
-    message:
-      result.data.length === 0
-        ? "No users found"
-        : "Users fetched successfully",
-    data: result.data,
-    pagination: {
-      currentPage: result.pagination.currentPage,
-      totalPages: result.pagination.totalPages,
-      totalRecords: result.pagination.totalRecords,
-      limit: result.pagination.limit,
-      hasNextPage: result.pagination.hasNextPage,
-      hasPrevPage: result.pagination.hasPrevPage,
-    },
-    statistics: result.statistics,
-  });
-});
+  try {
+    // ✅ Always include statistics
+    const result = await userPagination.paginate(
+      {
+        ...req.query,
+        includeStats: "true",
+      },
+      customFilter,
+    );
 
+    if (debug) {
+      console.log("📊 Results:", {
+        dataCount: result.data.length,
+        totalRecords: result.pagination.totalRecords,
+        currentPage: result.pagination.currentPage,
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message:
+        result.data.length === 0
+          ? "No users found"
+          : "Users fetched successfully",
+      data: result.data,
+      pagination: {
+        currentPage: result.pagination.currentPage,
+        totalPages: result.pagination.totalPages,
+        totalRecords: result.pagination.totalRecords,
+        limit: result.pagination.limit,
+        hasNextPage: result.pagination.hasNextPage,
+        hasPrevPage: result.pagination.hasPrevPage,
+      },
+      statistics: result.statistics,
+    });
+  } catch (error) {
+    console.error("❌ Pagination error in getUsers:", error);
+    
+    // Return a graceful error response
+    if (error.name === 'CastError') {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid filter value for ${error.path}: ${error.value}`,
+        error: error.message,
+      });
+    }
+    
+    throw error; // Let the global error handler handle it
+  }
+});
 /**
  * ✅ Get users by specific role (alternative endpoint)
  */
@@ -877,11 +991,16 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 /**
  * UPDATE USER PROFILE BY ADMIN
  */
+// controllers/userController.js - UPDATE upgradeUser function
 exports.upgradeUser = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const { userType, role, position, isActive, ...otherFields } = req.body;
+  const { userType, role, position, isActive, additionalRoles, ...otherFields } = req.body;
 
-  // Find the user
+  console.log("🔄 Upgrade User Request:", {
+    userId: id,
+    body: req.body,
+  });
+
   const user = await User.findOne({
     _id: id,
     firmId: req.firmId,
@@ -895,15 +1014,13 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
     return next(new AppError("Cannot update a deleted user account", 400));
   }
 
-  // Check permission
   if (req.user.role === "admin" && user.role === "super-admin") {
     return next(new AppError("Admins cannot update super-admin accounts", 403));
   }
 
-  // Update userType and role (only if different)
+  // Update userType and role
   if (userType && userType !== user.userType) {
     user.userType = userType;
-    // Auto-set role based on userType
     if (userType === "client") {
       user.role = "client";
       user.position = null;
@@ -917,17 +1034,26 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Update other fields
   if (role && user.userType !== "client") {
     user.role = role;
   }
 
-  if (position && user.userType !== "client") {
+  if (position !== undefined && user.userType !== "client") {
     user.position = position;
   }
 
   if (typeof isActive !== "undefined") {
     user.isActive = isActive;
+  }
+
+  // ✅ Handle additional roles
+  if (additionalRoles !== undefined) {
+    user.additionalRoles = Array.isArray(additionalRoles) ? additionalRoles : [];
+  }
+
+  // ✅ Handle isLawyer flag
+  if (req.body.isLawyer !== undefined) {
+    user.isLawyer = req.body.isLawyer;
   }
 
   // Update type-specific details
@@ -939,13 +1065,13 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
     user.staffDetails = { ...user.staffDetails, ...req.body.staffDetails };
   }
 
-  if (req.body.lawyerDetails && user.userType === "lawyer") {
+  if (req.body.lawyerDetails && (user.userType === "lawyer" || user.isLawyer)) {
     user.lawyerDetails = { ...user.lawyerDetails, ...req.body.lawyerDetails };
   }
 
   if (
     req.body.adminDetails &&
-    (user.userType === "admin" || user.userType === "super-admin")
+    (user.userType === "admin" || user.userType === "super-admin" || user.additionalRoles?.includes("admin"))
   ) {
     user.adminDetails = { ...user.adminDetails, ...req.body.adminDetails };
   }
@@ -959,10 +1085,29 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
 
   await user.save({ validateBeforeSave: false });
 
+  console.log("✅ User updated:", {
+    id: user._id,
+    userType: user.userType,
+    role: user.role,
+    additionalRoles: user.additionalRoles,
+    isLawyer: user.isLawyer,
+  });
+
   res.status(200).json({
     success: true,
-    message: `User updated successfully`,
-    data: user,
+    message: "User updated successfully",
+    data: {
+      user: {
+        id: user._id,
+        userType: user.userType,
+        role: user.role,
+        position: user.position,
+        isActive: user.isActive,
+        additionalRoles: user.additionalRoles,
+        isLawyer: user.isLawyer,
+        effectiveRoles: user.getEffectiveRoles(),
+      },
+    },
   });
 });
 

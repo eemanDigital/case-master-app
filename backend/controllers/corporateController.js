@@ -1,134 +1,250 @@
+const PaginationServiceFactory = require("../services/PaginationServiceFactory");
+const modelConfigs = require("../config/modelConfigs");
 const Matter = require("../models/matterModel");
 const CorporateDetail = require("../models/corporateDetailModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const QueryBuilder = require("../utils/queryBuilder");
+
+// Initialize pagination services
+const matterPaginationService = PaginationServiceFactory.createService(
+  Matter,
+  modelConfigs.Matter,
+);
+
+const corporateDetailPaginationService = PaginationServiceFactory.createService(
+  CorporateDetail,
+  modelConfigs.CorporateDetail,
+);
 
 // ============================================
-// CORPORATE-SPECIFIC OPERATIONS
+// CORPORATE MATTERS LISTING & PAGINATION
 // ============================================
 
 /**
- * @desc    Get all corporate matters
- * @route   GET /api/corporate
+ * @desc    Get all corporate matters with pagination, filtering, and sorting
+ * @route   GET /api/corporate-matters
  * @access  Private
  */
 exports.getAllCorporateMatters = catchAsync(async (req, res, next) => {
   const {
-    transactionType,
-    companyName,
-    status,
+    // Standard pagination
     page = 1,
     limit = 50,
     sort = "-dateOpened",
+    populate,
+    select,
+    debug,
+    includeStats,
+
+    // Corporate-specific filters
+    transactionType,
+    companyName,
+    companyType,
+    status,
+    jurisdiction,
+    dealValueMin,
+    dealValueMax,
+
+    // Date filters
+    incorporationDateStart,
+    incorporationDateEnd,
+    expectedClosingDateStart,
+    expectedClosingDateEnd,
+
+    // Search
+    search,
+
+    // Other
+    includeDeleted,
+    onlyDeleted,
   } = req.query;
 
-  const matterFilter = {
-    firmId: req.firmId,
+  // Add corporate matter type filter
+  const customFilter = {
     matterType: "corporate",
-    isDeleted: false,
   };
 
-  if (status) matterFilter.status = status;
+  // Use matter pagination service
+  const result = await matterPaginationService.paginate(
+    {
+      page,
+      limit,
+      sort,
+      populate,
+      select,
+      debug,
+      includeStats,
+      status,
+      search,
+      includeDeleted,
+      onlyDeleted,
+      // Pass corporate-specific filters to be handled by custom logic
+      transactionType,
+      companyName,
+      companyType,
+    },
+    customFilter,
+    req.firmId,
+  );
 
-  // Filter by corporate-specific fields if provided
-  let matterIds = null;
-  if (transactionType || companyName) {
-    const detailFilter = { firmId: req.firmId };
-    if (transactionType) detailFilter.transactionType = transactionType;
-    if (companyName)
-      detailFilter.companyName = { $regex: companyName, $options: "i" };
+  // Enhance matters with corporate details if not already populated
+  if (
+    result.data.length > 0 &&
+    (!populate || !populate.includes("corporateDetail"))
+  ) {
+    const matterIds = result.data.map((matter) => matter._id);
+    const corporateDetails = await CorporateDetail.find({
+      matterId: { $in: matterIds },
+      firmId: req.firmId,
+    }).lean();
 
-    const corporateDetails =
-      await CorporateDetail.find(detailFilter).select("matterId");
-    matterIds = corporateDetails.map((d) => d.matterId);
-    matterFilter._id = { $in: matterIds };
+    // Map corporate details to matters
+    const detailsMap = corporateDetails.reduce((map, detail) => {
+      map[detail.matterId.toString()] = detail;
+      return map;
+    }, {});
+
+    result.data = result.data.map((matter) => ({
+      ...matter,
+      corporateDetail: detailsMap[matter._id.toString()] || null,
+    }));
   }
-
-  const skip = (page - 1) * limit;
-
-  const matters = await Matter.find(matterFilter)
-    .sort(sort)
-    .skip(skip)
-    .limit(Number(limit))
-    .populate("accountOfficer", "firstName lastName email photo")
-    .populate("client", "firstName lastName email phone")
-    .populate("corporateDetail");
-
-  const total = await Matter.countDocuments(matterFilter);
 
   res.status(200).json({
     status: "success",
-    results: matters.length,
-    total,
-    page: Number(page),
-    totalPages: Math.ceil(total / limit),
-    data: {
-      matters,
-    },
+    ...result,
   });
 });
 
 // ============================================
-// CREATE CORPORATE DETAILS
+// ADVANCED CORPORATE SEARCH
+// ============================================
+
+/**
+ * @desc    Advanced search for corporate matters
+ * @route   POST /api/corporate-matters/search
+ * @access  Private
+ */
+exports.searchCorporateMatters = catchAsync(async (req, res, next) => {
+  const { criteria = {}, options = {} } = req.body;
+
+  // Add corporate matter type and firmId to criteria
+  const firmCriteria = {
+    ...criteria,
+    firmId: req.firmId,
+    matterType: "corporate",
+  };
+
+  // Use advanced search from pagination service
+  const result = await matterPaginationService.advancedSearch(
+    firmCriteria,
+    options,
+    req.firmId,
+  );
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+  });
+});
+
+// ============================================
+// CORPORATE DETAILS MANAGEMENT
 // ============================================
 
 /**
  * @desc    Create corporate details for a matter
- * @route   POST /api/corporate/:matterId/details
- * @access  Private
+ * @route   POST /api/corporate-matters/:matterId/details
+ * @access  Private (Admin, Lawyer)
  */
 exports.createCorporateDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const corporateData = req.body;
 
-  // 1. Verify matter exists and is corporate type
-  const matter = await Matter.findOne({
-    _id: matterId,
-    firmId: req.firmId,
-    matterType: "corporate",
-    isDeleted: false,
-  });
+  // Start transaction
+  const session = await Matter.startSession();
+  session.startTransaction();
 
-  if (!matter) {
-    return next(new AppError("Corporate matter not found", 404));
+  try {
+    // 1. Verify matter exists and is corporate type
+    const matter = await Matter.findOne({
+      _id: matterId,
+      firmId: req.firmId,
+      isDeleted: false,
+    }).session(session);
+
+    if (!matter) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Matter not found", 404));
+    }
+
+    if (matter.matterType !== "corporate") {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Matter is not a corporate matter", 400));
+    }
+
+    // 2. Check if corporate details already exist
+    const existingDetail = await CorporateDetail.findOne({
+      matterId,
+      firmId: req.firmId,
+    }).session(session);
+
+    if (existingDetail) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(
+        new AppError("Corporate details already exist for this matter", 400),
+      );
+    }
+
+    // 3. Create corporate detail
+    const corporateDetail = new CorporateDetail({
+      matterId,
+      firmId: req.firmId,
+      createdBy: req.user._id,
+      ...corporateData,
+    });
+
+    await corporateDetail.save({ session });
+
+    // 4. Update matter to link corporate detail
+    matter.corporateDetail = corporateDetail._id;
+    await matter.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    // Populate and return
+    const populatedDetail = await CorporateDetail.findById(
+      corporateDetail._id,
+    ).populate({
+      path: "matter",
+      select: "matterNumber title client accountOfficer status priority",
+      populate: [
+        { path: "client", select: "firstName lastName email phone" },
+        { path: "accountOfficer", select: "firstName lastName email photo" },
+      ],
+    });
+
+    res.status(201).json({
+      status: "success",
+      data: {
+        corporateDetail: populatedDetail,
+      },
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return next(error);
   }
-
-  // 2. Check if corporate details already exist
-  const existingDetail = await CorporateDetail.findOne({
-    matterId,
-    firmId: req.firmId,
-  });
-
-  if (existingDetail) {
-    return next(
-      new AppError("Corporate details already exist for this matter", 400),
-    );
-  }
-
-  // 3. Create corporate detail
-  const corporateDetail = new CorporateDetail({
-    matterId,
-    firmId: req.firmId,
-    ...corporateData,
-  });
-
-  await corporateDetail.save();
-
-  res.status(201).json({
-    status: "success",
-    data: {
-      corporateDetail,
-    },
-  });
 });
-
-// ============================================
-// GET CORPORATE DETAILS
-// ============================================
 
 /**
  * @desc    Get corporate details for a specific matter
- * @route   GET /api/corporate/:matterId/details
+ * @route   GET /api/corporate-matters/:matterId/details
  * @access  Private
  */
 exports.getCorporateDetails = catchAsync(async (req, res, next) => {
@@ -137,12 +253,58 @@ exports.getCorporateDetails = catchAsync(async (req, res, next) => {
   const corporateDetail = await CorporateDetail.findOne({
     matterId,
     firmId: req.firmId,
-  }).populate({
+  })
+    .populate({
+      path: "matter",
+      select:
+        "matterNumber title client accountOfficer status priority dateOpened",
+      populate: [
+        { path: "client", select: "firstName lastName email phone address" },
+        {
+          path: "accountOfficer",
+          select: "firstName lastName email photo role",
+        },
+        { path: "createdBy", select: "firstName lastName" },
+        { path: "lastModifiedBy", select: "firstName lastName" },
+      ],
+    })
+    .populate("createdBy", "firstName lastName")
+    .populate("lastModifiedBy", "firstName lastName");
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+    },
+  });
+});
+
+/**
+ * @desc    Update corporate details
+ * @route   PATCH /api/corporate-matters/:matterId/details
+ * @access  Private (Admin, Lawyer)
+ */
+exports.updateCorporateDetails = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const updateData = req.body;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      ...updateData,
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  ).populate({
     path: "matter",
-    select: "matterNumber title client accountOfficer status priority",
+    select: "matterNumber title client accountOfficer",
     populate: [
-      { path: "client", select: "firstName lastName email phone" },
-      { path: "accountOfficer", select: "firstName lastName email photo" },
+      { path: "client", select: "firstName lastName email" },
+      { path: "accountOfficer", select: "firstName lastName email" },
     ],
   });
 
@@ -159,44 +321,13 @@ exports.getCorporateDetails = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// UPDATE CORPORATE DETAILS
-// ============================================
-
-/**
- * @desc    Update corporate details
- * @route   PATCH /api/corporate/:matterId/details
- * @access  Private
- */
-exports.updateCorporateDetails = catchAsync(async (req, res, next) => {
-  const { matterId } = req.params;
-  const updateData = req.body;
-
-  const corporateDetail = await CorporateDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
-    updateData,
-    { new: true, runValidators: true },
-  );
-
-  if (!corporateDetail) {
-    return next(new AppError("Corporate details not found", 404));
-  }
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      corporateDetail,
-    },
-  });
-});
-
-// ============================================
-// ADD PARTY
+// PARTIES MANAGEMENT (Enhanced)
 // ============================================
 
 /**
  * @desc    Add party to corporate transaction
- * @route   POST /api/corporate/:matterId/parties
- * @access  Private
+ * @route   POST /api/corporate-matters/:matterId/parties
+ * @access  Private (Admin, Lawyer)
  */
 exports.addParty = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
@@ -205,7 +336,14 @@ exports.addParty = catchAsync(async (req, res, next) => {
   const corporateDetail = await CorporateDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      $push: { parties: partyData },
+      $push: {
+        parties: {
+          ...partyData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -218,109 +356,396 @@ exports.addParty = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       corporateDetail,
+      newParty: corporateDetail.parties[corporateDetail.parties.length - 1],
     },
   });
 });
 
-// ============================================
-// UPDATE PARTY
-// ============================================
-
 /**
  * @desc    Update party information
- * @route   PATCH /api/corporate/:matterId/parties/:index
- * @access  Private
+ * @route   PATCH /api/corporate-matters/:matterId/parties/:partyId
+ * @access  Private (Admin, Lawyer)
  */
 exports.updateParty = catchAsync(async (req, res, next) => {
-  const { matterId, index } = req.params;
+  const { matterId, partyId } = req.params;
   const partyData = req.body;
 
-  const corporateDetail = await CorporateDetail.findOne({
-    matterId,
-    firmId: req.firmId,
-  });
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    {
+      matterId,
+      firmId: req.firmId,
+      "parties._id": partyId,
+    },
+    {
+      $set: {
+        "parties.$": {
+          ...partyData,
+          _id: partyId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
 
   if (!corporateDetail) {
-    return next(new AppError("Corporate details not found", 404));
+    return next(new AppError("Party not found", 404));
   }
 
-  if (index >= corporateDetail.parties.length) {
-    return next(new AppError("Invalid party index", 400));
-  }
-
-  corporateDetail.parties[index] = {
-    ...corporateDetail.parties[index],
-    ...partyData,
-  };
-
-  await corporateDetail.save();
+  // Find the updated party
+  const updatedParty = corporateDetail.parties.id(partyId);
 
   res.status(200).json({
     status: "success",
     data: {
       corporateDetail,
+      updatedParty,
     },
   });
 });
 
-// ============================================
-// ADD MILESTONE
-// ============================================
-
 /**
- * @desc    Add milestone to corporate transaction
- * @route   POST /api/corporate/:matterId/milestones
- * @access  Private
+ * @desc    Remove party from corporate transaction
+ * @route   DELETE /api/corporate-matters/:matterId/parties/:partyId
+ * @access  Private (Admin, Lawyer)
  */
-exports.addMilestone = catchAsync(async (req, res, next) => {
-  const { matterId } = req.params;
-  const milestoneData = req.body;
-
-  const matter = await Matter.findOne({
-    _id: matterId,
-    firmId: req.firmId,
-    matterType: "corporate",
-    isDeleted: false,
-  });
-
-  if (!matter) {
-    return next(new AppError("Corporate matter not found", 404));
-  }
+exports.removeParty = catchAsync(async (req, res, next) => {
+  const { matterId, partyId } = req.params;
 
   const corporateDetail = await CorporateDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      $push: { milestones: milestoneData },
+      $pull: { parties: { _id: partyId } },
+      lastModifiedBy: req.user._id,
     },
-    { new: true, runValidators: true },
+    { new: true },
   );
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
 
   res.status(200).json({
     status: "success",
     data: {
       corporateDetail,
+      message: "Party removed successfully",
+    },
+  });
+});
+
+/**
+ * @desc    Get all parties for a corporate matter
+ * @route   GET /api/corporate-matters/:matterId/parties
+ * @access  Private
+ */
+exports.getParties = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+
+  const corporateDetail = await CorporateDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  }).select("parties");
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      parties: corporateDetail.parties || [],
+      count: corporateDetail.parties?.length || 0,
     },
   });
 });
 
 // ============================================
-// UPDATE MILESTONE
+// SHAREHOLDERS MANAGEMENT
 // ============================================
 
-/**
- * @desc    Update milestone status
- * @route   PATCH /api/corporate/:matterId/milestones/:milestoneId
- * @access  Private
- */
+exports.addShareholder = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const shareholderData = req.body;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $push: {
+        shareholders: {
+          ...shareholderData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+      newShareholder:
+        corporateDetail.shareholders[corporateDetail.shareholders.length - 1],
+    },
+  });
+});
+
+exports.updateShareholder = catchAsync(async (req, res, next) => {
+  const { matterId, shareholderId } = req.params;
+  const shareholderData = req.body;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    {
+      matterId,
+      firmId: req.firmId,
+      "shareholders._id": shareholderId,
+    },
+    {
+      $set: {
+        "shareholders.$": {
+          ...shareholderData,
+          _id: shareholderId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!corporateDetail) {
+    return next(new AppError("Shareholder not found", 404));
+  }
+
+  const updatedShareholder = corporateDetail.shareholders.id(shareholderId);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+      updatedShareholder,
+    },
+  });
+});
+
+exports.removeShareholder = catchAsync(async (req, res, next) => {
+  const { matterId, shareholderId } = req.params;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $pull: { shareholders: { _id: shareholderId } },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true },
+  );
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+      message: "Shareholder removed successfully",
+    },
+  });
+});
+
+exports.getShareholders = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+
+  const corporateDetail = await CorporateDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  }).select("shareholders");
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      shareholders: corporateDetail.shareholders || [],
+      count: corporateDetail.shareholders?.length || 0,
+    },
+  });
+});
+
+// ============================================
+// DIRECTORS MANAGEMENT
+// ============================================
+
+exports.addDirector = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const directorData = req.body;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $push: {
+        directors: {
+          ...directorData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+      newDirector:
+        corporateDetail.directors[corporateDetail.directors.length - 1],
+    },
+  });
+});
+
+exports.updateDirector = catchAsync(async (req, res, next) => {
+  const { matterId, directorId } = req.params;
+  const directorData = req.body;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    {
+      matterId,
+      firmId: req.firmId,
+      "directors._id": directorId,
+    },
+    {
+      $set: {
+        "directors.$": {
+          ...directorData,
+          _id: directorId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!corporateDetail) {
+    return next(new AppError("Director not found", 404));
+  }
+
+  const updatedDirector = corporateDetail.directors.id(directorId);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+      updatedDirector,
+    },
+  });
+});
+
+exports.removeDirector = catchAsync(async (req, res, next) => {
+  const { matterId, directorId } = req.params;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $pull: { directors: { _id: directorId } },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true },
+  );
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+      message: "Director removed successfully",
+    },
+  });
+});
+
+exports.getDirectors = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+
+  const corporateDetail = await CorporateDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  }).select("directors");
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      directors: corporateDetail.directors || [],
+      count: corporateDetail.directors?.length || 0,
+    },
+  });
+});
+
+// ============================================
+// MILESTONES MANAGEMENT
+// ============================================
+
+exports.addMilestone = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const milestoneData = req.body;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $push: {
+        milestones: {
+          ...milestoneData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+      newMilestone:
+        corporateDetail.milestones[corporateDetail.milestones.length - 1],
+    },
+  });
+});
+
 exports.updateMilestone = catchAsync(async (req, res, next) => {
   const { matterId, milestoneId } = req.params;
-  const updateData = req.body;
-
-  // Build update object dynamically using dot notation
-  const updateObject = {};
-  Object.keys(updateData).forEach((key) => {
-    updateObject[`milestones.$.${key}`] = updateData[key];
-  });
+  const milestoneData = req.body;
 
   const corporateDetail = await CorporateDetail.findOneAndUpdate(
     {
@@ -329,7 +754,15 @@ exports.updateMilestone = catchAsync(async (req, res, next) => {
       "milestones._id": milestoneId,
     },
     {
-      $set: updateObject,
+      $set: {
+        "milestones.$": {
+          ...milestoneData,
+          _id: milestoneId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -338,23 +771,104 @@ exports.updateMilestone = catchAsync(async (req, res, next) => {
     return next(new AppError("Milestone not found", 404));
   }
 
+  const updatedMilestone = corporateDetail.milestones.id(milestoneId);
+
   res.status(200).json({
     status: "success",
     data: {
       corporateDetail,
+      updatedMilestone,
+    },
+  });
+});
+
+exports.removeMilestone = catchAsync(async (req, res, next) => {
+  const { matterId, milestoneId } = req.params;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $pull: { milestones: { _id: milestoneId } },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true },
+  );
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+      message: "Milestone removed successfully",
+    },
+  });
+});
+
+exports.getMilestones = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+
+  const corporateDetail = await CorporateDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  }).select("milestones");
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      milestones: corporateDetail.milestones || [],
+      count: corporateDetail.milestones?.length || 0,
+    },
+  });
+});
+
+exports.completeMilestone = catchAsync(async (req, res, next) => {
+  const { matterId, milestoneId } = req.params;
+  const { completionDate = new Date(), notes } = req.body;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    {
+      matterId,
+      firmId: req.firmId,
+      "milestones._id": milestoneId,
+    },
+    {
+      $set: {
+        "milestones.$.status": "completed",
+        "milestones.$.actualCompletionDate": completionDate,
+        "milestones.$.notes": notes,
+        "milestones.$.completedBy": req.user._id,
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true },
+  );
+
+  if (!corporateDetail) {
+    return next(new AppError("Milestone not found", 404));
+  }
+
+  const completedMilestone = corporateDetail.milestones.id(milestoneId);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+      completedMilestone,
     },
   });
 });
 
 // ============================================
-// UPDATE DUE DILIGENCE
+// DUE DILIGENCE MANAGEMENT
 // ============================================
 
-/**
- * @desc    Update due diligence information
- * @route   PATCH /api/corporate/:matterId/due-diligence
- * @access  Private
- */
 exports.updateDueDiligence = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const dueDiligenceData = req.body;
@@ -362,7 +876,14 @@ exports.updateDueDiligence = catchAsync(async (req, res, next) => {
   const corporateDetail = await CorporateDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      dueDiligence: dueDiligenceData,
+      $set: {
+        dueDiligence: {
+          ...dueDiligenceData,
+          lastUpdated: new Date(),
+          updatedBy: req.user._id,
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -379,15 +900,30 @@ exports.updateDueDiligence = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.getDueDiligence = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+
+  const corporateDetail = await CorporateDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  }).select("dueDiligence");
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      dueDiligence: corporateDetail.dueDiligence || {},
+    },
+  });
+});
+
 // ============================================
-// ADD REGULATORY APPROVAL
+// REGULATORY APPROVALS MANAGEMENT
 // ============================================
 
-/**
- * @desc    Add regulatory approval requirement
- * @route   POST /api/corporate/:matterId/regulatory-approvals
- * @access  Private
- */
 exports.addRegulatoryApproval = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const approvalData = req.body;
@@ -395,7 +931,14 @@ exports.addRegulatoryApproval = catchAsync(async (req, res, next) => {
   const corporateDetail = await CorporateDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      $push: { regulatoryApprovals: approvalData },
+      $push: {
+        regulatoryApprovals: {
+          ...approvalData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -408,28 +951,17 @@ exports.addRegulatoryApproval = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       corporateDetail,
+      newApproval:
+        corporateDetail.regulatoryApprovals[
+          corporateDetail.regulatoryApprovals.length - 1
+        ],
     },
   });
 });
 
-// ============================================
-// UPDATE REGULATORY APPROVAL
-// ============================================
-
-/**
- * @desc    Update regulatory approval status
- * @route   PATCH /api/corporate/:matterId/regulatory-approvals/:approvalId
- * @access  Private
- */
 exports.updateRegulatoryApproval = catchAsync(async (req, res, next) => {
   const { matterId, approvalId } = req.params;
-  const updateData = req.body;
-
-  // Build update object dynamically using dot notation
-  const updateObject = {};
-  Object.keys(updateData).forEach((key) => {
-    updateObject[`regulatoryApprovals.$.${key}`] = updateData[key];
-  });
+  const approvalData = req.body;
 
   const corporateDetail = await CorporateDetail.findOneAndUpdate(
     {
@@ -438,7 +970,15 @@ exports.updateRegulatoryApproval = catchAsync(async (req, res, next) => {
       "regulatoryApprovals._id": approvalId,
     },
     {
-      $set: updateObject,
+      $set: {
+        "regulatoryApprovals.$": {
+          ...approvalData,
+          _id: approvalId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -447,33 +987,27 @@ exports.updateRegulatoryApproval = catchAsync(async (req, res, next) => {
     return next(new AppError("Regulatory approval not found", 404));
   }
 
+  const updatedApproval = corporateDetail.regulatoryApprovals.id(approvalId);
+
   res.status(200).json({
     status: "success",
     data: {
       corporateDetail,
+      updatedApproval,
     },
   });
 });
 
-// ============================================
-// ADD SHAREHOLDER
-// ============================================
-
-/**
- * @desc    Add shareholder to corporate matter
- * @route   POST /api/corporate/:matterId/shareholders
- * @access  Private
- */
-exports.addShareholder = catchAsync(async (req, res, next) => {
-  const { matterId } = req.params;
-  const shareholderData = req.body;
+exports.removeRegulatoryApproval = catchAsync(async (req, res, next) => {
+  const { matterId, approvalId } = req.params;
 
   const corporateDetail = await CorporateDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      $push: { shareholders: shareholderData },
+      $pull: { regulatoryApprovals: { _id: approvalId } },
+      lastModifiedBy: req.user._id,
     },
-    { new: true, runValidators: true },
+    { new: true },
   );
 
   if (!corporateDetail) {
@@ -484,93 +1018,75 @@ exports.addShareholder = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       corporateDetail,
+      message: "Regulatory approval removed successfully",
     },
   });
 });
 
-// ============================================
-// UPDATE SHAREHOLDER
-// ============================================
-
-/**
- * @desc    Update shareholder information
- * @route   PATCH /api/corporate/:matterId/shareholders/:index
- * @access  Private
- */
-exports.updateShareholder = catchAsync(async (req, res, next) => {
-  const { matterId, index } = req.params;
-  const shareholderData = req.body;
+exports.getRegulatoryApprovals = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
 
   const corporateDetail = await CorporateDetail.findOne({
     matterId,
     firmId: req.firmId,
-  });
+  }).select("regulatoryApprovals");
 
   if (!corporateDetail) {
     return next(new AppError("Corporate details not found", 404));
   }
 
-  if (index >= corporateDetail.shareholders.length) {
-    return next(new AppError("Invalid shareholder index", 400));
-  }
-
-  corporateDetail.shareholders[index] = {
-    ...corporateDetail.shareholders[index],
-    ...shareholderData,
-  };
-
-  await corporateDetail.save();
-
   res.status(200).json({
     status: "success",
     data: {
-      corporateDetail,
+      regulatoryApprovals: corporateDetail.regulatoryApprovals || [],
+      count: corporateDetail.regulatoryApprovals?.length || 0,
     },
   });
 });
 
-// ============================================
-// ADD DIRECTOR
-// ============================================
-
-/**
- * @desc    Add director to corporate matter
- * @route   POST /api/corporate/:matterId/directors
- * @access  Private
- */
-exports.addDirector = catchAsync(async (req, res, next) => {
-  const { matterId } = req.params;
-  const directorData = req.body;
+exports.updateApprovalStatus = catchAsync(async (req, res, next) => {
+  const { matterId, approvalId } = req.params;
+  const { status, approvalDate = new Date(), notes } = req.body;
 
   const corporateDetail = await CorporateDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
     {
-      $push: { directors: directorData },
+      matterId,
+      firmId: req.firmId,
+      "regulatoryApprovals._id": approvalId,
     },
-    { new: true, runValidators: true },
+    {
+      $set: {
+        "regulatoryApprovals.$.status": status,
+        "regulatoryApprovals.$.approvalDate":
+          status === "approved" ? approvalDate : null,
+        "regulatoryApprovals.$.notes": notes,
+        "regulatoryApprovals.$.statusUpdatedBy": req.user._id,
+        "regulatoryApprovals.$.statusUpdatedAt": new Date(),
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true },
   );
 
   if (!corporateDetail) {
-    return next(new AppError("Corporate details not found", 404));
+    return next(new AppError("Regulatory approval not found", 404));
   }
+
+  const updatedApproval = corporateDetail.regulatoryApprovals.id(approvalId);
 
   res.status(200).json({
     status: "success",
     data: {
       corporateDetail,
+      updatedApproval,
     },
   });
 });
 
 // ============================================
-// ADD KEY AGREEMENT
+// KEY AGREEMENTS MANAGEMENT
 // ============================================
 
-/**
- * @desc    Add key agreement to transaction
- * @route   POST /api/corporate/:matterId/agreements
- * @access  Private
- */
 exports.addKeyAgreement = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const agreementData = req.body;
@@ -578,7 +1094,14 @@ exports.addKeyAgreement = catchAsync(async (req, res, next) => {
   const corporateDetail = await CorporateDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      $push: { keyAgreements: agreementData },
+      $push: {
+        keyAgreements: {
+          ...agreementData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -591,28 +1114,15 @@ exports.addKeyAgreement = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       corporateDetail,
+      newAgreement:
+        corporateDetail.keyAgreements[corporateDetail.keyAgreements.length - 1],
     },
   });
 });
 
-// ============================================
-// UPDATE KEY AGREEMENT
-// ============================================
-
-/**
- * @desc    Update key agreement status
- * @route   PATCH /api/corporate/:matterId/agreements/:agreementId
- * @access  Private
- */
 exports.updateKeyAgreement = catchAsync(async (req, res, next) => {
   const { matterId, agreementId } = req.params;
-  const updateData = req.body;
-
-  // Build update object dynamically using dot notation
-  const updateObject = {};
-  Object.keys(updateData).forEach((key) => {
-    updateObject[`keyAgreements.$.${key}`] = updateData[key];
-  });
+  const agreementData = req.body;
 
   const corporateDetail = await CorporateDetail.findOneAndUpdate(
     {
@@ -621,7 +1131,15 @@ exports.updateKeyAgreement = catchAsync(async (req, res, next) => {
       "keyAgreements._id": agreementId,
     },
     {
-      $set: updateObject,
+      $set: {
+        "keyAgreements.$": {
+          ...agreementData,
+          _id: agreementId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -630,23 +1148,67 @@ exports.updateKeyAgreement = catchAsync(async (req, res, next) => {
     return next(new AppError("Agreement not found", 404));
   }
 
+  const updatedAgreement = corporateDetail.keyAgreements.id(agreementId);
+
   res.status(200).json({
     status: "success",
     data: {
       corporateDetail,
+      updatedAgreement,
+    },
+  });
+});
+
+exports.removeKeyAgreement = catchAsync(async (req, res, next) => {
+  const { matterId, agreementId } = req.params;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $pull: { keyAgreements: { _id: agreementId } },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true },
+  );
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+      message: "Key agreement removed successfully",
+    },
+  });
+});
+
+exports.getKeyAgreements = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+
+  const corporateDetail = await CorporateDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  }).select("keyAgreements");
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      keyAgreements: corporateDetail.keyAgreements || [],
+      count: corporateDetail.keyAgreements?.length || 0,
     },
   });
 });
 
 // ============================================
-// ADD COMPLIANCE REQUIREMENT
+// COMPLIANCE REQUIREMENTS MANAGEMENT
 // ============================================
 
-/**
- * @desc    Add compliance requirement
- * @route   POST /api/corporate/:matterId/compliance
- * @access  Private
- */
 exports.addComplianceRequirement = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const complianceData = req.body;
@@ -654,7 +1216,14 @@ exports.addComplianceRequirement = catchAsync(async (req, res, next) => {
   const corporateDetail = await CorporateDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      $push: { complianceRequirements: complianceData },
+      $push: {
+        complianceRequirements: {
+          ...complianceData,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -667,181 +1236,316 @@ exports.addComplianceRequirement = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       corporateDetail,
+      newRequirement:
+        corporateDetail.complianceRequirements[
+          corporateDetail.complianceRequirements.length - 1
+        ],
     },
   });
 });
 
-// ============================================
-// UPDATE COMPLIANCE REQUIREMENT
-// ============================================
-
-/**
- * @desc    Update compliance requirement
- * @route   PATCH /api/corporate/:matterId/compliance/:index
- * @access  Private
- */
 exports.updateComplianceRequirement = catchAsync(async (req, res, next) => {
-  const { matterId, index } = req.params;
+  const { matterId, requirementId } = req.params;
   const complianceData = req.body;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    {
+      matterId,
+      firmId: req.firmId,
+      "complianceRequirements._id": requirementId,
+    },
+    {
+      $set: {
+        "complianceRequirements.$": {
+          ...complianceData,
+          _id: requirementId,
+          updatedBy: req.user._id,
+          updatedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!corporateDetail) {
+    return next(new AppError("Compliance requirement not found", 404));
+  }
+
+  const updatedRequirement =
+    corporateDetail.complianceRequirements.id(requirementId);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+      updatedRequirement,
+    },
+  });
+});
+
+exports.removeComplianceRequirement = catchAsync(async (req, res, next) => {
+  const { matterId, requirementId } = req.params;
+
+  const corporateDetail = await CorporateDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $pull: { complianceRequirements: { _id: requirementId } },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true },
+  );
+
+  if (!corporateDetail) {
+    return next(new AppError("Corporate details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      corporateDetail,
+      message: "Compliance requirement removed successfully",
+    },
+  });
+});
+
+exports.getComplianceRequirements = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
 
   const corporateDetail = await CorporateDetail.findOne({
     matterId,
     firmId: req.firmId,
-  });
+  }).select("complianceRequirements");
 
   if (!corporateDetail) {
     return next(new AppError("Corporate details not found", 404));
   }
 
-  if (index >= corporateDetail.complianceRequirements.length) {
-    return next(new AppError("Invalid compliance requirement index", 400));
-  }
-
-  corporateDetail.complianceRequirements[index] = {
-    ...corporateDetail.complianceRequirements[index],
-    ...complianceData,
-  };
-
-  await corporateDetail.save();
-
   res.status(200).json({
     status: "success",
     data: {
-      corporateDetail,
+      complianceRequirements: corporateDetail.complianceRequirements || [],
+      count: corporateDetail.complianceRequirements?.length || 0,
     },
   });
 });
 
 // ============================================
-// RECORD TRANSACTION CLOSING
+// TRANSACTION CLOSING
 // ============================================
 
-/**
- * @desc    Record transaction closing details
- * @route   PATCH /api/corporate/:matterId/closing
- * @access  Private
- */
 exports.recordClosing = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
-  const { actualClosingDate } = req.body;
+  const { actualClosingDate, closingNotes } = req.body;
 
-  const matter = await Matter.findOne({
-    _id: matterId,
-    firmId: req.firmId,
-    matterType: "corporate",
-    isDeleted: false,
-  });
+  const session = await Matter.startSession();
+  session.startTransaction();
 
-  if (!matter) {
-    return next(new AppError("Corporate matter not found", 404));
+  try {
+    // 1. Update matter status and closing date
+    const matter = await Matter.findOneAndUpdate(
+      {
+        _id: matterId,
+        firmId: req.firmId,
+        matterType: "corporate",
+        isDeleted: false,
+      },
+      {
+        status: "completed",
+        actualClosureDate: actualClosingDate,
+        closingNotes: closingNotes,
+        lastModifiedBy: req.user._id,
+      },
+      { new: true, runValidators: true, session },
+    );
+
+    if (!matter) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Corporate matter not found", 404));
+    }
+
+    // 2. Update corporate detail
+    const corporateDetail = await CorporateDetail.findOneAndUpdate(
+      { matterId, firmId: req.firmId },
+      {
+        actualClosingDate: actualClosingDate,
+        closingNotes: closingNotes,
+        transactionStatus: "completed",
+        lastModifiedBy: req.user._id,
+      },
+      { new: true, runValidators: true, session },
+    );
+
+    if (!corporateDetail) {
+      await session.abortTransaction();
+      session.endSession();
+      return next(new AppError("Corporate details not found", 404));
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        matter,
+        corporateDetail,
+      },
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    return next(error);
   }
-
-  // Update corporate detail
-  const corporateDetail = await CorporateDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
-    {
-      actualClosingDate,
-    },
-    { new: true, runValidators: true },
-  );
-
-  // Update matter status
-  matter.status = "completed";
-  matter.actualClosureDate = actualClosingDate;
-  await matter.save();
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      corporateDetail,
-      matter,
-    },
-  });
 });
 
 // ============================================
-// GET CORPORATE STATISTICS
+// STATISTICS & DASHBOARD
 // ============================================
 
-/**
- * @desc    Get corporate-specific statistics
- * @route   GET /api/corporate/stats
- * @access  Private
- */
 exports.getCorporateStats = catchAsync(async (req, res, next) => {
   const firmQuery = { firmId: req.firmId, isDeleted: false };
 
-  // By transaction type
-  const byType = await CorporateDetail.aggregate([
-    { $match: firmQuery },
-    {
-      $group: {
-        _id: "$transactionType",
-        count: { $sum: 1 },
-        totalValue: { $sum: "$dealValue.amount" },
+  const [
+    overviewStats,
+    typeStats,
+    statusStats,
+    upcomingClosings,
+    pendingApprovals,
+    recentTransactions,
+  ] = await Promise.all([
+    // Overview statistics
+    Matter.aggregate([
+      {
+        $match: {
+          ...firmQuery,
+          matterType: "corporate",
+        },
       },
-    },
-    { $sort: { count: -1 } },
-  ]);
+      {
+        $group: {
+          _id: null,
+          totalCorporateMatters: { $sum: 1 },
+          activeCorporateMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] },
+          },
+          pendingCorporateMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] },
+          },
+          completedCorporateMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+          },
+        },
+      },
+    ]),
 
-  // Pending approvals
-  const pendingApprovals = await CorporateDetail.aggregate([
-    { $match: firmQuery },
-    { $unwind: "$regulatoryApprovals" },
-    {
-      $match: {
-        "regulatoryApprovals.status": "pending",
+    // By transaction type
+    CorporateDetail.aggregate([
+      { $match: firmQuery },
+      {
+        $group: {
+          _id: "$transactionType",
+          count: { $sum: 1 },
+          totalValue: { $sum: "$dealValue.amount" },
+          avgValue: { $avg: "$dealValue.amount" },
+        },
       },
-    },
-    {
-      $group: {
-        _id: null,
-        count: { $sum: 1 },
-      },
-    },
-  ]);
+      { $sort: { count: -1 } },
+    ]),
 
-  // Due diligence status
-  const dueDiligenceStatus = await CorporateDetail.aggregate([
-    { $match: firmQuery },
-    {
-      $group: {
-        _id: "$dueDiligence.status",
-        count: { $sum: 1 },
+    // By status
+    Matter.aggregate([
+      {
+        $match: {
+          ...firmQuery,
+          matterType: "corporate",
+        },
       },
-    },
-  ]);
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]),
 
-  // Upcoming closings (next 30 days)
-  const upcomingClosings = await CorporateDetail.countDocuments({
-    ...firmQuery,
-    expectedClosingDate: {
-      $gte: new Date(),
-      $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    },
-  });
+    // Upcoming closings (next 30 days)
+    CorporateDetail.countDocuments({
+      ...firmQuery,
+      expectedClosingDate: {
+        $gte: new Date(),
+        $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      },
+      transactionStatus: { $ne: "completed" },
+    }),
+
+    // Pending regulatory approvals
+    CorporateDetail.aggregate([
+      { $match: firmQuery },
+      { $unwind: "$regulatoryApprovals" },
+      {
+        $match: {
+          "regulatoryApprovals.status": "pending",
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          count: { $sum: 1 },
+        },
+      },
+    ]),
+
+    // Recent transactions (last 30 days)
+    Matter.aggregate([
+      {
+        $match: {
+          ...firmQuery,
+          matterType: "corporate",
+          dateOpened: {
+            $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+          },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$dateOpened" },
+          },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: -1 } },
+      { $limit: 10 },
+    ]),
+  ]);
 
   res.status(200).json({
     status: "success",
     data: {
-      byType,
+      overview: overviewStats[0] || {
+        totalCorporateMatters: 0,
+        activeCorporateMatters: 0,
+        pendingCorporateMatters: 0,
+        completedCorporateMatters: 0,
+      },
+      byType: typeStats,
+      byStatus: statusStats,
+      upcomingClosings: upcomingClosings || 0,
       pendingApprovals: pendingApprovals[0]?.count || 0,
-      dueDiligenceStatus,
-      upcomingClosings,
+      recentTransactions: recentTransactions,
     },
   });
 });
 
-// ============================================
-// GET PENDING APPROVALS
-// ============================================
-
-/**
- * @desc    Get all corporate matters with pending regulatory approvals
- * @route   GET /api/corporate/pending-approvals
- * @access  Private
- */
 exports.getPendingApprovals = catchAsync(async (req, res, next) => {
+  const { page = 1, limit = 20 } = req.query;
+
+  const skip = (page - 1) * limit;
+
+  // Find corporate details with pending approvals
   const corporateDetails = await CorporateDetail.find({
     firmId: req.firmId,
     isDeleted: false,
@@ -849,26 +1553,101 @@ exports.getPendingApprovals = catchAsync(async (req, res, next) => {
   })
     .populate({
       path: "matter",
-      select: "matterNumber title client accountOfficer status priority",
+      select:
+        "matterNumber title client accountOfficer status priority dateOpened",
+      match: { isDeleted: false },
       populate: [
-        { path: "client", select: "firstName lastName email" },
-        { path: "accountOfficer", select: "firstName lastName email" },
+        { path: "client", select: "firstName lastName email phone" },
+        { path: "accountOfficer", select: "firstName lastName email photo" },
       ],
     })
-    .sort({ "regulatoryApprovals.applicationDate": 1 });
+    .sort({ "regulatoryApprovals.applicationDate": 1 })
+    .skip(skip)
+    .limit(Number(limit));
 
-  // Filter out deleted matters
-  const filtered = corporateDetails.filter(
-    (detail) => detail.matter && !detail.matter.isDeleted,
+  // Filter out matters that might be deleted
+  const filteredDetails = corporateDetails.filter((detail) => detail.matter);
+
+  const total = await CorporateDetail.countDocuments({
+    firmId: req.firmId,
+    isDeleted: false,
+    "regulatoryApprovals.status": "pending",
+  });
+
+  // Extract and flatten pending approvals
+  const pendingApprovals = [];
+  filteredDetails.forEach((detail) => {
+    detail.regulatoryApprovals.forEach((approval) => {
+      if (approval.status === "pending") {
+        pendingApprovals.push({
+          ...approval.toObject(),
+          matter: detail.matter,
+          matterId: detail.matterId,
+        });
+      }
+    });
+  });
+
+  res.status(200).json({
+    status: "success",
+    results: pendingApprovals.length,
+    total,
+    page: Number(page),
+    totalPages: Math.ceil(total / limit),
+    data: {
+      pendingApprovals,
+    },
+  });
+});
+
+// ============================================
+// BULK OPERATIONS
+// ============================================
+
+exports.bulkUpdateCorporateMatters = catchAsync(async (req, res, next) => {
+  const { matterIds, updates } = req.body;
+
+  if (!matterIds || !Array.isArray(matterIds) || matterIds.length === 0) {
+    return next(new AppError("Please provide matter IDs to update", 400));
+  }
+
+  if (!updates || Object.keys(updates).length === 0) {
+    return next(new AppError("Please provide updates to apply", 400));
+  }
+
+  const result = await Matter.updateMany(
+    {
+      _id: { $in: matterIds },
+      firmId: req.firmId,
+      matterType: "corporate",
+    },
+    {
+      ...updates,
+      lastModifiedBy: req.user._id,
+      lastActivityDate: Date.now(),
+    },
+    { runValidators: true },
   );
 
   res.status(200).json({
     status: "success",
-    results: filtered.length,
     data: {
-      matters: filtered,
+      matchedCount: result.matchedCount,
+      modifiedCount: result.modifiedCount,
     },
   });
 });
+
+// ============================================
+// HELPER FUNCTIONS
+// ============================================
+
+const buildFirmQuery = (req, additionalFilters = {}) => {
+  return {
+    firmId: req.firmId,
+    isDeleted: false,
+    ...additionalFilters,
+  };
+};
 
 module.exports = exports;
