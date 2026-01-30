@@ -1,356 +1,227 @@
-// routes/userRoutes.js - COMPLETE MULTI-PRIVILEGE UPDATE
-
 const express = require("express");
+const matterController = require("../controllers/matterController");
 const {
-  getUsers,
-  getUser,
-  updateUser,
-  getUsersByRole,
-  getUsersByUserType,
-  getAllLawyers,
-  getAllClients,
-  getUsersByStatus,
-  getActiveUsers,
-  upgradeUser,
-  sendAutomatedEmail,
-  getSingleUser,
-  sendAutomatedCustomEmail,
-  getUserSelectOptions,
-  getAllSelectOptions,
-  getStaffByStatus,
-  getClientsByStatus,
-  getAllUsersByStatus,
-  getStatusStatistics,
-  getUserStatistics,
-  getStaffStatistics,
-  getClientStatistics,
-  deleteUser,
-  softDeleteUser,
-  restoreUser,
-} = require("../controllers/userController");
-
-const {
-  registerFirm,
-  register,
-  login,
-  isLoggedIn,
-  logout,
   protect,
-  forgotPassword,
-  resetPassword,
-  restrictTo,
-  restrictToUserTypes,
   hasPrivilege,
-  requireAllPrivileges,
-  canManageUsers,
   canManageCases,
-  canManageBilling,
   canViewReports,
   checkPermission,
-  sendLoginCode,
-  sendVerificationEmail,
-  verifyUser,
-  changePassword,
-  loginWithCode,
-  loginWithGoogle,
-  checkUserLimit,
-  updateFirmUserCount,
 } = require("../controllers/authController");
 
-const {
-  uploadUserPhoto,
-  resizeUserPhoto,
-} = require("../controllers/photoContoller");
-
-const router = express.Router();
+const matterRouter = express.Router();
 
 // ============================================
-// PUBLIC ROUTES
+// MIDDLEWARE
 // ============================================
-
-router.post("/register-firm", registerFirm);
-router.post("/login", login);
-router.post("/forgotpassword", forgotPassword);
-router.get("/loginStatus", isLoggedIn);
-router.patch("/verifyUser/:verificationToken", verifyUser);
-router.patch("/resetpassword/:resetToken", resetPassword);
-router.post("/sendLoginCode/:email", sendLoginCode);
-router.post("/loginWithCode/:email", loginWithCode);
-router.post("/google/callback", loginWithGoogle);
+matterRouter.use(protect);
 
 // ============================================
-// PROTECTED ROUTES (All routes below require authentication)
+// SPECIFIC ROUTES (MUST COME FIRST)
 // ============================================
 
-router.use(protect);
+// Bulk operations (SPECIFIC routes)
+matterRouter.patch(
+  "/bulk-update",
+  canManageCases,
+  matterController.checkBulkOperationLimit,
+  matterController.logBulkOperation,
+  matterController.bulkUpdateMatters,
+);
 
-router.get("/logout", logout);
-router.patch("/changepassword", changePassword);
+matterRouter.post(
+  "/bulk-assign-officer",
+  canManageCases,
+  matterController.checkBulkOperationLimit,
+  matterController.logBulkOperation,
+  matterController.bulkAssignOfficer,
+);
 
-// ============================================
-// USER REGISTRATION
-// ✅ Uses hasPrivilege - checks primary role + additional roles
-// ============================================
+matterRouter.delete(
+  "/bulk-delete",
+  canManageCases,
+  matterController.checkBulkOperationLimit,
+  matterController.logBulkOperation,
+  matterController.bulkDeleteMatters,
+);
 
-router.post(
-  "/register",
-  hasPrivilege("admin", "super-admin"), // ✅ Anyone with admin privilege (primary or additional)
-  checkUserLimit,
-  updateFirmUserCount,
-  uploadUserPhoto,
-  resizeUserPhoto,
-  register,
+matterRouter.post(
+  "/export",
+  canViewReports,
+  matterController.checkBulkOperationLimit,
+  matterController.exportMatters,
+);
+
+matterRouter.post(
+  "/search",
+  hasPrivilege("admin", "lawyer", "hr", "staff"),
+  matterController.searchMatters,
 );
 
 // ============================================
-// EMAIL ROUTES
-// ✅ Admin or HR can send emails
+// STATIC ROUTES (no parameters)
 // ============================================
 
-router.post(
-  "/sendAutomatedEmail",
-  hasPrivilege("admin", "hr"), // ✅ Admin OR HR privilege
-  sendAutomatedEmail,
-);
+matterRouter.get("/stats", matterController.getMatterStats);
 
-router.post(
-  "/sendAutomatedCustomEmail",
-  hasPrivilege("admin", "hr"), // ✅ Admin OR HR privilege
-  sendAutomatedCustomEmail,
-);
+matterRouter.get("/my-matters", matterController.getMyMatters);
 
-router.post(
-  "/sendVerificationEmail/:email",
-  hasPrivilege("admin", "super-admin"), // ✅ Admin privilege required
-  sendVerificationEmail,
-);
-
-// ============================================
-// SELECT OPTIONS ROUTES
-// ✅ Available to all authenticated users
-// ============================================
-
-router.get("/select-options/all", getAllSelectOptions);
-router.get("/select-options", getUserSelectOptions);
-
-// ============================================
-// STATISTICS ROUTES
-// ✅ Uses hasPrivilege - Admin, HR, or anyone with those additional roles
-// ============================================
-
-router.get(
-  "/statistics/general",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  getUserStatistics,
-);
-
-router.get(
-  "/statistics/staff",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  getStaffStatistics,
-);
-
-router.get(
-  "/statistics/clients",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  getClientStatistics,
-);
-
-router.get(
-  "/statistics/status",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  getStatusStatistics,
-);
-
-// ============================================
-// USER TYPE SPECIFIC ROUTES
-// ✅ Admin or HR can view all user types
-// ============================================
-
-router.get(
-  "/type/:userType",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  getUsersByUserType,
-);
-
-router.get(
-  "/lawyers/all",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  getAllLawyers,
-);
-
-router.get(
-  "/clients/all",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  getAllClients,
-);
-
-// ============================================
-// STATUS-BASED ROUTES
-// ✅ Admin or HR can view status reports
-// ============================================
-
-router.get(
-  "/staff/status/:status",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  getStaffByStatus,
-);
-
-router.get(
-  "/clients/status/:status",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  getClientsByStatus,
-);
-
-router.get(
-  "/all/status/:status",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  getAllUsersByStatus,
-);
-
-// ============================================
-// FILTERED USER ROUTES
-// ✅ Role-based filtering with privilege checks
-// ============================================
-
-router.get(
-  "/role/:role",
-  hasPrivilege("admin", "hr"), // ✅ Admin or HR privilege
-  getUsersByRole,
-);
-
-router.get(
-  "/status/:status",
-  hasPrivilege("admin", "hr"), // ✅ Admin or HR privilege
-  getUsersByStatus,
-);
-
-router.get(
-  "/active",
-  hasPrivilege("admin", "hr"), // ✅ Admin or HR privilege
-  getActiveUsers,
-);
-
-// ============================================
-// ENHANCED FILTERING ROUTES
-// ✅ Quick access routes with privilege checks
-// ============================================
-
-router.get(
-  "/filter/combined",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  (req, res, next) => {
-    return getUsers(req, res, next);
-  },
-);
-
-router.get(
-  "/quick/active-staff",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  (req, res, next) => {
-    req.params.status = "active";
-    return getStaffByStatus(req, res, next);
-  },
-);
-
-router.get(
-  "/quick/inactive-clients",
-  hasPrivilege("admin", "super-admin", "hr"), // ✅ Any of these privileges
-  (req, res, next) => {
-    req.params.status = "inactive";
-    return getClientsByStatus(req, res, next);
-  },
-);
-
-// ============================================
-// USER MANAGEMENT ROUTES
-// ✅ Different privilege levels for different actions
-// ============================================
-
-// Get all users - Admin or HR
-router.get(
+matterRouter.get(
   "/",
-  hasPrivilege("super-admin", "admin", "hr"), // ✅ Admin or HR privilege
-  getUsers,
+  hasPrivilege("admin", "lawyer", "hr", "staff"),
+  matterController.getAllMatters,
 );
 
-// Get current user - All authenticated users
-router.get("/getUser", getUser);
-
-// Get single user - Admin, HR, or the user themselves (checked in controller)
-router.get("/:id", getSingleUser);
-
-// Update current user - All authenticated users (self-update)
-router.patch("/updateUser", uploadUserPhoto, resizeUserPhoto, updateUser);
-
-// Upgrade user (change role/position) - Must have user management permission
-router.patch(
-  "/upgradeUser/:id",
-  canManageUsers, // ✅ Checks specific admin permission
-  upgradeUser,
+matterRouter.post(
+  "/",
+  canManageCases,
+  matterController.validateMatterType,
+  matterController.createMatter,
 );
 
 // ============================================
-// DELETE/RESTORE ROUTES
-// ✅ Only super-admin or admin with user management permission
+// SHORTCUT/SPECIAL ROUTES
 // ============================================
 
-// Hard delete - Super admin only
-router.delete(
-  "/delete/:id",
-  requireAllPrivileges("super-admin"), // ✅ Must be super-admin
-  deleteUser,
+matterRouter.get(
+  "/recent-activity",
+  hasPrivilege("admin", "lawyer", "hr", "staff"),
+  matterController.getRecentActivity,
 );
 
-// Soft delete - Admin with user management permission
-router.patch(
-  "/soft-delete/:id",
-  canManageUsers, // ✅ Checks specific admin permission
-  softDeleteUser,
+matterRouter.get(
+  "/pending",
+  hasPrivilege("admin", "lawyer", "hr", "staff"),
+  matterController.getPendingMatters,
 );
 
-// Restore deleted user - Admin with user management permission
-router.patch(
-  "/restore/:id",
-  canManageUsers, // ✅ Checks specific admin permission
-  restoreUser,
+matterRouter.get(
+  "/urgent",
+  hasPrivilege("admin", "lawyer", "hr", "staff"),
+  matterController.getUrgentMatters,
 );
 
 // ============================================
-// ADDITIONAL GRANULAR PERMISSION ROUTES
+// TYPE-SPECIFIC ROUTES (BEFORE :id)
 // ============================================
 
-// Example: Only users with specific admin permissions
-router.get(
-  "/audit-logs",
+matterRouter.get(
+  "/type/:matterType",
+  hasPrivilege("admin", "lawyer", "hr", "staff"),
+  matterController.getMattersByType,
+);
+
+matterRouter.get(
+  "/status/:status",
+  hasPrivilege("admin", "lawyer", "hr", "staff"),
+  matterController.getMattersByStatus,
+);
+
+matterRouter.get(
+  "/validate-matter-number/:matterNumber",
+  hasPrivilege("admin", "lawyer", "hr"),
+  matterController.validateMatterNumber,
+);
+
+// ============================================
+// GRANULAR PERMISSION ROUTES
+// ============================================
+
+matterRouter.get(
+  "/confidential",
   checkPermission((user) => {
-    // Custom logic: Must be super-admin OR admin with report viewing permission
-    return (
-      user.role === "super-admin" ||
-      (user.adminDetails && user.adminDetails.canViewReports === true)
-    );
+    const hasAccessRole = ["admin", "lawyer", "hr"].includes(user.userType);
+    const hasConfidentialAccess =
+      user.adminDetails?.canViewConfidential === true ||
+      user.lawyerDetails?.canViewConfidential === true ||
+      user.hrDetails?.canViewConfidential === true;
+
+    return hasAccessRole && hasConfidentialAccess;
   }),
-  (req, res) => {
-    res.json({ message: "Audit logs" });
+  (req, res, next) => {
+    req.query.isConfidential = true;
+    return matterController.getAllMatters(req, res, next);
   },
 );
 
-// Example: Multi-role check - Lawyer OR Admin
-router.get(
-  "/legal-resources",
-  hasPrivilege("lawyer", "admin"), // ✅ Anyone with lawyer OR admin privilege
-  (req, res) => {
-    res.json({ message: "Legal resources" });
+matterRouter.get(
+  "/financial-overview",
+  checkPermission((user) => {
+    const hasFinancialAccess =
+      user.userType === "admin" ||
+      user.userType === "lawyer" ||
+      user.additionalRoles?.includes("finance") ||
+      user.additionalRoles?.includes("accounting");
+
+    return hasFinancialAccess;
+  }),
+  (req, res, next) => {
+    req.query.select =
+      "title,matterNumber,estimatedValue,billingType,invoiceStatus";
+    return matterController.getAllMatters(req, res, next);
   },
 );
 
-// Example: Require ALL privileges (rare use case)
-router.post(
-  "/critical-operation",
-  requireAllPrivileges("admin", "super-admin"), // ✅ Must have BOTH
+// ============================================
+// PARAMETERIZED ROUTES (:id ROUTES - MUST COME LAST)
+// ============================================
+
+// Single matter routes
+matterRouter.get(
+  "/:id",
+  matterController.checkMatterAccess,
+  matterController.getMatter,
+);
+
+matterRouter.patch(
+  "/:id",
+  canManageCases,
+  matterController.checkMatterAccess,
+  matterController.validateMatterType,
+  matterController.updateMatter,
+);
+
+matterRouter.delete(
+  "/:id",
+  canManageCases,
+  matterController.checkMatterAccess,
+  matterController.deleteMatter,
+);
+
+// Nested routes for specific matter
+matterRouter.patch(
+  "/:id/restore",
+  canManageCases,
+  matterController.restoreMatter,
+);
+
+matterRouter.get(
+  "/:id/timeline",
+  matterController.checkMatterAccess,
+  matterController.getMatterTimeline,
+);
+
+matterRouter.post(
+  "/:id/activity",
+  hasPrivilege("admin", "lawyer", "hr", "staff"),
+  matterController.checkMatterAccess,
+  matterController.addActivityLog,
+);
+
+matterRouter.patch(
+  "/:id/billing",
+  checkPermission((user) => {
+    if (user.userType === "admin") return true;
+    if (user.userType === "lawyer" && user.lawyerDetails?.canManageBilling)
+      return true;
+    if (user.additionalRoles?.includes("finance")) return true;
+
+    return false;
+  }),
+  matterController.checkMatterAccess,
   (req, res) => {
-    res.json({ message: "Critical operation performed" });
+    // Handle billing update
+    res.json({ message: "Billing updated" });
   },
 );
 
-module.exports = router;
+module.exports = matterRouter;

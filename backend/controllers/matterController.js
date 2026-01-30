@@ -740,39 +740,51 @@ exports.bulkUpdateMatters = catchAsync(async (req, res, next) => {
     return next(new AppError("Please provide updates to apply", 400));
   }
 
-  // Restrict certain fields from bulk updates
-  const restrictedFields = [
-    "firmId",
-    "matterNumber",
-    "createdBy",
-    "createdAt",
-    "_id",
-  ];
+  // Validate user has access to these matters
+  const accessibleMatterIds = await Matter.find({
+    _id: { $in: matterIds },
+    firmId: req.firmId,
+  }).distinct("_id");
 
-  restrictedFields.forEach((field) => delete updates[field]);
-
-  // Add last modified info
-  const finalUpdates = {
-    ...updates,
-    lastModifiedBy: req.user._id,
-    lastActivityDate: Date.now(),
-  };
+  if (accessibleMatterIds.length === 0) {
+    return next(new AppError("No accessible matters found", 404));
+  }
 
   // Update matters
   const result = await Matter.updateMany(
+    { _id: { $in: accessibleMatterIds }, firmId: req.firmId },
     {
-      _id: { $in: matterIds },
-      firmId: req.firmId,
+      $set: updates,
+      $push: {
+        activityLog: {
+          action: "bulk_update",
+          user: req.user._id,
+          changes: updates,
+          timestamp: new Date(),
+        },
+      },
     },
-    finalUpdates,
-    { runValidators: true },
   );
 
+  // Get updated matters - ALWAYS return array
+  const updatedMatters = await Matter.find({
+    _id: { $in: accessibleMatterIds },
+    firmId: req.firmId,
+  })
+    .populate("client", "firstName lastName email companyName")
+    .populate("accountOfficer", "firstName lastName email")
+    .lean();
+
+  // Ensure it's an array
+  const mattersArray = Array.isArray(updatedMatters) ? updatedMatters : [];
+
   res.status(200).json({
-    status: "success",
+    success: true,
     data: {
       matchedCount: result.matchedCount,
       modifiedCount: result.modifiedCount,
+      matters: mattersArray,
+      clearSelection: true,
     },
   });
 });
@@ -1631,7 +1643,8 @@ exports.checkMatterAccess = catchAsync(async (req, res, next) => {
   );
   const isAdmin =
     req.user.userType === "admin" ||
-    req.user.additionalRoles?.includes("admin");
+    req.user.additionalRoles?.includes("admin") ||
+    req.user.additionalRoles?.includes("super-admin");
 
   if (!isAssignedOfficer && !isAdmin) {
     return next(

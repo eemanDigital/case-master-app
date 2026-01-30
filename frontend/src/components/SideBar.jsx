@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Menu, Avatar, Typography, Space, Badge, Divider, Tooltip } from "antd";
+import { Menu, Avatar, Typography, Space, Badge, Tooltip } from "antd";
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -15,11 +15,8 @@ import {
   DollarOutlined,
   QuestionCircleOutlined,
   LogoutOutlined,
-  SettingOutlined,
   BellOutlined,
-  AppstoreOutlined,
-  CrownOutlined,
-  SafetyCertificateOutlined,
+  SettingOutlined,
   HomeOutlined,
 } from "@ant-design/icons";
 import { logout, RESET } from "../redux/features/auth/authSlice";
@@ -28,46 +25,42 @@ import { useAdminHook } from "../hooks/useAdminHook";
 
 const { Text } = Typography;
 
-const SideBar = ({
-  isMobile,
-  closeDrawer,
-  collapsed,
-  isDarkMode: propDarkMode,
-}) => {
+const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useSelector((state) => state.auth);
-  const { isDarkMode, toggleTheme } = useTheme();
+  const { isDarkMode } = useTheme();
   const { isAdminOrHr, isSuperOrAdmin, userData } = useAdminHook();
 
   const [selectedKeys, setSelectedKeys] = useState(["dashboard"]);
   const [openKeys, setOpenKeys] = useState([]);
 
-  // Sync selectedKeys with current URL path
   useEffect(() => {
     const path = location.pathname;
 
-    if (path === "/dashboard" || path === "/") {
-      setSelectedKeys(["dashboard"]);
-      setOpenKeys([]);
+    // More specific path matching - check longer paths first
+    if (path.includes("/dashboard/staff/leave-application")) {
+      setSelectedKeys(["leave-applications"]);
+      setOpenKeys(["staff", "leave"]);
+    } else if (path.includes("/dashboard/staff/leave-balance")) {
+      setSelectedKeys(["leave-balance"]);
+      setOpenKeys(["staff", "leave"]);
+    } else if (path.includes("/dashboard/staff-status")) {
+      setSelectedKeys(["staff-status"]);
+      setOpenKeys(["staff"]);
+    } else if (path.includes("/dashboard/staff")) {
+      setSelectedKeys(["staff-directory"]);
+      setOpenKeys(["staff"]);
     } else if (path.includes("/dashboard/matters")) {
       setSelectedKeys(["matters"]);
-      setOpenKeys([]);
-    } else if (path.includes("/dashboard/cases")) {
-      setSelectedKeys(["cases"]);
       setOpenKeys([]);
     } else if (path.includes("/dashboard/case-reports")) {
       setSelectedKeys(["reports"]);
       setOpenKeys([]);
-    } else if (path.includes("/dashboard/staff")) {
-      if (path.includes("/leave")) {
-        setSelectedKeys(["leave"]);
-        setOpenKeys(["staff"]);
-      } else {
-        setSelectedKeys(["staff"]);
-        setOpenKeys([]);
-      }
+    } else if (path.includes("/dashboard/cases")) {
+      setSelectedKeys(["cases"]);
+      setOpenKeys([]);
     } else if (path.includes("/dashboard/cause-list")) {
       setSelectedKeys(["cause-list"]);
       setOpenKeys([]);
@@ -89,6 +82,9 @@ const SideBar = ({
     } else if (path.includes("/dashboard/profile")) {
       setSelectedKeys(["profile"]);
       setOpenKeys([]);
+    } else if (path === "/dashboard" || path === "/") {
+      setSelectedKeys(["dashboard"]);
+      setOpenKeys([]);
     } else {
       setSelectedKeys(["dashboard"]);
       setOpenKeys([]);
@@ -101,50 +97,49 @@ const SideBar = ({
     navigate("/users/login");
   };
 
-  // Navigation items with improved icons and structure
   const navItems = [
     {
       key: "dashboard",
-      icon: <DashboardOutlined className="text-lg" />,
+      icon: <DashboardOutlined />,
       label: "Dashboard",
       path: "/dashboard",
     },
     {
       key: "matters",
-      icon: <FileTextOutlined className="text-lg" />,
+      icon: <FileTextOutlined />,
       label: "Matters",
       path: "/dashboard/matters",
     },
     {
       key: "cases",
-      icon: <BankOutlined className="text-lg" />,
+      icon: <BankOutlined />,
       label: "Cases",
       path: "/dashboard/cases",
     },
     {
       key: "reports",
-      icon: <FileTextOutlined className="text-lg" />,
+      icon: <FileTextOutlined />,
       label: "Reports",
       path: "/dashboard/case-reports",
     },
     {
       key: "staff",
-      icon: <TeamOutlined className="text-lg" />,
+      icon: <TeamOutlined />,
       label: "Staff",
       children: [
         {
           key: "staff-directory",
-          label: "Staff Directory",
+          label: "Directory",
           path: "/dashboard/staff",
         },
         {
           key: "staff-status",
-          label: "Staff Status",
+          label: "Status",
           path: "/dashboard/staff-status",
         },
         {
           key: "leave",
-          label: "Leave Management",
+          label: "Leave",
           children: [
             {
               key: "leave-applications",
@@ -153,7 +148,7 @@ const SideBar = ({
             },
             {
               key: "leave-balance",
-              label: "Leave Balance",
+              label: "Balance",
               path: "/dashboard/staff/leave-balance",
             },
           ],
@@ -162,37 +157,37 @@ const SideBar = ({
     },
     {
       key: "cause-list",
-      icon: <CalendarOutlined className="text-lg" />,
+      icon: <CalendarOutlined />,
       label: "Cause List",
       path: "/dashboard/cause-list",
     },
     {
       key: "tasks",
-      icon: <CheckSquareOutlined className="text-lg" />,
+      icon: <CheckSquareOutlined />,
       label: "Tasks",
       path: "/dashboard/tasks",
     },
     {
       key: "clients",
-      icon: <UserOutlined className="text-lg" />,
+      icon: <UserOutlined />,
       label: "Clients",
       path: "/dashboard/clients",
     },
     {
       key: "documents",
-      icon: <FileOutlined className="text-lg" />,
+      icon: <FileOutlined />,
       label: "Documents",
       path: "/dashboard/documents",
     },
     {
       key: "billings",
-      icon: <DollarOutlined className="text-lg" />,
+      icon: <DollarOutlined />,
       label: "Billing",
       path: "/dashboard/billings",
     },
     {
       key: "support",
-      icon: <QuestionCircleOutlined className="text-lg" />,
+      icon: <QuestionCircleOutlined />,
       label: "Support",
       path: "/dashboard/contact-dev",
     },
@@ -212,25 +207,16 @@ const SideBar = ({
       return {
         key: item.key,
         icon: item.icon,
-        label:
-          collapsed && !isMobile ? (
-            <Tooltip title={item.label} placement="right">
-              <Link to={item.path} onClick={closeDrawer}>
-                {item.label}
-              </Link>
-            </Tooltip>
-          ) : (
-            <Link
-              to={item.path}
-              onClick={isMobile && closeDrawer ? closeDrawer : undefined}>
-              {item.label}
-            </Link>
-          ),
+        label: (
+          <Link to={item.path} onClick={isMobile ? closeDrawer : undefined}>
+            {item.label}
+          </Link>
+        ),
       };
     });
   };
 
-  const handleMenuClick = (e) => {
+  const handleMenuClick = () => {
     if (isMobile && closeDrawer) {
       closeDrawer();
     }
@@ -240,168 +226,102 @@ const SideBar = ({
     setOpenKeys(keys);
   };
 
-  // User info section
-  const renderUserInfo = () => (
+  return (
     <div
-      className={`p-4 border-b transition-colors duration-300 ${
-        isDarkMode ? "border-gray-700" : "border-gray-200"
-      }`}>
-      <div className="flex flex-col items-center gap-3">
-        <div className="relative">
-          <Avatar
-            size={collapsed ? 40 : 64}
-            src={userData?.photo}
-            icon={<UserOutlined />}
-            className={`border-2 shadow-lg ${
-              isDarkMode ? "border-blue-500" : "border-blue-400"
-            }`}
-          />
-          {userData?.isActive && (
-            <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-          )}
-        </div>
-
-        {!collapsed && (
-          <>
-            <div className="text-center">
+      className={`h-full flex flex-col ${
+        isDarkMode ? "bg-gray-900" : "bg-white"
+      }`}
+      style={{
+        boxShadow: isDarkMode
+          ? "2px 0 8px rgba(0, 0, 0, 0.4)"
+          : "2px 0 8px rgba(0, 0, 0, 0.06)",
+      }}>
+      {/* Logo Section */}
+      <div
+        className={`flex items-center px-6 border-b ${
+          isDarkMode ? "border-gray-800" : "border-gray-100"
+        }`}
+        style={{ height: 64, minHeight: 64 }}>
+        {!collapsed ? (
+          <div className="flex items-center gap-3 w-full">
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                isDarkMode
+                  ? "bg-gradient-to-br from-blue-600 to-blue-700"
+                  : "bg-gradient-to-br from-blue-500 to-blue-600"
+              }`}>
+              <HomeOutlined className="text-white text-lg" />
+            </div>
+            <div className="flex-1 min-w-0">
               <Text
                 strong
-                className={`block text-sm ${
-                  isDarkMode ? "text-gray-100" : "text-gray-800"
+                className={`block text-base leading-tight ${
+                  isDarkMode ? "text-gray-100" : "text-gray-900"
                 }`}>
-                {userData?.firstName} {userData?.lastName}
+                LawMaster
               </Text>
               <Text
-                type="secondary"
-                className={`text-xs ${
+                className={`block text-xs ${
                   isDarkMode ? "text-gray-400" : "text-gray-500"
                 }`}>
-                {userData?.position || userData?.role}
+                Legal Suite
               </Text>
             </div>
-
-            {/* Quick Stats */}
-            <div className="flex items-center justify-center gap-3 w-full">
-              <div className="text-center">
-                <Badge count={3} size="small" offset={[-5, 0]}>
-                  <Avatar
-                    size="small"
-                    icon={<BellOutlined />}
-                    className={`cursor-pointer ${
-                      isDarkMode ? "bg-gray-700" : "bg-gray-100"
-                    }`}
-                    onClick={() => navigate("/dashboard/notifications")}
-                  />
-                </Badge>
-              </div>
-              <div className="text-center">
-                <Avatar
-                  size="small"
-                  icon={<SettingOutlined />}
-                  className={`cursor-pointer ${
-                    isDarkMode ? "bg-gray-700" : "bg-gray-100"
-                  }`}
-                  onClick={() => {
-                    navigate("/dashboard/settings");
-                    if (isMobile && closeDrawer) closeDrawer();
-                  }}
-                />
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    </div>
-  );
-
-  // App Logo Section
-  const renderLogo = () => (
-    <div
-      className={`p-4 border-b transition-colors duration-300 ${
-        isDarkMode ? "border-gray-700" : "border-gray-200"
-      }`}>
-      <div className="flex items-center justify-center gap-2">
-        <div
-          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-colors duration-300 ${
-            isDarkMode ? "bg-blue-600" : "bg-blue-500"
-          }`}>
-          <HomeOutlined className="text-white" />
-        </div>
-
-        {!collapsed && (
-          <div>
-            <Text strong className="text-white text-base font-bold">
-              LawMaster
-            </Text>
-            <Text type="secondary" className="text-gray-400 text-xs block">
-              Legal Suite
-            </Text>
+          </div>
+        ) : (
+          <div
+            className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto ${
+              isDarkMode
+                ? "bg-gradient-to-br from-blue-600 to-blue-700"
+                : "bg-gradient-to-br from-blue-500 to-blue-600"
+            }`}>
+            <HomeOutlined className="text-white text-lg" />
           </div>
         )}
       </div>
-    </div>
-  );
-
-  return (
-    <div
-      className={`h-full flex flex-col transition-colors duration-300 ${
-        isDarkMode ? "bg-gray-900" : "bg-gray-800"
-      }`}
-      style={{
-        background: isDarkMode
-          ? "linear-gradient(180deg, #1a2236 0%, #111827 100%)"
-          : "linear-gradient(180deg, #1e293b 0%, #0f172a 100%)",
-      }}>
-      {/* Logo */}
-      {renderLogo()}
-
-      {/* User Info */}
-      {renderUserInfo()}
 
       {/* Navigation Menu */}
-      <div className="flex-grow overflow-auto py-4">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden py-2">
         <Menu
-          theme="dark"
           mode="inline"
           selectedKeys={selectedKeys}
           openKeys={openKeys}
           items={formatMenuItems(navItems)}
           onClick={handleMenuClick}
           onOpenChange={handleOpenChange}
-          className="border-0 px-2"
           inlineCollapsed={collapsed}
+          className={`border-0 ${isDarkMode ? "bg-gray-900" : "bg-white"}`}
           style={{
-            backgroundColor: "transparent",
             borderRight: "none",
+            color: "white",
           }}
+          theme="dark"
         />
       </div>
 
       {/* Logout Section */}
       <div
-        className={`p-4 border-t transition-colors duration-300 ${
-          isDarkMode ? "border-gray-700" : "border-gray-700"
+        className={`px-3 py-2 border-t ${
+          isDarkMode ? "border-gray-800" : "border-gray-100"
         }`}>
-        <Menu
-          theme="dark"
-          mode="inline"
-          className="border-0"
-          style={{ backgroundColor: "transparent" }}>
-          <Menu.Item
-            key="logout"
-            icon={<LogoutOutlined className="text-lg" />}
-            danger
-            onClick={handleLogout}
-            className={collapsed ? "text-center" : ""}>
-            {!collapsed && "Logout"}
-          </Menu.Item>
-        </Menu>
+        <button
+          onClick={handleLogout}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+            isDarkMode
+              ? "hover:bg-red-900/30 text-red-400 hover:text-red-300"
+              : "hover:bg-red-50 text-red-600 hover:text-red-700"
+          }`}>
+          <LogoutOutlined className="text-sm" />
+          {!collapsed && <span className="text-xs font-medium">Logout</span>}
+        </button>
 
-        {/* App Info */}
         {!collapsed && (
-          <div className="mt-4 text-center">
-            <Text type="secondary" className="text-gray-400 text-xs block">
-              v2.1.0 • Professional
+          <div className="mt-2 text-center">
+            <Text
+              className={`text-xs ${
+                isDarkMode ? "text-gray-500" : "text-gray-400"
+              }`}>
+              v2.1.0
             </Text>
           </div>
         )}
@@ -414,7 +334,6 @@ SideBar.propTypes = {
   isMobile: PropTypes.bool.isRequired,
   closeDrawer: PropTypes.func,
   collapsed: PropTypes.bool,
-  isDarkMode: PropTypes.bool,
 };
 
 export default SideBar;
