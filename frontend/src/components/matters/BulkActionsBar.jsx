@@ -325,7 +325,7 @@ const BulkActionsBar = ({
             </Text>
             <UserSelect
               placeholder="Select account officer"
-              userType="staff"
+              excludeUserTypes={["client"]}
               onChange={setSelectedOfficer}
               value={selectedOfficer}
               style={{ width: "100%" }}
@@ -416,3 +416,48 @@ const BulkActionsBar = ({
 };
 
 export default BulkActionsBar;
+
+// Usage Examples:
+// 1. Get all users (no filters):
+// jsx
+// <UserSelect placeholder="Select any user" />
+// 2. Get all users except clients:
+// jsx
+// <UserSelect
+//   placeholder="Select staff/lawyer/admin"
+//   excludeUserTypes={["client"]}
+// />
+// 3. Get all staff (excluding clients and admins):
+// jsx
+// <UserSelect
+//   placeholder="Select staff only"
+//   userType="staff"
+// />
+// 4. Get all lawyers with additional admin role:
+// jsx
+// <UserSelect
+//   placeholder="Select admin lawyers"
+//   userType="lawyer"
+//   includeAdditionalRoles={["admin"]}
+// />
+// 5. Get all active users (excluding inactive):
+// jsx
+// <UserSelect
+//   placeholder="Select active users"
+//   status="active"
+// />
+// 6. Multi-select with all options:
+// jsx
+// <UserSelect
+//   placeholder="Select multiple users"
+//   mode="multiple"
+//   showUserType={true}
+//   showStatus={true}
+//   excludeUserTypes={["client"]}
+// />
+// 7. Get users with specific additional roles:
+// jsx
+// <UserSelect
+//   placeholder="Select users with finance role"
+//   includeAdditionalRoles={["finance", "accounting"]}
+// />

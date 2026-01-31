@@ -1,197 +1,142 @@
 import axios from "axios";
 
-// Get base URL from environment or use relative path
+// Constants
 const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+const JWT_KEY = "jwt"; // Unified storage key
 
-// Create axios instance with default config
+// Create axios instance
 const api = axios.create({
   baseURL: BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // Important for cookies/sessions
+  withCredentials: true, // Configured once for all requests
 });
 
-// Get token from storage
+// Helper: Get token from storage
 const getToken = () => {
-  return localStorage.getItem("token") || sessionStorage.getItem("token");
+  return localStorage.getItem(JWT_KEY) || sessionStorage.getItem(JWT_KEY);
 };
 
-// Request interceptor to add auth token
+// Request interceptor: Attach JWT to every request
 api.interceptors.request.use(
   (config) => {
     const token = getToken();
     if (token) {
+      // Modern best practice: Check if headers object exists
+      config.headers = config.headers || {};
       config.headers.Authorization = `Bearer ${token}`;
     }
-
-    // Ensure withCredentials is true for all requests
-    config.withCredentials = true;
-
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  },
+  (error) => Promise.reject(error),
 );
 
-// Response interceptor for error handling
+// Response interceptor: Centralized error handling
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle common errors
     if (error.response) {
-      // Server responded with error status
       const { status, data } = error.response;
 
       switch (status) {
-        case 401:
-          // Unauthorized - clear token and redirect to login
-          localStorage.removeItem("token");
-          sessionStorage.removeItem("token");
-          delete api.defaults.headers.common["Authorization"];
+        case 401: {
+          // Logic wrapped in {} to avoid "Lexical declaration" error
+          apiService.removeToken();
 
-          // Only redirect if not already on login page
-          if (
-            window.location.pathname !== "users/login" &&
-            window.location.pathname !== "/register"
-          ) {
-            window.location.href =
-              "/login?redirect=" + encodeURIComponent(window.location.pathname);
+          const currentPath = window.location.pathname;
+          const isAuthPage =
+            currentPath === "/login" ||
+            currentPath === "/users/login" ||
+            currentPath === "/register";
+
+          if (!isAuthPage) {
+            window.location.href = `/login?redirect=${encodeURIComponent(currentPath)}`;
           }
           break;
+        }
 
         case 403:
-          console.error("Access forbidden:", data.message);
-          break;
-
-        case 404:
-          console.error("Resource not found:", data.message);
+          console.error("Forbidden: You do not have permission.");
           break;
 
         case 422:
-          console.error("Validation error:", data.errors);
+          console.error("Validation Error:", data.errors || data.message);
           break;
 
         case 500:
-          console.error("Server error:", data.message);
+          console.error("Internal Server Error:", data.message);
           break;
 
         default:
-          console.error(`Error ${status}:`, data.message);
+          console.error(`Error ${status}:`, data.message || "Unknown error");
       }
     } else if (error.request) {
-      console.error("No response received:", error.request);
+      console.error("Network Error: No response received from server.");
     } else {
-      console.error("Error setting up request:", error.message);
+      console.error("Request Configuration Error:", error.message);
     }
 
     return Promise.reject(error);
   },
 );
 
-// API methods
+// API Service Methods
 const apiService = {
-  // Generic GET request
-  get: async (url, config = {}) => {
-    const response = await api.get(url, {
-      ...config,
-      withCredentials: true,
-    });
-    return response.data;
+  get: (url, config = {}) => api.get(url, config).then((res) => res.data),
+
+  post: (url, data = {}, config = {}) =>
+    api.post(url, data, config).then((res) => res.data),
+
+  put: (url, data = {}, config = {}) =>
+    api.put(url, data, config).then((res) => res.data),
+
+  patch: (url, data = {}, config = {}) =>
+    api.patch(url, data, config).then((res) => res.data),
+
+  delete: (url, config = {}) => api.delete(url, config).then((res) => res.data),
+
+  /**
+   * Performance Tip: Browser automatically sets Boundary for FormData.
+   * Do not manually set Content-Type to 'multipart/form-data' if you can avoid it,
+   * but it's kept here for your specific requirement.
+   */
+  upload: (url, formData, onUploadProgress) => {
+    return api
+      .post(url, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress,
+      })
+      .then((res) => res.data);
   },
 
-  // Generic POST request
-  post: async (url, data = {}, config = {}) => {
-    const response = await api.post(url, data, {
-      ...config,
-      withCredentials: true,
-    });
-    return response.data;
+  download: (url, config = {}) => {
+    return api
+      .get(url, {
+        ...config,
+        responseType: "blob",
+      })
+      .then((res) => res.data);
   },
 
-  // Generic PUT request
-  put: async (url, data = {}, config = {}) => {
-    const response = await api.put(url, data, {
-      ...config,
-      withCredentials: true,
-    });
-    return response.data;
-  },
-
-  // Generic PATCH request
-  patch: async (url, data = {}, config = {}) => {
-    const response = await api.patch(url, data, {
-      ...config,
-      withCredentials: true,
-    });
-    return response.data;
-  },
-
-  // Generic DELETE request
-  delete: async (url, config = {}) => {
-    const response = await api.delete(url, {
-      ...config,
-      withCredentials: true,
-    });
-    return response.data;
-  },
-
-  // File upload with progress
-  upload: async (url, formData, onUploadProgress) => {
-    const config = {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      onUploadProgress,
-      withCredentials: true,
-    };
-
-    const response = await api.post(url, formData, config);
-    return response.data;
-  },
-
-  // Download file
-  download: async (url, config = {}) => {
-    const response = await api.get(url, {
-      ...config,
-      responseType: "blob",
-      withCredentials: true,
-    });
-    return response.data;
-  },
-
-  // Multiple concurrent requests
-  all: async (requests) => {
-    const responses = await Promise.all(requests);
-    return responses;
-  },
-
-  // Set authorization token
-  setToken: (token) => {
+  // Auth Management
+  setToken: (token, persist = true) => {
+    const storage = persist ? localStorage : sessionStorage;
+    storage.setItem(JWT_KEY, token);
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    localStorage.setItem("token", token);
   },
 
-  // Remove authorization token
   removeToken: () => {
+    localStorage.removeItem(JWT_KEY);
+    sessionStorage.removeItem(JWT_KEY);
     delete api.defaults.headers.common["Authorization"];
-    localStorage.removeItem("token");
-    sessionStorage.removeItem("token");
   },
 
-  // Check if user is authenticated
-  isAuthenticated: () => {
-    return !!getToken();
-  },
+  isAuthenticated: () => !!getToken(),
 
-  // Get current token
-  getToken: getToken,
+  getToken,
 
-  // Get current base URL
-  getBaseURL: () => {
-    return BASE_URL;
-  },
+  getBaseURL: () => BASE_URL,
 };
 
 export default apiService;
