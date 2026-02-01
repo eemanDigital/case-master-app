@@ -1,11 +1,10 @@
 import { configureStore } from "@reduxjs/toolkit";
 import authReducer from "../features/auth/authSlice";
-import { thunk } from "redux-thunk";
 import loadingReducer from "../features/loader/loadingSlice";
 import emailReducer from "../features/emails/emailSlice";
 import deleteReducer from "../features/delete/deleteSlice";
 import matterReducer from "../features/matter/matterSlice";
-// import appDataReducer from "../features/appData/appDataSlice";
+import litigationReducer from "../features/litigation/litigationSlice";
 
 export const store = configureStore({
   reducer: {
@@ -14,22 +13,24 @@ export const store = configureStore({
     email: emailReducer,
     delete: deleteReducer,
     matter: matterReducer,
-    // appData: appDataReducer,
+    litigation: litigationReducer,
   },
-
+  // Thunk is included by default, no need to concat it!
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        // Ignore these action types
+        // Only keep these if you absolutely MUST pass non-serializable
+        // objects (like File objects or Class instances) to actions.
         ignoredActions: ["matter/create/fulfilled"],
-        // Ignore these field paths in all actions
         ignoredActionPaths: ["meta.arg", "payload.timestamp"],
-        // Ignore these paths in the state
+        // If you convert your dates to strings, you can delete these ignoredPaths
         ignoredPaths: [
           "matter.currentMatter.dateOpened",
           "matter.currentMatter.expectedClosureDate",
+          "litigation.filters.dateRange",
         ],
       },
-    }).concat(thunk),
-  // devTools: process.env.NODE_ENV !== 'production',
+    }),
+  // devTools: true in development, false in production
+  // devTools: import.meta.env.MODE !== "production",
 });

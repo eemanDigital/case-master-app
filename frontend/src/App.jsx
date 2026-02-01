@@ -1,84 +1,159 @@
+import { lazy, Suspense, useEffect, useRef, useMemo } from "react";
 import {
   createBrowserRouter,
   createRoutesFromElements,
   Route,
   RouterProvider,
 } from "react-router-dom";
-import { ConfigProvider, Spin } from "antd";
-import HomeLayout from "./components/HomeLayout";
-import { ThemeProvider } from "./providers/ThemeProvider";
-import Dashboard from "./components/Dashboard.jsx";
-import DashboardLayout from "./components/DashboardLayout.jsx";
-import CaseList from "./pages/CaseList.jsx";
-import AddUserForm from "./pages/AddUserForm.jsx";
-import Profile from "./pages/Profile.jsx";
-import CreateCaseForm from "./pages/CreateCaseForm.jsx";
-import CreateCaseReportForm from "./pages/CreateCaseReportForm.jsx";
-import UpdateCase from "./pages/UpdateCase.jsx";
-import CaseDetails from "./pages/CaseDetails.jsx";
-import Error from "./components/Error.jsx";
-import { Result, Button } from "antd";
+import { ConfigProvider, Spin, Result, Button } from "antd";
 import { Link } from "react-router-dom";
-import LeaveAppForm from "./pages/LeaveAppForm.jsx";
-import LeaveApplicationList from "./pages/LeaveApplicationList.jsx";
-import LeaveApplicationDetails from "./pages/LeaveApplicationDetails.jsx";
-import TaskList from "./components/TaskList.jsx";
-import TaskDetails from "./pages/TaskDetails.jsx";
-import ClientLists from "./pages/ClientLists.jsx";
-import ClientDetails from "./pages/ClientDetails.jsx";
-import ProtectedRoute from "./components/ProtectedRoute.jsx";
-import CreateInvoiceForm from "./components/CreateInvoiceForm.jsx";
-import InvoiceDetails from "./pages/InvoiceDetails.jsx";
-import UpdateInvoice from "./pages/UpdateInvoice.jsx";
-import { CauseList } from "./components/CauseList.jsx";
-import StaffList from "./pages/StaffList.jsx";
-import StaffDetails from "./pages/StaffDetails.jsx";
-import MainCaseReportList from "./pages/MainCaseReportList.jsx";
-import PaymentMadeOnCase from "./pages/PaymentMadeOnCase.jsx";
-import VerifyAccount from "./components/VerifyAccount.jsx";
-import axios from "axios";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { useEffect, useRef } from "react";
+import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { getLoginStatus, getUser } from "./redux/features/auth/authSlice.js";
 import { setLoading } from "./redux/features/loader/loadingSlice.js";
+import { ThemeProvider } from "./providers/ThemeProvider";
 
-import ForgotPassword from "./pages/ForgotPassword.jsx";
-import ForgotPasswordReset from "./pages/ForgotPasswordReset.jsx";
-import LoginWithCode from "./components/LoginWithCode.jsx";
-import LeaveBalanceList from "./pages/leaveBalanceList.jsx";
-import ContactForm from "./components/ContactForm.jsx";
-import EventDetail from "./pages/EventDetail.jsx";
+// ============================================
+// EAGER LOADED COMPONENTS (Critical Path)
+// ============================================
+import HomeLayout from "./components/HomeLayout";
+import DashboardLayout from "./components/DashboardLayout.jsx";
+import Dashboard from "./components/Dashboard.jsx";
+import Error from "./components/Error.jsx";
+import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import {
   ShowOnlyVerifiedUser,
   ShowStaff,
 } from "./components/protect/Protect.jsx";
-import Login from "./pages/Login.jsx";
-import HomePage from "./components/HomePage.jsx";
-import NoteForm from "./pages/NoteForm.jsx";
-import UpdateNote from "./pages/UpdateNote.jsx";
-import NoteList from "./pages/NoteList.jsx";
-import DocumentRecord from "./pages/DocumentRecord.jsx";
-import DocumentRecordList from "./pages/DocumentRecordList.jsx";
-import DocumentRecordDetails from "./pages/DocumentRecordDetails.jsx";
-import SoftDeletedCasesArchive from "./components/SoftDeletedCasesArchive.jsx";
-import SoftDeletedReportsArchive from "./pages/SoftDeletedReportsArchive.jsx";
-import InvoiceList from "./pages/InvoiceList.jsx";
-import AddClientForm from "./components/AddClientForm.jsx";
-import DocumentsList from "./components/DocumentsList.jsx";
-import StatusUserList from "./pages/StatusUserList.jsx";
-import EditTaskForm from "./pages/EditTaskForm.jsx";
-import CreateTaskForm from "./pages/CreateTaskForm.jsx";
-import MatterListView from "./components/matters/MatterListView.jsx";
-import MatterDetails from "./pages/matters/MatterDetails.jsx";
-import MatterForm from "./components/matters/MatterForm/MatterForm.jsx";
-import MatterFormContainer from "./components/matters/MatterForm/MatterFormContainer.jsx";
 
-// Enable axios credentials
+// ============================================
+// LAZY LOADED COMPONENTS (Code Splitting)
+// ============================================
+
+// Auth Pages
+const HomePage = lazy(() => import("./components/HomePage.jsx"));
+const Login = lazy(() => import("./pages/Login.jsx"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword.jsx"));
+const ForgotPasswordReset = lazy(
+  () => import("./pages/ForgotPasswordReset.jsx"),
+);
+const LoginWithCode = lazy(() => import("./components/LoginWithCode.jsx"));
+const VerifyAccount = lazy(() => import("./components/VerifyAccount.jsx"));
+
+// Profile & Settings
+const Profile = lazy(() => import("./pages/Profile.jsx"));
+
+// Staff Management
+const StaffList = lazy(() => import("./pages/StaffList.jsx"));
+const StaffDetails = lazy(() => import("./pages/StaffDetails.jsx"));
+const AddUserForm = lazy(() => import("./pages/AddUserForm.jsx"));
+const StatusUserList = lazy(() => import("./pages/StatusUserList.jsx"));
+
+// Leave Management
+const LeaveAppForm = lazy(() => import("./pages/LeaveAppForm.jsx"));
+const LeaveApplicationList = lazy(
+  () => import("./pages/LeaveApplicationList.jsx"),
+);
+const LeaveApplicationDetails = lazy(
+  () => import("./pages/LeaveApplicationDetails.jsx"),
+);
+const LeaveBalanceList = lazy(() => import("./pages/leaveBalanceList.jsx"));
+
+// Cases Management
+const CaseList = lazy(() => import("./pages/CaseList.jsx"));
+const CreateCaseForm = lazy(() => import("./pages/CreateCaseForm.jsx"));
+const UpdateCase = lazy(() => import("./pages/UpdateCase.jsx"));
+const CaseDetails = lazy(() => import("./pages/CaseDetails.jsx"));
+const SoftDeletedCasesArchive = lazy(
+  () => import("./components/SoftDeletedCasesArchive.jsx"),
+);
+
+// Case Reports
+const MainCaseReportList = lazy(() => import("./pages/MainCaseReportList.jsx"));
+const CreateCaseReportForm = lazy(
+  () => import("./pages/CreateCaseReportForm.jsx"),
+);
+const SoftDeletedReportsArchive = lazy(
+  () => import("./pages/SoftDeletedReportsArchive.jsx"),
+);
+
+// Matters Management
+const MatterListView = lazy(
+  () => import("./components/matters/MatterListView.jsx"),
+);
+const MatterDetails = lazy(() => import("./pages/matters/MatterDetails.jsx"));
+const MatterFormContainer = lazy(
+  () => import("./components/matters/MatterForm/MatterFormContainer.jsx"),
+);
+
+// Litigation Management (New)
+const LitigationList = lazy(
+  () => import("./pages/litigation/LitigationList.jsx"),
+);
+const CreateLitigation = lazy(
+  () => import("./pages/litigation/CreateLitigation.jsx"),
+);
+const LitigationDetails = lazy(
+  () => import("./pages/litigation/LitigationDetails.jsx"),
+);
+const EditLitigation = lazy(
+  () => import("./pages/litigation/EditLitigation.jsx"),
+);
+
+// Tasks Management
+const TaskList = lazy(() => import("./components/TaskList.jsx"));
+const CreateTaskForm = lazy(() => import("./pages/CreateTaskForm.jsx"));
+const TaskDetails = lazy(() => import("./pages/TaskDetails.jsx"));
+const EditTaskForm = lazy(() => import("./pages/EditTaskForm.jsx"));
+
+// Clients Management
+const ClientLists = lazy(() => import("./pages/ClientLists.jsx"));
+const AddClientForm = lazy(() => import("./components/AddClientForm.jsx"));
+const ClientDetails = lazy(() => import("./pages/ClientDetails.jsx"));
+
+// Billing Management
+const InvoiceList = lazy(() => import("./pages/InvoiceList.jsx"));
+const CreateInvoiceForm = lazy(
+  () => import("./components/CreateInvoiceForm.jsx"),
+);
+const InvoiceDetails = lazy(() => import("./pages/InvoiceDetails.jsx"));
+const UpdateInvoice = lazy(() => import("./pages/UpdateInvoice.jsx"));
+const PaymentMadeOnCase = lazy(() => import("./pages/PaymentMadeOnCase.jsx"));
+
+// Documents Management
+const DocumentsList = lazy(() => import("./components/DocumentsList.jsx"));
+const DocumentRecord = lazy(() => import("./pages/DocumentRecord.jsx"));
+const DocumentRecordList = lazy(() => import("./pages/DocumentRecordList.jsx"));
+const DocumentRecordDetails = lazy(
+  () => import("./pages/DocumentRecordDetails.jsx"),
+);
+
+// Notes Management
+const NoteForm = lazy(() => import("./pages/NoteForm.jsx"));
+const NoteList = lazy(() => import("./pages/NoteList.jsx"));
+const UpdateNote = lazy(() => import("./pages/UpdateNote.jsx"));
+
+// Calendar & Events
+const CauseList = lazy(() =>
+  import("./components/CauseList.jsx").then((module) => ({
+    default: module.CauseList,
+  })),
+);
+const EventDetail = lazy(() => import("./pages/EventDetail.jsx"));
+
+// Support
+const ContactForm = lazy(() => import("./components/ContactForm.jsx"));
+
+// ============================================
+// AXIOS CONFIGURATION
+// ============================================
 axios.defaults.withCredentials = true;
 
-// Custom antd theme configuration
+// ============================================
+// ANTD THEME CONFIGURATION
+// ============================================
 const getAntdTheme = (isDarkMode) => ({
   token: {
     colorPrimary: isDarkMode ? "#3b82f6" : "#2563eb",
@@ -159,20 +234,59 @@ const getAntdTheme = (isDarkMode) => ({
   },
 });
 
-// Loading component
+// ============================================
+// LOADING COMPONENTS
+// ============================================
 const LoadingScreen = () => (
   <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-50">
-    <Spin size="large" />
+    <Spin size="large" tip="Loading..." />
   </div>
 );
 
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <Spin size="large" tip="Loading page..." />
+  </div>
+);
+
+// ============================================
+// 404 NOT FOUND COMPONENT
+// ============================================
+const NotFound = () => (
+  <Result
+    status="404"
+    title="404"
+    subTitle="Sorry, the page you visited does not exist."
+    extra={
+      <Link to="/dashboard">
+        <Button type="primary">Back to Dashboard</Button>
+      </Link>
+    }
+  />
+);
+
+// ============================================
+// PROTECTED ROUTE WRAPPER
+// ============================================
+const ProtectedStaffRoute = ({ children }) => (
+  <ShowOnlyVerifiedUser>
+    <ProtectedRoute isStaffRoute={true}>{children}</ProtectedRoute>
+  </ShowOnlyVerifiedUser>
+);
+
+// ============================================
+// MAIN APP COMPONENT
+// ============================================
 function App() {
   const dispatch = useDispatch();
   const isLoading = useSelector((state) => state.loading);
+  const isDarkMode = useSelector((state) => state.theme?.isDarkMode) || false;
   const hasInitialized = useRef(false);
 
+  // ============================================
+  // INITIAL AUTH CHECK (Run Once)
+  // ============================================
   useEffect(() => {
-    // ✅ Only run ONCE on mount
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
@@ -191,287 +305,568 @@ function App() {
     }
 
     initialAuthCheck();
-  }, []); // ✅ Empty dependency array - run once only
+  }, [dispatch]);
 
-  const router = createBrowserRouter(
-    createRoutesFromElements(
-      <Route path="/" element={<HomeLayout />} errorElement={<Error />}>
-        <Route index element={<HomePage />} />
-
-        <Route
-          path="*"
-          element={
-            <Result
-              status="404"
-              title="404"
-              subTitle="Sorry, the page you visited does not exist."
-              extra={
-                <Link to="/">
-                  <Button type="primary">Back Home</Button>
-                </Link>
+  // ============================================
+  // ROUTER CONFIGURATION
+  // ============================================
+  const router = useMemo(
+    () =>
+      createBrowserRouter(
+        createRoutesFromElements(
+          <Route path="/" element={<HomeLayout />} errorElement={<Error />}>
+            {/* Home Page */}
+            <Route
+              index
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <HomePage />
+                </Suspense>
               }
             />
-          }
-        />
 
-        <Route path="/users/login" element={<Login />} />
-        <Route path="/forgotpassword" element={<ForgotPassword />} />
-        <Route path="/resetPassword/:token" element={<ForgotPasswordReset />} />
-        <Route path="/loginWithCode/:email" element={<LoginWithCode />} />
-        <Route
-          path="dashboard/verify-account/:token"
-          element={<VerifyAccount />}
-        />
+            {/* Auth Routes */}
+            <Route
+              path="users/login"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Login />
+                </Suspense>
+              }
+            />
+            <Route
+              path="forgotpassword"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ForgotPassword />
+                </Suspense>
+              }
+            />
+            <Route
+              path="resetPassword/:token"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ForgotPasswordReset />
+                </Suspense>
+              }
+            />
+            <Route
+              path="loginWithCode/:email"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <LoginWithCode />
+                </Suspense>
+              }
+            />
+            <Route
+              path="dashboard/verify-account/:token"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <VerifyAccount />
+                </Suspense>
+              }
+            />
 
-        <Route path="dashboard" element={<DashboardLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="staff/add-user" element={<AddUserForm />} />
-          <Route path="add-notes" element={<NoteForm />} />
-          <Route path="note-list" element={<NoteList />} />
-          <Route path="update-note/:id" element={<UpdateNote />} />
+            {/* Dashboard Routes */}
+            <Route path="dashboard" element={<DashboardLayout />}>
+              <Route index element={<Dashboard />} />
 
-          <Route
-            path="staff"
-            element={
-              <ShowOnlyVerifiedUser>
-                <ProtectedRoute isStaffRoute={true}>
-                  <StaffList />
-                </ProtectedRoute>
-              </ShowOnlyVerifiedUser>
-            }
-          />
-          <Route
-            path="matters"
-            element={
-              <ShowOnlyVerifiedUser>
-                <ProtectedRoute isStaffRoute={true}>
-                  <MatterListView />
-                </ProtectedRoute>
-              </ShowOnlyVerifiedUser>
-            }
-          />
-          <Route
-            path="matters/create"
-            element={
-              <ShowOnlyVerifiedUser>
-                <ProtectedRoute isStaffRoute={true}>
-                  <MatterFormContainer />
-                </ProtectedRoute>
-              </ShowOnlyVerifiedUser>
-            }
-          />
+              {/* Profile */}
+              <Route
+                path="profile"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <Profile />
+                  </Suspense>
+                }
+              />
 
-          <Route path="matters/:id" element={<MatterDetails />} />
-          <Route
-            path="matters/:id/edit"
-            element={
-              <ShowOnlyVerifiedUser>
-                <ProtectedRoute isStaffRoute={true}>
-                  <MatterFormContainer isEditMode={true} />
-                </ProtectedRoute>
-              </ShowOnlyVerifiedUser>
-            }
-          />
+              {/* Staff Management */}
+              <Route
+                path="staff"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ProtectedStaffRoute>
+                      <StaffList />
+                    </ProtectedStaffRoute>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="staff/add-user"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AddUserForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="staff/:id/details"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <StaffDetails />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="staff-status"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ProtectedStaffRoute>
+                      <StatusUserList />
+                    </ProtectedStaffRoute>
+                  </Suspense>
+                }
+              />
 
-          <Route
-            path="staff-status"
-            element={
-              <ShowOnlyVerifiedUser>
-                <ProtectedRoute isStaffRoute={true}>
-                  <StatusUserList />
-                </ProtectedRoute>
-              </ShowOnlyVerifiedUser>
-            }
-          />
-          <Route path="staff/:id/details" element={<StaffDetails />} />
+              {/* Leave Management */}
+              <Route
+                path="leave-application"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <LeaveAppForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="staff/leave-application"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <LeaveApplicationList />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="staff/leave-application/:id/details"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <LeaveApplicationDetails />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="staff/leave-balance"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <LeaveBalanceList />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
 
-          <Route
-            path="cases"
-            element={
-              <ShowOnlyVerifiedUser>
-                <CaseList />
-              </ShowOnlyVerifiedUser>
-            }
-          />
-          <Route
-            path="cases/soft-deleted-cases"
-            element={
-              <ShowOnlyVerifiedUser>
-                <SoftDeletedCasesArchive />
-              </ShowOnlyVerifiedUser>
-            }
-          />
+              {/* Matters Management */}
+              <Route
+                path="matters"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ProtectedStaffRoute>
+                      <MatterListView />
+                    </ProtectedStaffRoute>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="matters/create"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ProtectedStaffRoute>
+                      <MatterFormContainer />
+                    </ProtectedStaffRoute>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="matters/:id"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <MatterDetails />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="matters/:id/edit"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ProtectedStaffRoute>
+                      <MatterFormContainer isEditMode={true} />
+                    </ProtectedStaffRoute>
+                  </Suspense>
+                }
+              />
 
-          <Route path="cases/:id/update" element={<UpdateCase />} />
-          <Route path="cases/add-case" element={<CreateCaseForm />} />
-          <Route path="cases/:id/casedetails" element={<CaseDetails />} />
+              {/* Litigation Management (Nested under /dashboard/matters/) */}
+              <Route path="matters/litigation">
+                <Route
+                  index
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <LitigationList />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="create"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <CreateLitigation />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path=":matterId"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <LitigationDetails />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path=":matterId/edit"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <EditLitigation />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+              </Route>
 
-          <Route
-            path="case-reports"
-            element={
-              <ShowOnlyVerifiedUser>
-                <MainCaseReportList />
-              </ShowOnlyVerifiedUser>
-            }
-          />
-          <Route
-            path="case-reports/soft-deleted-items"
-            element={
-              <ShowOnlyVerifiedUser>
-                <SoftDeletedReportsArchive />
-              </ShowOnlyVerifiedUser>
-            }
-          />
+              {/* Cases Management */}
+              <Route
+                path="cases"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <CaseList />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="cases/add-case"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <CreateCaseForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="cases/:id/update"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <UpdateCase />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="cases/:id/casedetails"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <CaseDetails />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="cases/soft-deleted-cases"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <SoftDeletedCasesArchive />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
 
-          <Route path="leave-application" element={<LeaveAppForm />} />
-          <Route
-            path="staff/leave-application"
-            element={
-              <ShowOnlyVerifiedUser>
-                <LeaveApplicationList />
-              </ShowOnlyVerifiedUser>
-            }
-          />
-          <Route
-            path="staff/leave-balance"
-            element={
-              <ShowOnlyVerifiedUser>
-                <LeaveBalanceList />
-              </ShowOnlyVerifiedUser>
-            }
-          />
+              {/* Case Reports */}
+              <Route
+                path="case-reports"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <MainCaseReportList />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="case-reports/add-report"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <CreateCaseReportForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="case-reports/soft-deleted-items"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <SoftDeletedReportsArchive />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
 
-          <Route
-            path="staff/leave-application/:id/details"
-            element={<LeaveApplicationDetails />}
-          />
-          <Route
-            path="documents"
-            element={
-              <ShowOnlyVerifiedUser>
-                <ShowStaff>
-                  <DocumentsList />
-                </ShowStaff>
-              </ShowOnlyVerifiedUser>
-            }
-          />
-          <Route
-            path="case-reports/add-report"
-            element={<CreateCaseReportForm />}
-          />
-          <Route path="profile" element={<Profile />} />
-          <Route
-            path="tasks"
-            element={
-              <ShowOnlyVerifiedUser>
-                <TaskList />
-              </ShowOnlyVerifiedUser>
-            }
-          />
-          <Route path="tasks/add-task" element={<CreateTaskForm />} />
+              {/* Tasks Management */}
+              <Route
+                path="tasks"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <TaskList />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="tasks/add-task"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <CreateTaskForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="tasks/:id/details"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <TaskDetails />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="tasks/:id/update"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <EditTaskForm />
+                  </Suspense>
+                }
+              />
 
-          <Route path="tasks/:id/details" element={<TaskDetails />} />
+              {/* Clients Management */}
+              <Route
+                path="clients"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <ClientLists />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="clients/add-client"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <AddClientForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="clients/:id/details"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ClientDetails />
+                  </Suspense>
+                }
+              />
 
-          <Route path="tasks/:id/update" element={<EditTaskForm />} />
+              {/* Billing Management */}
+              <Route
+                path="billings"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <InvoiceList />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="billings/invoices/add-invoices"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <CreateInvoiceForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="billings/invoices/:id/details"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <InvoiceDetails />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="billings/invoices/:id/update"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <UpdateInvoice />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="billings/payments/client/:clientId/case/:caseId"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <PaymentMadeOnCase />
+                  </Suspense>
+                }
+              />
 
-          <Route
-            path="clients"
-            element={
-              <ShowOnlyVerifiedUser>
-                <ClientLists />
-              </ShowOnlyVerifiedUser>
-            }
-          />
-          <Route path="clients/add-client" element={<AddClientForm />} />
-          <Route path="clients/:id/details" element={<ClientDetails />} />
+              {/* Documents Management */}
+              <Route
+                path="documents"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <ShowStaff>
+                        <DocumentsList />
+                      </ShowStaff>
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="record-documents"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <DocumentRecord />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="record-document-list"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <DocumentRecordList />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="record-document-list/:id/details"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <DocumentRecordDetails />
+                  </Suspense>
+                }
+              />
 
-          <Route
-            path="billings"
-            element={
-              <ShowOnlyVerifiedUser>
-                <InvoiceList />
-              </ShowOnlyVerifiedUser>
-            }
-          />
+              {/* Notes Management */}
+              <Route
+                path="add-notes"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <NoteForm />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="note-list"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <NoteList />
+                  </Suspense>
+                }
+              />
+              <Route
+                path="update-note/:id"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <UpdateNote />
+                  </Suspense>
+                }
+              />
 
-          <Route
-            path="billings/invoices/add-invoices"
-            element={<CreateInvoiceForm />}
-          />
-          <Route
-            path="billings/invoices/:id/details"
-            element={<InvoiceDetails />}
-          />
-          <Route
-            path="billings/invoices/:id/update"
-            element={<UpdateInvoice />}
-          />
+              {/* Calendar & Events */}
+              <Route
+                path="cause-list"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <CauseList />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
+              <Route
+                path="events/:id/details"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <EventDetail />
+                  </Suspense>
+                }
+              />
 
-          <Route
-            path="billings/payments/client/:clientId/case/:caseId"
-            element={<PaymentMadeOnCase />}
-          />
+              {/* Support */}
+              <Route
+                path="contact-dev"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ContactForm />
+                  </Suspense>
+                }
+              />
+            </Route>
 
-          <Route
-            path="cause-list"
-            element={
-              <ShowOnlyVerifiedUser>
-                <CauseList />
-              </ShowOnlyVerifiedUser>
-            }
-          />
-          <Route path="contact-dev" element={<ContactForm />} />
-          <Route path="events/:id/details" element={<EventDetail />} />
-          <Route path="record-document-list" element={<DocumentRecordList />} />
-          <Route path="record-documents" element={<DocumentRecord />} />
-          <Route
-            path="record-document-list/:id/details"
-            element={<DocumentRecordDetails />}
-          />
-        </Route>
-      </Route>,
-    ),
+            {/* 404 - Not Found (catch all) */}
+            <Route path="*" element={<NotFound />} />
+          </Route>,
+        ),
+      ),
+    [],
   );
 
-  // Theme-aware ToastContainer
-  const ThemeAwareToastContainer = () => {
-    const isDarkMode = useSelector((state) => state.theme?.isDarkMode) || false;
+  // ============================================
+  // THEME-AWARE TOAST CONTAINER
+  // ============================================
+  const toastContainerProps = useMemo(
+    () => ({
+      position: "top-right",
+      autoClose: 4000,
+      hideProgressBar: false,
+      newestOnTop: false,
+      closeOnClick: true,
+      rtl: false,
+      pauseOnFocusLoss: true,
+      draggable: true,
+      pauseOnHover: true,
+      theme: isDarkMode ? "dark" : "light",
+      toastStyle: {
+        fontSize: "14px",
+        fontFamily: "'Poppins', sans-serif",
+        borderRadius: "8px",
+      },
+    }),
+    [isDarkMode],
+  );
 
-    return (
-      <ToastContainer
-        position="top-right"
-        autoClose={4000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-        theme={isDarkMode ? "dark" : "light"}
-        toastStyle={{
-          fontSize: "14px",
-          fontFamily: "'Poppins', sans-serif",
-          borderRadius: "8px",
-        }}
-      />
-    );
-  };
+  // ============================================
+  // ANTD THEME (Memoized)
+  // ============================================
+  const antdTheme = useMemo(() => getAntdTheme(isDarkMode), [isDarkMode]);
 
   return (
     <ThemeProvider>
-      {({ isDarkMode }) => (
-        <ConfigProvider theme={getAntdTheme(isDarkMode)}>
-          {isLoading ? (
-            <LoadingScreen />
-          ) : (
-            <>
-              <RouterProvider router={router} />
-              <ThemeAwareToastContainer />
-            </>
-          )}
-        </ConfigProvider>
-      )}
+      <ConfigProvider theme={antdTheme}>
+        {isLoading ? (
+          <LoadingScreen />
+        ) : (
+          <>
+            <RouterProvider router={router} />
+            <ToastContainer {...toastContainerProps} />
+          </>
+        )}
+      </ConfigProvider>
     </ThemeProvider>
   );
 }

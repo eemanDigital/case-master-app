@@ -977,20 +977,29 @@ exports.protect = catchAsync(async (req, res, next) => {
 });
 
 /**
- * ===============================
- * RESTRICT TO ROLES
- * ===============================
+ * Helper to consolidate all user roles into a single array
+ * This includes the primary role, additional roles, and lawyer status
  */
-// controllers/authController.js - UPDATED MIDDLEWARE
+const getEffectiveRoles = (user) => {
+  const roles = [user.role];
+  if (user.additionalRoles && user.additionalRoles.length > 0) {
+    roles.push(...user.additionalRoles);
+  }
+  if (user.isLawyer) {
+    roles.push("lawyer");
+  }
+  return [...new Set(roles)]; // Remove duplicates
+};
 
 /**
  * ===============================
- * RESTRICT TO ROLES (UPDATED FOR MULTI-PRIVILEGE)
+ * 1. RESTRICT TO ROLES (OR)
+ * Access if user has ANY of the specified roles
  * ===============================
  */
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
-    // Super admin has access to everything
+    // 1) Super admin bypass
     if (
       req.user.role === "super-admin" ||
       req.user.userType === "super-admin"
@@ -998,88 +1007,13 @@ exports.restrictTo = (...roles) => {
       return next();
     }
 
-    // Check primary role
-    if (roles.includes(req.user.role)) {
-      return next();
-    }
+    // 2) Get all effective roles
+    const userRoles = getEffectiveRoles(req.user);
 
-    // ✅ NEW: Check additional roles
-    if (req.user.additionalRoles && req.user.additionalRoles.length > 0) {
-      const hasAdditionalRole = req.user.additionalRoles.some(
-        (additionalRole) => roles.includes(additionalRole),
-      );
-      if (hasAdditionalRole) {
-        return next();
-      }
-    }
+    // 3) Check if user has ANY of the required roles
+    const hasAccess = roles.some((role) => userRoles.includes(role));
 
-    // ✅ NEW: Check isLawyer flag if "lawyer" is in required roles
-    if (roles.includes("lawyer") && req.user.isLawyer === true) {
-      return next();
-    }
-
-    return next(
-      new AppError("You do not have permission to perform this action", 403),
-    );
-  };
-};
-
-/**
- * ===============================
- * RESTRICT TO USER TYPES (UPDATED)
- * ===============================
- */
-exports.restrictToUserTypes = (...userTypes) => {
-  return (req, res, next) => {
-    // Super admin has access to everything
-    if (req.user.userType === "super-admin") {
-      return next();
-    }
-
-    if (!userTypes.includes(req.user.userType)) {
-      return next(
-        new AppError("You do not have permission to perform this action", 403),
-      );
-    }
-    next();
-  };
-};
-
-/**
- * ===============================
- * NEW: CHECK SPECIFIC PRIVILEGE
- * ===============================
- */
-exports.hasPrivilege = (...privileges) => {
-  return (req, res, next) => {
-    // Super admin has all privileges
-    if (
-      req.user.role === "super-admin" ||
-      req.user.userType === "super-admin"
-    ) {
-      return next();
-    }
-
-    // Check if user has ANY of the required privileges
-    const hasRequiredPrivilege = privileges.some((privilege) => {
-      // Check primary role
-      if (req.user.role === privilege) return true;
-
-      // Check additional roles
-      if (
-        req.user.additionalRoles &&
-        req.user.additionalRoles.includes(privilege)
-      ) {
-        return true;
-      }
-
-      // Check lawyer flag
-      if (privilege === "lawyer" && req.user.isLawyer === true) return true;
-
-      return false;
-    });
-
-    if (!hasRequiredPrivilege) {
+    if (!hasAccess) {
       return next(
         new AppError("You do not have permission to perform this action", 403),
       );
@@ -1091,12 +1025,12 @@ exports.hasPrivilege = (...privileges) => {
 
 /**
  * ===============================
- * NEW: REQUIRE ALL PRIVILEGES
+ * 2. REQUIRE ALL PRIVILEGES (AND)
+ * Access only if user possesses ALL specified roles/privileges
  * ===============================
  */
 exports.requireAllPrivileges = (...privileges) => {
   return (req, res, next) => {
-    // Super admin has all privileges
     if (
       req.user.role === "super-admin" ||
       req.user.userType === "super-admin"
@@ -1104,24 +1038,14 @@ exports.requireAllPrivileges = (...privileges) => {
       return next();
     }
 
-    // Get all user's effective roles
-    const userRoles = [req.user.role];
-    if (req.user.additionalRoles && req.user.additionalRoles.length > 0) {
-      userRoles.push(...req.user.additionalRoles);
-    }
-    if (req.user.isLawyer) {
-      userRoles.push("lawyer");
-    }
+    const userRoles = getEffectiveRoles(req.user);
+    const hasAll = privileges.every((priv) => userRoles.includes(priv));
 
-    // Check if user has ALL required privileges
-    const hasAllPrivileges = privileges.every((privilege) =>
-      userRoles.includes(privilege),
-    );
-
-    if (!hasAllPrivileges) {
+    if (!hasAll) {
       return next(
         new AppError(
-          "You do not have all required permissions to perform this action",
+          "This action requires all of the following privileges: " +
+            privileges.join(", "),
           403,
         ),
       );
@@ -1133,62 +1057,95 @@ exports.requireAllPrivileges = (...privileges) => {
 
 /**
  * ===============================
- * NEW: CHECK ADMIN PERMISSION
+ * 3. RESTRICT BY USER TYPE
+ * Checks the base identity (e.g., Staff vs Client)
  * ===============================
  */
-exports.canManageUsers = (req, res, next) => {
-  if (req.user.role === "super-admin") return next();
+exports.restrictToUserTypes = (...userTypes) => {
+  return (req, res, next) => {
+    if (req.user.userType === "super-admin") return next();
 
-  if (req.user.adminDetails && req.user.adminDetails.canManageUsers === true) {
-    return next();
-  }
-
-  return next(new AppError("You do not have permission to manage users", 403));
-};
-
-exports.canManageCases = (req, res, next) => {
-  if (req.user.role === "super-admin") return next();
-
-  if (req.user.adminDetails && req.user.adminDetails.canManageCases === true) {
-    return next();
-  }
-
-  return next(new AppError("You do not have permission to manage cases", 403));
-};
-
-exports.canManageBilling = (req, res, next) => {
-  if (req.user.role === "super-admin") return next();
-
-  if (
-    req.user.adminDetails &&
-    req.user.adminDetails.canManageBilling === true
-  ) {
-    return next();
-  }
-
-  return next(
-    new AppError("You do not have permission to manage billing", 403),
-  );
-};
-
-exports.canViewReports = (req, res, next) => {
-  if (req.user.role === "super-admin") return next();
-
-  if (req.user.adminDetails && req.user.adminDetails.canViewReports === true) {
-    return next();
-  }
-
-  return next(new AppError("You do not have permission to view reports", 403));
+    if (!userTypes.includes(req.user.userType)) {
+      return next(
+        new AppError(`Access restricted to: ${userTypes.join(", ")}`, 403),
+      );
+    }
+    next();
+  };
 };
 
 /**
  * ===============================
- * NEW: FLEXIBLE PERMISSION CHECKER
+ * 4. ADMIN-SPECIFIC PERMISSIONS
+ * (Granular checks inside the Admin role)
+ * ===============================
+ */
+const checkAdminCapability = (capability) => {
+  return (req, res, next) => {
+    // 1. Super-admin in ANY role (primary or additional) bypasses all checks
+    if (req.user.role === "super-admin") return next();
+
+    // Check additional roles for super-admin
+    if (
+      req.user.additionalRoles &&
+      req.user.additionalRoles.includes("super-admin")
+    ) {
+      return next(); // Super-admin in additional roles has full access
+    }
+
+    // 2. Admin with specific capability check
+    const isAdmin =
+      req.user.role === "admin" ||
+      (req.user.additionalRoles && req.user.additionalRoles.includes("admin"));
+
+    if (isAdmin) {
+      // Admin in additional roles might not have adminDetails
+      // So we need to check if they have it, and if so, check capability
+      if (!req.user.adminDetails) {
+        // Admin in additional roles without adminDetails gets default access
+        // Or you can decide to deny access
+        return next(); // or return error based on your requirements
+      }
+
+      if (req.user.adminDetails[capability] === true) {
+        return next();
+      }
+    }
+
+    return next(
+      new AppError(`Insufficient administrative privilege: ${capability}`, 403),
+    );
+  };
+};
+
+exports.canManageUsers = checkAdminCapability("canManageUsers");
+exports.canManageCases = checkAdminCapability("canManageCases");
+exports.canManageBilling = checkAdminCapability("canManageBilling");
+exports.canViewReports = checkAdminCapability("canViewReports");
+exports.hasFullSystemAccess = checkAdminCapability("systemAccessLevel");
+
+/**
+ * ===============================
+ * 5. VERIFICATION CHECK
+ * ===============================
+ */
+exports.isVerified = (req, res, next) => {
+  if (req.user && req.user.isVerified) {
+    return next();
+  }
+  return next(
+    new AppError("Please verify your account to access this feature", 403),
+  );
+};
+
+/**
+ * ===============================
+ * FLEXIBLE PERMISSION CHECKER
  * ===============================
  */
 exports.checkPermission = (permissionChecker) => {
   return (req, res, next) => {
-    // Super admin bypass
+    // 1) Super admin bypass
     if (
       req.user.role === "super-admin" ||
       req.user.userType === "super-admin"
@@ -1196,29 +1153,18 @@ exports.checkPermission = (permissionChecker) => {
       return next();
     }
 
-    // Custom permission logic
+    // 2) Run the custom logic passed into the middleware
+    // We pass req.user to the checker function
     if (permissionChecker(req.user)) {
       return next();
     }
 
+    // 3) If logic returns false, deny access
     return next(
       new AppError("You do not have permission to perform this action", 403),
     );
   };
 };
-
-/**
- * ===============================
- * CHECK VERIFIED USER
- * ===============================
- */
-exports.isVerified = catchAsync(async (req, res, next) => {
-  if (req.user && req.user.isVerified) {
-    return next();
-  } else {
-    return next(new AppError("Account Not Verified", 403));
-  }
-});
 
 /**
  * ===============================

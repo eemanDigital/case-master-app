@@ -1,227 +1,195 @@
 const express = require("express");
-const matterController = require("../controllers/matterController");
+const userController = require("../controllers/userController");
+const authController = require("../controllers/authController");
+const photoController = require("../controllers/photoController");
+
+const router = express.Router();
+
+// Destructuring for cleaner routes
 const {
+  registerFirm,
+  login,
+  isLoggedIn,
+  forgotPassword,
+  verifyUser,
+  resetPassword,
+  sendLoginCode,
+  loginWithCode,
+  loginWithGoogle,
   protect,
-  hasPrivilege,
-  canManageCases,
-  canViewReports,
+  logout,
+  changePassword,
+  register,
+  sendVerificationEmail,
+  restrictTo,
   checkPermission,
-} = require("../controllers/authController");
+  canManageUsers,
+  checkUserLimit,
+  updateFirmUserCount,
+} = authController;
 
-const matterRouter = express.Router();
-
-// ============================================
-// MIDDLEWARE
-// ============================================
-matterRouter.use(protect);
-
-// ============================================
-// SPECIFIC ROUTES (MUST COME FIRST)
-// ============================================
-
-// Bulk operations (SPECIFIC routes)
-matterRouter.patch(
-  "/bulk-update",
-  canManageCases,
-  matterController.checkBulkOperationLimit,
-  matterController.logBulkOperation,
-  matterController.bulkUpdateMatters,
-);
-
-matterRouter.post(
-  "/bulk-assign-officer",
-  canManageCases,
-  matterController.checkBulkOperationLimit,
-  matterController.logBulkOperation,
-  matterController.bulkAssignOfficer,
-);
-
-matterRouter.delete(
-  "/bulk-delete",
-  canManageCases,
-  matterController.checkBulkOperationLimit,
-  matterController.logBulkOperation,
-  matterController.bulkDeleteMatters,
-);
-
-matterRouter.post(
-  "/export",
-  canViewReports,
-  matterController.checkBulkOperationLimit,
-  matterController.exportMatters,
-);
-
-matterRouter.post(
-  "/search",
-  hasPrivilege("admin", "lawyer", "hr", "staff"),
-  matterController.searchMatters,
-);
+const {
+  getUsers,
+  getUser,
+  updateUser,
+  getUsersByRole,
+  getUsersByUserType,
+  getAllLawyers,
+  getAllClients,
+  getUsersByStatus,
+  getActiveUsers,
+  upgradeUser,
+  sendAutomatedEmail,
+  getSingleUser,
+  sendAutomatedCustomEmail,
+  getUserSelectOptions,
+  getAllSelectOptions,
+  getStaffByStatus,
+  getClientsByStatus,
+  getAllUsersByStatus,
+  getStatusStatistics,
+  getUserStatistics,
+  getStaffStatistics,
+  getClientStatistics,
+  deleteUser,
+  softDeleteUser,
+  restoreUser,
+} = userController;
 
 // ============================================
-// STATIC ROUTES (no parameters)
+// PUBLIC ROUTES
 // ============================================
+router.post("/register-firm", registerFirm);
+router.post("/login", login);
+router.post("/forgotpassword", forgotPassword);
+router.get("/loginStatus", isLoggedIn);
+router.patch("/verifyUser/:verificationToken", verifyUser);
+router.patch("/resetpassword/:resetToken", resetPassword);
+router.post("/sendLoginCode/:email", sendLoginCode);
+router.post("/loginWithCode/:email", loginWithCode);
+router.post("/google/callback", loginWithGoogle);
 
-matterRouter.get("/stats", matterController.getMatterStats);
+// ============================================
+// PROTECTED ROUTES
+// ============================================
+router.use(protect); // Global protect for all routes below
 
-matterRouter.get("/my-matters", matterController.getMyMatters);
+router.get("/logout", logout);
+router.patch("/changepassword", changePassword);
 
-matterRouter.get(
-  "/",
-  hasPrivilege("admin", "lawyer", "hr", "staff"),
-  matterController.getAllMatters,
-);
-
-matterRouter.post(
-  "/",
-  canManageCases,
-  matterController.validateMatterType,
-  matterController.createMatter,
+// Registration: Restricted to those with admin or super-admin privilege
+router.post(
+  "/register",
+  restrictTo("admin", "super-admin"),
+  checkUserLimit,
+  updateFirmUserCount,
+  photoController.uploadUserPhoto,
+  photoController.resizeUserPhoto,
+  register,
 );
 
 // ============================================
-// SHORTCUT/SPECIAL ROUTES
+// COMMUNICATION & STATS
 // ============================================
-
-matterRouter.get(
-  "/recent-activity",
-  hasPrivilege("admin", "lawyer", "hr", "staff"),
-  matterController.getRecentActivity,
+// restrictTo now checks primary role + additionalRoles automatically
+router.post(
+  "/sendAutomatedEmail",
+  restrictTo("admin", "hr"),
+  sendAutomatedEmail,
+);
+router.post(
+  "/sendAutomatedCustomEmail",
+  restrictTo("admin", "hr"),
+  sendAutomatedCustomEmail,
+);
+router.post(
+  "/sendVerificationEmail/:email",
+  restrictTo("admin", "super-admin"),
+  sendVerificationEmail,
 );
 
-matterRouter.get(
-  "/pending",
-  hasPrivilege("admin", "lawyer", "hr", "staff"),
-  matterController.getPendingMatters,
+router.get(
+  "/statistics/general",
+  restrictTo("admin", "super-admin", "hr"),
+  getUserStatistics,
 );
-
-matterRouter.get(
-  "/urgent",
-  hasPrivilege("admin", "lawyer", "hr", "staff"),
-  matterController.getUrgentMatters,
+router.get(
+  "/statistics/staff",
+  restrictTo("admin", "super-admin", "hr"),
+  getStaffStatistics,
 );
-
-// ============================================
-// TYPE-SPECIFIC ROUTES (BEFORE :id)
-// ============================================
-
-matterRouter.get(
-  "/type/:matterType",
-  hasPrivilege("admin", "lawyer", "hr", "staff"),
-  matterController.getMattersByType,
+router.get(
+  "/statistics/clients",
+  restrictTo("admin", "super-admin", "hr"),
+  getClientStatistics,
 );
-
-matterRouter.get(
-  "/status/:status",
-  hasPrivilege("admin", "lawyer", "hr", "staff"),
-  matterController.getMattersByStatus,
-);
-
-matterRouter.get(
-  "/validate-matter-number/:matterNumber",
-  hasPrivilege("admin", "lawyer", "hr"),
-  matterController.validateMatterNumber,
+router.get(
+  "/statistics/status",
+  restrictTo("admin", "super-admin", "hr"),
+  getStatusStatistics,
 );
 
 // ============================================
-// GRANULAR PERMISSION ROUTES
+// DATA FETCHING (Multi-Privilege Aware)
 // ============================================
+router.get(
+  "/type/:userType",
+  restrictTo("admin", "super-admin", "hr"),
+  getUsersByUserType,
+);
+router.get(
+  "/lawyers/all",
+  restrictTo("admin", "super-admin", "hr", "lawyer"),
+  getAllLawyers,
+);
+router.get(
+  "/clients/all",
+  restrictTo("admin", "super-admin", "hr"),
+  getAllClients,
+);
 
-matterRouter.get(
-  "/confidential",
+router.get("/role/:role", restrictTo("admin", "hr"), getUsersByRole);
+router.get("/status/:status", restrictTo("admin", "hr"), getUsersByStatus);
+router.get("/active", restrictTo("admin", "hr"), getActiveUsers);
+
+// Select options are public to all authenticated staff/admins
+router.get("/select-options/all", getAllSelectOptions);
+router.get("/select-options", getUserSelectOptions);
+
+// ============================================
+// USER MANAGEMENT
+// ============================================
+router.get("/", restrictTo("super-admin", "admin", "hr"), getUsers);
+router.get("/getUser", getUser); // Self
+router.get("/:id", getSingleUser);
+
+router.patch(
+  "/updateUser",
+  photoController.uploadUserPhoto,
+  photoController.resizeUserPhoto,
+  updateUser,
+);
+
+// Upgrade/Manage (Uses granular adminDetails checks)
+router.patch("/upgradeUser/:id", canManageUsers, upgradeUser);
+router.patch("/soft-delete/:id", canManageUsers, softDeleteUser);
+router.patch("/restore/:id", canManageUsers, restoreUser);
+
+// Hard Delete: Only Super Admin (Must use the array logic)
+router.delete("/delete/:id", restrictTo("super-admin"), deleteUser);
+
+// ============================================
+// SPECIAL PERMISSIONS
+// ============================================
+router.get(
+  "/audit-logs",
   checkPermission((user) => {
-    const hasAccessRole = ["admin", "lawyer", "hr"].includes(user.userType);
-    const hasConfidentialAccess =
-      user.adminDetails?.canViewConfidential === true ||
-      user.lawyerDetails?.canViewConfidential === true ||
-      user.hrDetails?.canViewConfidential === true;
-
-    return hasAccessRole && hasConfidentialAccess;
+    return (
+      user.role === "super-admin" ||
+      (user.adminDetails && user.adminDetails.canViewReports)
+    );
   }),
-  (req, res, next) => {
-    req.query.isConfidential = true;
-    return matterController.getAllMatters(req, res, next);
-  },
+  (req, res) => res.json({ message: "Audit logs" }),
 );
 
-matterRouter.get(
-  "/financial-overview",
-  checkPermission((user) => {
-    const hasFinancialAccess =
-      user.userType === "admin" ||
-      user.userType === "lawyer" ||
-      user.additionalRoles?.includes("finance") ||
-      user.additionalRoles?.includes("accounting");
-
-    return hasFinancialAccess;
-  }),
-  (req, res, next) => {
-    req.query.select =
-      "title,matterNumber,estimatedValue,billingType,invoiceStatus";
-    return matterController.getAllMatters(req, res, next);
-  },
-);
-
-// ============================================
-// PARAMETERIZED ROUTES (:id ROUTES - MUST COME LAST)
-// ============================================
-
-// Single matter routes
-matterRouter.get(
-  "/:id",
-  matterController.checkMatterAccess,
-  matterController.getMatter,
-);
-
-matterRouter.patch(
-  "/:id",
-  canManageCases,
-  matterController.checkMatterAccess,
-  matterController.validateMatterType,
-  matterController.updateMatter,
-);
-
-matterRouter.delete(
-  "/:id",
-  canManageCases,
-  matterController.checkMatterAccess,
-  matterController.deleteMatter,
-);
-
-// Nested routes for specific matter
-matterRouter.patch(
-  "/:id/restore",
-  canManageCases,
-  matterController.restoreMatter,
-);
-
-matterRouter.get(
-  "/:id/timeline",
-  matterController.checkMatterAccess,
-  matterController.getMatterTimeline,
-);
-
-matterRouter.post(
-  "/:id/activity",
-  hasPrivilege("admin", "lawyer", "hr", "staff"),
-  matterController.checkMatterAccess,
-  matterController.addActivityLog,
-);
-
-matterRouter.patch(
-  "/:id/billing",
-  checkPermission((user) => {
-    if (user.userType === "admin") return true;
-    if (user.userType === "lawyer" && user.lawyerDetails?.canManageBilling)
-      return true;
-    if (user.additionalRoles?.includes("finance")) return true;
-
-    return false;
-  }),
-  matterController.checkMatterAccess,
-  (req, res) => {
-    // Handle billing update
-    res.json({ message: "Billing updated" });
-  },
-);
-
-module.exports = matterRouter;
+module.exports = router;

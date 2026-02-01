@@ -1,5 +1,10 @@
 import React, { useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import {
+  useNavigate,
+  useParams,
+  useSearchParams,
+  useLocation,
+} from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Modal, message } from "antd";
 import MatterForm from "./MatterForm";
@@ -13,11 +18,16 @@ import { formatMatterForForm } from "../../../utils/mattersFormatter";
 
 const MatterFormContainer = () => {
   const { id } = useParams();
-
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
   const mode = id ? "edit" : "create";
+
+  // Get query parameters
+  const typeParam = searchParams.get("type"); // e.g., "litigation"
+  const returnToParam = searchParams.get("returnTo"); // e.g., "/dashboard/matters/litigation/:matterId/create"
 
   const { currentMatter, isLoading, validationErrors } = useSelector(
     (state) => state.matter,
@@ -40,6 +50,11 @@ const MatterFormContainer = () => {
     try {
       console.log("Container received form data:", formData);
 
+      // If typeParam is provided, set it in formData
+      if (typeParam && !formData.matterType) {
+        formData.matterType = typeParam;
+      }
+
       // Validate required fields before submission
       if (!formData.matterType) {
         message.error("Matter type is required");
@@ -60,7 +75,54 @@ const MatterFormContainer = () => {
         const result = await dispatch(createMatter(formData)).unwrap();
         if (result) {
           message.success("Matter created successfully");
-          navigate(`/matters/${result.data.matter._id}`);
+
+          const createdMatterId = result.data.matter._id;
+
+          // Check if there's a returnTo path
+          if (returnToParam) {
+            // Replace :matterId placeholder with actual ID
+            const redirectPath = returnToParam.replace(
+              ":matterId",
+              createdMatterId,
+            );
+            navigate(redirectPath);
+          } else {
+            // Default navigation based on matter type
+            switch (formData.matterType) {
+              case "litigation":
+                navigate(
+                  `/dashboard/matters/litigation/${createdMatterId}/create`,
+                );
+                break;
+              case "corporate":
+                navigate(
+                  `/dashboard/matters/corporate/${createdMatterId}/create`,
+                );
+                break;
+              case "advisory":
+                navigate(
+                  `/dashboard/matters/advisory/${createdMatterId}/create`,
+                );
+                break;
+              case "property":
+                navigate(
+                  `/dashboard/matters/property/${createdMatterId}/create`,
+                );
+                break;
+              case "retainer":
+                navigate(
+                  `/dashboard/matters/retainer/${createdMatterId}/create`,
+                );
+                break;
+              case "general":
+                navigate(
+                  `/dashboard/matters/general/${createdMatterId}/create`,
+                );
+                break;
+              default:
+                navigate(`/dashboard/matters/${createdMatterId}`);
+            }
+          }
         }
       } else {
         const result = await dispatch(
@@ -72,7 +134,7 @@ const MatterFormContainer = () => {
 
         if (result) {
           message.success("Matter updated successfully");
-          navigate(`/matters/${id}`);
+          navigate(`/dashboard/matters/${id}`);
         }
       }
     } catch (error) {
@@ -96,14 +158,26 @@ const MatterFormContainer = () => {
       okText: "Yes",
       cancelText: "No",
       onOk: () => {
-        navigate(-1);
+        // Navigate back or to matters list
+        if (location.state?.from) {
+          navigate(location.state.from);
+        } else if (typeParam) {
+          // If came from specific type, go back to that list
+          navigate(`/dashboard/matters/${typeParam}`);
+        } else {
+          navigate("/dashboard/matters");
+        }
       },
     });
   };
 
   // Format initial values for the form
   const initialValues =
-    mode === "edit" && currentMatter ? formatMatterForForm(currentMatter) : {};
+    mode === "edit" && currentMatter
+      ? formatMatterForForm(currentMatter)
+      : typeParam
+        ? { matterType: typeParam } // Pre-fill matter type if provided
+        : {};
 
   return (
     <MatterForm
@@ -114,6 +188,7 @@ const MatterFormContainer = () => {
       onCancel={handleCancel}
       apiErrors={validationErrors}
       key={currentMatter?._id || "create"}
+      presetMatterType={typeParam} // Pass as prop to disable matter type field
     />
   );
 };

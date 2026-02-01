@@ -1,8 +1,8 @@
 import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { Menu, Avatar, Typography, Space, Badge, Tooltip } from "antd";
+import { useDispatch } from "react-redux";
+import { Menu, Typography } from "antd";
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -15,13 +15,16 @@ import {
   DollarOutlined,
   QuestionCircleOutlined,
   LogoutOutlined,
-  BellOutlined,
-  SettingOutlined,
   HomeOutlined,
+  AuditOutlined,
+  SolutionOutlined,
+  GlobalOutlined,
+  ReconciliationOutlined,
+  ProfileOutlined,
 } from "@ant-design/icons";
 import { logout, RESET } from "../redux/features/auth/authSlice";
 import { useTheme } from "../providers/ThemeProvider";
-import { useAdminHook } from "../hooks/useAdminHook";
+// import { useAdminHook } from "../hooks/useAdminHook";
 
 const { Text } = Typography;
 
@@ -29,9 +32,9 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useSelector((state) => state.auth);
+  // const { user } = useSelector((state) => state.auth);
   const { isDarkMode } = useTheme();
-  const { isAdminOrHr, isSuperOrAdmin, userData } = useAdminHook();
+  // const { isAdminOrHr, isSuperOrAdmin, userData } = useAdminHook();
 
   const [selectedKeys, setSelectedKeys] = useState(["dashboard"]);
   const [openKeys, setOpenKeys] = useState([]);
@@ -39,7 +42,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
   useEffect(() => {
     const path = location.pathname;
 
-    // More specific path matching - check longer paths first
+    // Staff-related paths - check most specific first
     if (path.includes("/dashboard/staff/leave-application")) {
       setSelectedKeys(["leave-applications"]);
       setOpenKeys(["staff", "leave"]);
@@ -52,10 +55,32 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
     } else if (path.includes("/dashboard/staff")) {
       setSelectedKeys(["staff-directory"]);
       setOpenKeys(["staff"]);
+    }
+    // Matter-related paths - check specific practice areas first
+    else if (path.includes("/dashboard/matters/litigation")) {
+      setSelectedKeys(["litigation"]);
+      setOpenKeys(["matters"]);
+    } else if (path.includes("/dashboard/matters/corporate")) {
+      setSelectedKeys(["corporate"]);
+      setOpenKeys(["matters"]);
+    } else if (path.includes("/dashboard/matters/retainership")) {
+      setSelectedKeys(["retainership"]);
+      setOpenKeys(["matters"]);
+    } else if (path.includes("/dashboard/matters/property")) {
+      setSelectedKeys(["property"]);
+      setOpenKeys(["matters"]);
+    } else if (path.includes("/dashboard/matters/advisory")) {
+      setSelectedKeys(["advisory"]);
+      setOpenKeys(["matters"]);
+    } else if (path.includes("/dashboard/matters/general")) {
+      setSelectedKeys(["general"]);
+      setOpenKeys(["matters"]);
     } else if (path.includes("/dashboard/matters")) {
-      setSelectedKeys(["matters"]);
-      setOpenKeys([]);
-    } else if (path.includes("/dashboard/case-reports")) {
+      setSelectedKeys(["all-matters"]);
+      setOpenKeys(["matters"]);
+    }
+    // Other paths
+    else if (path.includes("/dashboard/case-reports")) {
       setSelectedKeys(["reports"]);
       setOpenKeys([]);
     } else if (path.includes("/dashboard/cases")) {
@@ -108,7 +133,50 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
       key: "matters",
       icon: <FileTextOutlined />,
       label: "Matters",
-      path: "/dashboard/matters",
+      children: [
+        {
+          key: "all-matters",
+          icon: <ReconciliationOutlined />,
+          label: "All Matters",
+          path: "/dashboard/matters",
+        },
+        {
+          key: "litigation",
+          icon: <AuditOutlined />,
+          label: "Litigation",
+          path: "/dashboard/matters/litigation",
+        },
+        {
+          key: "corporate",
+          icon: <BankOutlined />,
+          label: "Corporate Practice",
+          path: "/dashboard/matters/corporate",
+        },
+        {
+          key: "retainership",
+          icon: <SolutionOutlined />,
+          label: "Retainership",
+          path: "/dashboard/matters/retainership",
+        },
+        {
+          key: "property",
+          icon: <GlobalOutlined />,
+          label: "Property Practice",
+          path: "/dashboard/matters/property",
+        },
+        {
+          key: "advisory",
+          icon: <ProfileOutlined />,
+          label: "Advisory",
+          path: "/dashboard/matters/advisory",
+        },
+        {
+          key: "general",
+          icon: <FileTextOutlined />,
+          label: "General Practice",
+          path: "/dashboard/matters/general",
+        },
+      ],
     },
     {
       key: "cases",

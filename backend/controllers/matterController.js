@@ -819,6 +819,7 @@ exports.bulkAssignOfficer = catchAsync(async (req, res, next) => {
       { userType: "lawyer" },
       { userType: "admin" },
       { additionalRoles: "admin" },
+      { additionalRoles: "super-admin" },
     ],
   });
 
@@ -828,8 +829,8 @@ exports.bulkAssignOfficer = catchAsync(async (req, res, next) => {
     );
   }
 
-  const session = await Matter.startSession();
-  session.startTransaction();
+  // const session = await Matter.startSession();
+  // session.startTransaction();
 
   try {
     // Update matters with new officer
@@ -852,11 +853,11 @@ exports.bulkAssignOfficer = catchAsync(async (req, res, next) => {
           },
         },
       },
-      { session },
+      // { session },
     );
 
-    await session.commitTransaction();
-    session.endSession();
+    // await session.commitTransaction();
+    // session.endSession();
 
     res.status(200).json({
       status: "success",
@@ -872,7 +873,7 @@ exports.bulkAssignOfficer = catchAsync(async (req, res, next) => {
     });
   } catch (error) {
     await session.abortTransaction();
-    session.endSession();
+    // session.endSession();
     return next(error);
   }
 });
