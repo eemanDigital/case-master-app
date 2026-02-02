@@ -1,6 +1,5 @@
 import apiService from "../../../services/api";
 import { buildQueryString } from "../../../utils/formatters";
-
 // ============================================
 // LITIGATION MATTERS CRUD
 // ============================================
@@ -86,9 +85,11 @@ export const deleteCourtOrder = (matterId, orderId) => {
 // PROCESSES FILED
 // ============================================
 
-export const addProcessFiled = (matterId, data) => {
-  // Expecting { party, processData } structure
-  return apiService.post(`/litigation/${matterId}/processes`, data);
+export const addProcessFiled = (matterId, party, processData) => {
+  return apiService.post(`/litigation/${matterId}/processes`, {
+    party,
+    processData,
+  });
 };
 
 export const updateProcessFiled = (
@@ -149,7 +150,99 @@ export const exportSingleMatter = (matterId, format = "pdf") => {
   });
 };
 
+// ============================================
+// ADDITIONAL LITIGATION OPERATIONS
+// ============================================
+
+export const addJudgment = (matterId, judgmentData) => {
+  return apiService.post(`/litigation/${matterId}/judgment`, judgmentData);
+};
+
+export const updateJudgment = (matterId, judgmentId, judgmentData) => {
+  return apiService.patch(
+    `/litigation/${matterId}/judgment/${judgmentId}`,
+    judgmentData,
+  );
+};
+
+export const deleteJudgment = (matterId, judgmentId) => {
+  return apiService.delete(`/litigation/${matterId}/judgment/${judgmentId}`);
+};
+
+export const addSettlement = (matterId, settlementData) => {
+  return apiService.post(`/litigation/${matterId}/settlement`, settlementData);
+};
+
+export const updateSettlement = (matterId, settlementId, settlementData) => {
+  return apiService.patch(
+    `/litigation/${matterId}/settlement/${settlementId}`,
+    settlementData,
+  );
+};
+
+export const deleteSettlement = (matterId, settlementId) => {
+  return apiService.delete(
+    `/litigation/${matterId}/settlement/${settlementId}`,
+  );
+};
+
+export const addAppeal = (matterId, appealData) => {
+  return apiService.post(`/litigation/${matterId}/appeal`, appealData);
+};
+
+export const updateAppeal = (matterId, appealId, appealData) => {
+  return apiService.patch(
+    `/litigation/${matterId}/appeal/${appealId}`,
+    appealData,
+  );
+};
+
+export const deleteAppeal = (matterId, appealId) => {
+  return apiService.delete(`/litigation/${matterId}/appeal/${appealId}`);
+};
+
+export const getLitigationTimeline = (matterId) => {
+  return apiService.get(`/litigation/${matterId}/timeline`);
+};
+
+export const addLitigationDocument = (matterId, documentData) => {
+  return apiService.post(`/litigation/${matterId}/documents`, documentData);
+};
+
+export const getLitigationDocuments = (matterId, params = {}) => {
+  const queryString = buildQueryString(params);
+  return apiService.get(`/litigation/${matterId}/documents${queryString}`);
+};
+
+export const deleteLitigationDocument = (matterId, documentId) => {
+  return apiService.delete(`/litigation/${matterId}/documents/${documentId}`);
+};
+
+export const getLitigationParties = (matterId) => {
+  return apiService.get(`/litigation/${matterId}/parties`);
+};
+
+export const addLitigationParty = (matterId, partyData) => {
+  return apiService.post(`/litigation/${matterId}/parties`, partyData);
+};
+
+export const updateLitigationParty = (matterId, partyId, partyData) => {
+  return apiService.patch(
+    `/litigation/${matterId}/parties/${partyId}`,
+    partyData,
+  );
+};
+
+export const deleteLitigationParty = (matterId, partyId) => {
+  return apiService.delete(`/litigation/${matterId}/parties/${partyId}`);
+};
+
+// ============================================
+// COMPREHENSIVE SERVICE OBJECT
+// ============================================
+
 const litigationService = {
+  // Core CRUD
   getAllLitigationMatters,
   searchLitigationMatters,
   getLitigationDetails,
@@ -157,22 +250,55 @@ const litigationService = {
   updateLitigationDetails,
   deleteLitigationDetails,
   restoreLitigationDetails,
+
+  // Hearings
   getUpcomingHearings,
   addHearing,
   updateHearing,
   deleteHearing,
+
+  // Court Orders
   addCourtOrder,
   updateCourtOrder,
   deleteCourtOrder,
+
+  // Processes Filed
   addProcessFiled,
   updateProcessFiled,
+
+  // Case Outcomes
   recordJudgment,
   recordSettlement,
   fileAppeal,
+
+  // Additional Case Outcome Operations
+  addJudgment,
+  updateJudgment,
+  deleteJudgment,
+  addSettlement,
+  updateSettlement,
+  deleteSettlement,
+  addAppeal,
+  updateAppeal,
+  deleteAppeal,
+
+  // Statistics & Reports
   getLitigationStats,
   getLitigationDashboard,
+
+  // Export
   exportLitigationMatters,
   exportSingleMatter,
+
+  // Additional Features
+  getLitigationTimeline,
+  addLitigationDocument,
+  getLitigationDocuments,
+  deleteLitigationDocument,
+  getLitigationParties,
+  addLitigationParty,
+  updateLitigationParty,
+  deleteLitigationParty,
 };
 
 export default litigationService;

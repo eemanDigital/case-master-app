@@ -59,7 +59,7 @@ export const fetchLitigationMatters = createAsyncThunk(
   async (params, { rejectWithValue }) => {
     try {
       const response = await litigationService.getAllLitigationMatters(params);
-      return response; // apiService already returns data
+      return response;
     } catch (error) {
       return rejectWithValue(
         error.response?.data || "Failed to fetch litigation matters",
@@ -90,7 +90,7 @@ export const fetchLitigationDetails = createAsyncThunk(
   async (matterId, { rejectWithValue }) => {
     try {
       const response = await litigationService.getLitigationDetails(matterId);
-      return response; // Contains { status, data: { litigationDetail } }
+      return response;
     } catch (error) {
       return rejectWithValue(
         error.response?.data || "Failed to fetch litigation details",
@@ -156,6 +156,10 @@ export const deleteLitigationDetails = createAsyncThunk(
   },
 );
 
+// ============================================
+// HEARINGS MANAGEMENT
+// ============================================
+
 // Add hearing
 export const addHearing = createAsyncThunk(
   "litigation/addHearing",
@@ -219,6 +223,10 @@ export const deleteHearing = createAsyncThunk(
   },
 );
 
+// ============================================
+// COURT ORDERS MANAGEMENT
+// ============================================
+
 // Add court order
 export const addCourtOrder = createAsyncThunk(
   "litigation/addCourtOrder",
@@ -228,7 +236,7 @@ export const addCourtOrder = createAsyncThunk(
         matterId,
         orderData,
       );
-      message.success(response.message || "Court order added successfully");
+      message.success("Court order added successfully");
       return response;
     } catch (error) {
       message.error(
@@ -240,6 +248,104 @@ export const addCourtOrder = createAsyncThunk(
     }
   },
 );
+
+// Update court order
+export const updateCourtOrder = createAsyncThunk(
+  "litigation/updateCourtOrder",
+  async ({ matterId, orderId, orderData }, { rejectWithValue }) => {
+    try {
+      const response = await litigationService.updateCourtOrder(
+        matterId,
+        orderId,
+        orderData,
+      );
+      message.success("Court order updated successfully");
+      return response;
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Failed to update court order",
+      );
+      return rejectWithValue(
+        error.response?.data || "Failed to update court order",
+      );
+    }
+  },
+);
+
+// Delete court order
+export const deleteCourtOrder = createAsyncThunk(
+  "litigation/deleteCourtOrder",
+  async ({ matterId, orderId }, { rejectWithValue }) => {
+    try {
+      const response = await litigationService.deleteCourtOrder(
+        matterId,
+        orderId,
+      );
+      message.success("Court order deleted successfully");
+      return response;
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Failed to delete court order",
+      );
+      return rejectWithValue(
+        error.response?.data || "Failed to delete court order",
+      );
+    }
+  },
+);
+
+// ============================================
+// PROCESSES FILED MANAGEMENT
+// ============================================
+
+// Add process filed
+export const addProcessFiled = createAsyncThunk(
+  "litigation/addProcessFiled",
+  async ({ matterId, party, processData }, { rejectWithValue }) => {
+    try {
+      const response = await litigationService.addProcessFiled(matterId, {
+        party,
+        ...processData,
+      });
+      message.success("Process added successfully");
+      return response;
+    } catch (error) {
+      message.error(error.response?.data?.message || "Failed to add process");
+      return rejectWithValue(error.response?.data || "Failed to add process");
+    }
+  },
+);
+
+// Update process filed
+export const updateProcessFiled = createAsyncThunk(
+  "litigation/updateProcessFiled",
+  async (
+    { matterId, party, processIndex, processData },
+    { rejectWithValue },
+  ) => {
+    try {
+      const response = await litigationService.updateProcessFiled(
+        matterId,
+        party,
+        processIndex,
+        processData,
+      );
+      message.success("Process updated successfully");
+      return response;
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Failed to update process",
+      );
+      return rejectWithValue(
+        error.response?.data || "Failed to update process",
+      );
+    }
+  },
+);
+
+// ============================================
+// CASE OUTCOMES
+// ============================================
 
 // Record judgment
 export const recordJudgment = createAsyncThunk(
@@ -300,13 +406,17 @@ export const fileAppeal = createAsyncThunk(
   },
 );
 
+// ============================================
+// STATISTICS & DASHBOARD
+// ============================================
+
 // Fetch statistics
 export const fetchLitigationStats = createAsyncThunk(
   "litigation/fetchStats",
   async (_, { rejectWithValue }) => {
     try {
       const response = await litigationService.getLitigationStats();
-      return response.data; // Extract data from response
+      return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data || "Failed to fetch statistics",
@@ -321,7 +431,7 @@ export const fetchLitigationDashboard = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await litigationService.getLitigationDashboard();
-      return response.data; // Extract data from response
+      return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data || "Failed to fetch dashboard",
@@ -336,7 +446,7 @@ export const fetchUpcomingHearings = createAsyncThunk(
   async (params, { rejectWithValue }) => {
     try {
       const response = await litigationService.getUpcomingHearings(params);
-      return response.data; // Extract data from response
+      return response.data;
     } catch (error) {
       return rejectWithValue(
         error.response?.data || "Failed to fetch upcoming hearings",
@@ -356,7 +466,7 @@ const litigationSlice = createSlice({
     // Filter actions
     setFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
-      state.pagination.page = 1; // Reset to first page on filter change
+      state.pagination.page = 1;
     },
 
     clearFilters: (state) => {
@@ -405,7 +515,9 @@ const litigationSlice = createSlice({
   },
 
   extraReducers: (builder) => {
-    // Fetch litigation matters
+    // ============================================
+    // FETCH LITIGATION MATTERS
+    // ============================================
     builder
       .addCase(fetchLitigationMatters.pending, (state) => {
         state.loading = true;
@@ -427,7 +539,9 @@ const litigationSlice = createSlice({
         state.error = action.payload;
       });
 
-    // Search litigation matters
+    // ============================================
+    // SEARCH LITIGATION MATTERS
+    // ============================================
     builder
       .addCase(searchLitigationMatters.pending, (state) => {
         state.loading = true;
@@ -449,7 +563,9 @@ const litigationSlice = createSlice({
         state.error = action.payload;
       });
 
-    // Fetch litigation details
+    // ============================================
+    // LITIGATION DETAILS
+    // ============================================
     builder
       .addCase(fetchLitigationDetails.pending, (state) => {
         state.detailsLoading = true;
@@ -462,10 +578,7 @@ const litigationSlice = createSlice({
       .addCase(fetchLitigationDetails.rejected, (state, action) => {
         state.detailsLoading = false;
         state.error = action.payload;
-      });
-
-    // Create litigation details
-    builder
+      })
       .addCase(createLitigationDetails.pending, (state) => {
         state.actionLoading = true;
       })
@@ -476,10 +589,7 @@ const litigationSlice = createSlice({
       .addCase(createLitigationDetails.rejected, (state, action) => {
         state.actionLoading = false;
         state.error = action.payload;
-      });
-
-    // Update litigation details
-    builder
+      })
       .addCase(updateLitigationDetails.pending, (state) => {
         state.actionLoading = true;
       })
@@ -490,16 +600,12 @@ const litigationSlice = createSlice({
       .addCase(updateLitigationDetails.rejected, (state, action) => {
         state.actionLoading = false;
         state.error = action.payload;
-      });
-
-    // Delete litigation details
-    builder
+      })
       .addCase(deleteLitigationDetails.pending, (state) => {
         state.actionLoading = true;
       })
       .addCase(deleteLitigationDetails.fulfilled, (state, action) => {
         state.actionLoading = false;
-        // Remove from matters list
         state.matters = state.matters.filter((m) => m._id !== action.payload);
         state.selectedDetails = null;
         state.selectedMatter = null;
@@ -509,7 +615,9 @@ const litigationSlice = createSlice({
         state.error = action.payload;
       });
 
-    // Hearing actions
+    // ============================================
+    // HEARINGS
+    // ============================================
     builder
       .addCase(addHearing.pending, (state) => {
         state.actionLoading = true;
@@ -545,7 +653,9 @@ const litigationSlice = createSlice({
         state.error = action.payload;
       });
 
-    // Court order
+    // ============================================
+    // COURT ORDERS
+    // ============================================
     builder
       .addCase(addCourtOrder.pending, (state) => {
         state.actionLoading = true;
@@ -557,21 +667,98 @@ const litigationSlice = createSlice({
       .addCase(addCourtOrder.rejected, (state, action) => {
         state.actionLoading = false;
         state.error = action.payload;
+      })
+      .addCase(updateCourtOrder.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(updateCourtOrder.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        state.selectedDetails = action.payload.data?.litigationDetail;
+      })
+      .addCase(updateCourtOrder.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(deleteCourtOrder.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(deleteCourtOrder.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        state.selectedDetails = action.payload.data?.litigationDetail;
+      })
+      .addCase(deleteCourtOrder.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
       });
 
-    // Case outcomes
+    // ============================================
+    // PROCESSES FILED
+    // ============================================
     builder
-      .addCase(recordJudgment.fulfilled, (state, action) => {
+      .addCase(addProcessFiled.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(addProcessFiled.fulfilled, (state, action) => {
+        state.actionLoading = false;
         state.selectedDetails = action.payload.data?.litigationDetail;
+      })
+      .addCase(addProcessFiled.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(updateProcessFiled.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(updateProcessFiled.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        state.selectedDetails = action.payload.data?.litigationDetail;
+      })
+      .addCase(updateProcessFiled.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      });
+
+    // ============================================
+    // CASE OUTCOMES
+    // ============================================
+    builder
+      .addCase(recordJudgment.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(recordJudgment.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        state.selectedDetails = action.payload.data?.litigationDetail;
+      })
+      .addCase(recordJudgment.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(recordSettlement.pending, (state) => {
+        state.actionLoading = true;
       })
       .addCase(recordSettlement.fulfilled, (state, action) => {
+        state.actionLoading = false;
         state.selectedDetails = action.payload.data?.litigationDetail;
       })
+      .addCase(recordSettlement.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(fileAppeal.pending, (state) => {
+        state.actionLoading = true;
+      })
       .addCase(fileAppeal.fulfilled, (state, action) => {
+        state.actionLoading = false;
         state.selectedDetails = action.payload.data?.litigationDetail;
+      })
+      .addCase(fileAppeal.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
       });
 
-    // Statistics
+    // ============================================
+    // STATISTICS & DASHBOARD
+    // ============================================
     builder
       .addCase(fetchLitigationStats.pending, (state) => {
         state.statsLoading = true;
@@ -583,10 +770,7 @@ const litigationSlice = createSlice({
       .addCase(fetchLitigationStats.rejected, (state, action) => {
         state.statsLoading = false;
         state.error = action.payload;
-      });
-
-    // Dashboard
-    builder
+      })
       .addCase(fetchLitigationDashboard.pending, (state) => {
         state.statsLoading = true;
       })
@@ -597,10 +781,7 @@ const litigationSlice = createSlice({
       .addCase(fetchLitigationDashboard.rejected, (state, action) => {
         state.statsLoading = false;
         state.error = action.payload;
-      });
-
-    // Upcoming hearings
-    builder
+      })
       .addCase(fetchUpcomingHearings.pending, (state) => {
         state.loading = true;
       })

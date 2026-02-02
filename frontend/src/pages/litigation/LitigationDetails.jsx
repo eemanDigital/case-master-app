@@ -1,17 +1,21 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Button, Tabs, Card, Descriptions, Tag, message } from "antd";
+import { Button, Tabs, Card, Descriptions, Tag, message, Space } from "antd";
 import {
   EditOutlined,
   DownloadOutlined,
   PrinterOutlined,
   TrophyOutlined,
   // ScaleOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import PageHeader from "../../components/common/PageHeader";
 import LoadingScreen from "../../components/common/LoadingScreen";
 import MatterDetailsCard from "../../components/litigation/MatterDetailsCard";
+import JudgmentRecordModal from "../../components/litigation/JudgmentRecordModal";
+import SettlementRecordModal from "../../components/litigation/SettlementRecordModal";
+import AppealFilingModal from "../../components/litigation/AppealFilingModal";
 import HearingTimeline from "../../components/litigation/HearingTimeline";
 
 import StatusTag from "../../components/common/StatusTag";
@@ -24,7 +28,7 @@ import litigationService, {
 import {
   formatDate,
   formatCurrency,
-  formatArrayToString,
+  // formatArrayToString,
 } from "../../utils/formatters";
 import {
   JUDGMENT_OUTCOMES,
@@ -40,6 +44,9 @@ const LitigationDetails = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { matterId } = useParams();
+  const [showJudgmentModal, setShowJudgmentModal] = useState(false);
+  const [showSettlementModal, setShowSettlementModal] = useState(false);
+  const [showAppealModal, setShowAppealModal] = useState(false);
 
   const litigationDetails = useSelector(selectSelectedDetails);
   const loading = useSelector(selectDetailsLoading);
@@ -132,6 +139,50 @@ const LitigationDetails = () => {
             Edit Details
           </Button>,
         ]}
+      />
+
+      <Space>
+        <Button
+          // icon={<ScaleOutlined />}
+          onClick={() => setShowJudgmentModal(true)}>
+          {litigationDetails.judgment ? "Edit Judgment" : "Record Judgment"}
+        </Button>
+
+        <Button
+          icon={<CheckCircleOutlined />}
+          onClick={() => setShowSettlementModal(true)}>
+          {litigationDetails.settlement?.isSettled
+            ? "Edit Settlement"
+            : "Record Settlement"}
+        </Button>
+
+        <Button
+          icon={<TrophyOutlined />}
+          onClick={() => setShowAppealModal(true)}>
+          {litigationDetails.appeal?.isAppealed ? "Edit Appeal" : "File Appeal"}
+        </Button>
+      </Space>
+
+      {/* Modals */}
+      <JudgmentRecordModal
+        visible={showJudgmentModal}
+        onCancel={() => setShowJudgmentModal(false)}
+        matterId={matterId}
+        initialValues={litigationDetails.judgment}
+      />
+
+      <SettlementRecordModal
+        visible={showSettlementModal}
+        onCancel={() => setShowSettlementModal(false)}
+        matterId={matterId}
+        initialValues={litigationDetails.settlement}
+      />
+
+      <AppealFilingModal
+        visible={showAppealModal}
+        onCancel={() => setShowAppealModal(false)}
+        matterId={matterId}
+        initialValues={litigationDetails.appeal}
       />
 
       <div className="max-w-7xl mx-auto p-6">

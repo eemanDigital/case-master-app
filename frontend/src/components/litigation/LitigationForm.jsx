@@ -58,6 +58,29 @@ const LitigationForm = ({
         lastHearingDate: initialValues.lastHearingDate
           ? dayjs(initialValues.lastHearingDate)
           : null,
+        // Format processes filed dates
+        firstParty: initialValues.firstParty
+          ? {
+              ...initialValues.firstParty,
+              processesFiled: initialValues.firstParty.processesFiled?.map(
+                (p) => ({
+                  ...p,
+                  filingDate: p.filingDate ? dayjs(p.filingDate) : null,
+                }),
+              ),
+            }
+          : undefined,
+        secondParty: initialValues.secondParty
+          ? {
+              ...initialValues.secondParty,
+              processesFiled: initialValues.secondParty.processesFiled?.map(
+                (p) => ({
+                  ...p,
+                  filingDate: p.filingDate ? dayjs(p.filingDate) : null,
+                }),
+              ),
+            }
+          : undefined,
       }
     : {};
 
@@ -73,6 +96,25 @@ const LitigationForm = ({
       lastHearingDate: values.lastHearingDate
         ? values.lastHearingDate.toISOString()
         : null,
+      // Format processes filed dates
+      firstParty: values.firstParty
+        ? {
+            ...values.firstParty,
+            processesFiled: values.firstParty.processesFiled?.map((p) => ({
+              ...p,
+              filingDate: p.filingDate ? p.filingDate.toISOString() : null,
+            })),
+          }
+        : undefined,
+      secondParty: values.secondParty
+        ? {
+            ...values.secondParty,
+            processesFiled: values.secondParty.processesFiled?.map((p) => ({
+              ...p,
+              filingDate: p.filingDate ? p.filingDate.toISOString() : null,
+            })),
+          }
+        : undefined,
     };
 
     onSubmit(formattedValues);
@@ -423,6 +465,82 @@ const LitigationForm = ({
             </>
           )}
         </Form.List>
+
+        <Divider orientation="left" plain>
+          Other Parties (if applicable)
+        </Divider>
+
+        <Form.List name="otherParty">
+          {(fields, { add, remove }) => (
+            <>
+              {fields.map(({ key, name, ...restField }) => (
+                <div
+                  key={key}
+                  className="mb-4 p-4 border border-gray-200 rounded">
+                  <Row gutter={16}>
+                    <Col xs={24}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, "description"]}
+                        label={`Other Party ${name + 1} Description`}>
+                        <Input placeholder="e.g., Third Party, Intervenor" />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24}>
+                      <Form.List name={[name, "name"]}>
+                        {(subFields, { add: addName, remove: removeName }) => (
+                          <>
+                            {subFields.map(
+                              ({ key: subKey, name: subName, ...subRest }) => (
+                                <Row gutter={16} key={subKey} align="middle">
+                                  <Col xs={22}>
+                                    <Form.Item
+                                      {...subRest}
+                                      name={[subName, "name"]}>
+                                      <Input placeholder="Enter name" />
+                                    </Form.Item>
+                                  </Col>
+                                  <Col xs={2}>
+                                    <MinusCircleOutlined
+                                      className="text-red-500 cursor-pointer"
+                                      onClick={() => removeName(subName)}
+                                    />
+                                  </Col>
+                                </Row>
+                              ),
+                            )}
+                            <Button
+                              type="dashed"
+                              onClick={() => addName()}
+                              icon={<PlusOutlined />}
+                              size="small"
+                              block>
+                              Add Name
+                            </Button>
+                          </>
+                        )}
+                      </Form.List>
+                    </Col>
+                    <Col xs={24}>
+                      <Button danger onClick={() => remove(name)} block>
+                        Remove Other Party
+                      </Button>
+                    </Col>
+                  </Row>
+                </div>
+              ))}
+              <Form.Item>
+                <Button
+                  type="dashed"
+                  onClick={() => add()}
+                  icon={<PlusOutlined />}
+                  block>
+                  Add Other Party
+                </Button>
+              </Form.Item>
+            </>
+          )}
+        </Form.List>
       </Card>
 
       {/* LEGAL BASIS */}
@@ -491,6 +609,214 @@ const LitigationForm = ({
             </Form.Item>
           </Col>
         </Row>
+      </Card>
+
+      {/* PROCESSES FILED */}
+      <Card title="Processes to be Filed" className="mb-6">
+        <Divider orientation="left" plain>
+          First Party Processes
+        </Divider>
+        <Form.List name={["firstParty", "processesFiled"]}>
+          {(fields, { add, remove }) => (
+            <>
+              {fields.map(({ key, name, ...restField }) => (
+                <Row gutter={16} key={key} align="middle">
+                  <Col xs={24} md={10}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "name"]}
+                      label={
+                        fields.length > 1
+                          ? `Process ${name + 1}`
+                          : "Process Name"
+                      }
+                      rules={[
+                        { required: true, message: "Process name required" },
+                      ]}>
+                      <Input placeholder="e.g., Motion for Adjournment" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={6}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "filingDate"]}
+                      label="Filing Date">
+                      <DatePicker
+                        style={{ width: "100%" }}
+                        format={DATE_FORMAT}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={22} md={6}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "status"]}
+                      label="Status"
+                      initialValue="pending">
+                      <Select>
+                        <Option value="pending">Pending</Option>
+                        <Option value="filed">Filed</Option>
+                        <Option value="served">Served</Option>
+                        <Option value="completed">Completed</Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col xs={2} md={2}>
+                    <MinusCircleOutlined
+                      className="text-red-500 cursor-pointer mt-2"
+                      onClick={() => remove(name)}
+                    />
+                  </Col>
+                </Row>
+              ))}
+              <Form.Item>
+                <Button
+                  type="dashed"
+                  onClick={() => add()}
+                  icon={<PlusOutlined />}
+                  block>
+                  Add First Party Process
+                </Button>
+              </Form.Item>
+            </>
+          )}
+        </Form.List>
+
+        <Divider orientation="left" plain>
+          Second Party Processes
+        </Divider>
+        <Form.List name={["secondParty", "processesFiled"]}>
+          {(fields, { add, remove }) => (
+            <>
+              {fields.map(({ key, name, ...restField }) => (
+                <Row gutter={16} key={key} align="middle">
+                  <Col xs={24} md={10}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "name"]}
+                      label={
+                        fields.length > 1
+                          ? `Process ${name + 1}`
+                          : "Process Name"
+                      }
+                      rules={[
+                        { required: true, message: "Process name required" },
+                      ]}>
+                      <Input placeholder="e.g., Counter-Affidavit" />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={6}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "filingDate"]}
+                      label="Filing Date">
+                      <DatePicker
+                        style={{ width: "100%" }}
+                        format={DATE_FORMAT}
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={22} md={6}>
+                    <Form.Item
+                      {...restField}
+                      name={[name, "status"]}
+                      label="Status"
+                      initialValue="pending">
+                      <Select>
+                        <Option value="pending">Pending</Option>
+                        <Option value="filed">Filed</Option>
+                        <Option value="served">Served</Option>
+                        <Option value="completed">Completed</Option>
+                      </Select>
+                    </Form.Item>
+                  </Col>
+                  <Col xs={2} md={2}>
+                    <MinusCircleOutlined
+                      className="text-red-500 cursor-pointer mt-2"
+                      onClick={() => remove(name)}
+                    />
+                  </Col>
+                </Row>
+              ))}
+              <Form.Item>
+                <Button
+                  type="dashed"
+                  onClick={() => add()}
+                  icon={<PlusOutlined />}
+                  block>
+                  Add Second Party Process
+                </Button>
+              </Form.Item>
+            </>
+          )}
+        </Form.List>
+      </Card>
+
+      {/* PRECEDENTS */}
+      <Card title="Legal Precedents" className="mb-6">
+        <Form.List name="precedents">
+          {(fields, { add, remove }) => (
+            <>
+              {fields.map(({ key, name, ...restField }) => (
+                <div
+                  key={key}
+                  className="mb-4 p-4 border border-gray-200 rounded">
+                  <Row gutter={16} align="middle">
+                    <Col xs={24} md={10}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, "caseName"]}
+                        label="Case Name"
+                        rules={[
+                          { required: true, message: "Case name required" },
+                        ]}>
+                        <Input placeholder="e.g., Brown v. Board of Education" />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={10}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, "citation"]}
+                        label="Citation">
+                        <Input placeholder="e.g., (2024) LPELR-12345(SC)" />
+                      </Form.Item>
+                    </Col>
+                    <Col xs={24} md={4}>
+                      <Button
+                        danger
+                        icon={<MinusCircleOutlined />}
+                        onClick={() => remove(name)}
+                        block>
+                        Remove
+                      </Button>
+                    </Col>
+                    <Col xs={24}>
+                      <Form.Item
+                        {...restField}
+                        name={[name, "relevance"]}
+                        label="Relevance/Application">
+                        <TextArea
+                          rows={2}
+                          placeholder="How does this precedent apply to the current case?"
+                          maxLength={500}
+                        />
+                      </Form.Item>
+                    </Col>
+                  </Row>
+                </div>
+              ))}
+              <Form.Item>
+                <Button
+                  type="dashed"
+                  onClick={() => add()}
+                  icon={<PlusOutlined />}
+                  block>
+                  Add Precedent
+                </Button>
+              </Form.Item>
+            </>
+          )}
+        </Form.List>
       </Card>
 
       {/* FORM ACTIONS */}
