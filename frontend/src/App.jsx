@@ -510,7 +510,7 @@ function App() {
                   }
                 />
                 <Route
-                  path="create"
+                  path=":matterId/create"
                   element={
                     <Suspense fallback={<PageLoader />}>
                       <ProtectedStaffRoute>

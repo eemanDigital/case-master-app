@@ -32,6 +32,8 @@ const LitigationTable = ({
 }) => {
   const navigate = useNavigate();
 
+  console.log("LitigationTable data:", data);
+
   const getCourtLabel = (courtName) => {
     const court = COURT_TYPES.find((c) => c.value === courtName);
     return court?.label || courtName;

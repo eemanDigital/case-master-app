@@ -118,7 +118,7 @@ const EditLitigation = () => {
         title="Edit Litigation Details"
         subtitle={`Suit No: ${litigationDetails.suitNo}`}
         showBack
-        backPath={`/litigation/${matterId}`}
+        backPath={`/dashboard/matters/litigation/${matterId}`}
       />
 
       <div className="max-w-6xl mx-auto p-6">

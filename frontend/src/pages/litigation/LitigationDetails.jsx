@@ -94,7 +94,9 @@ const LitigationDetails = () => {
           <p className="text-gray-500 mb-4">
             No details available for this matter.
           </p>
-          <Button type="primary" onClick={() => navigate("/litigation")}>
+          <Button
+            type="primary"
+            onClick={() => navigate("/dashboard/matters/litigation")}>
             Back to Litigation List
           </Button>
         </div>
@@ -110,7 +112,7 @@ const LitigationDetails = () => {
         title={matter?.title || "Litigation Matter"}
         subtitle={`Suit No: ${litigationDetails.suitNo}`}
         showBack
-        backPath="/litigation"
+        backPath="/dashboard/matters/litigation"
         extra={[
           <Button key="print" icon={<PrinterOutlined />} onClick={handlePrint}>
             Print
