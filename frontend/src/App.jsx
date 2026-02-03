@@ -102,6 +102,20 @@ const EditLitigation = lazy(
   () => import("./pages/litigation/EditLitigation.jsx"),
 );
 
+//Corporate Matters Management
+const CorporateMatterList = lazy(
+  () => import("./pages/corporate/CorporateList.jsx"),
+);
+const CreateCorporateMatter = lazy(
+  () => import("./pages/corporate/CreateCorporate.jsx"),
+);
+const CorporateMatterDetails = lazy(
+  () => import("./pages/corporate/CorporateDetails.jsx"),
+);
+// const EditCorporateMatter = lazy(
+//   () => import("./pages/corporate/EditCorporateMatter.jsx"),
+// );
+
 // Tasks Management
 const TaskList = lazy(() => import("./components/TaskList.jsx"));
 const CreateTaskForm = lazy(() => import("./pages/CreateTaskForm.jsx"));
@@ -537,6 +551,48 @@ function App() {
                     </Suspense>
                   }
                 />
+              </Route>
+
+              {/* Corporate Matters Management (Nested under /dashboard/matters/) */}
+              <Route path="matters/corporate">
+                <Route
+                  index
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <CorporateMatterList />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path=":matterId/create"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <CreateCorporateMatter />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path=":matterId"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <CorporateMatterDetails />
+                    </Suspense>
+                  }
+                />
+                {/* <Route  
+                  path=":matterId/edit"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <EditCorporateMatter />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                /> */}
               </Route>
 
               {/* Cases Management */}

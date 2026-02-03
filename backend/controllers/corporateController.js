@@ -163,8 +163,8 @@ exports.createCorporateDetails = catchAsync(async (req, res, next) => {
   const corporateData = req.body;
 
   // Start transaction
-  const session = await Matter.startSession();
-  session.startTransaction();
+  // const session = await Matter.startSession();
+  // session.startTransaction();
 
   try {
     // 1. Verify matter exists and is corporate type
@@ -172,7 +172,9 @@ exports.createCorporateDetails = catchAsync(async (req, res, next) => {
       _id: matterId,
       firmId: req.firmId,
       isDeleted: false,
-    }).session(session);
+    });
+
+    // .session(session);
 
     if (!matter) {
       await session.abortTransaction();
@@ -190,11 +192,12 @@ exports.createCorporateDetails = catchAsync(async (req, res, next) => {
     const existingDetail = await CorporateDetail.findOne({
       matterId,
       firmId: req.firmId,
-    }).session(session);
+    });
+    // .session(session);
 
     if (existingDetail) {
-      await session.abortTransaction();
-      session.endSession();
+      // await session.abortTransaction();
+      // session.endSession();
       return next(
         new AppError("Corporate details already exist for this matter", 400),
       );
@@ -208,14 +211,16 @@ exports.createCorporateDetails = catchAsync(async (req, res, next) => {
       ...corporateData,
     });
 
-    await corporateDetail.save({ session });
+    // await corporateDetail.save({ session });
+    await corporateDetail.save();
 
     // 4. Update matter to link corporate detail
     matter.corporateDetail = corporateDetail._id;
-    await matter.save({ session });
+    // await matter.save({ session });
+    await matter.save();
 
-    await session.commitTransaction();
-    session.endSession();
+    // await session.commitTransaction();
+    // session.endSession();
 
     // Populate and return
     const populatedDetail = await CorporateDetail.findById(
@@ -236,8 +241,8 @@ exports.createCorporateDetails = catchAsync(async (req, res, next) => {
       },
     });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    // await session.abortTransaction();
+    // session.endSession();
     return next(error);
   }
 });

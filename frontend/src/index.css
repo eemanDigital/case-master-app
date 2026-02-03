@@ -592,3 +592,81 @@ body {
     color: #d1d5db !important;
   }
 }
+
+/* Corporate List Styles */
+.corporate-list .ant-table {
+  background: white;
+}
+
+.corporate-list .ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+/* Corporate Details Styles */
+.corporate-details .ant-tabs-nav {
+  margin-bottom: 24px;
+}
+
+.corporate-details .ant-descriptions-item-label {
+  font-weight: 600;
+  width: 200px;
+}
+
+.corporate-details .ant-timeline-item {
+  padding-bottom: 16px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .corporate-list .ant-card-body {
+    padding: 12px;
+  }
+
+  .corporate-details .ant-tabs-nav {
+    flex-direction: column;
+  }
+
+  .corporate-details .ant-descriptions-item {
+    display: block;
+    width: 100%;
+  }
+}
+
+/* Print styles */
+@media print {
+  .corporate-details .ant-btn,
+  .corporate-details .ant-tabs-nav {
+    display: none;
+  }
+
+  .corporate-details {
+    padding: 0;
+  }
+
+  .corporate-details .ant-card {
+    border: none;
+    box-shadow: none;
+  }
+}
+
+/* Hover effects */
+.corporate-list .ant-table-row:hover {
+  background: #f6ffed;
+}
+
+/* Status colors */
+.status-active {
+  background: #f6ffed;
+  border-color: #b7eb8f;
+}
+
+.status-pending {
+  background: #e6f7ff;
+  border-color: #91d5ff;
+}
+
+.status-closed {
+  background: #fafafa;
+  border-color: #d9d9d9;
+}
