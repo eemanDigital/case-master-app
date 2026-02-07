@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   Card,
   Row,
@@ -13,8 +14,6 @@ import {
   DatePicker,
   Tooltip,
   Statistic,
-  Progress,
-  Badge,
   Dropdown,
   Menu,
   Modal,
@@ -28,56 +27,58 @@ import {
   PlusOutlined,
   EyeOutlined,
   EditOutlined,
-  FileTextOutlined,
+  HomeOutlined,
   CalendarOutlined,
   DollarOutlined,
   BarChartOutlined,
   DownloadOutlined,
   MoreOutlined,
   SyncOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
-import dayjs from "dayjs";
-import { useNavigate } from "react-router-dom";
+
 import {
-  fetchCorporateMatters,
-  searchCorporateMatters,
+  fetchPropertyMatters,
+  searchPropertyMatters,
   setFilters,
   clearFilters,
   setCurrentPage,
   setPageSize,
   setSelectedMatter,
-  selectCorporateMatters,
+  fetchPropertyStats,
+  clearError,
+  selectPropertyMatters,
   selectPagination,
   selectFilters,
-  selectCorporateLoading,
-  selectCorporateError,
-  selectCorporateStats,
-  fetchCorporateStats,
-} from "../../redux/features/corporate/corporateSlice";
+  selectPropertyLoading,
+  selectPropertyError,
+  selectPropertyStats,
+} from "../../redux/features/property/propertySlice";
 import {
+  PROPERTY_TYPES,
   TRANSACTION_TYPES,
-  COMPANY_TYPES,
-  DATE_FORMAT,
+  NIGERIAN_STATES,
   formatCurrency,
   getTransactionTypeLabel,
-  // getCompanyTypeLabel,
-} from "../../utils/corporateConstants";
+  getPropertyTypeLabel,
+} from "../../utils/propertyConstants";
 
 const { Search } = Input;
 const { Option } = Select;
 const { RangePicker } = DatePicker;
 
-const CorporateList = () => {
+const PropertyList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // Redux state
-  const matters = useSelector(selectCorporateMatters);
+  const matters = useSelector(selectPropertyMatters);
   const pagination = useSelector(selectPagination);
   const filters = useSelector(selectFilters);
-  const loading = useSelector(selectCorporateLoading);
-  const error = useSelector(selectCorporateError);
-  const stats = useSelector(selectCorporateStats);
+  const loading = useSelector(selectPropertyLoading);
+  const error = useSelector(selectPropertyError);
+  const stats = useSelector(selectPropertyStats);
+
   // Local state
   const [searchText, setSearchText] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -87,18 +88,24 @@ const CorporateList = () => {
   // Fetch data on mount and filter change
   useEffect(() => {
     dispatch(
-      fetchCorporateMatters({
+      fetchPropertyMatters({
         ...filters,
-        page: pagination.page,
-        limit: pagination.limit,
+        page: pagination.currentPage || pagination.current || 1,
+        limit: pagination.limit || 20,
       }),
     );
     loadStats();
-  }, [dispatch, pagination.page, pagination.limit, filters]);
+  }, [
+    dispatch,
+    pagination.currentPage,
+    pagination.current,
+    pagination.limit,
+    filters,
+  ]);
 
   const loadStats = async () => {
     setStatsLoading(true);
-    await dispatch(fetchCorporateStats());
+    await dispatch(fetchPropertyStats());
     setStatsLoading(false);
   };
 
@@ -106,14 +113,14 @@ const CorporateList = () => {
   const handleSearch = (value) => {
     if (value.trim()) {
       dispatch(
-        searchCorporateMatters({
+        searchPropertyMatters({
           criteria: { $text: { $search: value } },
           params: { page: 1, limit: pagination.limit },
         }),
       );
     } else {
       dispatch(
-        fetchCorporateMatters({ ...filters, page: 1, limit: pagination.limit }),
+        fetchPropertyMatters({ ...filters, page: 1, limit: pagination.limit }),
       );
     }
   };
@@ -129,99 +136,103 @@ const CorporateList = () => {
     setSearchText("");
   };
 
-  // Table columns
+  // Table columns - CORRECTED with proper null handling
   const columns = [
     {
-      title: "Matter No.",
+      title: "Matter Number",
       dataIndex: "matterNumber",
       key: "matterNumber",
-      width: 120,
-      render: (text, record) => (
-        <Button
-          type="link"
-          onClick={() => handleViewDetails(record)}
-          className="p-0 font-mono">
-          {text}
-        </Button>
+      width: 150,
+      fixed: "left",
+      render: (text) => (
+        <span className="font-medium text-blue-600">{text || "-"}</span>
       ),
     },
     {
       title: "Title",
       dataIndex: "title",
       key: "title",
+      width: 200,
       ellipsis: true,
-      render: (text, record) => (
-        <div>
-          <div className="font-medium">{text}</div>
-          <div className="text-xs text-gray-500">
-            {record.client?.name || "No client"}
-          </div>
-        </div>
-      ),
+      render: (text) => text || "-",
     },
     {
-      title: "Transaction Type",
-      dataIndex: "corporateDetail.transactionType",
-      key: "transactionType",
+      title: "Client",
+      dataIndex: "client",
+      key: "client",
       width: 180,
-      render: (transactionType) => {
-        if (!transactionType) return "-";
-        const typeConfig = TRANSACTION_TYPES.find(
-          (t) => t.value === transactionType,
-        );
+      render: (client) => {
+        if (!client) return "-";
         return (
-          <Tag color={typeConfig?.color || "default"} className="capitalize">
-            {typeConfig?.icon} {getTransactionTypeLabel(transactionType)}
+          <div>
+            <div className="font-medium">
+              {client.firstName} {client.lastName}
+            </div>
+            <div className="text-xs text-gray-500">{client.email}</div>
+          </div>
+        );
+      },
+    },
+    {
+      title: "Transaction",
+      key: "transactionType",
+      width: 150,
+      render: (_, record) => {
+        if (!record.propertyDetail) {
+          return <Tag color="default">Not Started</Tag>;
+        }
+        const transactionType = record.propertyDetail?.transactionType;
+        if (!transactionType) return <Tag color="default">Not Set</Tag>;
+        return (
+          <Tag color="blue" className="capitalize">
+            {getTransactionTypeLabel(transactionType)}
           </Tag>
         );
       },
     },
     {
-      title: "Company",
-      dataIndex: "corporateDetail.companyName",
-      key: "companyName",
-      width: 180,
-      ellipsis: true,
-    },
-    {
-      title: "Deal Value",
-      dataIndex: "corporateDetail.dealValue",
-      key: "dealValue",
-      width: 150,
-      align: "right",
-      render: (dealValue) => {
-        if (!dealValue?.amount) return "-";
+      title: "Property Type",
+      key: "propertyType",
+      width: 140,
+      render: (_, record) => {
+        if (!record.propertyDetail) return "-";
+        const properties = record.propertyDetail?.properties;
+        if (!properties || properties.length === 0) return "-";
+        const type = properties[0]?.propertyType;
         return (
-          <div className="font-semibold">
-            {formatCurrency(dealValue.amount, dealValue.currency)}
-          </div>
+          <Tag color="green">{getPropertyTypeLabel(type) || "Property"}</Tag>
         );
       },
     },
     {
-      title: "Closing Date",
-      dataIndex: "corporateDetail.expectedClosingDate",
-      key: "expectedClosingDate",
-      width: 140,
-      render: (date) => {
-        if (!date) return "-";
-        const daysUntil = Math.ceil(
-          (new Date(date) - new Date()) / (1000 * 60 * 60 * 24),
-        );
-        const isOverdue = daysUntil < 0;
+      title: "Location",
+      key: "location",
+      width: 180,
+      ellipsis: true,
+      render: (_, record) => {
+        if (!record.propertyDetail) return "-";
+        const properties = record.propertyDetail?.properties;
+        if (!properties || properties.length === 0) return "-";
+        const prop = properties[0];
 
+        if (prop.address) return prop.address;
+        if (prop.state) return prop.state;
+        if (prop.city) return prop.city;
+        return "-";
+      },
+    },
+    {
+      title: "Price/Value",
+      key: "purchasePrice",
+      width: 150,
+      align: "right",
+      render: (_, record) => {
+        if (!record.propertyDetail) return "-";
+        const purchasePrice = record.propertyDetail?.purchasePrice;
+        if (!purchasePrice?.amount) return "-";
         return (
-          <div>
-            <div className="flex items-center gap-1">
-              <CalendarOutlined className="text-gray-400" />
-              <span>{dayjs(date).format(DATE_FORMAT)}</span>
-            </div>
-            {!isOverdue && daysUntil <= 30 && (
-              <div className="text-xs text-orange-500">
-                {daysUntil} days left
-              </div>
-            )}
-            {isOverdue && <div className="text-xs text-red-500">Overdue</div>}
+          <div className="font-semibold">
+            {formatCurrency(purchasePrice.amount, purchasePrice.currency)}
           </div>
         );
       },
@@ -233,13 +244,30 @@ const CorporateList = () => {
       width: 120,
       render: (status) => {
         const statusConfig = {
-          active: { color: "green", text: "Active" },
-          pending: { color: "blue", text: "Pending" },
-          closed: { color: "gray", text: "Closed" },
-          on_hold: { color: "orange", text: "On Hold" },
-        }[status] || { color: "default", text: status };
-
-        return <Tag color={statusConfig.color}>{statusConfig.text}</Tag>;
+          active: { color: "green", label: "Active" },
+          pending: { color: "orange", label: "Pending" },
+          completed: { color: "blue", label: "Completed" },
+          on_hold: { color: "red", label: "On Hold" },
+        };
+        const config = statusConfig[status] || {
+          color: "default",
+          label: status,
+        };
+        return <Tag color={config.color}>{config.label}</Tag>;
+      },
+    },
+    {
+      title: "Date Opened",
+      dataIndex: "dateOpened",
+      key: "dateOpened",
+      width: 130,
+      render: (date) => {
+        if (!date) return "-";
+        return new Date(date).toLocaleDateString("en-GB", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        });
       },
     },
     {
@@ -248,7 +276,7 @@ const CorporateList = () => {
       width: 100,
       fixed: "right",
       render: (_, record) => (
-        <Space>
+        <Space size="small">
           <Tooltip title="View Details">
             <Button
               type="text"
@@ -257,23 +285,23 @@ const CorporateList = () => {
             />
           </Tooltip>
           <Dropdown
-            overlay={
-              <Menu>
-                <Menu.Item key="edit" icon={<EditOutlined />}>
-                  Edit Details
-                </Menu.Item>
-                <Menu.Item key="documents" icon={<FileTextOutlined />}>
-                  Documents
-                </Menu.Item>
-                <Menu.Item key="timeline" icon={<CalendarOutlined />}>
-                  Timeline
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item key="close" danger>
-                  Close Matter
-                </Menu.Item>
-              </Menu>
-            }
+            menu={{
+              items: [
+                {
+                  key: "edit",
+                  label: "Edit",
+                  icon: <EditOutlined />,
+                  onClick: () =>
+                    navigate(`/dashboard/matters/property/${record._id}/edit`),
+                },
+                {
+                  key: "view",
+                  label: "View Details",
+                  icon: <EyeOutlined />,
+                  onClick: () => handleViewDetails(record),
+                },
+              ],
+            }}
             trigger={["click"]}>
             <Button type="text" icon={<MoreOutlined />} />
           </Dropdown>
@@ -282,34 +310,29 @@ const CorporateList = () => {
     },
   ];
 
-  // Handle row selection
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: setSelectedRowKeys,
-  };
-
   // Handle pagination
   const handleTableChange = (newPagination) => {
     dispatch(setCurrentPage(newPagination.current));
-    dispatch(setPageSize(newPagination.pageSize));
+    if (newPagination.pageSize !== pagination.limit) {
+      dispatch(setPageSize(newPagination.pageSize));
+    }
   };
 
   // View matter details
   const handleViewDetails = (matter) => {
     dispatch(setSelectedMatter(matter));
-    navigate(`/dashboard/matters/corporate/${matter._id}`);
+    navigate(`/dashboard/matters/property/${matter._id}/details`);
   };
 
-  // Create new corporate matter
+  // Create new property matter
   const handleCreateNew = () => {
-    navigate("/dashboard/matters/corporate/create");
+    navigate(`/dashboard/matters/create`);
   };
 
   // Export data
   const handleExport = () => {
-    // Implement export logic
     Modal.info({
-      title: "Export Corporate Matters",
+      title: "Export Property Matters",
       content: "Export feature will be implemented soon.",
     });
   };
@@ -317,7 +340,11 @@ const CorporateList = () => {
   // Statistics card
   const renderStats = () => {
     if (statsLoading) {
-      return <Spin />;
+      return (
+        <div className="flex justify-center items-center py-8">
+          <Spin />
+        </div>
+      );
     }
 
     return (
@@ -325,9 +352,9 @@ const CorporateList = () => {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Total Matters"
-              value={stats?.totalMatters || 0}
-              prefix={<FileTextOutlined />}
+              title="Total Property Matters"
+              value={stats?.overview?.totalPropertyMatters || 0}
+              prefix={<HomeOutlined />}
               valueStyle={{ color: "#1890ff" }}
             />
           </Card>
@@ -336,7 +363,7 @@ const CorporateList = () => {
           <Card>
             <Statistic
               title="Active Transactions"
-              value={stats?.activeMatters || 0}
+              value={stats?.overview?.activePropertyMatters || 0}
               prefix={<SyncOutlined spin />}
               valueStyle={{ color: "#52c41a" }}
             />
@@ -345,21 +372,20 @@ const CorporateList = () => {
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Total Deal Value"
-              value={stats?.totalDealValue || 0}
-              prefix={<DollarOutlined />}
-              valueStyle={{ color: "#722ed1" }}
-              formatter={(value) => formatCurrency(value, "NGN")}
+              title="Pending Governor's Consents"
+              value={stats?.pendingConsents || 0}
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{ color: "#fa8c16" }}
             />
           </Card>
         </Col>
         <Col xs={24} sm={12} md={6}>
           <Card>
             <Statistic
-              title="Pending Approvals"
-              value={stats?.pendingApprovals || 0}
-              prefix={<Alert theme="filled" />}
-              valueStyle={{ color: "#fa8c16" }}
+              title="Completed Matters"
+              value={stats?.overview?.completedPropertyMatters || 0}
+              prefix={<CheckCircleOutlined />}
+              valueStyle={{ color: "#722ed1" }}
             />
           </Card>
         </Col>
@@ -368,14 +394,14 @@ const CorporateList = () => {
   };
 
   return (
-    <div className="corporate-list">
+    <div className="property-list">
       {/* Header */}
       <div className="mb-6">
         <div className="flex justify-between items-center mb-4">
           <div>
-            <h1 className="text-2xl font-bold">Corporate Matters</h1>
+            <h1 className="text-2xl font-bold">Property Matters</h1>
             <p className="text-gray-500">
-              Manage all corporate transactions and matters
+              Manage all property transactions and real estate matters
             </p>
           </div>
           <Space>
@@ -386,7 +412,7 @@ const CorporateList = () => {
               type="primary"
               icon={<PlusOutlined />}
               onClick={handleCreateNew}>
-              New Corporate Matter
+              New Property Matter
             </Button>
           </Space>
         </div>
@@ -399,7 +425,7 @@ const CorporateList = () => {
       <Card className="mb-6">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           <Search
-            placeholder="Search matters, companies, or clients..."
+            placeholder="Search matters, properties, addresses, or clients..."
             enterButton={<SearchOutlined />}
             size="large"
             value={searchText}
@@ -442,14 +468,31 @@ const CorporateList = () => {
 
               <Col xs={24} md={8}>
                 <Select
-                  placeholder="Company Type"
+                  placeholder="Property Type"
                   style={{ width: "100%" }}
-                  value={filters.companyType || undefined}
-                  onChange={(value) => handleFilterChange("companyType", value)}
+                  value={filters.propertyType || undefined}
+                  onChange={(value) =>
+                    handleFilterChange("propertyType", value)
+                  }
                   allowClear>
-                  {COMPANY_TYPES.map((type) => (
+                  {PROPERTY_TYPES.map((type) => (
                     <Option key={type.value} value={type.value}>
-                      {type.label}
+                      {type.icon} {type.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Col>
+
+              <Col xs={24} md={8}>
+                <Select
+                  placeholder="State/Location"
+                  style={{ width: "100%" }}
+                  value={filters.state || undefined}
+                  onChange={(value) => handleFilterChange("state", value)}
+                  allowClear>
+                  {NIGERIAN_STATES.map((state) => (
+                    <Option key={state.value} value={state.value}>
+                      {state.label}
                     </Option>
                   ))}
                 </Select>
@@ -464,18 +507,31 @@ const CorporateList = () => {
                   allowClear>
                   <Option value="active">Active</Option>
                   <Option value="pending">Pending</Option>
-                  <Option value="closed">Closed</Option>
+                  <Option value="completed">Completed</Option>
                   <Option value="on_hold">On Hold</Option>
                 </Select>
               </Col>
 
-              <Col xs={24} md={12}>
+              <Col xs={24} md={8}>
                 <Input
-                  placeholder="Company Name"
-                  value={filters.companyName || ""}
+                  placeholder="Min Price"
+                  value={filters.minPrice || ""}
                   onChange={(e) =>
-                    handleFilterChange("companyName", e.target.value)
+                    handleFilterChange("minPrice", e.target.value)
                   }
+                  prefix={<DollarOutlined />}
+                  allowClear
+                />
+              </Col>
+
+              <Col xs={24} md={8}>
+                <Input
+                  placeholder="Max Price"
+                  value={filters.maxPrice || ""}
+                  onChange={(e) =>
+                    handleFilterChange("maxPrice", e.target.value)
+                  }
+                  prefix={<DollarOutlined />}
                   allowClear
                 />
               </Col>
@@ -501,7 +557,7 @@ const CorporateList = () => {
           description={
             typeof error === "string"
               ? error
-              : "Failed to load corporate matters"
+              : "Failed to load property matters"
           }
           type="error"
           showIcon
@@ -519,24 +575,25 @@ const CorporateList = () => {
           rowKey="_id"
           loading={loading}
           pagination={{
-            current: pagination.page,
-            pageSize: pagination.limit,
-            total: pagination.total,
+            current: pagination.currentPage || pagination.current || 1,
+            pageSize: pagination.limit || 20,
+            total: pagination.totalRecords || pagination.count || 0,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) =>
               `${range[0]}-${range[1]} of ${total} matters`,
+            pageSizeOptions: ["10", "20", "50", "100"],
           }}
           onChange={handleTableChange}
-          scroll={{ x: 1300 }}
+          scroll={{ x: 1400 }}
           locale={{
             emptyText: (
               <Empty
                 description={
                   <span>
-                    No corporate matters found.{" "}
+                    No property matters found.{" "}
                     <Button type="link" onClick={handleCreateNew}>
-                      Create your first corporate matter
+                      Create your first property matter
                     </Button>
                   </span>
                 }
@@ -548,7 +605,8 @@ const CorporateList = () => {
 
       {/* Quick Stats Footer */}
       <div className="mt-6 text-sm text-gray-500 text-center">
-        Showing {matters.length} of {pagination.total} corporate matters
+        Showing {matters.length} of{" "}
+        {pagination.totalRecords || pagination.count || 0} property matters
         {filters.transactionType && (
           <span>
             {" "}
@@ -560,4 +618,4 @@ const CorporateList = () => {
   );
 };
 
-export default CorporateList;
+export default PropertyList;

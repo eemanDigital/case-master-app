@@ -12,6 +12,7 @@ const {
 } = require("../models/retainerAndGeneralDetailModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const sessionHelper = require("../utils/sessionHelper");
 
 // Initialize pagination service for Matter model
 const matterPaginationService = PaginationServiceFactory.createService(
@@ -887,6 +888,72 @@ exports.bulkAssignOfficer = catchAsync(async (req, res, next) => {
  * @route   DELETE /api/matters/bulk-delete
  * @access  Private (Admin/Lawyer only)
  */
+// exports.bulkDeleteMatters = catchAsync(async (req, res, next) => {
+//   const { matterIds } = req.body;
+
+//   if (!matterIds || !Array.isArray(matterIds) || matterIds.length === 0) {
+//     return next(new AppError("Please provide matter IDs to delete", 400));
+//   }
+
+//   const session = await Matter.startSession();
+//   session.startTransaction();
+
+//   try {
+//     // Find all matters to be deleted
+//     const matters = await Matter.find({
+//       _id: { $in: matterIds },
+//       firmId: req.firmId,
+//       isDeleted: false,
+//     }).session(session);
+
+//     if (matters.length === 0) {
+//       await session.abortTransaction();
+//       session.endSession();
+//       return next(new AppError("No accessible matters found to delete", 404));
+//     }
+
+//     // Soft delete all matters
+//     const deletionPromises = matters.map((matter) =>
+//       matter.softDelete(req.user._id, session),
+//     );
+
+//     await Promise.all(deletionPromises);
+
+//     // Also soft delete associated detail documents
+//     const detailDeletionPromises = matters.map(async (matter) => {
+//       const DetailModel = getDetailModel(matter.matterType);
+//       if (DetailModel) {
+//         return DetailModel.findOneAndUpdate(
+//           { matterId: matter._id, firmId: req.firmId },
+//           {
+//             isDeleted: true,
+//             deletedAt: Date.now(),
+//             deletedBy: req.user._id,
+//           },
+//           { session },
+//         );
+//       }
+//     });
+
+//     await Promise.all(detailDeletionPromises);
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     res.status(200).json({
+//       status: "success",
+//       data: {
+//         deletedCount: matters.length,
+//         deletedMatterIds: matters.map((m) => m._id),
+//       },
+//     });
+//   } catch (error) {
+//     await session.abortTransaction();
+//     session.endSession();
+//     return next(error);
+//   }
+// });
+
 exports.bulkDeleteMatters = catchAsync(async (req, res, next) => {
   const { matterIds } = req.body;
 
@@ -894,27 +961,34 @@ exports.bulkDeleteMatters = catchAsync(async (req, res, next) => {
     return next(new AppError("Please provide matter IDs to delete", 400));
   }
 
-  const session = await Matter.startSession();
-  session.startTransaction();
+  const session = await sessionHelper.startSession();
 
   try {
     // Find all matters to be deleted
-    const matters = await Matter.find({
-      _id: { $in: matterIds },
-      firmId: req.firmId,
-      isDeleted: false,
-    }).session(session);
+    const matters = await sessionHelper.executeWithSession(
+      Matter.find({
+        _id: { $in: matterIds },
+        firmId: req.firmId,
+        isDeleted: false,
+      }),
+      session,
+    );
 
     if (matters.length === 0) {
-      await session.abortTransaction();
-      session.endSession();
+      await sessionHelper.abortTransaction(session);
       return next(new AppError("No accessible matters found to delete", 404));
     }
 
     // Soft delete all matters
-    const deletionPromises = matters.map((matter) =>
-      matter.softDelete(req.user._id, session),
-    );
+    const deletionPromises = matters.map(async (matter) => {
+      matter.isDeleted = true;
+      matter.deletedAt = Date.now();
+      matter.deletedBy = req.user._id;
+      matter.lastModifiedBy = req.user._id;
+      matter.lastActivityDate = Date.now();
+
+      return await sessionHelper.saveWithSession(matter, session);
+    });
 
     await Promise.all(deletionPromises);
 
@@ -922,22 +996,32 @@ exports.bulkDeleteMatters = catchAsync(async (req, res, next) => {
     const detailDeletionPromises = matters.map(async (matter) => {
       const DetailModel = getDetailModel(matter.matterType);
       if (DetailModel) {
-        return DetailModel.findOneAndUpdate(
-          { matterId: matter._id, firmId: req.firmId },
-          {
-            isDeleted: true,
-            deletedAt: Date.now(),
-            deletedBy: req.user._id,
-          },
-          { session },
+        return await sessionHelper.executeWithSession(
+          DetailModel.findOneAndUpdate(
+            { matterId: matter._id, firmId: req.firmId },
+            {
+              isDeleted: true,
+              deletedAt: Date.now(),
+              deletedBy: req.user._id,
+            },
+            { new: true },
+          ),
+          session,
         );
       }
     });
 
-    await Promise.all(detailDeletionPromises);
+    await Promise.all(detailDeletionPromises.filter(Boolean));
 
-    await session.commitTransaction();
-    session.endSession();
+    await sessionHelper.commitTransaction(session);
+
+    // Log deletion
+    if (process.env.NODE_ENV !== "test") {
+      console.log(`Bulk delete completed: ${matters.length} matters deleted`, {
+        userId: req.user._id,
+        firmId: req.firmId,
+      });
+    }
 
     res.status(200).json({
       status: "success",
@@ -947,9 +1031,22 @@ exports.bulkDeleteMatters = catchAsync(async (req, res, next) => {
       },
     });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    return next(error);
+    await sessionHelper.abortTransaction(session);
+
+    // Handle specific errors
+    if (error.name === "AppError") {
+      return next(error);
+    }
+
+    // Log unexpected errors
+    console.error("Bulk delete error:", error);
+
+    return next(
+      new AppError(
+        error.message || "An error occurred while deleting matters",
+        500,
+      ),
+    );
   }
 });
 

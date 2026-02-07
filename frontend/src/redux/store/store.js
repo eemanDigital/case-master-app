@@ -6,6 +6,8 @@ import deleteReducer from "../features/delete/deleteSlice";
 import matterReducer from "../features/matter/matterSlice";
 import litigationReducer from "../features/litigation/litigationSlice";
 import corporateReducer from "../features/corporate/corporateSlice";
+import propertyReducer from "../features/property/propertySlice";
+import retainerReducer from "../features/retainer/retainerSlice";
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +18,8 @@ export const store = configureStore({
     matter: matterReducer,
     litigation: litigationReducer,
     corporate: corporateReducer,
+    property: propertyReducer,
+    retainer: retainerReducer,
   },
   // Thunk is included by default, no need to concat it!
   middleware: (getDefaultMiddleware) =>

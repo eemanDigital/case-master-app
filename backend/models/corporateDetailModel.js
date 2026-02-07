@@ -1,33 +1,30 @@
 const mongoose = require("mongoose");
 
 // Sub-schemas for corporate-specific data
-const partyEntitySchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      trim: true,
-      required: true,
-    },
-    entityType: {
-      type: String,
-      enum: ["company", "individual", "partnership", "trust", "government"],
-    },
-    registrationNumber: {
-      type: String,
-      trim: true,
-    },
-    jurisdiction: {
-      type: String,
-      trim: true,
-    },
-    role: {
-      type: String,
-      trim: true,
-      // E.g., "Buyer", "Seller", "Shareholder", "Director"
-    },
+const partyEntitySchema = new mongoose.Schema({
+  name: {
+    type: String,
+    trim: true,
+    required: true,
   },
-  { _id: false },
-);
+  entityType: {
+    type: String,
+    enum: ["company", "individual", "partnership", "trust", "government"],
+  },
+  registrationNumber: {
+    type: String,
+    trim: true,
+  },
+  jurisdiction: {
+    type: String,
+    trim: true,
+  },
+  role: {
+    type: String,
+    trim: true,
+    // E.g., "Buyer", "Seller", "Shareholder", "Director"
+  },
+});
 
 const milestoneSchema = new mongoose.Schema(
   {
@@ -55,47 +52,41 @@ const milestoneSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-const shareholderSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      trim: true,
-      required: true,
-    },
-    numberOfShares: {
-      type: Number,
-      min: 0,
-    },
-    shareClass: {
-      type: String,
-      trim: true,
-    },
-    percentageOwnership: {
-      type: Number,
-      min: 0,
-      max: 100,
-    },
+const shareholderSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    trim: true,
+    required: true,
   },
-  { _id: false },
-);
+  numberOfShares: {
+    type: Number,
+    min: 0,
+  },
+  shareClass: {
+    type: String,
+    trim: true,
+  },
+  percentageOwnership: {
+    type: Number,
+    min: 0,
+    max: 100,
+  },
+});
 
-const directorSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      trim: true,
-      required: true,
-    },
-    position: {
-      type: String,
-      trim: true,
-    },
-    appointmentDate: {
-      type: Date,
-    },
+const directorSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    trim: true,
+    required: true,
   },
-  { _id: false },
-);
+  position: {
+    type: String,
+    trim: true,
+  },
+  appointmentDate: {
+    type: Date,
+  },
+});
 
 // CorporateDetail Schema
 const corporateDetailSchema = new mongoose.Schema(

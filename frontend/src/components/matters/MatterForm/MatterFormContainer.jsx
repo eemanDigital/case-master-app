@@ -111,7 +111,7 @@ const MatterFormContainer = () => {
                 break;
               case "retainer":
                 navigate(
-                  `/dashboard/matters/retainer/${createdMatterId}/create`,
+                  `/dashboard/matters/retainers/${createdMatterId}/create`,
                 );
                 break;
               case "general":

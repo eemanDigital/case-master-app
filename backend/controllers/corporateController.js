@@ -1,3 +1,4 @@
+const mongoose = require("mongoose");
 const PaginationServiceFactory = require("../services/PaginationServiceFactory");
 const modelConfigs = require("../config/modelConfigs");
 const Matter = require("../models/matterModel");
@@ -481,6 +482,7 @@ exports.addShareholder = catchAsync(async (req, res, next) => {
       $push: {
         shareholders: {
           ...shareholderData,
+          _id: new mongoose.Types.ObjectId(),
           addedBy: req.user._id,
           addedAt: new Date(),
         },

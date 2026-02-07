@@ -7,14 +7,20 @@ const generalRouter = express.Router();
 // Protect all routes
 generalRouter.use(protect);
 
-// General matters listing & search
+// ============================================
+// GENERAL MATTERS LISTING & SEARCH
+// ============================================
 generalRouter.get("/", generalController.getAllGeneralMatters);
 generalRouter.post("/search", generalController.searchGeneralMatters);
 
-// Statistics
+// ============================================
+// STATISTICS
+// ============================================
 generalRouter.get("/stats", generalController.getGeneralStats);
 
-// General details CRUD
+// ============================================
+// GENERAL DETAILS CRUD
+// ============================================
 generalRouter
   .route("/:matterId/details")
   .get(generalController.getGeneralDetails)
@@ -31,7 +37,9 @@ generalRouter.patch(
   generalController.restoreGeneralDetails,
 );
 
-// Requirements management
+// ============================================
+// REQUIREMENTS MANAGEMENT
+// ============================================
 generalRouter.post(
   "/:matterId/requirements",
   restrictTo("admin", "lawyer"),
@@ -50,7 +58,9 @@ generalRouter.delete(
   generalController.deleteRequirement,
 );
 
-// Parties management
+// ============================================
+// PARTIES MANAGEMENT
+// ============================================
 generalRouter.post(
   "/:matterId/parties",
   restrictTo("admin", "lawyer"),
@@ -69,7 +79,9 @@ generalRouter.delete(
   generalController.deleteParty,
 );
 
-// Deliverables management
+// ============================================
+// DELIVERABLES MANAGEMENT
+// ============================================
 generalRouter.post(
   "/:matterId/deliverables",
   restrictTo("admin", "lawyer"),
@@ -88,7 +100,9 @@ generalRouter.delete(
   generalController.deleteDeliverable,
 );
 
-// Documents management
+// ============================================
+// DOCUMENTS MANAGEMENT (DOCUMENTS RECEIVED)
+// ============================================
 generalRouter.post(
   "/:matterId/documents",
   restrictTo("admin", "lawyer"),
@@ -107,14 +121,69 @@ generalRouter.delete(
   generalController.deleteDocument,
 );
 
-// Service completion
+// ============================================
+// PROJECT STAGES MANAGEMENT (NIGERIAN BILLING)
+// ============================================
+generalRouter.post(
+  "/:matterId/stages",
+  restrictTo("admin", "lawyer"),
+  generalController.addProjectStage,
+);
+
+generalRouter.patch(
+  "/:matterId/stages/:stageId",
+  restrictTo("admin", "lawyer"),
+  generalController.updateProjectStage,
+);
+
+generalRouter.patch(
+  "/:matterId/stages/:stageId/complete",
+  restrictTo("admin", "lawyer"),
+  generalController.completeProjectStage,
+);
+
+// ============================================
+// DISBURSEMENTS MANAGEMENT
+// ============================================
+generalRouter.post(
+  "/:matterId/disbursements",
+  restrictTo("admin", "lawyer"),
+  generalController.addDisbursement,
+);
+
+generalRouter.patch(
+  "/:matterId/disbursements/:disbursementId",
+  restrictTo("admin", "lawyer"),
+  generalController.updateDisbursement,
+);
+
+generalRouter.delete(
+  "/:matterId/disbursements/:disbursementId",
+  restrictTo("admin", "lawyer"),
+  generalController.deleteDisbursement,
+);
+
+// ============================================
+// NBA STAMP MANAGEMENT
+// ============================================
+generalRouter.patch(
+  "/:matterId/nba-stamp",
+  restrictTo("admin", "lawyer"),
+  generalController.updateNBAStamp,
+);
+
+// ============================================
+// SERVICE COMPLETION
+// ============================================
 generalRouter.post(
   "/:matterId/complete",
   restrictTo("admin", "lawyer"),
   generalController.completeGeneralService,
 );
 
-// Bulk operations
+// ============================================
+// BULK OPERATIONS
+// ============================================
 generalRouter.patch(
   "/bulk-update",
   restrictTo("admin", "lawyer"),

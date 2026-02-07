@@ -256,9 +256,9 @@ const MatterForm = memo(
           }
         });
 
-        console.log("=== FINAL TRANSFORMED VALUES ===");
-        console.log("Matter Type:", transformedValues.matterType);
-        console.log("All data:", transformedValues);
+        // console.log("=== FINAL TRANSFORMED VALUES ===");
+        // console.log("Matter Type:", transformedValues.matterType);
+        // console.log("All data:", transformedValues);
 
         // Validate matterType is present
         if (!transformedValues.matterType) {

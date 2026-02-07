@@ -147,13 +147,95 @@ exports.searchPropertyMatters = catchAsync(async (req, res, next) => {
  * @route   POST /api/property-matters/:matterId/details
  * @access  Private (Admin, Lawyer)
  */
+// exports.createPropertyDetails = catchAsync(async (req, res, next) => {
+//   const { matterId } = req.params;
+//   const propertyData = req.body;
+
+//   // Start transaction
+//   // const session = await Matter.startSession();
+//   // session.startTransaction();
+
+//   try {
+//     // 1. Verify matter exists
+//     const matter = await Matter.findOne({
+//       _id: matterId,
+//       firmId: req.firmId,
+//       isDeleted: false,
+//     })
+
+//     // .session(session);
+
+//     if (!matter) {
+//       await session.abortTransaction();
+//       session.endSession();
+//       return next(new AppError("Matter not found", 404));
+//     }
+
+//     if (matter.matterType !== "property") {
+//       await session.abortTransaction();
+//       session.endSession();
+//       return next(new AppError("Matter is not a property matter", 400));
+//     }
+
+//     // 2. Check if property details already exist
+//     const existingDetail = await PropertyDetail.findOne({
+//       matterId,
+//       firmId: req.firmId,
+//     }).session(session);
+
+//     if (existingDetail) {
+//       await session.abortTransaction();
+//       session.endSession();
+//       return next(
+//         new AppError("Property details already exist for this matter", 400),
+//       );
+//     }
+
+//     // 3. Create property detail
+//     const propertyDetail = new PropertyDetail({
+//       matterId,
+//       firmId: req.firmId,
+//       createdBy: req.user._id,
+//       ...propertyData,
+//     });
+
+//     await propertyDetail.save({ session });
+
+//     // 4. Update matter to link property detail
+//     matter.propertyDetail = propertyDetail._id;
+//     await matter.save({ session });
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     // Populate and return
+//     const populatedDetail = await PropertyDetail.findById(
+//       propertyDetail._id,
+//     ).populate({
+//       path: "matter",
+//       select: "matterNumber title client accountOfficer status priority",
+//       populate: [
+//         { path: "client", select: "firstName lastName email phone" },
+//         { path: "accountOfficer", select: "firstName lastName email photo" },
+//       ],
+//     });
+
+//     res.status(201).json({
+//       status: "success",
+//       data: {
+//         propertyDetail: populatedDetail,
+//       },
+//     });
+//   } catch (error) {
+//     await session.abortTransaction();
+//     session.endSession();
+//     return next(error);
+//   }
+// });
+
 exports.createPropertyDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const propertyData = req.body;
-
-  // Start transaction
-  const session = await Matter.startSession();
-  session.startTransaction();
 
   try {
     // 1. Verify matter exists
@@ -161,17 +243,13 @@ exports.createPropertyDetails = catchAsync(async (req, res, next) => {
       _id: matterId,
       firmId: req.firmId,
       isDeleted: false,
-    }).session(session);
+    });
 
     if (!matter) {
-      await session.abortTransaction();
-      session.endSession();
       return next(new AppError("Matter not found", 404));
     }
 
     if (matter.matterType !== "property") {
-      await session.abortTransaction();
-      session.endSession();
       return next(new AppError("Matter is not a property matter", 400));
     }
 
@@ -179,11 +257,9 @@ exports.createPropertyDetails = catchAsync(async (req, res, next) => {
     const existingDetail = await PropertyDetail.findOne({
       matterId,
       firmId: req.firmId,
-    }).session(session);
+    });
 
     if (existingDetail) {
-      await session.abortTransaction();
-      session.endSession();
       return next(
         new AppError("Property details already exist for this matter", 400),
       );
@@ -197,20 +273,17 @@ exports.createPropertyDetails = catchAsync(async (req, res, next) => {
       ...propertyData,
     });
 
-    await propertyDetail.save({ session });
+    await propertyDetail.save();
 
     // 4. Update matter to link property detail
     matter.propertyDetail = propertyDetail._id;
-    await matter.save({ session });
+    await matter.save();
 
-    await session.commitTransaction();
-    session.endSession();
-
-    // Populate and return
+    // 5. Populate and return
     const populatedDetail = await PropertyDetail.findById(
       propertyDetail._id,
     ).populate({
-      path: "matter",
+      path: "matterId",
       select: "matterNumber title client accountOfficer status priority",
       populate: [
         { path: "client", select: "firstName lastName email phone" },
@@ -225,8 +298,6 @@ exports.createPropertyDetails = catchAsync(async (req, res, next) => {
       },
     });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     return next(error);
   }
 });
@@ -238,6 +309,8 @@ exports.createPropertyDetails = catchAsync(async (req, res, next) => {
  */
 exports.getPropertyDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
+
+  console.log(matterId);
 
   const propertyDetail = await PropertyDetail.findOne({
     matterId,
@@ -258,9 +331,9 @@ exports.getPropertyDetails = catchAsync(async (req, res, next) => {
     .populate("createdBy", "firstName lastName")
     .populate("lastModifiedBy", "firstName lastName");
 
-  if (!propertyDetail) {
-    return next(new AppError("Property details not found", 404));
-  }
+  // if (!propertyDetail) {
+  //   return next(new AppError("Property details not found", 404));
+  // }
 
   res.status(200).json({
     status: "success",
@@ -421,23 +494,27 @@ exports.updateProperty = catchAsync(async (req, res, next) => {
   const { matterId, propertyId } = req.params;
   const propertyData = req.body;
 
+  // Build the $set object with proper field paths
+  const setObject = {
+    lastModifiedBy: req.user._id,
+  };
+
+  // Add each field from propertyData with proper array syntax
+  Object.keys(propertyData).forEach((key) => {
+    setObject[`properties.$.${key}`] = propertyData[key];
+  });
+
+  // Add metadata fields
+  setObject["properties.$.updatedBy"] = req.user._id;
+  setObject["properties.$.updatedAt"] = new Date();
+
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     {
       matterId,
       firmId: req.firmId,
       "properties._id": propertyId,
     },
-    {
-      $set: {
-        "properties.$": {
-          ...propertyData,
-          _id: propertyId,
-          updatedBy: req.user._id,
-          updatedAt: new Date(),
-        },
-      },
-      lastModifiedBy: req.user._id,
-    },
+    { $set: setObject },
     { new: true, runValidators: true },
   );
 
@@ -529,23 +606,27 @@ exports.updatePayment = catchAsync(async (req, res, next) => {
   const { matterId, installmentId } = req.params;
   const updateData = req.body;
 
+  // Build the $set object with proper field paths
+  const setObject = {
+    lastModifiedBy: req.user._id,
+  };
+
+  // Add each field from updateData with proper array syntax
+  Object.keys(updateData).forEach((key) => {
+    setObject[`paymentSchedule.$.${key}`] = updateData[key];
+  });
+
+  // Add metadata fields
+  setObject["paymentSchedule.$.updatedBy"] = req.user._id;
+  setObject["paymentSchedule.$.updatedAt"] = new Date();
+
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     {
       matterId,
       firmId: req.firmId,
       "paymentSchedule._id": installmentId,
     },
-    {
-      $set: {
-        "paymentSchedule.$": {
-          ...updateData,
-          _id: installmentId,
-          updatedBy: req.user._id,
-          updatedAt: new Date(),
-        },
-      },
-      lastModifiedBy: req.user._id,
-    },
+    { $set: setObject },
     { new: true, runValidators: true },
   );
 
@@ -789,23 +870,27 @@ exports.updateCondition = catchAsync(async (req, res, next) => {
   const { matterId, conditionId } = req.params;
   const updateData = req.body;
 
+  // Build the $set object with proper field paths
+  const setObject = {
+    lastModifiedBy: req.user._id,
+  };
+
+  // Add each field from updateData with proper array syntax
+  Object.keys(updateData).forEach((key) => {
+    setObject[`conditions.$.${key}`] = updateData[key];
+  });
+
+  // Add metadata fields
+  setObject["conditions.$.updatedBy"] = req.user._id;
+  setObject["conditions.$.updatedAt"] = new Date();
+
   const propertyDetail = await PropertyDetail.findOneAndUpdate(
     {
       matterId,
       firmId: req.firmId,
       "conditions._id": conditionId,
     },
-    {
-      $set: {
-        "conditions.$": {
-          ...updateData,
-          _id: conditionId,
-          updatedBy: req.user._id,
-          updatedAt: new Date(),
-        },
-      },
-      lastModifiedBy: req.user._id,
-    },
+    { $set: setObject },
     { new: true, runValidators: true },
   );
 

@@ -310,7 +310,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/matters", matterRouter);
 app.use("/api/v1/litigation", litigationRouter);
 app.use("/api/v1/corporate", corporateRouter);
-app.use("/api/v1/properties", propertyRouter);
+app.use("/api/v1/property", propertyRouter);
 app.use("/api/v1/retainers", retainerRouter);
 app.use("/api/v1/advisory", advisoryRouter);
 app.use("/api/v1/general", generalRouter);

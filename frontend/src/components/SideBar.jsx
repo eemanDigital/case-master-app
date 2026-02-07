@@ -156,7 +156,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           key: "retainership",
           icon: <SolutionOutlined />,
           label: "Retainership",
-          path: "/dashboard/matters/retainership",
+          path: "/dashboard/matters/retainers",
         },
         {
           key: "property",

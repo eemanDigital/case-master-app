@@ -20,14 +20,8 @@ const generalDetailPaginationService = PaginationServiceFactory.createService(
 // GENERAL MATTERS LISTING & PAGINATION
 // ============================================
 
-/**
- * @desc    Get all general matters with pagination, filtering, and sorting
- * @route   GET /api/general-matters
- * @access  Private
- */
 exports.getAllGeneralMatters = catchAsync(async (req, res, next) => {
   const {
-    // Standard pagination
     page = 1,
     limit = 50,
     sort = "-dateOpened",
@@ -35,25 +29,16 @@ exports.getAllGeneralMatters = catchAsync(async (req, res, next) => {
     select,
     debug,
     includeStats,
-
-    // General-specific filters
     serviceType,
     status,
-
-    // Search
     search,
-
-    // Other
     includeDeleted,
     onlyDeleted,
+    jurisdictionState,
   } = req.query;
 
-  // Add general matter type filter
-  const customFilter = {
-    matterType: "general",
-  };
+  const customFilter = { matterType: "general" };
 
-  // Use matter pagination service
   const result = await matterPaginationService.paginate(
     {
       page,
@@ -73,7 +58,7 @@ exports.getAllGeneralMatters = catchAsync(async (req, res, next) => {
     req.firmId,
   );
 
-  // Enhance matters with general details if not already populated
+  // Enhance with general details
   if (
     result.data.length > 0 &&
     (!populate || !populate.includes("generalDetail"))
@@ -84,7 +69,6 @@ exports.getAllGeneralMatters = catchAsync(async (req, res, next) => {
       firmId: req.firmId,
     }).lean();
 
-    // Map general details to matters
     const detailsMap = generalDetails.reduce((map, detail) => {
       map[detail.matterId.toString()] = detail;
       return map;
@@ -96,32 +80,29 @@ exports.getAllGeneralMatters = catchAsync(async (req, res, next) => {
     }));
   }
 
+  // Filter by jurisdiction state if provided
+  if (jurisdictionState && result.data.length > 0) {
+    result.data = result.data.filter(
+      (item) => item.generalDetail?.jurisdiction?.state === jurisdictionState,
+    );
+    result.total = result.data.length;
+  }
+
   res.status(200).json({
     status: "success",
     ...result,
   });
 });
 
-// ============================================
-// ADVANCED GENERAL SEARCH
-// ============================================
-
-/**
- * @desc    Advanced search for general matters
- * @route   POST /api/general-matters/search
- * @access  Private
- */
 exports.searchGeneralMatters = catchAsync(async (req, res, next) => {
   const { criteria = {}, options = {} } = req.body;
 
-  // Add general matter type and firmId to criteria
   const firmCriteria = {
     ...criteria,
     firmId: req.firmId,
     matterType: "general",
   };
 
-  // Use advanced search from pagination service
   const result = await matterPaginationService.advancedSearch(
     firmCriteria,
     options,
@@ -135,103 +116,132 @@ exports.searchGeneralMatters = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// GENERAL DETAILS MANAGEMENT
+// GENERAL DETAILS MANAGEMENT (NO SESSION)
 // ============================================
 
-/**
- * @desc    Create general details for a matter
- * @route   POST /api/general-matters/:matterId/details
- * @access  Private (Admin, Lawyer)
- */
 exports.createGeneralDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const generalData = req.body;
 
-  // Start transaction
-  const session = await Matter.startSession();
-  session.startTransaction();
+  // 1. Verify matter exists
+  const matter = await Matter.findOne({
+    _id: matterId,
+    firmId: req.firmId,
+    isDeleted: false,
+  });
 
-  try {
-    // 1. Verify matter exists
-    const matter = await Matter.findOne({
-      _id: matterId,
-      firmId: req.firmId,
-      isDeleted: false,
-    }).session(session);
-
-    if (!matter) {
-      await session.abortTransaction();
-      session.endSession();
-      return next(new AppError("Matter not found", 404));
-    }
-
-    if (matter.matterType !== "general") {
-      await session.abortTransaction();
-      session.endSession();
-      return next(new AppError("Matter is not a general matter", 400));
-    }
-
-    // 2. Check if general details already exist
-    const existingDetail = await GeneralDetail.findOne({
-      matterId,
-      firmId: req.firmId,
-    }).session(session);
-
-    if (existingDetail) {
-      await session.abortTransaction();
-      session.endSession();
-      return next(
-        new AppError("General details already exist for this matter", 400),
-      );
-    }
-
-    // 3. Create general detail
-    const generalDetail = new GeneralDetail({
-      matterId,
-      firmId: req.firmId,
-      createdBy: req.user._id,
-      ...generalData,
-    });
-
-    await generalDetail.save({ session });
-
-    // 4. Update matter to link general detail
-    matter.generalDetail = generalDetail._id;
-    await matter.save({ session });
-
-    await session.commitTransaction();
-    session.endSession();
-
-    // Populate and return
-    const populatedDetail = await GeneralDetail.findById(
-      generalDetail._id,
-    ).populate({
-      path: "matter",
-      select: "matterNumber title client accountOfficer status priority",
-      populate: [
-        { path: "client", select: "firstName lastName email phone" },
-        { path: "accountOfficer", select: "firstName lastName email photo" },
-      ],
-    });
-
-    res.status(201).json({
-      status: "success",
-      data: {
-        generalDetail: populatedDetail,
-      },
-    });
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    return next(error);
+  if (!matter) {
+    return next(new AppError("Matter not found", 404));
   }
+
+  if (matter.matterType !== "general") {
+    return next(new AppError("Matter is not a general matter", 400));
+  }
+
+  // 2. Check if general details already exist
+  const existingDetail = await GeneralDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
+
+  if (existingDetail) {
+    return next(
+      new AppError("General details already exist for this matter", 400),
+    );
+  }
+
+  // 3. Create general detail with proper Nigerian model structure
+  const generalDetail = new GeneralDetail({
+    matterId,
+    firmId: req.firmId,
+    createdBy: req.user._id,
+
+    // Service type and description
+    serviceType: generalData.serviceType,
+    otherServiceType: generalData.otherServiceType,
+    serviceDescription: generalData.serviceDescription,
+
+    // Billing structure (Nigerian model)
+    billing: {
+      billingType: generalData.billing?.billingType || "fixed-fee",
+      fixedFee: generalData.billing?.fixedFee,
+      lproScale: generalData.billing?.lproScale,
+      percentage: generalData.billing?.percentage,
+      vatRate: generalData.billing?.vatRate || 7.5,
+      applyVAT: generalData.billing?.applyVAT !== false,
+      applyWHT: generalData.billing?.applyWHT !== false,
+      whtRate: generalData.billing?.whtRate || 5,
+    },
+
+    // Project stages (Nigerian billing pattern)
+    projectStages: generalData.projectStages || [],
+
+    // Requirements tracking
+    specificRequirements: generalData.specificRequirements || [],
+
+    // Parties involved
+    partiesInvolved: generalData.partiesInvolved || [],
+
+    // Deliverables
+    expectedDeliverables: generalData.expectedDeliverables || [],
+
+    // Document tracking
+    documentsReceived: generalData.documentsReceived || [],
+
+    // Disbursements (out-of-pockets)
+    disbursements: generalData.disbursements || [],
+
+    // Court appearances (if litigation)
+    courtAppearances: generalData.courtAppearances || [],
+
+    // NBA stamp compliance
+    requiresNBAStamp: generalData.requiresNBAStamp || false,
+    nbaStampDetails: generalData.nbaStampDetails,
+
+    // Timeline
+    requestDate: generalData.requestDate || new Date(),
+    expectedCompletionDate: generalData.expectedCompletionDate,
+
+    // Jurisdiction (Nigerian context)
+    jurisdiction: generalData.jurisdiction || {},
+
+    // Notes
+    procedureNotes: generalData.procedureNotes,
+  });
+
+  await generalDetail.save();
+
+  // 4. Update matter to link general detail
+  matter.generalDetail = generalDetail._id;
+  if (generalDetail.expectedCompletionDate) {
+    matter.expectedClosureDate = generalDetail.expectedCompletionDate;
+  }
+  await matter.save();
+
+  // 5. Populate and return
+  const populatedDetail = await GeneralDetail.findById(
+    generalDetail._id,
+  ).populate({
+    path: "matterId",
+    select: "matterNumber title client accountOfficer status priority",
+    populate: [
+      { path: "client", select: "firstName lastName email phone" },
+      { path: "accountOfficer", select: "firstName lastName email photo" },
+    ],
+  });
+
+  // Add calculated totals
+  const enrichedDetail = populatedDetail.toObject();
+  enrichedDetail.financialSummary = populatedDetail.totalWithTax;
+
+  res.status(201).json({
+    status: "success",
+    data: {
+      generalDetail: enrichedDetail,
+    },
+  });
 });
 
-/**
- * @desc    Get general details for a specific matter
- * @route   GET /api/general-matters/:matterId/details
- * @access  Private
- */
 exports.getGeneralDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
 
@@ -240,7 +250,7 @@ exports.getGeneralDetails = catchAsync(async (req, res, next) => {
     firmId: req.firmId,
   })
     .populate({
-      path: "matter",
+      path: "matterId",
       select:
         "matterNumber title client accountOfficer status priority dateOpened",
       populate: [
@@ -258,19 +268,18 @@ exports.getGeneralDetails = catchAsync(async (req, res, next) => {
     return next(new AppError("General details not found", 404));
   }
 
+  // Add financial summary
+  const enrichedDetail = generalDetail.toObject();
+  enrichedDetail.financialSummary = generalDetail.totalWithTax;
+
   res.status(200).json({
     status: "success",
     data: {
-      generalDetail,
+      generalDetail: enrichedDetail,
     },
   });
 });
 
-/**
- * @desc    Update general details
- * @route   PATCH /api/general-matters/:matterId/details
- * @access  Private (Admin, Lawyer)
- */
 exports.updateGeneralDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const updateData = req.body;
@@ -283,7 +292,7 @@ exports.updateGeneralDetails = catchAsync(async (req, res, next) => {
     },
     { new: true, runValidators: true },
   ).populate({
-    path: "matter",
+    path: "matterId",
     select: "matterNumber title client accountOfficer",
     populate: [
       { path: "client", select: "firstName lastName email" },
@@ -303,11 +312,6 @@ exports.updateGeneralDetails = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @desc    Delete general details
- * @route   DELETE /api/general-matters/:matterId/details
- * @access  Private (Admin, Lawyer)
- */
 exports.deleteGeneralDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
 
@@ -334,11 +338,6 @@ exports.deleteGeneralDetails = catchAsync(async (req, res, next) => {
   });
 });
 
-/**
- * @desc    Restore general details
- * @route   PATCH /api/general-matters/:matterId/details/restore
- * @access  Private (Admin, Lawyer)
- */
 exports.restoreGeneralDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
 
@@ -380,6 +379,7 @@ exports.addRequirement = catchAsync(async (req, res, next) => {
       $push: {
         specificRequirements: {
           ...requirementData,
+          status: requirementData.status || "pending",
           addedBy: req.user._id,
           addedAt: new Date(),
         },
@@ -409,23 +409,22 @@ exports.updateRequirement = catchAsync(async (req, res, next) => {
   const { matterId, requirementId } = req.params;
   const updateData = req.body;
 
+  const setObject = { lastModifiedBy: req.user._id };
+
+  Object.keys(updateData).forEach((key) => {
+    setObject[`specificRequirements.$.${key}`] = updateData[key];
+  });
+
+  setObject["specificRequirements.$.updatedBy"] = req.user._id;
+  setObject["specificRequirements.$.updatedAt"] = new Date();
+
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     {
       matterId,
       firmId: req.firmId,
       "specificRequirements._id": requirementId,
     },
-    {
-      $set: {
-        "specificRequirements.$": {
-          ...updateData,
-          _id: requirementId,
-          updatedBy: req.user._id,
-          updatedAt: new Date(),
-        },
-      },
-      lastModifiedBy: req.user._id,
-    },
+    { $set: setObject },
     { new: true, runValidators: true },
   );
 
@@ -511,23 +510,22 @@ exports.updateParty = catchAsync(async (req, res, next) => {
   const { matterId, partyId } = req.params;
   const updateData = req.body;
 
+  const setObject = { lastModifiedBy: req.user._id };
+
+  Object.keys(updateData).forEach((key) => {
+    setObject[`partiesInvolved.$.${key}`] = updateData[key];
+  });
+
+  setObject["partiesInvolved.$.updatedBy"] = req.user._id;
+  setObject["partiesInvolved.$.updatedAt"] = new Date();
+
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     {
       matterId,
       firmId: req.firmId,
       "partiesInvolved._id": partyId,
     },
-    {
-      $set: {
-        "partiesInvolved.$": {
-          ...updateData,
-          _id: partyId,
-          updatedBy: req.user._id,
-          updatedAt: new Date(),
-        },
-      },
-      lastModifiedBy: req.user._id,
-    },
+    { $set: setObject },
     { new: true, runValidators: true },
   );
 
@@ -585,6 +583,7 @@ exports.addDeliverable = catchAsync(async (req, res, next) => {
       $push: {
         expectedDeliverables: {
           ...deliverableData,
+          status: deliverableData.status || "pending",
           addedBy: req.user._id,
           addedAt: new Date(),
         },
@@ -614,23 +613,22 @@ exports.updateDeliverable = catchAsync(async (req, res, next) => {
   const { matterId, deliverableId } = req.params;
   const updateData = req.body;
 
+  const setObject = { lastModifiedBy: req.user._id };
+
+  Object.keys(updateData).forEach((key) => {
+    setObject[`expectedDeliverables.$.${key}`] = updateData[key];
+  });
+
+  setObject["expectedDeliverables.$.updatedBy"] = req.user._id;
+  setObject["expectedDeliverables.$.updatedAt"] = new Date();
+
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     {
       matterId,
       firmId: req.firmId,
       "expectedDeliverables._id": deliverableId,
     },
-    {
-      $set: {
-        "expectedDeliverables.$": {
-          ...updateData,
-          _id: deliverableId,
-          updatedBy: req.user._id,
-          updatedAt: new Date(),
-        },
-      },
-      lastModifiedBy: req.user._id,
-    },
+    { $set: setObject },
     { new: true, runValidators: true },
   );
 
@@ -676,7 +674,7 @@ exports.deleteDeliverable = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// DOCUMENTS MANAGEMENT
+// DOCUMENTS MANAGEMENT (UPDATED FOR NEW SCHEMA)
 // ============================================
 
 exports.addDocument = catchAsync(async (req, res, next) => {
@@ -687,7 +685,7 @@ exports.addDocument = catchAsync(async (req, res, next) => {
     { matterId, firmId: req.firmId },
     {
       $push: {
-        documentsRequired: {
+        documentsReceived: {
           ...documentData,
           addedBy: req.user._id,
           addedAt: new Date(),
@@ -707,8 +705,8 @@ exports.addDocument = catchAsync(async (req, res, next) => {
     data: {
       generalDetail,
       newDocument:
-        generalDetail.documentsRequired[
-          generalDetail.documentsRequired.length - 1
+        generalDetail.documentsReceived[
+          generalDetail.documentsReceived.length - 1
         ],
     },
   });
@@ -716,32 +714,43 @@ exports.addDocument = catchAsync(async (req, res, next) => {
 
 exports.updateDocumentStatus = catchAsync(async (req, res, next) => {
   const { matterId, documentId } = req.params;
-  const { isReceived, receivedDate } = req.body;
+  const { isReceived, receivedDate, returnDate, receiptNumber } = req.body;
+
+  const setObject = { lastModifiedBy: req.user._id };
+
+  if (isReceived !== undefined) {
+    setObject["documentsReceived.$.isReceived"] = isReceived;
+    setObject["documentsReceived.$.receivedDate"] = isReceived
+      ? receivedDate || new Date()
+      : null;
+    setObject["documentsReceived.$.receivedBy"] = isReceived
+      ? req.user._id
+      : null;
+  }
+
+  if (returnDate !== undefined) {
+    setObject["documentsReceived.$.returnDate"] = returnDate;
+  }
+
+  if (receiptNumber !== undefined) {
+    setObject["documentsReceived.$.receiptNumber"] = receiptNumber;
+  }
 
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     {
       matterId,
       firmId: req.firmId,
-      "documentsRequired._id": documentId,
+      "documentsReceived._id": documentId,
     },
-    {
-      $set: {
-        "documentsRequired.$.isReceived": isReceived,
-        "documentsRequired.$.receivedDate": isReceived
-          ? receivedDate || new Date()
-          : null,
-        "documentsRequired.$.receivedBy": isReceived ? req.user._id : null,
-      },
-      lastModifiedBy: req.user._id,
-    },
-    { new: true },
+    { $set: setObject },
+    { new: true, runValidators: true },
   );
 
   if (!generalDetail) {
     return next(new AppError("Document not found", 404));
   }
 
-  const updatedDocument = generalDetail.documentsRequired.id(documentId);
+  const updatedDocument = generalDetail.documentsReceived.id(documentId);
 
   res.status(200).json({
     status: "success",
@@ -758,7 +767,7 @@ exports.deleteDocument = catchAsync(async (req, res, next) => {
   const generalDetail = await GeneralDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      $pull: { documentsRequired: { _id: documentId } },
+      $pull: { documentsReceived: { _id: documentId } },
       lastModifiedBy: req.user._id,
     },
     { new: true },
@@ -772,7 +781,256 @@ exports.deleteDocument = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       generalDetail,
-      message: "Document requirement removed successfully",
+      message: "Document removed successfully",
+    },
+  });
+});
+
+// ============================================
+// PROJECT STAGES MANAGEMENT (NEW)
+// ============================================
+
+exports.addProjectStage = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const stageData = req.body;
+
+  const generalDetail = await GeneralDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $push: {
+        projectStages: {
+          ...stageData,
+          isCompleted: stageData.isCompleted || false,
+          isPaid: stageData.isPaid || false,
+          addedBy: req.user._id,
+          addedAt: new Date(),
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!generalDetail) {
+    return next(new AppError("General details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      generalDetail,
+      newStage:
+        generalDetail.projectStages[generalDetail.projectStages.length - 1],
+    },
+  });
+});
+
+exports.updateProjectStage = catchAsync(async (req, res, next) => {
+  const { matterId, stageId } = req.params;
+  const updateData = req.body;
+
+  const setObject = { lastModifiedBy: req.user._id };
+
+  Object.keys(updateData).forEach((key) => {
+    setObject[`projectStages.$.${key}`] = updateData[key];
+  });
+
+  setObject["projectStages.$.updatedBy"] = req.user._id;
+  setObject["projectStages.$.updatedAt"] = new Date();
+
+  const generalDetail = await GeneralDetail.findOneAndUpdate(
+    {
+      matterId,
+      firmId: req.firmId,
+      "projectStages._id": stageId,
+    },
+    { $set: setObject },
+    { new: true, runValidators: true },
+  );
+
+  if (!generalDetail) {
+    return next(new AppError("Project stage not found", 404));
+  }
+
+  const updatedStage = generalDetail.projectStages.id(stageId);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      generalDetail,
+      updatedStage,
+    },
+  });
+});
+
+exports.completeProjectStage = catchAsync(async (req, res, next) => {
+  const { matterId, stageId } = req.params;
+  const { actualDate, amountPaid } = req.body;
+
+  const generalDetail = await GeneralDetail.findOneAndUpdate(
+    {
+      matterId,
+      firmId: req.firmId,
+      "projectStages._id": stageId,
+    },
+    {
+      $set: {
+        "projectStages.$.isCompleted": true,
+        "projectStages.$.actualDate": actualDate || new Date(),
+        "projectStages.$.updatedBy": req.user._id,
+        "projectStages.$.updatedAt": new Date(),
+        lastModifiedBy: req.user._id,
+      },
+    },
+    { new: true },
+  );
+
+  if (!generalDetail) {
+    return next(new AppError("Project stage not found", 404));
+  }
+
+  const completedStage = generalDetail.projectStages.id(stageId);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      generalDetail,
+      completedStage,
+    },
+  });
+});
+
+// ============================================
+// DISBURSEMENTS MANAGEMENT
+// ============================================
+
+exports.addDisbursement = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const disbursementData = req.body;
+
+  const generalDetail = await GeneralDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $push: {
+        disbursements: {
+          ...disbursementData,
+          incurredDate: disbursementData.incurredDate || new Date(),
+          addedBy: req.user._id,
+        },
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!generalDetail) {
+    return next(new AppError("General details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      generalDetail,
+      newDisbursement:
+        generalDetail.disbursements[generalDetail.disbursements.length - 1],
+    },
+  });
+});
+
+exports.updateDisbursement = catchAsync(async (req, res, next) => {
+  const { matterId, disbursementId } = req.params;
+  const updateData = req.body;
+
+  const setObject = { lastModifiedBy: req.user._id };
+
+  Object.keys(updateData).forEach((key) => {
+    setObject[`disbursements.$.${key}`] = updateData[key];
+  });
+
+  setObject["disbursements.$.updatedBy"] = req.user._id;
+  setObject["disbursements.$.updatedAt"] = new Date();
+
+  const generalDetail = await GeneralDetail.findOneAndUpdate(
+    {
+      matterId,
+      firmId: req.firmId,
+      "disbursements._id": disbursementId,
+    },
+    { $set: setObject },
+    { new: true, runValidators: true },
+  );
+
+  if (!generalDetail) {
+    return next(new AppError("Disbursement not found", 404));
+  }
+
+  const updatedDisbursement = generalDetail.disbursements.id(disbursementId);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      generalDetail,
+      updatedDisbursement,
+    },
+  });
+});
+
+exports.deleteDisbursement = catchAsync(async (req, res, next) => {
+  const { matterId, disbursementId } = req.params;
+
+  const generalDetail = await GeneralDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $pull: { disbursements: { _id: disbursementId } },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true },
+  );
+
+  if (!generalDetail) {
+    return next(new AppError("General details or disbursement not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      generalDetail,
+      message: "Disbursement removed successfully",
+    },
+  });
+});
+
+// ============================================
+// NBA STAMP MANAGEMENT
+// ============================================
+
+exports.updateNBAStamp = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const { stampNumber, stampDate, stampValue } = req.body;
+
+  const generalDetail = await GeneralDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      requiresNBAStamp: true,
+      nbaStampDetails: {
+        stampNumber,
+        stampDate: stampDate || new Date(),
+        stampValue,
+      },
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!generalDetail) {
+    return next(new AppError("General details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      generalDetail,
+      nbaStampDetails: generalDetail.nbaStampDetails,
     },
   });
 });
@@ -783,68 +1041,54 @@ exports.deleteDocument = catchAsync(async (req, res, next) => {
 
 exports.completeGeneralService = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
-  const { completionDate } = req.body;
+  const { completionDate, finalNotes } = req.body;
 
-  const session = await Matter.startSession();
-  session.startTransaction();
+  // Update general detail
+  const generalDetail = await GeneralDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      actualCompletionDate: completionDate || new Date(),
+      procedureNotes: finalNotes
+        ? `${generalDetail.procedureNotes || ""}\n\n${finalNotes}`
+        : generalDetail.procedureNotes,
+      lastModifiedBy: req.user._id,
+    },
+    { new: true, runValidators: true },
+  );
 
-  try {
-    // Update matter
-    const matter = await Matter.findOneAndUpdate(
-      {
-        _id: matterId,
-        firmId: req.firmId,
-        matterType: "general",
-        isDeleted: false,
-      },
-      {
-        status: "completed",
-        actualClosureDate: completionDate || new Date(),
-        lastModifiedBy: req.user._id,
-      },
-      { new: true, runValidators: true, session },
-    );
-
-    if (!matter) {
-      await session.abortTransaction();
-      session.endSession();
-      return next(new AppError("General matter not found", 404));
-    }
-
-    // Update general detail
-    const generalDetail = await GeneralDetail.findOneAndUpdate(
-      { matterId, firmId: req.firmId },
-      {
-        $set: {
-          actualCompletionDate: completionDate || new Date(),
-          lastModifiedBy: req.user._id,
-        },
-      },
-      { new: true, runValidators: true, session },
-    );
-
-    if (!generalDetail) {
-      await session.abortTransaction();
-      session.endSession();
-      return next(new AppError("General details not found", 404));
-    }
-
-    await session.commitTransaction();
-    session.endSession();
-
-    res.status(200).json({
-      status: "success",
-      message: "General service marked as completed",
-      data: {
-        generalDetail,
-        matter,
-      },
-    });
-  } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    return next(error);
+  if (!generalDetail) {
+    return next(new AppError("General details not found", 404));
   }
+
+  // Update matter
+  const matter = await Matter.findOneAndUpdate(
+    {
+      _id: matterId,
+      firmId: req.firmId,
+      matterType: "general",
+      isDeleted: false,
+    },
+    {
+      status: "completed",
+      actualClosureDate: generalDetail.actualCompletionDate,
+      lastModifiedBy: req.user._id,
+      lastActivityDate: new Date(),
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!matter) {
+    return next(new AppError("General matter not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: "General service marked as completed",
+    data: {
+      generalDetail,
+      matter,
+    },
+  });
 });
 
 // ============================================
@@ -860,9 +1104,10 @@ exports.getGeneralStats = catchAsync(async (req, res, next) => {
     requirementStats,
     deliverableStats,
     documentStats,
+    revenueStats,
+    jurisdictionStats,
     recentMatters,
   ] = await Promise.all([
-    // Overview statistics
     Matter.aggregate([
       {
         $match: {
@@ -883,23 +1128,25 @@ exports.getGeneralStats = catchAsync(async (req, res, next) => {
           completedGeneralMatters: {
             $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
           },
+          closedGeneralMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "closed"] }, 1, 0] },
+          },
         },
       },
     ]),
 
-    // By service type
     GeneralDetail.aggregate([
       { $match: firmQuery },
       {
         $group: {
           _id: "$serviceType",
           count: { $sum: 1 },
+          avgFee: { $avg: "$billing.fixedFee.amount" },
         },
       },
       { $sort: { count: -1 } },
     ]),
 
-    // Requirements statistics
     GeneralDetail.aggregate([
       { $match: firmQuery },
       { $unwind: "$specificRequirements" },
@@ -907,20 +1154,10 @@ exports.getGeneralStats = catchAsync(async (req, res, next) => {
         $group: {
           _id: "$specificRequirements.status",
           count: { $sum: 1 },
-          completedCount: {
-            $sum: {
-              $cond: [
-                { $eq: ["$specificRequirements.status", "completed"] },
-                1,
-                0,
-              ],
-            },
-          },
         },
       },
     ]),
 
-    // Deliverables statistics
     GeneralDetail.aggregate([
       { $match: firmQuery },
       { $unwind: "$expectedDeliverables" },
@@ -951,48 +1188,78 @@ exports.getGeneralStats = catchAsync(async (req, res, next) => {
       },
     ]),
 
-    // Documents statistics
     GeneralDetail.aggregate([
       { $match: firmQuery },
-      { $unwind: "$documentsRequired" },
+      { $unwind: "$documentsReceived" },
       {
         $group: {
-          _id: "$documentsRequired.isReceived",
+          _id: "$documentsReceived.isReceived",
           count: { $sum: 1 },
+          originalKeptCount: {
+            $sum: {
+              $cond: [
+                { $eq: ["$documentsReceived.originalKeptByFirm", true] },
+                1,
+                0,
+              ],
+            },
+          },
         },
       },
     ]),
 
-    // Recent matters (last 30 days)
+    GeneralDetail.aggregate([
+      { $match: firmQuery },
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: "$billing.fixedFee.amount" },
+          avgRevenue: { $avg: "$billing.fixedFee.amount" },
+          totalDisbursements: { $sum: "$totalDisbursements" },
+          matterCount: { $sum: 1 },
+        },
+      },
+    ]),
+
+    GeneralDetail.aggregate([
+      { $match: firmQuery },
+      {
+        $group: {
+          _id: "$jurisdiction.state",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+      { $limit: 10 },
+    ]),
+
     Matter.aggregate([
       {
         $match: {
           ...firmQuery,
           matterType: "general",
-          dateOpened: {
-            $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-          },
         },
       },
-      {
-        $group: {
-          _id: {
-            $dateToString: { format: "%Y-%m-%d", date: "$dateOpened" },
-          },
-          count: { $sum: 1 },
-        },
-      },
-      { $sort: { _id: -1 } },
+      { $sort: { dateOpened: -1 } },
       { $limit: 10 },
+      {
+        $project: {
+          matterNumber: 1,
+          title: 1,
+          status: 1,
+          dateOpened: 1,
+          expectedClosureDate: 1,
+          client: 1,
+        },
+      },
     ]),
   ]);
 
-  // Calculate totals
   const pendingRequirements = requirementStats.find((s) => s._id === "pending");
   const pendingDeliverables = deliverableStats.find(
     (s) => s._id === "pending" || s._id === "in-progress",
   );
-  const missingDocuments = documentStats.find((s) => s._id === false);
+  const missingDocuments = documentStats.find((s) => !s._id);
 
   res.status(200).json({
     status: "success",
@@ -1002,15 +1269,13 @@ exports.getGeneralStats = catchAsync(async (req, res, next) => {
         activeGeneralMatters: 0,
         pendingGeneralMatters: 0,
         completedGeneralMatters: 0,
+        closedGeneralMatters: 0,
       },
       byServiceType,
       requirements: {
         byStatus: requirementStats,
         pending: pendingRequirements?.count || 0,
-        completed: requirementStats.reduce(
-          (sum, stat) => sum + (stat.completedCount || 0),
-          0,
-        ),
+        completed: requirementStats.find((s) => s._id === "met")?.count || 0,
       },
       deliverables: {
         byStatus: deliverableStats,
@@ -1021,17 +1286,24 @@ exports.getGeneralStats = catchAsync(async (req, res, next) => {
         ),
       },
       documents: {
-        received: documentStats.find((s) => s._id === true)?.count || 0,
+        received: documentStats.find((s) => s._id)?.count || 0,
         missing: missingDocuments?.count || 0,
+        originalKept: documentStats.reduce(
+          (sum, stat) => sum + (stat.originalKeptCount || 0),
+          0,
+        ),
       },
+      revenue: revenueStats[0] || {
+        totalRevenue: 0,
+        avgRevenue: 0,
+        totalDisbursements: 0,
+        matterCount: 0,
+      },
+      jurisdictions: jurisdictionStats,
       recentMatters,
     },
   });
 });
-
-// ============================================
-// BULK OPERATIONS
-// ============================================
 
 exports.bulkUpdateGeneralMatters = catchAsync(async (req, res, next) => {
   const { matterIds, updates } = req.body;

@@ -86,7 +86,12 @@ const ShareholdersManager = ({ matterId, shareholders = [] }) => {
     }
     setModalVisible(true);
   };
-
+  console.log("Editing shareholder:", editingShareholder);
+  console.log(
+    "Shareholder ID:",
+    editingShareholder?._id || editingShareholder?.id,
+  );
+  console.log("Matter ID:", matterId);
   // Handle form submission
   const handleSubmit = async (values) => {
     setLoading(true);

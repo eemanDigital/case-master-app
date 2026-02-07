@@ -116,6 +116,32 @@ const CorporateMatterDetails = lazy(
 //   () => import("./pages/corporate/EditCorporateMatter.jsx"),
 // );
 
+//Property Management
+const PropertyList = lazy(() => import("./pages/property/PropertyList.jsx"));
+
+const CreateProperty = lazy(
+  () => import("./pages/property/CreateProperty.jsx"),
+);
+
+const EditProperty = lazy(() => import("./pages/property/EditProperty.jsx"));
+
+const PropertyDetails = lazy(
+  () => import("./pages/property/PropertyDetails.jsx"),
+);
+
+//Retainer Management
+const RetainerList = lazy(() => import("./pages/retainer/RetainerList.jsx"));
+const CreateRetainerPage = lazy(() =>
+  import("./pages/retainer/RetainerPageWrappers.jsx").then((module) => ({
+    default: module.CreateRetainerPage,
+  })),
+);
+const RetainerDetailsPage = lazy(() =>
+  import("./pages/retainer/RetainerPageWrappers.jsx").then((module) => ({
+    default: module.RetainerDetailsPage,
+  })),
+);
+
 // Tasks Management
 const TaskList = lazy(() => import("./components/TaskList.jsx"));
 const CreateTaskForm = lazy(() => import("./pages/CreateTaskForm.jsx"));
@@ -593,6 +619,103 @@ function App() {
                     </Suspense>
                   }
                 /> */}
+              </Route>
+
+              <Route path="matters/property">
+                <Route
+                  index
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <PropertyList />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+
+                <Route
+                  path=":matterId/create"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <CreateProperty />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+
+                <Route
+                  path=":matterId/edit"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <EditProperty />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+
+                <Route
+                  path=":matterId/details"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <PropertyDetails />
+                    </Suspense>
+                  }
+                />
+              </Route>
+
+              {/* Retainer Management */}
+
+              {/* ==================== RETAINER ROUTES (NEW) ==================== */}
+              <Route path="matters/retainers">
+                {/* List all retainers */}
+                <Route
+                  index
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <RetainerList />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+
+                {/* Create new retainer */}
+                <Route
+                  path=":matterId/create"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <CreateRetainerPage />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+
+                {/* View retainer details */}
+                <Route
+                  path=":matterId/details"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <RetainerDetailsPage />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+
+                {/* Edit retainer (opens details in edit mode) */}
+                <Route
+                  path=":matterId/edit"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <RetainerDetailsPage editMode />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
               </Route>
 
               {/* Cases Management */}

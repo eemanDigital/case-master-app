@@ -7,16 +7,22 @@ const retainerRouter = express.Router();
 // Protect all routes
 retainerRouter.use(protect);
 
-// Retainer matters listing & search
+// ============================================
+// RETAINER MATTERS LISTING & SEARCH
+// ============================================
 retainerRouter.get("/", retainerController.getAllRetainerMatters);
 retainerRouter.post("/search", retainerController.searchRetainerMatters);
 
-// Statistics & analytics
+// ============================================
+// STATISTICS & ANALYTICS
+// ============================================
 retainerRouter.get("/stats", retainerController.getRetainerStats);
 retainerRouter.get("/expiring", retainerController.getExpiringRetainers);
 retainerRouter.get("/pending-requests", retainerController.getPendingRequests);
 
-// Retainer details CRUD
+// ============================================
+// RETAINER DETAILS CRUD
+// ============================================
 retainerRouter
   .route("/:matterId/details")
   .get(retainerController.getRetainerDetails)
@@ -36,7 +42,9 @@ retainerRouter.patch(
   retainerController.restoreRetainerDetails,
 );
 
-// Services management
+// ============================================
+// SERVICES MANAGEMENT (NIGERIAN UNITS MODEL)
+// ============================================
 retainerRouter.post(
   "/:matterId/services",
   restrictTo("admin", "lawyer"),
@@ -55,19 +63,55 @@ retainerRouter.delete(
   retainerController.removeService,
 );
 
-// Hours management
+// Service usage (Nigerian units - replaces hours)
 retainerRouter.patch(
-  "/:matterId/services/:serviceId/hours",
+  "/:matterId/services/:serviceId/usage",
   restrictTo("admin", "lawyer"),
-  retainerController.updateServiceHours,
+  retainerController.updateServiceUsage,
 );
 
-retainerRouter.get(
-  "/:matterId/hours-summary",
-  retainerController.getHoursSummary,
+// ============================================
+// DISBURSEMENTS MANAGEMENT (OUT-OF-POCKETS)
+// ============================================
+retainerRouter.post(
+  "/:matterId/disbursements",
+  restrictTo("admin", "lawyer"),
+  retainerController.addDisbursement,
 );
 
-// Client requests management
+retainerRouter.patch(
+  "/:matterId/disbursements/:disbursementId",
+  restrictTo("admin", "lawyer"),
+  retainerController.updateDisbursement,
+);
+
+retainerRouter.delete(
+  "/:matterId/disbursements/:disbursementId",
+  restrictTo("admin", "lawyer"),
+  retainerController.deleteDisbursement,
+);
+
+// ============================================
+// COURT APPEARANCES MANAGEMENT
+// ============================================
+retainerRouter.post(
+  "/:matterId/court-appearances",
+  restrictTo("admin", "lawyer"),
+  retainerController.addCourtAppearance,
+);
+
+// ============================================
+// ACTIVITY LOG MANAGEMENT
+// ============================================
+retainerRouter.post(
+  "/:matterId/activities",
+  restrictTo("admin", "lawyer"),
+  retainerController.logActivity,
+);
+
+// ============================================
+// CLIENT REQUESTS MANAGEMENT
+// ============================================
 retainerRouter.post(
   "/:matterId/requests",
   restrictTo("admin", "lawyer"),
@@ -86,7 +130,18 @@ retainerRouter.delete(
   retainerController.deleteRequest,
 );
 
-// Retainer life cycle
+// ============================================
+// NBA STAMP MANAGEMENT
+// ============================================
+retainerRouter.patch(
+  "/:matterId/nba-stamp",
+  restrictTo("admin", "lawyer"),
+  retainerController.updateNBAStamp,
+);
+
+// ============================================
+// RETAINER LIFE CYCLE
+// ============================================
 retainerRouter.post(
   "/:matterId/renew",
   restrictTo("admin", "lawyer"),
@@ -99,7 +154,14 @@ retainerRouter.post(
   retainerController.terminateRetainer,
 );
 
-// Bulk operations
+// ============================================
+// REPORTS & SUMMARIES
+// ============================================
+retainerRouter.get("/:matterId/summary", retainerController.getRetainerSummary);
+
+// ============================================
+// BULK OPERATIONS
+// ============================================
 retainerRouter.patch(
   "/bulk-update",
   restrictTo("admin", "lawyer"),

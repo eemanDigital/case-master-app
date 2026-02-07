@@ -121,7 +121,7 @@ const CorporateDetails = () => {
 
   // Handle back navigation
   const handleBack = () => {
-    navigate("/matters/corporate");
+    navigate("/dashboard/matters/corporate");
   };
 
   // Print details
