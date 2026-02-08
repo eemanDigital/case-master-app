@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Modal,
   Form,
@@ -15,11 +15,12 @@ import {
   Col,
   Card,
   Statistic,
+  Radio,
 } from "antd";
 import {
   CalendarOutlined,
   DollarOutlined,
-  //   ClockCircleOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -39,48 +40,6 @@ const RenewalModal = ({
   const [newEndDate, setNewEndDate] = useState(null);
   const [renewalPeriod, setRenewalPeriod] = useState("12");
 
-  // Calculate default dates
-  useEffect(() => {
-    if (currentEndDate) {
-      const endDate = dayjs(currentEndDate);
-      const oneYearLater = endDate.add(12, "month");
-      form.setFieldsValue({
-        newEndDate: oneYearLater,
-        renewalPeriod: "12",
-      });
-      setNewEndDate(oneYearLater);
-    }
-  }, [currentEndDate, form]);
-
-  // Handle period change
-  const handlePeriodChange = (period) => {
-    setRenewalPeriod(period);
-    if (currentEndDate) {
-      const newDate = dayjs(currentEndDate).add(Number(period), "month");
-      form.setFieldsValue({ newEndDate: newDate });
-      setNewEndDate(newDate);
-    }
-  };
-
-  // Calculate days difference
-  const calculateDays = () => {
-    if (!currentEndDate || !newEndDate) return 0;
-    return newEndDate.diff(dayjs(currentEndDate), "day");
-  };
-
-  // Handle form submit
-  const handleSubmit = () => {
-    form.validateFields().then((values) => {
-      onOk({
-        newEndDate: values.newEndDate.toISOString(),
-        retainerFee: values.retainerFee,
-        renewalNotes: values.renewalNotes,
-        servicesIncluded: values.servicesIncluded,
-      });
-    });
-  };
-
-  // Quick period options
   const periodOptions = [
     { value: "1", label: "1 Month" },
     { value: "3", label: "3 Months" },
@@ -90,36 +49,92 @@ const RenewalModal = ({
     { value: "36", label: "3 Years" },
   ];
 
+  useEffect(() => {
+    if (currentEndDate && visible) {
+      const endDate = dayjs(currentEndDate);
+      const oneYearLater = endDate.add(12, "month");
+      form.setFieldsValue({
+        newEndDate: oneYearLater,
+        renewalPeriod: "12",
+        retainerFee: currentRetainerFee?.retainerFee || 0,
+        currency: currentRetainerFee?.currency || "NGN",
+        frequency: currentRetainerFee?.frequency || "monthly",
+        vatRate: currentRetainerFee?.vatRate || 7.5,
+        whtRate: currentRetainerFee?.whtRate || 5,
+        applyVAT: currentRetainerFee?.applyVAT !== false,
+        applyWHT: currentRetainerFee?.applyWHT !== false,
+      });
+      setNewEndDate(oneYearLater);
+    }
+  }, [currentEndDate, currentRetainerFee, form, visible]);
+
+  const handlePeriodChange = (period) => {
+    setRenewalPeriod(period);
+    if (currentEndDate) {
+      const newDate = dayjs(currentEndDate).add(Number(period), "month");
+      form.setFieldsValue({ newEndDate: newDate });
+      setNewEndDate(newDate);
+    }
+  };
+
+  const calculateDays = () => {
+    if (!currentEndDate || !newEndDate) return 0;
+    return newEndDate.diff(dayjs(currentEndDate), "day");
+  };
+
+  const calculateMonths = () => {
+    if (!currentEndDate || !newEndDate) return 0;
+    return newEndDate.diff(dayjs(currentEndDate), "month");
+  };
+
+  const handleSubmit = () => {
+    form.validateFields().then((values) => {
+      onOk({
+        newEndDate: values.newEndDate.toISOString(),
+        billing: {
+          retainerFee: values.retainerFee,
+          currency: values.currency,
+          frequency: values.frequency,
+          vatRate: values.vatRate,
+          applyVAT: values.applyVAT,
+          applyWHT: values.applyWHT,
+          whtRate: values.whtRate,
+        },
+        renewalNotes: values.renewalNotes,
+        servicesIncluded: values.servicesIncluded,
+        autoRenewal: values.autoRenewal || false,
+      });
+    });
+  };
+
   return (
     <Modal
-      title="Renew Retainer Agreement"
+      title={
+        <Space>
+          <CalendarOutlined className="text-blue-500" />
+          <span>Renew Retainer Agreement</span>
+        </Space>
+      }
       open={visible}
       onCancel={onCancel}
       onOk={handleSubmit}
       confirmLoading={loading}
-      width={700}
+      width={800}
       okText="Renew Retainer"
-      cancelText="Cancel">
+      cancelText="Cancel"
+      okButtonProps={{ className: "bg-blue-600 hover:bg-blue-700" }}>
       <Alert
-        message="Retainer Renewal"
-        description="Create a new retainer agreement for the next period. This will archive the current agreement and start a new one."
+        message="Retainer Renewal Process"
+        description="Creating a new retainer agreement will archive the current one and start a fresh term with updated conditions."
         type="info"
         showIcon
-        style={{ marginBottom: 24 }}
+        className="mb-6"
       />
-
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{
-          renewalPeriod: "12",
-          retainerFee: currentRetainerFee || {
-            amount: 0,
-            frequency: "monthly",
-          },
-        }}>
-        {/* Current Agreement Summary */}
-        <Card size="small" style={{ marginBottom: 16 }}>
+      <Form form={form} layout="vertical">
+        <Card
+          title="Current Agreement"
+          size="small"
+          className="mb-4 bg-gray-50">
           <Row gutter={16}>
             <Col span={12}>
               <Statistic
@@ -137,81 +152,97 @@ const RenewalModal = ({
                 title="Days Remaining"
                 value={
                   currentEndDate
-                    ? dayjs(currentEndDate).diff(dayjs(), "day")
+                    ? Math.max(dayjs(currentEndDate).diff(dayjs(), "day"), 0)
                     : 0
                 }
                 suffix="days"
+                prefix={<ClockCircleOutlined />}
               />
             </Col>
           </Row>
         </Card>
 
-        {/* Renewal Period Selection */}
-        <Card title="Renewal Period" size="small" style={{ marginBottom: 16 }}>
-          <Space wrap style={{ width: "100%", justifyContent: "center" }}>
-            {periodOptions.map((option) => (
-              <Tag
-                key={option.value}
-                color={renewalPeriod === option.value ? "blue" : "default"}
-                style={{
-                  cursor: "pointer",
-                  padding: "8px 16px",
-                  fontSize: "14px",
-                }}
-                onClick={() => handlePeriodChange(option.value)}>
-                {option.label}
-              </Tag>
-            ))}
-          </Space>
-
-          <Divider style={{ margin: "16px 0" }} />
-
+        <Card title="Renewal Period" size="small" className="mb-4">
+          <div className="mb-4">
+            <Text strong className="block mb-2">
+              Quick Select Period:
+            </Text>
+            <Space wrap>
+              {periodOptions.map((option) => (
+                <Tag
+                  key={option.value}
+                  color={renewalPeriod === option.value ? "blue" : "default"}
+                  style={{
+                    cursor: "pointer",
+                    padding: "8px 16px",
+                    fontSize: "14px",
+                  }}
+                  onClick={() => handlePeriodChange(option.value)}>
+                  {option.label}
+                </Tag>
+              ))}
+            </Space>
+          </div>
+          <Divider className="my-4" />
           <Form.Item
             name="newEndDate"
             label="New End Date"
             rules={[{ required: true, message: "Please select end date" }]}>
             <DatePicker
-              style={{ width: "100%" }}
+              className="w-full"
               format="DD MMMM YYYY"
+              size="large"
               onChange={(date) => setNewEndDate(date)}
+              disabledDate={(current) =>
+                current && current < dayjs(currentEndDate)
+              }
             />
           </Form.Item>
-
-          {newEndDate && (
-            <div style={{ marginTop: 8 }}>
-              <Text type="secondary">
-                New agreement will be for {calculateDays()} days
-              </Text>
-            </div>
+          {newEndDate && currentEndDate && (
+            <Alert
+              message={
+                <Space>
+                  <Text strong>New Agreement Duration:</Text>
+                  <Tag color="blue">{calculateMonths()} months</Tag>
+                  <Text type="secondary">({calculateDays()} days)</Text>
+                </Space>
+              }
+              type="success"
+              showIcon
+              className="mt-2"
+            />
           )}
         </Card>
 
-        {/* Retainer Fee */}
-        <Card title="Retainer Fee" size="small" style={{ marginBottom: 16 }}>
+        <Card title="Retainer Fee" size="small" className="mb-4">
           <Row gutter={16}>
             <Col span={16}>
               <Form.Item
-                name={["retainerFee", "amount"]}
+                name="retainerFee"
                 label="Monthly Retainer Fee"
                 rules={[{ required: true, message: "Please enter amount" }]}>
                 <InputNumber
-                  style={{ width: "100%" }}
+                  className="w-full"
                   min={0}
                   prefix={<DollarOutlined />}
+                  placeholder="0.00"
+                  size="large"
+                  addonBefore="₦"
                   formatter={(value) =>
-                    `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
+                  parser={(value) => value.replace(/\₦\s?|(,*)/g, "")}
                 />
               </Form.Item>
             </Col>
             <Col span={8}>
               <Form.Item
-                name={["retainerFee", "frequency"]}
+                name="frequency"
                 label="Billing Frequency"
                 rules={[
                   { required: true, message: "Please select frequency" },
                 ]}>
-                <Select>
+                <Select size="large">
                   <Option value="monthly">Monthly</Option>
                   <Option value="quarterly">Quarterly</Option>
                   <Option value="annually">Annually</Option>
@@ -221,28 +252,6 @@ const RenewalModal = ({
           </Row>
         </Card>
 
-        {/* Services Review */}
-        <Card title="Services Review" size="small" style={{ marginBottom: 16 }}>
-          <Form.Item
-            name="servicesIncluded"
-            label="Services to Include"
-            extra="Leave empty to copy all services from current agreement">
-            <Select
-              mode="multiple"
-              placeholder="Select services to include in new agreement"
-              allowClear
-              style={{ width: "100%" }}>
-              <Option value="Legal Consultation">Legal Consultation</Option>
-              <Option value="Contract Review">Contract Review</Option>
-              <Option value="Document Drafting">Document Drafting</Option>
-              <Option value="Compliance Review">Compliance Review</Option>
-              <Option value="Legal Research">Legal Research</Option>
-              <Option value="Meeting Attendance">Meeting Attendance</Option>
-            </Select>
-          </Form.Item>
-        </Card>
-
-        {/* Renewal Notes */}
         <Card title="Renewal Details" size="small">
           <Form.Item
             name="renewalNotes"
@@ -253,6 +262,7 @@ const RenewalModal = ({
               placeholder="Enter details about this renewal, changes to terms, or special conditions..."
               maxLength={1000}
               showCount
+              size="large"
             />
           </Form.Item>
         </Card>

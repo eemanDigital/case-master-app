@@ -166,7 +166,6 @@ const RetainerForm = ({ retainerDetails, onCancel, onSuccess }) => {
         },
       };
 
-      console.log("Setting form values:", formData);
       form.setFieldsValue(formData);
     }
   }, [retainerDetails, form]);
@@ -211,9 +210,10 @@ const RetainerForm = ({ retainerDetails, onCancel, onSuccess }) => {
         terminationClause: values.terminationClause,
       };
 
-      console.log("Submitting form data:", JSON.stringify(formData, null, 2));
+      const matterId = retainerDetails?.matterId._id;
 
-      const matterId = retainerDetails?.matterId || retainerDetails?._id;
+      console.log("MATTERID", matterId);
+
       if (!matterId) {
         throw new Error("Matter ID not found");
       }
