@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import {
-  Modal,
   Form,
   Input,
   DatePicker,
@@ -16,6 +15,7 @@ import {
   message,
   Alert,
   Switch,
+  Descriptions,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -24,6 +24,7 @@ import {
   CloseOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
+import { useParams, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import { createGeneralDetails } from "../../redux/features/general/generalSlice";
 import {
@@ -38,10 +39,14 @@ const { Step } = Steps;
 const { Option } = Select;
 const { TextArea } = Input;
 
-const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
+const CreateGeneral = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { matterId } = useParams();
+
   const [form] = Form.useForm();
   const [currentStep, setCurrentStep] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const steps = [
     { title: "Service Info" },
@@ -52,9 +57,33 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
 
   const handleSubmit = async (values) => {
     try {
+      setLoading(true);
+
+      // ✅ FIX: Validate critical fields before submission
+      if (!values.serviceType) {
+        message.error("Please select a service type");
+        setCurrentStep(0); // Go back to first step
+        setLoading(false);
+        return;
+      }
+
+      if (!values.serviceDescription) {
+        message.error("Please provide a service description");
+        setCurrentStep(0);
+        setLoading(false);
+        return;
+      }
+
+      if (!values.billingType) {
+        message.error("Please select a billing type");
+        setCurrentStep(1);
+        setLoading(false);
+        return;
+      }
+
       const formData = {
         serviceType: values.serviceType,
-        otherServiceType: values.otherServiceType,
+        otherServiceType: values.otherServiceType || "",
         serviceDescription: values.serviceDescription,
 
         billing: {
@@ -62,24 +91,25 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
           fixedFee:
             values.billingType === "fixed-fee"
               ? {
-                  amount: values.fixedFeeAmount,
+                  amount: values.fixedFeeAmount || 0,
                   currency: values.currency || "NGN",
                 }
               : undefined,
           lproScale:
             values.billingType === "lpro-scale"
               ? {
-                  scale: values.lproScale,
-                  reference: values.lproReference,
+                  scale: values.lproScale || "Scale 1",
+                  reference: values.lproReference || "",
                 }
               : undefined,
           percentage:
             values.billingType === "percentage"
               ? {
-                  rate: values.percentageRate,
-                  baseAmount: values.percentageBaseAmount,
+                  rate: values.percentageRate || 0,
+                  baseAmount: values.percentageBaseAmount || 0,
                   calculatedFee:
-                    (values.percentageRate / 100) * values.percentageBaseAmount,
+                    ((values.percentageRate || 0) / 100) *
+                    (values.percentageBaseAmount || 0),
                 }
               : undefined,
           vatRate: values.vatRate || 7.5,
@@ -93,34 +123,89 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
         expectedCompletionDate: values.expectedCompletionDate?.toISOString(),
 
         jurisdiction: {
-          state: values.state,
-          lga: values.lga,
-          court: values.court,
+          state: values.state || "",
+          lga: values.lga || "",
+          court: values.court || "",
         },
 
         requiresNBAStamp: values.requiresNBAStamp || false,
         nbaStampDetails: values.requiresNBAStamp
           ? {
-              stampNumber: values.stampNumber,
-              stampValue: values.stampValue,
+              stampNumber: values.stampNumber || "",
+              stampValue: values.stampValue || 0,
             }
           : undefined,
 
-        procedureNotes: values.procedureNotes,
+        procedureNotes: values.procedureNotes || "",
       };
 
       await dispatch(
         createGeneralDetails({ matterId, data: formData }),
       ).unwrap();
       message.success("General matter created successfully!");
-      onSuccess();
+      navigate(`/dashboard/matters/general/${matterId}/details`);
     } catch (error) {
-      message.error(error || "Failed to create general matter");
+      console.error("Submission error:", error);
+      message.error(
+        error?.message || error || "Failed to create general matter",
+      );
+    } finally {
+      setLoading(false);
     }
   };
 
+  const handleCancel = () => {
+    navigate("/dashboard/matters/general");
+  };
+
+  const handleNext = async () => {
+    // ✅ FIX: Validate current step fields before moving to next
+    let fieldsToValidate = [];
+
+    // ✅ Get current form values to determine conditional validation
+    const currentValues = form.getFieldsValue(true);
+
+    switch (currentStep) {
+      case 0:
+        fieldsToValidate = ["serviceType", "serviceDescription"];
+        if (currentValues.serviceType === "other") {
+          fieldsToValidate.push("otherServiceType");
+        }
+        break;
+      case 1:
+        fieldsToValidate = ["billingType"];
+        if (currentValues.billingType === "fixed-fee") {
+          fieldsToValidate.push("fixedFeeAmount");
+        } else if (currentValues.billingType === "lpro-scale") {
+          fieldsToValidate.push("lproScale");
+        } else if (currentValues.billingType === "percentage") {
+          fieldsToValidate.push("percentageRate", "percentageBaseAmount");
+        }
+        break;
+      case 2:
+        // No required fields in step 2
+        break;
+    }
+
+    try {
+      if (fieldsToValidate.length > 0) {
+        await form.validateFields(fieldsToValidate);
+      }
+      setCurrentStep(currentStep + 1);
+    } catch (error) {
+      console.error("Validation failed:", error);
+      message.error("Please fill in all required fields");
+    }
+  };
+
+  // ✅ FIX: Watch all form values reactively for preview
+  const serviceType = Form.useWatch("serviceType", form);
+  const billingType = Form.useWatch("billingType", form);
+  const requiresNBAStamp = Form.useWatch("requiresNBAStamp", form);
+
   const renderStepContent = (step) => {
-    const values = form.getFieldsValue();
+    // ✅ FIX: Get fresh values each time
+    const values = form.getFieldsValue(true);
 
     switch (step) {
       case 0:
@@ -129,8 +214,10 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
             <Form.Item
               name="serviceType"
               label="Service Type"
-              rules={[{ required: true }]}>
-              <Select placeholder="Select service type">
+              rules={[
+                { required: true, message: "Please select a service type" },
+              ]}>
+              <Select placeholder="Select service type" size="large">
                 {NIGERIAN_GENERAL_SERVICE_TYPES.map((t) => (
                   <Option key={t.value} value={t.value}>
                     {t.label}
@@ -139,21 +226,36 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
               </Select>
             </Form.Item>
 
-            {values.serviceType === "other" && (
+            {serviceType === "other" && (
               <Form.Item
                 name="otherServiceType"
-                label="Specify Other Service Type">
-                <Input placeholder="Enter service type" />
+                label="Specify Other Service Type"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please specify the service type",
+                  },
+                ]}>
+                <Input placeholder="Enter service type" size="large" />
               </Form.Item>
             )}
 
             <Form.Item
               name="serviceDescription"
               label="Service Description"
-              rules={[{ required: true }]}>
+              rules={[
+                {
+                  required: true,
+                  message: "Please provide a service description",
+                },
+                {
+                  min: 10,
+                  message: "Description must be at least 10 characters",
+                },
+              ]}>
               <TextArea
                 rows={4}
-                placeholder="Describe the service..."
+                placeholder="Describe the service in detail..."
                 maxLength={5000}
                 showCount
               />
@@ -167,8 +269,10 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
             <Form.Item
               name="billingType"
               label="Billing Type"
-              rules={[{ required: true }]}>
-              <Select placeholder="Select billing type">
+              rules={[
+                { required: true, message: "Please select a billing type" },
+              ]}>
+              <Select placeholder="Select billing type" size="large">
                 {BILLING_TYPES.map((t) => (
                   <Option key={t.value} value={t.value}>
                     {t.label}
@@ -177,20 +281,28 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
               </Select>
             </Form.Item>
 
-            {values.billingType === "fixed-fee" && (
+            {billingType === "fixed-fee" && (
               <Row gutter={16}>
                 <Col span={16}>
                   <Form.Item
                     name="fixedFeeAmount"
                     label="Fixed Fee Amount"
-                    rules={[{ required: true, type: "number", min: 0 }]}>
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please enter the fee amount",
+                      },
+                      { type: "number", min: 0, message: "Must be positive" },
+                    ]}>
                     <InputNumber
                       min={0}
                       style={{ width: "100%" }}
                       prefix="₦"
+                      size="large"
                       formatter={(v) =>
                         `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                       }
+                      parser={(v) => v.replace(/₦\s?|(,*)/g, "")}
                     />
                   </Form.Item>
                 </Col>
@@ -199,7 +311,7 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
                     name="currency"
                     label="Currency"
                     initialValue="NGN">
-                    <Select>
+                    <Select size="large">
                       <Option value="NGN">NGN</Option>
                       <Option value="USD">USD</Option>
                     </Select>
@@ -208,14 +320,16 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
               </Row>
             )}
 
-            {values.billingType === "lpro-scale" && (
+            {billingType === "lpro-scale" && (
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     name="lproScale"
                     label="LPRO Scale"
-                    rules={[{ required: true }]}>
-                    <Select placeholder="Select scale">
+                    rules={[
+                      { required: true, message: "Please select LPRO scale" },
+                    ]}>
+                    <Select placeholder="Select scale" size="large">
                       {LPRO_SCALES.map((s) => (
                         <Option key={s.value} value={s.value}>
                           {s.label}
@@ -226,30 +340,48 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
                 </Col>
                 <Col span={12}>
                   <Form.Item name="lproReference" label="LPRO Reference">
-                    <Input placeholder="e.g., Item 12(a)" />
+                    <Input placeholder="e.g., Item 12(a)" size="large" />
                   </Form.Item>
                 </Col>
               </Row>
             )}
 
-            {values.billingType === "percentage" && (
+            {billingType === "percentage" && (
               <Row gutter={16}>
                 <Col span={12}>
                   <Form.Item
                     name="percentageRate"
                     label="Percentage Rate (%)"
                     rules={[
-                      { required: true, type: "number", min: 0, max: 100 },
+                      {
+                        required: true,
+                        message: "Please enter percentage rate",
+                      },
+                      { type: "number", min: 0, max: 100 },
                     ]}>
-                    <InputNumber min={0} max={100} style={{ width: "100%" }} />
+                    <InputNumber
+                      min={0}
+                      max={100}
+                      style={{ width: "100%" }}
+                      size="large"
+                      suffix="%"
+                    />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item
                     name="percentageBaseAmount"
                     label="Base Amount"
-                    rules={[{ required: true, type: "number", min: 0 }]}>
-                    <InputNumber min={0} style={{ width: "100%" }} prefix="₦" />
+                    rules={[
+                      { required: true, message: "Please enter base amount" },
+                      { type: "number", min: 0 },
+                    ]}>
+                    <InputNumber
+                      min={0}
+                      style={{ width: "100%" }}
+                      prefix="₦"
+                      size="large"
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -260,29 +392,44 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
               description="VAT and WHT will be applied automatically"
               type="info"
               showIcon
-              style={{ marginBottom: 16 }}
+              style={{ marginBottom: 16, marginTop: 16 }}
             />
 
             <Row gutter={16}>
-              <Col span={8}>
-                <Form.Item name="vatRate" label="VAT Rate %">
-                  <InputNumber min={0} max={100} style={{ width: "100%" }} />
+              <Col span={6}>
+                <Form.Item name="vatRate" label="VAT Rate %" initialValue={7.5}>
+                  <InputNumber
+                    min={0}
+                    max={100}
+                    style={{ width: "100%" }}
+                    size="large"
+                  />
                 </Form.Item>
               </Col>
-              <Col span={8}>
+              <Col span={6}>
                 <Form.Item
                   name="applyVAT"
                   label="Apply VAT"
-                  valuePropName="checked">
+                  valuePropName="checked"
+                  initialValue={true}>
                   <Switch defaultChecked />
                 </Form.Item>
               </Col>
-              <Col span={8}>
-                <Form.Item name="whtRate" label="WHT Rate">
-                  <Select>
+              <Col span={6}>
+                <Form.Item name="whtRate" label="WHT Rate" initialValue={5}>
+                  <Select size="large">
                     <Option value={5}>5% (Individual)</Option>
                     <Option value={10}>10% (Corporate)</Option>
                   </Select>
+                </Form.Item>
+              </Col>
+              <Col span={6}>
+                <Form.Item
+                  name="applyWHT"
+                  label="Apply WHT"
+                  valuePropName="checked"
+                  initialValue={true}>
+                  <Switch defaultChecked />
                 </Form.Item>
               </Col>
             </Row>
@@ -300,14 +447,22 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
                     name="requestDate"
                     label="Request Date"
                     initialValue={dayjs()}>
-                    <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      format="DD/MM/YYYY"
+                      size="large"
+                    />
                   </Form.Item>
                 </Col>
                 <Col span={12}>
                   <Form.Item
                     name="expectedCompletionDate"
                     label="Expected Completion">
-                    <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+                    <DatePicker
+                      style={{ width: "100%" }}
+                      format="DD/MM/YYYY"
+                      size="large"
+                    />
                   </Form.Item>
                 </Col>
               </Row>
@@ -318,7 +473,7 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
               <Row gutter={16}>
                 <Col span={8}>
                   <Form.Item name="state" label="State">
-                    <Select placeholder="Select state" showSearch>
+                    <Select placeholder="Select state" showSearch size="large">
                       {NIGERIAN_STATES.map((s) => (
                         <Option key={s} value={s}>
                           {s}
@@ -329,30 +484,30 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
                 </Col>
                 <Col span={8}>
                   <Form.Item name="lga" label="LGA">
-                    <Input placeholder="e.g., Ikeja" />
+                    <Input placeholder="e.g., Ikeja" size="large" />
                   </Form.Item>
                 </Col>
                 <Col span={8}>
                   <Form.Item name="court" label="Court (if applicable)">
-                    <Input placeholder="e.g., Lagos High Court" />
+                    <Input placeholder="e.g., Lagos High Court" size="large" />
                   </Form.Item>
                 </Col>
               </Row>
             </Card>
 
             <Card>
-              <Title level={5}>NBA Stamp</Title>
+              <Title level={5}>NBA Stamp & Notes</Title>
               <Form.Item
                 name="requiresNBAStamp"
                 label="Requires NBA Stamp"
                 valuePropName="checked">
                 <Switch />
               </Form.Item>
-              {values.requiresNBAStamp && (
+              {requiresNBAStamp && (
                 <Row gutter={16}>
                   <Col span={12}>
                     <Form.Item name="stampNumber" label="Stamp Number">
-                      <Input placeholder="NBA stamp number" />
+                      <Input placeholder="NBA stamp number" size="large" />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
@@ -361,16 +516,26 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
                         min={0}
                         style={{ width: "100%" }}
                         prefix="₦"
+                        size="large"
                       />
                     </Form.Item>
                   </Col>
                 </Row>
               )}
+              <Form.Item name="procedureNotes" label="Procedure Notes">
+                <TextArea
+                  rows={4}
+                  placeholder="Add notes about procedures, special requirements..."
+                  maxLength={5000}
+                  showCount
+                />
+              </Form.Item>
             </Card>
           </div>
         );
 
       case 3:
+        // ✅ FIX: Complete preview with all form values
         return (
           <Card>
             <Alert
@@ -380,41 +545,153 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
               showIcon
               style={{ marginBottom: 24 }}
             />
-            <Text strong>Service Type:</Text>{" "}
-            {
-              NIGERIAN_GENERAL_SERVICE_TYPES.find(
-                (t) => t.value === values.serviceType,
-              )?.label
-            }
-            <br />
-            <Text strong>Billing Type:</Text>{" "}
-            {BILLING_TYPES.find((t) => t.value === values.billingType)?.label}
-            <br />
-            {values.billingType === "fixed-fee" && (
-              <>
-                <Text strong>Fee:</Text> ₦
-                {values.fixedFeeAmount?.toLocaleString()} ({values.currency})
-                <br />
-              </>
+
+            {/* Service Information */}
+            <Card
+              type="inner"
+              title="Service Information"
+              style={{ marginBottom: 16 }}>
+              <Descriptions column={1} size="small">
+                <Descriptions.Item label="Service Type">
+                  <Text strong>
+                    {NIGERIAN_GENERAL_SERVICE_TYPES.find(
+                      (t) => t.value === values.serviceType,
+                    )?.label || "Not selected"}
+                  </Text>
+                </Descriptions.Item>
+                {values.serviceType === "other" && values.otherServiceType && (
+                  <Descriptions.Item label="Other Service Type">
+                    {values.otherServiceType}
+                  </Descriptions.Item>
+                )}
+                <Descriptions.Item label="Description">
+                  {values.serviceDescription || "No description"}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            {/* Billing Information */}
+            <Card
+              type="inner"
+              title="Billing Information"
+              style={{ marginBottom: 16 }}>
+              <Descriptions column={2} size="small">
+                <Descriptions.Item label="Billing Type" span={2}>
+                  <Text strong>
+                    {BILLING_TYPES.find((t) => t.value === values.billingType)
+                      ?.label || "Not selected"}
+                  </Text>
+                </Descriptions.Item>
+
+                {values.billingType === "fixed-fee" && (
+                  <>
+                    <Descriptions.Item label="Fee Amount">
+                      ₦{values.fixedFeeAmount?.toLocaleString() || "0"}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Currency">
+                      {values.currency || "NGN"}
+                    </Descriptions.Item>
+                  </>
+                )}
+
+                {values.billingType === "lpro-scale" && (
+                  <>
+                    <Descriptions.Item label="LPRO Scale">
+                      {values.lproScale || "Not selected"}
+                    </Descriptions.Item>
+                    {values.lproReference && (
+                      <Descriptions.Item label="LPRO Reference">
+                        {values.lproReference}
+                      </Descriptions.Item>
+                    )}
+                  </>
+                )}
+
+                {values.billingType === "percentage" && (
+                  <>
+                    <Descriptions.Item label="Percentage Rate">
+                      {values.percentageRate || 0}%
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Base Amount">
+                      ₦{values.percentageBaseAmount?.toLocaleString() || "0"}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Calculated Fee" span={2}>
+                      ₦
+                      {(
+                        ((values.percentageRate || 0) *
+                          (values.percentageBaseAmount || 0)) /
+                        100
+                      ).toLocaleString()}
+                    </Descriptions.Item>
+                  </>
+                )}
+
+                <Descriptions.Item label="VAT">
+                  {values.applyVAT
+                    ? `${values.vatRate || 7.5}%`
+                    : "Not applicable"}
+                </Descriptions.Item>
+                <Descriptions.Item label="WHT">
+                  {values.applyWHT
+                    ? `${values.whtRate || 5}%`
+                    : "Not applicable"}
+                </Descriptions.Item>
+              </Descriptions>
+            </Card>
+
+            {/* Timeline & Jurisdiction */}
+            <Card
+              type="inner"
+              title="Timeline & Jurisdiction"
+              style={{ marginBottom: 16 }}>
+              <Descriptions column={2} size="small">
+                <Descriptions.Item label="Request Date">
+                  {values.requestDate
+                    ? dayjs(values.requestDate).format("DD MMM YYYY")
+                    : "Not set"}
+                </Descriptions.Item>
+                {values.expectedCompletionDate && (
+                  <Descriptions.Item label="Expected Completion">
+                    {dayjs(values.expectedCompletionDate).format("DD MMM YYYY")}
+                  </Descriptions.Item>
+                )}
+                {values.state && (
+                  <Descriptions.Item label="State">
+                    {values.state}
+                  </Descriptions.Item>
+                )}
+                {values.lga && (
+                  <Descriptions.Item label="LGA">
+                    {values.lga}
+                  </Descriptions.Item>
+                )}
+                {values.court && (
+                  <Descriptions.Item label="Court">
+                    {values.court}
+                  </Descriptions.Item>
+                )}
+              </Descriptions>
+            </Card>
+
+            {/* NBA Stamp */}
+            {values.requiresNBAStamp && (
+              <Card type="inner" title="NBA Stamp Details">
+                <Descriptions column={2} size="small">
+                  <Descriptions.Item label="Stamp Number">
+                    {values.stampNumber || "Not provided"}
+                  </Descriptions.Item>
+                  <Descriptions.Item label="Stamp Value">
+                    ₦{values.stampValue?.toLocaleString() || "0"}
+                  </Descriptions.Item>
+                </Descriptions>
+              </Card>
             )}
-            <Text strong>VAT:</Text>{" "}
-            {values.applyVAT ? `${values.vatRate}%` : "No"} |{" "}
-            <Text strong>WHT:</Text>{" "}
-            {values.applyWHT ? `${values.whtRate}%` : "No"}
-            <br />
-            {values.state && (
-              <>
-                <Text strong>Jurisdiction:</Text> {values.state}
-                {values.lga ? `, ${values.lga}` : ""}
-                <br />
-              </>
-            )}
-            {values.expectedCompletionDate && (
-              <>
-                <Text strong>Expected Completion:</Text>{" "}
-                {dayjs(values.expectedCompletionDate).format("DD MMM YYYY")}
-                <br />
-              </>
+
+            {/* Notes */}
+            {values.procedureNotes && (
+              <Card type="inner" title="Notes" style={{ marginTop: 16 }}>
+                <Text>{values.procedureNotes}</Text>
+              </Card>
             )}
           </Card>
         );
@@ -425,67 +702,90 @@ const CreateGeneral = ({ visible, onCancel, onSuccess, matterId }) => {
   };
 
   return (
-    <Modal
-      title="Create General Matter"
-      open={visible}
-      onCancel={onCancel}
-      footer={null}
-      width={800}
-      destroyOnClose>
-      <Steps current={currentStep} style={{ marginBottom: 32 }}>
-        {steps.map((s, i) => (
-          <Step key={i} title={s.title} />
-        ))}
-      </Steps>
+    <div style={{ padding: 24, maxWidth: 900, margin: "0 auto" }}>
+      <Button
+        type="link"
+        onClick={handleCancel}
+        style={{ paddingLeft: 0, marginBottom: 16 }}>
+        ← Back to General Matters
+      </Button>
 
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={() =>
-          currentStep === 3
-            ? handleSubmit(form.getFieldsValue())
-            : setCurrentStep(currentStep + 1)
-        }
-        initialValues={{
-          billingType: "fixed-fee",
-          vatRate: 7.5,
-          applyVAT: true,
-          applyWHT: true,
-          whtRate: 5,
-          currency: "NGN",
-          requestDate: dayjs(),
-        }}>
-        {renderStepContent(currentStep)}
+      <Card>
+        <Title level={3}>Create General Matter Details</Title>
+        <Text type="secondary">Matter ID: {matterId}</Text>
 
-        <div
-          style={{
-            marginTop: 32,
-            display: "flex",
-            justifyContent: "space-between",
+        <Steps
+          current={currentStep}
+          style={{ marginTop: 32, marginBottom: 32 }}>
+          {steps.map((s, i) => (
+            <Step key={i} title={s.title} />
+          ))}
+        </Steps>
+
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          preserve={true}
+          initialValues={{
+            billingType: "fixed-fee",
+            vatRate: 7.5,
+            applyVAT: true,
+            applyWHT: true,
+            whtRate: 5,
+            currency: "NGN",
+            requestDate: dayjs(),
           }}>
-          <Space>
-            {currentStep > 0 && (
+          {/* ✅ FIX: Keep all steps mounted but hide inactive ones to preserve values */}
+          <div style={{ display: currentStep === 0 ? "block" : "none" }}>
+            {renderStepContent(0)}
+          </div>
+          <div style={{ display: currentStep === 1 ? "block" : "none" }}>
+            {renderStepContent(1)}
+          </div>
+          <div style={{ display: currentStep === 2 ? "block" : "none" }}>
+            {renderStepContent(2)}
+          </div>
+          <div style={{ display: currentStep === 3 ? "block" : "none" }}>
+            {renderStepContent(3)}
+          </div>
+
+          <div
+            style={{
+              marginTop: 32,
+              display: "flex",
+              justifyContent: "space-between",
+            }}>
+            <Space>
+              {currentStep > 0 && (
+                <Button
+                  onClick={() => setCurrentStep(currentStep - 1)}
+                  icon={<ArrowLeftOutlined />}
+                  size="large">
+                  Previous
+                </Button>
+              )}
               <Button
-                onClick={() => setCurrentStep(currentStep - 1)}
-                icon={<ArrowLeftOutlined />}>
-                Previous
+                onClick={handleCancel}
+                icon={<CloseOutlined />}
+                size="large">
+                Cancel
               </Button>
-            )}
-            <Button onClick={onCancel} icon={<CloseOutlined />}>
-              Cancel
+            </Space>
+            <Button
+              type="primary"
+              onClick={currentStep === 3 ? () => form.submit() : handleNext}
+              loading={loading}
+              size="large"
+              icon={
+                currentStep === 3 ? <SaveOutlined /> : <ArrowRightOutlined />
+              }>
+              {currentStep === 3 ? "Create" : "Next"}
             </Button>
-          </Space>
-          <Button
-            type="primary"
-            htmlType="submit"
-            icon={
-              currentStep === 3 ? <SaveOutlined /> : <ArrowRightOutlined />
-            }>
-            {currentStep === 3 ? "Create" : "Next"}
-          </Button>
-        </div>
-      </Form>
-    </Modal>
+          </div>
+        </Form>
+      </Card>
+    </div>
   );
 };
 

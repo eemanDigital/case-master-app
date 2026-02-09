@@ -19,10 +19,12 @@ const PartiesManager = ({ matterId }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingParty, setEditingParty] = useState(null);
 
-  const details = useSelector((state) => state.general.selectedDetails);
+  const selectedDetails = useSelector((state) => state.general.selectedDetails);
   const actionLoading = useSelector((state) => state.general.actionLoading);
 
-  const parties = details?.partiesInvolved || [];
+  // ✅ Extract generalDetail from nested structure
+  const generalDetail = selectedDetails?.generalDetail || selectedDetails;
+  const parties = generalDetail?.partiesInvolved || [];
 
   const handleAdd = useCallback(() => {
     setEditingParty(null);
@@ -70,7 +72,7 @@ const PartiesManager = ({ matterId }) => {
           await dispatch(
             updateParty({
               matterId,
-              partyId: editingParty._id,
+              partyId: editingParty._id || editingParty.id,
               data: values,
             }),
           ).unwrap();
@@ -130,7 +132,7 @@ const PartiesManager = ({ matterId }) => {
             size="small"
             danger
             icon={<DeleteOutlined />}
-            onClick={() => handleDelete(record._id)}
+            onClick={() => handleDelete(record._id || record.id)}
           />
         </Space>
       ),
@@ -149,7 +151,7 @@ const PartiesManager = ({ matterId }) => {
         <Table
           columns={columns}
           dataSource={parties}
-          rowKey={(record) => record._id}
+          rowKey={(record) => record._id || record.id}
           loading={actionLoading}
           pagination={false}
           locale={{ emptyText: "No parties added yet" }}

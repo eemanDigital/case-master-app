@@ -23,7 +23,7 @@ import {
   BILLING_TYPES,
   LPRO_SCALES,
   NIGERIAN_STATES,
-} from "../../redux/features/general/generalConstants";
+} from "../../utils/generalConstants";
 
 const { Title } = Typography;
 const { Option } = Select;
@@ -33,46 +33,51 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
   const [form] = Form.useForm();
   const dispatch = useDispatch();
 
+  // ✅ FIX: Watch form values for conditional rendering
+  const billingType = Form.useWatch("billingType", form);
+  const requiresNBAStamp = Form.useWatch("requiresNBAStamp", form);
+
   useEffect(() => {
     if (generalDetails) {
+      // ✅ FIX: Handle both nested and flat response structures
+      const detail = generalDetails.generalDetail || generalDetails;
+
       form.setFieldsValue({
-        serviceType: generalDetails.serviceType,
-        otherServiceType: generalDetails.otherServiceType,
-        serviceDescription: generalDetails.serviceDescription,
+        serviceType: detail.serviceType,
+        otherServiceType: detail.otherServiceType,
+        serviceDescription: detail.serviceDescription,
 
         // Billing
-        billingType: generalDetails.billing?.billingType,
-        fixedFeeAmount: generalDetails.billing?.fixedFee?.amount,
-        currency: generalDetails.billing?.fixedFee?.currency || "NGN",
-        lproScale: generalDetails.billing?.lproScale?.scale,
-        lproReference: generalDetails.billing?.lproScale?.reference,
-        percentageRate: generalDetails.billing?.percentage?.rate,
-        percentageBaseAmount: generalDetails.billing?.percentage?.baseAmount,
-        vatRate: generalDetails.billing?.vatRate || 7.5,
-        applyVAT: generalDetails.billing?.applyVAT !== false,
-        applyWHT: generalDetails.billing?.applyWHT !== false,
-        whtRate: generalDetails.billing?.whtRate || 5,
+        billingType: detail.billing?.billingType,
+        fixedFeeAmount: detail.billing?.fixedFee?.amount,
+        currency: detail.billing?.fixedFee?.currency || "NGN",
+        lproScale: detail.billing?.lproScale?.scale,
+        lproReference: detail.billing?.lproScale?.reference,
+        percentageRate: detail.billing?.percentage?.rate,
+        percentageBaseAmount: detail.billing?.percentage?.baseAmount,
+        vatRate: detail.billing?.vatRate || 7.5,
+        applyVAT: detail.billing?.applyVAT !== false,
+        applyWHT: detail.billing?.applyWHT !== false,
+        whtRate: detail.billing?.whtRate || 5,
 
         // Timeline
-        requestDate: generalDetails.requestDate
-          ? dayjs(generalDetails.requestDate)
-          : null,
-        expectedCompletionDate: generalDetails.expectedCompletionDate
-          ? dayjs(generalDetails.expectedCompletionDate)
+        requestDate: detail.requestDate ? dayjs(detail.requestDate) : null,
+        expectedCompletionDate: detail.expectedCompletionDate
+          ? dayjs(detail.expectedCompletionDate)
           : null,
 
         // Jurisdiction
-        state: generalDetails.jurisdiction?.state,
-        lga: generalDetails.jurisdiction?.lga,
-        court: generalDetails.jurisdiction?.court,
+        state: detail.jurisdiction?.state,
+        lga: detail.jurisdiction?.lga,
+        court: detail.jurisdiction?.court,
 
         // NBA Stamp
-        requiresNBAStamp: generalDetails.requiresNBAStamp,
-        stampNumber: generalDetails.nbaStampDetails?.stampNumber,
-        stampValue: generalDetails.nbaStampDetails?.stampValue,
+        requiresNBAStamp: detail.requiresNBAStamp,
+        stampNumber: detail.nbaStampDetails?.stampNumber,
+        stampValue: detail.nbaStampDetails?.stampValue,
 
         // Notes
-        procedureNotes: generalDetails.procedureNotes,
+        procedureNotes: detail.procedureNotes,
       });
     }
   }, [generalDetails, form]);
@@ -135,9 +140,10 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
         procedureNotes: values.procedureNotes,
       };
 
+      const matterId = generalDetails.matterId || generalDetails._id;
       await dispatch(
         updateGeneralDetails({
-          matterId: generalDetails.matterId,
+          matterId,
           data: formData,
         }),
       ).unwrap();
@@ -179,12 +185,14 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
 
       <Card title="Service Information" style={{ marginBottom: 24 }}>
         <Row gutter={16}>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item
               name="serviceType"
               label="Service Type"
-              rules={[{ required: true }]}>
-              <Select placeholder="Select service type">
+              rules={[
+                { required: true, message: "Please select service type" },
+              ]}>
+              <Select placeholder="Select service type" size="large">
                 {NIGERIAN_GENERAL_SERVICE_TYPES.map((t) => (
                   <Option key={t.value} value={t.value}>
                     {t.label}
@@ -193,11 +201,11 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
               </Select>
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item
               name="otherServiceType"
               label="Other Service Type (if applicable)">
-              <Input placeholder="Specify other service type" />
+              <Input placeholder="Specify other service type" size="large" />
             </Form.Item>
           </Col>
         </Row>
@@ -205,7 +213,9 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
         <Form.Item
           name="serviceDescription"
           label="Service Description"
-          rules={[{ required: true }]}>
+          rules={[
+            { required: true, message: "Please enter service description" },
+          ]}>
           <TextArea
             rows={4}
             placeholder="Describe the service..."
@@ -219,8 +229,8 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
         <Form.Item
           name="billingType"
           label="Billing Type"
-          rules={[{ required: true }]}>
-          <Select placeholder="Select billing type">
+          rules={[{ required: true, message: "Please select billing type" }]}>
+          <Select placeholder="Select billing type" size="large">
             {BILLING_TYPES.map((t) => (
               <Option key={t.value} value={t.value}>
                 {t.label}
@@ -229,26 +239,30 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
           </Select>
         </Form.Item>
 
-        {form.getFieldValue("billingType") === "fixed-fee" && (
+        {billingType === "fixed-fee" && (
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} md={16}>
               <Form.Item
                 name="fixedFeeAmount"
                 label="Fixed Fee Amount"
-                rules={[{ required: true }]}>
+                rules={[
+                  { required: true, message: "Please enter fee amount" },
+                ]}>
                 <InputNumber
                   min={0}
                   style={{ width: "100%" }}
                   prefix="₦"
+                  size="large"
                   formatter={(v) =>
                     `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
                   }
+                  parser={(v) => v.replace(/₦\s?|(,*)/g, "")}
                 />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={8}>
               <Form.Item name="currency" label="Currency">
-                <Select>
+                <Select size="large">
                   <Option value="NGN">NGN</Option>
                   <Option value="USD">USD</Option>
                 </Select>
@@ -257,14 +271,14 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
           </Row>
         )}
 
-        {form.getFieldValue("billingType") === "lpro-scale" && (
+        {billingType === "lpro-scale" && (
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 name="lproScale"
                 label="LPRO Scale"
-                rules={[{ required: true }]}>
-                <Select placeholder="Select LPRO scale">
+                rules={[{ required: true, message: "Please select scale" }]}>
+                <Select placeholder="Select LPRO scale" size="large">
                   {LPRO_SCALES.map((s) => (
                     <Option key={s.value} value={s.value}>
                       {s.label}
@@ -273,30 +287,43 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
                 </Select>
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item name="lproReference" label="LPRO Reference">
-                <Input placeholder="e.g., Item 12(a)" />
+                <Input placeholder="e.g., Item 12(a)" size="large" />
               </Form.Item>
             </Col>
           </Row>
         )}
 
-        {form.getFieldValue("billingType") === "percentage" && (
+        {billingType === "percentage" && (
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 name="percentageRate"
                 label="Percentage Rate (%)"
-                rules={[{ required: true }]}>
-                <InputNumber min={0} max={100} style={{ width: "100%" }} />
+                rules={[{ required: true, message: "Please enter rate" }]}>
+                <InputNumber
+                  min={0}
+                  max={100}
+                  style={{ width: "100%" }}
+                  size="large"
+                  suffix="%"
+                />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item
                 name="percentageBaseAmount"
                 label="Base Amount"
-                rules={[{ required: true }]}>
-                <InputNumber min={0} style={{ width: "100%" }} prefix="₦" />
+                rules={[
+                  { required: true, message: "Please enter base amount" },
+                ]}>
+                <InputNumber
+                  min={0}
+                  style={{ width: "100%" }}
+                  prefix="₦"
+                  size="large"
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -304,36 +331,35 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
 
         <Divider>Nigerian Tax Compliance</Divider>
         <Row gutter={16}>
-          <Col span={6}>
+          <Col xs={12} md={6}>
             <Form.Item name="vatRate" label="VAT Rate %">
-              <InputNumber min={0} max={100} style={{ width: "100%" }} />
+              <InputNumber
+                min={0}
+                max={100}
+                style={{ width: "100%" }}
+                size="large"
+              />
             </Form.Item>
           </Col>
-          <Col span={6}>
-            <Form.Item
-              name="applyVAT"
-              label="Apply VAT"
-              valuePropName="checked">
-              <Select>
+          <Col xs={12} md={6}>
+            <Form.Item name="applyVAT" label="Apply VAT">
+              <Select size="large">
                 <Option value={true}>Yes</Option>
                 <Option value={false}>No</Option>
               </Select>
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col xs={12} md={6}>
             <Form.Item name="whtRate" label="WHT Rate">
-              <Select>
+              <Select size="large">
                 <Option value={5}>5% (Individual)</Option>
                 <Option value={10}>10% (Corporate)</Option>
               </Select>
             </Form.Item>
           </Col>
-          <Col span={6}>
-            <Form.Item
-              name="applyWHT"
-              label="Apply WHT"
-              valuePropName="checked">
-              <Select>
+          <Col xs={12} md={6}>
+            <Form.Item name="applyWHT" label="Apply WHT">
+              <Select size="large">
                 <Option value={true}>Yes</Option>
                 <Option value={false}>No</Option>
               </Select>
@@ -344,25 +370,33 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
 
       <Card title="Timeline & Jurisdiction" style={{ marginBottom: 24 }}>
         <Row gutter={16}>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item name="requestDate" label="Request Date">
-              <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+              <DatePicker
+                style={{ width: "100%" }}
+                format="DD/MM/YYYY"
+                size="large"
+              />
             </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col xs={24} md={12}>
             <Form.Item
               name="expectedCompletionDate"
               label="Expected Completion">
-              <DatePicker style={{ width: "100%" }} format="DD/MM/YYYY" />
+              <DatePicker
+                style={{ width: "100%" }}
+                format="DD/MM/YYYY"
+                size="large"
+              />
             </Form.Item>
           </Col>
         </Row>
 
         <Divider>Jurisdiction (Nigerian Context)</Divider>
         <Row gutter={16}>
-          <Col span={8}>
+          <Col xs={24} md={8}>
             <Form.Item name="state" label="State">
-              <Select placeholder="Select state" showSearch>
+              <Select placeholder="Select state" showSearch size="large">
                 {NIGERIAN_STATES.map((s) => (
                   <Option key={s} value={s}>
                     {s}
@@ -371,40 +405,42 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
               </Select>
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col xs={24} md={8}>
             <Form.Item name="lga" label="LGA (Local Government)">
-              <Input placeholder="e.g., Ikeja" />
+              <Input placeholder="e.g., Ikeja" size="large" />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col xs={24} md={8}>
             <Form.Item name="court" label="Court (if litigation)">
-              <Input placeholder="e.g., Lagos High Court" />
+              <Input placeholder="e.g., Lagos High Court" size="large" />
             </Form.Item>
           </Col>
         </Row>
       </Card>
 
       <Card title="NBA Stamp & Notes" style={{ marginBottom: 24 }}>
-        <Form.Item
-          name="requiresNBAStamp"
-          label="Requires NBA Stamp"
-          valuePropName="checked">
-          <Select>
+        <Form.Item name="requiresNBAStamp" label="Requires NBA Stamp">
+          <Select size="large">
             <Option value={true}>Yes</Option>
             <Option value={false}>No</Option>
           </Select>
         </Form.Item>
 
-        {form.getFieldValue("requiresNBAStamp") && (
+        {requiresNBAStamp && (
           <Row gutter={16}>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item name="stampNumber" label="Stamp Number">
-                <Input placeholder="NBA stamp number" />
+                <Input placeholder="NBA stamp number" size="large" />
               </Form.Item>
             </Col>
-            <Col span={12}>
+            <Col xs={24} md={12}>
               <Form.Item name="stampValue" label="Stamp Value">
-                <InputNumber min={0} style={{ width: "100%" }} prefix="₦" />
+                <InputNumber
+                  min={0}
+                  style={{ width: "100%" }}
+                  prefix="₦"
+                  size="large"
+                />
               </Form.Item>
             </Col>
           </Row>

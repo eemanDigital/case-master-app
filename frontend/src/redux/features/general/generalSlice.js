@@ -595,7 +595,7 @@ const generalSlice = createSlice({
     });
     builder.addCase(fetchGeneralStats.fulfilled, (state, action) => {
       state.statsLoading = false;
-      state.stats = action.payload.data;
+      state.stats = action.payload;
     });
     builder.addCase(fetchGeneralStats.rejected, (state, action) => {
       state.statsLoading = false;
@@ -608,7 +608,7 @@ const generalSlice = createSlice({
     });
     builder.addCase(fetchGeneralDetails.fulfilled, (state, action) => {
       state.detailsLoading = false;
-      state.selectedDetails = action.payload.data?.generalDetail;
+      state.selectedDetails = action.payload;
     });
     builder.addCase(fetchGeneralDetails.rejected, (state, action) => {
       state.detailsLoading = false;
@@ -684,8 +684,9 @@ const generalSlice = createSlice({
       });
       builder.addCase(action.fulfilled, (state, action) => {
         state.actionLoading = false;
-        if (action.payload.data?.generalDetail) {
-          state.selectedDetails = action.payload.data.generalDetail;
+        if (action.payload) {
+          console.log(action.payload, "PAYL");
+          state.selectedDetails = action.payload;
         }
       });
       builder.addCase(action.rejected, (state, action) => {

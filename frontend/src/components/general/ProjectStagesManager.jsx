@@ -37,10 +37,11 @@ const ProjectStagesManager = ({ matterId }) => {
   const [completeModalVisible, setCompleteModalVisible] = useState(false);
   const [editingStage, setEditingStage] = useState(null);
 
-  const details = useSelector((state) => state.general.selectedDetails);
+  const selectedDetails = useSelector((state) => state.general.selectedDetails);
+  const generalDetail = selectedDetails?.generalDetail || selectedDetails;
   const actionLoading = useSelector((state) => state.general.actionLoading);
 
-  const stages = details?.projectStages || [];
+  const stages = generalDetail?.projectStages || [];
 
   const handleAdd = useCallback(() => {
     setEditingStage(null);

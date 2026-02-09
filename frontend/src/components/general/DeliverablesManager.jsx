@@ -37,10 +37,11 @@ const DeliverablesManager = ({ matterId }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingDeliverable, setEditingDeliverable] = useState(null);
 
-  const details = useSelector((state) => state.general.selectedDetails);
+  const selectedDetails = useSelector((state) => state.general.selectedDetails);
+  const generalDetail = selectedDetails?.generalDetail || selectedDetails;
   const actionLoading = useSelector((state) => state.general.actionLoading);
 
-  const deliverables = details?.expectedDeliverables || [];
+  const deliverables = generalDetail?.expectedDeliverables || [];
 
   const handleAdd = useCallback(() => {
     setEditingDeliverable(null);

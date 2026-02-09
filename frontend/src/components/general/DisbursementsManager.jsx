@@ -43,10 +43,11 @@ const DisbursementsManager = ({ matterId }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingDisbursement, setEditingDisbursement] = useState(null);
 
-  const details = useSelector((state) => state.general.selectedDetails);
+  const selectedDetails = useSelector((state) => state.general.selectedDetails);
+  const generalDetail = selectedDetails?.generalDetail || selectedDetails;
   const actionLoading = useSelector((state) => state.general.actionLoading);
 
-  const disbursements = details?.disbursements || [];
+  const disbursements = generalDetail?.disbursements || [];
 
   const handleAdd = useCallback(() => {
     setEditingDisbursement(null);

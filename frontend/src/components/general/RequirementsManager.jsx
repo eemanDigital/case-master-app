@@ -11,18 +11,14 @@ import {
   Select,
   message,
 } from "antd";
-import {
-  PlusOutlined,
-  EditOutlined,
-  DeleteOutlined,
-  //   CheckCircleOutlined,
-} from "@ant-design/icons";
+import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import {
   addRequirement,
   updateRequirement,
   deleteRequirement,
 } from "../../redux/features/general/generalSlice";
+
 import { REQUIREMENT_STATUSES } from "../../utils/generalConstants";
 
 const { Option } = Select;
@@ -34,10 +30,13 @@ const RequirementsManager = ({ matterId }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingRequirement, setEditingRequirement] = useState(null);
 
-  const details = useSelector((state) => state.general.selectedDetails);
+  const selectedDetails = useSelector((state) => state.general.selectedDetails);
+
   const actionLoading = useSelector((state) => state.general.actionLoading);
 
-  const requirements = details?.specificRequirements || [];
+  // ✅ Extract generalDetail from nested structure
+  const generalDetail = selectedDetails?.generalDetail || selectedDetails;
+  const requirements = generalDetail?.specificRequirements || [];
 
   const handleAdd = useCallback(() => {
     setEditingRequirement(null);
@@ -187,7 +186,7 @@ const RequirementsManager = ({ matterId }) => {
         <Table
           columns={columns}
           dataSource={requirements}
-          rowKey={(record) => record._id}
+          rowKey={(record) => record._id || record.id}
           loading={actionLoading}
           pagination={false}
           locale={{ emptyText: "No requirements added yet" }}

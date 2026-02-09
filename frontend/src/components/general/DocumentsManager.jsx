@@ -39,10 +39,11 @@ const DocumentsManager = ({ matterId }) => {
   const [statusModalVisible, setStatusModalVisible] = useState(false);
   const [editingDocument, setEditingDocument] = useState(null);
 
-  const details = useSelector((state) => state.general.selectedDetails);
+  const selectedDetails = useSelector((state) => state.general.selectedDetails);
+  const generalDetail = selectedDetails?.generalDetail || selectedDetails;
   const actionLoading = useSelector((state) => state.general.actionLoading);
 
-  const documents = details?.documentsReceived || [];
+  const documents = generalDetail?.documentsReceived || [];
 
   const handleAdd = useCallback(() => {
     setEditingDocument(null);
