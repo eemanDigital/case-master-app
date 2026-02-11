@@ -4,6 +4,7 @@ const Matter = require("../models/matterModel");
 const AdvisoryDetail = require("../models/advisoryDetailModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const mongoose = require("mongoose");
 
 // Initialize pagination services
 const matterPaginationService = PaginationServiceFactory.createService(
@@ -149,9 +150,14 @@ exports.createAdvisoryDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const advisoryData = req.body;
 
+  // Validate matterId
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
+
   // Start transaction
-  const session = await Matter.startSession();
-  session.startTransaction();
+  // const session = await mongoose.startSession();
+  // session.startTransaction();
 
   try {
     // 1. Verify matter exists
@@ -159,17 +165,19 @@ exports.createAdvisoryDetails = catchAsync(async (req, res, next) => {
       _id: matterId,
       firmId: req.firmId,
       isDeleted: false,
-    }).session(session);
+    });
+
+    // .session(session);
 
     if (!matter) {
-      await session.abortTransaction();
-      session.endSession();
+      // await session.abortTransaction();
+      // session.endSession();
       return next(new AppError("Matter not found", 404));
     }
 
     if (matter.matterType !== "advisory") {
-      await session.abortTransaction();
-      session.endSession();
+      // await session.abortTransaction();
+      // session.endSession();
       return next(new AppError("Matter is not an advisory matter", 400));
     }
 
@@ -177,11 +185,13 @@ exports.createAdvisoryDetails = catchAsync(async (req, res, next) => {
     const existingDetail = await AdvisoryDetail.findOne({
       matterId,
       firmId: req.firmId,
-    }).session(session);
+    });
+
+    // .session(session);
 
     if (existingDetail) {
-      await session.abortTransaction();
-      session.endSession();
+      // await session.abortTransaction();
+      // session.endSession();
       return next(
         new AppError("Advisory details already exist for this matter", 400),
       );
@@ -192,17 +202,20 @@ exports.createAdvisoryDetails = catchAsync(async (req, res, next) => {
       matterId,
       firmId: req.firmId,
       createdBy: req.user._id,
+      lastModifiedBy: req.user._id,
       ...advisoryData,
     });
 
-    await advisoryDetail.save({ session });
+    // await advisoryDetail.save({ session });
+    await advisoryDetail.save();
 
     // 4. Update matter to link advisory detail
     matter.advisoryDetail = advisoryDetail._id;
-    await matter.save({ session });
+    // await matter.save({ session });
+    await matter.save();
 
-    await session.commitTransaction();
-    session.endSession();
+    // await session.commitTransaction();
+    // session.endSession();
 
     // Populate and return
     const populatedDetail = await AdvisoryDetail.findById(
@@ -223,8 +236,8 @@ exports.createAdvisoryDetails = catchAsync(async (req, res, next) => {
       },
     });
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
+    // await session.abortTransaction();
+    // session.endSession();
     return next(error);
   }
 });
@@ -236,6 +249,11 @@ exports.createAdvisoryDetails = catchAsync(async (req, res, next) => {
  */
 exports.getAdvisoryDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
+
+  // Validate matterId
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
 
   const advisoryDetail = await AdvisoryDetail.findOne({
     matterId,
@@ -277,11 +295,27 @@ exports.updateAdvisoryDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const updateData = req.body;
 
+  // Validate matterId
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
+
+  // Remove array fields from direct update - they need special handling
+  const {
+    researchQuestions,
+    keyFindings,
+    recommendations,
+    deliverables,
+    complianceChecklist,
+    ...safeUpdates
+  } = updateData;
+
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
-      ...updateData,
+      ...safeUpdates,
       lastModifiedBy: req.user._id,
+      lastModifiedAt: new Date(),
     },
     { new: true, runValidators: true },
   ).populate({
@@ -306,34 +340,68 @@ exports.updateAdvisoryDetails = catchAsync(async (req, res, next) => {
 });
 
 /**
- * @desc    Delete advisory details
+ * @desc    Delete advisory details (soft delete)
  * @route   DELETE /api/advisory-matters/:matterId/details
  * @access  Private (Admin, Lawyer)
  */
 exports.deleteAdvisoryDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
+  const { deletionType = "soft" } = req.query;
 
-  const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId, isDeleted: false },
-    {
-      isDeleted: true,
-      deletedAt: Date.now(),
-      deletedBy: req.user._id,
-    },
-    { new: true },
-  );
-
-  if (!advisoryDetail) {
-    return next(
-      new AppError("Advisory details not found or already deleted", 404),
-    );
+  // Validate matterId
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
   }
 
-  res.status(200).json({
-    status: "success",
-    data: null,
-    message: "Advisory details deleted successfully",
-  });
+  if (deletionType === "hard") {
+    // Hard delete - completely remove the document
+    const advisoryDetail = await AdvisoryDetail.findOneAndDelete({
+      matterId,
+      firmId: req.firmId,
+    });
+
+    if (!advisoryDetail) {
+      return next(new AppError("Advisory details not found", 404));
+    }
+
+    // Remove reference from matter
+    await Matter.findOneAndUpdate(
+      { _id: matterId, firmId: req.firmId },
+      { $unset: { advisoryDetail: 1 } },
+    );
+
+    res.status(200).json({
+      status: "success",
+      data: null,
+      message: "Advisory details permanently deleted",
+    });
+  } else {
+    // Soft delete - mark as deleted
+    const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
+      { matterId, firmId: req.firmId, isDeleted: false },
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedBy: req.user._id,
+        lastModifiedBy: req.user._id,
+      },
+      { new: true },
+    );
+
+    if (!advisoryDetail) {
+      return next(
+        new AppError("Advisory details not found or already deleted", 404),
+      );
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        advisoryDetail,
+      },
+      message: "Advisory details moved to trash",
+    });
+  }
 });
 
 /**
@@ -344,12 +412,18 @@ exports.deleteAdvisoryDetails = catchAsync(async (req, res, next) => {
 exports.restoreAdvisoryDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
 
+  // Validate matterId
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
+
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId, isDeleted: true },
     {
       isDeleted: false,
       deletedAt: null,
       deletedBy: null,
+      lastModifiedBy: req.user._id,
     },
     { new: true },
   );
@@ -369,12 +443,17 @@ exports.restoreAdvisoryDetails = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// RESEARCH QUESTIONS MANAGEMENT
+// RESEARCH QUESTIONS MANAGEMENT - FIXED
 // ============================================
 
 exports.addResearchQuestion = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const questionData = req.body;
+
+  // Validate matterId
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
 
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
@@ -382,11 +461,17 @@ exports.addResearchQuestion = catchAsync(async (req, res, next) => {
       $push: {
         researchQuestions: {
           ...questionData,
+          _id: new mongoose.Types.ObjectId(),
+          status: questionData.status || "pending",
           addedBy: req.user._id,
           addedAt: new Date(),
+          updatedAt: new Date(),
         },
       },
-      lastModifiedBy: req.user._id,
+      $set: {
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
     },
     { new: true, runValidators: true },
   );
@@ -395,14 +480,16 @@ exports.addResearchQuestion = catchAsync(async (req, res, next) => {
     return next(new AppError("Advisory details not found", 404));
   }
 
+  const newQuestion =
+    advisoryDetail.researchQuestions[
+      advisoryDetail.researchQuestions.length - 1
+    ];
+
   res.status(200).json({
     status: "success",
     data: {
       advisoryDetail,
-      newQuestion:
-        advisoryDetail.researchQuestions[
-          advisoryDetail.researchQuestions.length - 1
-        ],
+      newQuestion,
     },
   });
 });
@@ -411,6 +498,24 @@ exports.updateResearchQuestion = catchAsync(async (req, res, next) => {
   const { matterId, questionId } = req.params;
   const updateData = req.body;
 
+  // Validate IDs
+  if (
+    !mongoose.Types.ObjectId.isValid(matterId) ||
+    !mongoose.Types.ObjectId.isValid(questionId)
+  ) {
+    return next(new AppError("Invalid ID format", 400));
+  }
+
+  // FIXED: Use $set with specific field paths, not replacing entire object
+  const setFields = {};
+  Object.keys(updateData).forEach((key) => {
+    setFields[`researchQuestions.$.${key}`] = updateData[key];
+  });
+
+  // Add metadata fields
+  setFields["researchQuestions.$.updatedBy"] = req.user._id;
+  setFields["researchQuestions.$.updatedAt"] = new Date();
+
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     {
       matterId,
@@ -418,15 +523,11 @@ exports.updateResearchQuestion = catchAsync(async (req, res, next) => {
       "researchQuestions._id": questionId,
     },
     {
+      $set: setFields,
       $set: {
-        "researchQuestions.$": {
-          ...updateData,
-          _id: questionId,
-          updatedBy: req.user._id,
-          updatedAt: new Date(),
-        },
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
       },
-      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -449,11 +550,22 @@ exports.updateResearchQuestion = catchAsync(async (req, res, next) => {
 exports.deleteResearchQuestion = catchAsync(async (req, res, next) => {
   const { matterId, questionId } = req.params;
 
+  // Validate IDs
+  if (
+    !mongoose.Types.ObjectId.isValid(matterId) ||
+    !mongoose.Types.ObjectId.isValid(questionId)
+  ) {
+    return next(new AppError("Invalid ID format", 400));
+  }
+
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
       $pull: { researchQuestions: { _id: questionId } },
-      lastModifiedBy: req.user._id,
+      $set: {
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
     },
     { new: true },
   );
@@ -468,18 +580,23 @@ exports.deleteResearchQuestion = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       advisoryDetail,
-      message: "Research question removed successfully",
     },
+    message: "Research question removed successfully",
   });
 });
 
 // ============================================
-// KEY FINDINGS MANAGEMENT
+// KEY FINDINGS MANAGEMENT - FIXED
 // ============================================
 
 exports.addKeyFinding = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const findingData = req.body;
+
+  // Validate matterId
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
 
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
@@ -487,11 +604,16 @@ exports.addKeyFinding = catchAsync(async (req, res, next) => {
       $push: {
         keyFindings: {
           ...findingData,
+          _id: new mongoose.Types.ObjectId(),
           addedBy: req.user._id,
           addedAt: new Date(),
+          updatedAt: new Date(),
         },
       },
-      lastModifiedBy: req.user._id,
+      $set: {
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
     },
     { new: true, runValidators: true },
   );
@@ -500,12 +622,14 @@ exports.addKeyFinding = catchAsync(async (req, res, next) => {
     return next(new AppError("Advisory details not found", 404));
   }
 
+  const newFinding =
+    advisoryDetail.keyFindings[advisoryDetail.keyFindings.length - 1];
+
   res.status(200).json({
     status: "success",
     data: {
       advisoryDetail,
-      newFinding:
-        advisoryDetail.keyFindings[advisoryDetail.keyFindings.length - 1],
+      newFinding,
     },
   });
 });
@@ -513,6 +637,23 @@ exports.addKeyFinding = catchAsync(async (req, res, next) => {
 exports.updateKeyFinding = catchAsync(async (req, res, next) => {
   const { matterId, findingId } = req.params;
   const updateData = req.body;
+
+  // Validate IDs
+  if (
+    !mongoose.Types.ObjectId.isValid(matterId) ||
+    !mongoose.Types.ObjectId.isValid(findingId)
+  ) {
+    return next(new AppError("Invalid ID format", 400));
+  }
+
+  // FIXED: Use $set with specific field paths
+  const setFields = {};
+  Object.keys(updateData).forEach((key) => {
+    setFields[`keyFindings.$.${key}`] = updateData[key];
+  });
+
+  setFields["keyFindings.$.updatedBy"] = req.user._id;
+  setFields["keyFindings.$.updatedAt"] = new Date();
 
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     {
@@ -522,14 +663,10 @@ exports.updateKeyFinding = catchAsync(async (req, res, next) => {
     },
     {
       $set: {
-        "keyFindings.$": {
-          ...updateData,
-          _id: findingId,
-          updatedBy: req.user._id,
-          updatedAt: new Date(),
-        },
+        ...setFields,
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
       },
-      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -552,11 +689,22 @@ exports.updateKeyFinding = catchAsync(async (req, res, next) => {
 exports.deleteKeyFinding = catchAsync(async (req, res, next) => {
   const { matterId, findingId } = req.params;
 
+  // Validate IDs
+  if (
+    !mongoose.Types.ObjectId.isValid(matterId) ||
+    !mongoose.Types.ObjectId.isValid(findingId)
+  ) {
+    return next(new AppError("Invalid ID format", 400));
+  }
+
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
       $pull: { keyFindings: { _id: findingId } },
-      lastModifiedBy: req.user._id,
+      $set: {
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
     },
     { new: true },
   );
@@ -569,30 +717,41 @@ exports.deleteKeyFinding = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       advisoryDetail,
-      message: "Key finding removed successfully",
     },
+    message: "Key finding removed successfully",
   });
 });
 
 // ============================================
-// OPINION MANAGEMENT
+// OPINION MANAGEMENT - FIXED
 // ============================================
 
 exports.updateOpinion = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const opinionData = req.body;
 
+  // Validate matterId
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
+
+  // FIXED: Use individual field updates instead of replacing entire object
+  const setFields = {};
+  Object.keys(opinionData).forEach((key) => {
+    setFields[`opinion.${key}`] = opinionData[key];
+  });
+
+  setFields["opinion.updatedBy"] = req.user._id;
+  setFields["opinion.updatedAt"] = new Date();
+
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
       $set: {
-        opinion: {
-          ...opinionData,
-          updatedBy: req.user._id,
-          updatedAt: new Date(),
-        },
+        ...setFields,
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
       },
-      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -610,12 +769,17 @@ exports.updateOpinion = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// RECOMMENDATIONS MANAGEMENT
+// RECOMMENDATIONS MANAGEMENT - FIXED
 // ============================================
 
 exports.addRecommendation = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const recommendationData = req.body;
+
+  // Validate matterId
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
 
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
@@ -623,11 +787,18 @@ exports.addRecommendation = catchAsync(async (req, res, next) => {
       $push: {
         recommendations: {
           ...recommendationData,
+          _id: new mongoose.Types.ObjectId(),
+          implementationStatus:
+            recommendationData.implementationStatus || "pending",
           addedBy: req.user._id,
           addedAt: new Date(),
+          updatedAt: new Date(),
         },
       },
-      lastModifiedBy: req.user._id,
+      $set: {
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
     },
     { new: true, runValidators: true },
   );
@@ -636,14 +807,14 @@ exports.addRecommendation = catchAsync(async (req, res, next) => {
     return next(new AppError("Advisory details not found", 404));
   }
 
+  const newRecommendation =
+    advisoryDetail.recommendations[advisoryDetail.recommendations.length - 1];
+
   res.status(200).json({
     status: "success",
     data: {
       advisoryDetail,
-      newRecommendation:
-        advisoryDetail.recommendations[
-          advisoryDetail.recommendations.length - 1
-        ],
+      newRecommendation,
     },
   });
 });
@@ -651,6 +822,23 @@ exports.addRecommendation = catchAsync(async (req, res, next) => {
 exports.updateRecommendation = catchAsync(async (req, res, next) => {
   const { matterId, recommendationId } = req.params;
   const updateData = req.body;
+
+  // Validate IDs
+  if (
+    !mongoose.Types.ObjectId.isValid(matterId) ||
+    !mongoose.Types.ObjectId.isValid(recommendationId)
+  ) {
+    return next(new AppError("Invalid ID format", 400));
+  }
+
+  // FIXED: Use $set with specific field paths
+  const setFields = {};
+  Object.keys(updateData).forEach((key) => {
+    setFields[`recommendations.$.${key}`] = updateData[key];
+  });
+
+  setFields["recommendations.$.updatedBy"] = req.user._id;
+  setFields["recommendations.$.updatedAt"] = new Date();
 
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     {
@@ -660,14 +848,10 @@ exports.updateRecommendation = catchAsync(async (req, res, next) => {
     },
     {
       $set: {
-        "recommendations.$": {
-          ...updateData,
-          _id: recommendationId,
-          updatedBy: req.user._id,
-          updatedAt: new Date(),
-        },
+        ...setFields,
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
       },
-      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -691,11 +875,22 @@ exports.updateRecommendation = catchAsync(async (req, res, next) => {
 exports.deleteRecommendation = catchAsync(async (req, res, next) => {
   const { matterId, recommendationId } = req.params;
 
+  // Validate IDs
+  if (
+    !mongoose.Types.ObjectId.isValid(matterId) ||
+    !mongoose.Types.ObjectId.isValid(recommendationId)
+  ) {
+    return next(new AppError("Invalid ID format", 400));
+  }
+
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
       $pull: { recommendations: { _id: recommendationId } },
-      lastModifiedBy: req.user._id,
+      $set: {
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
     },
     { new: true },
   );
@@ -710,18 +905,23 @@ exports.deleteRecommendation = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       advisoryDetail,
-      message: "Recommendation removed successfully",
     },
+    message: "Recommendation removed successfully",
   });
 });
 
 // ============================================
-// DELIVERABLES MANAGEMENT
+// DELIVERABLES MANAGEMENT - FIXED (MAIN ERROR FIX)
 // ============================================
 
 exports.addDeliverable = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const deliverableData = req.body;
+
+  // Validate matterId
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
 
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
@@ -729,11 +929,17 @@ exports.addDeliverable = catchAsync(async (req, res, next) => {
       $push: {
         deliverables: {
           ...deliverableData,
+          _id: new mongoose.Types.ObjectId(),
+          status: deliverableData.status || "pending",
           addedBy: req.user._id,
           addedAt: new Date(),
+          updatedAt: new Date(),
         },
       },
-      lastModifiedBy: req.user._id,
+      $set: {
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
     },
     { new: true, runValidators: true },
   );
@@ -742,12 +948,14 @@ exports.addDeliverable = catchAsync(async (req, res, next) => {
     return next(new AppError("Advisory details not found", 404));
   }
 
+  const newDeliverable =
+    advisoryDetail.deliverables[advisoryDetail.deliverables.length - 1];
+
   res.status(200).json({
     status: "success",
     data: {
       advisoryDetail,
-      newDeliverable:
-        advisoryDetail.deliverables[advisoryDetail.deliverables.length - 1],
+      newDeliverable,
     },
   });
 });
@@ -755,6 +963,25 @@ exports.addDeliverable = catchAsync(async (req, res, next) => {
 exports.updateDeliverable = catchAsync(async (req, res, next) => {
   const { matterId, deliverableId } = req.params;
   const updateData = req.body;
+
+  // Validate IDs
+  if (
+    !mongoose.Types.ObjectId.isValid(matterId) ||
+    !mongoose.Types.ObjectId.isValid(deliverableId)
+  ) {
+    return next(new AppError("Invalid ID format", 400));
+  }
+
+  // FIXED: Use $set with specific field paths instead of replacing entire object
+  // This is the fix for the MongoDB error
+  const setFields = {};
+  Object.keys(updateData).forEach((key) => {
+    setFields[`deliverables.$.${key}`] = updateData[key];
+  });
+
+  // Add metadata fields
+  setFields["deliverables.$.updatedBy"] = req.user._id;
+  setFields["deliverables.$.updatedAt"] = new Date();
 
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     {
@@ -764,14 +991,10 @@ exports.updateDeliverable = catchAsync(async (req, res, next) => {
     },
     {
       $set: {
-        "deliverables.$": {
-          ...updateData,
-          _id: deliverableId,
-          updatedBy: req.user._id,
-          updatedAt: new Date(),
-        },
+        ...setFields,
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
       },
-      lastModifiedBy: req.user._id,
     },
     { new: true, runValidators: true },
   );
@@ -794,11 +1017,22 @@ exports.updateDeliverable = catchAsync(async (req, res, next) => {
 exports.deleteDeliverable = catchAsync(async (req, res, next) => {
   const { matterId, deliverableId } = req.params;
 
+  // Validate IDs
+  if (
+    !mongoose.Types.ObjectId.isValid(matterId) ||
+    !mongoose.Types.ObjectId.isValid(deliverableId)
+  ) {
+    return next(new AppError("Invalid ID format", 400));
+  }
+
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
     {
       $pull: { deliverables: { _id: deliverableId } },
-      lastModifiedBy: req.user._id,
+      $set: {
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
     },
     { new: true },
   );
@@ -811,20 +1045,25 @@ exports.deleteDeliverable = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       advisoryDetail,
-      message: "Deliverable removed successfully",
     },
+    message: "Deliverable removed successfully",
   });
 });
 
 // ============================================
-// SERVICE COMPLETION
+// SERVICE COMPLETION - FIXED
 // ============================================
 
 exports.completeAdvisory = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const { completionDate, finalOpinion } = req.body;
 
-  const session = await Matter.startSession();
+  // Validate matterId
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
+
+  const session = await mongoose.startSession();
   session.startTransaction();
 
   try {
@@ -837,9 +1076,12 @@ exports.completeAdvisory = catchAsync(async (req, res, next) => {
         isDeleted: false,
       },
       {
-        status: "completed",
-        actualClosureDate: completionDate || new Date(),
-        lastModifiedBy: req.user._id,
+        $set: {
+          status: "completed",
+          actualClosureDate: completionDate || new Date(),
+          lastModifiedBy: req.user._id,
+          lastActivityDate: new Date(),
+        },
       },
       { new: true, runValidators: true, session },
     );
@@ -851,19 +1093,24 @@ exports.completeAdvisory = catchAsync(async (req, res, next) => {
     }
 
     // Update advisory detail
+    const updateFields = {
+      completionDate: completionDate || new Date(),
+      lastModifiedBy: req.user._id,
+      lastModifiedAt: new Date(),
+    };
+
+    // Add opinion fields if provided
+    if (finalOpinion) {
+      Object.keys(finalOpinion).forEach((key) => {
+        updateFields[`opinion.${key}`] = finalOpinion[key];
+      });
+      updateFields["opinion.finalizedBy"] = req.user._id;
+      updateFields["opinion.finalizationDate"] = new Date();
+    }
+
     const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
       { matterId, firmId: req.firmId },
-      {
-        $set: {
-          opinion: {
-            ...finalOpinion,
-            finalizedBy: req.user._id,
-            finalizationDate: new Date(),
-          },
-          completionDate: completionDate || new Date(),
-          lastModifiedBy: req.user._id,
-        },
-      },
+      { $set: updateFields },
       { new: true, runValidators: true, session },
     );
 
@@ -892,7 +1139,7 @@ exports.completeAdvisory = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// STATISTICS & DASHBOARD
+// STATISTICS & DASHBOARD - FIXED
 // ============================================
 
 exports.getAdvisoryStats = catchAsync(async (req, res, next) => {
@@ -923,6 +1170,9 @@ exports.getAdvisoryStats = catchAsync(async (req, res, next) => {
           pendingAdvisoryMatters: {
             $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] },
           },
+          inProgressAdvisoryMatters: {
+            $sum: { $cond: [{ $eq: ["$status", "in-progress"] }, 1, 0] },
+          },
           completedAdvisoryMatters: {
             $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
           },
@@ -937,7 +1187,6 @@ exports.getAdvisoryStats = catchAsync(async (req, res, next) => {
         $group: {
           _id: "$advisoryType",
           count: { $sum: 1 },
-          avgComplexity: { $avg: "$complexityLevel" },
         },
       },
       { $sort: { count: -1 } },
@@ -1013,8 +1262,9 @@ exports.getAdvisoryStats = catchAsync(async (req, res, next) => {
   ]);
 
   // Calculate totals
-  const pendingDeliverables = deliverableStats.find(
-    (s) => s._id === "pending" || s._id === "in-progress",
+  const pendingDeliverables = deliverableStats.find((s) => s._id === "pending");
+  const inProgressDeliverables = deliverableStats.find(
+    (s) => s._id === "in-progress",
   );
   const overdueDeliverables = deliverableStats.reduce(
     (sum, stat) => sum + (stat.overdueCount || 0),
@@ -1028,14 +1278,20 @@ exports.getAdvisoryStats = catchAsync(async (req, res, next) => {
         totalAdvisoryMatters: 0,
         activeAdvisoryMatters: 0,
         pendingAdvisoryMatters: 0,
+        inProgressAdvisoryMatters: 0,
         completedAdvisoryMatters: 0,
       },
       byType,
-      researchQuestions: researchStats,
+      researchQuestions: {
+        byStatus: researchStats,
+        total: researchStats.reduce((sum, stat) => sum + stat.count, 0),
+      },
       deliverables: {
         byStatus: deliverableStats,
         pending: pendingDeliverables?.count || 0,
+        inProgress: inProgressDeliverables?.count || 0,
         overdue: overdueDeliverables,
+        total: deliverableStats.reduce((sum, stat) => sum + stat.count, 0),
       },
       recentAdvisories,
     },
@@ -1043,7 +1299,7 @@ exports.getAdvisoryStats = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// BULK OPERATIONS
+// BULK OPERATIONS - FIXED
 // ============================================
 
 exports.bulkUpdateAdvisoryMatters = catchAsync(async (req, res, next) => {
@@ -1057,6 +1313,13 @@ exports.bulkUpdateAdvisoryMatters = catchAsync(async (req, res, next) => {
     return next(new AppError("Please provide updates to apply", 400));
   }
 
+  // Validate all matterIds
+  for (const id of matterIds) {
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return next(new AppError(`Invalid matter ID format: ${id}`, 400));
+    }
+  }
+
   const result = await Matter.updateMany(
     {
       _id: { $in: matterIds },
@@ -1064,9 +1327,11 @@ exports.bulkUpdateAdvisoryMatters = catchAsync(async (req, res, next) => {
       matterType: "advisory",
     },
     {
-      ...updates,
-      lastModifiedBy: req.user._id,
-      lastActivityDate: Date.now(),
+      $set: {
+        ...updates,
+        lastModifiedBy: req.user._id,
+        lastActivityDate: new Date(),
+      },
     },
     { runValidators: true },
   );

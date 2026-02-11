@@ -1043,22 +1043,35 @@ exports.completeGeneralService = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const { completionDate, finalNotes } = req.body;
 
-  // Update general detail
-  const generalDetail = await GeneralDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
-    {
-      actualCompletionDate: completionDate || new Date(),
-      procedureNotes: finalNotes
-        ? `${generalDetail.procedureNotes || ""}\n\n${finalNotes}`
-        : generalDetail.procedureNotes,
-      lastModifiedBy: req.user._id,
-    },
-    { new: true, runValidators: true },
-  );
+  // ✅ FIX: First, fetch the existing general detail
+  const existingGeneralDetail = await GeneralDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
 
-  if (!generalDetail) {
+  if (!existingGeneralDetail) {
     return next(new AppError("General details not found", 404));
   }
+
+  // ✅ FIX: Now build the update object with the existing data
+  const updateData = {
+    actualCompletionDate: completionDate || new Date(),
+    lastModifiedBy: req.user._id,
+  };
+
+  // Only update procedureNotes if finalNotes is provided
+  if (finalNotes) {
+    updateData.procedureNotes = existingGeneralDetail.procedureNotes
+      ? `${existingGeneralDetail.procedureNotes}\n\n${finalNotes}`
+      : finalNotes;
+  }
+
+  // ✅ FIX: Update general detail with the prepared data
+  const generalDetail = await GeneralDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    updateData,
+    { new: true, runValidators: true },
+  ).populate("matterId");
 
   // Update matter
   const matter = await Matter.findOneAndUpdate(
