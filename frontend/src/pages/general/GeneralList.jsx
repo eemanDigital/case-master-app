@@ -9,17 +9,14 @@ import {
   Select,
   Row,
   Col,
-  Statistic,
   message,
   Dropdown,
   Menu,
   Modal,
-  Progress,
-  Tooltip,
   Typography,
-  Divider,
-  List,
-  Avatar,
+  Segmented,
+  Badge,
+  Tooltip,
 } from "antd";
 import {
   PlusOutlined,
@@ -32,20 +29,20 @@ import {
   CheckCircleOutlined,
   DollarOutlined,
   FileTextOutlined,
-  CalendarOutlined,
-  EnvironmentOutlined,
   WarningOutlined,
   CheckOutlined,
   CloseOutlined,
   RiseOutlined,
-  FallOutlined,
-  BarChartOutlined,
-  TeamOutlined,
   PaperClipOutlined,
+  BarChartOutlined,
+  AppstoreOutlined,
+  UnorderedListOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
+
+// Redux
 import {
   fetchGeneralMatters,
   fetchGeneralStats,
@@ -57,9 +54,15 @@ import {
 } from "../../redux/features/general/generalSlice";
 import { NIGERIAN_GENERAL_SERVICE_TYPES } from "../../utils/generalConstants";
 
+// Components
+import StatCard from "../../components/general/StatCard";
+import DistributionChart from "../../components/general/DistributionChart";
+import ComplianceCard from "../../components/general/ComplianceCard";
+import RecentMattersCard from "../../components/general/RecentMattersCard";
+
 const { Search } = Input;
 const { Option } = Select;
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const GeneralList = () => {
   const dispatch = useDispatch();
@@ -75,8 +78,11 @@ const GeneralList = () => {
     action: null,
   });
   const [activeStatCard, setActiveStatCard] = useState(null);
+  const [viewMode, setViewMode] = useState("dashboard"); // 'dashboard' or 'table'
 
-  // Load data
+  // ============================================
+  // DATA LOADING
+  // ============================================
   useEffect(() => {
     dispatch(
       fetchGeneralMatters({
@@ -88,7 +94,9 @@ const GeneralList = () => {
     dispatch(fetchGeneralStats());
   }, [dispatch, pagination.page, pagination.limit, filters]);
 
-  // Handler functions remain the same...
+  // ============================================
+  // HANDLERS
+  // ============================================
   const handleTableChange = useCallback(
     (pag) => {
       dispatch(setPagination({ page: pag.current, limit: pag.pageSize }));
@@ -115,6 +123,7 @@ const GeneralList = () => {
   const handleClearFilters = useCallback(() => {
     dispatch(clearFilters());
     dispatch(setPagination({ page: 1 }));
+    setActiveStatCard(null);
   }, [dispatch]);
 
   const handleDelete = useCallback(
@@ -144,28 +153,6 @@ const GeneralList = () => {
     [dispatch, pagination, filters],
   );
 
-  const handleBulkAction = useCallback(
-    async (action, data) => {
-      try {
-        const payload = { matterIds: selectedRowKeys, updates: data };
-        await dispatch(bulkUpdateGeneralMatters(payload)).unwrap();
-        message.success(`Bulk ${action} completed successfully`);
-        setSelectedRowKeys([]);
-        setBulkActionModal({ visible: false, action: null });
-        dispatch(
-          fetchGeneralMatters({
-            page: pagination.page,
-            limit: pagination.limit,
-            ...filters,
-          }),
-        );
-      } catch (error) {
-        message.error(error || "Bulk action failed");
-      }
-    },
-    [dispatch, selectedRowKeys, pagination, filters],
-  );
-
   const handleCreateGeneral = useCallback(
     (matterId) => {
       navigate(`/dashboard/matters/general/${matterId}/create`);
@@ -173,123 +160,107 @@ const GeneralList = () => {
     [navigate],
   );
 
-  // ✅ EMPTY STATE COMPONENT
-  const EmptyState = ({ message }) => (
-    <div
-      style={{
-        textAlign: "center",
-        padding: 40,
-        color: "#bfbfbf",
-      }}>
-      <BarChartOutlined style={{ fontSize: 48, marginBottom: 16 }} />
-      <Text type="secondary">{message}</Text>
-    </div>
-  );
+  const handleRefresh = useCallback(() => {
+    dispatch(
+      fetchGeneralMatters({
+        page: pagination.page,
+        limit: pagination.limit,
+        ...filters,
+      }),
+    );
+    dispatch(fetchGeneralStats());
+  }, [dispatch, pagination, filters]);
 
-  // ✅ COMPREHENSIVE STATS MAPPING
+  // ============================================
+  // COMPUTED DATA
+  // ============================================
   const statsCards = useMemo(() => {
     if (!stats) return [];
 
     const { overview, requirements, deliverables, documents, revenue } = stats;
 
     return [
-      // Overview Cards
       {
         key: "total",
         title: "Total Matters",
         value: overview?.totalGeneralMatters || 0,
-        icon: <FileTextOutlined />,
+        icon: FileTextOutlined,
         color: "#1890ff",
-        description: "Total general matters",
-        trend: null,
+        description: "All general matters",
       },
       {
         key: "active",
         title: "Active",
         value: overview?.activeGeneralMatters || 0,
-        icon: <RiseOutlined />,
+        icon: RiseOutlined,
         color: "#52c41a",
-        description: "Currently active matters",
+        description: "Currently active",
         trend: "up",
+        onClick: () => handleFilterChange("status", "active"),
       },
       {
         key: "pending",
         title: "Pending",
         value: overview?.pendingGeneralMatters || 0,
-        icon: <WarningOutlined />,
+        icon: WarningOutlined,
         color: "#faad14",
-        description: "Matters awaiting action",
-        trend: "neutral",
+        description: "Awaiting action",
+        onClick: () => handleFilterChange("status", "pending"),
       },
       {
         key: "completed",
         title: "Completed",
         value: overview?.completedGeneralMatters || 0,
-        icon: <CheckCircleOutlined />,
+        icon: CheckCircleOutlined,
         color: "#722ed1",
         description: "Successfully completed",
-        trend: "up",
+        onClick: () => handleFilterChange("status", "completed"),
       },
-      {
-        key: "closed",
-        title: "Closed",
-        value: overview?.closedGeneralMatters || 0,
-        icon: <CloseOutlined />,
-        color: "#8c8c8c",
-        description: "Archived/Closed matters",
-        trend: null,
-      },
-      // Revenue Card
       {
         key: "revenue",
         title: "Total Revenue",
         value: revenue?.totalRevenue || 0,
-        icon: <DollarOutlined />,
+        icon: DollarOutlined,
         color: "#13c2c2",
-        description: `Average: ₦${(revenue?.avgRevenue || 0).toLocaleString()}`,
+        description: `Avg: ₦${(revenue?.avgRevenue || 0).toLocaleString()}`,
         formattedValue: `₦${(revenue?.totalRevenue || 0).toLocaleString()}`,
         trend: "up",
-        prefix: "₦",
       },
-      // Requirements Card
       {
         key: "requirements",
-        title: "Requirements",
+        title: "Requirements Met",
         value: requirements?.completed || 0,
-        icon: <CheckOutlined />,
+        icon: CheckOutlined,
         color: "#52c41a",
         description: `${requirements?.pending || 0} pending`,
-        subValue: `${requirements?.pending || 0} pending`,
-        suffix: `/${(requirements?.completed || 0) + (requirements?.pending || 0)}`,
+        subValue:
+          requirements?.pending > 0 ? `${requirements.pending} pending` : null,
       },
-      // Deliverables Card
       {
         key: "deliverables",
         title: "Deliverables",
         value: deliverables?.pending || 0,
-        icon: <PaperClipOutlined />,
+        icon: PaperClipOutlined,
         color: "#fa8c16",
-        description: `${deliverables?.overdue || 0} overdue`,
-        subValue: `${deliverables?.overdue || 0} overdue`,
-        suffix: ` pending`,
+        description: "Pending delivery",
+        subValue:
+          deliverables?.overdue > 0 ? `${deliverables.overdue} overdue` : null,
       },
-      // Documents Card
       {
         key: "documents",
         title: "Documents",
         value: documents?.received || 0,
-        icon: <FileTextOutlined />,
+        icon: FileTextOutlined,
         color: "#eb2f96",
-        description: `${documents?.missing || 0} missing`,
-        subValue: `${documents?.missing || 0} missing`,
-        suffix: ` received`,
+        description: "Received",
+        subValue:
+          documents?.missing > 0 ? `${documents.missing} missing` : null,
       },
     ];
-  }, [stats]);
+  }, [stats, handleFilterChange]);
 
-  // ✅ SERVICE TYPE DISTRIBUTION
   const serviceTypeData = useMemo(() => {
-    if (!stats?.byServiceType) return [];
+    if (!stats?.byServiceType || !stats?.overview) return [];
 
     return stats.byServiceType.map((service) => ({
       ...service,
@@ -298,33 +269,20 @@ const GeneralList = () => {
           ?.label || service._id,
       formattedAvgFee: `₦${(service.avgFee || 0).toLocaleString()}`,
       percentage: (service.count / stats.overview.totalGeneralMatters) * 100,
+      description: `${service.count} matters • ₦${service.avgFee.toLocaleString()} avg`,
     }));
   }, [stats]);
 
-  // ✅ JURISDICTION DISTRIBUTION
-  const jurisdictionData = useMemo(() => {
-    if (!stats?.jurisdictions) return [];
-
-    return stats.jurisdictions.map((jur) => ({
-      ...jur,
-      name: jur._id || "Not Specified",
-    }));
-  }, [stats]);
-
-  // ✅ REQUIREMENTS STATUS
   const requirementsData = useMemo(() => {
     if (!stats?.requirements?.byStatus) return [];
 
-    const total = stats.requirements.completed + stats.requirements.pending;
     return stats.requirements.byStatus.map((req) => ({
       ...req,
       name: req._id === "met" ? "Met" : "Pending",
       color: req._id === "met" ? "#52c41a" : "#faad14",
-      percentage: total > 0 ? (req.count / total) * 100 : 0,
     }));
   }, [stats]);
 
-  // ✅ DELIVERABLES STATUS
   const deliverablesData = useMemo(() => {
     if (!stats?.deliverables?.byStatus) return [];
 
@@ -335,379 +293,18 @@ const GeneralList = () => {
     }));
   }, [stats]);
 
-  // ✅ RECENT MATTERS FOR QUICK ACCESS
   const recentMatters = useMemo(() => {
     if (!stats?.recentMatters) return [];
 
     return stats.recentMatters.slice(0, 5).map((matter) => ({
       ...matter,
       formattedDate: dayjs(matter.dateOpened).format("DD MMM YYYY"),
-      statusColor:
-        {
-          active: "green",
-          pending: "orange",
-          completed: "blue",
-          closed: "gray",
-        }[matter.status] || "default",
     }));
   }, [stats]);
 
-  // ✅ RENDER STATS CARDS
-  const renderStatsCards = useMemo(
-    () => (
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        {statsCards.map((stat) => (
-          <Col xs={24} sm={12} md={6} key={stat.key}>
-            <Card
-              hoverable
-              onClick={() => {
-                if (stat.key === "pending") {
-                  handleFilterChange("status", "pending");
-                } else if (stat.key === "requirements") {
-                  // Navigate to requirements section
-                }
-                setActiveStatCard(stat.key);
-              }}
-              style={{
-                borderLeft: `4px solid ${stat.color}`,
-                cursor: "pointer",
-                transition: "all 0.3s",
-                backgroundColor:
-                  activeStatCard === stat.key ? "#f6ffed" : "white",
-              }}>
-              <div style={{ display: "flex", alignItems: "flex-start" }}>
-                <div
-                  style={{
-                    backgroundColor: `${stat.color}15`,
-                    borderRadius: 8,
-                    padding: 8,
-                    marginRight: 12,
-                  }}>
-                  {React.cloneElement(stat.icon, {
-                    style: { color: stat.color, fontSize: 20 },
-                  })}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {stat.title}
-                  </Text>
-                  <div style={{ display: "flex", alignItems: "baseline" }}>
-                    <Statistic
-                      value={stat.value}
-                      prefix={stat.prefix}
-                      suffix={stat.suffix}
-                      valueStyle={{
-                        fontSize: 24,
-                        fontWeight: "bold",
-                        color: stat.color,
-                      }}
-                      loading={statsLoading}
-                    />
-                    {stat.formattedValue && (
-                      <Text strong style={{ marginLeft: 8, fontSize: 16 }}>
-                        {stat.formattedValue}
-                      </Text>
-                    )}
-                  </div>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {stat.description}
-                  </Text>
-                  {stat.subValue && (
-                    <div style={{ marginTop: 4 }}>
-                      <Text type="danger" style={{ fontSize: 11 }}>
-                        {stat.subValue}
-                      </Text>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-    ),
-    [statsCards, activeStatCard, statsLoading, handleFilterChange],
-  );
-
-  // ✅ RENDER CHARTS AND DISTRIBUTIONS
-  const renderChartsAndDistributions = useMemo(
-    () => (
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        {/* Service Type Distribution */}
-        <Col xs={24} md={12}>
-          <Card
-            title="Service Type Distribution"
-            extra={
-              <Button
-                type="link"
-                size="small"
-                onClick={() => handleFilterChange("serviceType", null)}>
-                View All
-              </Button>
-            }>
-            {serviceTypeData.length > 0 ? (
-              <>
-                <List
-                  dataSource={serviceTypeData}
-                  renderItem={(item) => (
-                    <List.Item
-                      actions={[
-                        <Tag color="blue">{item.count}</Tag>,
-                        <Text type="secondary">{item.formattedAvgFee}</Text>,
-                      ]}>
-                      <List.Item.Meta
-                        avatar={
-                          <Progress
-                            type="circle"
-                            percent={Math.round(item.percentage)}
-                            width={40}
-                            strokeColor="#1890ff"
-                          />
-                        }
-                        title={
-                          <Button
-                            type="link"
-                            onClick={() =>
-                              handleFilterChange("serviceType", item._id)
-                            }
-                            style={{ padding: 0 }}>
-                            {item.name}
-                          </Button>
-                        }
-                        description={`${item.count} matters • ₦${item.avgFee.toLocaleString()} avg`}
-                      />
-                    </List.Item>
-                  )}
-                />
-              </>
-            ) : (
-              <EmptyState message="No service type data available" />
-            )}
-          </Card>
-        </Col>
-
-        {/* Requirements & Deliverables */}
-        <Col xs={24} md={12}>
-          <Card title="Compliance Status">
-            <Row gutter={16}>
-              <Col span={12}>
-                <Card
-                  size="small"
-                  title="Requirements"
-                  style={{ height: "100%" }}>
-                  {requirementsData.length > 0 ? (
-                    <>
-                      <Progress
-                        percent={Math.round(
-                          (stats.requirements.completed /
-                            (stats.requirements.completed +
-                              stats.requirements.pending)) *
-                            100,
-                        )}
-                        status="active"
-                        style={{ marginBottom: 16 }}
-                      />
-                      <Row gutter={8}>
-                        {requirementsData.map((req) => (
-                          <Col span={12} key={req._id}>
-                            <div style={{ textAlign: "center" }}>
-                              <div style={{ fontSize: 24, color: req.color }}>
-                                {req.count}
-                              </div>
-                              <Text type="secondary">{req.name}</Text>
-                            </div>
-                          </Col>
-                        ))}
-                      </Row>
-                    </>
-                  ) : (
-                    <EmptyState message="No requirements data" />
-                  )}
-                </Card>
-              </Col>
-              <Col span={12}>
-                <Card
-                  size="small"
-                  title="Deliverables"
-                  style={{ height: "100%" }}>
-                  {deliverablesData.length > 0 ? (
-                    <>
-                      <div style={{ marginBottom: 16 }}>
-                        <Text strong style={{ display: "block" }}>
-                          Pending: {stats.deliverables.pending}
-                        </Text>
-                        <Text type="danger" style={{ fontSize: 12 }}>
-                          Overdue: {stats.deliverables.overdue}
-                        </Text>
-                      </div>
-                      {deliverablesData.map((del) => (
-                        <div
-                          key={del._id}
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            marginBottom: 8,
-                          }}>
-                          <Tag color={del.color}>{del.name}</Tag>
-                          <Text strong>{del.count}</Text>
-                        </div>
-                      ))}
-                    </>
-                  ) : (
-                    <EmptyState message="No deliverables data" />
-                  )}
-                </Card>
-              </Col>
-            </Row>
-          </Card>
-        </Col>
-
-        {/* Documents & Jurisdiction */}
-        <Col xs={24} md={12}>
-          <Card title="Documents Status">
-            <Row gutter={16}>
-              <Col span={8}>
-                <Statistic
-                  title="Received"
-                  value={stats?.documents?.received || 0}
-                  valueStyle={{ color: "#52c41a" }}
-                  prefix={<CheckCircleOutlined />}
-                />
-              </Col>
-              <Col span={8}>
-                <Statistic
-                  title="Missing"
-                  value={stats?.documents?.missing || 0}
-                  valueStyle={{ color: "#f5222d" }}
-                  prefix={<WarningOutlined />}
-                />
-              </Col>
-              <Col span={8}>
-                <Statistic
-                  title="Originals Kept"
-                  value={stats?.documents?.originalKept || 0}
-                  valueStyle={{ color: "#1890ff" }}
-                  prefix={<FileTextOutlined />}
-                />
-              </Col>
-            </Row>
-          </Card>
-        </Col>
-
-        {/* Jurisdiction Distribution */}
-        <Col xs={24} md={12}>
-          <Card
-            title="Jurisdiction Distribution"
-            extra={<EnvironmentOutlined style={{ color: "#52c41a" }} />}>
-            {jurisdictionData.length > 0 ? (
-              <div style={{ maxHeight: 200, overflowY: "auto" }}>
-                {jurisdictionData.map((jur) => (
-                  <div
-                    key={jur._id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "8px 0",
-                      borderBottom: "1px solid #f0f0f0",
-                    }}>
-                    <Text>{jur.name}</Text>
-                    <div style={{ display: "flex", alignItems: "center" }}>
-                      <Progress
-                        percent={Math.round(
-                          (jur.count / stats.overview.totalGeneralMatters) *
-                            100,
-                        )}
-                        size="small"
-                        style={{ width: 100, marginRight: 12 }}
-                      />
-                      <Tag color="blue">{jur.count}</Tag>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <EmptyState message="No jurisdiction data available" />
-            )}
-          </Card>
-        </Col>
-      </Row>
-    ),
-    [
-      serviceTypeData,
-      requirementsData,
-      deliverablesData,
-      jurisdictionData,
-      stats,
-      handleFilterChange,
-    ],
-  );
-
-  // ✅ RENDER QUICK ACCESS - RECENT MATTERS
-  const renderRecentMatters = useMemo(
-    () => (
-      <Card
-        title="Recent Matters"
-        extra={
-          <Button
-            type="link"
-            onClick={() => navigate("/dashboard/matters/general")}>
-            View All
-          </Button>
-        }
-        style={{ marginBottom: 24 }}>
-        <List
-          dataSource={recentMatters}
-          loading={statsLoading}
-          renderItem={(item) => (
-            <List.Item
-              actions={[
-                <Button
-                  type="link"
-                  size="small"
-                  onClick={() =>
-                    navigate(`/dashboard/matters/general/${item._id}/details`)
-                  }>
-                  View
-                </Button>,
-              ]}>
-              <List.Item.Meta
-                avatar={
-                  <Avatar
-                    style={{
-                      backgroundColor: item.statusColor,
-                    }}>
-                    {item.matterNumber?.split("/")[0] || "GEN"}
-                  </Avatar>
-                }
-                title={
-                  <div style={{ display: "flex", alignItems: "center" }}>
-                    <Text strong style={{ marginRight: 8 }}>
-                      {item.matterNumber}
-                    </Text>
-                    <Tag color={item.statusColor}>
-                      {item.status.toUpperCase()}
-                    </Tag>
-                  </div>
-                }
-                description={
-                  <>
-                    <div>{item.title}</div>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
-                      Opened: {item.formattedDate}
-                    </Text>
-                  </>
-                }
-              />
-            </List.Item>
-          )}
-        />
-      </Card>
-    ),
-    [recentMatters, statsLoading, navigate],
-  );
-
-  // Columns and table remain the same...
+  // ============================================
+  // TABLE COLUMNS
+  // ============================================
   const columns = useMemo(
     () => [
       {
@@ -716,7 +313,7 @@ const GeneralList = () => {
         key: "matterNumber",
         width: 150,
         fixed: "left",
-        render: (text) => <strong>{text}</strong>,
+        render: (text) => <Text strong>{text}</Text>,
       },
       {
         title: "Service Type",
@@ -728,7 +325,11 @@ const GeneralList = () => {
           const service = NIGERIAN_GENERAL_SERVICE_TYPES.find(
             (s) => s.value === type,
           );
-          return <Tag color="blue">{service?.label || type}</Tag>;
+          return (
+            <Tag color="blue" style={{ borderRadius: "4px" }}>
+              {service?.label || type}
+            </Tag>
+          );
         },
       },
       {
@@ -737,15 +338,22 @@ const GeneralList = () => {
         key: "client",
         width: 200,
         render: (client) =>
-          client ? `${client.firstName} ${client.lastName}` : "N/A",
-      },
-      {
-        title: "Billing Type",
-        dataIndex: ["generalDetail", "billing", "billingType"],
-        key: "billingType",
-        width: 130,
-        render: (type) =>
-          type ? <Tag color="green">{type?.toUpperCase()}</Tag> : "N/A",
+          client ? (
+            <div>
+              <Text strong>
+                {client.firstName} {client.lastName}
+              </Text>
+              {client.companyName && (
+                <div>
+                  <Text type="secondary" style={{ fontSize: "12px" }}>
+                    {client.companyName}
+                  </Text>
+                </div>
+              )}
+            </div>
+          ) : (
+            "N/A"
+          ),
       },
       {
         title: "Fee",
@@ -753,11 +361,14 @@ const GeneralList = () => {
         key: "fee",
         width: 130,
         render: (financialSummary, record) => {
-          // Try financialSummary first, then billing
           const baseFee = financialSummary?.baseFee;
-          if (baseFee) return `₦${baseFee.toLocaleString()}`;
+          if (baseFee)
+            return (
+              <Text strong style={{ color: "#52c41a" }}>
+                ₦{baseFee.toLocaleString()}
+              </Text>
+            );
 
-          // Fallback to billing data
           const billing = record?.generalDetail?.billing;
           if (!billing) return "N/A";
 
@@ -769,27 +380,21 @@ const GeneralList = () => {
         },
       },
       {
-        title: "Jurisdiction",
-        dataIndex: ["generalDetail", "jurisdiction", "state"],
-        key: "jurisdiction",
-        width: 120,
-        render: (state) => state || "N/A",
-      },
-      {
         title: "Status",
         dataIndex: "status",
         key: "status",
         width: 120,
         render: (status) => {
-          const colors = {
-            active: "success",
-            pending: "warning",
-            completed: "blue",
-            closed: "default",
+          const statusConfig = {
+            active: { color: "success", icon: "🟢" },
+            pending: { color: "warning", icon: "🟡" },
+            completed: { color: "processing", icon: "🔵" },
+            closed: { color: "default", icon: "⚫" },
           };
+          const config = statusConfig[status] || statusConfig.closed;
           return (
-            <Tag color={colors[status] || "default"}>
-              {status?.toUpperCase()}
+            <Tag color={config.color} style={{ borderRadius: "4px" }}>
+              {config.icon} {status?.toUpperCase()}
             </Tag>
           );
         },
@@ -799,7 +404,14 @@ const GeneralList = () => {
         dataIndex: ["generalDetail", "expectedCompletionDate"],
         key: "expectedCompletionDate",
         width: 150,
-        render: (date) => (date ? dayjs(date).format("DD MMM YYYY") : "N/A"),
+        render: (date) =>
+          date ? (
+            <Tooltip title={dayjs(date).format("DD MMMM YYYY")}>
+              {dayjs(date).format("DD MMM YYYY")}
+            </Tooltip>
+          ) : (
+            <Text type="secondary">Not set</Text>
+          ),
       },
       {
         title: "Actions",
@@ -816,9 +428,7 @@ const GeneralList = () => {
                   type="link"
                   size="small"
                   onClick={() =>
-                    navigate(
-                      `/dashboard/matters/general/${record?._id}/details`,
-                    )
+                    navigate(`/dashboard/matters/general/${record._id}/details`)
                   }>
                   View
                 </Button>
@@ -827,7 +437,7 @@ const GeneralList = () => {
                   type="primary"
                   size="small"
                   onClick={() => handleCreateGeneral(record._id)}>
-                  Create Details
+                  Create
                 </Button>
               )}
 
@@ -868,95 +478,231 @@ const GeneralList = () => {
     [navigate, handleDelete, handleCreateGeneral],
   );
 
+  // ============================================
+  // RENDER
+  // ============================================
   return (
-    <div style={{ padding: 24 }}>
+    <div
+      style={{
+        padding: "24px",
+        background: "linear-gradient(to bottom, #f0f2f5 0%, #ffffff 100%)",
+        minHeight: "100vh",
+      }}>
+      {/* Header */}
       <div
         style={{
-          marginBottom: 24,
+          marginBottom: "32px",
           display: "flex",
           justifyContent: "space-between",
-          alignItems: "center",
+          alignItems: "flex-start",
+          flexWrap: "wrap",
+          gap: "16px",
         }}>
         <div>
-          <Title level={2} style={{ margin: 0 }}>
-            General Matters Dashboard
+          <Title level={2} style={{ margin: 0, marginBottom: "8px" }}>
+            General Matters
           </Title>
-          <Text type="secondary">Overview of all general legal matters</Text>
+          <Text type="secondary">
+            Manage and track all general legal services
+          </Text>
         </div>
-        <Space>
+
+        <Space wrap>
+          <Segmented
+            value={viewMode}
+            onChange={setViewMode}
+            options={[
+              {
+                label: "Dashboard",
+                value: "dashboard",
+                icon: <AppstoreOutlined />,
+              },
+              {
+                label: "Table",
+                value: "table",
+                icon: <UnorderedListOutlined />,
+              },
+            ]}
+          />
           <Button
             icon={<ReloadOutlined />}
-            onClick={() => {
-              dispatch(
-                fetchGeneralMatters({
-                  page: pagination.page,
-                  limit: pagination.limit,
-                  ...filters,
-                }),
-              );
-              dispatch(fetchGeneralStats());
-            }}
+            onClick={handleRefresh}
             loading={loading || statsLoading}>
             Refresh
           </Button>
-          <Button icon={<DownloadOutlined />}>Export Report</Button>
+          <Button icon={<DownloadOutlined />}>Export</Button>
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() =>
-              message.info(
-                "Please create a matter first, then add general details",
-              )
+              message.info("Create a matter first, then add general details")
             }>
             New Matter
           </Button>
         </Space>
       </div>
 
-      {/* Stats Overview */}
-      {renderStatsCards}
+      {/* Dashboard View */}
+      {viewMode === "dashboard" && (
+        <>
+          {/* Stats Cards */}
+          <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+            {statsCards.map((stat) => (
+              <Col xs={24} sm={12} md={8} lg={6} key={stat.key}>
+                <StatCard
+                  {...stat}
+                  loading={statsLoading}
+                  isActive={activeStatCard === stat.key}
+                  onClick={() => {
+                    if (stat.onClick) {
+                      stat.onClick();
+                      setActiveStatCard(stat.key);
+                    }
+                  }}
+                />
+              </Col>
+            ))}
+          </Row>
 
-      {/* Charts and Distributions */}
-      {renderChartsAndDistributions}
+          {/* Charts and Analytics */}
+          <Row gutter={[16, 16]} style={{ marginBottom: "24px" }}>
+            {/* Service Distribution */}
+            <Col xs={24} lg={12}>
+              <DistributionChart
+                title="Service Type Distribution"
+                data={serviceTypeData}
+                loading={statsLoading}
+                onItemClick={(item) =>
+                  handleFilterChange("serviceType", item._id)
+                }
+                onViewAll={() => setViewMode("table")}
+                emptyMessage="No service type data available"
+              />
+            </Col>
 
-      {/* Recent Matters */}
-      {renderRecentMatters}
+            {/* Compliance */}
+            <Col xs={24} lg={12}>
+              <ComplianceCard
+                requirementsData={requirementsData}
+                deliverablesData={deliverablesData}
+                stats={stats}
+              />
+            </Col>
+          </Row>
 
-      {/* Main Table */}
-      <Card
-        title="All General Matters"
-        extra={
-          <Space>
-            <Search
-              placeholder="Search matters..."
-              onSearch={handleSearch}
-              enterButton={<SearchOutlined />}
-              style={{ width: 250 }}
-            />
-            <Button icon={<FilterOutlined />}>Advanced Filters</Button>
-          </Space>
-        }>
-        <Table
-          columns={columns}
-          dataSource={matters}
-          rowKey="_id"
-          loading={loading}
-          pagination={{
-            current: pagination.page,
-            pageSize: pagination.limit,
-            total: pagination.total,
-            showSizeChanger: true,
-            showQuickJumper: true,
-            showTotal: (total) => `Total ${total} matters`,
-          }}
-          onChange={handleTableChange}
-          scroll={{ x: 1400 }}
-          rowSelection={{
-            selectedRowKeys,
-            onChange: setSelectedRowKeys,
-          }}
-        />
-      </Card>
+          {/* Recent Matters */}
+          <RecentMattersCard
+            recentMatters={recentMatters}
+            loading={statsLoading}
+            onViewMatter={(matter) =>
+              navigate(`/dashboard/matters/general/${matter._id}/details`)
+            }
+            onViewAll={() => setViewMode("table")}
+          />
+        </>
+      )}
+
+      {/* Table View */}
+      {viewMode === "table" && (
+        <Card
+          title={
+            <Space>
+              <BarChartOutlined />
+              <Text strong>All General Matters</Text>
+              <Badge
+                count={pagination.total}
+                style={{ backgroundColor: "#52c41a" }}
+              />
+            </Space>
+          }
+          extra={
+            <Space>
+              <Search
+                placeholder="Search matters..."
+                onSearch={handleSearch}
+                allowClear
+                style={{ width: 250 }}
+              />
+              <Button
+                icon={<FilterOutlined />}
+                onClick={() => setShowFilters(!showFilters)}>
+                Filters
+              </Button>
+              {Object.values(filters).some((v) => v) && (
+                <Button onClick={handleClearFilters}>Clear Filters</Button>
+              )}
+            </Space>
+          }
+          bodyStyle={{ padding: 0 }}>
+          {showFilters && (
+            <div style={{ padding: "16px", borderBottom: "1px solid #f0f0f0" }}>
+              <Row gutter={16}>
+                <Col xs={24} sm={8}>
+                  <Select
+                    placeholder="Service Type"
+                    style={{ width: "100%" }}
+                    allowClear
+                    onChange={(v) => handleFilterChange("serviceType", v)}
+                    value={filters.serviceType}>
+                    {NIGERIAN_GENERAL_SERVICE_TYPES.map((t) => (
+                      <Option key={t.value} value={t.value}>
+                        {t.label}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Select
+                    placeholder="Status"
+                    style={{ width: "100%" }}
+                    allowClear
+                    onChange={(v) => handleFilterChange("status", v)}
+                    value={filters.status}>
+                    <Option value="active">Active</Option>
+                    <Option value="pending">Pending</Option>
+                    <Option value="completed">Completed</Option>
+                    <Option value="closed">Closed</Option>
+                  </Select>
+                </Col>
+                <Col xs={24} sm={8}>
+                  <Select
+                    placeholder="Jurisdiction"
+                    style={{ width: "100%" }}
+                    allowClear
+                    onChange={(v) => handleFilterChange("jurisdictionState", v)}
+                    value={filters.jurisdictionState}>
+                    <Option value="Lagos">Lagos</Option>
+                    <Option value="Abuja">Abuja</Option>
+                    <Option value="Rivers">Rivers</Option>
+                  </Select>
+                </Col>
+              </Row>
+            </div>
+          )}
+
+          <Table
+            columns={columns}
+            dataSource={matters}
+            rowKey="_id"
+            loading={loading}
+            pagination={{
+              current: pagination.page,
+              pageSize: pagination.limit,
+              total: pagination.total,
+              showSizeChanger: true,
+              showQuickJumper: true,
+              showTotal: (total) => `Total ${total} matters`,
+              position: ["bottomCenter"],
+            }}
+            onChange={handleTableChange}
+            scroll={{ x: 1200 }}
+            rowSelection={{
+              selectedRowKeys,
+              onChange: setSelectedRowKeys,
+            }}
+          />
+        </Card>
+      )}
 
       {/* Bulk Action Modal */}
       <Modal
@@ -965,7 +711,7 @@ const GeneralList = () => {
         onCancel={() => setBulkActionModal({ visible: false, action: null })}
         onOk={() => {
           if (bulkActionModal.action === "status") {
-            handleBulkAction("status", { status: "active" });
+            // handleBulkAction("status", { status: "active" });
           }
         }}>
         <p>Update {selectedRowKeys.length} selected matter(s)</p>

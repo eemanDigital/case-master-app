@@ -147,6 +147,21 @@ const GeneralList = lazy(() => import("./pages/general/GeneralList.jsx"));
 const CreateGeneral = lazy(() => import("./pages/general/CreateGeneral.jsx"));
 const GeneralDetails = lazy(() => import("./pages/general/GeneralDetails.jsx"));
 
+//  Advisory matter management
+const AdvisoryDashboardPage = lazy(
+  () => import("./components/advisory/AdvisoryDashboardPage.jsx"),
+);
+const AdvisoryCreatePage = lazy(
+  () => import("./pages/advisory/AdvisoryCreatePage.jsx"),
+);
+const AdvisoryDetailPage = lazy(
+  () => import("./pages/advisory/AdvisoryDetailPage.jsx"),
+);
+
+const AdvisoryEditPage = lazy(
+  () => import("./pages/advisory/AdvisoryEditPage.jsx"),
+);
+
 // Tasks Management
 const TaskList = lazy(() => import("./components/TaskList.jsx"));
 const CreateTaskForm = lazy(() => import("./pages/CreateTaskForm.jsx"));
@@ -766,6 +781,55 @@ function App() {
                     <Suspense fallback={<PageLoader />}>
                       <ProtectedStaffRoute>
                         <GeneralDetails editMode />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+              </Route>
+
+              {/* Advisory Matter Management */}
+
+              <Route path="matters/advisory">
+                {/* List all general matters */}
+                <Route
+                  index
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <AdvisoryDashboardPage />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+                {/* Create new general matter */}
+                <Route
+                  path=":matterId/create"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <AdvisoryCreatePage />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+                {/* View general matter details */}
+                <Route
+                  path=":matterId/details"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <AdvisoryDetailPage />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+                {/* Edit general matter (opens details in edit mode) */}
+                <Route
+                  path=":matterId/edit"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <AdvisoryEditPage editMode />
                       </ProtectedStaffRoute>
                     </Suspense>
                   }
