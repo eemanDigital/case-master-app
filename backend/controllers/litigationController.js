@@ -299,26 +299,35 @@ exports.restoreLitigationDetails = catchAsync(async (req, res, next) => {
 exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
   const { days = 30, page = 1, limit = 20, courtName, clientId } = req.query;
 
-  const startDate = new Date();
+  // 1. Define Time Boundaries (Inclusive of today)
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const endOfToday = new Date();
+  endOfToday.setHours(23, 59, 59, 999);
+
   const endDate = new Date();
   endDate.setDate(endDate.getDate() + Number(days));
+  endDate.setHours(23, 59, 59, 999);
 
+  // 2. Filter: From start of today until the end of the range
   const customFilter = {
     nextHearingDate: {
-      $gte: startDate,
+      $gte: startOfToday,
       $lte: endDate,
     },
   };
 
   if (courtName) customFilter.courtName = courtName;
 
+  // 3. Execute Pagination
   const result = await litigationService.paginate(
     { page, limit, sort: "nextHearingDate" },
     customFilter,
     req.firmId,
   );
 
-  // Populate matter details and filter by client if needed
+  // 4. Populate Matter and Hearing Details
   if (result.data && result.data.length > 0) {
     const populatedData = await LitigationDetail.populate(result.data, [
       {
@@ -342,19 +351,34 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
       },
     ]);
 
-    // Filter by client if specified
+    // 5. Clean Data & Apply Client Filter
     let filteredData = populatedData.filter(
       (detail) => detail.matter && !detail.matter.isDeleted,
     );
 
     if (clientId) {
       filteredData = filteredData.filter(
-        (detail) => detail.matter.client._id.toString() === clientId,
+        (detail) => detail.matter.client?._id.toString() === clientId,
       );
     }
 
-    result.data = filteredData;
+    // 6. Categorize & Safe Object Conversion
+    const enhancedData = filteredData.map((detail) => {
+      const hearingDate = new Date(detail.nextHearingDate);
+
+      // FIX: Check if toObject exists (Mongoose Doc) or use as-is (Plain Object)
+      const detailObj =
+        typeof detail.toObject === "function" ? detail.toObject() : detail;
+
+      return {
+        ...detailObj,
+        isToday: hearingDate >= startOfToday && hearingDate <= endOfToday,
+      };
+    });
+
+    result.data = enhancedData;
     result.pagination.count = result.data.length;
+    result.todayCount = enhancedData.filter((d) => d.isToday).length;
   }
 
   res.status(200).json({
@@ -376,7 +400,7 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     firmId: req.firmId,
     matterType: "litigation",
     isDeleted: false,
-  }).populate("accountOfficer", "firstName lastName email");
+  }).populate("accountOfficer assignedLawyers");
 
   if (!matter) {
     return next(new AppError("Litigation matter not found", 404));
@@ -415,7 +439,12 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     litigationDetail.nextHearingDate = hearingData.nextHearingDate;
   }
 
+  console.log("🔵 About to save litigation with hearings...");
+
+  // ✅ THIS TRIGGERS THE MIDDLEWARE!
   await litigationDetail.save();
+
+  console.log("🔵 Litigation saved, middleware should have run");
 
   // Update matter last activity
   matter.lastActivityDate = new Date();
@@ -427,24 +456,15 @@ exports.addHearing = catchAsync(async (req, res, next) => {
       path: "hearings.lawyerPresent",
       select: "firstName lastName email photo",
     },
-    {
-      path: "matter",
-      select: "matterNumber title client accountOfficer",
-      populate: [
-        { path: "client", select: "firstName lastName email phone" },
-        { path: "accountOfficer", select: "firstName lastName email photo" },
-      ],
-    },
   ]);
 
-  // 🔥 AUTO-SYNC: Create calendar event
-  const newHearing =
-    litigationDetail.hearings[litigationDetail.hearings.length - 1];
-  try {
-    await createCalendarEventFromHearing(litigationDetail, newHearing, matter);
-  } catch (calendarError) {
-    console.error("❌ Calendar sync failed:", calendarError);
-  }
+  // ❌ REMOVE THIS - Middleware already did it!
+  // const newHearing = litigationDetail.hearings[litigationDetail.hearings.length - 1];
+  // try {
+  //   await createCalendarEventFromHearing(litigationDetail, newHearing, matter);
+  // } catch (calendarError) {
+  //   console.error("❌ Calendar sync failed:", calendarError);
+  // }
 
   res.status(200).json({
     status: "success",
@@ -452,6 +472,10 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     data: { litigationDetail },
   });
 });
+
+// ============================================
+// UPDATE HEARING (WITH AUTO-CALENDAR SYNC) 🔥
+// ============================================
 
 // ============================================
 // UPDATE HEARING (WITH AUTO-CALENDAR SYNC) 🔥
@@ -466,54 +490,75 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     firmId: req.firmId,
     matterType: "litigation",
     isDeleted: false,
-  }).populate("accountOfficer", "firstName lastName email");
+  }).populate("accountOfficer assignedLawyers");
 
   if (!matter) {
     return next(new AppError("Litigation matter not found", 404));
   }
 
-  const setObj = {};
-  for (const key in updateData) {
-    setObj[`hearings.$.${key}`] = updateData[key];
-  }
-
-  const litigationDetail = await LitigationDetail.findOneAndUpdate(
-    {
-      matterId,
-      firmId: req.firmId,
-      "hearings._id": hearingId,
-    },
-    { $set: setObj },
-    { new: true, runValidators: true },
-  ).populate([
-    { path: "hearings.preparedBy", select: "firstName lastName email photo" },
-    {
-      path: "hearings.lawyerPresent",
-      select: "firstName lastName email photo",
-    },
-  ]);
+  const litigationDetail = await LitigationDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
 
   if (!litigationDetail) {
+    return next(new AppError("Litigation not found", 404));
+  }
+
+  // Find the hearing
+  const hearing = litigationDetail.hearings.id(hearingId);
+
+  if (!hearing) {
     return next(new AppError("Hearing not found", 404));
+  }
+
+  // Store old nextHearingDate to compare later
+  const oldNextHearingDate = hearing.nextHearingDate;
+
+  // Update hearing fields
+  Object.keys(updateData).forEach((key) => {
+    hearing[key] = updateData[key];
+  });
+
+  console.log("🔵 About to save updated litigation...");
+
+  // Save the document (triggers middleware)
+  await litigationDetail.save();
+
+  console.log("🔵 Litigation saved, middleware should have run");
+
+  // 🔥 CRITICAL FIX: Ensure nextHearingDate is properly set on parent
+  // Sometimes middleware doesn't run correctly with subdocument updates
+  const futureHearings = litigationDetail.hearings.filter(
+    (h) => h.nextHearingDate && new Date(h.nextHearingDate) > new Date(),
+  );
+
+  if (futureHearings.length > 0) {
+    // Sort by nextHearingDate and take the earliest
+    futureHearings.sort(
+      (a, b) => new Date(a.nextHearingDate) - new Date(b.nextHearingDate),
+    );
+    litigationDetail.nextHearingDate = futureHearings[0].nextHearingDate;
+  } else {
+    litigationDetail.nextHearingDate = null;
+  }
+
+  // Save again if nextHearingDate changed
+  if (litigationDetail.isModified("nextHearingDate")) {
+    await litigationDetail.save();
   }
 
   // Update matter last activity
   matter.lastActivityDate = new Date();
   await matter.save();
 
-  // 🔥 AUTO-SYNC: Update calendar event
-  const updatedHearing = litigationDetail.hearings.id(hearingId);
-  if (updatedHearing) {
-    try {
-      await createCalendarEventFromHearing(
-        litigationDetail,
-        updatedHearing,
-        matter,
-      );
-    } catch (calendarError) {
-      console.error("❌ Calendar sync failed:", calendarError);
-    }
-  }
+  await litigationDetail.populate([
+    { path: "hearings.preparedBy", select: "firstName lastName email photo" },
+    {
+      path: "hearings.lawyerPresent",
+      select: "firstName lastName email photo",
+    },
+  ]);
 
   res.status(200).json({
     status: "success",

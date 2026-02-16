@@ -51,6 +51,15 @@ const StaffDetails = lazy(() => import("./pages/StaffDetails.jsx"));
 const AddUserForm = lazy(() => import("./pages/AddUserForm.jsx"));
 const StatusUserList = lazy(() => import("./pages/StatusUserList.jsx"));
 
+// calender management
+const CalendarPage = lazy(() => import("./pages/calender/CalendarPage.jsx"));
+const CalendarDashboard = lazy(
+  () => import("./pages/calender/CalendarDashboard.jsx"),
+);
+const BlockedDatesPage = lazy(
+  () => import("./pages/calender/BlockedDatesPage.jsx"),
+);
+
 // Leave Management
 const LeaveAppForm = lazy(() => import("./pages/LeaveAppForm.jsx"));
 const LeaveApplicationList = lazy(
@@ -89,8 +98,8 @@ const MatterFormContainer = lazy(
 );
 
 // Litigation Management (New)
-const LitigationList = lazy(
-  () => import("./pages/litigation/LitigationList.jsx"),
+const LitigationDashboardPage = lazy(
+  () => import("./pages/dashboard/litigation/LitigationDashboardPage"),
 );
 const CreateLitigation = lazy(
   () => import("./pages/litigation/CreateLitigation.jsx"),
@@ -564,7 +573,7 @@ function App() {
                   element={
                     <Suspense fallback={<PageLoader />}>
                       <ProtectedStaffRoute>
-                        <LitigationList />
+                        <LitigationDashboardPage />
                       </ProtectedStaffRoute>
                     </Suspense>
                   }
@@ -835,6 +844,39 @@ function App() {
                   }
                 />
               </Route>
+
+              <Route
+                path="calendar"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <CalendarPage />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
+
+              <Route
+                path="calendar/dashboard"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <CalendarDashboard />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
+
+              <Route
+                path="calendar/blocked-dates"
+                element={
+                  <Suspense fallback={<PageLoader />}>
+                    <ShowOnlyVerifiedUser>
+                      <BlockedDatesPage />
+                    </ShowOnlyVerifiedUser>
+                  </Suspense>
+                }
+              />
 
               {/* Cases Management */}
               <Route

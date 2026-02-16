@@ -1,4 +1,5 @@
 import { useEffect, createContext, useRef, useMemo } from "react";
+import { Col } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -8,6 +9,7 @@ import CaseCountsByPeriodChart from "./CaseCountsByPeriodChart";
 import CaseCountsByClientChart from "./CaseCountsByClientChart";
 import CaseCountsByYearChart from "./CaseCountsByYearChart ";
 // import ClientDashboard from "./ClientDashboard";
+
 import LeaveNotification from "./LeaveNotification";
 import { useSelector } from "react-redux";
 import useUsersCount from "../hooks/useUsersCount";
@@ -30,6 +32,7 @@ import QuickActionsPanel from "./QuickActionsPanel";
 import ClientCaseDashboard from "./clientDashboard/ClientCaseDashboard";
 
 import PaymentDashboard from "./PaymentDashboard";
+import CourtHearingsWidget from "./calender/CourtHearingsWidget";
 
 export const PaymentFiltersContext = createContext();
 
@@ -38,7 +41,7 @@ const Dashboard = () => {
 
   const { user } = useSelector((state) => state.auth);
 
-  console.log(user)
+  console.log(user);
   const userId = user?.data?._id;
   const lawFirmName = user?.data?.firmId.name;
 
@@ -225,34 +228,16 @@ const Dashboard = () => {
 
             <div className="container mx-auto mt-2">
               <div className="flex flex-wrap -mx-4">
-                <div className="flex-none gap-4 w-full px-4 mb-8">
+                {/* <div className="flex-none gap-4 w-full px-4 mb-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg shadow-md w-full items-start">
                     <div className="bg-gradient-to-br from-white to-blue-50/50 border border-gray-200 rounded-2xl shadow-sm h-[400px] w-full flex flex-col">
-                      {dataLoading.reports ? (
-                        <div className="p-4">
-                          <Skeleton active paragraph={{ rows: 8 }} />
-                        </div>
-                      ) : (
-                        <LatestCaseReports
-                          reports={reports?.data}
-                          error={dataError.reports}
-                          loading={dataLoading.reports}
-                          fetchData={fetchData}
-                        />
-                      )}
-                    </div>
-
-                    <div className="bg-gradient-to-br from-white to-purple-50/50 border border-gray-200 rounded-2xl shadow-sm h-[400px] w-full flex flex-col">
-                      {dataLoading.causeList ? (
-                        <div className="p-4">
-                          <Skeleton active paragraph={{ rows: 8 }} />
-                        </div>
-                      ) : (
-                        <CurrentDayCauseList />
-                      )}
-                    </div>
-                  </div>
-                </div>
+                      */}
+                <Col xs={24} xl={16}>
+                  <CourtHearingsWidget limit={10} showStatistics={true} />
+                </Col>
+                {/* </div> */}
+                {/* </div> */}
+                {/* </div> */}
 
                 <div className="w-full px-4">
                   <div className="border-t border-gray-300 my-8">

@@ -1,141 +1,218 @@
-import { Form, Select, Input, Button, Space, DatePicker, Row, Col } from "antd";
-import { SearchOutlined, ClearOutlined } from "@ant-design/icons";
+// components/litigation/filters/LitigationFilters.jsx
+import { useState, useEffect } from "react";
+import { Form, Input, Select, Button, Space, Row, Col, Tooltip } from "antd";
 import {
-  COURT_TYPES,
-  CASE_STAGES,
-  MATTER_STATUS,
-  NIGERIAN_STATES,
-} from "../../../utils/litigationConstants";
+  SearchOutlined,
+  ClearOutlined,
+  DownOutlined,
+  UpOutlined,
+} from "@ant-design/icons";
 
 const { Option } = Select;
-// const { RangePicker } = DatePicker;
 
-const LitigationFilters = ({ onFilter, onClear, loading }) => {
+const LitigationFilters = ({
+  onFilter,
+  onClear,
+  loading,
+  initialValues = {},
+  compact = false,
+  onToggleVisibility,
+}) => {
   const [form] = Form.useForm();
+  const [isExpanded, setIsExpanded] = useState(!compact);
 
-  const handleFilter = (values) => {
+  useEffect(() => {
+    form.setFieldsValue(initialValues);
+  }, [form, initialValues]);
+
+  const handleSubmit = (values) => {
     // Remove empty values
-    const cleanedValues = Object.entries(values).reduce((acc, [key, value]) => {
-      if (value !== undefined && value !== null && value !== "") {
-        acc[key] = value;
-      }
-      return acc;
-    }, {});
-
-    onFilter(cleanedValues);
+    const filters = Object.fromEntries(
+      Object.entries(values).filter(
+        ([_, v]) => v !== "" && v !== null && v !== undefined,
+      ),
+    );
+    onFilter(filters);
   };
 
-  const handleClear = () => {
+  const handleReset = () => {
     form.resetFields();
     onClear();
   };
 
+  const handleToggle = () => {
+    setIsExpanded(!isExpanded);
+    onToggleVisibility?.();
+  };
+
+  const activeFilterCount = Object.values(initialValues).filter(
+    (v) => v && v !== "",
+  ).length;
+
   return (
-    <div className="bg-white p-6 rounded-lg border border-gray-200 mb-6">
-      <Form
-        form={form}
-        onFinish={handleFilter}
-        layout="vertical"
-        className="mb-0">
-        <Row gutter={16}>
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Form.Item name="suitNo" label="Suit Number">
-              <Input placeholder="Search suit number" allowClear />
-            </Form.Item>
-          </Col>
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={handleSubmit}
+      className="litigation-filters">
+      {/* Search Row - Always Visible */}
+      <div className="flex items-center gap-2">
+        <Form.Item name="search" className="!mb-0 flex-1">
+          <Input
+            placeholder="Search by suit no, title, client..."
+            prefix={<SearchOutlined className="text-gray-400" />}
+            allowClear
+            className="w-full"
+          />
+        </Form.Item>
 
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Form.Item name="courtName" label="Court">
-              <Select
-                placeholder="Select court"
-                allowClear
-                showSearch
-                optionFilterProp="children">
-                {COURT_TYPES.map((court) => (
-                  <Option key={court.value} value={court.value}>
-                    {court.label}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
+        <Space>
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            className="bg-indigo-600 hover:bg-indigo-700 border-indigo-600">
+            Search
+          </Button>
 
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Form.Item name="currentStage" label="Current Stage">
-              <Select placeholder="Select stage" allowClear>
-                {CASE_STAGES.map((stage) => (
-                  <Option key={stage.value} value={stage.value}>
-                    {stage.label}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
+          <Tooltip title={isExpanded ? "Hide filters" : "Show filters"}>
+            <Button
+              icon={isExpanded ? <UpOutlined /> : <DownOutlined />}
+              onClick={handleToggle}
+              className="text-gray-600"
+            />
+          </Tooltip>
 
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Form.Item name="status" label="Status">
-              <Select placeholder="Select status" allowClear>
-                {MATTER_STATUS.map((status) => (
-                  <Option key={status.value} value={status.value}>
-                    {status.label}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Form.Item name="state" label="State">
-              <Select
-                placeholder="Select state"
-                allowClear
-                showSearch
-                optionFilterProp="children">
-                {NIGERIAN_STATES.map((state) => (
-                  <Option key={state.value} value={state.value}>
-                    {state.label}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Form.Item name="judge" label="Judge">
-              <Input placeholder="Search judge name" allowClear />
-            </Form.Item>
-          </Col>
-
-          <Col xs={24} sm={12} md={8} lg={6}>
-            <Form.Item name="year" label="Filing Year">
-              <DatePicker
-                picker="year"
-                placeholder="Select year"
-                style={{ width: "100%" }}
-                allowClear
+          {activeFilterCount > 0 && (
+            <Tooltip title="Clear all filters">
+              <Button
+                icon={<ClearOutlined />}
+                onClick={handleReset}
+                className="text-gray-600"
               />
-            </Form.Item>
-          </Col>
+            </Tooltip>
+          )}
+        </Space>
+      </div>
 
-          <Col xs={24} sm={12} md={8} lg={6} className="flex items-end">
-            <Form.Item className="w-full mb-0">
-              <Space className="w-full" style={{ justifyContent: "flex-end" }}>
-                <Button icon={<ClearOutlined />} onClick={handleClear}>
-                  Clear
+      {/* Expanded Filters */}
+      {isExpanded && (
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <Row gutter={[16, 16]}>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Form.Item name="courtName" label="Court">
+                <Select
+                  allowClear
+                  placeholder="Select court"
+                  className="[&_.ant-select-selector]:rounded-lg">
+                  <Option value="high court">High Court</Option>
+                  <Option value="magistrate court">Magistrate Court</Option>
+                  <Option value="court of appeal">Court of Appeal</Option>
+                  <Option value="supreme court">Supreme Court</Option>
+                  <Option value="federal high court">Federal High Court</Option>
+                  <Option value="sharia court of appeal">
+                    Sharia Court of Appeal
+                  </Option>
+                  <Option value="customary court of appeal">
+                    Customary Court of Appeal
+                  </Option>
+                  <Option value="national industrial court">
+                    National Industrial Court
+                  </Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Form.Item name="currentStage" label="Stage">
+                <Select
+                  allowClear
+                  placeholder="Select stage"
+                  className="[&_.ant-select-selector]:rounded-lg">
+                  <Option value="filing">Filing</Option>
+                  <Option value="pre-trial">Pre-Trial</Option>
+                  <Option value="trial">Trial</Option>
+                  <Option value="post-trial">Post-Trial</Option>
+                  <Option value="judgment">Judgment</Option>
+                  <Option value="appeal">Appeal</Option>
+                  <Option value="settled">Settled</Option>
+                  <Option value="enforcement">Enforcement</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Form.Item name="status" label="Matter Status">
+                <Select
+                  allowClear
+                  placeholder="Select status"
+                  className="[&_.ant-select-selector]:rounded-lg">
+                  <Option value="active">Active</Option>
+                  <Option value="pending">Pending</Option>
+                  <Option value="completed">Completed</Option>
+                  <Option value="closed">Closed</Option>
+                  <Option value="cancelled">Cancelled</Option>
+                  <Option value="on-hold">On Hold</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Form.Item name="suitNo" label="Suit Number">
+                <Input placeholder="e.g., HCL/2026/001" />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Form.Item name="judge" label="Judge">
+                <Input placeholder="Judge name" />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Form.Item name="year" label="Filing Year">
+                <Select
+                  allowClear
+                  placeholder="Select year"
+                  className="[&_.ant-select-selector]:rounded-lg">
+                  {[2026, 2025, 2024, 2023, 2022, 2021, 2020].map((year) => (
+                    <Option key={year} value={year}>
+                      {year}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <Form.Item name="hasDetail" label="Setup Status">
+                <Select
+                  allowClear
+                  placeholder="Select status"
+                  className="[&_.ant-select-selector]:rounded-lg">
+                  <Option value="true">Setup Complete</Option>
+                  <Option value="false">Pending Setup</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} sm={24} md={24} lg={24}>
+              <div className="flex justify-end">
+                <Button onClick={handleReset} className="mr-2">
+                  Clear All
                 </Button>
                 <Button
                   type="primary"
-                  icon={<SearchOutlined />}
                   htmlType="submit"
-                  loading={loading}>
-                  Filter
+                  className="bg-indigo-600 hover:bg-indigo-700 border-indigo-600">
+                  Apply Filters
                 </Button>
-              </Space>
-            </Form.Item>
-          </Col>
-        </Row>
-      </Form>
-    </div>
+              </div>
+            </Col>
+          </Row>
+        </div>
+      )}
+    </Form>
   );
 };
 

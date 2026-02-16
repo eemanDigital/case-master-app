@@ -12,6 +12,7 @@ import {
   CASE_STAGES,
   COURT_TYPES,
 } from "../../utils/litigationConstants";
+import MatterHearingsTimeline from "../calender/MatterHearingsTimeline";
 
 const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
   const getCourtLabel = (courtName) => {

@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { Menu, Typography } from "antd";
+import { Menu, Typography, Badge } from "antd";
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -24,7 +24,6 @@ import {
 } from "@ant-design/icons";
 import { logout, RESET } from "../redux/features/auth/authSlice";
 import { useTheme } from "../providers/ThemeProvider";
-// import { useAdminHook } from "../hooks/useAdminHook";
 
 const { Text } = Typography;
 
@@ -32,9 +31,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  // const { user } = useSelector((state) => state.auth);
   const { isDarkMode } = useTheme();
-  // const { isAdminOrHr, isSuperOrAdmin, userData } = useAdminHook();
 
   const [selectedKeys, setSelectedKeys] = useState(["dashboard"]);
   const [openKeys, setOpenKeys] = useState([]);
@@ -56,7 +53,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
       setSelectedKeys(["staff-directory"]);
       setOpenKeys(["staff"]);
     }
-    // Matter-related paths - check specific practice areas first
+    // Matter-related paths
     else if (path.includes("/dashboard/matters/litigation")) {
       setSelectedKeys(["litigation"]);
       setOpenKeys(["matters"]);
@@ -78,6 +75,20 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
     } else if (path.includes("/dashboard/matters")) {
       setSelectedKeys(["all-matters"]);
       setOpenKeys(["matters"]);
+    }
+    // Calendar paths
+    else if (path.includes("/dashboard/calendar/dashboard")) {
+      setSelectedKeys(["calendar-dashboard"]);
+      setOpenKeys(["calendar"]);
+    } else if (path.includes("/dashboard/calendar/blocked-dates")) {
+      setSelectedKeys(["blocked-dates"]);
+      setOpenKeys(["calendar"]);
+    } else if (path.includes("/dashboard/calendar/deleted")) {
+      setSelectedKeys(["deleted-events"]);
+      setOpenKeys(["calendar"]);
+    } else if (path.includes("/dashboard/calendar")) {
+      setSelectedKeys(["calendar-main"]);
+      setOpenKeys(["calendar"]);
     }
     // Other paths
     else if (path.includes("/dashboard/case-reports")) {
@@ -236,6 +247,33 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
       path: "/dashboard/tasks",
     },
     {
+      key: "calendar",
+      icon: <CalendarOutlined />,
+      label: "Calendar",
+      children: [
+        {
+          key: "calendar-main",
+          label: "View Calendar",
+          path: "/dashboard/calendar",
+        },
+        {
+          key: "calendar-dashboard",
+          label: "Dashboard",
+          path: "/dashboard/calendar/dashboard",
+        },
+        {
+          key: "blocked-dates",
+          label: "Blocked Dates",
+          path: "/dashboard/calendar/blocked-dates",
+        },
+        {
+          key: "deleted-events",
+          label: "Deleted Events",
+          path: "/dashboard/calendar/deleted",
+        },
+      ],
+    },
+    {
       key: "clients",
       icon: <UserOutlined />,
       label: "Clients",
@@ -297,59 +335,79 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
   return (
     <div
       className={`h-full flex flex-col ${
-        isDarkMode ? "bg-gray-900" : "bg-white"
+        isDarkMode 
+          ? "bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800" 
+          : "bg-gradient-to-b from-white via-white to-gray-50"
       }`}
       style={{
         boxShadow: isDarkMode
-          ? "2px 0 8px rgba(0, 0, 0, 0.4)"
-          : "2px 0 8px rgba(0, 0, 0, 0.06)",
-      }}>
+          ? "4px 0 24px rgba(0, 0, 0, 0.5)"
+          : "4px 0 24px rgba(0, 0, 0, 0.08)",
+      }}
+    >
       {/* Logo Section */}
       <div
         className={`flex items-center px-6 border-b ${
-          isDarkMode ? "border-gray-800" : "border-gray-100"
+          isDarkMode 
+            ? "border-gray-800 bg-gray-900/50" 
+            : "border-gray-200 bg-white"
         }`}
-        style={{ height: 64, minHeight: 64 }}>
+        style={{ height: 64, minHeight: 64 }}
+      >
         {!collapsed ? (
           <div className="flex items-center gap-3 w-full">
             <div
-              className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+              className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg ${
                 isDarkMode
-                  ? "bg-gradient-to-br from-blue-600 to-blue-700"
-                  : "bg-gradient-to-br from-blue-500 to-blue-600"
-              }`}>
-              <HomeOutlined className="text-white text-lg" />
+                  ? "bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700"
+                  : "bg-gradient-to-br from-primary-500 via-primary-600 to-deepBlue-700"
+              }`}
+              style={{
+                boxShadow: isDarkMode
+                  ? "0 4px 14px rgba(59, 130, 246, 0.4)"
+                  : "0 4px 14px rgba(59, 130, 246, 0.3)",
+              }}
+            >
+              <HomeOutlined className="text-white text-xl" />
             </div>
             <div className="flex-1 min-w-0">
               <Text
                 strong
-                className={`block text-base leading-tight ${
-                  isDarkMode ? "text-gray-100" : "text-gray-900"
-                }`}>
+                className={`block text-lg leading-tight font-semibold ${
+                  isDarkMode ? "text-white" : "text-gray-900"
+                }`}
+              >
                 LawMaster
               </Text>
               <Text
                 className={`block text-xs ${
-                  isDarkMode ? "text-gray-400" : "text-gray-500"
-                }`}>
-                Legal Suite
+                  isDarkMode ? "text-primary-400" : "text-primary-600"
+                }`}
+              >
+                Legal Suite Pro
               </Text>
             </div>
           </div>
         ) : (
           <div
-            className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto ${
+            className={`w-11 h-11 rounded-xl flex items-center justify-center mx-auto shadow-lg ${
               isDarkMode
-                ? "bg-gradient-to-br from-blue-600 to-blue-700"
-                : "bg-gradient-to-br from-blue-500 to-blue-600"
-            }`}>
-            <HomeOutlined className="text-white text-lg" />
+                ? "bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700"
+                : "bg-gradient-to-br from-primary-500 via-primary-600 to-deepBlue-700"
+            }`}
+            style={{
+              boxShadow: isDarkMode
+                ? "0 4px 14px rgba(59, 130, 246, 0.4)"
+                : "0 4px 14px rgba(59, 130, 246, 0.3)",
+            }}
+          >
+            <HomeOutlined className="text-white text-xl" />
           </div>
         )}
       </div>
 
       {/* Navigation Menu */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden py-2">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden py-3 px-2">
         <Menu
           mode="inline"
           selectedKeys={selectedKeys}
@@ -358,42 +416,202 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           onClick={handleMenuClick}
           onOpenChange={handleOpenChange}
           inlineCollapsed={collapsed}
-          className={`border-0 ${isDarkMode ? "bg-gray-900" : "bg-white"}`}
+          className={`border-0 ${
+            isDarkMode ? "bg-transparent" : "bg-transparent"
+          }`}
           style={{
             borderRight: "none",
-            color: "white",
           }}
-          theme="dark"
+          theme={isDarkMode ? "dark" : "light"}
+          // Custom styles for menu items
+          getPopupContainer={(node) => node.parentNode}
         />
+
+        <style jsx global>{`
+          /* Light Mode Menu Styles */
+          .ant-menu-light .ant-menu-item {
+            border-radius: 8px;
+            margin: 4px 0;
+            padding: 0 12px !important;
+            height: 40px;
+            line-height: 40px;
+            color: ${isDarkMode ? "#d1d5db" : "#4b5563"};
+            transition: all 0.2s ease;
+          }
+
+          .ant-menu-light .ant-menu-item:hover {
+            background: ${isDarkMode 
+              ? "rgba(59, 130, 246, 0.1)" 
+              : "rgba(59, 130, 246, 0.08)"};
+            color: ${isDarkMode ? "#93c5fd" : "#2563eb"};
+          }
+
+          .ant-menu-light .ant-menu-item-selected {
+            background: ${isDarkMode
+              ? "linear-gradient(90deg, rgba(59, 130, 246, 0.15) 0%, rgba(37, 99, 235, 0.1) 100%)"
+              : "linear-gradient(90deg, rgba(59, 130, 246, 0.12) 0%, rgba(219, 234, 254, 0.8) 100%)"};
+            color: ${isDarkMode ? "#60a5fa" : "#1d4ed8"};
+            font-weight: 600;
+            border-left: 3px solid ${isDarkMode ? "#3b82f6" : "#2563eb"};
+            padding-left: 9px !important;
+          }
+
+          .ant-menu-light .ant-menu-item-selected::before {
+            content: "";
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: ${isDarkMode ? "#60a5fa" : "#2563eb"};
+          }
+
+          /* Dark Mode Menu Styles */
+          .ant-menu-dark .ant-menu-item {
+            border-radius: 8px;
+            margin: 4px 0;
+            padding: 0 12px !important;
+            height: 40px;
+            line-height: 40px;
+            color: #d1d5db;
+            transition: all 0.2s ease;
+          }
+
+          .ant-menu-dark .ant-menu-item:hover {
+            background: rgba(59, 130, 246, 0.12);
+            color: #93c5fd;
+          }
+
+          .ant-menu-dark .ant-menu-item-selected {
+            background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.15) 100%);
+            color: #60a5fa;
+            font-weight: 600;
+            border-left: 3px solid #3b82f6;
+            padding-left: 9px !important;
+          }
+
+          .ant-menu-dark .ant-menu-item-selected::before {
+            content: "";
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #60a5fa;
+          }
+
+          /* Submenu Styles */
+          .ant-menu-light .ant-menu-submenu-title {
+            border-radius: 8px;
+            margin: 4px 0;
+            padding: 0 12px !important;
+            height: 40px;
+            line-height: 40px;
+            color: ${isDarkMode ? "#d1d5db" : "#4b5563"};
+            transition: all 0.2s ease;
+          }
+
+          .ant-menu-light .ant-menu-submenu-title:hover {
+            background: ${isDarkMode 
+              ? "rgba(59, 130, 246, 0.1)" 
+              : "rgba(59, 130, 246, 0.08)"};
+            color: ${isDarkMode ? "#93c5fd" : "#2563eb"};
+          }
+
+          .ant-menu-dark .ant-menu-submenu-title {
+            border-radius: 8px;
+            margin: 4px 0;
+            padding: 0 12px !important;
+            height: 40px;
+            line-height: 40px;
+            color: #d1d5db;
+          }
+
+          .ant-menu-dark .ant-menu-submenu-title:hover {
+            background: rgba(59, 130, 246, 0.12);
+            color: #93c5fd;
+          }
+
+          /* Menu Icons */
+          .ant-menu-item .anticon,
+          .ant-menu-submenu-title .anticon {
+            font-size: 16px;
+            transition: all 0.2s ease;
+          }
+
+          .ant-menu-item-selected .anticon {
+            color: ${isDarkMode ? "#60a5fa" : "#2563eb"};
+          }
+
+          /* Submenu Arrow */
+          .ant-menu-submenu-arrow {
+            color: ${isDarkMode ? "#9ca3af" : "#6b7280"};
+          }
+
+          .ant-menu-submenu-open > .ant-menu-submenu-title .ant-menu-submenu-arrow {
+            color: ${isDarkMode ? "#60a5fa" : "#2563eb"};
+          }
+        `}</style>
       </div>
 
       {/* Logout Section */}
       <div
-        className={`px-3 py-2 border-t ${
-          isDarkMode ? "border-gray-800" : "border-gray-100"
-        }`}>
+        className={`px-3 py-3 border-t ${
+          isDarkMode 
+            ? "border-gray-800 bg-gray-900/30" 
+            : "border-gray-200 bg-gray-50"
+        }`}
+      >
         <button
           onClick={handleLogout}
-          className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-all ${
+          className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
             isDarkMode
-              ? "hover:bg-red-900/30 text-red-400 hover:text-red-300"
-              : "hover:bg-red-50 text-red-600 hover:text-red-700"
-          }`}>
-          <LogoutOutlined className="text-sm" />
-          {!collapsed && <span className="text-xs font-medium">Logout</span>}
+              ? "hover:bg-red-900/20 text-red-400 hover:text-red-300 border border-red-900/30 hover:border-red-800/50"
+              : "hover:bg-red-50 text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300"
+          }`}
+          style={{
+            boxShadow: isDarkMode 
+              ? "0 2px 8px rgba(239, 68, 68, 0.1)" 
+              : "0 2px 8px rgba(239, 68, 68, 0.08)",
+          }}
+        >
+          <LogoutOutlined className="text-base group-hover:scale-110 transition-transform" />
+          {!collapsed && (
+            <span className="text-sm font-medium">Logout</span>
+          )}
         </button>
 
         {!collapsed && (
-          <div className="mt-2 text-center">
-            <Text
-              className={`text-xs ${
+          <div className="mt-3 text-center">
+            <div className={`flex items-center justify-center gap-2 ${
+              isDarkMode ? "text-gray-600" : "text-gray-400"
+            }`}>
+              <div className={`w-2 h-2 rounded-full ${
+                isDarkMode ? "bg-green-500" : "bg-green-500"
+              }`} style={{
+                boxShadow: "0 0 8px rgba(34, 197, 94, 0.5)",
+                animation: "pulse 2s ease-in-out infinite"
+              }}/>
+              <Text className={`text-xs font-medium ${
                 isDarkMode ? "text-gray-500" : "text-gray-400"
               }`}>
-              v2.1.0
-            </Text>
+                v2.1.0 • Active
+              </Text>
+            </div>
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.5; }
+        }
+      `}</style>
     </div>
   );
 };

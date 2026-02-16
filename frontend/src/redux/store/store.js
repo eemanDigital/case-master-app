@@ -10,6 +10,7 @@ import propertyReducer from "../features/property/propertySlice";
 import retainerReducer from "../features/retainer/retainerSlice";
 import generalReducer from "../features/general/generalSlice";
 import advisoryReducer from "../features/advisory/advisorySlice";
+import calenderReducer from "../features/calender/calenderSlice";
 
 export const store = configureStore({
   reducer: {
@@ -24,6 +25,7 @@ export const store = configureStore({
     retainer: retainerReducer,
     general: generalReducer,
     advisory: advisoryReducer,
+    calendar: calenderReducer,
   },
   // Thunk is included by default, no need to concat it!
   middleware: (getDefaultMiddleware) =>
@@ -38,6 +40,10 @@ export const store = configureStore({
           "matter.currentMatter.dateOpened",
           "matter.currentMatter.expectedClosureDate",
           "litigation.filters.dateRange",
+          "calendar/createEvent/pending",
+          "calendar/createEvent/fulfilled",
+          "calendar/updateEvent/pending",
+          "calendar/updateEvent/fulfilled",
         ],
       },
     }),

@@ -17,14 +17,15 @@ import JudgmentRecordModal from "../../components/litigation/JudgmentRecordModal
 import SettlementRecordModal from "../../components/litigation/SettlementRecordModal";
 import AppealFilingModal from "../../components/litigation/AppealFilingModal";
 import HearingTimeline from "../../components/litigation/HearingTimeline";
-
 import StatusTag from "../../components/common/StatusTag";
+
 import litigationService, {
   fetchLitigationDetails,
   selectSelectedDetails,
   selectDetailsLoading,
   clearSelectedMatter,
 } from "../../redux/features/litigation/litigationSlice";
+
 import {
   formatDate,
   formatCurrency,
