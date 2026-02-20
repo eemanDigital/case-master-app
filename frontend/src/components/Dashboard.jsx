@@ -14,7 +14,7 @@ import LeaveNotification from "./LeaveNotification";
 import { useSelector } from "react-redux";
 import useUsersCount from "../hooks/useUsersCount";
 import DashBoardDataCount from "./DashBoardDataCount";
-import LatestCaseReports from "./LatestCaseReports";
+// import LatestCaseReports from "./LatestCaseReports";
 // import TodoList from "./TodoList";
 import ScrollingEvents from "./ScrollingEvents";
 import TaskDashboardCard from "./TaskDashboardCard";

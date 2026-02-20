@@ -1,5 +1,6 @@
 import apiService from "../../../services/api";
 import { buildQueryString } from "../../../utils/formatters";
+
 // ============================================
 // LITIGATION MATTERS CRUD
 // ============================================
@@ -39,12 +40,65 @@ export const restoreLitigationDetails = (matterId) => {
 };
 
 // ============================================
-// HEARINGS MANAGEMENT
+// HEARINGS MANAGEMENT - UPDATED
 // ============================================
 
+/**
+ * Get upcoming hearings - NOW RETURNS INDIVIDUAL HEARING RECORDS
+ *
+ * Response format:
+ * {
+ *   status: "success",
+ *   results: 25,
+ *   stats: {
+ *     total: 25,
+ *     today: 3,
+ *     thisWeek: 8,
+ *     pending: 10,
+ *     completed: 15
+ *   },
+ *   data: [
+ *     {
+ *       _id: "hearing123",  // Individual hearing ID
+ *       date: "2024-01-15",
+ *       outcome: "adjourned",
+ *       notes: "...",
+ *       nextHearingDate: "2024-02-20",
+ *       lawyerPresent: [...],
+ *       suitNo: "FHC/L/123/2024",
+ *       courtName: "federal high court",
+ *       matter: {...},
+ *       displayDate: "2024-02-20"
+ *     },
+ *     // ... more individual hearing records
+ *   ]
+ * }
+ */
 export const getUpcomingHearings = (params = {}) => {
   const queryString = buildQueryString(params);
   return apiService.get(`/litigation/upcoming-hearings${queryString}`);
+};
+
+/**
+ * Get ALL hearings for a specific matter
+ * Returns complete hearing history (past, present, future)
+ *
+ * Response format:
+ * {
+ *   status: "success",
+ *   results: 10,
+ *   data: {
+ *     litigationDetail: { ... },
+ *     hearings: [
+ *       { _id, date, outcome, notes, nextHearingDate, ... },
+ *       ...
+ *     ],
+ *     stats: { total, past, today, upcoming, completed, pending }
+ *   }
+ * }
+ */
+export const getMatterHearings = (matterId) => {
+  return apiService.get(`/litigation/${matterId}/hearings`);
 };
 
 export const addHearing = (matterId, hearingData) => {
@@ -85,11 +139,8 @@ export const deleteCourtOrder = (matterId, orderId) => {
 // PROCESSES FILED
 // ============================================
 
-export const addProcessFiled = (matterId, party, processData) => {
-  return apiService.post(`/litigation/${matterId}/processes`, {
-    party,
-    processData,
-  });
+export const addProcessFiled = (matterId, data) => {
+  return apiService.post(`/litigation/${matterId}/processes`, data);
 };
 
 export const updateProcessFiled = (
@@ -251,8 +302,9 @@ const litigationService = {
   deleteLitigationDetails,
   restoreLitigationDetails,
 
-  // Hearings
+  // Hearings - UPDATED to handle individual records
   getUpcomingHearings,
+  getMatterHearings, // NEW: Get all hearings for specific matter
   addHearing,
   updateHearing,
   deleteHearing,
