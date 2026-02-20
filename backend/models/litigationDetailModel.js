@@ -1,6 +1,9 @@
 const mongoose = require("mongoose");
 
-// Import sub-schemas (your existing schemas)
+// ============================================
+// SUB-SCHEMAS
+// ============================================
+
 const nameSchema = new mongoose.Schema(
   {
     name: {
@@ -104,7 +107,10 @@ const courtOrderSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-// LitigationDetail Schema
+// ============================================
+// LITIGATION DETAIL SCHEMA
+// ============================================
+
 const litigationDetailSchema = new mongoose.Schema(
   {
     matterId: {
@@ -158,64 +164,32 @@ const litigationDetailSchema = new mongoose.Schema(
       },
     },
 
-    otherCourt: {
-      type: String,
-      trim: true,
-    },
-
-    courtNo: {
-      type: String,
-      trim: true,
-    },
-
-    courtLocation: {
-      type: String,
-      trim: true,
-    },
-
+    otherCourt: String,
+    courtNo: String,
+    courtLocation: String,
     state: {
       type: String,
       trim: true,
       required: [true, "State is required"],
     },
-
-    division: {
-      type: String,
-      trim: true,
-    },
-
+    division: String,
     judge: [judgeSchema],
 
     firstParty: {
-      description: {
-        type: String,
-        trim: true,
-        maxlength: [1000, "Description must be less than 1000 characters long"],
-      },
+      description: String,
       name: [nameSchema],
       processesFiled: [partyProcessSchema],
     },
 
     secondParty: {
-      description: {
-        type: String,
-        trim: true,
-        maxlength: [1000, "Description must be less than 1000 characters long"],
-      },
+      description: String,
       name: [nameSchema],
       processesFiled: [partyProcessSchema],
     },
 
     otherParty: [
       {
-        description: {
-          type: String,
-          trim: true,
-          maxlength: [
-            1000,
-            "Description must be less than 1000 characters long",
-          ],
-        },
+        description: String,
         name: [nameSchema],
         processesFiled: [partyProcessSchema],
       },
@@ -244,32 +218,19 @@ const litigationDetailSchema = new mongoose.Schema(
       },
     },
 
-    otherModeOfCommencement: {
-      type: String,
-      trim: true,
-    },
-
+    otherModeOfCommencement: String,
     filingDate: {
       type: Date,
       required: [true, "Filing date is required"],
       default: Date.now,
     },
-
-    serviceDate: {
-      type: Date,
-    },
-
+    serviceDate: Date,
     hearings: [hearingSchema],
-
     nextHearingDate: {
       type: Date,
       index: true,
     },
-
-    lastHearingDate: {
-      type: Date,
-    },
-
+    lastHearingDate: Date,
     totalHearings: {
       type: Number,
       default: 0,
@@ -278,14 +239,8 @@ const litigationDetailSchema = new mongoose.Schema(
     courtOrders: [courtOrderSchema],
 
     judgment: {
-      judgmentDate: {
-        type: Date,
-      },
-      judgmentSummary: {
-        type: String,
-        trim: true,
-        maxlength: [5000, "Judgment summary must be less than 5000 characters"],
-      },
+      judgmentDate: Date,
+      judgmentSummary: String,
       outcome: {
         type: String,
         enum: [
@@ -297,32 +252,15 @@ const litigationDetailSchema = new mongoose.Schema(
           "pending",
         ],
       },
-      damages: {
-        type: Number,
-        min: 0,
-      },
-      costs: {
-        type: Number,
-        min: 0,
-      },
+      damages: Number,
+      costs: Number,
     },
 
     appeal: {
-      isAppealed: {
-        type: Boolean,
-        default: false,
-      },
-      appealDate: {
-        type: Date,
-      },
-      appealCourt: {
-        type: String,
-        trim: true,
-      },
-      appealSuitNo: {
-        type: String,
-        trim: true,
-      },
+      isAppealed: { type: Boolean, default: false },
+      appealDate: Date,
+      appealCourt: String,
+      appealSuitNo: String,
       appealStatus: {
         type: String,
         enum: ["pending", "won", "lost", "withdrawn", "dismissed"],
@@ -330,22 +268,10 @@ const litigationDetailSchema = new mongoose.Schema(
     },
 
     settlement: {
-      isSettled: {
-        type: Boolean,
-        default: false,
-      },
-      settlementDate: {
-        type: Date,
-      },
-      settlementTerms: {
-        type: String,
-        trim: true,
-        maxlength: [5000, "Settlement terms must be less than 5000 characters"],
-      },
-      settlementAmount: {
-        type: Number,
-        min: 0,
-      },
+      isSettled: { type: Boolean, default: false },
+      settlementDate: Date,
+      settlementTerms: String,
+      settlementAmount: Number,
     },
 
     currentStage: {
@@ -362,30 +288,10 @@ const litigationDetailSchema = new mongoose.Schema(
       default: "pre-trial",
     },
 
-    isLandmark: {
-      type: Boolean,
-      default: false,
-    },
-
-    citationReference: {
-      type: String,
-      trim: true,
-    },
-
-    applicableLaws: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
-
-    legalIssues: [
-      {
-        type: String,
-        trim: true,
-      },
-    ],
-
+    isLandmark: { type: Boolean, default: false },
+    citationReference: String,
+    applicableLaws: [String],
+    legalIssues: [String],
     precedents: [
       {
         caseName: String,
@@ -394,15 +300,8 @@ const litigationDetailSchema = new mongoose.Schema(
       },
     ],
 
-    isDeleted: {
-      type: Boolean,
-      default: false,
-    },
-
-    deletedAt: {
-      type: Date,
-    },
-
+    isDeleted: { type: Boolean, default: false },
+    deletedAt: Date,
     deletedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -427,10 +326,10 @@ litigationDetailSchema.index({ firmId: 1, currentStage: 1 });
 litigationDetailSchema.index({ firmId: 1, isDeleted: 1 });
 
 // ============================================
-// MIDDLEWARE
+// PRE-SAVE MIDDLEWARE
 // ============================================
 
-// Sync firmId from parent Matter on save
+// Sync firmId from parent Matter
 litigationDetailSchema.pre("save", async function (next) {
   if (this.isNew && this.matterId) {
     const Matter = mongoose.model("Matter");
@@ -442,161 +341,133 @@ litigationDetailSchema.pre("save", async function (next) {
   next();
 });
 
-// Update totalHearings count
-// Update totalHearings count
+// Update hearing counters and dates
 litigationDetailSchema.pre("save", function (next) {
   if (this.isModified("hearings")) {
     this.totalHearings = this.hearings.length;
 
     if (this.hearings.length > 0) {
-      // Sort hearings by date (most recent first)
+      // Most recent hearing date
       const sortedHearings = [...this.hearings].sort(
         (a, b) => new Date(b.date) - new Date(a.date),
       );
       this.lastHearingDate = sortedHearings[0].date;
 
-      // 🔥 FIX: Find the NEXT FUTURE hearing date
-      // Look for hearings that have a nextHearingDate in the future
-      const nextHearingDates = this.hearings
-        .filter(
-          (h) => h.nextHearingDate && new Date(h.nextHearingDate) > new Date(),
-        )
-        .map((h) => new Date(h.nextHearingDate));
+      // Earliest future nextHearingDate
+      const now = new Date();
+      const futureNextHearingDates = this.hearings
+        .filter((h) => h.nextHearingDate && new Date(h.nextHearingDate) > now)
+        .map((h) => new Date(h.nextHearingDate))
+        .sort((a, b) => a - b);
 
-      if (nextHearingDates.length > 0) {
-        // Get the earliest future nextHearingDate
-        this.nextHearingDate = new Date(Math.min(...nextHearingDates));
+      if (futureNextHearingDates.length > 0) {
+        this.nextHearingDate = futureNextHearingDates[0];
       } else {
-        // No future hearings, check if any hearing itself is in the future
+        // Fallback: any hearing.date in the future
         const futureHearingDates = this.hearings
-          .filter((h) => new Date(h.date) > new Date())
-          .map((h) => new Date(h.date));
-
-        if (futureHearingDates.length > 0) {
-          this.nextHearingDate = new Date(Math.min(...futureHearingDates));
-        } else {
-          this.nextHearingDate = null;
-        }
+          .filter((h) => new Date(h.date) > now)
+          .map((h) => new Date(h.date))
+          .sort((a, b) => a - b);
+        this.nextHearingDate =
+          futureHearingDates.length > 0 ? futureHearingDates[0] : null;
       }
     }
   }
   next();
 });
 
-// ============================================
-// 🔥 AUTO-SYNC HEARINGS TO CALENDAR
-// ============================================
-
-/**
- * PRE-SAVE: Detect if hearings changed
- * This sets a flag that we check in post-save
- */
+// Flag for post-save sync
 litigationDetailSchema.pre("save", function (next) {
   if (this.isModified("hearings")) {
     this._hearingsChanged = true;
-    console.log("🔵 PRE-SAVE: Hearings detected as modified");
+    console.log("🔵 PRE-SAVE: Hearings modified");
   }
   next();
 });
 
-/**
- * POST-SAVE: Auto-sync hearings to calendar
- * This runs AFTER the document is saved to DB
- */
-litigationDetailSchema.post("save", async function (doc) {
-  console.log("🟢 POST-SAVE MIDDLEWARE TRIGGERED!");
+// ============================================
+// POST-SAVE MIDDLEWARE - CALENDAR SYNC
+// ============================================
 
-  // Check if hearings actually changed
+litigationDetailSchema.post("save", async function (doc) {
+  console.log("🟢 POST-SAVE: Triggered");
+
   if (!this._hearingsChanged) {
-    console.log("⚠️ Hearings not modified, skipping sync");
+    console.log("⚠️ No hearing changes, skipping sync");
     return;
   }
 
-  console.log("🟢 Hearings were modified, starting sync...");
+  console.log("🟢 Syncing hearings to calendar...");
 
   try {
-    // Use mongoose.model to avoid circular dependency
     const CalendarEvent = mongoose.model("CalendarEvent");
     const Matter = mongoose.model("Matter");
 
-    console.log("📦 Models loaded successfully");
-
-    // Get the parent matter with populated fields
     const matter = await Matter.findById(doc.matterId)
       .populate("accountOfficer")
       .populate("assignedLawyers");
 
     if (!matter) {
-      console.log("⚠️ Matter not found for litigation:", doc._id);
+      console.log("⚠️ Matter not found:", doc.matterId);
       return;
     }
 
-    console.log(`📋 Found matter: ${matter.matterNumber}`);
-    console.log(`👥 Account Officers: ${matter.accountOfficer?.length || 0}`);
-    console.log(`👥 Assigned Lawyers: ${matter.assignedLawyers?.length || 0}`);
-    console.log(`📝 Total hearings to sync: ${doc.hearings.length}`);
+    console.log(
+      `📋 Matter: ${matter.matterNumber}, Hearings: ${doc.hearings.length}`,
+    );
 
-    // Sync all hearings in parallel for better performance
     await Promise.all(
       doc.hearings.map((hearing) =>
-        syncSingleHearing(doc, hearing, matter, { CalendarEvent }),
+        syncHearingToCalendar(doc, hearing, matter, CalendarEvent),
       ),
     );
 
-    console.log(
-      `✅ Auto-synced ${doc.hearings.length} hearings to calendar for matter ${matter.matterNumber}`,
-    );
+    console.log(`✅ Sync complete`);
   } catch (error) {
-    console.error("❌ Error in auto-sync middleware:", error);
+    console.error("❌ Sync error:", error);
   }
 });
 
-/**
- * CORRECTED syncSingleHearing function
- * Uses NEXT HEARING DATE as the calendar event date (not the past hearing date)
- * Only shows upcoming hearings on the calendar
- */
+// ============================================
+// CALENDAR SYNC FUNCTION
+// ============================================
 
-async function syncSingleHearing(litigationDetail, hearing, matter, models) {
-  const { CalendarEvent } = models;
-
-  // Define constants
-  const EVENT_TYPES = { HEARING: "hearing", MENTION: "mention" };
-  const EVENT_STATUS = { SCHEDULED: "scheduled", COMPLETED: "completed" };
-  const PRIORITY_LEVELS = { HIGH: "high" };
-
+async function syncHearingToCalendar(
+  litigationDetail,
+  hearing,
+  matter,
+  CalendarEvent,
+) {
   try {
-    console.log(`  🔄 Syncing hearing: ${hearing._id}`);
+    console.log(`  🔄 Syncing: ${hearing._id}`);
 
-    // ========================================
-    // DETERMINE WHICH DATE TO USE
-    // ========================================
+    const now = new Date();
 
-    // If hearing has a NEXT hearing date, use that for the calendar
-    // Otherwise, use the current hearing date
-    const useNextHearingDate =
-      hearing.nextHearingDate && new Date(hearing.nextHearingDate) > new Date();
-
-    const calendarDate = useNextHearingDate
+    // Determine which date to show on calendar
+    const hasNextHearingDate =
+      hearing.nextHearingDate && new Date(hearing.nextHearingDate) > now;
+    const calendarDate = hasNextHearingDate
       ? new Date(hearing.nextHearingDate)
       : new Date(hearing.date);
 
-    const startDateTime = calendarDate;
+    // Set default time 9:00 AM - 11:00 AM
+    const startDateTime = new Date(calendarDate);
+    startDateTime.setHours(9, 0, 0, 0);
+
     const endDateTime = new Date(calendarDate);
-    endDateTime.setHours(endDateTime.getHours() + 2);
+    endDateTime.setHours(11, 0, 0, 0);
 
-    // Determine if this hearing is completed (has outcome and no future next date)
-    const isCompleted = hearing.outcome && !useNextHearingDate;
-    const eventStatus = isCompleted
-      ? EVENT_STATUS.COMPLETED
-      : EVENT_STATUS.SCHEDULED;
+    // Status
+    const isCompleted = hearing.outcome && !hasNextHearingDate;
+    const eventStatus = isCompleted ? "completed" : "scheduled";
 
-    // Build title based on whether we're using next hearing date
-    const eventTitle = useNextHearingDate
-      ? `Court Hearing (Next): ${matter.title || litigationDetail.suitNo}`
-      : `Court Hearing: ${matter.title || litigationDetail.suitNo}`;
+    // Title
+    const titlePrefix = hasNextHearingDate
+      ? "Court Hearing (Next)"
+      : "Court Hearing";
+    const eventTitle = `${titlePrefix}: ${matter.title || litigationDetail.suitNo}`;
 
-    // Build description
+    // Description
     let description = `Court hearing for ${matter.matterNumber}\n`;
     description += `Court: ${litigationDetail.courtName}`;
     if (litigationDetail.courtLocation) {
@@ -608,8 +479,8 @@ async function syncSingleHearing(litigationDetail, hearing, matter, models) {
       description += `\nPurpose: ${hearing.purpose}`;
     }
 
-    if (useNextHearingDate) {
-      description += `\n\n📅 Next Hearing Date: ${calendarDate.toLocaleDateString()}`;
+    if (hasNextHearingDate) {
+      description += `\n\n📅 Next Hearing: ${calendarDate.toLocaleDateString()}`;
       if (hearing.outcome) {
         description += `\nPrevious Outcome (${new Date(hearing.date).toLocaleDateString()}): ${hearing.outcome}`;
       }
@@ -617,14 +488,15 @@ async function syncSingleHearing(litigationDetail, hearing, matter, models) {
       description += `\nOutcome: ${hearing.outcome}`;
     }
 
+    // Event type
     const eventType = hearing.purpose?.toLowerCase().includes("mention")
-      ? EVENT_TYPES.MENTION
-      : EVENT_TYPES.HEARING;
+      ? "mention"
+      : "hearing";
 
-    // Build participants
+    // Participants
     const participants = [];
 
-    if (matter.accountOfficer && matter.accountOfficer.length > 0) {
+    if (matter.accountOfficer?.length > 0) {
       matter.accountOfficer.forEach((officer) => {
         participants.push({
           user: officer._id || officer,
@@ -634,7 +506,7 @@ async function syncSingleHearing(litigationDetail, hearing, matter, models) {
       });
     }
 
-    if (matter.assignedLawyers && matter.assignedLawyers.length > 0) {
+    if (matter.assignedLawyers?.length > 0) {
       matter.assignedLawyers.forEach((lawyer) => {
         const lawyerId = lawyer._id || lawyer;
         if (
@@ -649,7 +521,7 @@ async function syncSingleHearing(litigationDetail, hearing, matter, models) {
       });
     }
 
-    if (hearing.lawyerPresent && hearing.lawyerPresent.length > 0) {
+    if (hearing.lawyerPresent?.length > 0) {
       hearing.lawyerPresent.forEach((lawyer) => {
         if (
           !participants.some((p) => p.user.toString() === lawyer.toString())
@@ -663,28 +535,24 @@ async function syncSingleHearing(litigationDetail, hearing, matter, models) {
       });
     }
 
-    // Build tags
+    // Tags
     const tags = ["court-hearing", "auto-synced", litigationDetail.courtName];
-    if (useNextHearingDate) {
-      tags.push("next-hearing");
-    }
-    if (isCompleted) {
-      tags.push("completed");
-    }
+    if (hasNextHearingDate) tags.push("next-hearing");
+    if (isCompleted) tags.push("completed");
 
-    // Choose color based on status
-    const color = useNextHearingDate
-      ? "#fa8c16" // Orange for next hearing
+    // Color
+    const color = hasNextHearingDate
+      ? "#fa8c16"
       : isCompleted
-        ? "#52c41a" // Green for completed
-        : "#722ed1"; // Purple for scheduled
+        ? "#52c41a"
+        : "#722ed1";
 
-    // Build event data
+    // Event data
     const eventData = {
       firmId: litigationDetail.firmId,
       eventType,
       status: eventStatus,
-      priority: PRIORITY_LEVELS.HIGH,
+      priority: "high",
       matter: matter._id,
       matterType: matter.matterType,
       title: eventTitle,
@@ -709,9 +577,9 @@ async function syncSingleHearing(litigationDetail, hearing, matter, models) {
         judge: litigationDetail.judge?.[0]?.name,
         courtRoom: litigationDetail.courtNo,
         suitNumber: litigationDetail.suitNo,
-        hearingType: eventType === EVENT_TYPES.MENTION ? "mention" : "trial",
+        hearingType: eventType === "mention" ? "mention" : "trial",
         outcome: hearing.outcome,
-        isNextHearing: useNextHearingDate,
+        isNextHearing: hasNextHearingDate,
         originalHearingDate: hearing.date,
         nextHearingDate: hearing.nextHearingDate,
       },
@@ -727,12 +595,12 @@ async function syncSingleHearing(litigationDetail, hearing, matter, models) {
       customFields: {
         hearingId: hearing._id.toString(),
         litigationDetailId: litigationDetail._id.toString(),
-        isUsingNextHearingDate: useNextHearingDate,
+        isUsingNextHearingDate: hasNextHearingDate,
         originalHearingDate: hearing.date.toISOString(),
       },
     };
 
-    // Find existing event for this hearing
+    // Find or create event
     const existingEvent = await CalendarEvent.findOne({
       firmId: litigationDetail.firmId,
       "customFields.hearingId": hearing._id.toString(),
@@ -740,38 +608,27 @@ async function syncSingleHearing(litigationDetail, hearing, matter, models) {
     });
 
     if (existingEvent) {
-      // Update existing event
       Object.assign(existingEvent, eventData);
       existingEvent.lastModifiedBy =
         matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0];
       await existingEvent.save();
-
-      console.log(`  ✅ Updated calendar event: ${existingEvent.eventId}`);
       console.log(
-        `     📅 Calendar date: ${calendarDate.toLocaleDateString()}`,
-      );
-      console.log(
-        `     ${useNextHearingDate ? "🔸 Using NEXT hearing date" : "🔹 Using current hearing date"}`,
+        `  ✅ Updated: ${existingEvent.eventId} → ${calendarDate.toLocaleDateString()}`,
       );
     } else {
-      // Create new event
       const newEvent = await CalendarEvent.create(eventData);
-
-      console.log(`  ✅ Created calendar event: ${newEvent.eventId}`);
       console.log(
-        `     📅 Calendar date: ${calendarDate.toLocaleDateString()}`,
-      );
-      console.log(
-        `     ${useNextHearingDate ? "🔸 Using NEXT hearing date" : "🔹 Using current hearing date"}`,
+        `  ✅ Created: ${newEvent.eventId} → ${calendarDate.toLocaleDateString()}`,
       );
     }
+
+    console.log(
+      `     ${hasNextHearingDate ? "🔸 Using NEXT date" : "🔹 Using current date"}`,
+    );
   } catch (error) {
-    console.error(`  ❌ Error syncing hearing ${hearing._id}:`, error.message);
+    console.error(`  ❌ Error syncing ${hearing._id}:`, error.message);
   }
 }
-
-// Export for use in the model
-module.exports = { syncSingleHearing };
 
 // ============================================
 // VIRTUALS
@@ -783,6 +640,10 @@ litigationDetailSchema.virtual("matter", {
   foreignField: "_id",
   justOne: true,
 });
+
+// ============================================
+// MODEL EXPORT
+// ============================================
 
 const LitigationDetail = mongoose.model(
   "LitigationDetail",

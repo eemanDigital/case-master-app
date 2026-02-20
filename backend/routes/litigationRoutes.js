@@ -13,6 +13,7 @@ litigationRouter.use(protect);
 
 litigationRouter.get("/stats", litigationController.getLitigationStats);
 litigationRouter.get("/dashboard", litigationController.getLitigationDashboard); // ✅
+
 litigationRouter.get(
   "/upcoming-hearings",
   litigationController.getUpcomingHearings,
@@ -64,6 +65,10 @@ litigationRouter.patch(
   "/:matterId/hearings/:hearingId",
   litigationController.updateHearing,
 );
+litigationRouter.get(
+  "/:matterId/hearings",
+  litigationController.getMatterHearings,
+); // ✅
 litigationRouter.delete(
   "/:matterId/hearings/:hearingId",
   litigationController.deleteHearing,

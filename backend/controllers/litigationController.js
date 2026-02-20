@@ -297,93 +297,133 @@ exports.restoreLitigationDetails = catchAsync(async (req, res, next) => {
 // ============================================
 
 exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
-  const { days = 30, page = 1, limit = 20, courtName, clientId } = req.query;
+  const { limit = 50, days = 30 } = req.query;
 
-  // 1. Define Time Boundaries (Inclusive of today)
-  const startOfToday = new Date();
-  startOfToday.setHours(0, 0, 0, 0);
+  const now = new Date();
+  const futureDate = new Date();
+  futureDate.setDate(futureDate.getDate() + parseInt(days));
 
-  const endOfToday = new Date();
-  endOfToday.setHours(23, 59, 59, 999);
+  // Find all litigation matters with hearings
+  const litigations = await LitigationDetail.find({
+    firmId: req.firmId,
+    isDeleted: false,
+    "hearings.0": { $exists: true }, // Only matters with at least one hearing
+  })
+    .populate({
+      path: "matterId",
+      match: { isDeleted: false }, // Exclude deleted matters
+      select: "matterNumber title client accountOfficer status priority",
+      populate: [
+        {
+          path: "client",
+          select: "firstName lastName email phone companyName",
+        },
+        { path: "accountOfficer", select: "firstName lastName email photo" },
+      ],
+    })
+    .populate({
+      path: "hearings.preparedBy",
+      select: "firstName lastName email photo",
+    })
+    .populate({
+      path: "hearings.lawyerPresent",
+      select: "firstName lastName email photo",
+    })
+    .lean();
 
-  const endDate = new Date();
-  endDate.setDate(endDate.getDate() + Number(days));
-  endDate.setHours(23, 59, 59, 999);
+  // Extract ALL individual hearing records
+  const allHearings = [];
 
-  // 2. Filter: From start of today until the end of the range
-  const customFilter = {
-    nextHearingDate: {
-      $gte: startOfToday,
-      $lte: endDate,
-    },
-  };
+  litigations.forEach((litigation) => {
+    // Skip if matter was deleted
+    if (!litigation.matterId) return;
+    if (!litigation.hearings || litigation.hearings.length === 0) return;
 
-  if (courtName) customFilter.courtName = courtName;
+    // Process each hearing as a separate record
+    litigation.hearings.forEach((hearing) => {
+      // Determine display date: use nextHearingDate if future, otherwise hearing.date
+      const displayDate = hearing.nextHearingDate
+        ? new Date(hearing.nextHearingDate)
+        : new Date(hearing.date);
 
-  // 3. Execute Pagination
-  const result = await litigationService.paginate(
-    { page, limit, sort: "nextHearingDate" },
-    customFilter,
-    req.firmId,
-  );
+      // Include if:
+      // 1. Within date range, OR
+      // 2. Past hearing without outcome (needs attention)
+      const isInRange = displayDate <= futureDate;
+      const needsAttention = !hearing.outcome && new Date(hearing.date) < now;
 
-  // 4. Populate Matter and Hearing Details
-  if (result.data && result.data.length > 0) {
-    const populatedData = await LitigationDetail.populate(result.data, [
-      {
-        path: "matter",
-        select: "matterNumber title client accountOfficer status priority",
-        populate: [
-          {
-            path: "client",
-            select: "firstName lastName email phone companyName",
-          },
-          { path: "accountOfficer", select: "firstName lastName email photo" },
-        ],
-      },
-      {
-        path: "hearings.preparedBy",
-        select: "firstName lastName email photo",
-      },
-      {
-        path: "hearings.lawyerPresent",
-        select: "firstName lastName email photo",
-      },
-    ]);
+      if (isInRange || needsAttention) {
+        allHearings.push({
+          // Hearing-specific fields
+          _id: hearing._id,
+          date: hearing.date,
+          purpose: hearing.purpose,
+          outcome: hearing.outcome,
+          notes: hearing.notes,
+          nextHearingDate: hearing.nextHearingDate,
+          lawyerPresent: hearing.lawyerPresent,
+          preparedBy: hearing.preparedBy,
+          createdAt: hearing.createdAt,
+          updatedAt: hearing.updatedAt,
 
-    // 5. Clean Data & Apply Client Filter
-    let filteredData = populatedData.filter(
-      (detail) => detail.matter && !detail.matter.isDeleted,
-    );
+          // Litigation context
+          litigationDetailId: litigation._id,
+          matterId: litigation.matterId._id,
+          suitNo: litigation.suitNo,
+          courtName: litigation.courtName,
+          courtNo: litigation.courtNo,
+          courtLocation: litigation.courtLocation,
+          state: litigation.state,
+          division: litigation.division,
+          judge: litigation.judge,
+          firstParty: litigation.firstParty,
+          secondParty: litigation.secondParty,
 
-    if (clientId) {
-      filteredData = filteredData.filter(
-        (detail) => detail.matter.client?._id.toString() === clientId,
-      );
-    }
+          // Populated matter
+          matter: litigation.matterId,
 
-    // 6. Categorize & Safe Object Conversion
-    const enhancedData = filteredData.map((detail) => {
-      const hearingDate = new Date(detail.nextHearingDate);
+          // For sorting/filtering
+          displayDate: displayDate,
 
-      // FIX: Check if toObject exists (Mongoose Doc) or use as-is (Plain Object)
-      const detailObj =
-        typeof detail.toObject === "function" ? detail.toObject() : detail;
-
-      return {
-        ...detailObj,
-        isToday: hearingDate >= startOfToday && hearingDate <= endOfToday,
-      };
+          // Store full hearings array for widget (to find linked hearing)
+          hearings: litigation.hearings,
+        });
+      }
     });
+  });
 
-    result.data = enhancedData;
-    result.pagination.count = result.data.length;
-    result.todayCount = enhancedData.filter((d) => d.isToday).length;
-  }
+  // Sort by display date (earliest first)
+  allHearings.sort((a, b) => new Date(a.displayDate) - new Date(b.displayDate));
+
+  // Apply limit
+  const limitedHearings = allHearings.slice(0, parseInt(limit));
+
+  // Calculate statistics
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const stats = {
+    total: limitedHearings.length,
+    today: limitedHearings.filter((h) => {
+      const hDate = new Date(h.nextHearingDate || h.date);
+      hDate.setHours(0, 0, 0, 0);
+      return hDate.getTime() === today.getTime();
+    }).length,
+    thisWeek: limitedHearings.filter((h) => {
+      const hDate = new Date(h.nextHearingDate || h.date);
+      const weekFromNow = new Date(today);
+      weekFromNow.setDate(weekFromNow.getDate() + 7);
+      return hDate >= today && hDate <= weekFromNow;
+    }).length,
+    pending: limitedHearings.filter((h) => !h.outcome).length,
+    completed: limitedHearings.filter((h) => !!h.outcome).length,
+  };
 
   res.status(200).json({
     status: "success",
-    ...result,
+    results: limitedHearings.length,
+    stats,
+    data: limitedHearings, // Return array directly (Redux expects this)
   });
 });
 
@@ -472,10 +512,116 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     data: { litigationDetail },
   });
 });
+exports.getMatterHearings = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
 
-// ============================================
-// UPDATE HEARING (WITH AUTO-CALENDAR SYNC) 🔥
-// ============================================
+  // Verify matter exists and belongs to firm
+  const matter = await Matter.findOne({
+    _id: matterId,
+    firmId: req.firmId,
+    matterType: "litigation",
+    isDeleted: false,
+  });
+
+  if (!matter) {
+    return next(new AppError("Litigation matter not found", 404));
+  }
+
+  // Find litigation details with all hearings
+  const litigationDetail = await LitigationDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  })
+    .populate({
+      path: "hearings.preparedBy",
+      select: "firstName lastName email photo",
+    })
+    .populate({
+      path: "hearings.lawyerPresent",
+      select: "firstName lastName email photo",
+    })
+    .lean();
+
+  if (!litigationDetail) {
+    return next(new AppError("Litigation details not found", 404));
+  }
+
+  // Get all hearings (don't filter - return complete history)
+  const allHearings = litigationDetail.hearings || [];
+
+  // Sort hearings by date (most recent first for timeline display)
+  const sortedHearings = allHearings.sort(
+    (a, b) => new Date(b.date) - new Date(a.date),
+  );
+
+  // Calculate statistics
+  const now = new Date();
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const stats = {
+    total: sortedHearings.length,
+
+    // Past hearings (date has passed)
+    past: sortedHearings.filter((h) => {
+      const hDate = new Date(h.date);
+      hDate.setHours(0, 0, 0, 0);
+      return hDate < today && !h.outcome;
+    }).length,
+
+    // Today's hearings
+    today: sortedHearings.filter((h) => {
+      const hDate = new Date(h.date);
+      hDate.setHours(0, 0, 0, 0);
+      return hDate.getTime() === today.getTime();
+    }).length,
+
+    // Future hearings
+    upcoming: sortedHearings.filter((h) => {
+      const hDate = new Date(h.date);
+      hDate.setHours(0, 0, 0, 0);
+      return hDate > today && !h.outcome;
+    }).length,
+
+    // Completed hearings (has outcome)
+    completed: sortedHearings.filter((h) => !!h.outcome).length,
+
+    // Pending (no outcome yet)
+    pending: sortedHearings.filter((h) => !h.outcome).length,
+
+    // With next hearing date set
+    withNextDate: sortedHearings.filter((h) => !!h.nextHearingDate).length,
+  };
+
+  // Include litigation context
+  const response = {
+    litigationDetail: {
+      _id: litigationDetail._id,
+      matterId: litigationDetail.matterId,
+      suitNo: litigationDetail.suitNo,
+      courtName: litigationDetail.courtName,
+      courtNo: litigationDetail.courtNo,
+      division: litigationDetail.division,
+      courtLocation: litigationDetail.courtLocation,
+      state: litigationDetail.state,
+      judge: litigationDetail.judge,
+      nextHearingDate: litigationDetail.nextHearingDate,
+      lastHearingDate: litigationDetail.lastHearingDate,
+      totalHearings: litigationDetail.totalHearings,
+      currentStage: litigationDetail.currentStage,
+      firstParty: litigationDetail.firstParty,
+      secondParty: litigationDetail.secondParty,
+    },
+    hearings: sortedHearings,
+    stats,
+  };
+
+  res.status(200).json({
+    status: "success",
+    results: sortedHearings.length,
+    data: response,
+  });
+});
 
 // ============================================
 // UPDATE HEARING (WITH AUTO-CALENDAR SYNC) 🔥
@@ -512,11 +658,77 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     return next(new AppError("Hearing not found", 404));
   }
 
-  // Store old nextHearingDate to compare later
-  const oldNextHearingDate = hearing.nextHearingDate;
+  // ============================================
+  // 🔥 BUSINESS RULE VALIDATION
+  // ============================================
 
-  // Update hearing fields
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const hearingDate = new Date(hearing.date);
+  hearingDate.setHours(0, 0, 0, 0);
+
+  const isHearingDateToday = hearingDate.getTime() === today.getTime();
+  const isHearingDateInPast = hearingDate < today;
+  const isHearingDateInFuture = hearingDate > today;
+
+  // Fields that should ONLY be editable on the hearing date
+  const restrictedFields = ["outcome", "notes"];
+
+  // Check if user is trying to update restricted fields
+  const hasRestrictedFieldUpdate = restrictedFields.some((field) =>
+    Object.prototype.hasOwnProperty.call(updateData, field),
+  );
+
+  // RULE 1: Cannot update outcome/notes if hearing date is in the future
+  if (hasRestrictedFieldUpdate && isHearingDateInFuture) {
+    return next(
+      new AppError(
+        `Cannot update hearing outcome or notes until the hearing date (${hearing.date.toLocaleDateString()}). You can only update the next adjourned date.`,
+        403,
+      ),
+    );
+  }
+
+  // RULE 2: Cannot update outcome/notes if hearing date is in the past AND no outcome recorded yet
+  // (This prevents back-dating reports)
+  if (hasRestrictedFieldUpdate && isHearingDateInPast && !hearing.outcome) {
+    return next(
+      new AppError(
+        `Cannot file report for past hearings. Please contact an administrator if this needs to be recorded.`,
+        403,
+      ),
+    );
+  }
+
+  // RULE 3: If updating outcome for today's hearing, ensure required fields
+  if (
+    isHearingDateToday &&
+    updateData.outcome === "adjourned" &&
+    !updateData.nextHearingDate
+  ) {
+    return next(
+      new AppError(
+        'Next hearing date is required when outcome is "Adjourned"',
+        400,
+      ),
+    );
+  }
+
+  // ============================================
+  // PROCEED WITH UPDATE
+  // ============================================
+
+  // Update hearing fields (only allowed fields based on rules)
   Object.keys(updateData).forEach((key) => {
+    // For future hearings, only allow nextHearingDate and lawyerPresent updates
+    if (
+      isHearingDateInFuture &&
+      key !== "nextHearingDate" &&
+      key !== "lawyerPresent"
+    ) {
+      return; // Skip restricted fields
+    }
     hearing[key] = updateData[key];
   });
 
@@ -527,23 +739,23 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
 
   console.log("🔵 Litigation saved, middleware should have run");
 
-  // 🔥 CRITICAL FIX: Ensure nextHearingDate is properly set on parent
-  // Sometimes middleware doesn't run correctly with subdocument updates
+  // Recalculate the next hearing date at the litigation level
   const futureHearings = litigationDetail.hearings.filter(
     (h) => h.nextHearingDate && new Date(h.nextHearingDate) > new Date(),
   );
 
   if (futureHearings.length > 0) {
-    // Sort by nextHearingDate and take the earliest
+    // Sort to find the earliest upcoming hearing
     futureHearings.sort(
       (a, b) => new Date(a.nextHearingDate) - new Date(b.nextHearingDate),
     );
     litigationDetail.nextHearingDate = futureHearings[0].nextHearingDate;
   } else {
+    // No future hearings
     litigationDetail.nextHearingDate = null;
   }
 
-  // Save again if nextHearingDate changed
+  // Save again if nextHearingDate changed at the litigation level
   if (litigationDetail.isModified("nextHearingDate")) {
     await litigationDetail.save();
   }
@@ -552,6 +764,7 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   matter.lastActivityDate = new Date();
   await matter.save();
 
+  // Populate related fields before response
   await litigationDetail.populate([
     { path: "hearings.preparedBy", select: "firstName lastName email photo" },
     {
@@ -566,7 +779,6 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     data: { litigationDetail },
   });
 });
-
 // ============================================
 // DELETE HEARING
 // ============================================
