@@ -8,6 +8,7 @@ import {
 } from "@ant-design/icons";
 import EventList from "../pages/EventList";
 import EventForm from "./EventForm";
+import { SendEmailButton } from "./emails";
 
 const { Panel } = Collapse;
 
@@ -40,6 +41,18 @@ const QuickActionsPanel = () => {
                 <EventList />
                 <EventForm />
               </div>
+            </div>
+
+            {/* Column 2: Email */}
+            <div className="space-y-2 xs:space-y-0 xs:flex xs:flex-col xs:gap-2">
+              <SendEmailButton
+                type="primary"
+                size="middle"
+                className="bg-indigo-600 hover:bg-indigo-700 border-indigo-600"
+                icon="mail">
+                <span className="hidden xs:inline">Send Email</span>
+                <span className="xs:hidden">Email</span>
+              </SendEmailButton>
             </div>
 
             {/* Column 3: Navigation - Full width on mobile */}

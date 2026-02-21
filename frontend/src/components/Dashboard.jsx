@@ -26,7 +26,6 @@ import {
 } from "./protect/Protect";
 import { Alert, Skeleton } from "antd";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
-import CurrentDayCauseList from "./CurrentDayCauseList";
 import VerifyAccountNotice from "./VerifyAccountNotice";
 import QuickActionsPanel from "./QuickActionsPanel";
 import ClientCaseDashboard from "./clientDashboard/ClientCaseDashboard";

@@ -2,8 +2,17 @@ const express = require("express");
 const userController = require("../controllers/userController");
 const authController = require("../controllers/authController");
 const photoController = require("../controllers/photoController");
+const multer = require("multer");
 
 const router = express.Router();
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit
+  },
+});
 
 // Destructuring for cleaner routes
 const {
@@ -42,6 +51,7 @@ const {
   sendAutomatedEmail,
   getSingleUser,
   sendAutomatedCustomEmail,
+  sendCustomEmail,
   getUserSelectOptions,
   getAllSelectOptions,
   getStaffByStatus,
@@ -102,6 +112,14 @@ router.post(
   restrictTo("admin", "hr"),
   sendAutomatedCustomEmail,
 );
+
+router.post(
+  "/sendCustomEmail",
+  restrictTo("admin", "hr", "lawyer"),
+  upload.any(), // Accept any fields including attachments
+  sendCustomEmail,
+);
+
 router.post(
   "/sendVerificationEmail/:email",
   restrictTo("admin", "super-admin"),

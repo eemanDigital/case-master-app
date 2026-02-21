@@ -64,6 +64,13 @@ const hearingSchema = new mongoose.Schema(
     nextHearingDate: {
       type: Date,
     },
+
+    hearingNoticeRequired: {
+      type: Boolean,
+      default: false,
+      required: true,
+    },
+
     notes: {
       type: String,
       trim: true,
@@ -376,23 +383,50 @@ litigationDetailSchema.pre("save", function (next) {
   next();
 });
 
-// Flag for post-save sync
-litigationDetailSchema.pre("save", function (next) {
+// Flag for post-save sync - store the specific hearing ID that changed
+litigationDetailSchema.pre("save", async function (next) {
   if (this.isModified("hearings")) {
-    this._hearingsChanged = true;
-    console.log("🔵 PRE-SAVE: Hearings modified");
+    // Store original hearings for comparison (only for updates)
+    if (!this.isNew) {
+      try {
+        const original = await this.constructor.findById(this._id).select("hearings");
+        this._original = original?.toObject?.() || { hearings: original?.hearings || [] };
+      } catch (err) {
+        console.log("⚠️ Could not fetch original hearings:", err.message);
+        this._original = { hearings: [] };
+      }
+    }
+
+    // Get the previous hearings array (if updating)
+    const previousHearings = this._original?.hearings || [];
+    const currentHearings = this.hearings;
+
+    // Find newly added hearings
+    const currentIds = currentHearings.map(h => h._id?.toString()).filter(Boolean);
+    const previousIds = previousHearings.map(h => h._id?.toString()).filter(Boolean);
+    
+    // New hearing added
+    const addedIds = currentIds.filter(id => !previousIds.includes(id));
+    
+    // Check if any hearing was modified (not new, but existing)
+    this._hearingChanges = {
+      added: addedIds,
+      hasChanges: true,
+    };
+    
+    console.log("🔵 PRE-SAVE: Hearings modified", { added: addedIds.length });
   }
   next();
 });
 
 // ============================================
-// POST-SAVE MIDDLEWARE - CALENDAR SYNC
+// POST-SAVE MIDDLEWARE - CALENDAR SYNC (OPTIMIZED)
 // ============================================
 
 litigationDetailSchema.post("save", async function (doc) {
   console.log("🟢 POST-SAVE: Triggered");
 
-  if (!this._hearingsChanged) {
+  if (!this._hearingChanges?.hasChanges) {
     console.log("⚠️ No hearing changes, skipping sync");
     return;
   }
@@ -416,13 +450,40 @@ litigationDetailSchema.post("save", async function (doc) {
       `📋 Matter: ${matter.matterNumber}, Hearings: ${doc.hearings.length}`,
     );
 
+    // Only sync hearings that were added or modified
+    // For new hearings, sync the newly added ones
+    // For updates, we need to find which hearing was updated
+    const hearingsToSync = [];
+
+    if (this._hearingChanges.added?.length > 0) {
+      // New hearings were added - find them in current hearings
+      this._hearingChanges.added.forEach(addedId => {
+        const hearing = doc.hearings.find(h => h._id?.toString() === addedId);
+        if (hearing) {
+          hearingsToSync.push(hearing);
+        }
+      });
+    }
+
+    // If no new hearings but hearings were modified, sync all 
+    // (since we can't easily track which one was modified without more logic)
+    if (hearingsToSync.length === 0 && doc.hearings.length > 0) {
+      // This is an update scenario - sync all hearings to ensure calendar is up to date
+      hearingsToSync.push(...doc.hearings);
+    }
+
+    if (hearingsToSync.length === 0) {
+      console.log("⚠️ No hearings to sync");
+      return;
+    }
+
     await Promise.all(
-      doc.hearings.map((hearing) =>
+      hearingsToSync.map((hearing) =>
         syncHearingToCalendar(doc, hearing, matter, CalendarEvent),
       ),
     );
 
-    console.log(`✅ Sync complete`);
+    console.log(`✅ Sync complete for ${hearingsToSync.length} hearing(s)`);
   } catch (error) {
     console.error("❌ Sync error:", error);
   }

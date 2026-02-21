@@ -32,6 +32,7 @@ import {
   CheckCircleOutlined,
   EditOutlined,
   FileTextOutlined,
+  BellOutlined,
 } from "@ant-design/icons";
 import {
   fetchUpcomingHearings,
@@ -39,7 +40,6 @@ import {
   selectHearingsStats,
   selectLitigationLoading,
   selectLitigationError,
-  addHearing,
   updateHearing,
 } from "../../redux/features/litigation/litigationSlice";
 import useUserSelectOptions from "../../hooks/useUserSelectOptions";
@@ -62,6 +62,7 @@ const VIEW = {
   ALL: "all",
   TODAY_REPORTS: "today_reports",
   URGENT: "urgent",
+  HEARING_NOTICE: "hearing_notice",
 };
 
 const OUTCOME_OPTIONS = [
@@ -210,6 +211,14 @@ const SimpleHearingCard = React.memo(({ hearing, onClick }) => {
           <span className="truncate">{hearing.courtName || "Court"}</span>
         </div>
       </div>
+      {/* hearing notice service */}
+      {hearing.hearingNoticeRequired && (
+        <div className="mb-2">
+          <Tag color="orange" className="!text-[10px] !px-2 !py-0.5">
+            Hearing Notice Required
+          </Tag>
+        </div>
+      )}
       <div className="text-xs font-medium text-gray-400 whitespace-nowrap">
         {getRelative(displayDate)}
       </div>
@@ -295,6 +304,17 @@ const DetailedHearingCard = React.memo(({ hearing, onClick }) => {
           <div className="mb-2">
             <Tag color="green" className="!text-[10px] !px-2 !py-0.5">
               {hearing.outcome.replace(/_/g, " ")}
+            </Tag>
+          </div>
+        )}
+
+        {/* Hearing Notice Required Tag */}
+        {hearing.hearingNoticeRequired && !hearing.outcome && (
+          <div className="mb-2">
+            <Tag
+              color="orange"
+              className="!text-[10px] !px-2 !py-0.5 animate-pulse">
+              Hearing Notice Required
             </Tag>
           </div>
         )}
@@ -895,34 +915,44 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
     dispatch(fetchUpcomingHearings({ limit: 50, days: 30 }));
   }, [dispatch]);
 
-  const { todayReports, urgentSimple, upcomingSimple } = useMemo(() => {
-    const today = dayjs().startOf("day");
-    const threeDays = dayjs().add(3, "day").endOf("day");
-    const reports = [],
-      urgent = [],
-      upcoming = [];
+  const { todayReports, urgentSimple, upcomingSimple, hearingNoticeRequired } =
+    useMemo(() => {
+      const today = dayjs().startOf("day");
+      const threeDays = dayjs().add(3, "day").endOf("day");
+      const reports = [],
+        urgent = [],
+        upcoming = [],
+        noticeRequired = [];
 
-    hearings.forEach((h) => {
-      const displayDate = h.nextHearingDate || h.date;
-      const d = dayjs(displayDate);
-      const hasReport = !!h.outcome;
+      hearings.forEach((h) => {
+        const displayDate = h.nextHearingDate || h.date;
+        const d = dayjs(displayDate);
+        const hasReport = !!h.outcome;
+        const needsNotice = h.hearingNoticeRequired && !hasReport;
 
-      if (d.isSame(today, "day")) {
-        if (hasReport) reports.push(h);
-        else upcoming.push(h);
-      } else if (d.isAfter(today) && d.isSameOrBefore(threeDays)) {
-        urgent.push(h);
-      } else if (d.isAfter(today)) {
-        upcoming.push(h);
-      }
-    });
+        // Separate hearing notice required hearings (future hearings only)
+        if (needsNotice && d.isAfter(today)) {
+          noticeRequired.push(h);
+          return;
+        }
 
-    return {
-      todayReports: reports,
-      urgentSimple: urgent,
-      upcomingSimple: upcoming,
-    };
-  }, [hearings]);
+        if (d.isSame(today, "day")) {
+          if (hasReport) reports.push(h);
+          else upcoming.push(h);
+        } else if (d.isAfter(today) && d.isSameOrBefore(threeDays)) {
+          urgent.push(h);
+        } else if (d.isAfter(today)) {
+          upcoming.push(h);
+        }
+      });
+
+      return {
+        todayReports: reports,
+        urgentSimple: urgent,
+        upcomingSimple: upcoming,
+        hearingNoticeRequired: noticeRequired,
+      };
+    }, [hearings]);
 
   const displayedContent = useMemo(() => {
     switch (activeView) {
@@ -934,10 +964,25 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
         };
       case VIEW.URGENT:
         return { type: "single", items: urgentSimple, componentType: "simple" };
+      case VIEW.HEARING_NOTICE:
+        return {
+          type: "single",
+          items: hearingNoticeRequired,
+          componentType: "simple",
+        };
       default:
         return {
           type: "sections",
           sections: [
+            ...(hearingNoticeRequired.length > 0
+              ? [
+                  {
+                    title: "📜 Hearing Notice Required",
+                    items: hearingNoticeRequired,
+                    type: "simple",
+                  },
+                ]
+              : []),
             ...(todayReports.length > 0
               ? [
                   {
@@ -991,7 +1036,10 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
   }, []);
 
   const totalVisible =
-    todayReports.length + urgentSimple.length + upcomingSimple.length;
+    todayReports.length +
+    urgentSimple.length +
+    upcomingSimple.length +
+    hearingNoticeRequired.length;
 
   return (
     <>
@@ -1007,7 +1055,8 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
                 Court Hearings
               </h3>
               <p className="text-[11px] text-gray-400 mt-0.5">
-                {totalVisible} scheduled · {todayReports.length} reports today
+                {totalVisible} scheduled · {todayReports.length} reports today ·{" "}
+                {hearingNoticeRequired.length} notice pending
               </p>
             </div>
           </div>
@@ -1023,6 +1072,14 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
         <div className="px-5 pb-5">
           {/* Stat pills */}
           <div className="flex gap-2 mb-4">
+            <StatPill
+              icon={<FileTextOutlined />}
+              label="Notice"
+              value={hearingNoticeRequired.length}
+              colorKey="amber"
+              active={activeView === VIEW.HEARING_NOTICE}
+              onClick={() => handleViewChange(VIEW.HEARING_NOTICE)}
+            />
             <StatPill
               icon={<FileTextOutlined />}
               label="Reports"
@@ -1056,6 +1113,22 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
               onClick={() => handleViewChange(VIEW.ALL)}
             />
           </div>
+
+          {/* Hearing Notice Required Banner */}
+          {hearingNoticeRequired.length > 0 &&
+            activeView !== VIEW.HEARING_NOTICE && (
+              <button
+                onClick={() => handleViewChange(VIEW.HEARING_NOTICE)}
+                className="w-full mb-3 flex items-center gap-3 bg-gradient-to-r
+                         from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600
+                         text-white rounded-xl px-4 py-3 transition-all shadow-sm">
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                <p className="text-sm font-bold flex-1 text-left">
+                  {hearingNoticeRequired.length} Hearing Notice Pending
+                </p>
+                <RightOutlined className="text-xs opacity-60" />
+              </button>
+            )}
 
           {/* Today's banner */}
           {todayReports.length > 0 && activeView !== VIEW.TODAY_REPORTS && (

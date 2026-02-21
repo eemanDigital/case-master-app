@@ -1,9 +1,12 @@
-import { lazy, Suspense, useEffect, useRef, useMemo } from "react";
+import { lazy, Suspense, useEffect, useRef, useMemo, useState } from "react";
 import {
   createBrowserRouter,
   createRoutesFromElements,
   Route,
   RouterProvider,
+  Outlet,
+  useLocation,
+  useNavigate,
 } from "react-router-dom";
 import { ConfigProvider, Spin, Result, Button } from "antd";
 import { Link } from "react-router-dom";
@@ -51,7 +54,7 @@ const StaffDetails = lazy(() => import("./pages/StaffDetails.jsx"));
 const AddUserForm = lazy(() => import("./pages/AddUserForm.jsx"));
 const StatusUserList = lazy(() => import("./pages/StatusUserList.jsx"));
 
-// calender management
+// Calendar Management
 const CalendarPage = lazy(() => import("./pages/calender/CalendarPage.jsx"));
 const CalendarDashboard = lazy(
   () => import("./pages/calender/CalendarDashboard.jsx"),
@@ -97,7 +100,7 @@ const MatterFormContainer = lazy(
   () => import("./components/matters/MatterForm/MatterFormContainer.jsx"),
 );
 
-// Litigation Management (New)
+// Litigation Management
 const LitigationDashboardPage = lazy(
   () => import("./pages/dashboard/litigation/LitigationDashboardPage"),
 );
@@ -111,7 +114,7 @@ const EditLitigation = lazy(
   () => import("./pages/litigation/EditLitigation.jsx"),
 );
 
-//Corporate Matters Management
+// Corporate Matters Management
 const CorporateMatterList = lazy(
   () => import("./pages/corporate/CorporateList.jsx"),
 );
@@ -121,24 +124,18 @@ const CreateCorporateMatter = lazy(
 const CorporateMatterDetails = lazy(
   () => import("./pages/corporate/CorporateDetails.jsx"),
 );
-// const EditCorporateMatter = lazy(
-//   () => import("./pages/corporate/EditCorporateMatter.jsx"),
-// );
 
-//Property Management
+// Property Management
 const PropertyList = lazy(() => import("./pages/property/PropertyList.jsx"));
-
 const CreateProperty = lazy(
   () => import("./pages/property/CreateProperty.jsx"),
 );
-
 const EditProperty = lazy(() => import("./pages/property/EditProperty.jsx"));
-
 const PropertyDetails = lazy(
   () => import("./pages/property/PropertyDetails.jsx"),
 );
 
-//Retainer Management
+// Retainer Management
 const RetainerList = lazy(() => import("./pages/retainer/RetainerList.jsx"));
 const CreateRetainerPage = lazy(() =>
   import("./pages/retainer/RetainerPageWrappers.jsx").then((module) => ({
@@ -156,7 +153,7 @@ const GeneralList = lazy(() => import("./pages/general/GeneralList.jsx"));
 const CreateGeneral = lazy(() => import("./pages/general/CreateGeneral.jsx"));
 const GeneralDetails = lazy(() => import("./pages/general/GeneralDetails.jsx"));
 
-//  Advisory matter management
+// Advisory Matter Management
 const AdvisoryDashboardPage = lazy(
   () => import("./components/advisory/AdvisoryDashboardPage.jsx"),
 );
@@ -166,7 +163,6 @@ const AdvisoryCreatePage = lazy(
 const AdvisoryDetailPage = lazy(
   () => import("./pages/advisory/AdvisoryDetailPage.jsx"),
 );
-
 const AdvisoryEditPage = lazy(
   () => import("./pages/advisory/AdvisoryEditPage.jsx"),
 );
@@ -306,12 +302,6 @@ const getAntdTheme = (isDarkMode) => ({
 // ============================================
 // LOADING COMPONENTS
 // ============================================
-const LoadingScreen = () => (
-  <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-50">
-    <Spin size="large" tip="Loading..." />
-  </div>
-);
-
 const PageLoader = () => (
   <div className="flex items-center justify-center min-h-screen">
     <Spin size="large" tip="Loading page..." />
@@ -344,6 +334,43 @@ const ProtectedStaffRoute = ({ children }) => (
 );
 
 // ============================================
+// AUTH ROUTE HANDLER
+// Must live INSIDE the router tree so useLocation/useNavigate work.
+// Uses <Outlet /> instead of {children}.
+// ============================================
+const AuthRouteHandler = () => {
+  const navigate = useNavigate();
+  const { isLoggedIn, isLoading: authLoading } = useSelector(
+    (state) => state.auth,
+  );
+  const initialized = useRef(false);
+
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    if (isLoggedIn) {
+      const redirectPath = sessionStorage.getItem("redirectAfterLogin");
+      if (redirectPath) {
+        sessionStorage.removeItem("redirectAfterLogin");
+        navigate(redirectPath, { replace: true });
+      }
+    }
+  }, [isLoggedIn, navigate]);
+
+  if (authLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-50">
+        <Spin size="large" tip="Loading..." />
+      </div>
+    );
+  }
+
+  // Renders the matched child route
+  return <Outlet />;
+};
+
+// ============================================
 // MAIN APP COMPONENT
 // ============================================
 function App() {
@@ -351,6 +378,7 @@ function App() {
   const isLoading = useSelector((state) => state.loading);
   const isDarkMode = useSelector((state) => state.theme?.isDarkMode) || false;
   const hasInitialized = useRef(false);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
   // ============================================
   // INITIAL AUTH CHECK (Run Once)
@@ -370,6 +398,7 @@ function App() {
         console.error("Initial auth check failed:", error);
       } finally {
         dispatch(setLoading(false));
+        setIsAuthReady(true);
       }
     }
 
@@ -377,797 +406,766 @@ function App() {
   }, [dispatch]);
 
   // ============================================
-  // ROUTER CONFIGURATION
+  // ALL HOOKS BEFORE EARLY RETURNS
   // ============================================
   const router = useMemo(
     () =>
       createBrowserRouter(
         createRoutesFromElements(
-          <Route path="/" element={<HomeLayout />} errorElement={<Error />}>
-            {/* Home Page */}
-            <Route
-              index
-              element={
-                <Suspense fallback={<PageLoader />}>
-                  <HomePage />
-                </Suspense>
-              }
-            />
-
-            {/* Auth Routes */}
-            <Route
-              path="users/login"
-              element={
-                <Suspense fallback={<PageLoader />}>
-                  <Login />
-                </Suspense>
-              }
-            />
-            <Route
-              path="forgotpassword"
-              element={
-                <Suspense fallback={<PageLoader />}>
-                  <ForgotPassword />
-                </Suspense>
-              }
-            />
-            <Route
-              path="resetPassword/:token"
-              element={
-                <Suspense fallback={<PageLoader />}>
-                  <ForgotPasswordReset />
-                </Suspense>
-              }
-            />
-            <Route
-              path="loginWithCode/:email"
-              element={
-                <Suspense fallback={<PageLoader />}>
-                  <LoginWithCode />
-                </Suspense>
-              }
-            />
-            <Route
-              path="dashboard/verify-account/:token"
-              element={
-                <Suspense fallback={<PageLoader />}>
-                  <VerifyAccount />
-                </Suspense>
-              }
-            />
-
-            {/* Dashboard Routes */}
-            <Route path="dashboard" element={<DashboardLayout />}>
-              <Route index element={<Dashboard />} />
-
-              {/* Profile */}
+          // AuthRouteHandler is the outermost layout route so that
+          // useLocation / useNavigate are available inside it.
+          <Route element={<AuthRouteHandler />}>
+            <Route path="/" element={<HomeLayout />} errorElement={<Error />}>
+              {/* Home Page */}
               <Route
-                path="profile"
+                index
                 element={
                   <Suspense fallback={<PageLoader />}>
-                    <Profile />
+                    <HomePage />
                   </Suspense>
                 }
               />
 
-              {/* Staff Management */}
+              {/* Auth Routes */}
               <Route
-                path="staff"
+                path="users/login"
                 element={
                   <Suspense fallback={<PageLoader />}>
-                    <ProtectedStaffRoute>
-                      <StaffList />
-                    </ProtectedStaffRoute>
+                    <Login />
                   </Suspense>
                 }
               />
               <Route
-                path="staff/add-user"
+                path="forgotpassword"
                 element={
                   <Suspense fallback={<PageLoader />}>
-                    <AddUserForm />
+                    <ForgotPassword />
                   </Suspense>
                 }
               />
               <Route
-                path="staff/:id/details"
+                path="resetPassword/:token"
                 element={
                   <Suspense fallback={<PageLoader />}>
-                    <StaffDetails />
+                    <ForgotPasswordReset />
                   </Suspense>
                 }
               />
               <Route
-                path="staff-status"
+                path="loginWithCode/:email"
                 element={
                   <Suspense fallback={<PageLoader />}>
-                    <ProtectedStaffRoute>
-                      <StatusUserList />
-                    </ProtectedStaffRoute>
-                  </Suspense>
-                }
-              />
-
-              {/* Leave Management */}
-              <Route
-                path="leave-application"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <LeaveAppForm />
+                    <LoginWithCode />
                   </Suspense>
                 }
               />
               <Route
-                path="staff/leave-application"
+                path="dashboard/verify-account/:token"
                 element={
                   <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <LeaveApplicationList />
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-              <Route
-                path="staff/leave-application/:id/details"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <LeaveApplicationDetails />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="staff/leave-balance"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <LeaveBalanceList />
-                    </ShowOnlyVerifiedUser>
+                    <VerifyAccount />
                   </Suspense>
                 }
               />
 
-              {/* Matters Management */}
-              <Route
-                path="matters"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ProtectedStaffRoute>
-                      <MatterListView />
-                    </ProtectedStaffRoute>
-                  </Suspense>
-                }
-              />
-              <Route
-                path="matters/create"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ProtectedStaffRoute>
-                      <MatterFormContainer />
-                    </ProtectedStaffRoute>
-                  </Suspense>
-                }
-              />
-              <Route
-                path="matters/:id"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <MatterDetails />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="matters/:id/edit"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ProtectedStaffRoute>
-                      <MatterFormContainer isEditMode={true} />
-                    </ProtectedStaffRoute>
-                  </Suspense>
-                }
-              />
+              {/* Dashboard Routes */}
+              <Route path="dashboard" element={<DashboardLayout />}>
+                <Route index element={<Dashboard />} />
 
-              {/* Litigation Management (Nested under /dashboard/matters/) */}
-              <Route path="matters/litigation">
+                {/* Profile */}
                 <Route
-                  index
+                  path="profile"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <Profile />
+                    </Suspense>
+                  }
+                />
+
+                {/* Staff Management */}
+                <Route
+                  path="staff"
                   element={
                     <Suspense fallback={<PageLoader />}>
                       <ProtectedStaffRoute>
-                        <LitigationDashboardPage />
+                        <StaffList />
                       </ProtectedStaffRoute>
                     </Suspense>
                   }
                 />
                 <Route
-                  path=":matterId/create"
+                  path="staff/add-user"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <AddUserForm />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="staff/:id/details"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <StaffDetails />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="staff-status"
                   element={
                     <Suspense fallback={<PageLoader />}>
                       <ProtectedStaffRoute>
-                        <CreateLitigation />
+                        <StatusUserList />
+                      </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+
+                {/* Leave Management */}
+                <Route
+                  path="leave-application"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <LeaveAppForm />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="staff/leave-application"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <LeaveApplicationList />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="staff/leave-application/:id/details"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <LeaveApplicationDetails />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="staff/leave-balance"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <LeaveBalanceList />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+
+                {/* Matters Management */}
+                <Route
+                  path="matters"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ProtectedStaffRoute>
+                        <MatterListView />
                       </ProtectedStaffRoute>
                     </Suspense>
                   }
                 />
                 <Route
-                  path=":matterId"
+                  path="matters/create"
                   element={
                     <Suspense fallback={<PageLoader />}>
-                      <LitigationDetails />
+                      <ProtectedStaffRoute>
+                        <MatterFormContainer />
+                      </ProtectedStaffRoute>
                     </Suspense>
                   }
                 />
                 <Route
-                  path=":matterId/edit"
+                  path="matters/:id"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <MatterDetails />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="matters/:id/edit"
                   element={
                     <Suspense fallback={<PageLoader />}>
                       <ProtectedStaffRoute>
-                        <EditLitigation />
+                        <MatterFormContainer isEditMode={true} />
                       </ProtectedStaffRoute>
+                    </Suspense>
+                  }
+                />
+
+                {/* Litigation Management */}
+                <Route path="matters/litigation">
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <LitigationDashboardPage />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <CreateLitigation />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <LitigationDetails />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/edit"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <EditLitigation />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                </Route>
+
+                {/* Corporate Matters Management */}
+                <Route path="matters/corporate">
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <CorporateMatterList />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <CreateCorporateMatter />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <CorporateMatterDetails />
+                      </Suspense>
+                    }
+                  />
+                </Route>
+
+                {/* Property Management */}
+                <Route path="matters/property">
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <PropertyList />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <CreateProperty />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/edit"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <EditProperty />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/details"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <PropertyDetails />
+                      </Suspense>
+                    }
+                  />
+                </Route>
+
+                {/* Retainer Management */}
+                <Route path="matters/retainers">
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <RetainerList />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <CreateRetainerPage />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/details"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <RetainerDetailsPage />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/edit"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <RetainerDetailsPage editMode />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                </Route>
+
+                {/* General Matter Management */}
+                <Route path="matters/general">
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <GeneralList />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <CreateGeneral />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/details"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <GeneralDetails />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/edit"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <GeneralDetails editMode />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                </Route>
+
+                {/* Advisory Matter Management */}
+                <Route path="matters/advisory">
+                  <Route
+                    index
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <AdvisoryDashboardPage />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/create"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <AdvisoryCreatePage />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/details"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <AdvisoryDetailPage />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path=":matterId/edit"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProtectedStaffRoute>
+                          <AdvisoryEditPage editMode />
+                        </ProtectedStaffRoute>
+                      </Suspense>
+                    }
+                  />
+                </Route>
+
+                {/* Calendar Management */}
+                <Route
+                  path="calendar"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <CalendarPage />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="calendar/dashboard"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <CalendarDashboard />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="calendar/blocked-dates"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <BlockedDatesPage />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+
+                {/* Cases Management */}
+                <Route
+                  path="cases"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <CaseList />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="cases/add-case"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <CreateCaseForm />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="cases/:id/update"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <UpdateCase />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="cases/:id/casedetails"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <CaseDetails />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="cases/soft-deleted-cases"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <SoftDeletedCasesArchive />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+
+                {/* Case Reports */}
+                <Route
+                  path="case-reports"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <MainCaseReportList />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="case-reports/add-report"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <CreateCaseReportForm />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="case-reports/soft-deleted-items"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <SoftDeletedReportsArchive />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+
+                {/* Tasks Management */}
+                <Route
+                  path="tasks"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <TaskList />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="tasks/add-task"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <CreateTaskForm />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="tasks/:id/details"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <TaskDetails />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="tasks/:id/update"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <EditTaskForm />
+                    </Suspense>
+                  }
+                />
+
+                {/* Clients Management */}
+                <Route
+                  path="clients"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <ClientLists />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="clients/add-client"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <AddClientForm />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="clients/:id/details"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ClientDetails />
+                    </Suspense>
+                  }
+                />
+
+                {/* Billing Management */}
+                <Route
+                  path="billings"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <InvoiceList />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="billings/invoices/add-invoices"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <CreateInvoiceForm />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="billings/invoices/:id/details"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <InvoiceDetails />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="billings/invoices/:id/update"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <UpdateInvoice />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="billings/payments/client/:clientId/case/:caseId"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <PaymentMadeOnCase />
+                    </Suspense>
+                  }
+                />
+
+                {/* Documents Management */}
+                <Route
+                  path="documents"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <ShowStaff>
+                          <DocumentsList />
+                        </ShowStaff>
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="record-documents"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <DocumentRecord />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="record-document-list"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <DocumentRecordList />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="record-document-list/:id/details"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <DocumentRecordDetails />
+                    </Suspense>
+                  }
+                />
+
+                {/* Notes Management */}
+                <Route
+                  path="add-notes"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <NoteForm />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="note-list"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <NoteList />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="update-note/:id"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <UpdateNote />
+                    </Suspense>
+                  }
+                />
+
+                {/* Cause List & Events */}
+                <Route
+                  path="cause-list"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ShowOnlyVerifiedUser>
+                        <CauseList />
+                      </ShowOnlyVerifiedUser>
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path="events/:id/details"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <EventDetail />
+                    </Suspense>
+                  }
+                />
+
+                {/* Support */}
+                <Route
+                  path="contact-dev"
+                  element={
+                    <Suspense fallback={<PageLoader />}>
+                      <ContactForm />
                     </Suspense>
                   }
                 />
               </Route>
 
-              {/* Corporate Matters Management (Nested under /dashboard/matters/) */}
-              <Route path="matters/corporate">
-                <Route
-                  index
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <CorporateMatterList />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-                <Route
-                  path=":matterId/create"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <CreateCorporateMatter />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-                <Route
-                  path=":matterId"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <CorporateMatterDetails />
-                    </Suspense>
-                  }
-                />
-                {/* <Route  
-                  path=":matterId/edit"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <EditCorporateMatter />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                /> */}
-              </Route>
-
-              <Route path="matters/property">
-                <Route
-                  index
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <PropertyList />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-
-                <Route
-                  path=":matterId/create"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <CreateProperty />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-
-                <Route
-                  path=":matterId/edit"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <EditProperty />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-
-                <Route
-                  path=":matterId/details"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <PropertyDetails />
-                    </Suspense>
-                  }
-                />
-              </Route>
-
-              {/* Retainer Management */}
-
-              {/* ==================== RETAINER ROUTES (NEW) ==================== */}
-              <Route path="matters/retainers">
-                {/* List all retainers */}
-                <Route
-                  index
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <RetainerList />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-
-                {/* Create new retainer */}
-                <Route
-                  path=":matterId/create"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <CreateRetainerPage />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-
-                {/* View retainer details */}
-                <Route
-                  path=":matterId/details"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <RetainerDetailsPage />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-
-                {/* Edit retainer (opens details in edit mode) */}
-                <Route
-                  path=":matterId/edit"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <RetainerDetailsPage editMode />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-              </Route>
-
-              {/* General Matter Management */}
-
-              <Route path="matters/general">
-                {/* List all general matters */}
-                <Route
-                  index
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <GeneralList />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-                {/* Create new general matter */}
-                <Route
-                  path=":matterId/create"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <CreateGeneral />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-                {/* View general matter details */}
-                <Route
-                  path=":matterId/details"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <GeneralDetails />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-                {/* Edit general matter (opens details in edit mode) */}
-                <Route
-                  path=":matterId/edit"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <GeneralDetails editMode />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-              </Route>
-
-              {/* Advisory Matter Management */}
-
-              <Route path="matters/advisory">
-                {/* List all general matters */}
-                <Route
-                  index
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <AdvisoryDashboardPage />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-                {/* Create new general matter */}
-                <Route
-                  path=":matterId/create"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <AdvisoryCreatePage />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-                {/* View general matter details */}
-                <Route
-                  path=":matterId/details"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <AdvisoryDetailPage />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-                {/* Edit general matter (opens details in edit mode) */}
-                <Route
-                  path=":matterId/edit"
-                  element={
-                    <Suspense fallback={<PageLoader />}>
-                      <ProtectedStaffRoute>
-                        <AdvisoryEditPage editMode />
-                      </ProtectedStaffRoute>
-                    </Suspense>
-                  }
-                />
-              </Route>
-
-              <Route
-                path="calendar"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <CalendarPage />
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-
-              <Route
-                path="calendar/dashboard"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <CalendarDashboard />
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-
-              <Route
-                path="calendar/blocked-dates"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <BlockedDatesPage />
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-
-              {/* Cases Management */}
-              <Route
-                path="cases"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <CaseList />
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-              <Route
-                path="cases/add-case"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <CreateCaseForm />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="cases/:id/update"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <UpdateCase />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="cases/:id/casedetails"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <CaseDetails />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="cases/soft-deleted-cases"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <SoftDeletedCasesArchive />
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-
-              {/* Case Reports */}
-              <Route
-                path="case-reports"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <MainCaseReportList />
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-              <Route
-                path="case-reports/add-report"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <CreateCaseReportForm />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="case-reports/soft-deleted-items"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <SoftDeletedReportsArchive />
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-
-              {/* Tasks Management */}
-              <Route
-                path="tasks"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <TaskList />
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-              <Route
-                path="tasks/add-task"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <CreateTaskForm />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="tasks/:id/details"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <TaskDetails />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="tasks/:id/update"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <EditTaskForm />
-                  </Suspense>
-                }
-              />
-
-              {/* Clients Management */}
-              <Route
-                path="clients"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <ClientLists />
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-              <Route
-                path="clients/add-client"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <AddClientForm />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="clients/:id/details"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ClientDetails />
-                  </Suspense>
-                }
-              />
-
-              {/* Billing Management */}
-              <Route
-                path="billings"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <InvoiceList />
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-              <Route
-                path="billings/invoices/add-invoices"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <CreateInvoiceForm />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="billings/invoices/:id/details"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <InvoiceDetails />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="billings/invoices/:id/update"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <UpdateInvoice />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="billings/payments/client/:clientId/case/:caseId"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <PaymentMadeOnCase />
-                  </Suspense>
-                }
-              />
-
-              {/* Documents Management */}
-              <Route
-                path="documents"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <ShowStaff>
-                        <DocumentsList />
-                      </ShowStaff>
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-              <Route
-                path="record-documents"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <DocumentRecord />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="record-document-list"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <DocumentRecordList />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="record-document-list/:id/details"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <DocumentRecordDetails />
-                  </Suspense>
-                }
-              />
-
-              {/* Notes Management */}
-              <Route
-                path="add-notes"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <NoteForm />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="note-list"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <NoteList />
-                  </Suspense>
-                }
-              />
-              <Route
-                path="update-note/:id"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <UpdateNote />
-                  </Suspense>
-                }
-              />
-
-              {/* Calendar & Events */}
-              <Route
-                path="cause-list"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ShowOnlyVerifiedUser>
-                      <CauseList />
-                    </ShowOnlyVerifiedUser>
-                  </Suspense>
-                }
-              />
-              <Route
-                path="events/:id/details"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <EventDetail />
-                  </Suspense>
-                }
-              />
-
-              {/* Support */}
-              <Route
-                path="contact-dev"
-                element={
-                  <Suspense fallback={<PageLoader />}>
-                    <ContactForm />
-                  </Suspense>
-                }
-              />
+              {/* 404 - Not Found */}
+              <Route path="*" element={<NotFound />} />
             </Route>
-
-            {/* 404 - Not Found (catch all) */}
-            <Route path="*" element={<NotFound />} />
           </Route>,
         ),
       ),
     [],
   );
 
-  // ============================================
-  // THEME-AWARE TOAST CONTAINER
-  // ============================================
   const toastContainerProps = useMemo(
     () => ({
       position: "top-right",
@@ -1189,22 +1187,24 @@ function App() {
     [isDarkMode],
   );
 
-  // ============================================
-  // ANTD THEME (Memoized)
-  // ============================================
   const antdTheme = useMemo(() => getAntdTheme(isDarkMode), [isDarkMode]);
+
+  // ============================================
+  // EARLY RETURN — AFTER ALL HOOKS
+  // ============================================
+  if (!isAuthReady || isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-white dark:bg-gray-900 z-50">
+        <Spin size="large" tip="Loading..." />
+      </div>
+    );
+  }
 
   return (
     <ThemeProvider>
       <ConfigProvider theme={antdTheme}>
-        {isLoading ? (
-          <LoadingScreen />
-        ) : (
-          <>
-            <RouterProvider router={router} />
-            <ToastContainer {...toastContainerProps} />
-          </>
-        )}
+        <RouterProvider router={router} />
+        <ToastContainer {...toastContainerProps} />
       </ConfigProvider>
     </ThemeProvider>
   );

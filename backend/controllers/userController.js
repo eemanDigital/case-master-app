@@ -4,7 +4,7 @@ const User = require("../models/userModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const filterObj = require("../utils/filterObj");
-const sendMail = require("../utils/email");
+const { sendMail, sendCustomEmail } = require("../utils/email");
 const PaginationServiceFactory = require("../services/PaginationServiceFactory");
 const Firm = require("../models/firmModel");
 
@@ -32,7 +32,10 @@ exports.getUsers = catchAsync(async (req, res, next) => {
     process.env.DEBUG_QUERIES === "true" || req.query.debug === "true";
 
   if (debug) {
-    console.log("\n🔍 [getUsers] Request Query:", JSON.stringify(req.query, null, 2));
+    console.log(
+      "\n🔍 [getUsers] Request Query:",
+      JSON.stringify(req.query, null, 2),
+    );
     console.log("📋 Raw Query Keys:", Object.keys(req.query));
   }
 
@@ -49,15 +52,18 @@ exports.getUsers = catchAsync(async (req, res, next) => {
         type: typeof req.query.role,
         value: req.query.role,
         isArray: Array.isArray(req.query.role),
-        isObject: typeof req.query.role === 'object',
-        keys: typeof req.query.role === 'object' ? Object.keys(req.query.role) : 'N/A'
+        isObject: typeof req.query.role === "object",
+        keys:
+          typeof req.query.role === "object"
+            ? Object.keys(req.query.role)
+            : "N/A",
       });
     }
 
     // Case 1: Simple string (not an object) - e.g., role=admin or role=admin,lawyer
-    if (typeof req.query.role === 'string') {
+    if (typeof req.query.role === "string") {
       // Check if it's comma-separated
-      if (req.query.role.includes(',')) {
+      if (req.query.role.includes(",")) {
         const roles = req.query.role.split(",").map((r) => r.trim());
         customFilter.role = roles.length === 1 ? roles[0] : { $in: roles };
       } else {
@@ -66,14 +72,20 @@ exports.getUsers = catchAsync(async (req, res, next) => {
       }
     }
     // Case 2: Object with $in property (parsed by Express from role[$in][0]=admin)
-    else if (typeof req.query.role === 'object' && req.query.role !== null && !Array.isArray(req.query.role)) {
+    else if (
+      typeof req.query.role === "object" &&
+      req.query.role !== null &&
+      !Array.isArray(req.query.role)
+    ) {
       // Check if it has $in property
       if (req.query.role.$in !== undefined) {
-        const roles = Array.isArray(req.query.role.$in) ? req.query.role.$in : [req.query.role.$in];
+        const roles = Array.isArray(req.query.role.$in)
+          ? req.query.role.$in
+          : [req.query.role.$in];
         customFilter.role = { $in: roles };
-      } 
+      }
       // Check if it's an object with numeric keys like { '0': 'admin', '1': 'lawyer' }
-      else if (Object.keys(req.query.role).every(key => !isNaN(key))) {
+      else if (Object.keys(req.query.role).every((key) => !isNaN(key))) {
         const roles = Object.values(req.query.role);
         customFilter.role = { $in: roles };
       }
@@ -89,7 +101,10 @@ exports.getUsers = catchAsync(async (req, res, next) => {
     }
     // Case 3: Array (rare but possible)
     else if (Array.isArray(req.query.role)) {
-      customFilter.role = req.query.role.length === 1 ? req.query.role[0] : { $in: req.query.role };
+      customFilter.role =
+        req.query.role.length === 1
+          ? req.query.role[0]
+          : { $in: req.query.role };
     }
     // Case 4: Other types (number, boolean) - convert to string
     else {
@@ -102,22 +117,29 @@ exports.getUsers = catchAsync(async (req, res, next) => {
     if (debug) {
       console.log("👤 userType parameter:", {
         type: typeof req.query.userType,
-        value: req.query.userType
+        value: req.query.userType,
       });
     }
 
-    if (typeof req.query.userType === 'string') {
-      if (req.query.userType.includes(',')) {
+    if (typeof req.query.userType === "string") {
+      if (req.query.userType.includes(",")) {
         const userTypes = req.query.userType.split(",").map((t) => t.trim());
-        customFilter.userType = userTypes.length === 1 ? userTypes[0] : { $in: userTypes };
+        customFilter.userType =
+          userTypes.length === 1 ? userTypes[0] : { $in: userTypes };
       } else {
         customFilter.userType = req.query.userType;
       }
-    } else if (typeof req.query.userType === 'object' && req.query.userType !== null && !Array.isArray(req.query.userType)) {
+    } else if (
+      typeof req.query.userType === "object" &&
+      req.query.userType !== null &&
+      !Array.isArray(req.query.userType)
+    ) {
       if (req.query.userType.$in !== undefined) {
-        const userTypes = Array.isArray(req.query.userType.$in) ? req.query.userType.$in : [req.query.userType.$in];
+        const userTypes = Array.isArray(req.query.userType.$in)
+          ? req.query.userType.$in
+          : [req.query.userType.$in];
         customFilter.userType = { $in: userTypes };
-      } else if (Object.keys(req.query.userType).every(key => !isNaN(key))) {
+      } else if (Object.keys(req.query.userType).every((key) => !isNaN(key))) {
         const userTypes = Object.values(req.query.userType);
         customFilter.userType = { $in: userTypes };
       } else if (Object.keys(req.query.userType).length === 0) {
@@ -126,7 +148,10 @@ exports.getUsers = catchAsync(async (req, res, next) => {
         customFilter.userType = req.query.userType;
       }
     } else if (Array.isArray(req.query.userType)) {
-      customFilter.userType = req.query.userType.length === 1 ? req.query.userType[0] : { $in: req.query.userType };
+      customFilter.userType =
+        req.query.userType.length === 1
+          ? req.query.userType[0]
+          : { $in: req.query.userType };
     } else {
       customFilter.userType = String(req.query.userType);
     }
@@ -145,17 +170,22 @@ exports.getUsers = catchAsync(async (req, res, next) => {
   }
 
   // Clean up any empty objects in the filter
-  Object.keys(customFilter).forEach(key => {
-    if (customFilter[key] && 
-        typeof customFilter[key] === 'object' && 
-        !Array.isArray(customFilter[key]) && 
-        Object.keys(customFilter[key]).length === 0) {
+  Object.keys(customFilter).forEach((key) => {
+    if (
+      customFilter[key] &&
+      typeof customFilter[key] === "object" &&
+      !Array.isArray(customFilter[key]) &&
+      Object.keys(customFilter[key]).length === 0
+    ) {
       delete customFilter[key];
     }
   });
 
   if (debug) {
-    console.log("🔧 Final Custom Filter:", JSON.stringify(customFilter, null, 2));
+    console.log(
+      "🔧 Final Custom Filter:",
+      JSON.stringify(customFilter, null, 2),
+    );
   }
 
   try {
@@ -195,16 +225,16 @@ exports.getUsers = catchAsync(async (req, res, next) => {
     });
   } catch (error) {
     console.error("❌ Pagination error in getUsers:", error);
-    
+
     // Return a graceful error response
-    if (error.name === 'CastError') {
+    if (error.name === "CastError") {
       return res.status(400).json({
         success: false,
         message: `Invalid filter value for ${error.path}: ${error.value}`,
         error: error.message,
       });
     }
-    
+
     throw error; // Let the global error handler handle it
   }
 });
@@ -994,7 +1024,14 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 // controllers/userController.js - UPDATE upgradeUser function
 exports.upgradeUser = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const { userType, role, position, isActive, additionalRoles, ...otherFields } = req.body;
+  const {
+    userType,
+    role,
+    position,
+    isActive,
+    additionalRoles,
+    ...otherFields
+  } = req.body;
 
   console.log("🔄 Upgrade User Request:", {
     userId: id,
@@ -1048,7 +1085,9 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
 
   // ✅ Handle additional roles
   if (additionalRoles !== undefined) {
-    user.additionalRoles = Array.isArray(additionalRoles) ? additionalRoles : [];
+    user.additionalRoles = Array.isArray(additionalRoles)
+      ? additionalRoles
+      : [];
   }
 
   // ✅ Handle isLawyer flag
@@ -1071,7 +1110,9 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
 
   if (
     req.body.adminDetails &&
-    (user.userType === "admin" || user.userType === "super-admin" || user.additionalRoles?.includes("admin"))
+    (user.userType === "admin" ||
+      user.userType === "super-admin" ||
+      user.additionalRoles?.includes("admin"))
   ) {
     user.adminDetails = { ...user.adminDetails, ...req.body.adminDetails };
   }
@@ -1334,6 +1375,260 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
     });
   } catch (error) {
     return next(error);
+  }
+});
+
+/**
+ * Send custom email with HTML content and attachments
+ * SECURITY: Added input validation, sanitization, and audit logging
+ */
+exports.sendCustomEmail = catchAsync(async (req, res, next) => {
+  // Handle both JSON and FormData (Multer puts fields in req.body)
+  let { send_to, reply_to, subject, htmlContent, textContent, attachment } = req.body;
+
+  // With upload.any(), fields might be in req.body but need parsing
+  if (!subject && req.body.subject) {
+    subject = req.body.subject;
+  }
+  if (!send_to && req.body.send_to) {
+    send_to = req.body.send_to;
+  }
+  if (!reply_to && req.body.reply_to) {
+    reply_to = req.body.reply_to;
+  }
+  if (!htmlContent && req.body.htmlContent) {
+    htmlContent = req.body.htmlContent;
+  }
+  if (!textContent && req.body.textContent) {
+    textContent = req.body.textContent;
+  }
+  if (!attachment && req.body.attachment) {
+    attachment = req.body.attachment;
+  }
+
+  // Security: Validate and sanitize inputs
+  if (!subject || typeof subject !== "string") {
+    return next(new AppError("Subject is required", 400));
+  }
+
+  // Validate textContent is a string if provided
+  if (textContent !== undefined && typeof textContent !== "string") {
+    textContent = String(textContent);
+  }
+
+  // Security: Sanitize subject to prevent header injection
+  subject = subject.replace(/[\r\n]/g, "").trim();
+  if (subject.length > 200) {
+    return next(new AppError("Subject too long (max 200 characters)", 400));
+  }
+
+  // Parse send_to if it comes as string from FormData
+  let recipients = [];
+  if (typeof send_to === "string") {
+    recipients = [send_to];
+  } else if (Array.isArray(send_to)) {
+    recipients = send_to;
+  }
+
+  // Security: Validate recipients
+  if (!recipients.length) {
+    return next(new AppError("At least one recipient is required", 400));
+  }
+
+  // Security: Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  for (const email of recipients) {
+    if (!emailRegex.test(email)) {
+      return next(new AppError(`Invalid email address: ${email}`, 400));
+    }
+  }
+
+  // Security: Limit number of recipients
+  if (recipients.length > 50) {
+    return next(new AppError("Maximum 50 recipients allowed", 400));
+  }
+
+  // Handle attachments from FormData (files)
+  let processedAttachments = [];
+  let totalAttachmentSize = 0;
+
+  // Security: Check file upload count
+  if (req.files && req.files.length > 10) {
+    return next(new AppError("Maximum 10 files allowed", 400));
+  }
+
+  // Check for uploaded files (from Multer)
+  if (req.files && req.files.length > 0) {
+    for (const file of req.files) {
+      totalAttachmentSize += file.size;
+      if (file.size > 10 * 1024 * 1024) {
+        return next(
+          new AppError(`File ${file.originalname} exceeds 10MB limit`, 400),
+        );
+      }
+      processedAttachments.push({
+        content: file.buffer.toString("base64"),
+        filename: file.originalname,
+      });
+    }
+  }
+
+  // Security: Check total attachment size (max 20MB)
+  if (totalAttachmentSize > 20 * 1024 * 1024) {
+    return next(new AppError("Total attachments exceed 20MB limit", 400));
+  }
+
+  // Check for attachment data (from JSON or stringified FormData)
+  if (attachment) {
+    try {
+      const attachmentsArray =
+        typeof attachment === "string" ? JSON.parse(attachment) : attachment;
+
+      const atts = Array.isArray(attachmentsArray)
+        ? attachmentsArray
+        : [attachmentsArray];
+
+      for (const att of atts) {
+        if (att.content && att.filename) {
+          // Security: Validate base64 size
+          const estSize = (att.content.length * 3) / 4;
+          if (estSize > 10 * 1024 * 1024) {
+            return next(
+              new AppError(
+                `Attachment ${att.filename} exceeds 10MB limit`,
+                400,
+              ),
+            );
+          }
+          processedAttachments.push({
+            content: att.content,
+            filename: att.filename,
+          });
+        }
+      }
+    } catch (e) {
+      console.log("Could not parse attachments:", e.message);
+    }
+  }
+
+  if (!recipients.length || !subject) {
+    return next(new AppError("Recipient(s) and subject are required", 400));
+  }
+
+  const firm = await Firm.findById(req.firmId);
+  const send_from = process.env.SENDINBLUE_EMAIL || process.env.EMAIL_FROM;
+  const devEmail = process.env.DEVELOPER_EMAIL;
+
+  // Convert markdown-like formatting to HTML
+  const convertToHtml = (text) => {
+    if (!text) return '';
+    
+    let html = text
+      // Escape HTML characters first
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      // Convert markdown to HTML
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/__(.*?)__/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/_(.*?)_/g, '<em>$1</em>')
+      .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>')
+      // Convert line breaks to paragraphs
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+    
+    return `<p>${html}</p>`;
+  };
+
+  // Security: Sanitize HTML content to prevent XSS in email
+  const sanitizeHtml = (html) => {
+    if (!html) return "";
+    return html
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
+      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, "")
+      .replace(/javascript:/gi, "")
+      .replace(/on\w+\s*=/gi, "");
+  };
+
+  // Convert text content to HTML if only text is provided
+  let htmlContentToUse = htmlContent;
+  if (!htmlContentToUse && textContent) {
+    htmlContentToUse = convertToHtml(textContent);
+  }
+
+  // Default HTML with sanitization
+  const defaultHtmlContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">${firm?.name || "Law Firm"}</h1>
+      </div>
+      <div style="padding: 30px; background: #f9f9f9; border-radius: 0 0 10px 10px;">
+        ${htmlContentToUse ? sanitizeHtml(htmlContentToUse) : "<p>Please find below important information from your legal team.</p>"}
+      </div>
+      <div style="text-align: center; padding: 20px; color: #999; font-size: 12px;">
+        <p>&copy; ${new Date().getFullYear()} ${firm?.name || "Law Firm"}. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+
+  // Use provided HTML with sanitization (or converted from text)
+  const finalHtmlContent = htmlContent
+    ? sanitizeHtml(htmlContent) + defaultHtmlContent
+    : defaultHtmlContent;
+
+  const sendEmailToRecipient = async (recipientEmail) => {
+    let user = null;
+    let personalizedHtml = finalHtmlContent;
+    let personalizedText = textContent;
+
+    // Personalize for known users
+    if (recipientEmail !== devEmail) {
+      user = await User.findOne({
+        email: recipientEmail,
+        firmId: req.firmId,
+        isDeleted: { $ne: true },
+      });
+
+      if (user) {
+        // Security: Sanitize name before inserting
+        const safeName = (user.firstName || "Client").replace(/[<>]/g, "");
+        personalizedHtml = personalizedHtml.replace(/\{\{name\}\}/g, safeName);
+        personalizedText =
+          personalizedText?.replace(/\{\{name\}\}/g, safeName) || "";
+      }
+    }
+
+    await sendCustomEmail(
+      subject,
+      recipientEmail,
+      send_from,
+      reply_to || send_from,
+      personalizedHtml,
+      processedAttachments,
+      personalizedText,
+    );
+  };
+
+  try {
+    await Promise.all(recipients.map(sendEmailToRecipient));
+
+    // Security: Log email activity for audit (without sensitive data)
+    console.log(
+      `📧 [AUDIT] Custom email sent: subject="${subject}", recipients=${recipients.length}, attachments=${processedAttachments.length}, by=${req.user?._id}`,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `Custom email${recipients.length > 1 ? "s" : ""} sent successfully`,
+      data: {
+        recipients: recipients.length,
+        attachmentsCount: processedAttachments.length,
+      },
+    });
+  } catch (error) {
+    console.error("Custom email error:", error);
+    return next(new AppError(`Failed to send email: ${error.message}`, 500));
   }
 });
 

@@ -43,6 +43,24 @@ export const sendAutomatedCustomEmail = createAsyncThunk(
   }
 );
 
+// New thunk for custom emails with HTML and attachments
+export const sendCustomEmail = createAsyncThunk(
+  "email/sendCustomEmail",
+  async (emailData, thunkAPI) => {
+    try {
+      return await emailService.sendCustomEmail(emailData);
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
 const emailSlice = createSlice({
   name: "email",
   initialState,
@@ -82,6 +100,22 @@ const emailSlice = createSlice({
         toast.success(action.payload);
       })
       .addCase(sendAutomatedCustomEmail.rejected, (state, action) => {
+        state.sendingEmail = false;
+        state.emailSent = false;
+        state.msg = action.payload;
+        toast.error(action.payload);
+      })
+      // Send Custom Email with attachments
+      .addCase(sendCustomEmail.pending, (state) => {
+        state.sendingEmail = true;
+      })
+      .addCase(sendCustomEmail.fulfilled, (state, action) => {
+        state.sendingEmail = false;
+        state.emailSent = true;
+        state.msg = action.payload.message;
+        toast.success(action.payload.message);
+      })
+      .addCase(sendCustomEmail.rejected, (state, action) => {
         state.sendingEmail = false;
         state.emailSent = false;
         state.msg = action.payload;

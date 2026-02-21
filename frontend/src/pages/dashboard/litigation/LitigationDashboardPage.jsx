@@ -2,11 +2,15 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { Tabs, Spin, Alert, Button, Row, Col } from "antd";
+import { Tabs, Spin, Alert, Button, Row, Col, Card, Typography } from "antd";
 import {
   ReloadOutlined,
   AppstoreOutlined,
   UnorderedListOutlined,
+  BarChartOutlined,
+  CalendarOutlined,
+  BellOutlined,
+  ScheduleOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -28,14 +32,13 @@ import LitigationDashboardHeader from "../../../components/litigation/dashboard/
 import LitigationStatsGrid from "../../../components/litigation/dashboard/LitigationStatsGrid";
 import LitigationTable from "../../../components/litigation/LitigationTable";
 import LitigationFilters from "../../../components/litigation/filters/LitigationFilters";
-// import LitigationBulkActions from "../../../components/litigation/dashboard/LitigationBulkActions";
 import UpcomingHearingsWidget from "../../../components/litigation/dashboard/UpcomingHearingsWidget";
 import CourtDistributionChart from "../../../components/litigation/dashboard/CourtDistributionChart";
 import CaseStageChart from "../../../components/litigation/dashboard/CaseStageChart";
 import HearingsTimeline from "../../../components/litigation/dashboard/HearingsTimeline";
 import CourtOrderDeadlinesWidget from "../../../components/calender/CourtOrderDeadlinesWidget";
-// import CourtHearingsWidget from "../../../components/calender/CourtHearingsWidget";
 
+const { Title, Text } = Typography;
 const { TabPane } = Tabs;
 
 const LitigationDashboardPage = () => {
@@ -160,10 +163,10 @@ const LitigationDashboardPage = () => {
   // Loading state
   if (loading && matters.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
           <Spin size="large" className="mb-4" />
-          <div className="text-gray-600">Loading litigation dashboard...</div>
+          <div className="text-slate-600">Loading litigation dashboard...</div>
         </div>
       </div>
     );
@@ -172,7 +175,7 @@ const LitigationDashboardPage = () => {
   // Error state
   if (error && matters.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <Alert
           type="error"
           message="Failed to load litigation dashboard"
@@ -190,51 +193,128 @@ const LitigationDashboardPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-50">
       <LitigationDashboardHeader
         totalMatters={pagination.total || 0}
         onRefresh={handleRefresh}
         isLoading={loading || statsLoading}
       />
 
-      <div className="p-6 space-y-6">
+      <div className="px-6 pb-6 space-y-6">
         {/* Stats Grid */}
         <LitigationStatsGrid stats={stats} loading={statsLoading} />
 
-        {/* Charts Row */}
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={8}>
-            <CourtDistributionChart data={stats?.byCourt || []} />
-          </Col>
-          <Col xs={24} lg={8}>
-            <CaseStageChart data={stats?.byStage || []} />
-          </Col>
-          <Col xs={24} lg={8}>
-            <UpcomingHearingsWidget
-              hearings={upcomingHearings}
-              loading={loading}
-              onViewAll={() => navigate("#dashboard/calendar")}
-            />
-          </Col>
-        </Row>
+        {/* Analytics Section */}
+        <Card
+          className="rounded-xl border-slate-200 shadow-sm"
+          bodyStyle={{ padding: "24px" }}>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-100">
+              <BarChartOutlined className="text-white text-lg" />
+            </div>
+            <div>
+              <Title level={5} className="!mb-0 !text-slate-800">
+                Analytics Overview
+              </Title>
+              <Text type="secondary" className="text-xs">
+                Court distribution and case stages
+              </Text>
+            </div>
+          </div>
 
+          <Row gutter={[24, 24]}>
+            <Col xs={24} lg={12}>
+              <div className="h-[300px]">
+                <CourtDistributionChart data={stats?.byCourt || []} />
+              </div>
+            </Col>
+            <Col xs={24} lg={12}>
+              <div className="h-[300px]">
+                <CaseStageChart data={stats?.byStage || []} />
+              </div>
+            </Col>
+          </Row>
+        </Card>
+
+        {/* Upcoming Hearings & Deadlines Row */}
         <Row gutter={[24, 24]}>
-          {/* Hearings Section */}
-
-          {/* Deadlines Section */}
-          <Col xs={24} xl={8}>
-            <CourtOrderDeadlinesWidget limit={5} showStatistics={true} />
+          <Col xs={24} lg={12}>
+            <Card
+              className="rounded-xl border-slate-200 shadow-sm h-full"
+              bodyStyle={{ padding: "0" }}>
+              <div className="flex items-center justify-between p-5 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
+                    <ScheduleOutlined className="text-white" />
+                  </div>
+                  <div>
+                    <Title level={5} className="!mb-0 !text-sm !text-slate-800">
+                      Upcoming Hearings
+                    </Title>
+                    <Text type="secondary" className="text-xs">
+                      Next 7 days
+                    </Text>
+                  </div>
+                </div>
+              </div>
+              <UpcomingHearingsWidget
+                hearings={upcomingHearings}
+                loading={loading}
+                onViewAll={() => navigate("#dashboard/calendar")}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} lg={12}>
+            <Card
+              className="rounded-xl border-slate-200 shadow-sm h-full"
+              bodyStyle={{ padding: "0" }}>
+              <div className="flex items-center justify-between p-5 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-rose-500 to-red-500 flex items-center justify-center shadow-md">
+                    <BellOutlined className="text-white" />
+                  </div>
+                  <div>
+                    <Title level={5} className="!mb-0 !text-sm !text-slate-800">
+                      Court Deadlines
+                    </Title>
+                    <Text type="secondary" className="text-xs">
+                      Upcoming order deadlines
+                    </Text>
+                  </div>
+                </div>
+              </div>
+              <CourtOrderDeadlinesWidget limit={5} showStatistics={true} />
+            </Card>
           </Col>
         </Row>
 
         {/* Hearings Timeline */}
-        <HearingsTimeline data={stats?.hearingsByMonth || []} />
+        <Card
+          className="rounded-xl border-slate-200 shadow-sm"
+          bodyStyle={{ padding: "24px" }}>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-100">
+              <CalendarOutlined className="text-white text-lg" />
+            </div>
+            <div>
+              <Title level={5} className="!mb-0 !text-slate-800">
+                Hearings Timeline
+              </Title>
+              <Text type="secondary" className="text-xs">
+                Monthly hearing activity
+              </Text>
+            </div>
+          </div>
+          <HearingsTimeline data={stats?.hearingsByMonth || []} />
+        </Card>
 
-        {/* Main Content Card */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-          {/* View Toggle & Filters */}
-          <div className="px-6 pt-5 pb-3 border-b border-gray-100">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Matters Table */}
+        <Card
+          className="rounded-xl border-slate-200 shadow-sm overflow-hidden"
+          bodyStyle={{ padding: "0" }}>
+          {/* Table Header */}
+          <div className="px-6 py-5 border-b border-slate-100 bg-slate-50/50">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="flex items-center gap-4">
                 <Tabs
                   activeKey={activeView}
@@ -262,10 +342,14 @@ const LitigationDashboardPage = () => {
                   />
                 </Tabs>
 
-                <span className="text-sm text-gray-500">
-                  {pagination.total || 0}{" "}
+                <span className="text-sm text-slate-500">
+                  <span className="font-medium text-slate-700">
+                    {pagination.total || 0}
+                  </span>{" "}
                   {pagination.total === 1 ? "matter" : "matters"}
-                  {isFiltersActive && " (filtered)"}
+                  {isFiltersActive && (
+                    <span className="ml-1 text-amber-600">(filtered)</span>
+                  )}
                 </span>
               </div>
 
@@ -274,29 +358,14 @@ const LitigationDashboardPage = () => {
                 onClear={handleClearFilters}
                 loading={loading}
                 initialValues={filters}
-                compact={!filterVisible}
-                onToggleVisibility={() => setFilterVisible(!filterVisible)}
               />
             </div>
           </div>
 
-          {/* Bulk Actions Bar */}
-          {/* {selectedRowKeys.length > 0 && (
-            <LitigationBulkActions
-              selectedCount={selectedRowKeys.length}
-              selectedIds={selectedRowKeys}
-              onClearSelection={handleClearSelection}
-              onSuccess={() => {
-                loadMatters();
-                setSelectedRowKeys([]);
-              }}
-            />
-          )} */}
-
-          {/* Content Area */}
+          {/* Table Content */}
           <div className="relative">
             {loading && (
-              <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
+              <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center py-12">
                 <Spin tip="Loading matters..." />
               </div>
             )}
@@ -329,7 +398,7 @@ const LitigationDashboardPage = () => {
               />
             )}
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

@@ -10,7 +10,8 @@ const sendViaBrevoAPI = async (
   send_to,
   send_from,
   reply_to,
-  htmlContent
+  htmlContent,
+  attachments = [],
 ) => {
   const apiKey = process.env.BREVO_API_KEY;
 
@@ -18,20 +19,25 @@ const sendViaBrevoAPI = async (
     throw new Error("BREVO_API_KEY is not configured in environment variables");
   }
 
-  // console.log("📤 Sending email via Brevo API to:", send_to);
-  // console.log("API Key length:", apiKey.length);
-  // console.log("API Key starts with:", apiKey.substring(0, 10) + "...");
-
   const payload = {
     sender: { email: send_from },
-    to: [{ email: send_to }],
+    to: Array.isArray(send_to)
+      ? send_to.map((email) => ({ email }))
+      : [{ email: send_to }],
     subject: subject,
     htmlContent: htmlContent,
-    replyTo: { email: reply_to },
+    replyTo: reply_to ? { email: reply_to } : undefined,
   };
 
+  // Add attachments if provided
+  if (attachments.length > 0) {
+    payload.attachment = attachments.map((att) => ({
+      content: att.content, // Base64 encoded
+      name: att.filename,
+    }));
+  }
+
   try {
-    // Use node-fetch for Node < 18, or global fetch for Node >= 18
     const fetch = globalThis.fetch || require("node-fetch");
 
     const response = await fetch("https://api.brevo.com/v3/smtp/email", {
@@ -45,7 +51,6 @@ const sendViaBrevoAPI = async (
     });
 
     const responseText = await response.text();
-    console.log("Brevo API Response Status:", response.status);
 
     if (!response.ok) {
       console.error("Brevo API Response:", responseText);
@@ -69,7 +74,8 @@ const sendViaSMTP = async (
   send_from,
   reply_to,
   template,
-  context
+  context,
+  attachments = [],
 ) => {
   console.log("🔧 Using SMTP for email (development mode)");
 
@@ -102,10 +108,20 @@ const sendViaSMTP = async (
     from: send_from,
     to: send_to,
     replyTo: reply_to,
-    template,
     subject,
-    context,
+    attachments: attachments.map((att) => ({
+      filename: att.filename,
+      content: att.content, // Base64 or buffer
+    })),
   };
+
+  // If template provided, use it; otherwise use direct HTML
+  if (template) {
+    mailOptions.template = template;
+    mailOptions.context = context;
+  } else {
+    mailOptions.html = context?.html || "";
+  }
 
   await transporter.verify();
   console.log("✅ SMTP connection verified");
@@ -115,54 +131,41 @@ const sendViaSMTP = async (
   return info;
 };
 
-// Main send mail function
+// Main send mail function using template
 const sendMail = async (
   subject,
   send_to,
   send_from,
   reply_to,
   template,
-  context
+  context,
 ) => {
-  console.log("📧 Email Service Called");
+  console.log("📧 Email Service Called - Template Mode");
   console.log("Environment:", process.env.NODE_ENV);
-  console.log("BREVO_API_KEY exists:", !!process.env.BREVO_API_KEY);
   console.log("To:", send_to);
   console.log("Template:", template);
 
   try {
-    // Use Brevo API if API key is available (recommended for Render)
     if (process.env.BREVO_API_KEY) {
       console.log("🚀 Using Brevo API (Render-compatible)");
 
-      // Render the handlebars template to HTML
       const templatePath = path.resolve(
         "./views/emails",
-        `${template}.handlebars`
+        `${template}.handlebars`,
       );
-
-      console.log("Reading template from:", templatePath);
       const templateSource = await fs.readFile(templatePath, "utf8");
-
-      // Compile template with context data
       const compiledTemplate = handlebars.compile(templateSource);
-      const htmlContent = compiledTemplate(context);
-
-      console.log(
-        "Template compiled with context keys:",
-        Object.keys(context || {})
-      );
+      const htmlContent = compiledTemplate(context || {});
 
       return await sendViaBrevoAPI(
         subject,
         send_to,
         send_from,
         reply_to,
-        htmlContent
+        htmlContent,
       );
     }
 
-    // Fallback to SMTP (local development)
     console.log("⚠️  BREVO_API_KEY not found, falling back to SMTP");
     return await sendViaSMTP(
       subject,
@@ -170,13 +173,72 @@ const sendMail = async (
       send_from,
       reply_to,
       template,
-      context
+      context || {},
     );
   } catch (err) {
     console.error("❌ Email sending failed:", err.message);
-    console.error("Full error:", err);
     throw new Error(`Email sending failed: ${err.message}`);
   }
 };
 
-module.exports = sendMail;
+// Enhanced send custom email with HTML content and attachments
+const sendCustomEmail = async (
+  subject,
+  send_to,
+  send_from,
+  reply_to,
+  htmlContent,
+  attachments = [],
+  textContent = "",
+) => {
+  console.log("📧 Email Service Called - Custom Mode");
+  console.log("Environment:", process.env.NODE_ENV);
+  console.log("To:", send_to);
+  console.log("Attachments:", attachments.length);
+
+  try {
+    if (process.env.BREVO_API_KEY) {
+      console.log("🚀 Using Brevo API for custom email");
+
+      return await sendViaBrevoAPI(
+        subject,
+        send_to,
+        send_from,
+        reply_to,
+        htmlContent,
+        attachments,
+      );
+    }
+
+    console.log("⚠️  BREVO_API_KEY not found, falling back to SMTP");
+    return await sendViaSMTP(
+      subject,
+      send_to,
+      send_from,
+      reply_to,
+      null, // No template - using direct HTML
+      { html: htmlContent },
+      attachments,
+    );
+  } catch (err) {
+    console.error("❌ Custom email sending failed:", err.message);
+    throw new Error(`Custom email sending failed: ${err.message}`);
+  }
+};
+
+// Helper to read file and convert to base64
+const getAttachmentContent = async (filePath) => {
+  try {
+    const buffer = await fs.readFile(filePath);
+    return buffer.toString("base64");
+  } catch (error) {
+    console.error("❌ Error reading attachment file:", error.message);
+    return null;
+  }
+};
+
+module.exports = {
+  sendMail,
+  sendCustomEmail,
+  getAttachmentContent,
+};

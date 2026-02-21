@@ -245,9 +245,40 @@ const createDeadlineFromCourtOrder = async (
   }
 };
 
+// Helper function to delete calendar event when hearing is deleted
+const deleteCalendarEventForHearing = async (litigationDetail, hearingId) => {
+  try {
+    const event = await CalendarEvent.findOneAndUpdate(
+      {
+        firmId: litigationDetail.firmId,
+        "customFields.hearingId": hearingId.toString(),
+        isDeleted: false,
+      },
+      {
+        isDeleted: true,
+        deletedAt: new Date(),
+        status: "cancelled",
+      },
+      { new: true },
+    );
+
+    if (event) {
+      console.log(`✅ Deleted calendar event for hearing: ${hearingId}`);
+    } else {
+      console.log(`⚠️ No calendar event found for hearing: ${hearingId}`);
+    }
+
+    return event;
+  } catch (error) {
+    console.error("❌ Error deleting calendar event for hearing:", error);
+    throw error;
+  }
+};
+
 module.exports = {
   createCalendarEventFromHearing,
   updateNextHearingInCalendar,
   markHearingAsCompleted,
   createDeadlineFromCourtOrder,
+  deleteCalendarEventForHearing,
 };

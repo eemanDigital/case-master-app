@@ -1,6 +1,9 @@
 const Matter = require("../models/matterModel");
 const LitigationDetail = require("../models/litigationDetailModel");
 const catchAsync = require("../utils/catchAsync");
+const dayjs = require("dayjs");
+const isSameOrAfter = require("dayjs/plugin/isSameOrAfter");
+const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
 const AppError = require("../utils/appError");
 const PaginationServiceFactory = require("../services/PaginationServiceFactory");
 const {
@@ -8,6 +11,7 @@ const {
   updateNextHearingInCalendar,
   createDeadlineFromCourtOrder,
   markHearingAsCompleted,
+  deleteCalendarEventForHearing,
 } = require("../controllers/calenderSync");
 
 // ============================================
@@ -361,6 +365,7 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
           outcome: hearing.outcome,
           notes: hearing.notes,
           nextHearingDate: hearing.nextHearingDate,
+          hearingNoticeServed: hearing.hearingNoticeServed,
           lawyerPresent: hearing.lawyerPresent,
           preparedBy: hearing.preparedBy,
           createdAt: hearing.createdAt,
@@ -498,14 +503,6 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     },
   ]);
 
-  // ❌ REMOVE THIS - Middleware already did it!
-  // const newHearing = litigationDetail.hearings[litigationDetail.hearings.length - 1];
-  // try {
-  //   await createCalendarEventFromHearing(litigationDetail, newHearing, matter);
-  // } catch (calendarError) {
-  //   console.error("❌ Calendar sync failed:", calendarError);
-  // }
-
   res.status(200).json({
     status: "success",
     message: "Hearing added and synced to calendar",
@@ -627,6 +624,10 @@ exports.getMatterHearings = catchAsync(async (req, res, next) => {
 // UPDATE HEARING (WITH AUTO-CALENDAR SYNC) 🔥
 // ============================================
 
+// 1. Initialize the plugins
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
+
 exports.updateHearing = catchAsync(async (req, res, next) => {
   const { matterId, hearingId } = req.params;
   const updateData = req.body;
@@ -651,62 +652,71 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     return next(new AppError("Litigation not found", 404));
   }
 
-  // Find the hearing
   const hearing = litigationDetail.hearings.id(hearingId);
-
   if (!hearing) {
     return next(new AppError("Hearing not found", 404));
   }
 
-  // ============================================
-  // 🔥 BUSINESS RULE VALIDATION
-  // ============================================
+  // ════════════════════════════════════════════════════════════
+  // BUSINESS RULES LOGIC
+  // ════════════════════════════════════════════════════════════
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const now = dayjs();
+  const hearingDate = dayjs(hearing.date).startOf("day");
+  const gracePeriodEnd = hearingDate.add(2, "day").endOf("day"); // 48hr grace
 
-  const hearingDate = new Date(hearing.date);
-  hearingDate.setHours(0, 0, 0, 0);
+  const isBeforeHearing = now.isBefore(hearingDate);
+  const isWithinGracePeriod =
+    now.isSameOrAfter(hearingDate) && now.isSameOrBefore(gracePeriodEnd);
+  const isAfterGracePeriod = now.isAfter(gracePeriodEnd);
 
-  const isHearingDateToday = hearingDate.getTime() === today.getTime();
-  const isHearingDateInPast = hearingDate < today;
-  const isHearingDateInFuture = hearingDate > today;
-
-  // Fields that should ONLY be editable on the hearing date
-  const restrictedFields = ["outcome", "notes"];
-
-  // Check if user is trying to update restricted fields
-  const hasRestrictedFieldUpdate = restrictedFields.some((field) =>
-    Object.prototype.hasOwnProperty.call(updateData, field),
+  // Fields restricted to filing phase (on/after hearing date)
+  const reportFields = ["outcome", "notes"];
+  const hasReportFieldUpdate = reportFields.some((f) =>
+    Object.prototype.hasOwnProperty.call(updateData, f),
   );
 
-  // RULE 1: Cannot update outcome/notes if hearing date is in the future
-  if (hasRestrictedFieldUpdate && isHearingDateInFuture) {
+  // RULE 1: Cannot file report BEFORE hearing date
+  if (hasReportFieldUpdate && isBeforeHearing) {
     return next(
       new AppError(
-        `Cannot update hearing outcome or notes until the hearing date (${hearing.date.toLocaleDateString()}). You can only update the next adjourned date.`,
+        `Cannot file report until hearing date (${hearingDate.format("DD MMM YYYY")}). ` +
+          `You can update lawyer assignments and hearing notice flag.`,
         403,
       ),
     );
   }
 
-  // RULE 2: Cannot update outcome/notes if hearing date is in the past AND no outcome recorded yet
-  // (This prevents back-dating reports)
-  if (hasRestrictedFieldUpdate && isHearingDateInPast && !hearing.outcome) {
+  // RULE 2: Report must be filed within grace period
+  if (hasReportFieldUpdate && isAfterGracePeriod && !hearing.outcome) {
     return next(
       new AppError(
-        `Cannot file report for past hearings. Please contact an administrator if this needs to be recorded.`,
+        `Report filing window closed. The 48-hour grace period ended on ` +
+          `${gracePeriodEnd.format("DD MMM YYYY [at] HH:mm")}. ` +
+          `Please contact an administrator to file a late report.`,
         403,
       ),
     );
   }
 
-  // RULE 3: If updating outcome for today's hearing, ensure required fields
+  // RULE 2B: Allow editing existing reports ONLY within grace period
   if (
-    isHearingDateToday &&
-    updateData.outcome === "adjourned" &&
-    !updateData.nextHearingDate
+    hasReportFieldUpdate &&
+    hearing.outcome &&
+    !isWithinGracePeriod &&
+    !isBeforeHearing
   ) {
+    return next(
+      new AppError(
+        `Report editing window closed. Reports can only be edited within 48 hours of the hearing date. ` +
+          `Grace period ended: ${gracePeriodEnd.format("DD MMM YYYY [at] HH:mm")}`,
+        403,
+      ),
+    );
+  }
+
+  // RULE 3: Adjourned outcome requires next hearing date
+  if (updateData.outcome === "adjourned" && !updateData.nextHearingDate) {
     return next(
       new AppError(
         'Next hearing date is required when outcome is "Adjourned"',
@@ -715,56 +725,43 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     );
   }
 
-  // ============================================
-  // PROCEED WITH UPDATE
-  // ============================================
-
-  // Update hearing fields (only allowed fields based on rules)
-  Object.keys(updateData).forEach((key) => {
-    // For future hearings, only allow nextHearingDate and lawyerPresent updates
-    if (
-      isHearingDateInFuture &&
-      key !== "nextHearingDate" &&
-      key !== "lawyerPresent"
-    ) {
-      return; // Skip restricted fields
+  // RULE 4: Validate next hearing date is in future
+  if (updateData.nextHearingDate) {
+    const nextDate = dayjs(updateData.nextHearingDate);
+    if (nextDate.isBefore(now)) {
+      return next(new AppError("Next hearing date must be in the future", 400));
     }
+  }
+
+  // RULE 5: Cannot remove outcome once filed (unless in grace)
+  if (hearing.outcome && updateData.outcome === null) {
+    if (!isWithinGracePeriod) {
+      return next(
+        new AppError(
+          "Cannot remove outcome after grace period. Please contact an administrator.",
+          400,
+        ),
+      );
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // PROCEED WITH UPDATE
+  // ════════════════════════════════════════════════════════════
+
+  Object.keys(updateData).forEach((key) => {
     hearing[key] = updateData[key];
   });
 
   console.log("🔵 About to save updated litigation...");
-
-  // Save the document (triggers middleware)
   await litigationDetail.save();
+  console.log("🔵 Litigation saved, middleware ran");
 
-  console.log("🔵 Litigation saved, middleware should have run");
-
-  // Recalculate the next hearing date at the litigation level
-  const futureHearings = litigationDetail.hearings.filter(
-    (h) => h.nextHearingDate && new Date(h.nextHearingDate) > new Date(),
-  );
-
-  if (futureHearings.length > 0) {
-    // Sort to find the earliest upcoming hearing
-    futureHearings.sort(
-      (a, b) => new Date(a.nextHearingDate) - new Date(b.nextHearingDate),
-    );
-    litigationDetail.nextHearingDate = futureHearings[0].nextHearingDate;
-  } else {
-    // No future hearings
-    litigationDetail.nextHearingDate = null;
-  }
-
-  // Save again if nextHearingDate changed at the litigation level
-  if (litigationDetail.isModified("nextHearingDate")) {
-    await litigationDetail.save();
-  }
-
-  // Update matter last activity
+  // Update matter
   matter.lastActivityDate = new Date();
   await matter.save();
 
-  // Populate related fields before response
+  // Populate for response
   await litigationDetail.populate([
     { path: "hearings.preparedBy", select: "firstName lastName email photo" },
     {
@@ -780,21 +777,42 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   });
 });
 // ============================================
-// DELETE HEARING
+// DELETE HEARING (WITH CALENDAR SYNC)
 // ============================================
 
 exports.deleteHearing = catchAsync(async (req, res, next) => {
   const { matterId, hearingId } = req.params;
 
-  const litigationDetail = await LitigationDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
-    { $pull: { hearings: { _id: hearingId } } },
-    { new: true },
-  );
+  const litigationDetail = await LitigationDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
 
   if (!litigationDetail) {
+    return next(new AppError("Litigation not found", 404));
+  }
+
+  // Find the hearing before deleting to get its ID
+  const hearing = litigationDetail.hearings.id(hearingId);
+  if (!hearing) {
     return next(new AppError("Hearing not found", 404));
   }
+
+  // Delete associated calendar event first
+  try {
+    await deleteCalendarEventForHearing(litigationDetail, hearingId);
+  } catch (calendarError) {
+    console.error("❌ Calendar event deletion failed:", calendarError);
+  }
+
+  // Delete the hearing
+  litigationDetail.hearings.pull({ _id: hearingId });
+
+  // Mark that hearings changed so middleware syncs
+  litigationDetail._hearingChanges = { hasChanges: true };
+
+  // Save to trigger middleware for updating nextHearingDate
+  await litigationDetail.save();
 
   // Update matter last activity
   await Matter.findByIdAndUpdate(matterId, {
@@ -803,6 +821,7 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
+    message: "Hearing deleted and calendar event removed",
     data: { litigationDetail },
   });
 });
