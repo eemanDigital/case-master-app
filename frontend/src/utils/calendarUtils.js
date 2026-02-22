@@ -248,6 +248,18 @@ export const filterEventsByType = (events, types) => {
 };
 
 /**
+ * Filter events by auto-sync (hearings synced from litigation)
+ */
+export const filterAutoSyncedEvents = (events, autoSyncedOnly) => {
+  if (!autoSyncedOnly) return events;
+  return events.filter((event) => 
+    event.tags?.includes("auto-synced") || 
+    event.customFields?.hearingId ||
+    event.hearingMetadata?.hearingId
+  );
+};
+
+/**
  * Search events
  */
 export const searchEvents = (events, query) => {
@@ -281,6 +293,20 @@ export const getCalendarDays = (date) => {
   while (currentDate.isSameOrBefore(endDate)) {
     days.push(currentDate.toDate());
     currentDate = currentDate.add(1, "day");
+  }
+
+  return days;
+};
+
+/**
+ * Get calendar days for week view
+ */
+export const getWeekDays = (date) => {
+  const startOfWeek = dayjs(date).startOf("week");
+  
+  const days = [];
+  for (let i = 0; i < 7; i++) {
+    days.push(startOfWeek.add(i, "day").toDate());
   }
 
   return days;

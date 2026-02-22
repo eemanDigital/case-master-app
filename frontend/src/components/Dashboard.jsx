@@ -1,21 +1,18 @@
+// Dashboard.jsx (updated section)
 import { useEffect, createContext, useRef, useMemo } from "react";
 import { Col } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
+import { useStatsData } from "../hooks/useStatsData"; // Import new hook
 import CasesByCategoriesChart from "./CasesByCategoriesChart";
 import AccountOfficerCharts from "./AccountOfficerCharts";
 import CaseCountsByPeriodChart from "./CaseCountsByPeriodChart";
 import CaseCountsByClientChart from "./CaseCountsByClientChart";
 import CaseCountsByYearChart from "./CaseCountsByYearChart ";
-// import ClientDashboard from "./ClientDashboard";
-
 import LeaveNotification from "./LeaveNotification";
 import { useSelector } from "react-redux";
-import useUsersCount from "../hooks/useUsersCount";
 import DashBoardDataCount from "./DashBoardDataCount";
-// import LatestCaseReports from "./LatestCaseReports";
-// import TodoList from "./TodoList";
 import ScrollingEvents from "./ScrollingEvents";
 import TaskDashboardCard from "./TaskDashboardCard";
 
@@ -29,7 +26,6 @@ import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import VerifyAccountNotice from "./VerifyAccountNotice";
 import QuickActionsPanel from "./QuickActionsPanel";
 import ClientCaseDashboard from "./clientDashboard/ClientCaseDashboard";
-
 import PaymentDashboard from "./PaymentDashboard";
 import CourtHearingsWidget from "./calender/CourtHearingsWidget";
 
@@ -39,10 +35,8 @@ const Dashboard = () => {
   useRedirectLogoutUser("/users/login");
 
   const { user } = useSelector((state) => state.auth);
-
-  console.log(user);
   const userId = user?.data?._id;
-  const lawFirmName = user?.data?.firmId.name;
+  const lawFirmName = user?.data?.firmId?.name;
 
   const hasInitialized = useRef(false);
 
@@ -54,7 +48,6 @@ const Dashboard = () => {
     users,
     tasks,
     reports,
-
     accountOfficerAggregates,
     dashboardStats,
     error: dataError,
@@ -62,7 +55,6 @@ const Dashboard = () => {
   } = useDataGetterHook();
 
   const { isAdminOrHr, isStaff, isClient, isVerified } = useAdminHook();
-  const { lawyerCount, clientCount, staff } = useUsersCount(users);
 
   // ✅ SINGLE initialization effect
   useEffect(() => {
@@ -79,7 +71,6 @@ const Dashboard = () => {
             { endpoint: "reports", key: "reports" },
             { endpoint: "tasks", key: "tasks" },
             { endpoint: "reports/upcoming", key: "causeList" },
-
             {
               endpoint: "cases/account-officers/aggregate",
               key: "accountOfficerAggregates",
@@ -136,8 +127,8 @@ const Dashboard = () => {
   );
 
   const effectiveCasesByAccountOfficer = useMemo(
-    () => dashboardData.casesByAccountOfficer || [],
-    [dashboardData.casesByAccountOfficer],
+    () => accountOfficerAggregates?.data || [],
+    [accountOfficerAggregates?.data],
   );
 
   const effectiveMonthlyNewCases = useMemo(
@@ -148,16 +139,6 @@ const Dashboard = () => {
   const effectiveYearlyNewCases = useMemo(
     () => dashboardData.yearlyNewCases || [],
     [dashboardData.yearlyNewCases],
-  );
-
-  const totalCases = useMemo(
-    () => dashboardData.totalCases || 0,
-    [dashboardData.totalCases],
-  );
-
-  const activeCases = useMemo(
-    () => dashboardData.activeCases || 0,
-    [dashboardData.activeCases],
   );
 
   if (userError) return <Alert message={userError} type="error" showIcon />;
@@ -202,45 +183,17 @@ const Dashboard = () => {
 
         {isStaff && (
           <>
-            {dataLoading.dashboardStats ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                {[1, 2, 3, 4].map((i) => (
-                  <Skeleton.Button
-                    key={i}
-                    active
-                    block
-                    style={{ height: 120 }}
-                  />
-                ))}
-              </div>
-            ) : (
-              <DashBoardDataCount
-                staff={staff}
-                lawyerCount={lawyerCount}
-                clientCount={clientCount}
-                totalCases={totalCases}
-                activeCases={activeCases}
-                dashboardStats={dashboardStats}
-                loading={dataLoading.dashboardStats}
-              />
-            )}
+            {/* DashBoardDataCount is self-fetching via Redux (matterSlice + authSlice) */}
+            <DashBoardDataCount />
 
             <div className="container mx-auto mt-2">
               <div className="flex flex-wrap -mx-4">
-                {/* <div className="flex-none gap-4 w-full px-4 mb-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg shadow-md w-full items-start">
-                    <div className="bg-gradient-to-br from-white to-blue-50/50 border border-gray-200 rounded-2xl shadow-sm h-[400px] w-full flex flex-col">
-                      */}
                 <Col xs={24} xl={16}>
                   <CourtHearingsWidget limit={10} showStatistics={true} />
                 </Col>
-                {/* </div> */}
-                {/* </div> */}
-                {/* </div> */}
 
                 <div className="w-full px-4">
                   <div className="border-t border-gray-300 my-8">
-                    {" "}
                     {dataLoading.tasks ? (
                       <Skeleton active paragraph={{ rows: 6 }} />
                     ) : (
@@ -250,9 +203,8 @@ const Dashboard = () => {
                       />
                     )}
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {/* <TodoList /> */}
 
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {dataLoading.dashboardStats ? (
                       <Skeleton.Node
                         active
@@ -270,7 +222,7 @@ const Dashboard = () => {
                     ) : (
                       <AccountOfficerCharts
                         title="Cases By Account Officer"
-                        data={accountOfficerAggregates?.data}
+                        data={effectiveCasesByAccountOfficer}
                       />
                     )}
 
@@ -295,6 +247,7 @@ const Dashboard = () => {
               ) : (
                 <CaseCountsByYearChart data={effectiveYearlyNewCases} />
               )}
+
               {dataLoading.dashboardStats ? (
                 <Skeleton.Node active style={{ width: "100%", height: 300 }} />
               ) : (

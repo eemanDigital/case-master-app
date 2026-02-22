@@ -13,7 +13,7 @@ const initialState = {
   message: "",
 
   // Bulk operations
-  selectedMatters: [], // Array of selected matter IDs
+  selectedMatters: [],
   bulkLoading: false,
   bulkError: null,
 
@@ -43,16 +43,11 @@ const initialState = {
 // BULK ACTION ASYNC THUNKS
 // ============================================
 
-// Bulk update matters
 export const bulkUpdateMatters = createAsyncThunk(
   "matter/bulkUpdate",
   async ({ matterIds, updateData }, { rejectWithValue }) => {
     try {
-      const response = await matterService.bulkUpdateMatters(
-        matterIds,
-        updateData,
-      );
-      return response;
+      return await matterService.bulkUpdateMatters(matterIds, updateData);
     } catch (error) {
       if (error.response?.status === 400) {
         return rejectWithValue({
@@ -67,13 +62,11 @@ export const bulkUpdateMatters = createAsyncThunk(
   },
 );
 
-// Bulk delete matters
 export const bulkDeleteMatters = createAsyncThunk(
   "matter/bulkDelete",
   async (matterIds, { rejectWithValue }) => {
     try {
-      const response = await matterService.bulkDeleteMatters(matterIds);
-      return response;
+      return await matterService.bulkDeleteMatters(matterIds);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete matters",
@@ -82,16 +75,11 @@ export const bulkDeleteMatters = createAsyncThunk(
   },
 );
 
-// Bulk assign account officer
 export const bulkAssignOfficer = createAsyncThunk(
   "matter/bulkAssignOfficer",
   async ({ matterIds, officerId }, { rejectWithValue }) => {
     try {
-      const response = await matterService.bulkAssignOfficer(
-        matterIds,
-        officerId,
-      );
-      return response;
+      return await matterService.bulkAssignOfficer(matterIds, officerId);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to assign officer",
@@ -100,15 +88,12 @@ export const bulkAssignOfficer = createAsyncThunk(
   },
 );
 
-// Bulk export matters
 export const bulkExportMatters = createAsyncThunk(
   "matter/bulkExport",
   async ({ matterIds, format = "csv" }, { rejectWithValue }) => {
     try {
-      const data = await matterService.bulkExportMatters(matterIds, format);
-      return data; // This is now the Blob
+      return await matterService.bulkExportMatters(matterIds, format);
     } catch (error) {
-      // If the response is a blob, the error message is inside it
       if (error.response && error.response.data instanceof Blob) {
         const text = await error.response.data.text();
         const errorData = JSON.parse(text);
@@ -120,15 +105,14 @@ export const bulkExportMatters = createAsyncThunk(
 );
 
 // ============================================
-// EXISTING ASYNC THUNKS (Keep these)
+// CORE ASYNC THUNKS
 // ============================================
 
 export const createMatter = createAsyncThunk(
   "matter/create",
   async (matterData, { rejectWithValue }) => {
     try {
-      const response = await matterService.createMatter(matterData);
-      return response;
+      return await matterService.createMatter(matterData);
     } catch (error) {
       if (error.response?.status === 400) {
         return rejectWithValue({
@@ -147,8 +131,7 @@ export const getMatters = createAsyncThunk(
   "matter/getAll",
   async (params = {}, { rejectWithValue }) => {
     try {
-      const response = await matterService.getAllMatters(params);
-      return response;
+      return await matterService.getAllMatters(params);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch matters",
@@ -161,8 +144,7 @@ export const getMatter = createAsyncThunk(
   "matter/get",
   async (matterId, { rejectWithValue }) => {
     try {
-      const response = await matterService.getMatter(matterId);
-      return response;
+      return await matterService.getMatter(matterId);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch matter",
@@ -175,11 +157,7 @@ export const updateMatter = createAsyncThunk(
   "matter/update",
   async ({ matterId, matterData }, { rejectWithValue }) => {
     try {
-      const response = await matterService.updateMatter({
-        matterId,
-        matterData,
-      });
-      return response;
+      return await matterService.updateMatter({ matterId, matterData });
     } catch (error) {
       if (error.response?.status === 400) {
         return rejectWithValue({
@@ -198,8 +176,7 @@ export const deleteMatter = createAsyncThunk(
   "matter/delete",
   async (matterId, { rejectWithValue }) => {
     try {
-      const response = await matterService.deleteMatter(matterId);
-      return response;
+      return await matterService.deleteMatter(matterId);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete matter",
@@ -212,8 +189,7 @@ export const getMatterStats = createAsyncThunk(
   "matter/stats",
   async (_, { rejectWithValue }) => {
     try {
-      const response = await matterService.getMatterStats();
-      return response;
+      return await matterService.getMatterStats();
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch stats",
@@ -226,8 +202,7 @@ export const searchMatters = createAsyncThunk(
   "matter/search",
   async (searchCriteria, { rejectWithValue }) => {
     try {
-      const response = await matterService.searchMatters(searchCriteria);
-      return response;
+      return await matterService.searchMatters(searchCriteria);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to search matters",
@@ -237,17 +212,26 @@ export const searchMatters = createAsyncThunk(
 );
 
 // ============================================
-// SLICE DEFINITION
+// HELPERS
+// ============================================
+
+/** Safely coerce any value to a finite integer. Objects/null/undefined → 0 */
+const safeInt = (val) => {
+  if (val == null || typeof val === "object") return 0;
+  const n = Number(val);
+  return isFinite(n) ? Math.round(n) : 0;
+};
+
+// ============================================
+// SLICE
 // ============================================
 
 const matterSlice = createSlice({
   name: "matter",
   initialState,
   reducers: {
-    // ✅ Existing reducers...
-    resetMatterState: (state) => {
-      return initialState;
-    },
+    resetMatterState: () => initialState,
+
     resetMatter: (state) => {
       state.currentMatter = null;
       state.isLoading = false;
@@ -256,88 +240,87 @@ const matterSlice = createSlice({
       state.message = "";
       state.validationErrors = {};
     },
+
     resetValidationErrors: (state) => {
       state.validationErrors = {};
     },
+
     resetLoading: (state) => {
       state.isLoading = false;
       state.isError = false;
       state.isSuccess = false;
       state.message = "";
     },
+
     setFilters: (state, action) => {
       state.filters = { ...state.filters, ...action.payload };
       state.pagination.page = 1;
     },
+
     clearFilters: (state) => {
       state.filters = initialState.filters;
     },
+
     setPagination: (state, action) => {
       state.pagination = { ...state.pagination, ...action.payload };
     },
+
     clearError: (state) => {
       state.isError = false;
       state.message = "";
       state.validationErrors = {};
     },
+
     setCurrentMatter: (state, action) => {
       state.currentMatter = action.payload;
     },
+
     updateMatterInList: (state, action) => {
-      const updatedMatter = action.payload;
-      const index = state.matters.findIndex((m) => m._id === updatedMatter._id);
-      if (index !== -1) {
-        state.matters[index] = updatedMatter;
-      }
+      const idx = state.matters.findIndex((m) => m._id === action.payload._id);
+      if (idx !== -1) state.matters[idx] = action.payload;
     },
+
     removeMatterFromList: (state, action) => {
-      const matterId = action.payload;
-      state.matters = state.matters.filter((m) => m._id !== matterId);
-      if (state.currentMatter?._id === matterId) {
+      state.matters = state.matters.filter((m) => m._id !== action.payload);
+      if (state.currentMatter?._id === action.payload) {
         state.currentMatter = null;
       }
     },
+
     addMatterToList: (state, action) => {
       state.matters.unshift(action.payload);
     },
 
-    // ✅ NEW: Bulk Action Selection Reducers
+    // ── Bulk selection ──────────────────────────────
     selectMatter: (state, action) => {
-      const matterId = action.payload;
-      if (!state.selectedMatters.includes(matterId)) {
-        state.selectedMatters.push(matterId);
+      if (!state.selectedMatters.includes(action.payload)) {
+        state.selectedMatters.push(action.payload);
       }
     },
 
     deselectMatter: (state, action) => {
-      const matterId = action.payload;
       state.selectedMatters = state.selectedMatters.filter(
-        (id) => id !== matterId,
+        (id) => id !== action.payload,
       );
     },
 
     toggleSelectMatter: (state, action) => {
-      const matterId = action.payload;
-      const index = state.selectedMatters.indexOf(matterId);
-      if (index > -1) {
-        state.selectedMatters.splice(index, 1);
+      const idx = state.selectedMatters.indexOf(action.payload);
+      if (idx > -1) {
+        state.selectedMatters.splice(idx, 1);
       } else {
-        state.selectedMatters.push(matterId);
+        state.selectedMatters.push(action.payload);
       }
     },
 
     selectAllMatters: (state, action) => {
-      const matterIds = action.payload || state.matters.map((m) => m._id);
-      state.selectedMatters = [
-        ...new Set([...state.selectedMatters, ...matterIds]),
-      ];
+      const ids = action.payload || state.matters.map((m) => m._id);
+      state.selectedMatters = [...new Set([...state.selectedMatters, ...ids])];
     },
 
     selectPageMatters: (state, action) => {
-      // Select all matters in current page
-      const pageMatters = action.payload;
       state.selectedMatters = [
-        ...new Set([...state.selectedMatters, ...pageMatters]),
+        ...new Set([...state.selectedMatters, ...action.payload]),
       ];
     },
 
@@ -349,7 +332,6 @@ const matterSlice = createSlice({
       state.selectedMatters = action.payload;
     },
 
-    // Bulk operations loading states
     setBulkLoading: (state, action) => {
       state.bulkLoading = action.payload;
     },
@@ -362,11 +344,11 @@ const matterSlice = createSlice({
       state.bulkError = null;
     },
   },
+
   extraReducers: (builder) => {
     builder
-      // ================ BULK ACTIONS ================
 
-      // Bulk Update Matters
+      // ── Bulk Update ──────────────────────────────
       .addCase(bulkUpdateMatters.pending, (state) => {
         state.bulkLoading = true;
         state.bulkError = null;
@@ -374,46 +356,27 @@ const matterSlice = createSlice({
       .addCase(bulkUpdateMatters.fulfilled, (state, action) => {
         state.bulkLoading = false;
         state.isSuccess = true;
-
-        const updatedMatters =
+        const updated =
           action.payload.data?.matters || action.payload.data || [];
-
-        // Update matters in state
-        updatedMatters.forEach((updatedMatter) => {
-          const index = state.matters.findIndex(
-            (m) => m._id === updatedMatter._id,
-          );
-          if (index !== -1) {
-            state.matters[index] = updatedMatter;
-          }
-
-          // Update current matter if it's the same
-          if (state.currentMatter?._id === updatedMatter._id) {
-            state.currentMatter = updatedMatter;
-          }
+        updated.forEach((m) => {
+          const idx = state.matters.findIndex((x) => x._id === m._id);
+          if (idx !== -1) state.matters[idx] = m;
+          if (state.currentMatter?._id === m._id) state.currentMatter = m;
         });
-
-        // Clear selection if option is set
-        if (action.payload.data?.clearSelection) {
-          state.selectedMatters = [];
-        }
-
-        state.message = `Successfully updated ${updatedMatters.length} matters`;
+        if (action.payload.data?.clearSelection) state.selectedMatters = [];
+        state.message = `Successfully updated ${updated.length} matters`;
         message.success(state.message);
       })
       .addCase(bulkUpdateMatters.rejected, (state, action) => {
         state.bulkLoading = false;
         state.isError = true;
         state.bulkError = action.payload?.message || "Failed to update matters";
-
-        if (action.payload?.errors) {
+        if (action.payload?.errors)
           state.validationErrors = action.payload.errors;
-        }
-
         message.error(state.bulkError);
       })
 
-      // Bulk Delete Matters
+      // ── Bulk Delete ──────────────────────────────
       .addCase(bulkDeleteMatters.pending, (state) => {
         state.bulkLoading = true;
         state.bulkError = null;
@@ -421,26 +384,17 @@ const matterSlice = createSlice({
       .addCase(bulkDeleteMatters.fulfilled, (state, action) => {
         state.bulkLoading = false;
         state.isSuccess = true;
-
-        const deletedMatterIds =
+        const deletedIds =
           action.payload.data?.deletedMatterIds || action.meta.arg || [];
-
-        // Remove deleted matters from state
         state.matters = state.matters.filter(
-          (m) => !deletedMatterIds.includes(m._id),
+          (m) => !deletedIds.includes(m._id),
         );
-
-        // Remove from selected matters
         state.selectedMatters = state.selectedMatters.filter(
-          (id) => !deletedMatterIds.includes(id),
+          (id) => !deletedIds.includes(id),
         );
-
-        // Clear current matter if it was deleted
-        if (deletedMatterIds.includes(state.currentMatter?._id)) {
+        if (deletedIds.includes(state.currentMatter?._id))
           state.currentMatter = null;
-        }
-
-        state.message = `Successfully deleted ${deletedMatterIds.length} matters`;
+        state.message = `Successfully deleted ${deletedIds.length} matters`;
         message.success(state.message);
       })
       .addCase(bulkDeleteMatters.rejected, (state, action) => {
@@ -450,7 +404,7 @@ const matterSlice = createSlice({
         message.error(state.bulkError);
       })
 
-      // Bulk Assign Officer
+      // ── Bulk Assign Officer ──────────────────────
       .addCase(bulkAssignOfficer.pending, (state) => {
         state.bulkLoading = true;
         state.bulkError = null;
@@ -458,21 +412,13 @@ const matterSlice = createSlice({
       .addCase(bulkAssignOfficer.fulfilled, (state, action) => {
         state.bulkLoading = false;
         state.isSuccess = true;
-
-        const updatedMatters =
+        const updated =
           action.payload.data?.matters || action.payload.data || [];
-
-        // Update matters with new officer
-        updatedMatters.forEach((updatedMatter) => {
-          const index = state.matters.findIndex(
-            (m) => m._id === updatedMatter._id,
-          );
-          if (index !== -1) {
-            state.matters[index] = updatedMatter;
-          }
+        updated.forEach((m) => {
+          const idx = state.matters.findIndex((x) => x._id === m._id);
+          if (idx !== -1) state.matters[idx] = m;
         });
-
-        state.message = `Successfully assigned officer to ${updatedMatters.length} matters`;
+        state.message = `Successfully assigned officer to ${updated.length} matters`;
         message.success(state.message);
       })
       .addCase(bulkAssignOfficer.rejected, (state, action) => {
@@ -482,7 +428,7 @@ const matterSlice = createSlice({
         message.error(state.bulkError);
       })
 
-      // Bulk Export Matters
+      // ── Bulk Export ──────────────────────────────
       .addCase(bulkExportMatters.pending, (state) => {
         state.bulkLoading = true;
         state.bulkError = null;
@@ -490,11 +436,7 @@ const matterSlice = createSlice({
       .addCase(bulkExportMatters.fulfilled, (state, action) => {
         state.bulkLoading = false;
         state.isSuccess = true;
-
-        const exportCount = action.meta.arg?.matterIds?.length || 0;
-        state.message = `Successfully exported ${exportCount} matters`;
-
-        // Note: File download is handled in the component
+        state.message = `Successfully exported ${action.meta.arg?.matterIds?.length || 0} matters`;
       })
       .addCase(bulkExportMatters.rejected, (state, action) => {
         state.bulkLoading = false;
@@ -503,9 +445,7 @@ const matterSlice = createSlice({
         message.error(state.bulkError);
       })
 
-      // ================ EXISTING CASES ================
-
-      // Create Matter
+      // ── Create Matter ────────────────────────────
       .addCase(createMatter.pending, (state) => {
         state.isLoading = true;
         state.isSuccess = false;
@@ -525,18 +465,16 @@ const matterSlice = createSlice({
       .addCase(createMatter.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
-
         if (action.payload?.errors) {
           state.validationErrors = action.payload.errors;
           state.message = "Please fix the validation errors";
         } else {
           state.message = action.payload || "Failed to create matter";
         }
-
         message.error(state.message);
       })
 
-      // Get All Matters
+      // ── Get All Matters ──────────────────────────
       .addCase(getMatters.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
@@ -555,7 +493,7 @@ const matterSlice = createSlice({
         message.error(state.message);
       })
 
-      // Get Single Matter
+      // ── Get Single Matter ────────────────────────
       .addCase(getMatter.pending, (state) => {
         state.isLoading = true;
         state.isError = false;
@@ -574,7 +512,7 @@ const matterSlice = createSlice({
         message.error(state.message);
       })
 
-      // Update Matter
+      // ── Update Matter ────────────────────────────
       .addCase(updateMatter.pending, (state) => {
         state.isLoading = true;
         state.isSuccess = false;
@@ -583,56 +521,38 @@ const matterSlice = createSlice({
       .addCase(updateMatter.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-
-        const updatedMatter =
-          action.payload.data?.matter || action.payload.data;
-        if (updatedMatter) {
-          // Update in matters array
-          const index = state.matters.findIndex(
-            (m) => m._id === updatedMatter._id,
-          );
-          if (index !== -1) {
-            state.matters[index] = updatedMatter;
-          }
-
-          // Update current matter if it's the same
-          if (state.currentMatter?._id === updatedMatter._id) {
-            state.currentMatter = updatedMatter;
-          }
+        const updated = action.payload.data?.matter || action.payload.data;
+        if (updated) {
+          const idx = state.matters.findIndex((m) => m._id === updated._id);
+          if (idx !== -1) state.matters[idx] = updated;
+          if (state.currentMatter?._id === updated._id)
+            state.currentMatter = updated;
         }
-
         state.message = "Matter updated successfully";
         message.success("Matter updated successfully");
       })
       .addCase(updateMatter.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
-
         if (action.payload?.errors) {
           state.validationErrors = action.payload.errors;
           state.message = "Please fix the validation errors";
         } else {
           state.message = action.payload || "Failed to update matter";
         }
-
         message.error(state.message);
       })
 
-      // Delete Matter
+      // ── Delete Matter ────────────────────────────
       .addCase(deleteMatter.pending, (state) => {
         state.isLoading = true;
       })
       .addCase(deleteMatter.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-
-        const deletedMatterId = action.meta.arg;
-        state.matters = state.matters.filter((m) => m._id !== deletedMatterId);
-
-        if (state.currentMatter?._id === deletedMatterId) {
-          state.currentMatter = null;
-        }
-
+        const id = action.meta.arg;
+        state.matters = state.matters.filter((m) => m._id !== id);
+        if (state.currentMatter?._id === id) state.currentMatter = null;
         state.message = "Matter deleted successfully";
         message.success("Matter deleted successfully");
       })
@@ -643,14 +563,47 @@ const matterSlice = createSlice({
         message.error(state.message);
       })
 
-      // Get Stats
+      // ── Get Stats ────────────────────────────────
+      // KEY FIX: normalize API response into flat primitives only.
+      // Raw API: { status, data: { overview:{_id:null,...}, byType:[...], ... } }
+      // matterService returns response.data → action.payload = { status, data:{...} }
+      // We store ONLY extracted numbers + arrays (for charts) — no nested objects.
       .addCase(getMatterStats.pending, (state) => {
         state.isLoading = true;
+        state.isError = false;
       })
       .addCase(getMatterStats.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        state.stats = action.payload.data || null;
+
+        const raw = action.payload?.data || {};
+        // overview comes from MongoDB $group aggregate → array[0], includes _id:null
+        const ov =
+          raw.overview && typeof raw.overview === "object" ? raw.overview : {};
+
+        // Store ONLY flat primitives — never store nested objects where
+        // a component might accidentally render them as React children
+        state.stats = {
+          // ── Numbers (safe to pass as `value` props) ──
+          totalMatters: safeInt(ov.totalMatters),
+          activeMatters: safeInt(ov.activeMatters),
+          pendingMatters: safeInt(ov.pendingMatters),
+          completedMatters: safeInt(ov.completedMatters),
+          closedMatters: safeInt(ov.closedMatters),
+          highPriorityMatters: safeInt(ov.highPriorityMatters),
+          urgentPriorityMatters: safeInt(ov.urgentPriorityMatters),
+          averageAgeDays: ov.averageAgeDays
+            ? Math.round(Number(ov.averageAgeDays))
+            : 0,
+          myMatters: safeInt(raw.myMatters),
+          // ── Arrays (for charts — kept separate, never used as React children) ──
+          byType: Array.isArray(raw.byType) ? raw.byType : [],
+          byStatus: Array.isArray(raw.byStatus) ? raw.byStatus : [],
+          byPriority: Array.isArray(raw.byPriority) ? raw.byPriority : [],
+          recentActivity: Array.isArray(raw.recentActivity)
+            ? raw.recentActivity
+            : [],
+        };
       })
       .addCase(getMatterStats.rejected, (state, action) => {
         state.isLoading = false;
@@ -659,7 +612,7 @@ const matterSlice = createSlice({
         message.error(state.message);
       })
 
-      // Search Matters
+      // ── Search Matters ───────────────────────────
       .addCase(searchMatters.pending, (state) => {
         state.isLoading = true;
       })
@@ -677,7 +630,6 @@ const matterSlice = createSlice({
   },
 });
 
-// Export all actions
 export const {
   resetMatterState,
   resetMatter,
@@ -691,8 +643,6 @@ export const {
   updateMatterInList,
   removeMatterFromList,
   addMatterToList,
-
-  // Bulk action selectors
   selectMatter,
   deselectMatter,
   toggleSelectMatter,
@@ -700,8 +650,6 @@ export const {
   selectPageMatters,
   clearSelectedMatters,
   setSelectedMatters,
-
-  // Bulk loading states
   setBulkLoading,
   setBulkError,
   clearBulkError,

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useDispatch } from "react-redux";
 import {
   Layout,
   Table,
@@ -11,7 +12,6 @@ import {
   message,
   Input,
   Select,
-  Modal,
 } from "antd";
 import {
   PlusOutlined,
@@ -23,6 +23,11 @@ import {
   ReloadOutlined,
 } from "@ant-design/icons";
 import { useBlockedDates } from "../../hooks/useCalendar";
+import {
+  createBlockedDate,
+  updateBlockedDate,
+  deleteBlockedDate,
+} from "../../redux/features/calender/calenderSlice";
 import { formatDate, formatTime } from "../../utils/calendarUtils";
 import {
   BLOCK_TYPES,
@@ -36,11 +41,13 @@ const { Title, Text } = Typography;
 const { Search } = Input;
 
 const BlockedDatesPage = () => {
+  const dispatch = useDispatch();
   const [showForm, setShowForm] = useState(false);
   const [formMode, setFormMode] = useState("create");
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [submitLoading, setSubmitLoading] = useState(false);
 
   const { blockedDates, loading, refresh } = useBlockedDates();
 
@@ -56,9 +63,29 @@ const BlockedDatesPage = () => {
     setShowForm(true);
   };
 
+  const handleSubmit = async (data) => {
+    setSubmitLoading(true);
+    try {
+      if (formMode === "create") {
+        await dispatch(createBlockedDate(data)).unwrap();
+        message.success("Blocked date created successfully");
+      } else {
+        await dispatch(updateBlockedDate({ blockId: selectedBlock._id, updateData: data })).unwrap();
+        message.success("Blocked date updated successfully");
+      }
+      setShowForm(false);
+      setSelectedBlock(null);
+      refresh();
+    } catch (error) {
+      message.error(error?.message || "Failed to save blocked date");
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
   const handleDelete = async (blockId) => {
     try {
-      // Call delete API
+      await dispatch(deleteBlockedDate(blockId)).unwrap();
       message.success("Blocked date deleted successfully");
       refresh();
     } catch (error) {
@@ -68,7 +95,10 @@ const BlockedDatesPage = () => {
 
   const handleToggleActive = async (block) => {
     try {
-      // Call update API to toggle isActive
+      await dispatch(updateBlockedDate({
+        blockId: block._id,
+        updateData: { isActive: !block.isActive }
+      })).unwrap();
       message.success(
         block.isActive ? "Blocked date deactivated" : "Blocked date activated",
       );
@@ -292,25 +322,12 @@ const BlockedDatesPage = () => {
         visible={showForm}
         mode={formMode}
         initialValues={selectedBlock}
-        onSubmit={async (data) => {
-          try {
-            // Call create/update API
-            message.success(
-              formMode === "create"
-                ? "Blocked date created successfully"
-                : "Blocked date updated successfully",
-            );
-            setShowForm(false);
-            setSelectedBlock(null);
-            refresh();
-          } catch (error) {
-            message.error("Failed to save blocked date");
-          }
-        }}
+        onSubmit={handleSubmit}
         onCancel={() => {
           setShowForm(false);
           setSelectedBlock(null);
         }}
+        loading={submitLoading}
       />
     </Layout>
   );

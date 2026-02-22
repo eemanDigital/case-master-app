@@ -11,6 +11,7 @@ import {
   Alert,
   Row,
   Col,
+  Spin,
 } from "antd";
 import {
   PlusOutlined,
@@ -25,6 +26,7 @@ import {
   EVENT_TYPES,
   EVENT_TYPE_LABELS,
 } from "../../utils/calendarConstants";
+import useUserSelectOptions from "../../hooks/useUserSelectOptions";
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -43,6 +45,13 @@ const BlockedDateFormModal = ({
   const [blockScope, setBlockScope] = useState(BLOCK_SCOPES.FIRM_WIDE);
   const [allowOverride, setAllowOverride] = useState(false);
   const [isRecurring, setIsRecurring] = useState(false);
+
+  const { data: userData, loading: usersLoading } = useUserSelectOptions({
+    type: "all",
+    autoFetch: visible,
+  });
+
+  const userOptions = userData?.data || userData || [];
 
   useEffect(() => {
     if (visible && initialValues) {
@@ -78,14 +87,37 @@ const BlockedDateFormModal = ({
     try {
       const values = await form.validateFields();
 
-      const [startDate, endDate] = values.dateRange;
+      let startDate, endDate;
+
+      if (blockType === BLOCK_TYPES.DATE_RANGE) {
+        [startDate, endDate] = values.dateRange;
+      } else if (blockType === BLOCK_TYPES.TIME_SLOT && values.singleDate) {
+        startDate = values.singleDate;
+        endDate = values.singleDate;
+      } else if (values.dateRange && values.dateRange[0]) {
+        startDate = values.dateRange[0];
+        endDate = values.dateRange[1] || values.dateRange[0];
+      } else {
+        startDate = values.singleDate;
+        endDate = values.singleDate;
+      }
+
+      if (!startDate) {
+        form.setFields([
+          {
+            name: blockType === BLOCK_TYPES.DATE_RANGE ? 'dateRange' : 'singleDate',
+            errors: ['Please select date(s)'],
+          },
+        ]);
+        return;
+      }
 
       const blockData = {
         ...values,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        startTime: values.startTime ? values.startTime.format("HH:mm") : null,
-        endTime: values.endTime ? values.endTime.format("HH:mm") : null,
+        startDate: dayjs(startDate).toISOString(),
+        endDate: dayjs(endDate).toISOString(),
+        startTime: values.startTime ? dayjs(values.startTime).format("HH:mm") : null,
+        endTime: values.endTime ? dayjs(values.endTime).format("HH:mm") : null,
         blockType,
         blockScope,
         allowOverride,
@@ -93,6 +125,7 @@ const BlockedDateFormModal = ({
       };
 
       delete blockData.dateRange;
+      delete blockData.singleDate;
 
       onSubmit(blockData);
     } catch (error) {
@@ -175,12 +208,21 @@ const BlockedDateFormModal = ({
         </Select>
       </Form.Item>
 
-      <Form.Item
-        name="dateRange"
-        label={blockType === BLOCK_TYPES.DATE_RANGE ? "Date Range" : "Date"}
-        rules={[{ required: true, message: "Please select date(s)" }]}>
-        <RangePicker style={{ width: "100%" }} format="MMMM DD, YYYY" />
-      </Form.Item>
+      {blockType === BLOCK_TYPES.DATE_RANGE ? (
+        <Form.Item
+          name="dateRange"
+          label="Date Range"
+          rules={[{ required: true, message: "Please select date range" }]}>
+          <RangePicker style={{ width: "100%" }} format="MMMM DD, YYYY" />
+        </Form.Item>
+      ) : (
+        <Form.Item
+          name="singleDate"
+          label="Date"
+          rules={[{ required: true, message: "Please select date" }]}>
+          <DatePicker style={{ width: "100%" }} format="MMMM DD, YYYY" />
+        </Form.Item>
+      )}
 
       {blockType === BLOCK_TYPES.TIME_SLOT && (
         <Row gutter={16}>
@@ -291,10 +333,19 @@ const BlockedDateFormModal = ({
             mode="multiple"
             placeholder="Select users to block"
             showSearch
-            optionFilterProp="children">
-            {/* Populate with users from your system */}
-            <Option value="user1">User 1</Option>
-            <Option value="user2">User 2</Option>
+            optionFilterProp="children"
+            loading={usersLoading}
+            disabled={usersLoading}
+            className="w-full">
+            {Array.isArray(userOptions) && userOptions.map((user) => (
+              <Option 
+                key={user._id || user.id || user.value} 
+                value={user._id || user.id || user.value}>
+                {user.firstName && user.lastName 
+                  ? `${user.firstName} ${user.lastName}` 
+                  : user.label || user.name || "Unknown User"}
+              </Option>
+            ))}
           </Select>
         </Form.Item>
       )}

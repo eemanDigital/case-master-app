@@ -1,5 +1,5 @@
-import React from "react";
-import { useSelector } from "react-redux";
+import React, { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import {
   Card,
   List,
@@ -20,7 +20,9 @@ import {
   selectPendingCourtOrderDeadlines,
   selectOverdueCourtOrderDeadlines,
   selectCourtOrderDeadlineStatistics,
+  selectEventsData,
 } from "../../redux/features/calender/calenderSelector";
+import { getAllEvents } from "../../redux/features/calender/calenderSlice";
 import { formatDateTime } from "../../utils/calendarUtils";
 import { getDaysUntil } from "../../utils/hearingSyncUtils";
 import { Link } from "react-router-dom";
@@ -28,9 +30,17 @@ import { Link } from "react-router-dom";
 const { Text } = Typography;
 
 const CourtOrderDeadlinesWidget = ({ limit = 5, showStatistics = true }) => {
+  const dispatch = useDispatch();
+  const events = useSelector(selectEventsData);
   const pendingDeadlines = useSelector(selectPendingCourtOrderDeadlines);
   const overdueDeadlines = useSelector(selectOverdueCourtOrderDeadlines);
   const statistics = useSelector(selectCourtOrderDeadlineStatistics);
+
+  useEffect(() => {
+    if (!events || events.length === 0) {
+      dispatch(getAllEvents({}));
+    }
+  }, [dispatch, events]);
 
   // Sort by urgency (closest deadlines first)
   const sortedDeadlines = [...pendingDeadlines].sort(

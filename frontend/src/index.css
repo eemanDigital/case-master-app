@@ -7,13 +7,83 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Base Styles - Move these before any @apply rules */
+/* ============================================ */
+/* CSS VARIABLES - LIGHT MODE (Default) */
+/* ============================================ */
 :root {
-  --primary-color: #3b82f6;
-  --secondary-color: #e11d48;
-  --deep-blue: #1c4e80;
+  /* Brand Colors */
+  --color-primary: #2563eb;
+  --color-primary-hover: #1d4ed8;
+  --color-secondary: #e11d48;
+  --color-deep-blue: #1c4e80;
+  
+  /* Background Colors */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f9fafb;
+  --color-bg-tertiary: #f3f4f6;
+  --color-bg-card: #ffffff;
+  --color-bg-elevated: #ffffff;
+  
+  /* Text Colors */
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-tertiary: #6b7280;
+  --color-text-disabled: #9ca3af;
+  --color-text-inverse: #ffffff;
+  
+  /* Border Colors */
+  --color-border: #e5e7eb;
+  --color-border-hover: #d1d5db;
+  --color-border-focus: #2563eb;
+  
+  /* Status Colors */
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-error: #ef4444;
+  --color-info: #0ea5e9;
+  
+  /* Shadows */
+  --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+  --shadow-hard: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
+/* ============================================ */
+/* DARK MODE VARIABLES */
+/* ============================================ */
+.dark {
+  /* Brand Colors */
+  --color-primary: #3b82f6;
+  --color-primary-hover: #60a5fa;
+  --color-secondary: #f43f5e;
+  --color-deep-blue: #60a5fa;
+  
+  /* Background Colors */
+  --color-bg-primary: #111827;
+  --color-bg-secondary: #1f2937;
+  --color-bg-tertiary: #374151;
+  --color-bg-card: #1f2937;
+  --color-bg-elevated: #374151;
+  
+  /* Text Colors */
+  --color-text-primary: #f9fafb;
+  --color-text-secondary: #d1d5db;
+  --color-text-tertiary: #9ca3af;
+  --color-text-disabled: #6b7280;
+  --color-text-inverse: #111827;
+  
+  /* Border Colors */
+  --color-border: #374151;
+  --color-border-hover: #4b5563;
+  --color-border-focus: #3b82f6;
+  
+  /* Shadows */
+  --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.3), 0 10px 20px -2px rgba(0, 0, 0, 0.2);
+  --shadow-hard: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================ */
+/* BASE STYLES */
+/* ============================================ */
 *,
 *::before,
 *::after {
@@ -31,13 +101,11 @@ html {
 
 body {
   font-family: "Poppins", sans-serif;
+  @apply bg-gray-50 text-gray-900;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Dark mode base styles */
-.dark {
-  color-scheme: dark;
-}
-
 .dark body {
   background-color: #111827;
   color: #f9fafb;
@@ -77,13 +145,15 @@ body {
 }
 
 @layer components {
-  /* Card Components */
+  /* ============================================ */
+  /* CARD COMPONENTS */
+  /* ============================================ */
   .card {
-    @apply bg-white rounded-lg shadow-soft transition-all duration-300;
+    @apply bg-white rounded-xl shadow-soft transition-all duration-300;
   }
 
   .dark .card {
-    @apply bg-gray-800;
+    @apply bg-gray-800 border border-gray-700;
   }
 
   .card-hover {
@@ -91,10 +161,20 @@ body {
   }
 
   .dark .card-hover {
-    @apply hover:shadow-hard;
+    @apply hover:shadow-hard hover:border-gray-600;
   }
 
-  /* Button Components */
+  .card-elevated {
+    @apply bg-white rounded-xl shadow-hard;
+  }
+
+  .dark .card-elevated {
+    @apply bg-gray-800 border border-gray-700;
+  }
+
+  /* ============================================ */
+  /* BUTTON COMPONENTS */
+  /* ============================================ */
   .btn-primary {
     @apply bg-primary-600 hover:bg-primary-700 active:bg-primary-800 
            text-white font-medium px-4 py-2 rounded-lg 
@@ -104,10 +184,42 @@ body {
   }
 
   .dark .btn-primary {
-    @apply bg-primary-500 hover:bg-primary-600 active:bg-primary-700;
+    @apply bg-primary-500 hover:bg-primary-600 active:bg-primary-700
+           focus:ring-offset-gray-800;
   }
 
-  /* Input Components */
+  .btn-secondary {
+    @apply bg-gray-100 hover:bg-gray-200 active:bg-gray-300 
+           text-gray-700 font-medium px-4 py-2 rounded-lg 
+           transition-all duration-200;
+  }
+
+  .dark .btn-secondary {
+    @apply bg-gray-700 hover:bg-gray-600 active:bg-gray-500
+           text-gray-100;
+  }
+
+  .btn-success {
+    @apply bg-success-500 hover:bg-success-600 active:bg-success-700
+           text-white font-medium px-4 py-2 rounded-lg
+           transition-all duration-200;
+  }
+
+  .btn-warning {
+    @apply bg-warning-500 hover:bg-warning-600 active:bg-warning-700
+           text-white font-medium px-4 py-2 rounded-lg
+           transition-all duration-200;
+  }
+
+  .btn-error {
+    @apply bg-error-500 hover:bg-error-600 active:bg-error-700
+           text-white font-medium px-4 py-2 rounded-lg
+           transition-all duration-200;
+  }
+
+  /* ============================================ */
+  /* INPUT COMPONENTS */
+  /* ============================================ */
   .form-input {
     @apply w-full px-4 py-2 border border-gray-300 rounded-lg 
            bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
@@ -119,7 +231,21 @@ body {
            placeholder:text-gray-500 focus:ring-primary-400;
   }
 
-  /* Badge Components */
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+
+  .dark .form-label {
+    @apply text-gray-300;
+  }
+
+  .form-error {
+    @apply text-sm text-error-500 mt-1;
+  }
+
+  /* ============================================ */
+  /* BADGE/TAG COMPONENTS */
+  /* ============================================ */
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
@@ -132,9 +258,11 @@ body {
     @apply bg-primary-900 text-primary-200;
   }
 
-  /* Table Components */
+  /* ============================================ */
+  /* TABLE COMPONENTS */
+  /* ============================================ */
   .table-container {
-    @apply overflow-x-auto rounded-lg border border-gray-200;
+    @apply overflow-x-auto rounded-xl border border-gray-200;
   }
 
   .dark .table-container {
@@ -145,6 +273,144 @@ body {
     @apply bg-gray-50 text-left text-xs font-semibold 
            text-gray-500 uppercase tracking-wider;
   }
+
+  .dark .table-header {
+    @apply bg-gray-800 text-gray-400;
+  }
+
+  .table-row {
+    @apply border-b border-gray-200 hover:bg-gray-50 transition-colors;
+  }
+
+  .dark .table-row {
+    @apply border-gray-700 hover:bg-gray-700/50;
+  }
+
+  .table-cell {
+    @apply px-6 py-4 text-sm text-gray-900;
+  }
+
+  .dark .table-cell {
+    @apply text-gray-300;
+  }
+
+  /* ============================================ */
+  /* STATUS BADGES */
+  /* ============================================ */
+  .status-active {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .dark .status-active {
+    @apply bg-green-900/30 text-green-400;
+  }
+
+  .status-pending {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .dark .status-pending {
+    @apply bg-yellow-900/30 text-yellow-400;
+  }
+
+  .status-completed {
+    @apply bg-blue-100 text-blue-800;
+  }
+
+  .dark .status-completed {
+    @apply bg-blue-900/30 text-blue-400;
+  }
+
+  .status-cancelled {
+    @apply bg-red-100 text-red-800;
+  }
+
+  .dark .status-cancelled {
+    @apply bg-red-900/30 text-red-400;
+  }
+
+  /* ============================================ */
+  /* PRIORITY BADGES */
+  /* ============================================ */
+  .priority-urgent {
+    @apply bg-red-100 text-red-800;
+  }
+
+  .dark .priority-urgent {
+    @apply bg-red-900/30 text-red-400;
+  }
+
+  .priority-high {
+    @apply bg-orange-100 text-orange-800;
+  }
+
+  .dark .priority-high {
+    @apply bg-orange-900/30 text-orange-400;
+  }
+
+  .priority-medium {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .dark .priority-medium {
+    @apply bg-yellow-900/30 text-yellow-400;
+  }
+
+  .priority-low {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .dark .priority-low {
+    @apply bg-green-900/30 text-green-400;
+  }
+
+  /* ============================================ */
+  /* PAGE/SECTION STYLES */
+  /* ============================================ */
+  .page-container {
+    @apply min-h-screen bg-gray-50 py-6 px-4 sm:px-6 lg:px-8;
+  }
+
+  .dark .page-container {
+    @apply bg-gray-900;
+  }
+
+  .section-title {
+    @apply text-2xl font-bold text-gray-900 mb-6;
+  }
+
+  .dark .section-title {
+    @apply text-white;
+  }
+
+  /* ============================================ */
+  /* SIDEBAR/NAV STYLES */
+  /* ============================================ */
+  .sidebar {
+    @apply bg-white border-r border-gray-200;
+  }
+
+  .dark .sidebar {
+    @apply bg-gray-800 border-gray-700;
+  }
+
+  .nav-item {
+    @apply flex items-center px-4 py-3 text-gray-600 hover:bg-gray-100 hover:text-gray-900 
+           rounded-lg transition-colors;
+  }
+
+  .dark .nav-item {
+    @apply text-gray-300 hover:bg-gray-700 hover:text-white;
+  }
+
+  .nav-item-active {
+    @apply bg-primary-50 text-primary-600 font-medium;
+  }
+
+  .dark .nav-item-active {
+    @apply bg-primary-900/30 text-primary-400;
+  }
+}
 
   .dark .table-header {
     @apply bg-gray-800 text-gray-400;

@@ -42,6 +42,7 @@ import {
   selectLitigationError,
   updateHearing,
 } from "../../redux/features/litigation/litigationSlice";
+import { getAllEvents } from "../../redux/features/calender/calenderSlice";
 import useUserSelectOptions from "../../hooks/useUserSelectOptions";
 import { formatName } from "../../utils/formatters";
 import { useNavigate } from "react-router-dom";
@@ -515,8 +516,9 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
           hearingData,
         }),
       ).unwrap();
-      message.success("Hearing report filed successfully");
+      message.success("Hearing report filed and calendar synced");
       dispatch(fetchUpcomingHearings({ limit: 50, days: 30 }));
+      dispatch(getAllEvents({}));
       setActivePanel("none");
       onClose();
     } catch {

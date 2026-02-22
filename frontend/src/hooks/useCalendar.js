@@ -21,6 +21,7 @@ import {
   filterEventsByDateRange,
   filterEventsByStatus,
   filterEventsByType,
+  filterAutoSyncedEvents,
   searchEvents,
   getEventStatistics,
 } from "../utils/calendarUtils";
@@ -41,6 +42,7 @@ export const useCalendarEvents = (params = {}) => {
     types: [],
     startDate: null,
     endDate: null,
+    autoSyncedOnly: false,
   });
 
   // Fetch events on mount or when params change
@@ -86,6 +88,11 @@ export const useCalendarEvents = (params = {}) => {
       result = filterEventsByType(result, filters.types);
     }
 
+    // Apply auto-sync filter
+    if (filters.autoSyncedOnly) {
+      result = filterAutoSyncedEvents(result, filters.autoSyncedOnly);
+    }
+
     // Apply date range filter
     if (filters.startDate && filters.endDate) {
       result = filterEventsByDateRange(
@@ -116,6 +123,7 @@ export const useCalendarEvents = (params = {}) => {
       types: [],
       startDate: null,
       endDate: null,
+      autoSyncedOnly: false,
     });
   }, []);
 

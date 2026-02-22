@@ -1,5 +1,14 @@
 import React from "react";
-import { Drawer, Form, Select, Button, Space, Divider, DatePicker } from "antd";
+import {
+  Drawer,
+  Form,
+  Select,
+  Button,
+  Space,
+  Divider,
+  DatePicker,
+  Switch,
+} from "antd";
 import { FilterOutlined, ClearOutlined } from "@ant-design/icons";
 import {
   EVENT_TYPES,
@@ -56,6 +65,21 @@ const CalendarFilters = ({
         </Space>
       }>
       <Form form={form} layout="vertical" initialValues={filters}>
+        <div className="bg-purple-50 p-4 rounded-lg mb-4">
+          <Form.Item
+            name="autoSyncedOnly"
+            valuePropName="checked"
+            className="!mb-0">
+            <Switch />
+          </Form.Item>
+          <span className="text-sm text-purple-700 font-medium ml-2">
+            Show Auto-Synced Hearings Only
+          </span>
+          <p className="text-xs text-purple-600 mt-1 mb-0">
+            Display only hearings synced from litigation matters
+          </p>
+        </div>
+
         <Form.Item
           name="types"
           label="Event Types"

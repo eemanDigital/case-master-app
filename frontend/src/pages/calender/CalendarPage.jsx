@@ -1,8 +1,10 @@
 import React, { useState } from "react";
+import { useSelector } from "react-redux";
 import { Layout, message, Spin } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
 import CalendarHeader from "../../components/calender/CalendarHeader";
 import MonthView from "../../components/calender/MonthView";
+import WeekView from "../../components/calender/WeekView";
 import AgendaView from "../../components/calender/AgendaView";
 import EventFormModal from "../../components/calender/EventFormModal";
 import EventDetailsModal from "../../components/calender/EventDetailsModal";
@@ -13,7 +15,6 @@ import {
   useEventOperations,
   useDateBlockCheck,
 } from "../../hooks/useCalendar";
-
 const { Content } = Layout;
 
 const CalendarPage = () => {
@@ -23,6 +24,10 @@ const CalendarPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [formMode, setFormMode] = useState("create");
+  const { user } = useSelector((state) => state.auth);
+
+  // Get current user
+  const currentUserId = user?._id;
 
   // Hooks
   const {
@@ -181,6 +186,16 @@ const CalendarPage = () => {
           />
         );
 
+      case "week":
+        return (
+          <WeekView
+            currentDate={currentDate}
+            events={events}
+            onDateClick={handleDateClick}
+            onEventClick={handleViewEvent}
+          />
+        );
+
       case "agenda":
         return (
           <AgendaView
@@ -190,7 +205,7 @@ const CalendarPage = () => {
           />
         );
 
-      // Add day and week views here
+      // Add day view here
       default:
         return (
           <MonthView
@@ -275,6 +290,7 @@ const CalendarPage = () => {
       <EventDetailsModal
         visible={showEventDetails}
         event={selectedEvent}
+        currentUserId={currentUserId}
         onClose={() => {
           setShowEventDetails(false);
           setSelectedEvent(null);
