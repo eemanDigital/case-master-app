@@ -17,11 +17,14 @@ const createCalendarEventFromHearing = async (
   matter,
 ) => {
   try {
-    // Check if calendar event already exists for this hearing
+    // Check if calendar event already exists for this hearing (check both fields for compatibility)
     const existingEvent = await CalendarEvent.findOne({
       firmId: litigationDetail.firmId,
       matter: matter._id,
-      "hearingMetadata.hearingId": hearing._id,
+      $or: [
+        { "hearingMetadata.hearingId": hearing._id },
+        { "customFields.hearingId": hearing._id?.toString() },
+      ],
       isDeleted: false,
     });
 
@@ -251,7 +254,10 @@ const deleteCalendarEventForHearing = async (litigationDetail, hearingId) => {
     const event = await CalendarEvent.findOneAndUpdate(
       {
         firmId: litigationDetail.firmId,
-        "customFields.hearingId": hearingId.toString(),
+        $or: [
+          { "customFields.hearingId": hearingId.toString() },
+          { "hearingMetadata.hearingId": hearingId },
+        ],
         isDeleted: false,
       },
       {

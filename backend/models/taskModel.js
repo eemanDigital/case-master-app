@@ -111,19 +111,27 @@ const taskSchema = new mongoose.Schema(
       trim: true,
       maxLength: [2000, "Description should not exceed 2000 characters"],
     },
-    caseToWorkOn: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Case",
-        validate: {
-          validator: function (cases) {
-            return cases.length > 0 || this.customCaseReference;
-          },
-          message:
-            "Either link to existing case or provide custom case reference",
-        },
-      },
-    ],
+    // Primary link to Matter
+    matter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Matter",
+    },
+    // Store matter type for quick filtering (litigation, corporate, property, etc.)
+    matterType: {
+      type: String,
+      enum: ["litigation", "corporate", "advisory", "retainer", "property", "general", "other"],
+      default: "other",
+    },
+    // For litigation-specific tasks: link to LitigationDetail
+    litigationDetailId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "LitigationDetail",
+    },
+    // For specific hearings within a litigation matter
+    hearingId: {
+      type: mongoose.Schema.Types.ObjectId,
+    },
+    // Custom case reference for external/legacy cases
     customCaseReference: {
       type: String,
       trim: true,
@@ -345,8 +353,13 @@ const taskSchema = new mongoose.Schema(
 // Indexes for better performance
 taskSchema.index({ firmId: 1, status: 1, dueDate: 1 });
 taskSchema.index({ firmId: 1, "assignees.user": 1 });
-taskSchema.index({ firmId: 1, caseToWorkOn: 1 });
+taskSchema.index({ firmId: 1, matter: 1 });
+taskSchema.index({ firmId: 1, matterType: 1 });
+taskSchema.index({ firmId: 1, litigationDetailId: 1 });
 taskSchema.index({ firmId: 1, createdBy: 1 });
+taskSchema.index({ firmId: 1, isDeleted: 1 });
+taskSchema.index({ firmId: 1, dueDate: 1, status: 1 });
+taskSchema.index({ "assignees.user": 1, status: 1 });
 
 // Virtual for overdue status
 taskSchema.virtual("isOverdue").get(function () {
@@ -462,8 +475,15 @@ taskSchema.pre(/^find/, function (next) {
     { path: "createdBy", select: "firstName lastName email position" },
     { path: "assignees.user", select: "firstName lastName email position" },
     {
-      path: "caseToWorkOn",
-      select: "suitNo firstParty.name secondParty.name caseStatus",
+      path: "matter",
+      select: "matterNumber title matterType status client",
+      populate: [
+        { path: "client", select: "firstName lastName companyName" },
+      ],
+    },
+    {
+      path: "litigationDetailId",
+      select: "suitNo courtName courtNo nextHearingDate currentStage",
     },
     {
       path: "referenceDocuments",

@@ -5,15 +5,56 @@ const catchAsync = require("../utils/catchAsync");
 const s3Service = require("../services/s3Service");
 const path = require("path");
 
-// Create task with simplified assignment
+/**
+ * @typedef {import('../models/taskModel').Task} Task
+ */
+
+/**
+ * @typedef {Object} TaskResponse
+ * @property {string} status - Response status
+ * @property {Object} data - Response data
+ */
+
+/**
+ * Creates a new task with assignees and reference documents
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware
+ * @returns {Promise<void>}
+ */
 exports.createTask = catchAsync(async (req, res, next) => {
-  const { assignees = [], referenceDocuments, ...rest } = req.body;
+  const { 
+    assignees = [], 
+    referenceDocuments, 
+    matter,
+    matterType,
+    litigationDetailId,
+    hearingId,
+    ...rest 
+  } = req.body;
 
   const taskData = {
     createdBy: req.user.id,
     firmId: req.firmId,
     ...rest,
   };
+
+  // Handle matter linking
+  if (matter) {
+    taskData.matter = matter;
+    taskData.matterType = matterType || "other";
+  }
+
+  // Handle litigation-specific linking
+  if (litigationDetailId) {
+    taskData.litigationDetailId = litigationDetailId;
+    taskData.matterType = "litigation";
+  }
+
+  // Handle hearing-specific linking
+  if (hearingId) {
+    taskData.hearingId = hearingId;
+  }
 
   // Create the task first
   const task = await Task.create(taskData);
@@ -44,10 +85,8 @@ exports.createTask = catchAsync(async (req, res, next) => {
   })
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
-    .populate(
-      "caseToWorkOn",
-      "suitNo firstParty.name secondParty.name caseStatus"
-    )
+    .populate("matter", "matterNumber title matterType status client")
+    .populate("litigationDetailId", "suitNo courtName courtNo nextHearingDate")
     .populate("referenceDocuments");
 
   res.status(201).json({
@@ -63,7 +102,9 @@ exports.getTasks = catchAsync(async (req, res, next) => {
     priority,
     category,
     assignedTo,
-    caseId,
+    matterId,
+    matterType,
+    litigationDetailId,
     startDate,
     endDate,
     includeDeleted,
@@ -101,7 +142,14 @@ exports.getTasks = catchAsync(async (req, res, next) => {
     }
   }
 
-  if (caseId) filter.caseToWorkOn = caseId;
+  // Filter by matter
+  if (matterId) filter.matter = matterId;
+  
+  // Filter by matter type
+  if (matterType) filter.matterType = matterType;
+  
+  // Filter by litigation detail
+  if (litigationDetailId) filter.litigationDetailId = litigationDetailId;
 
   // Date filters
   if (startDate || endDate) {
@@ -115,10 +163,8 @@ exports.getTasks = catchAsync(async (req, res, next) => {
   const tasksQuery = Task.find(filter)
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
-    .populate(
-      "caseToWorkOn",
-      "suitNo firstParty.name secondParty.name caseStatus"
-    )
+    .populate("matter", "matterNumber title matterType status client")
+    .populate("litigationDetailId", "suitNo courtName courtNo nextHearingDate")
     .populate("referenceDocuments", "fileName fileUrl fileType fileSize")
     .sort(sort)
     .skip(skip)
@@ -150,10 +196,15 @@ exports.getTask = catchAsync(async (req, res, next) => {
   })
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
-    .populate(
-      "caseToWorkOn",
-      "suitNo firstParty.name secondParty.name caseStatus client accountOfficer"
-    )
+    .populate("matter", "matterNumber title matterType status client accountOfficer")
+    .populate({
+      path: "matter",
+      populate: [
+        { path: "client", select: "firstName lastName companyName" },
+        { path: "accountOfficer", select: "firstName lastName email" },
+      ],
+    })
+    .populate("litigationDetailId", "suitNo courtName courtNo division courtLocation nextHearingDate currentStage")
     .populate("referenceDocuments")
     .populate({
       path: "taskResponses.documents",
@@ -182,10 +233,24 @@ exports.getTask = catchAsync(async (req, res, next) => {
 // Update task
 exports.updateTask = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
-  const updateData = { ...req.body };
+  const { matter, matterType, litigationDetailId, hearingId, referenceDocuments, ...updateData } = req.body;
+
+  // Handle matter linking updates
+  if (matter !== undefined) {
+    updateData.matter = matter;
+  }
+  if (matterType !== undefined) {
+    updateData.matterType = matterType;
+  }
+  if (litigationDetailId !== undefined) {
+    updateData.litigationDetailId = litigationDetailId;
+  }
+  if (hearingId !== undefined) {
+    updateData.hearingId = hearingId;
+  }
 
   // Handle reference documents update
-  if (updateData.referenceDocuments) {
+  if (referenceDocuments) {
     const existingTask = await Task.findOne({
       _id: taskId,
       firmId: req.firmId,
@@ -195,7 +260,7 @@ exports.updateTask = catchAsync(async (req, res, next) => {
     }
     updateData.referenceDocuments = [
       ...existingTask.referenceDocuments,
-      ...updateData.referenceDocuments,
+      ...referenceDocuments,
     ];
   }
 
@@ -209,10 +274,8 @@ exports.updateTask = catchAsync(async (req, res, next) => {
   )
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
-    .populate(
-      "caseToWorkOn",
-      "suitNo firstParty.name secondParty.name caseStatus"
-    )
+    .populate("matter", "matterNumber title matterType status")
+    .populate("litigationDetailId", "suitNo courtName courtNo")
     .populate("referenceDocuments");
 
   if (!updatedTask) {
@@ -443,10 +506,8 @@ exports.getMyTasks = catchAsync(async (req, res, next) => {
     firmId: req.firmId,
   })
     .populate("createdBy", "firstName lastName email position")
-    .populate(
-      "caseToWorkOn",
-      "suitNo firstParty.name secondParty.name caseStatus"
-    )
+    .populate("matter", "matterNumber title matterType status")
+    .populate("litigationDetailId", "suitNo courtName")
     .populate("referenceDocuments", "fileName fileUrl fileType");
 
   res.status(200).json({
@@ -466,7 +527,8 @@ exports.getOverdueTasks = catchAsync(async (req, res, next) => {
   })
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
-    .populate("caseToWorkOn", "suitNo firstParty.name secondParty.name");
+    .populate("matter", "matterNumber title matterType")
+    .populate("litigationDetailId", "suitNo courtName");
 
   res.status(200).json({
     status: "success",
@@ -652,13 +714,6 @@ exports.uploadReferenceDocuments = catchAsync(async (req, res, next) => {
       },
     });
 
-    console.log("✅ Task reference document uploaded:", {
-      fileId: fileRecord._id,
-      fileName: fileRecord.fileName,
-      taskId: taskId,
-      hasPresignedUrl: !!uploadResult.presignedUrl,
-    });
-
     // Add to task's reference documents
     if (!task.referenceDocuments.includes(fileRecord._id)) {
       task.referenceDocuments.push(fileRecord._id);
@@ -777,14 +832,6 @@ exports.uploadResponseDocuments = catchAsync(async (req, res, next) => {
         fileSize: file.size,
         mimeType: file.mimetype,
       },
-    });
-
-    console.log("✅ Task response document uploaded:", {
-      fileId: fileRecord._id,
-      fileName: fileRecord.fileName,
-      taskId: taskId,
-      responseId: responseId,
-      hasPresignedUrl: !!uploadResult.presignedUrl,
     });
 
     // Add to task response or create new response
@@ -1004,10 +1051,8 @@ exports.getTasksByAssignee = catchAsync(async (req, res, next) => {
   const tasks = await Task.find(query)
     .populate("createdBy", "firstName lastName email position")
     .populate("assignees.user", "firstName lastName email position")
-    .populate(
-      "caseToWorkOn",
-      "suitNo firstParty.name secondParty.name caseStatus"
-    )
+    .populate("matter", "matterNumber title matterType status")
+    .populate("litigationDetailId", "suitNo courtName")
     .sort({ dueDate: 1, taskPriority: -1 });
 
   res.status(200).json({
@@ -1325,10 +1370,8 @@ exports.getTasksPendingReview = catchAsync(async (req, res, next) => {
       .populate("createdBy", "firstName lastName email position")
       .populate("assignees.user", "firstName lastName email position")
       .populate("lastSubmittedBy", "firstName lastName email position")
-      .populate(
-        "caseToWorkOn",
-        "suitNo firstParty.name secondParty.name caseStatus"
-      )
+      .populate("matter", "matterNumber title matterType status")
+      .populate("litigationDetailId", "suitNo courtName")
       .sort({ submittedForReviewAt: -1 })
       .skip(skip)
       .limit(parseInt(limit)),

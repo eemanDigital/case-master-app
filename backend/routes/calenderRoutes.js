@@ -1,4 +1,4 @@
-// In your calendarRoutes.js - MODIFIED VERSION
+// calendarRoutes.js - UPDATED TO MATCH userModel ROLES & POSITIONS
 const express = require("express");
 const calendarController = require("../controllers/calenderController");
 const blockedDateController = require("../controllers/blockedDateController");
@@ -10,13 +10,43 @@ const {
   createDeadlineFromCourtOrder,
 } = require("../controllers/calenderSync");
 
-// ============================================
-// MAIN CALENDAR ROUTER
-// ============================================
 const router = express.Router();
 
-// Protect all calendar routes
+// ============================================
+// PROTECT ALL CALENDAR ROUTES
+// ============================================
 router.use(protect);
+
+// ============================================
+// POSITION-BASED RESTRICTION HELPER
+// Checks req.user.position for senior-level access
+// since "principal" and "partner" are positions, not roles
+// ============================================
+const restrictToSeniorPositions = (req, res, next) => {
+  // Super admin always passes
+  if (req.user.role === "super-admin" || req.user.userType === "super-admin") {
+    return next();
+  }
+
+  const seniorPositions = [
+    "Managing Partner",
+    "Senior Partner",
+    "Partner",
+    "Principal",
+    "Head of Chambers",
+  ];
+
+  if (seniorPositions.includes(req.user.position)) {
+    return next();
+  }
+
+  return next({
+    status: "fail",
+    statusCode: 403,
+    message:
+      "You do not have permission to perform this action. Senior position required.",
+  });
+};
 
 // ============================================
 // CALENDAR EVENTS - STATISTICS & DASHBOARD
@@ -50,15 +80,11 @@ router.patch("/events/:id/respond", calendarController.respondToInvitation);
 router.patch("/events/:id/restore", calendarController.restoreEvent);
 
 // ============================================
-// CALENDAR SYNC ENDPOINTS (RESTRICTED)
+// CALENDAR SYNC ENDPOINTS
+// Valid roles from userModel: "lawyer", "admin", "super-admin"
+// "secretary" and "hr" are excluded from sync operations
 // ============================================
-const syncRestriction = restrictTo(
-  "principal",
-  "partner",
-  "super_admin",
-  "admin",
-  "associate",
-);
+const syncRestriction = restrictTo("super-admin", "admin", "lawyer");
 
 // Sync hearing to calendar
 router.post("/sync/hearing", syncRestriction, async (req, res, next) => {
@@ -171,32 +197,34 @@ router.post(
 
 // ============================================
 // BLOCKED DATES - PUBLIC ENDPOINTS
+// Available to all authenticated users
 // ============================================
-// Check if date is blocked (available to all authenticated users)
 router.post("/blocked-dates/check", blockedDateController.checkIfBlocked);
-
-// Get blocked dates in range
 router.get(
   "/blocked-dates/range",
   blockedDateController.getBlockedDatesInRange,
 );
-
-// Get my blocked dates
 router.get("/blocked-dates/my-blocks", blockedDateController.getMyBlockedDates);
 
 // ============================================
 // BLOCKED DATES - RESTRICTED OPERATIONS
+// Valid roles from userModel: "lawyer", "admin", "super-admin", "hr", "secretary"
+// Blocking dates is allowed for all non-client, non-staff roles
 // ============================================
 const blockRestriction = restrictTo(
-  "principal",
-  "partner",
-  "super_admin",
+  "super-admin",
   "admin",
+  "lawyer",
+  "hr",
+  "secretary",
 );
 
-const principalRestriction = restrictTo("principal", "partner");
+// ============================================
+// BLOCKED DATES - EXCEPTION MANAGEMENT
+// Restricted to users with senior positions (Partner, Principal, etc.)
+// since "principal" and "partner" are POSITIONS not ROLES in the userModel
+// ============================================
 
-// CRUD operations
 router
   .route("/blocked-dates")
   .get(blockedDateController.getAllBlockedDates)
@@ -215,20 +243,21 @@ router.patch(
   blockedDateController.restoreBlockedDate,
 );
 
-// Exception management (principals and partners only)
+// Exception management — senior positions only (Partner, Principal, Head of Chambers, etc.)
+// Uses position-based check since these are positions not roles in the userModel
 router.post(
   "/blocked-dates/:id/exceptions",
-  principalRestriction,
+  restrictToSeniorPositions,
   blockedDateController.grantException,
 );
 
 router.delete(
   "/blocked-dates/:id/exceptions/:userId",
-  principalRestriction,
+  restrictToSeniorPositions,
   blockedDateController.revokeException,
 );
 
 // ============================================
-// EXPORT SINGLE ROUTER
+// EXPORT ROUTER
 // ============================================
 module.exports = router;

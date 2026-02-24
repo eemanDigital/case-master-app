@@ -484,6 +484,9 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     litigationDetail.nextHearingDate = hearingData.nextHearingDate;
   }
 
+  // Set flag to ensure middleware triggers sync
+  litigationDetail._hearingChanges = { hasChanges: true };
+
   console.log("🔵 About to save litigation with hearings...");
 
   // ✅ THIS TRIGGERS THE MIDDLEWARE!
@@ -753,6 +756,9 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     hearing[key] = updateData[key];
   });
 
+  // Set flag to ensure middleware triggers calendar sync
+  litigationDetail._hearingChanges = { hasChanges: true };
+
   console.log("🔵 About to save updated litigation...");
   await litigationDetail.save();
   console.log("🔵 Litigation saved, middleware ran");
@@ -808,10 +814,10 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
   // Delete the hearing
   litigationDetail.hearings.pull({ _id: hearingId });
 
-  // Mark that hearings changed so middleware syncs
+  // Set flag BEFORE save to trigger middleware for updating nextHearingDate
   litigationDetail._hearingChanges = { hasChanges: true };
 
-  // Save to trigger middleware for updating nextHearingDate
+  // Save to trigger middleware
   await litigationDetail.save();
 
   // Update matter last activity

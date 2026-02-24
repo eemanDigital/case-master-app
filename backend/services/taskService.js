@@ -10,14 +10,14 @@ class TaskService {
     if ((!assignedTo || assignedTo.length === 0) && !assignedToClient) {
       throw new AppError(
         "Task must be assigned to at least one staff member or client",
-        400
+        400,
       );
     }
 
     if (assignedTo && assignedTo.length > 0 && assignedToClient) {
       throw new AppError(
         "Task cannot be assigned to both staff and client",
-        400
+        400,
       );
     }
 
@@ -49,7 +49,7 @@ class TaskService {
       },
       {
         $set: { status: "overdue" },
-      }
+      },
     );
     return result;
   }

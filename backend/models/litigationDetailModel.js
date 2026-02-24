@@ -86,6 +86,10 @@ const hearingSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    hearingNoticeServed: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );
@@ -383,50 +387,26 @@ litigationDetailSchema.pre("save", function (next) {
   next();
 });
 
-// Flag for post-save sync - store the specific hearing ID that changed
-litigationDetailSchema.pre("save", async function (next) {
+// Flag for post-save sync - track if hearings were modified
+litigationDetailSchema.pre("save", function (next) {
   if (this.isModified("hearings")) {
-    // Store original hearings for comparison (only for updates)
-    if (!this.isNew) {
-      try {
-        const original = await this.constructor.findById(this._id).select("hearings");
-        this._original = original?.toObject?.() || { hearings: original?.hearings || [] };
-      } catch (err) {
-        console.log("⚠️ Could not fetch original hearings:", err.message);
-        this._original = { hearings: [] };
-      }
-    }
-
-    // Get the previous hearings array (if updating)
-    const previousHearings = this._original?.hearings || [];
-    const currentHearings = this.hearings;
-
-    // Find newly added hearings
-    const currentIds = currentHearings.map(h => h._id?.toString()).filter(Boolean);
-    const previousIds = previousHearings.map(h => h._id?.toString()).filter(Boolean);
-    
-    // New hearing added
-    const addedIds = currentIds.filter(id => !previousIds.includes(id));
-    
-    // Check if any hearing was modified (not new, but existing)
     this._hearingChanges = {
-      added: addedIds,
       hasChanges: true,
+      wasNew: this.isNew,
     };
-    
-    console.log("🔵 PRE-SAVE: Hearings modified", { added: addedIds.length });
+    console.log("🔵 PRE-SAVE: Hearings modified, isNew:", this.isNew);
   }
   next();
 });
 
 // ============================================
-// POST-SAVE MIDDLEWARE - CALENDAR SYNC (OPTIMIZED)
+// POST-SAVE MIDDLEWARE - CALENDAR SYNC
 // ============================================
 
 litigationDetailSchema.post("save", async function (doc) {
-  console.log("🟢 POST-SAVE: Triggered");
+  console.log("🟢 POST-SAVE: Triggered, _hearingChanges:", doc._hearingChanges);
 
-  if (!this._hearingChanges?.hasChanges) {
+  if (!doc._hearingChanges?.hasChanges) {
     console.log("⚠️ No hearing changes, skipping sync");
     return;
   }
@@ -450,27 +430,9 @@ litigationDetailSchema.post("save", async function (doc) {
       `📋 Matter: ${matter.matterNumber}, Hearings: ${doc.hearings.length}`,
     );
 
-    // Only sync hearings that were added or modified
-    // For new hearings, sync the newly added ones
-    // For updates, we need to find which hearing was updated
-    const hearingsToSync = [];
-
-    if (this._hearingChanges.added?.length > 0) {
-      // New hearings were added - find them in current hearings
-      this._hearingChanges.added.forEach(addedId => {
-        const hearing = doc.hearings.find(h => h._id?.toString() === addedId);
-        if (hearing) {
-          hearingsToSync.push(hearing);
-        }
-      });
-    }
-
-    // If no new hearings but hearings were modified, sync all 
-    // (since we can't easily track which one was modified without more logic)
-    if (hearingsToSync.length === 0 && doc.hearings.length > 0) {
-      // This is an update scenario - sync all hearings to ensure calendar is up to date
-      hearingsToSync.push(...doc.hearings);
-    }
+    // For new documents, sync all hearings
+    // For updates, sync all hearings to ensure calendar is in sync
+    const hearingsToSync = doc.hearings || [];
 
     if (hearingsToSync.length === 0) {
       console.log("⚠️ No hearings to sync");
@@ -661,10 +623,13 @@ async function syncHearingToCalendar(
       },
     };
 
-    // Find or create event
+    // Find or create event (check both fields for compatibility)
     const existingEvent = await CalendarEvent.findOne({
       firmId: litigationDetail.firmId,
-      "customFields.hearingId": hearing._id.toString(),
+      $or: [
+        { "customFields.hearingId": hearing._id?.toString() },
+        { "hearingMetadata.hearingId": hearing._id },
+      ],
       isDeleted: false,
     });
 

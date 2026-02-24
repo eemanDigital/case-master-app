@@ -14,9 +14,77 @@ const buildFirmQuery = (req, additionalFilters = {}) => {
   };
 };
 
-// Check if user has permission to create blocks
-const canCreateBlock = (userRole) => {
-  return ["principal", "partner", "super_admin", "admin"].includes(userRole);
+/**
+ * Get all effective roles for a user.
+ * Combines primary role + additionalRoles + isLawyer flag.
+ * Mirrors the same logic used in authController.
+ */
+const getEffectiveRoles = (user) => {
+  const roles = [user.role];
+  if (user.additionalRoles && user.additionalRoles.length > 0) {
+    roles.push(...user.additionalRoles);
+  }
+  if (user.isLawyer) {
+    roles.push("lawyer");
+  }
+  return [...new Set(roles)];
+};
+
+/**
+ * Check if user has ANY of the specified roles (primary or additional).
+ */
+const hasAnyRole = (user, ...roles) => {
+  if (user.role === "super-admin" || user.userType === "super-admin")
+    return true;
+  const effectiveRoles = getEffectiveRoles(user);
+  return roles.some((r) => effectiveRoles.includes(r));
+};
+
+/**
+ * Check if user holds a senior position.
+ * "Principal" and "Partner" variants are POSITIONS in the userModel, not roles.
+ */
+const hasSeniorPosition = (user) => {
+  if (user.role === "super-admin" || user.userType === "super-admin")
+    return true;
+
+  const seniorPositions = [
+    "Managing Partner",
+    "Senior Partner",
+    "Partner",
+    "Principal",
+    "Head of Chambers",
+  ];
+
+  return seniorPositions.includes(user.position);
+};
+
+/**
+ * Can manage blocked dates:
+ * Valid roles from userModel — "super-admin", "admin", "lawyer", "hr", "secretary"
+ * Also allows users with senior positions (Partner, Principal, etc.)
+ */
+const canManageBlock = (user) => {
+  if (hasSeniorPosition(user)) return true;
+  return hasAnyRole(user, "super-admin", "admin", "lawyer", "hr", "secretary");
+};
+
+/**
+ * Can grant/revoke exceptions:
+ * Only senior positions OR super-admin / admin roles
+ */
+const canManageExceptions = (user) => {
+  if (hasSeniorPosition(user)) return true;
+  return hasAnyRole(user, "super-admin", "admin");
+};
+
+/**
+ * Can block specific users (sensitive operation):
+ * Only senior positions OR super-admin
+ */
+const canBlockSpecificUsers = (user) => {
+  if (hasSeniorPosition(user)) return true;
+  return hasAnyRole(user, "super-admin");
 };
 
 // ============================================
@@ -26,22 +94,25 @@ const canCreateBlock = (userRole) => {
 /**
  * @desc    Create a blocked date/time slot
  * @route   POST /api/calendar/blocked-dates
- * @access  Private (Principal, Partner, Admin only)
+ * @access  Private (Admin, Lawyer, HR, Secretary, Senior Positions)
  */
 exports.createBlockedDate = catchAsync(async (req, res, next) => {
-  // Check permission
-  if (!canCreateBlock(req.user.role)) {
+  if (!canManageBlock(req.user)) {
     return next(new AppError("You do not have permission to block dates", 403));
   }
 
   const { blockScope, blockedUsers, ...blockData } = req.body;
 
-  // Additional validation: Only principals can block specific users
-  if (blockScope === "specific_users" && req.user.role !== "principal") {
-    return next(new AppError("Only principals can block specific users", 403));
+  // Only senior positions or super-admin can block specific users
+  if (blockScope === "specific_users" && !canBlockSpecificUsers(req.user)) {
+    return next(
+      new AppError(
+        "Only principals, partners, or super-admins can block specific users",
+        403,
+      ),
+    );
   }
 
-  // Create the block
   const block = await BlockedDate.create({
     ...blockData,
     blockScope,
@@ -54,9 +125,7 @@ exports.createBlockedDate = catchAsync(async (req, res, next) => {
 
   res.status(201).json({
     status: "success",
-    data: {
-      block,
-    },
+    data: { block },
   });
 });
 
@@ -81,7 +150,6 @@ exports.getAllBlockedDates = catchAsync(async (req, res, next) => {
 
   const filter = buildFirmQuery(req);
 
-  // Date range filter
   if (startDate && endDate) {
     filter.startDate = { $lte: new Date(endDate) };
     filter.endDate = { $gte: new Date(startDate) };
@@ -108,9 +176,7 @@ exports.getAllBlockedDates = catchAsync(async (req, res, next) => {
     results: blocks.length,
     total,
     page: Number(page),
-    data: {
-      blocks,
-    },
+    data: { blocks },
   });
 });
 
@@ -138,9 +204,7 @@ exports.getBlockedDate = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: {
-      block,
-    },
+    data: { block },
   });
 });
 
@@ -151,10 +215,10 @@ exports.getBlockedDate = catchAsync(async (req, res, next) => {
 /**
  * @desc    Update blocked date
  * @route   PATCH /api/calendar/blocked-dates/:id
- * @access  Private (Principal, Partner, Admin only)
+ * @access  Private (Admin, Lawyer, HR, Secretary, Senior Positions)
  */
 exports.updateBlockedDate = catchAsync(async (req, res, next) => {
-  if (!canCreateBlock(req.user.role)) {
+  if (!canManageBlock(req.user)) {
     return next(
       new AppError("You do not have permission to update blocked dates", 403),
     );
@@ -168,7 +232,6 @@ exports.updateBlockedDate = catchAsync(async (req, res, next) => {
     return next(new AppError("Blocked date not found", 404));
   }
 
-  // Update fields
   const allowedUpdates = [
     "title",
     "reason",
@@ -196,9 +259,7 @@ exports.updateBlockedDate = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: {
-      block,
-    },
+    data: { block },
   });
 });
 
@@ -207,12 +268,12 @@ exports.updateBlockedDate = catchAsync(async (req, res, next) => {
 // ============================================
 
 /**
- * @desc    Delete (deactivate) blocked date
+ * @desc    Delete (soft delete) blocked date
  * @route   DELETE /api/calendar/blocked-dates/:id
- * @access  Private (Principal, Partner, Admin only)
+ * @access  Private (Admin, Lawyer, HR, Secretary, Senior Positions)
  */
 exports.deleteBlockedDate = catchAsync(async (req, res, next) => {
-  if (!canCreateBlock(req.user.role)) {
+  if (!canManageBlock(req.user)) {
     return next(
       new AppError("You do not have permission to delete blocked dates", 403),
     );
@@ -241,11 +302,13 @@ exports.deleteBlockedDate = catchAsync(async (req, res, next) => {
 /**
  * @desc    Restore a deleted blocked date
  * @route   PATCH /api/calendar/blocked-dates/:id/restore
- * @access  Private (Principal, Partner, Admin only)
+ * @access  Private (Admin, Lawyer, HR, Secretary, Senior Positions)
  */
 exports.restoreBlockedDate = catchAsync(async (req, res, next) => {
-  if (!canCreateBlock(req.user.role)) {
-    return next(new AppError("You do not have permission", 403));
+  if (!canManageBlock(req.user)) {
+    return next(
+      new AppError("You do not have permission to restore blocked dates", 403),
+    );
   }
 
   const block = await BlockedDate.findOne({
@@ -262,9 +325,7 @@ exports.restoreBlockedDate = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: {
-      block,
-    },
+    data: { block },
   });
 });
 
@@ -275,12 +336,15 @@ exports.restoreBlockedDate = catchAsync(async (req, res, next) => {
 /**
  * @desc    Grant exception to a user for a blocked date
  * @route   POST /api/calendar/blocked-dates/:id/exceptions
- * @access  Private (Principal, Partner only)
+ * @access  Private (Senior Positions, Admin, Super-Admin)
  */
 exports.grantException = catchAsync(async (req, res, next) => {
-  if (!["principal", "partner"].includes(req.user.role)) {
+  if (!canManageExceptions(req.user)) {
     return next(
-      new AppError("Only principals and partners can grant exceptions", 403),
+      new AppError(
+        "Only principals, partners, admins, or super-admins can grant exceptions",
+        403,
+      ),
     );
   }
 
@@ -294,7 +358,6 @@ exports.grantException = catchAsync(async (req, res, next) => {
     return next(new AppError("Blocked date not found", 404));
   }
 
-  // Check if exception already exists
   const existingException = block.exceptions.find(
     (e) => e.user.toString() === userId,
   );
@@ -304,15 +367,12 @@ exports.grantException = catchAsync(async (req, res, next) => {
   }
 
   await block.grantException(userId, req.user._id, reason);
-
   await block.populate("exceptions.user", "firstName lastName email");
 
   res.status(200).json({
     status: "success",
     message: "Exception granted successfully",
-    data: {
-      block,
-    },
+    data: { block },
   });
 });
 
@@ -323,12 +383,15 @@ exports.grantException = catchAsync(async (req, res, next) => {
 /**
  * @desc    Revoke exception from a user
  * @route   DELETE /api/calendar/blocked-dates/:id/exceptions/:userId
- * @access  Private (Principal, Partner only)
+ * @access  Private (Senior Positions, Admin, Super-Admin)
  */
 exports.revokeException = catchAsync(async (req, res, next) => {
-  if (!["principal", "partner"].includes(req.user.role)) {
+  if (!canManageExceptions(req.user)) {
     return next(
-      new AppError("Only principals and partners can revoke exceptions", 403),
+      new AppError(
+        "Only principals, partners, admins, or super-admins can revoke exceptions",
+        403,
+      ),
     );
   }
 
@@ -347,9 +410,7 @@ exports.revokeException = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     message: "Exception revoked successfully",
-    data: {
-      block,
-    },
+    data: { block },
   });
 });
 
@@ -415,9 +476,7 @@ exports.getBlockedDatesInRange = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     results: blocks.length,
-    data: {
-      blocks,
-    },
+    data: { blocks },
   });
 });
 
@@ -440,14 +499,11 @@ exports.getMyBlockedDates = catchAsync(async (req, res, next) => {
     filter.endDate = { $gte: new Date(startDate) };
   }
 
-  // Find blocks that affect this user
   const blocks = await BlockedDate.find(filter);
 
   const relevantBlocks = blocks.filter((block) => {
-    // Firm-wide blocks affect everyone
     if (block.blockScope === "firm_wide") return true;
 
-    // Specific user blocks
     if (block.blockScope === "specific_users") {
       return block.blockedUsers.some(
         (u) => u.toString() === req.user._id.toString(),
@@ -460,9 +516,7 @@ exports.getMyBlockedDates = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     results: relevantBlocks.length,
-    data: {
-      blocks: relevantBlocks,
-    },
+    data: { blocks: relevantBlocks },
   });
 });
 
