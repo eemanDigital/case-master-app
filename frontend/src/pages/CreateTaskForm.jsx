@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { PlusOutlined, UserAddOutlined, MailOutlined } from "@ant-design/icons";
+import {
+  PlusOutlined,
+  UserAddOutlined,
+  MailOutlined,
+  FileTextOutlined,
+  BankOutlined,
+} from "@ant-design/icons";
 import {
   taskPriorityOptions,
   taskCategoryOptions,
@@ -17,18 +23,16 @@ import {
   Space,
   Tag,
   InputNumber,
-  Divider,
   Alert,
   Collapse,
-  Upload,
-  message,
+  Card,
+  Row,
+  Col,
   Checkbox,
 } from "antd";
-import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import useModal from "../hooks/useModal";
 import { SelectInputs } from "../components/DynamicInputs";
-
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useDispatch, useSelector } from "react-redux";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
@@ -36,24 +40,31 @@ import { getUsers } from "../redux/features/auth/authSlice";
 import { formatDate } from "../utils/formatDate";
 import { toast } from "react-toastify";
 import ButtonWithIcon from "../components/ButtonWithIcon";
+import dayjs from "dayjs";
+import useMattersSelectOptions from "../hooks/useMattersSelectOptions";
 
 const { TextArea } = Input;
 const { Title } = Typography;
 const { Panel } = Collapse;
 
+const MATTER_TYPE_OPTIONS = [
+  { value: "litigation", label: "Litigation", icon: "⚖️" },
+  { value: "corporate", label: "Corporate", icon: "🏢" },
+  { value: "property", label: "Property", icon: "🏠" },
+  { value: "advisory", label: "Advisory", icon: "💼" },
+  { value: "retainer", label: "Retainer", icon: "📋" },
+  { value: "general", label: "General", icon: "📁" },
+];
+
 const CreateTaskForm = () => {
-  const { casesOptions } = useCaseSelectOptions();
-  const { data: userData } = useUserSelectOptions();
+  const { data: userData } = useUserSelectOptions({ type: "all" });
   const { fetchData } = useDataGetterHook();
   const dispatch = useDispatch();
   const { users, user } = useSelector((state) => state.auth);
 
-  // Modal hooks
-  const { open, confirmLoading, showModal, handleOk, handleCancel } =
-    useModal();
+  const { open, confirmLoading, showModal, handleCancel } = useModal();
   const [form] = Form.useForm();
   const [selectedAssignees, setSelectedAssignees] = useState([]);
-  const [referenceDocuments, setReferenceDocuments] = useState([]);
 
   const {
     dataFetcher,
@@ -61,39 +72,133 @@ const CreateTaskForm = () => {
     error: dataError,
   } = useDataFetch();
 
-  // Fetch users
+  // ── Matter selection — powered by Redux via useMattersSelectOptions ─────────
+  const {
+    matters, // full mapped list from Redux state.matter.matters
+    loading: matterSearchLoading,
+    fetchMatters, // call with searchText to search; "" to reset
+    getLitigationDetails,
+  } = useMattersSelectOptions({
+    status: "active",
+    limit: 50,
+    autoFetch: false, // don't auto-fetch on mount — only fetch when modal opens
+  });
+
+  // ── Litigation detail options (populated after a litigation matter is picked) ─
+  const [litigationLoading, setLitigationLoading] = useState(false);
+  const [litigationOptions, setLitigationOptions] = useState([]);
+
+  // ── Tracks which matter type is currently selected ─────────────────────────
+  const [selectedMatterType, setSelectedMatterType] = useState(null);
+
+  // ── Fetch users on mount ───────────────────────────────────────────────────
   useEffect(() => {
     dispatch(getUsers());
   }, [dispatch]);
 
-  // Handle assignee selection change
-  const handleAssigneeChange = (value) => {
-    setSelectedAssignees(value || []);
-  };
+  // ── When modal opens, fetch matters. When it closes, reset form. ───────────
+  useEffect(() => {
+    if (open) {
+      // Kick off the initial list load when the modal first opens.
+      fetchMatters("");
+    } else {
+      form.resetFields();
+      setSelectedAssignees([]);
+      setSelectedMatterType(null);
+      setLitigationOptions([]);
+    }
+  }, [open]); // intentionally omit fetchMatters from deps
 
-  // Reset form and state
-  const resetFormAndState = () => {
+  // ── Search handler — delegates to Redux thunk via the hook ─────────────────
+  const handleMatterSearch = useCallback(
+    (searchText) => {
+      fetchMatters(searchText || "");
+    },
+    [fetchMatters],
+  );
+
+  // ── When a matter is selected, auto-fill type and load litigation details ───
+  const handleMatterChange = useCallback(
+    async (matterId) => {
+      if (!matterId) {
+        // Cleared
+        setSelectedMatterType(null);
+        form.setFieldsValue({
+          matterType: undefined,
+          litigationDetailId: undefined,
+        });
+        setLitigationOptions([]);
+        return;
+      }
+
+      const selectedMatter = matters.find((m) => m._id === matterId);
+      if (!selectedMatter) return;
+
+      setSelectedMatterType(selectedMatter.matterType);
+      form.setFieldsValue({ matterType: selectedMatter.matterType });
+
+      if (selectedMatter.matterType === "litigation") {
+        setLitigationLoading(true);
+        const details = await getLitigationDetails(matterId);
+        if (details) {
+          setLitigationOptions([
+            {
+              _id: details._id,
+              value: details._id,
+              label: `${details.suitNo || "N/A"} - ${details.courtName || "Unknown Court"}`,
+              subtitle: `Next Hearing: ${
+                details.nextHearingDate
+                  ? dayjs(details.nextHearingDate).format("MMM D, YYYY")
+                  : "Not set"
+              }`,
+            },
+          ]);
+        } else {
+          setLitigationOptions([]);
+        }
+        setLitigationLoading(false);
+      } else {
+        form.setFieldsValue({ litigationDetailId: undefined });
+        setLitigationOptions([]);
+      }
+    },
+    [matters, form, getLitigationDetails],
+  );
+
+  // ── Matter type manually changed (overrides the auto-fill) ────────────────
+  const handleMatterTypeChange = useCallback(
+    (value) => {
+      setSelectedMatterType(value);
+      if (value !== "litigation") {
+        form.setFieldsValue({ litigationDetailId: undefined });
+        setLitigationOptions([]);
+      }
+    },
+    [form],
+  );
+
+  const handleAssigneeChange = (value) => setSelectedAssignees(value || []);
+
+  const resetFormAndState = useCallback(() => {
     form.resetFields();
     setSelectedAssignees([]);
-    setReferenceDocuments([]);
-  };
+    setSelectedMatterType(null);
+    setLitigationOptions([]);
+  }, [form]);
 
-  // Handle form submission
+  // ── Submit ──────────────────────────────────────────────────────────────────
   const handleSubmit = useCallback(
     async (values) => {
       try {
-        // Prepare task data with new consolidated fields
         const taskData = {
           title: values.title,
           description: values.description || "",
           instruction: values.instruction,
-          createdBy: user?.data?._id || user?._id, // Required by schema
-          // Only include caseToWorkOn if a case is selected
-          ...(values.caseToWorkOn && { caseToWorkOn: [values.caseToWorkOn] }),
-          // Only include customCaseReference if provided
-          ...(values.customCaseReference && {
-            customCaseReference: values.customCaseReference,
-          }),
+          createdBy: user?.data?._id || user?._id,
+          matter: values.matter,
+          matterType: values.matterType,
+          litigationDetailId: values.litigationDetailId,
+          customCaseReference: values.customCaseReference,
           startDate: values.startDate ? values.startDate.toDate() : null,
           dueDate: values.dueDate ? values.dueDate.toDate() : new Date(),
           taskPriority: values.taskPriority || "medium",
@@ -104,33 +209,13 @@ const CreateTaskForm = () => {
             values.tags && Array.isArray(values.tags)
               ? values.tags.map((tag) => tag.trim())
               : [],
-          dependencies: values.dependencies || [],
-          isTemplate: values.isTemplate || false,
-          templateName: values.templateName || "",
-          referenceDocuments: referenceDocuments || [],
-          // Add recurrence if specified
-          ...(values.recurrencePattern &&
-            values.recurrencePattern !== "none" && {
-              recurrence: {
-                pattern: values.recurrencePattern,
-                ...(values.recurrenceEndDate && {
-                  endAfter: values.recurrenceEndDate.toDate(),
-                }),
-                ...(values.recurrenceOccurrences && {
-                  occurrences: values.recurrenceOccurrences,
-                }),
-              },
-            }),
-          // New fields structure
           assignees: [
-            // Add the creator as primary assignee
             {
               user: user?.data?._id || user?._id,
               role: "primary",
               assignedBy: user?.data?._id || user?._id,
               isClient: false,
             },
-            // Add selected assignees
             ...(selectedAssignees || []).map((userId) => {
               const userObj = users?.data?.find((u) => u._id === userId);
               return {
@@ -143,61 +228,53 @@ const CreateTaskForm = () => {
           ],
         };
 
-        // Post data to create task
         const result = await dataFetcher("tasks", "POST", taskData);
 
         if (result?.error) {
           toast.error(result.error || "Failed to create task");
-          // DON'T reset form on error - user keeps their data
           return;
         }
 
-        // Refresh tasks list
         await fetchData("tasks", "tasks");
 
-        // Send email notification if checkbox was checked
+        // ── Optional email notification ───────────────────────────────────────
         if (values.sendEmailNotification && selectedAssignees.length > 0) {
           try {
-            // Get all assigned users for email notification
             const assignedUserIds = [
               user?.data?._id || user?._id,
               ...(selectedAssignees || []),
             ];
-
-            const assignedUsers = users?.data?.filter((user) =>
-              assignedUserIds.includes(user._id)
+            const assignedUsers = users?.data?.filter((u) =>
+              assignedUserIds.includes(u._id),
             );
-            const sendToEmails = assignedUsers?.map((user) => user.email) || [];
+            const sendToEmails = assignedUsers?.map((u) => u.email) || [];
 
-            // Prepare email data
-            const emailData = {
-              subject: "New Task Assigned - A.T. Lukman & Co.",
-              send_to: sendToEmails,
-              send_from: user?.data?.email || user?.email,
-              reply_to: "noreply@atlukman.com",
-              template: "taskAssignment",
-              url: "/dashboard/tasks",
-              context: {
-                sendersName: `${user?.data?.firstName || user?.firstName} ${
-                  user?.data?.lastName || user?.lastName
-                }`,
-                sendersPosition: user?.data?.position || user?.position || "",
-                title: values.title,
-                dueDate: formatDate(values.dueDate),
-                instruction: values.instruction,
-                taskPriority: values.taskPriority,
-                category: values.category,
-                estimatedEffort: values.estimatedEffort,
-                recipients: assignedUsers
-                  ?.filter((u) => u._id !== (user?.data?._id || user?._id))
-                  .map((u) => `${u.firstName} ${u.lastName}`)
-                  .join(", "),
-              },
-            };
-
-            // Send email notification
             if (sendToEmails.length > 0) {
-              await dispatch(sendAutomatedCustomEmail(emailData));
+              await dispatch(
+                sendAutomatedCustomEmail({
+                  subject: "New Task Assigned - A.T. Lukman & Co.",
+                  send_to: sendToEmails,
+                  send_from: user?.data?.email || user?.email,
+                  reply_to: "noreply@atlukman.com",
+                  template: "taskAssignment",
+                  url: "/dashboard/tasks",
+                  context: {
+                    sendersName: `${user?.data?.firstName || user?.firstName} ${user?.data?.lastName || user?.lastName}`,
+                    sendersPosition:
+                      user?.data?.position || user?.position || "",
+                    title: values.title,
+                    dueDate: formatDate(values.dueDate),
+                    instruction: values.instruction,
+                    taskPriority: values.taskPriority,
+                    category: values.category,
+                    estimatedEffort: values.estimatedEffort,
+                    recipients: assignedUsers
+                      ?.filter((u) => u._id !== (user?.data?._id || user?._id))
+                      .map((u) => `${u.firstName} ${u.lastName}`)
+                      .join(", "),
+                  },
+                }),
+              );
               toast.success("Task created and email notifications sent!");
             }
           } catch (emailError) {
@@ -205,57 +282,45 @@ const CreateTaskForm = () => {
             toast.warning("Task created but email notification failed.");
           }
         } else {
-          // Show success message without email
           toast.success("Task created successfully!");
         }
 
-        // Only reset form and close modal if successful
         resetFormAndState();
         handleCancel();
       } catch (err) {
         console.error("Task creation error:", err);
         toast.error("Failed to create task. Please try again.");
-        // DON'T reset form on error - user keeps their data
       }
     },
     [
       dataFetcher,
       fetchData,
-      form,
       user,
       users,
       dispatch,
       selectedAssignees,
-      referenceDocuments,
       handleCancel,
-    ]
+      resetFormAndState,
+    ],
   );
 
-  // Form submission
   const onSubmit = useCallback(async () => {
-    let values;
     try {
-      values = await form.validateFields();
-    } catch (errorInfo) {
-      console.log("Validation failed:", errorInfo);
+      const values = await form.validateFields();
+      await handleSubmit(values);
+    } catch {
       toast.error("Please fill in all required fields");
-      return;
     }
-    await handleSubmit(values);
   }, [form, handleSubmit]);
 
-  // DataFetcher error
   useEffect(() => {
-    if (dataError) {
-      toast.error(dataError || "An error occurred");
-    }
+    if (dataError) toast.error(dataError || "An error occurred");
   }, [dataError]);
 
-  // Get role badge for user display
+  // ── Helpers for assignee display ───────────────────────────────────────────
   const getRoleBadge = (userId) => {
     const userObj = users?.data?.find((u) => u._id === userId);
     if (!userObj) return null;
-
     const roleColors = {
       admin: "red",
       "super-admin": "red",
@@ -264,7 +329,6 @@ const CreateTaskForm = () => {
       secretary: "purple",
       client: "green",
     };
-
     return (
       <Tag
         color={roleColors[userObj.role] || "default"}
@@ -274,7 +338,6 @@ const CreateTaskForm = () => {
     );
   };
 
-  // Get user display name
   const getUserDisplayName = (userId) => {
     const userObj = users?.data?.find((u) => u._id === userId);
     return userObj
@@ -282,12 +345,14 @@ const CreateTaskForm = () => {
       : "Unknown User";
   };
 
-  // Custom modal cancel handler
   const handleModalCancel = () => {
     resetFormAndState();
     handleCancel();
   };
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
     <>
       <ButtonWithIcon
@@ -327,7 +392,7 @@ const CreateTaskForm = () => {
             status: "pending",
             category: "other",
           }}>
-          {/* Basic Information */}
+          {/* ── Basic Information ─────────────────────────────────────── */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Form.Item
               label="Task Title"
@@ -345,10 +410,7 @@ const CreateTaskForm = () => {
               label="Task Category"
               name="category"
               rules={[
-                {
-                  required: true,
-                  message: "Please select task category!",
-                },
+                { required: true, message: "Please select task category!" },
               ]}>
               <Select
                 placeholder="Select category"
@@ -384,25 +446,118 @@ const CreateTaskForm = () => {
             />
           </Form.Item>
 
-          {/* Assignment Section */}
+          {/* ── Matter Linking ─────────────────────────────────────────── */}
+          <Card
+            size="small"
+            className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100">
+            <div className="flex items-center gap-2 mb-3">
+              <FileTextOutlined className="text-blue-500" />
+              <span className="font-semibold text-sm">Link to Matter</span>
+            </div>
+
+            <Row gutter={[12, 12]}>
+              {/* Matter search — driven by Redux via useMattersSelectOptions */}
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="matter"
+                  label="Search Matter"
+                  className="!mb-0">
+                  <Select
+                    showSearch
+                    placeholder="Search by title or number..."
+                    loading={matterSearchLoading}
+                    onSearch={handleMatterSearch}
+                    onChange={handleMatterChange}
+                    filterOption={false} // server-side filtering via Redux thunk
+                    allowClear
+                    className="w-full">
+                    {matters.map((matter) => (
+                      <Select.Option
+                        key={matter._id}
+                        value={matter._id}
+                        label={matter.label}>
+                        <div className="py-1">
+                          <div className="font-medium">{matter.label}</div>
+                          <div className="text-xs text-gray-500 flex items-center gap-2">
+                            <Tag className="!text-xs !py-0">
+                              {matter.matterType}
+                            </Tag>
+                            <span>{matter.subtitle}</span>
+                          </div>
+                        </div>
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              {/* Matter type — auto-filled when a matter is selected */}
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="matterType"
+                  label="Matter Type"
+                  className="!mb-0">
+                  <Select
+                    placeholder="Select matter type"
+                    allowClear
+                    onChange={handleMatterTypeChange}>
+                    {MATTER_TYPE_OPTIONS.map((opt) => (
+                      <Select.Option key={opt.value} value={opt.value}>
+                        <Space>
+                          <span>{opt.icon}</span>
+                          <span>{opt.label}</span>
+                        </Space>
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+
+              {/* Litigation detail — visible only for litigation matters */}
+              {selectedMatterType === "litigation" && (
+                <Col xs={24}>
+                  <Form.Item
+                    name="litigationDetailId"
+                    label="Litigation Details">
+                    <Select
+                      placeholder="Select litigation case details..."
+                      loading={litigationLoading}
+                      allowClear>
+                      {litigationOptions.map((detail) => (
+                        <Select.Option
+                          key={detail._id}
+                          value={detail._id}
+                          label={detail.label}>
+                          <div className="py-1">
+                            <div className="font-medium flex items-center gap-2">
+                              <BankOutlined className="text-purple-500" />
+                              {detail.label}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {detail.subtitle}
+                            </div>
+                          </div>
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              )}
+
+              <Col xs={24}>
+                <Form.Item
+                  name="customCaseReference"
+                  label="Or Custom Case Reference">
+                  <Input placeholder="Enter external case reference (optional)" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+
+          {/* ── Assignment & Scheduling ───────────────────────────────── */}
           <Collapse ghost size="small">
             <Panel header="Assignment & Scheduling" key="assignment">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <Form.Item name="caseToWorkOn" label="Related Case">
-                  <Select
-                    placeholder="Select a case (optional)"
-                    options={casesOptions}
-                    allowClear
-                    className="w-full"
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="customCaseReference"
-                  label="Custom Case Reference">
-                  <Input placeholder="Or enter custom case reference" />
-                </Form.Item>
-
                 <Form.Item
                   name="assignee"
                   label="Assign to Users"
@@ -459,7 +614,6 @@ const CreateTaskForm = () => {
                 </Form.Item>
               </div>
 
-              {/* Selected Assignees Preview */}
               {selectedAssignees.length > 0 && (
                 <>
                   <Alert
@@ -479,7 +633,6 @@ const CreateTaskForm = () => {
                     className="mb-4"
                   />
 
-                  {/* Email Notification Checkbox */}
                   <Form.Item
                     name="sendEmailNotification"
                     valuePropName="checked"
@@ -498,19 +651,14 @@ const CreateTaskForm = () => {
             </Panel>
           </Collapse>
 
-          {/* Advanced Options */}
+          {/* ── Advanced Options ──────────────────────────────────────── */}
           <Collapse ghost size="small">
             <Panel header="Advanced Options" key="advanced">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <SelectInputs
                   fieldName="taskPriority"
                   label="Task Priority"
-                  rules={[
-                    {
-                      required: true,
-                      message: "Specify task priority",
-                    },
-                  ]}
+                  rules={[{ required: true, message: "Specify task priority" }]}
                   options={taskPriorityOptions}
                 />
 
@@ -540,75 +688,6 @@ const CreateTaskForm = () => {
                     placeholder="Add tags (press Enter)"
                     className="w-full"
                     tokenSeparators={[","]}
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="isTemplate"
-                  label="Save as Template"
-                  valuePropName="checked">
-                  <Select
-                    placeholder="Save as template?"
-                    options={[
-                      { value: false, label: "No" },
-                      { value: true, label: "Yes" },
-                    ]}
-                    className="w-full"
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="templateName"
-                  label="Template Name"
-                  dependencies={["isTemplate"]}>
-                  <Input
-                    placeholder="Enter template name"
-                    disabled={!form.getFieldValue("isTemplate")}
-                  />
-                </Form.Item>
-              </div>
-
-              {/* Recurrence Settings */}
-              <Divider orientation="left">Recurrence (Optional)</Divider>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                <Form.Item name="recurrencePattern" label="Repeat">
-                  <Select
-                    placeholder="Select recurrence"
-                    options={[
-                      { value: "none", label: "No Repeat" },
-                      { value: "daily", label: "Daily" },
-                      { value: "weekly", label: "Weekly" },
-                      { value: "monthly", label: "Monthly" },
-                      { value: "yearly", label: "Yearly" },
-                    ]}
-                    className="w-full"
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="recurrenceEndDate"
-                  label="End Date"
-                  dependencies={["recurrencePattern"]}>
-                  <DatePicker
-                    className="w-full"
-                    placeholder="Select end date"
-                    disabled={
-                      form.getFieldValue("recurrencePattern") === "none"
-                    }
-                  />
-                </Form.Item>
-
-                <Form.Item
-                  name="recurrenceOccurrences"
-                  label="Number of Occurrences"
-                  dependencies={["recurrencePattern"]}>
-                  <InputNumber
-                    min={1}
-                    placeholder="e.g., 5"
-                    className="w-full"
-                    disabled={
-                      form.getFieldValue("recurrencePattern") === "none"
-                    }
                   />
                 </Form.Item>
               </div>

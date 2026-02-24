@@ -102,7 +102,8 @@ const getRelative = (date) => {
 const getEditPermissions = (hearing) => {
   if (!hearing) return { canEditOutcome: false, canEditNotes: false };
   const now = dayjs().startOf("day");
-  const hearingDate = dayjs(hearing.date).startOf("day");
+  const displayDate = hearing.nextHearingDate || hearing.date;
+  const hearingDate = dayjs(displayDate).startOf("day");
   if (hearingDate.isSame(now)) {
     return { canEditOutcome: true, canEditNotes: true, isToday: true };
   } else if (hearingDate.isAfter(now)) {
@@ -172,6 +173,10 @@ const VirtualizedList = ({ items, renderItem, height = 400 }) => {
 
 const SimpleHearingCard = React.memo(({ hearing, onClick }) => {
   const displayDate = hearing.nextHearingDate || hearing.date;
+  const isToday = useMemo(
+    () => dayjs(displayDate).isSame(dayjs(), "day"),
+    [displayDate],
+  );
 
   const caseTitle = useMemo(
     () =>
@@ -185,17 +190,34 @@ const SimpleHearingCard = React.memo(({ hearing, onClick }) => {
   return (
     <button
       onClick={() => onClick(hearing)}
-      className="w-full text-left flex items-center gap-3 p-3 rounded-xl border border-gray-100
-                 hover:border-gray-200 hover:bg-gray-50 transition-all group
-                 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1">
+      className={`w-full text-left relative flex items-center gap-3 p-3 rounded-xl border
+                 transition-all group
+                 focus:outline-none focus:ring-2 focus:ring-offset-1
+                 ${
+                   isToday
+                     ? "border-emerald-200 bg-emerald-50/50 hover:border-emerald-300 hover:bg-emerald-50 focus:ring-emerald-400"
+                     : "border-gray-100 hover:border-gray-200 hover:bg-gray-50 focus:ring-blue-400"
+                 }`}>
+      {isToday && (
+        <span className="absolute left-0 top-2 bottom-2 w-1 bg-emerald-500 rounded-r-full" />
+      )}
       <div
-        className="w-10 h-10 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50
-                      flex flex-col items-center justify-center flex-shrink-0
-                      group-hover:from-gray-200 group-hover:to-gray-100 transition-all">
-        <span className="text-sm font-bold text-gray-700 leading-none">
+        className={`w-10 h-10 rounded-lg flex flex-col items-center justify-center flex-shrink-0
+                      transition-all ${
+                        isToday
+                          ? "bg-gradient-to-br from-emerald-100 to-emerald-50 group-hover:from-emerald-200 group-hover:to-emerald-100"
+                          : "bg-gradient-to-br from-gray-100 to-gray-50 group-hover:from-gray-200 group-hover:to-gray-100"
+                      }`}>
+        <span
+          className={`text-sm font-bold leading-none ${
+            isToday ? "text-emerald-700" : "text-gray-700"
+          }`}>
           {dayjs(displayDate).format("D")}
         </span>
-        <span className="text-[8px] font-semibold uppercase text-gray-500">
+        <span
+          className={`text-[8px] font-semibold uppercase ${
+            isToday ? "text-emerald-600" : "text-gray-500"
+          }`}>
           {dayjs(displayDate).format("MMM")}
         </span>
       </div>
@@ -220,8 +242,11 @@ const SimpleHearingCard = React.memo(({ hearing, onClick }) => {
           </Tag>
         </div>
       )}
-      <div className="text-xs font-medium text-gray-400 whitespace-nowrap">
-        {getRelative(displayDate)}
+      <div
+        className={`text-xs font-medium whitespace-nowrap ${
+          isToday ? "text-emerald-600 font-bold" : "text-gray-400"
+        }`}>
+        {isToday ? "TODAY" : getRelative(displayDate)}
       </div>
     </button>
   );
@@ -245,20 +270,35 @@ const DetailedHearingCard = React.memo(({ hearing, onClick }) => {
   );
 
   const displayDate = hearing.nextHearingDate || hearing.date;
+  const isToday = useMemo(
+    () => dayjs(displayDate).isSame(dayjs(), "day"),
+    [displayDate],
+  );
 
   return (
     <button
       onClick={() => onClick(hearing)}
-      className="w-full text-left relative flex gap-3 p-4 rounded-2xl border
+      className={`w-full text-left relative flex gap-3 p-4 rounded-2xl border
                  transition-all duration-200 group
                  hover:shadow-md hover:-translate-y-0.5
-                 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-1
-                 bg-gradient-to-r from-blue-50 to-sky-50 border-blue-200">
-      <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-blue-500" />
+                 focus:outline-none focus:ring-2 focus:ring-offset-1
+                 ${
+                   isToday
+                     ? "bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200 focus:ring-emerald-400"
+                     : "bg-gradient-to-r from-blue-50 to-sky-50 border-blue-200 focus:ring-blue-400"
+                 }`}>
+      {isToday && (
+        <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-emerald-500 animate-pulse" />
+      )}
+      {!isToday && <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-blue-500" />}
 
       <div
-        className="flex-shrink-0 w-11 h-11 rounded-xl flex flex-col items-center
-                      justify-center ml-2 bg-blue-500 text-white">
+        className={`flex-shrink-0 w-11 h-11 rounded-xl flex flex-col items-center
+                      justify-center ml-2 ${
+                        isToday
+                          ? "bg-gradient-to-br from-emerald-500 to-teal-500"
+                          : "bg-blue-500"
+                      } text-white`}>
         <span className="text-base font-black leading-none">
           {dayjs(displayDate).format("D")}
         </span>
@@ -269,9 +309,16 @@ const DetailedHearingCard = React.memo(({ hearing, onClick }) => {
 
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-1">
-          <p className="text-sm font-bold text-gray-900 leading-snug line-clamp-1">
-            {caseTitle}
-          </p>
+          <div className="flex items-center gap-2 flex-1 min-w-0">
+            {isToday && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                TODAY
+              </span>
+            )}
+            <p className="text-sm font-bold text-gray-900 leading-snug line-clamp-1">
+              {caseTitle}
+            </p>
+          </div>
           {hasReport && (
             <Tooltip title="Report filed">
               <CheckCircleOutlined className="text-emerald-500 text-xs flex-shrink-0" />
@@ -746,10 +793,14 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
                            border-2 font-semibold text-sm transition-all ${
                              editPerms.isFuture && !hasReport
                                ? "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
-                               : "border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 hover:border-blue-300"
+                               : isToday
+                                 ? hasReport
+                                   ? "border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:border-emerald-300"
+                                   : "border-emerald-500 text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-md"
+                                 : "border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 hover:border-blue-300"
                            }`}>
                 <EditOutlined />
-                {hasReport ? "Update Report" : "File Report"}
+                {hasReport ? "Update Report" : isToday ? "File Today's Report" : "File Report"}
               </button>
             </div>
           )}

@@ -4,14 +4,10 @@ import { Col } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
-import { useStatsData } from "../hooks/useStatsData"; // Import new hook
-import CasesByCategoriesChart from "./CasesByCategoriesChart";
-import AccountOfficerCharts from "./AccountOfficerCharts";
-import CaseCountsByPeriodChart from "./CaseCountsByPeriodChart";
-import CaseCountsByClientChart from "./CaseCountsByClientChart";
-import CaseCountsByYearChart from "./CaseCountsByYearChart ";
+
 import LeaveNotification from "./LeaveNotification";
-import { useSelector } from "react-redux";
+
+import { useSelector, useDispatch } from "react-redux";
 import DashBoardDataCount from "./DashBoardDataCount";
 import ScrollingEvents from "./ScrollingEvents";
 import TaskDashboardCard from "./TaskDashboardCard";
@@ -28,13 +24,29 @@ import QuickActionsPanel from "./QuickActionsPanel";
 import ClientCaseDashboard from "./clientDashboard/ClientCaseDashboard";
 import PaymentDashboard from "./PaymentDashboard";
 import CourtHearingsWidget from "./calender/CourtHearingsWidget";
+import { getMatterStats } from "../redux/features/matter/matterSlice";
+import { getUserStatistics } from "../redux/features/auth/authSlice";
 
 export const PaymentFiltersContext = createContext();
 
 const Dashboard = () => {
   useRedirectLogoutUser("/users/login");
+  const dispatch = useDispatch();
 
   const { user } = useSelector((state) => state.auth);
+  const { stats: matterStats, isLoading: matterLoading } = useSelector(
+    (state) => state.matter,
+  );
+
+  // Debug logging
+  console.log("Redux matter stats:", matterStats);
+
+  const authState = useSelector((state) => state.auth);
+  const userStatistics = authState.userStatistics;
+  const statisticsLoading = authState.statisticsLoading;
+
+  console.log("User Statistics from auth:", userStatistics);
+
   const userId = user?.data?._id;
   const lawFirmName = user?.data?.firmId?.name;
 
@@ -55,6 +67,12 @@ const Dashboard = () => {
   } = useDataGetterHook();
 
   const { isAdminOrHr, isStaff, isClient, isVerified } = useAdminHook();
+
+  // Fetch matter and user stats on mount
+  useEffect(() => {
+    dispatch(getMatterStats());
+    dispatch(getUserStatistics());
+  }, [dispatch]);
 
   // ✅ SINGLE initialization effect
   useEffect(() => {
@@ -85,63 +103,9 @@ const Dashboard = () => {
     initializeDashboard();
   }, []); // ✅ Only run once on mount
 
-  // ✅ Memoize expensive computations
-  const dashboardData = useMemo(
-    () => dashboardStats?.data || {},
-    [dashboardStats],
-  );
-
-  const effectiveCasesByStatus = useMemo(
-    () => dashboardData.casesByStatus || [],
-    [dashboardData.casesByStatus],
-  );
-
-  const effectiveCasesByCourt = useMemo(
-    () => dashboardData.casesByCourt || [],
-    [dashboardData.casesByCourt],
-  );
-
-  const effectiveCasesByNature = useMemo(
-    () => dashboardData.casesByNature || [],
-    [dashboardData.casesByNature],
-  );
-
-  const effectiveCasesByRating = useMemo(
-    () => dashboardData.casesByRating || [],
-    [dashboardData.casesByRating],
-  );
-
-  const effectiveCasesByMode = useMemo(
-    () => dashboardData.casesByMode || [],
-    [dashboardData.casesByMode],
-  );
-
-  const effectiveCasesByCategory = useMemo(
-    () => dashboardData.casesByCategory || [],
-    [dashboardData.casesByCategory],
-  );
-
-  const effectiveCasesByClient = useMemo(
-    () => dashboardData.casesByClient || [],
-    [dashboardData.casesByClient],
-  );
-
-  const effectiveCasesByAccountOfficer = useMemo(
-    () => accountOfficerAggregates?.data || [],
-    [accountOfficerAggregates?.data],
-  );
-
-  const effectiveMonthlyNewCases = useMemo(
-    () => dashboardData.monthlyNewCases || [],
-    [dashboardData.monthlyNewCases],
-  );
-
-  const effectiveYearlyNewCases = useMemo(
-    () => dashboardData.yearlyNewCases || [],
-    [dashboardData.yearlyNewCases],
-  );
-
   if (userError) return <Alert message={userError} type="error" showIcon />;
+
+  const isLoading = matterLoading || statisticsLoading;
 
   return (
     <>
@@ -183,8 +147,11 @@ const Dashboard = () => {
 
         {isStaff && (
           <>
-            {/* DashBoardDataCount is self-fetching via Redux (matterSlice + authSlice) */}
-            <DashBoardDataCount />
+            <DashBoardDataCount
+              matterStats={matterStats}
+              userStats={userStatistics}
+              loading={isLoading}
+            />
 
             <div className="container mx-auto mt-2">
               <div className="flex flex-wrap -mx-4">
@@ -203,104 +170,8 @@ const Dashboard = () => {
                       />
                     )}
                   </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {dataLoading.dashboardStats ? (
-                      <Skeleton.Node
-                        active
-                        style={{ width: "100%", height: 300 }}
-                      />
-                    ) : (
-                      <CaseCountsByClientChart data={effectiveCasesByClient} />
-                    )}
-
-                    {dataLoading.dashboardStats ? (
-                      <Skeleton.Node
-                        active
-                        style={{ width: "100%", height: 300 }}
-                      />
-                    ) : (
-                      <AccountOfficerCharts
-                        title="Cases By Account Officer"
-                        data={effectiveCasesByAccountOfficer}
-                      />
-                    )}
-
-                    {dataLoading.dashboardStats ? (
-                      <Skeleton.Node
-                        active
-                        style={{ width: "100%", height: 300 }}
-                      />
-                    ) : (
-                      <CaseCountsByPeriodChart
-                        data={effectiveMonthlyNewCases}
-                      />
-                    )}
-                  </div>
                 </div>
               </div>
-            </div>
-
-            <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-3 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-8">
-              {dataLoading.dashboardStats ? (
-                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
-              ) : (
-                <CaseCountsByYearChart data={effectiveYearlyNewCases} />
-              )}
-
-              {dataLoading.dashboardStats ? (
-                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
-              ) : (
-                <CasesByCategoriesChart
-                  title="Case By Status"
-                  data={effectiveCasesByStatus}
-                />
-              )}
-
-              {dataLoading.dashboardStats ? (
-                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
-              ) : (
-                <CasesByCategoriesChart
-                  title="Nature of Case"
-                  data={effectiveCasesByNature}
-                />
-              )}
-
-              {dataLoading.dashboardStats ? (
-                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
-              ) : (
-                <CasesByCategoriesChart
-                  title="Cases By Court"
-                  data={effectiveCasesByCourt}
-                />
-              )}
-
-              {dataLoading.dashboardStats ? (
-                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
-              ) : (
-                <CasesByCategoriesChart
-                  title="Cases By Priority"
-                  data={effectiveCasesByRating}
-                />
-              )}
-
-              {dataLoading.dashboardStats ? (
-                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
-              ) : (
-                <CasesByCategoriesChart
-                  title="Cases By Mode of Commencement"
-                  data={effectiveCasesByMode}
-                />
-              )}
-
-              {dataLoading.dashboardStats ? (
-                <Skeleton.Node active style={{ width: "100%", height: 300 }} />
-              ) : (
-                <CasesByCategoriesChart
-                  title="Cases By Category"
-                  data={effectiveCasesByCategory}
-                />
-              )}
             </div>
 
             <ShowAdminComponent>

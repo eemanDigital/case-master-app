@@ -1,5 +1,5 @@
-import PropTypes from "prop-types";
-import { useEffect, useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import {
   Modal,
   Button,
@@ -18,6 +18,7 @@ import {
   Col,
   Select,
   TimePicker,
+  message,
 } from "antd";
 import {
   UploadOutlined,
@@ -29,50 +30,47 @@ import {
   LoadingOutlined,
   MailOutlined,
 } from "@ant-design/icons";
-import useModal from "../hooks/useModal";
-import { toast } from "react-toastify";
-import { useDispatch, useSelector } from "react-redux";
-import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
-import { useDataFetch } from "../hooks/useDataFetch";
+
+import {
+  submitTaskResponse,
+  uploadTaskResponseDocs,
+  selectTaskActionLoading,
+} from "../redux/features/task/taskSlice";
+import { selectUser } from "../redux/features/auth/authSlice";
 
 const { Text, Title } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
-const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
+const TaskResponseForm = ({ taskId, taskDetails, onResponseSubmitted }) => {
   const dispatch = useDispatch();
+  const user = useSelector(selectUser);
+  const loading = useSelector(selectTaskActionLoading);
+
   const [form] = Form.useForm();
-  const { user } = useSelector((state) => state.auth);
-  const { sendingEmail, emailSent, msg } = useSelector((state) => state.email);
-
-  // Use your custom data fetch hook
-  const { dataFetcher, loading: apiLoading, error: apiError } = useDataFetch();
-
+  const [modalOpen, setModalOpen] = useState(false);
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [submissionStatus, setSubmissionStatus] = useState(null);
-  const [isEmailEnabled, setIsEmailEnabled] = useState(true); // Email toggle state
+  const [isEmailEnabled, setIsEmailEnabled] = useState(true);
 
-  const { open, showModal, handleCancel } = useModal();
-
-  // Use refs to prevent duplicate submissions
   const isSubmittingRef = useRef(false);
-  const emailSentRef = useRef(false);
 
-  // Reset everything when modal closes
-  const handleModalCancel = useCallback(() => {
+  const resetForm = useCallback(() => {
     form.resetFields();
     setFileList([]);
     setUploadProgress(0);
     setSubmissionStatus(null);
-    setIsEmailEnabled(true); // Reset to default enabled
+    setIsEmailEnabled(true);
     isSubmittingRef.current = false;
-    emailSentRef.current = false;
-    handleCancel();
-  }, [form, handleCancel]);
+  }, [form]);
 
-  // Handle file upload changes with validation
+  const handleCancel = useCallback(() => {
+    setModalOpen(false);
+    resetForm();
+  }, [resetForm]);
+
   const handleFileChange = useCallback(({ fileList: newFileList }) => {
     const validatedFileList = newFileList.map((file) => {
       const isLt10M = file.size ? file.size / 1024 / 1024 < 10 : true;
@@ -98,20 +96,12 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
       } else if (file.status !== "error") {
         file.status = "done";
       }
-
       return file;
     });
-
     setFileList(validatedFileList);
   }, []);
 
-  // Remove file from upload list
-  const handleRemoveFile = useCallback((file) => {
-    setFileList((prev) => prev.filter((f) => f.uid !== file.uid));
-  }, []);
-
-  // Upload files to the server using axios
-  const uploadFiles = async (taskId) => {
+  const uploadFiles = async (tid) => {
     if (fileList.length === 0) return [];
 
     setUploading(true);
@@ -122,38 +112,20 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
         formData.append("files", file.originFileObj);
         formData.append(
           "description",
-          `Task response document for ${taskDetails?.title || "task"}`
+          `Task response document for ${taskDetails?.title || "task"}`,
         );
 
         try {
-          // Use dataFetcher for file upload
-          const result = await dataFetcher(
-            `tasks/${taskId}/response-documents`,
-            "POST",
-            formData,
-            {
-              headers: {
-                "Content-Type": "multipart/form-data",
-              },
-              onUploadProgress: (progressEvent) => {
-                if (progressEvent.total) {
-                  const progress = Math.round(
-                    (progressEvent.loaded * 100) / progressEvent.total
-                  );
-                  setUploadProgress(progress);
-                }
-              },
-            }
-          );
+          const result = await dispatch(
+            uploadTaskResponseDocs({
+              taskId: tid,
+              formData,
+            }),
+          ).unwrap();
 
-          if (result.error) {
-            throw new Error(result.error);
-          }
-
-          return result.data?.files?.[0]?._id || null;
+          return result.files?.[0]?._id || null;
         } catch (error) {
-          console.error("File upload error:", error);
-          toast.error(`Failed to upload ${file.name}`);
+          message.error(`Failed to upload ${file.name}`);
           return null;
         }
       });
@@ -163,53 +135,9 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
     return results;
   };
 
-  // Send email notification function
-  const sendEmailNotification = async (responseData, formValues) => {
-    if (!isEmailEnabled || emailSentRef.current) return;
-
-    try {
-      const creatorEmail = responseData?.createdBy?.email;
-
-      if (!creatorEmail) {
-        console.warn("No creator email found, skipping email notification");
-        return;
-      }
-
-      const emailData = {
-        subject: "Task Response Submitted - A.T. Lukman & Co.",
-        send_to: creatorEmail,
-        reply_to: "noreply@atlukman.com",
-        template: "taskResponse",
-        url: "/dashboard/tasks",
-        context: {
-          recipient: responseData.createdBy?.firstName || "Task Creator",
-          position: responseData.createdBy?.position || "",
-          comment: formValues.comment,
-          completed: formValues.completed ? "Completed" : "In Progress",
-          completionPercentage: formValues.completionPercentage || 0,
-          submittedBy: `${user?.data?.firstName || user?.firstName} ${
-            user?.data?.lastName || user?.lastName
-          }`,
-          taskTitle: taskDetails?.title || "Task",
-          timeSpent: formValues.timeSpent
-            ? `${formValues.timeSpent.hour()}h ${formValues.timeSpent.minute()}m`
-            : "Not specified",
-        },
-      };
-
-      emailSentRef.current = true;
-      await dispatch(sendAutomatedCustomEmail(emailData));
-    } catch (emailError) {
-      console.error("Failed to send email:", emailError);
-      // Don't show error toast here as response was already successful
-    }
-  };
-
-  // Handle form submission
   const handleSubmit = async (values) => {
-    // Prevent duplicate submissions
     if (isSubmittingRef.current) {
-      toast.warning("Submission in progress, please wait...");
+      message.warning("Submission in progress, please wait...");
       return;
     }
 
@@ -217,7 +145,6 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
     setSubmissionStatus("uploading");
 
     try {
-      // Convert Day.js time to minutes
       let timeSpentInMinutes = 0;
       if (values.timeSpent) {
         const hours = values.timeSpent.hour();
@@ -225,11 +152,9 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
         timeSpentInMinutes = hours * 60 + minutes;
       }
 
-      // 1. Upload files first
       const documentIds = await uploadFiles(taskId);
       const validDocumentIds = documentIds.filter((id) => id !== null);
 
-      // 2. Prepare response payload with updated field names
       const payload = {
         status: values.completed ? "completed" : "in-progress",
         completionPercentage: values.completed
@@ -240,54 +165,27 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
         documentIds: validDocumentIds,
       };
 
-      // 3. Submit task response using dataFetcher
-      const response = await dataFetcher(
-        `tasks/${taskId}/responses`,
-        "POST",
-        payload
-      );
-
-      if (response.error) {
-        throw new Error(response.error);
-      }
+      await dispatch(
+        submitTaskResponse({
+          taskId,
+          data: payload,
+        }),
+      ).unwrap();
 
       setSubmissionStatus("success");
+      message.success("Task response submitted successfully!");
 
-      // 4. Send email notification if enabled (in background, don't await)
-      if (isEmailEnabled) {
-        sendEmailNotification(response.data, values).catch(() => {
-          // Silent fail - don't affect user experience
-        });
-      }
-
-      toast.success("Task response submitted successfully!");
-
-      // 5. Callback to refresh parent component
-      if (onResponseSubmitted) {
-        onResponseSubmitted();
-      }
-
-      // 6. Close modal after short delay
       setTimeout(() => {
-        handleModalCancel();
+        handleCancel();
+        onResponseSubmitted?.();
       }, 1500);
     } catch (error) {
-      console.error("Submission error:", error);
       setSubmissionStatus("error");
-      toast.error(
-        error.message || "Failed to submit task response. Please try again."
-      );
-      // Reset submitting flag on error
+      message.error(error?.message || "Failed to submit response");
       isSubmittingRef.current = false;
     }
   };
 
-  // Calculate time spent in minutes
-  const handleTimeChange = (time) => {
-    form.setFieldValue("timeSpent", time);
-  };
-
-  // Handle completion checkbox change
   const handleCompletionChange = (e) => {
     if (e.target.checked) {
       form.setFieldValue("completionPercentage", 100);
@@ -296,74 +194,50 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
     }
   };
 
-  // Handle completion percentage change
   const handleCompletionPercentageChange = (value) => {
-    if (value === 100) {
-      form.setFieldValue("completed", true);
-    } else {
-      form.setFieldValue("completed", false);
-    }
+    form.setFieldValue("completed", value === 100);
   };
 
-  // Toggle email notification
   const handleEmailToggle = (e) => {
     setIsEmailEnabled(e.target.checked);
   };
 
-  // Show API errors
-  useEffect(() => {
-    if (apiError && !isSubmittingRef.current) {
-      toast.error(apiError);
-    }
-  }, [apiError]);
-
-  // Show success message when email is sent
-  useEffect(() => {
-    if (emailSent && !isSubmittingRef.current) {
-      toast.success(msg || "Email notification sent successfully!");
-    }
-  }, [emailSent, msg]);
-
-  const isSubmitting =
-    uploading || sendingEmail || apiLoading || isSubmittingRef.current;
+  const isSubmitting = uploading || loading || isSubmittingRef.current;
 
   return (
-    <div className="task-response-form">
+    <>
       <Button
         type="primary"
         icon={<SendOutlined />}
-        onClick={showModal}
+        onClick={() => setModalOpen(true)}
         size="large"
-        className="w-full md:w-auto bg-blue-600 hover:bg-blue-700 border-blue-600"
-        disabled={isSubmitting}>
-        {isSubmitting ? "Submitting..." : "Submit Response"}
+        className="bg-blue-600 hover:bg-blue-700 border-blue-600">
+        Submit Response
       </Button>
 
       <Modal
         title={
-          <div className="flex items-center gap-2">
+          <Space>
             <SendOutlined className="text-blue-500" />
-            <Title level={4} className="mb-0">
+            <Title level={4} className="!mb-0">
               Submit Task Response
             </Title>
-          </div>
+          </Space>
         }
-        open={open}
-        onCancel={handleModalCancel}
+        open={modalOpen}
+        onCancel={handleCancel}
         width={700}
         footer={null}
         destroyOnClose
-        className="task-response-modal"
         maskClosable={!isSubmitting}
         keyboard={!isSubmitting}
         closable={!isSubmitting}>
-        <Divider className="my-4" />
+        <Divider />
 
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          className="response-form"
           disabled={isSubmitting}
           initialValues={{
             completionPercentage: 0,
@@ -371,9 +245,8 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
             completed: false,
           }}>
           <Row gutter={[16, 16]}>
-            {/* Left Column - Response Details */}
+            {/* Left Column */}
             <Col xs={24} lg={12}>
-              {/* Completion Status */}
               <Card size="small" className="mb-4">
                 <Form.Item name="completed" valuePropName="checked">
                   <Checkbox
@@ -387,7 +260,6 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
                 </Form.Item>
               </Card>
 
-              {/* Progress Percentage */}
               <Card size="small" className="mb-4">
                 <Form.Item
                   label="Completion Percentage"
@@ -411,13 +283,11 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
                 </Form.Item>
               </Card>
 
-              {/* Time Spent */}
               <Card size="small" className="mb-4">
                 <Form.Item label="Time Spent (HH:mm)" name="timeSpent">
                   <TimePicker
                     format="HH:mm"
                     placeholder="Select time spent"
-                    onChange={handleTimeChange}
                     disabled={isSubmitting}
                     className="w-full"
                     showNow={false}
@@ -428,7 +298,6 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
                 </Text>
               </Card>
 
-              {/* Email Notification Toggle */}
               <Card size="small" className="mb-4">
                 <Form.Item name="sendEmailNotification" valuePropName="checked">
                   <Checkbox
@@ -445,11 +314,6 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
                     </Space>
                   </Checkbox>
                 </Form.Item>
-                <Text type="secondary" className="text-xs block mt-1">
-                  {isEmailEnabled
-                    ? "Task creator will receive email notification"
-                    : "Email notification will not be sent"}
-                </Text>
               </Card>
             </Col>
 
@@ -468,36 +332,16 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
                   <Upload
                     fileList={fileList}
                     onChange={handleFileChange}
-                    onRemove={handleRemoveFile}
+                    onRemove={(file) =>
+                      setFileList((prev) =>
+                        prev.filter((f) => f.uid !== file.uid),
+                      )
+                    }
                     multiple
                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.txt,.xlsx,.xls,.zip"
                     listType="text"
                     beforeUpload={() => false}
-                    disabled={isSubmitting}
-                    itemRender={(originNode, file) => (
-                      <div className="flex items-center justify-between w-full p-2 hover:bg-gray-50 rounded">
-                        <Space>
-                          <FileTextOutlined />
-                          <Text
-                            ellipsis={{ tooltip: file.name }}
-                            className="max-w-[150px]">
-                            {file.name}
-                          </Text>
-                          {file.status === "uploading" && (
-                            <Progress
-                              percent={uploadProgress}
-                              size="small"
-                              style={{ width: 80 }}
-                            />
-                          )}
-                        </Space>
-                        {file.status === "error" && (
-                          <Tag color="red" icon={<CloseCircleOutlined />}>
-                            {file.response}
-                          </Tag>
-                        )}
-                      </div>
-                    )}>
+                    disabled={isSubmitting}>
                     <Button
                       icon={<UploadOutlined />}
                       type="dashed"
@@ -511,14 +355,12 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
                     </Button>
                   </Upload>
                 </Form.Item>
-
                 <Text type="secondary" className="text-xs block mt-2">
-                  Supported formats: PDF, DOC, DOCX, JPG, PNG, TXT, Excel, ZIP
-                  (Max 10MB per file)
+                  Supported: PDF, DOC, DOCX, JPG, PNG, TXT, Excel, ZIP (Max
+                  10MB)
                 </Text>
               </Card>
 
-              {/* Upload Progress */}
               {uploading && fileList.length > 0 && (
                 <Alert
                   message="Uploading Files"
@@ -531,7 +373,7 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
             </Col>
           </Row>
 
-          {/* Comment Section - Full Width */}
+          {/* Comment Section */}
           <Card
             size="small"
             title={
@@ -545,10 +387,7 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
               name="comment"
               rules={[
                 { required: true, message: "Please provide a comment!" },
-                {
-                  min: 10,
-                  message: "Comment must be at least 10 characters long",
-                },
+                { min: 10, message: "Comment must be at least 10 characters" },
                 {
                   max: 2000,
                   message: "Comment must not exceed 2000 characters",
@@ -557,7 +396,7 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
               validateTrigger="onBlur">
               <TextArea
                 rows={5}
-                placeholder="Describe your progress, challenges encountered, completion details, or any other relevant information..."
+                placeholder="Describe your progress, challenges, or completion details..."
                 showCount
                 maxLength={2000}
                 disabled={isSubmitting}
@@ -567,22 +406,12 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
           </Card>
 
           {/* Status Alerts */}
-          {submissionStatus === "uploading" && (
-            <Alert
-              message="Uploading Files..."
-              description="Please wait while we upload your files and submit the response."
-              type="info"
-              showIcon
-              className="mt-4"
-            />
-          )}
-
           {submissionStatus === "success" && (
             <Alert
               message="Response Submitted Successfully!"
               description={
                 isEmailEnabled
-                  ? "Your task response has been submitted and email notifications have been sent."
+                  ? "Your task response has been submitted and notifications sent."
                   : "Your task response has been submitted successfully."
               }
               type="success"
@@ -601,23 +430,9 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
             />
           )}
 
-          {/* API Error Alert */}
-          {apiError && (
-            <Alert
-              message="API Error"
-              description={apiError}
-              type="error"
-              showIcon
-              className="mt-4"
-            />
-          )}
-
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
-            <Button
-              onClick={handleModalCancel}
-              disabled={isSubmitting}
-              size="large">
+            <Button onClick={handleCancel} disabled={isSubmitting} size="large">
               Cancel
             </Button>
             <Button
@@ -633,27 +448,8 @@ const TaskResponseForm = ({ taskId, onResponseSubmitted, taskDetails }) => {
           </div>
         </Form>
       </Modal>
-    </div>
+    </>
   );
-};
-
-// Prop types validation
-TaskResponseForm.propTypes = {
-  taskId: PropTypes.string.isRequired,
-  onResponseSubmitted: PropTypes.func,
-  taskDetails: PropTypes.shape({
-    title: PropTypes.string,
-    createdBy: PropTypes.shape({
-      email: PropTypes.string,
-      firstName: PropTypes.string,
-      position: PropTypes.string,
-    }),
-  }),
-};
-
-TaskResponseForm.defaultProps = {
-  taskDetails: {},
-  onResponseSubmitted: () => {},
 };
 
 export default TaskResponseForm;

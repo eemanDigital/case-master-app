@@ -138,7 +138,7 @@ const TaskList = () => {
 
       return currentUserId === assignedById || isSuperOrAdmin;
     },
-    [user?.data?._id, isSuperOrAdmin]
+    [user?.data?._id, isSuperOrAdmin],
   );
 
   // Handle delete with confirmation and error handling
@@ -156,11 +156,11 @@ const TaskList = () => {
       } catch (error) {
         console.error("Delete failed:", error);
         toast.error(
-          error?.message || "Failed to delete task. Please try again."
+          error?.message || "Failed to delete task. Please try again.",
         );
       }
     },
-    [dispatch, fetchData]
+    [dispatch, fetchData],
   );
 
   // Filter tasks based on user role with error handling
@@ -172,15 +172,15 @@ const TaskList = () => {
 
       if (isClient && loggedInClientId) {
         filteredTasks = filteredTasks.filter(
-          (task) => task?.assignedToClient?._id === loggedInClientId
+          (task) => task?.assignedToClient?._id === loggedInClientId,
         );
       } else if (!isSuperOrAdmin && loggedInClientId) {
         filteredTasks = filteredTasks.filter(
           (task) =>
             task?.assignee?.some((user) => user._id === loggedInClientId) ||
             task?.assignees?.some(
-              (assignee) => assignee.user?._id === loggedInClientId
-            )
+              (assignee) => assignee.user?._id === loggedInClientId,
+            ),
         );
       }
 
@@ -222,13 +222,13 @@ const TaskList = () => {
     try {
       const total = filteredTasksByRole.length;
       const completed = filteredTasksByRole.filter(
-        (task) => task?.status === "completed"
+        (task) => task?.status === "completed",
       ).length;
       const inProgress = filteredTasksByRole.filter(
-        (task) => task?.status === "in-progress"
+        (task) => task?.status === "in-progress",
       ).length;
       const overdue = filteredTasksByRole.filter(
-        (task) => task?.isOverdue
+        (task) => task?.isOverdue,
       ).length;
 
       return { total, completed, inProgress, overdue };
@@ -516,7 +516,7 @@ const TaskList = () => {
                     onOk: () => deleteTask(record?.id),
                   });
                 },
-              }
+              },
             );
           }
 
@@ -562,7 +562,7 @@ const TaskList = () => {
       user?.data?._id,
       fetchData,
       deleteTask,
-    ]
+    ],
   );
 
   // Mobile-optimized TaskCard component with better spacing
@@ -627,7 +627,7 @@ const TaskList = () => {
                 onOk: () => deleteTask(task.id),
               });
             },
-          }
+          },
         );
       }
 
@@ -803,7 +803,7 @@ const TaskList = () => {
       deleteTask,
       user?.data?._id,
       fetchData,
-    ]
+    ],
   );
 
   // Filter drawer for mobile

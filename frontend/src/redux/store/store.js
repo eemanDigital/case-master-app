@@ -11,6 +11,7 @@ import retainerReducer from "../features/retainer/retainerSlice";
 import generalReducer from "../features/general/generalSlice";
 import advisoryReducer from "../features/advisory/advisorySlice";
 import calenderReducer from "../features/calender/calenderSlice";
+import taskReducer from "../features/task/taskSlice";
 
 export const store = configureStore({
   reducer: {
@@ -26,6 +27,7 @@ export const store = configureStore({
     general: generalReducer,
     advisory: advisoryReducer,
     calendar: calenderReducer,
+    task: taskReducer,
   },
   // Thunk is included by default, no need to concat it!
   middleware: (getDefaultMiddleware) =>

@@ -1,34 +1,43 @@
-import React, { useState } from "react";
-import PropTypes from "prop-types";
-import { Dropdown, Button, Space, Modal, Menu } from "antd";
+import React, { useCallback, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Dropdown, Button, Space, Modal } from "antd";
 import {
   MoreOutlined,
   SendOutlined,
   CheckCircleOutlined,
   EyeOutlined,
-  // SyncOutlined,
   EditOutlined,
   DeleteOutlined,
   FileTextOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { useDataFetch } from "../hooks/useDataFetch";
-import { toast } from "react-toastify";
+
+import {
+  submitForReview,
+  forceCompleteTask,
+  deleteTask,
+  selectTaskActionLoading,
+} from "../redux/features/task/taskSlice";
+import { selectUser } from "../redux/features/auth/authSlice";
 import TaskReviewModal from "./TaskReviewModal";
 
-const TaskActions = ({ task, userId, onTaskUpdate, showDelete = true }) => {
+const TaskActions = ({ task, onTaskUpdate, showDelete = true }) => {
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { dataFetcher } = useDataFetch();
-  const [reviewModalVisible, setReviewModalVisible] = useState(false);
+  const loading = useSelector(selectTaskActionLoading);
+  const user = useSelector(selectUser);
 
-  const isAssignee = task.assignees?.some(
-    (assignee) => assignee.user?._id === userId || assignee.user === userId
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+
+  const userId = user?._id || user?.data?._id;
+
+  const isAssignee = task?.assignees?.some(
+    (assignee) => (assignee.user?._id || assignee.user) === userId,
   );
 
-  const isTaskGiver = task.createdBy?._id === userId;
-  const isAdmin = false; // You can get this from your user context
+  const isTaskGiver = task?.createdBy?._id === userId;
 
-  const handleSubmitForReview = async () => {
+  const handleSubmitForReview = useCallback(async () => {
     Modal.confirm({
       title: "Submit for Review",
       content: "Are you ready to submit this task for review?",
@@ -36,64 +45,71 @@ const TaskActions = ({ task, userId, onTaskUpdate, showDelete = true }) => {
       cancelText: "Cancel",
       onOk: async () => {
         try {
-          const response = await dataFetcher(
-            `tasks/${task._id}/submit-review`,
-            "PUT",
-            {
-              comment: "Submitted for review",
-            }
-          );
-
-          if (response.error) throw new Error(response.error);
-
-          toast.success("Task submitted for review!");
-
-          if (onTaskUpdate) {
-            onTaskUpdate();
-          }
+          await dispatch(
+            submitForReview({
+              taskId: task._id,
+              data: { comment: "Submitted for review" },
+            }),
+          ).unwrap();
+          onTaskUpdate?.();
         } catch (error) {
-          toast.error(error.message || "Failed to submit for review");
+          // Error handled by slice
         }
       },
     });
-  };
+  }, [dispatch, task._id, onTaskUpdate]);
 
-  const handleDeleteTask = () => {
+  const handleDeleteTask = useCallback(() => {
     Modal.confirm({
       title: "Delete Task",
-      content: "Are you sure you want to delete this task?",
+      content:
+        "Are you sure you want to delete this task? This action cannot be undone.",
       okText: "Delete",
       okType: "danger",
       cancelText: "Cancel",
       onOk: async () => {
         try {
-          const response = await dataFetcher(`tasks/${task._id}`, "DELETE");
-
-          if (response.error) throw new Error(response.error);
-
-          toast.success("Task deleted successfully!");
-
-          if (onTaskUpdate) {
-            onTaskUpdate();
-          }
+          await dispatch(deleteTask(task._id)).unwrap();
+          onTaskUpdate?.();
+          navigate("/dashboard/tasks");
         } catch (error) {
-          toast.error(error.message || "Failed to delete task");
+          // Error handled by slice
         }
       },
     });
-  };
+  }, [dispatch, task._id, onTaskUpdate, navigate]);
 
-  const getMenuItems = () => {
+  const handleForceComplete = useCallback(async () => {
+    Modal.confirm({
+      title: "Mark as Complete",
+      content: "Mark this task as completed without review?",
+      okText: "Mark Complete",
+      onOk: async () => {
+        try {
+          await dispatch(
+            forceCompleteTask({
+              taskId: task._id,
+              data: { completionComment: "Task force completed" },
+            }),
+          ).unwrap();
+          onTaskUpdate?.();
+        } catch (error) {
+          // Error handled by slice
+        }
+      },
+    });
+  }, [dispatch, task._id, onTaskUpdate]);
+
+  const getMenuItems = useCallback(() => {
     const items = [
       {
         key: "view",
         icon: <EyeOutlined />,
         label: "View Details",
-        onClick: () => navigate(`/dashboard/tasks/${task._id}/details`),
+        onClick: () => navigate(`/dashboard/tasks/${task._id}`),
       },
     ];
 
-    // Actions for assignee
     if (isAssignee) {
       if (task.status === "in-progress" || task.status === "rejected") {
         items.push({
@@ -112,14 +128,13 @@ const TaskActions = ({ task, userId, onTaskUpdate, showDelete = true }) => {
       });
     }
 
-    // Actions for task giver
     if (isTaskGiver) {
       if (task.status === "under-review") {
         items.push({
           key: "review",
           icon: <CheckCircleOutlined />,
           label: "Review Task",
-          onClick: () => setReviewModalVisible(true),
+          onClick: () => setReviewModalOpen(true),
         });
       }
 
@@ -128,28 +143,7 @@ const TaskActions = ({ task, userId, onTaskUpdate, showDelete = true }) => {
           key: "force-complete",
           icon: <CheckCircleOutlined />,
           label: "Mark as Complete",
-          onClick: async () => {
-            Modal.confirm({
-              title: "Mark as Complete",
-              content: "Mark this task as completed without review?",
-              okText: "Mark Complete",
-              onOk: async () => {
-                try {
-                  await dataFetcher(
-                    `tasks/${task._id}/force-complete`,
-                    "POST",
-                    {
-                      completionComment: "Task force completed",
-                    }
-                  );
-                  toast.success("Task marked as completed!");
-                  onTaskUpdate && onTaskUpdate();
-                } catch (error) {
-                  toast.error("Failed to mark as complete");
-                }
-              },
-            });
-          },
+          onClick: handleForceComplete,
         });
       }
 
@@ -157,15 +151,12 @@ const TaskActions = ({ task, userId, onTaskUpdate, showDelete = true }) => {
         key: "edit",
         icon: <EditOutlined />,
         label: "Edit Task",
-        onClick: () => navigate(`/dashboard/tasks/${task._id}/update`),
+        onClick: () => navigate(`/dashboard/tasks/${task._id}/edit`),
       });
     }
 
-    // Admin/Task Giver delete action
-    if ((isTaskGiver || isAdmin) && showDelete) {
-      items.push({
-        type: "divider",
-      });
+    if ((isTaskGiver || user?.role === "admin") && showDelete) {
+      items.push({ type: "divider" });
       items.push({
         key: "delete",
         icon: <DeleteOutlined />,
@@ -176,7 +167,17 @@ const TaskActions = ({ task, userId, onTaskUpdate, showDelete = true }) => {
     }
 
     return items;
-  };
+  }, [
+    task,
+    isAssignee,
+    isTaskGiver,
+    user?.role,
+    showDelete,
+    navigate,
+    handleSubmitForReview,
+    handleForceComplete,
+    handleDeleteTask,
+  ]);
 
   return (
     <>
@@ -187,7 +188,8 @@ const TaskActions = ({ task, userId, onTaskUpdate, showDelete = true }) => {
               type="primary"
               size="small"
               icon={<SendOutlined />}
-              onClick={handleSubmitForReview}>
+              onClick={handleSubmitForReview}
+              loading={loading}>
               Submit for Review
             </Button>
           )}
@@ -197,8 +199,8 @@ const TaskActions = ({ task, userId, onTaskUpdate, showDelete = true }) => {
             type="primary"
             size="small"
             icon={<CheckCircleOutlined />}
-            onClick={() => setReviewModalVisible(true)}
-            className="bg-green-600 hover:bg-green-700 border-green-600">
+            onClick={() => setReviewModalOpen(true)}
+            className="!bg-green-600 hover:!bg-green-700 !border-green-600">
             Review Task
           </Button>
         )}
@@ -211,32 +213,17 @@ const TaskActions = ({ task, userId, onTaskUpdate, showDelete = true }) => {
         </Dropdown>
       </Space>
 
-      {/* Review Modal */}
-      {reviewModalVisible && (
-        <TaskReviewModal
-          task={task}
-          visible={reviewModalVisible}
-          onClose={() => setReviewModalVisible(false)}
-          onReviewComplete={() => {
-            if (onTaskUpdate) onTaskUpdate();
-            setReviewModalVisible(false);
-          }}
-          currentUserId={userId}
-        />
-      )}
+      <TaskReviewModal
+        task={task}
+        open={reviewModalOpen}
+        onClose={() => {
+          setReviewModalOpen(false);
+          onTaskUpdate?.();
+        }}
+        currentUserId={userId}
+      />
     </>
   );
-};
-
-TaskActions.propTypes = {
-  task: PropTypes.object.isRequired,
-  userId: PropTypes.string.isRequired,
-  onTaskUpdate: PropTypes.func,
-  showDelete: PropTypes.bool,
-};
-
-TaskActions.defaultProps = {
-  showDelete: true,
 };
 
 export default TaskActions;

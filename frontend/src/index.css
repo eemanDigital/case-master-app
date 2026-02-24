@@ -16,35 +16,37 @@
   --color-primary-hover: #1d4ed8;
   --color-secondary: #e11d48;
   --color-deep-blue: #1c4e80;
-  
+
   /* Background Colors */
   --color-bg-primary: #ffffff;
   --color-bg-secondary: #f9fafb;
   --color-bg-tertiary: #f3f4f6;
   --color-bg-card: #ffffff;
   --color-bg-elevated: #ffffff;
-  
+
   /* Text Colors */
   --color-text-primary: #111827;
   --color-text-secondary: #4b5563;
   --color-text-tertiary: #6b7280;
   --color-text-disabled: #9ca3af;
   --color-text-inverse: #ffffff;
-  
+
   /* Border Colors */
   --color-border: #e5e7eb;
   --color-border-hover: #d1d5db;
   --color-border-focus: #2563eb;
-  
+
   /* Status Colors */
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
   --color-info: #0ea5e9;
-  
+
   /* Shadows */
-  --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
-  --shadow-hard: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  --shadow-soft:
+    0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+  --shadow-hard:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 /* ============================================ */
@@ -56,29 +58,31 @@
   --color-primary-hover: #60a5fa;
   --color-secondary: #f43f5e;
   --color-deep-blue: #60a5fa;
-  
+
   /* Background Colors */
   --color-bg-primary: #111827;
   --color-bg-secondary: #1f2937;
   --color-bg-tertiary: #374151;
   --color-bg-card: #1f2937;
   --color-bg-elevated: #374151;
-  
+
   /* Text Colors */
   --color-text-primary: #f9fafb;
   --color-text-secondary: #d1d5db;
   --color-text-tertiary: #9ca3af;
   --color-text-disabled: #6b7280;
   --color-text-inverse: #111827;
-  
+
   /* Border Colors */
   --color-border: #374151;
   --color-border-hover: #4b5563;
   --color-border-focus: #3b82f6;
-  
+
   /* Shadows */
-  --shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.3), 0 10px 20px -2px rgba(0, 0, 0, 0.2);
-  --shadow-hard: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  --shadow-soft:
+    0 2px 15px -3px rgba(0, 0, 0, 0.3), 0 10px 20px -2px rgba(0, 0, 0, 0.2);
+  --shadow-hard:
+    0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.3);
 }
 
 /* ============================================ */
@@ -102,7 +106,9 @@ html {
 body {
   font-family: "Poppins", sans-serif;
   @apply bg-gray-50 text-gray-900;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
 
 /* Dark mode base styles */
@@ -412,9 +418,8 @@ body {
   }
 }
 
-  .dark .table-header {
-    @apply bg-gray-800 text-gray-400;
-  }
+.dark .table-header {
+  @apply bg-gray-800 text-gray-400;
 }
 
 @layer utilities {
