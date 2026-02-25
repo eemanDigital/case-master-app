@@ -1,6 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
 import TaskReminderForm from "./TaskReminderForm";
 import {
@@ -21,6 +20,8 @@ import {
   Drawer,
   Empty,
   Collapse,
+  Pagination,
+  Flex,
 } from "antd";
 import {
   DeleteOutlined,
@@ -35,51 +36,75 @@ import {
   SyncOutlined,
   UserOutlined,
   FileTextOutlined,
+  ReloadOutlined,
 } from "@ant-design/icons";
 import CreateTaskForm from "../pages/CreateTaskForm";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useDispatch, useSelector } from "react-redux";
 import LoadingSpinner from "./LoadingSpinner";
 import { toast } from "react-toastify";
-import { deleteData, RESET } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "./PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import TaskActions from "./TaskActions";
 import TaskStatusFlow from "./TaskStatusFlow";
+import {
+  fetchTasks,
+  deleteTask,
+  setTaskFilters,
+  clearTaskFilters,
+  selectAllTasks,
+  selectTaskLoading,
+  selectTaskError,
+  selectTaskPagination,
+  selectTaskFilters,
+} from "../redux/features/task/taskSlice";
 
 const { Search } = Input;
 const { Option } = Select;
 
 const TaskList = () => {
-  const {
-    tasks,
-    loading: loadingTasks,
-    error: taskError,
-    fetchData,
-  } = useDataGetterHook();
-
-  const { isError, isSuccess, message } = useSelector((state) => state.delete);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  
+  // Redux state
+  const tasks = useSelector(selectAllTasks);
+  const loading = useSelector(selectTaskLoading);
+  const error = useSelector(selectTaskError);
+  const pagination = useSelector(selectTaskPagination);
+  const filters = useSelector(selectTaskFilters);
+  
   const { user } = useSelector((state) => state.auth);
   const loggedInClientId = user?.data?._id;
   const { isSuperOrAdmin, isStaff, isClient } = useAdminHook();
-  const dispatch = useDispatch();
 
   // State for filters and search
   const [searchText, setSearchText] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [priorityFilter, setPriorityFilter] = useState("all");
+  const [localStatusFilter, setLocalStatusFilter] = useState("all");
+  const [localPriorityFilter, setLocalPriorityFilter] = useState("all");
   const [viewMode, setViewMode] = useState("card"); // Default to card for mobile-first
   const [filterDrawerVisible, setFilterDrawerVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   useRedirectLogoutUser("/users/login");
+
+  // Build filter params for API
+  const filterParams = useMemo(() => {
+    const params = {};
+    if (localStatusFilter !== "all") params.status = localStatusFilter;
+    if (localPriorityFilter !== "all") params.priority = localPriorityFilter;
+    if (searchText) params.search = searchText;
+    params.page = currentPage;
+    params.limit = pageSize;
+    return params;
+  }, [localStatusFilter, localPriorityFilter, searchText, currentPage, pageSize]);
 
   // Handle responsive view
   useEffect(() => {
     const handleResize = () => {
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
-      // Auto-switch to card view on mobile for better UX
       if (mobile && viewMode === "table") {
         setViewMode("card");
       }
@@ -89,41 +114,15 @@ const TaskList = () => {
     return () => window.removeEventListener("resize", handleResize);
   }, [viewMode]);
 
-  // Fetch tasks data with error handling
+  // Fetch tasks from Redux
   useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        await fetchData("tasks", "tasks");
-      } catch (error) {
-        console.error("Failed to fetch tasks:", error);
-        toast.error("Failed to load tasks. Please try again.");
-      }
-    };
+    dispatch(fetchTasks(filterParams));
+  }, [dispatch, filterParams]);
 
-    loadTasks();
-  }, [fetchData]);
-
-  // Display toast message with improved handling
-  useEffect(() => {
-    if (isSuccess && message) {
-      toast.success(message, {
-        position: isMobile ? "top-center" : "top-right",
-        autoClose: 3000,
-      });
-      dispatch(RESET());
-      fetchData("tasks", "tasks").catch((error) => {
-        console.error("Failed to refresh tasks:", error);
-      });
-    }
-
-    if (isError && message) {
-      toast.error(message, {
-        position: isMobile ? "top-center" : "top-right",
-        autoClose: 5000,
-      });
-      dispatch(RESET());
-    }
-  }, [isSuccess, isError, message, dispatch, fetchData, isMobile]);
+  // Refresh tasks
+  const refreshTasks = useCallback(() => {
+    dispatch(fetchTasks(filterParams));
+  }, [dispatch, filterParams]);
 
   // Permission check function with memoization
   const canEdit = useCallback(
@@ -142,7 +141,7 @@ const TaskList = () => {
   );
 
   // Handle delete with confirmation and error handling
-  const deleteTask = useCallback(
+  const handleDeleteTask = useCallback(
     async (id) => {
       if (!id) {
         toast.error("Invalid task ID");
@@ -150,25 +149,25 @@ const TaskList = () => {
       }
 
       try {
-        await dispatch(deleteData(`tasks/${id}`)).unwrap();
+        await dispatch(deleteTask(id)).unwrap();
         toast.success("Task deleted successfully");
-        await fetchData("tasks", "tasks");
+        refreshTasks();
       } catch (error) {
         console.error("Delete failed:", error);
         toast.error(
-          error?.message || "Failed to delete task. Please try again.",
+          error?.message || error || "Failed to delete task. Please try again.",
         );
       }
     },
-    [dispatch, fetchData],
+    [dispatch, refreshTasks],
   );
 
   // Filter tasks based on user role with error handling
   const filteredTasksByRole = useMemo(() => {
-    if (!tasks?.data || !Array.isArray(tasks.data)) return [];
+    if (!tasks || !Array.isArray(tasks)) return [];
 
     try {
-      let filteredTasks = [...tasks.data];
+      let filteredTasks = [...tasks];
 
       if (isClient && loggedInClientId) {
         filteredTasks = filteredTasks.filter(
@@ -189,9 +188,9 @@ const TaskList = () => {
       console.error("Error filtering tasks:", error);
       return [];
     }
-  }, [tasks?.data, isSuperOrAdmin, isClient, loggedInClientId]);
+  }, [tasks, isSuperOrAdmin, isClient, loggedInClientId]);
 
-  // Apply search and filters with debouncing
+  // Apply search and filters with debouncing (client-side for display)
   const filteredAndSearchedTasks = useMemo(() => {
     try {
       return filteredTasksByRole.filter((task) => {
@@ -205,9 +204,9 @@ const TaskList = () => {
           task.customCaseReference?.toLowerCase().includes(searchLower);
 
         const matchesStatus =
-          statusFilter === "all" || task.status === statusFilter;
+          localStatusFilter === "all" || task.status === localStatusFilter;
         const matchesPriority =
-          priorityFilter === "all" || task.taskPriority === priorityFilter;
+          localPriorityFilter === "all" || task.taskPriority === localPriorityFilter;
 
         return matchesSearch && matchesStatus && matchesPriority;
       });
@@ -215,7 +214,7 @@ const TaskList = () => {
       console.error("Error filtering tasks:", error);
       return [];
     }
-  }, [filteredTasksByRole, searchText, statusFilter, priorityFilter]);
+  }, [filteredTasksByRole, searchText, localStatusFilter, localPriorityFilter]);
 
   // Statistics with error handling
   const taskStats = useMemo(() => {
@@ -434,7 +433,7 @@ const TaskList = () => {
                 <TaskStatusFlow
                   task={record}
                   userId={user?.data?._id}
-                  onStatusChange={() => fetchData("tasks", "tasks")}
+                  onStatusChange={refreshTasks}
                 />
               ),
             },
@@ -446,7 +445,7 @@ const TaskList = () => {
                 <TaskActions
                   task={record}
                   userId={user?.data?._id}
-                  onTaskUpdate={() => fetchData("tasks", "tasks")}
+                  onTaskUpdate={refreshTasks}
                 />
               ),
             },
@@ -513,7 +512,7 @@ const TaskList = () => {
                     okType: "danger",
                     cancelText: "Cancel",
                     centered: isMobile,
-                    onOk: () => deleteTask(record?.id),
+                    onOk: () => handleDeleteTask(record?.id),
                   });
                 },
               },
@@ -560,8 +559,8 @@ const TaskList = () => {
       getPriorityColor,
       canEdit,
       user?.data?._id,
-      fetchData,
-      deleteTask,
+      refreshTasks,
+      handleDeleteTask,
     ],
   );
 
@@ -624,11 +623,187 @@ const TaskList = () => {
                 okText: "Delete",
                 okType: "danger",
                 centered: isMobile,
-                onOk: () => deleteTask(task.id),
+                onOk: () => handleDeleteTask(task.id),
               });
             },
           },
-        );
+        ]
+      }
+
+      return (
+        <Card
+          className="task-card h-full hover:shadow-lg transition-all duration-200 border border-gray-200"
+          size="small"
+          bodyStyle={{ padding: isMobile ? "16px" : "20px" }}>
+          {/* Header: Status and Priority Tags */}
+          <div className="flex justify-between items-start mb-4 gap-2">
+            <Tag
+              color={statusConfig.color}
+              icon={statusConfig.icon}
+              className="text-xs px-2 py-1">
+              {statusConfig.text}
+            </Tag>
+            <Tag
+              color={getPriorityColor(task.taskPriority)}
+              className="capitalize text-xs px-2 py-1">
+              {task.taskPriority || "N/A"}
+            </Tag>
+          </div>
+
+          {/* Task Title */}
+          <Link to={`${task.id}/details`} className="block mb-3">
+            <h3 className="font-semibold text-gray-800 hover:text-blue-600 line-clamp-2 text-base md:text-lg leading-tight">
+              {task.title || "Untitled Task"}
+            </h3>
+          </Link>
+
+          {/* Task Description */}
+          {task.description && (
+            <p className="text-sm text-gray-600 line-clamp-2 mb-4 leading-relaxed">
+              {task.description}
+            </p>
+          )}
+
+          {/* Assignees and Due Date Info */}
+          <div className="space-y-3 mb-4 pb-4 border-b border-gray-200">
+            <div className="flex items-center gap-2 text-sm">
+              <UserOutlined className="flex-shrink-0 text-gray-400" />
+              <span className="text-gray-700 truncate">
+                {task.assignees?.length > 0 ? (
+                  <>
+                    <strong>{task.assignees.length}</strong> assignee
+                    {task.assignees.length > 1 ? "s" : ""}
+                  </>
+                ) : (
+                  <span className="text-gray-400">Unassigned</span>
+                )}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm">
+              <ClockCircleOutlined className="flex-shrink-0 text-gray-400" />
+              <span
+                className={
+                  task.isOverdue
+                    ? "text-red-600 font-semibold"
+                    : "text-gray-700"
+                }>
+                {task.isOverdue && "⚠️ "}
+                {formatDate(task.dueDate)}
+                {task.isOverdue && " (Overdue)"}
+              </span>
+            </div>
+
+            {task.referenceDocuments?.length > 0 && (
+              <div className="flex items-center gap-2 text-sm">
+                <FileTextOutlined className="flex-shrink-0 text-gray-400" />
+                <span className="text-gray-700">
+                  {task.referenceDocuments.length} document
+                  {task.referenceDocuments.length > 1 ? "s" : ""}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Task Status Flow - Collapsible for mobile */}
+          <Collapse
+            ghost
+            size="small"
+            className="mb-3 task-status-collapse"
+            items={[
+              {
+                key: "status",
+                label: (
+                  <span className="text-sm font-medium text-gray-700">
+                    Status Management
+                  </span>
+                ),
+                children: (
+                  <div className="py-2">
+                    <TaskStatusFlow
+                      task={task}
+                      userId={user?.data?._id}
+                      onStatusChange={refreshTasks}
+                    />
+                  </div>
+                ),
+              },
+            ]}
+          />
+
+          {/* Task Actions - Collapsible for mobile */}
+          <Collapse
+            ghost
+            size="small"
+            className="mb-4 task-actions-collapse"
+            items={[
+              {
+                key: "actions",
+                label: (
+                  <span className="text-sm font-medium text-gray-700">
+                    Task Operations
+                  </span>
+                ),
+                children: (
+                  <div className="py-2">
+                    <TaskActions
+                      task={task}
+                      userId={user?.data?._id}
+                      onTaskUpdate={refreshTasks}
+                    />
+                  </div>
+                ),
+              },
+            ]}
+          />
+
+          {/* Action Buttons Footer */}
+          <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+            <Space size="middle" className="flex-wrap">
+              <Link to={`${task.id}/details`}>
+                <Button
+                  type="primary"
+                  size={isMobile ? "small" : "middle"}
+                  icon={<EyeOutlined />}>
+                  {isMobile ? "View" : "View Details"}
+                </Button>
+              </Link>
+
+              {hasEditPermission && (
+                <Link to={`${task.id}/update`}>
+                  <Button
+                    size={isMobile ? "small" : "middle"}
+                    icon={<EditOutlined />}>
+                    Edit
+                  </Button>
+                </Link>
+              )}
+            </Space>
+
+            <Dropdown
+              menu={{ items: cardMenuItems }}
+              placement="bottomRight"
+              trigger={["click"]}>
+              <Button
+                type="text"
+                size={isMobile ? "small" : "middle"}
+                icon={<MoreOutlined />}
+              />
+            </Dropdown>
+          </div>
+        </Card>
+      );
+    },
+    [
+      getStatusConfig,
+      getPriorityColor,
+      canEdit,
+      isMobile,
+      handleDeleteTask,
+      user?.data?._id,
+      refreshTasks,
+    ],
+  );
       }
 
       return (
@@ -818,8 +993,11 @@ const TaskList = () => {
         <div>
           <label className="block text-sm font-medium mb-2">Status</label>
           <Select
-            value={statusFilter}
-            onChange={setStatusFilter}
+            value={localStatusFilter}
+            onChange={(value) => {
+              setLocalStatusFilter(value);
+              setCurrentPage(1);
+            }}
             className="w-full"
             suffixIcon={<FilterOutlined />}>
             <Option value="all">All Status</Option>
@@ -833,8 +1011,11 @@ const TaskList = () => {
         <div>
           <label className="block text-sm font-medium mb-2">Priority</label>
           <Select
-            value={priorityFilter}
-            onChange={setPriorityFilter}
+            value={localPriorityFilter}
+            onChange={(value) => {
+              setLocalPriorityFilter(value);
+              setCurrentPage(1);
+            }}
             className="w-full"
             suffixIcon={<FilterOutlined />}>
             <Option value="all">All Priority</Option>
@@ -863,9 +1044,10 @@ const TaskList = () => {
         <Button
           block
           onClick={() => {
-            setStatusFilter("all");
-            setPriorityFilter("all");
+            setLocalStatusFilter("all");
+            setLocalPriorityFilter("all");
             setSearchText("");
+            setCurrentPage(1);
           }}>
           Clear All
         </Button>
@@ -874,7 +1056,7 @@ const TaskList = () => {
   );
 
   // Loading state
-  if (loadingTasks.tasks) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner />
@@ -883,12 +1065,12 @@ const TaskList = () => {
   }
 
   // Error state
-  if (taskError.error) {
+  if (error) {
     return (
       <div className="p-4 md:p-6">
         <PageErrorAlert
-          errorCondition={taskError.error}
-          errorMessage={taskError.error}
+          errorCondition={error}
+          errorMessage={error}
         />
       </div>
     );
@@ -896,25 +1078,35 @@ const TaskList = () => {
 
   return (
     <div className="task-list-container p-3 sm:p-4 md:p-6 max-w-screen-2xl mx-auto">
-      {/* Header Section - Mobile Optimized */}
-      <div className="mb-4 md:mb-6">
-        <div className="flex flex-col gap-3 md:gap-4 mb-4 md:mb-6">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-1 md:mb-2 truncate">
-                Tasks
-              </h1>
-              <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">
-                Manage and track all your tasks
-              </p>
-            </div>
-            {isStaff && (
-              <div className="flex-shrink-0">
-                <CreateTaskForm />
+        {/* Header Section - Mobile Optimized */}
+        <div className="mb-4 md:mb-6">
+          <div className="flex flex-col gap-3 md:gap-4 mb-4 md:mb-6">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <Flex align="center" gap={2}>
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-0 truncate">
+                    Tasks
+                  </h1>
+                  <Tooltip title="Refresh">
+                    <Button 
+                      type="text" 
+                      icon={<ReloadOutlined spin={loading} />} 
+                      onClick={refreshTasks}
+                      loading={loading}
+                    />
+                  </Tooltip>
+                </Flex>
+                <p className="text-xs sm:text-sm text-gray-600 line-clamp-1">
+                  Manage and track all your tasks
+                </p>
               </div>
-            )}
+              {isStaff && (
+                <div className="flex-shrink-0">
+                  <CreateTaskForm />
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
         {/* Statistics Cards - Mobile First */}
         <Row gutter={[8, 8]} className="mb-4 md:mb-6">
@@ -996,7 +1188,7 @@ const TaskList = () => {
                     onClick={() => setFilterDrawerVisible(true)}
                     className="flex-1">
                     Filters
-                    {(statusFilter !== "all" || priorityFilter !== "all") && (
+                    {(localStatusFilter !== "all" || localPriorityFilter !== "all") && (
                       <Badge dot status="processing" className="ml-2" />
                     )}
                   </Button>
@@ -1016,8 +1208,11 @@ const TaskList = () => {
                 // Desktop: Show inline filters
                 <>
                   <Select
-                    value={statusFilter}
-                    onChange={setStatusFilter}
+                    value={localStatusFilter}
+                    onChange={(value) => {
+                      setLocalStatusFilter(value);
+                      setCurrentPage(1);
+                    }}
                     placeholder="Status"
                     className="min-w-[130px]"
                     suffixIcon={<FilterOutlined />}>
@@ -1029,8 +1224,11 @@ const TaskList = () => {
                   </Select>
 
                   <Select
-                    value={priorityFilter}
-                    onChange={setPriorityFilter}
+                    value={localPriorityFilter}
+                    onChange={(value) => {
+                      setLocalPriorityFilter(value);
+                      setCurrentPage(1);
+                    }}
                     placeholder="Priority"
                     className="min-w-[130px]"
                     suffixIcon={<FilterOutlined />}>
@@ -1050,13 +1248,14 @@ const TaskList = () => {
                   </Select>
 
                   {(searchText ||
-                    statusFilter !== "all" ||
-                    priorityFilter !== "all") && (
+                    localStatusFilter !== "all" ||
+                    localPriorityFilter !== "all") && (
                     <Button
                       onClick={() => {
                         setSearchText("");
-                        setStatusFilter("all");
-                        setPriorityFilter("all");
+                        setLocalStatusFilter("all");
+                        setLocalPriorityFilter("all");
+                        setCurrentPage(1);
                       }}
                       type="link"
                       className="ml-auto">
@@ -1071,10 +1270,10 @@ const TaskList = () => {
       </div>
 
       {/* Tasks Display */}
-      {taskError.tasks ? (
+      {error ? (
         <PageErrorAlert
-          errorCondition={taskError.tasks}
-          errorMessage={taskError.tasks}
+          errorCondition={error}
+          errorMessage={error}
         />
       ) : (
         <>
@@ -1086,16 +1285,27 @@ const TaskList = () => {
                 rowKey="_id"
                 scroll={{ x: isMobile ? 600 : 1000 }}
                 pagination={{
-                  pageSize: isMobile ? 5 : 10,
+                  pageSize: pageSize,
+                  current: currentPage,
+                  total: pagination.total,
                   showSizeChanger: !isMobile,
                   showQuickJumper: !isMobile,
                   simple: isMobile,
                   showTotal: (total, range) =>
                     !isMobile && `${range[0]}-${range[1]} of ${total} tasks`,
                   position: ["bottomCenter"],
+                  onChange: (page, pageSize) => {
+                    setCurrentPage(page);
+                    setPageSize(pageSize);
+                  },
+                  onShowSizeChange: (current, size) => {
+                    setPageSize(size);
+                    setCurrentPage(1);
+                  },
                 }}
                 size={isMobile ? "small" : "middle"}
                 className="task-table"
+                loading={loading}
               />
             </Card>
           ) : (
@@ -1118,8 +1328,8 @@ const TaskList = () => {
                     </h3>
                     <p className="text-xs md:text-sm text-gray-400">
                       {searchText ||
-                      statusFilter !== "all" ||
-                      priorityFilter !== "all"
+                      localStatusFilter !== "all" ||
+                      localPriorityFilter !== "all"
                         ? "Try adjusting your search or filters"
                         : "Get started by creating your first task"}
                     </p>
@@ -1127,8 +1337,8 @@ const TaskList = () => {
                 }>
                 {isStaff &&
                   !searchText &&
-                  statusFilter === "all" &&
-                  priorityFilter === "all" && (
+                  localStatusFilter === "all" &&
+                  localPriorityFilter === "all" && (
                     <CreateTaskForm
                       buttonProps={{
                         type: "primary",

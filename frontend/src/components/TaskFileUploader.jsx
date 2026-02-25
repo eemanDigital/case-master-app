@@ -1,6 +1,7 @@
 // components/TaskFileUploader.jsx
 import { useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
+import { useSelector } from "react-redux";
 import { Button, Modal, Upload, Form, Input, Select, message } from "antd";
 import {
   UploadOutlined,
@@ -23,6 +24,9 @@ const TaskFileUploader = ({
   const [form] = Form.useForm();
   const [fileList, setFileList] = useState([]);
   const [uploading, setUploading] = useState(false);
+
+  const { user } = useSelector((state) => state.auth);
+  const firmId = user?.data?.firm || user?.firm || user?._id;
 
   const { open, showModal, handleOk, handleCancel } = useModal();
   const { dataFetcher, loading } = useDataFetch();
@@ -48,6 +52,11 @@ const TaskFileUploader = ({
       formData.append("entityId", taskId);
       formData.append("category", "task-document");
       formData.append("uploadType", uploadType); // 'reference' or 'response'
+
+      // Add firmId if available
+      if (firmId) {
+        formData.append("firmId", firmId);
+      }
 
       if (values.description) {
         formData.append("description", values.description);

@@ -615,7 +615,8 @@ const taskSlice = createSlice({
       })
       .addCase(createTask.fulfilled, (state, action) => {
         state.actionLoading = false;
-        taskAdapter.addOne(state, action.payload.data);
+        const taskData = action.payload.data || action.payload;
+        taskAdapter.addOne(state, taskData);
         state.pagination.total += 1;
       })
       .addCase(createTask.rejected, (state, action) => {
@@ -629,9 +630,10 @@ const taskSlice = createSlice({
       })
       .addCase(updateTask.fulfilled, (state, action) => {
         state.actionLoading = false;
+        const taskData = action.payload.data || action.payload;
         taskAdapter.updateOne(state, {
-          id: action.payload.data._id,
-          changes: action.payload.data,
+          id: taskData._id,
+          changes: taskData,
         });
       })
       .addCase(updateTask.rejected, (state, action) => {
@@ -679,15 +681,17 @@ const taskSlice = createSlice({
 
       // ── assignees ───────────────────────────────────────────
       .addCase(addTaskAssignee.fulfilled, (state, action) => {
+        const taskData = action.payload.data || action.payload;
         taskAdapter.updateOne(state, {
-          id: action.payload.data._id,
-          changes: action.payload.data,
+          id: taskData._id,
+          changes: taskData,
         });
       })
       .addCase(removeTaskAssignee.fulfilled, (state, action) => {
+        const taskData = action.payload.data || action.payload;
         taskAdapter.updateOne(state, {
-          id: action.payload.data._id,
-          changes: action.payload.data,
+          id: taskData._id,
+          changes: taskData,
         });
       })
 
@@ -697,9 +701,10 @@ const taskSlice = createSlice({
       })
       .addCase(submitTaskResponse.fulfilled, (state, action) => {
         state.actionLoading = false;
+        const taskData = action.payload.data || action.payload;
         taskAdapter.updateOne(state, {
-          id: action.payload.data._id,
-          changes: action.payload.data,
+          id: taskData._id,
+          changes: taskData,
         });
       })
       .addCase(submitTaskResponse.rejected, (state, action) => {
@@ -713,9 +718,10 @@ const taskSlice = createSlice({
       })
       .addCase(submitForReview.fulfilled, (state, action) => {
         state.actionLoading = false;
+        const taskData = action.payload.data || action.payload;
         taskAdapter.updateOne(state, {
-          id: action.payload.data._id,
-          changes: action.payload.data,
+          id: taskData._id,
+          changes: taskData,
         });
       })
       .addCase(submitForReview.rejected, (state, action) => {
@@ -728,12 +734,13 @@ const taskSlice = createSlice({
       })
       .addCase(reviewTaskComplete.fulfilled, (state, action) => {
         state.actionLoading = false;
+        const taskData = action.payload.data || action.payload;
         taskAdapter.updateOne(state, {
-          id: action.payload.data._id,
-          changes: action.payload.data,
+          id: taskData._id,
+          changes: taskData,
         });
         state.pendingReviewTasks = state.pendingReviewTasks.filter(
-          (t) => t._id !== action.payload.data._id,
+          (t) => t._id !== taskData._id,
         );
       })
       .addCase(reviewTaskComplete.rejected, (state, action) => {
@@ -742,12 +749,13 @@ const taskSlice = createSlice({
       })
 
       .addCase(forceCompleteTask.fulfilled, (state, action) => {
+        const taskData = action.payload.data || action.payload;
         taskAdapter.updateOne(state, {
-          id: action.payload.data._id,
-          changes: action.payload.data,
+          id: taskData._id,
+          changes: taskData,
         });
         state.overdueTasks = state.overdueTasks.filter(
-          (t) => t._id !== action.payload.data._id,
+          (t) => t._id !== taskData._id,
         );
       })
 
@@ -814,9 +822,10 @@ const taskSlice = createSlice({
       })
       .addCase(updateTaskEnhanced.fulfilled, (state, action) => {
         state.actionLoading = false;
+        const taskData = action.payload.data || action.payload;
         taskAdapter.updateOne(state, {
-          id: action.payload.data._id,
-          changes: action.payload.data,
+          id: taskData._id,
+          changes: taskData,
         });
       })
       .addCase(updateTaskEnhanced.rejected, (state, action) => {

@@ -93,18 +93,18 @@ const TaskEditModal = ({ open, onClose, task, onSuccess }) => {
         };
 
         // Dispatch update action
-        await dispatch(
+        const result = await dispatch(
           updateTaskEnhanced({ taskId: task._id, data: updateData }),
-        ).unwrap();
+        );
 
-        message.success("Task updated successfully");
-
-        // Call success callback and close modal
-        onSuccess?.();
-        onClose();
-
-        // Reset form after successful update
-        form.resetFields();
+        if (updateTaskEnhanced.fulfilled.match(result)) {
+          message.success("Task updated successfully");
+          onSuccess?.();
+          onClose();
+          form.resetFields();
+        } else {
+          message.error(result.payload || "Failed to update task");
+        }
       } catch (error) {
         console.error("Task update error:", error);
         message.error(error?.message || "Failed to update task");

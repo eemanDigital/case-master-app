@@ -676,6 +676,7 @@ exports.uploadReferenceDocuments = catchAsync(async (req, res, next) => {
         entityType: "Task",
         entityId: taskId,
         uploadedBy: req.user.id,
+        firmId: req.firmId,
         metadata: {
           uploadType: "task-reference",
           taskId: taskId,
@@ -794,6 +795,7 @@ exports.uploadResponseDocuments = catchAsync(async (req, res, next) => {
         entityType: "Task",
         entityId: taskId,
         uploadedBy: req.user.id,
+        firmId: req.firmId,
         metadata: {
           uploadType: "task-response",
           taskId: taskId,
