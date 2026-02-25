@@ -1,22 +1,38 @@
-import React from "react";
+// TaskStatusFlow.jsx
+import React, { useCallback, useState } from "react";
 import PropTypes from "prop-types";
-import { Steps, Tag, Badge, Tooltip, Space } from "antd";
+import {
+  Steps,
+  Tag,
+  Badge,
+  Tooltip,
+  Space,
+  Button,
+  message,
+  Popconfirm,
+} from "antd";
 import {
   ClockCircleOutlined,
   PlayCircleOutlined,
   EyeOutlined,
   CheckCircleOutlined,
-  SyncOutlined,
+  CloseCircleOutlined,
+  LoadingOutlined,
 } from "@ant-design/icons";
-import { useDataFetch } from "../hooks/useDataFetch";
-import { toast } from "react-toastify";
+import { useDispatch } from "react-redux";
+import {
+  updateTask,
+  submitForReview,
+  forceCompleteTask,
+} from "../redux/features/task/taskSlice";
 
 const { Step } = Steps;
 
-const TaskStatusFlow = ({ task, userId, onStatusChange }) => {
-  const { dataFetcher, loading } = useDataFetch();
+const TaskStatusFlow = ({ task, userId, onStatusChange, size = "small" }) => {
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
 
-  const getCurrentStep = () => {
+  const getCurrentStep = useCallback(() => {
     switch (task.status) {
       case "pending":
         return 0;
@@ -27,163 +43,219 @@ const TaskStatusFlow = ({ task, userId, onStatusChange }) => {
       case "completed":
         return 3;
       case "rejected":
-        return 1; // Rejected goes back to in-progress step
+        return 1;
       default:
         return 0;
     }
-  };
+  }, [task.status]);
 
-  const handleSubmitForReview = async () => {
-    try {
-      const response = await dataFetcher(
-        `tasks/${task._id}/submit-review`,
-        "PUT",
-        {
-          comment: "Submitted for review",
-        }
-      );
-
-      if (response.error) throw new Error(response.error);
-
-      toast.success("Task submitted for review!");
-
-      if (onStatusChange) {
-        onStatusChange();
+  const handleStatusChange = useCallback(
+    async (newStatus, comment = "") => {
+      setLoading(true);
+      try {
+        await dispatch(
+          updateTask({
+            taskId: task._id,
+            data: { status: newStatus, statusComment: comment },
+          }),
+        ).unwrap();
+        message.success(`Task status updated to ${newStatus}`);
+        onStatusChange?.();
+      } catch (error) {
+        message.error(error || "Failed to update task status");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      toast.error(error.message || "Failed to submit for review");
-    }
-  };
-
-  const handleForceComplete = async () => {
-    try {
-      const response = await dataFetcher(
-        `tasks/${task._id}/force-complete`,
-        "POST",
-        {
-          completionComment: "Task force completed",
-        }
-      );
-
-      if (response.error) throw new Error(response.error);
-
-      toast.success("Task marked as completed!");
-
-      if (onStatusChange) {
-        onStatusChange();
-      }
-    } catch (error) {
-      toast.error(error.message || "Failed to mark as complete");
-    }
-  };
-
-  const isAssignee = task.assignees?.some(
-    (assignee) => assignee.user?._id === userId || assignee.user === userId
+    },
+    [dispatch, task._id, onStatusChange],
   );
 
-  const isTaskGiver = task.createdBy?._id === userId;
+  const handleSubmitForReview = useCallback(async () => {
+    setLoading(true);
+    try {
+      await dispatch(
+        submitForReview({
+          taskId: task._id,
+          data: { comment: "Submitted for review" },
+        }),
+      ).unwrap();
+      message.success("Task submitted for review");
+      onStatusChange?.();
+    } catch (error) {
+      message.error(error || "Failed to submit for review");
+    } finally {
+      setLoading(false);
+    }
+  }, [dispatch, task._id, onStatusChange]);
+
+  const handleForceComplete = useCallback(async () => {
+    setLoading(true);
+    try {
+      await dispatch(
+        forceCompleteTask({
+          taskId: task._id,
+          data: { completionComment: "Task force completed" },
+        }),
+      ).unwrap();
+      message.success("Task marked as completed");
+      onStatusChange?.();
+    } catch (error) {
+      message.error(error || "Failed to mark as complete");
+    } finally {
+      setLoading(false);
+    }
+  }, [dispatch, task._id, onStatusChange]);
+
+  const isAssignee = task.assignees?.some(
+    (assignee) => (assignee.user?._id || assignee.user) === userId,
+  );
+
+  const isTaskGiver =
+    task.createdBy?._id === userId || task.createdBy === userId;
 
   return (
-    <div className="task-status-flow">
-      <Steps current={getCurrentStep()} size="small">
-        <Step
-          title="Pending"
-          icon={<ClockCircleOutlined />}
-          description={
-            isAssignee && task.status === "pending" ? (
-              <Tooltip title="Mark as In Progress">
-                <Tag
-                  color="orange"
-                  className="cursor-pointer hover:opacity-80"
-                  onClick={async () => {
-                    try {
-                      await dataFetcher(`tasks/${task._id}`, "PATCH", {
-                        status: "in-progress",
-                      });
-                      toast.success("Task started!");
-                      onStatusChange && onStatusChange();
-                    } catch (error) {
-                      toast.error("Failed to start task");
-                    }
-                  }}>
-                  Start Task
-                </Tag>
-              </Tooltip>
-            ) : (
-              <Badge
-                status={task.status === "pending" ? "processing" : "default"}
-                text="Pending Start"
-              />
-            )
-          }
-        />
+    <div className="task-status-flow w-full">
+      <Steps
+        current={getCurrentStep()}
+        size={size}
+        className="mb-4"
+        items={[
+          {
+            title: size === "small" ? null : "Pending",
+            icon: <ClockCircleOutlined />,
+            description:
+              size === "small" ? null : (
+                <div className="mt-2">
+                  {isAssignee && task.status === "pending" && (
+                    <Popconfirm
+                      title="Start Task"
+                      description="Are you ready to start working on this task?"
+                      onConfirm={() =>
+                        handleStatusChange("in-progress", "Task started")
+                      }
+                      okText="Yes"
+                      cancelText="No">
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<PlayCircleOutlined />}
+                        loading={loading}
+                        className="p-0">
+                        Start
+                      </Button>
+                    </Popconfirm>
+                  )}
+                  {task.status === "pending" && (
+                    <Badge status="processing" text="Awaiting start" />
+                  )}
+                </div>
+              ),
+          },
+          {
+            title: size === "small" ? null : "In Progress",
+            icon: <PlayCircleOutlined />,
+            description:
+              size === "small" ? null : (
+                <div className="mt-2 space-y-2">
+                  {isAssignee &&
+                    (task.status === "in-progress" ||
+                      task.status === "rejected") && (
+                      <Popconfirm
+                        title="Submit for Review"
+                        description="Submit this task for review?"
+                        onConfirm={handleSubmitForReview}
+                        okText="Submit"
+                        cancelText="Cancel">
+                        <Button
+                          type="link"
+                          size="small"
+                          icon={<EyeOutlined />}
+                          loading={loading}
+                          className="p-0 text-blue-500">
+                          Submit Review
+                        </Button>
+                      </Popconfirm>
+                    )}
+                  {isTaskGiver && task.status === "in-progress" && (
+                    <Popconfirm
+                      title="Force Complete"
+                      description="Mark as complete without review?"
+                      onConfirm={handleForceComplete}
+                      okText="Yes"
+                      cancelText="No">
+                      <Button
+                        type="link"
+                        size="small"
+                        icon={<CheckCircleOutlined />}
+                        loading={loading}
+                        className="p-0 text-green-500">
+                        Force Complete
+                      </Button>
+                    </Popconfirm>
+                  )}
+                </div>
+              ),
+          },
+          {
+            title: size === "small" ? null : "Under Review",
+            icon: <EyeOutlined />,
+            description:
+              size === "small" ? null : (
+                <div className="mt-2">
+                  {task.status === "under-review" && (
+                    <Badge status="processing" text="Awaiting review" />
+                  )}
+                </div>
+              ),
+          },
+          {
+            title: size === "small" ? null : "Completed",
+            icon: <CheckCircleOutlined />,
+            description:
+              size === "small" ? null : (
+                <div className="mt-2">
+                  {task.status === "completed" ? (
+                    <Space size="small">
+                      <Tag color="green" icon={<CheckCircleOutlined />}>
+                        Completed
+                      </Tag>
+                      {task.completedAt && (
+                        <span className="text-xs text-gray-500">
+                          {new Date(task.completedAt).toLocaleDateString()}
+                        </span>
+                      )}
+                    </Space>
+                  ) : (
+                    <Badge status="default" text="Not completed" />
+                  )}
+                </div>
+              ),
+          },
+        ]}
+      />
 
-        <Step
-          title="In Progress"
-          icon={<PlayCircleOutlined />}
-          description={
-            <Space direction="vertical" size="small">
-              {isAssignee &&
-                (task.status === "in-progress" ||
-                  task.status === "rejected") && (
-                  <Tooltip title="Submit for Review">
-                    <Tag
-                      color="blue"
-                      className="cursor-pointer hover:opacity-80"
-                      onClick={handleSubmitForReview}>
-                      Submit for Review
-                    </Tag>
-                  </Tooltip>
-                )}
-              {isTaskGiver && task.status === "in-progress" && (
-                <Tooltip title="Force Mark as Complete">
-                  <Tag
-                    color="green"
-                    className="cursor-pointer hover:opacity-80"
-                    onClick={handleForceComplete}>
-                    Mark Complete
-                  </Tag>
-                </Tooltip>
-              )}
-            </Space>
-          }
-        />
-
-        <Step
-          title="Under Review"
-          icon={<EyeOutlined />}
-          description={
-            isTaskGiver ? (
-              <Space size="small">
-                <Tooltip title="Task awaiting your review">
-                  <Badge status="processing" text="Awaiting Review" />
-                </Tooltip>
-              </Space>
-            ) : (
-              <Badge status="processing" text="Awaiting Review" />
-            )
-          }
-        />
-
-        <Step
-          title="Completed"
-          icon={<CheckCircleOutlined />}
-          description={
-            task.status === "completed" ? (
-              <div className="flex items-center gap-2">
-                <Tag color="green">Completed</Tag>
-                {task.completedAt && (
-                  <span className="text-xs text-gray-500">
-                    {new Date(task.completedAt).toLocaleDateString()}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <Badge status="default" text="Not Completed" />
-            )
-          }
-        />
-      </Steps>
+      {/* Mobile compact view */}
+      {size === "small" && (
+        <div className="flex items-center justify-between mt-2 text-xs">
+          <Badge
+            status={
+              task.status === "pending"
+                ? "processing"
+                : task.status === "completed"
+                  ? "success"
+                  : task.status === "rejected"
+                    ? "error"
+                    : "default"
+            }
+            text={task.status?.replace("-", " ") || "Pending"}
+          />
+          {task.isOverdue && (
+            <Tag color="red" icon={<CloseCircleOutlined />} className="text-xs">
+              Overdue
+            </Tag>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -192,6 +264,11 @@ TaskStatusFlow.propTypes = {
   task: PropTypes.object.isRequired,
   userId: PropTypes.string.isRequired,
   onStatusChange: PropTypes.func,
+  size: PropTypes.oneOf(["small", "default"]),
+};
+
+TaskStatusFlow.defaultProps = {
+  size: "small",
 };
 
 export default TaskStatusFlow;

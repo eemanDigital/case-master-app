@@ -581,7 +581,7 @@ const taskSlice = createSlice({
       })
       .addCase(fetchTasks.fulfilled, (state, action) => {
         state.loading = false;
-        taskAdapter.setAll(state, action.payload.data || []);
+        taskAdapter.setAll(state, action.payload || []);
         state.pagination = action.payload.pagination || {
           page: 1,
           limit: 20,
