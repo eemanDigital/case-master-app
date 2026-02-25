@@ -1132,6 +1132,7 @@ exports.submitTaskForReview = catchAsync(async (req, res, next) => {
 });
 
 // Review task and mark as completed (Task Giver action)
+// NOTE: This reviews the task as a whole (approve/reject the submitted work)
 exports.reviewTask = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
   const { approve, reviewComment, rating, sendNotification = true } = req.body;
@@ -1194,14 +1195,16 @@ exports.reviewTask = catchAsync(async (req, res, next) => {
     task.reviewComment = reviewComment;
     task.rating = rating;
 
-    // Mark the latest response as approved
-    if (task.taskResponses.length > 0) {
-      const latestResponse = task.taskResponses[task.taskResponses.length - 1];
-      latestResponse.approved = true;
-      latestResponse.reviewedBy = req.user.id;
-      latestResponse.reviewedAt = new Date();
-      latestResponse.reviewComment = reviewComment;
-    }
+    // Mark all in-progress responses as completed
+    task.taskResponses.forEach((response) => {
+      if (response.status === "in-progress" || response.status === "under-review") {
+        response.status = "completed";
+        response.completionPercentage = 100;
+        response.reviewedBy = req.user.id;
+        response.reviewedAt = new Date();
+        response.reviewComment = reviewComment;
+      }
+    });
   } else {
     // Reject and return for revision
     task.status = "rejected";
@@ -1209,14 +1212,15 @@ exports.reviewTask = catchAsync(async (req, res, next) => {
     task.reviewedAt = new Date();
     task.reviewComment = reviewComment;
 
-    // Mark the latest response as rejected
-    if (task.taskResponses.length > 0) {
-      const latestResponse = task.taskResponses[task.taskResponses.length - 1];
-      latestResponse.approved = false;
-      latestResponse.reviewedBy = req.user.id;
-      latestResponse.reviewedAt = new Date();
-      latestResponse.reviewComment = reviewComment;
-    }
+    // Mark pending responses as needs-review
+    task.taskResponses.forEach((response) => {
+      if (response.status === "in-progress" || response.status === "under-review") {
+        response.status = "needs-review";
+        response.reviewedBy = req.user.id;
+        response.reviewedAt = new Date();
+        response.reviewComment = reviewComment;
+      }
+    });
   }
 
   // Create history entry
@@ -1436,6 +1440,7 @@ exports.getTaskHistory = catchAsync(async (req, res, next) => {
 // REMINDER MANAGEMENT
 // ============================================================
 
+// Create reminder for task
 exports.createReminder = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
   const { message, scheduledFor } = req.body;
@@ -1454,6 +1459,7 @@ exports.createReminder = catchAsync(async (req, res, next) => {
     return next(new AppError("Task not found", 404));
   }
 
+  // Check authorization - task creator or assignee can create reminders
   const isAssigned = task.isUserAssigned(req.user.id);
   const isCreator = task.createdBy.toString() === req.user.id;
   const isAdmin = ["admin", "super-admin"].includes(req.user.role);
@@ -1474,6 +1480,8 @@ exports.createReminder = catchAsync(async (req, res, next) => {
   await task.save();
 
   const createdReminder = task.reminders[task.reminders.length - 1];
+  
+  // Populate sender for response
   await task.populate("reminders.sender", "firstName lastName email");
 
   res.status(201).json({
@@ -1489,6 +1497,7 @@ exports.createReminder = catchAsync(async (req, res, next) => {
   });
 });
 
+// Get reminders for task
 exports.getReminders = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
 
@@ -1506,6 +1515,7 @@ exports.getReminders = catchAsync(async (req, res, next) => {
   });
 });
 
+// Delete reminder
 exports.deleteReminder = catchAsync(async (req, res, next) => {
   const { taskId, reminderId } = req.params;
 
@@ -1519,6 +1529,7 @@ exports.deleteReminder = catchAsync(async (req, res, next) => {
     return next(new AppError("Reminder not found", 404));
   }
 
+  // Check authorization - only sender or admin can delete
   const isSender = reminder.sender?.toString() === req.user.id;
   const isAdmin = ["admin", "super-admin"].includes(req.user.role);
 
@@ -1526,6 +1537,7 @@ exports.deleteReminder = catchAsync(async (req, res, next) => {
     return next(new AppError("Not authorized to delete this reminder", 403));
   }
 
+  // Only allow deletion if not already sent
   if (reminder.isSent) {
     return next(new AppError("Cannot delete a reminder that has already been sent", 400));
   }
@@ -1544,6 +1556,7 @@ exports.deleteReminder = catchAsync(async (req, res, next) => {
 // TASK DEPENDENCY MANAGEMENT
 // ============================================================
 
+// Get task dependencies
 exports.getDependencies = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
 
@@ -1561,6 +1574,7 @@ exports.getDependencies = catchAsync(async (req, res, next) => {
   });
 });
 
+// Add task dependency
 exports.addDependency = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
   const { dependentTaskId } = req.body;
@@ -1586,6 +1600,7 @@ exports.addDependency = catchAsync(async (req, res, next) => {
     return next(new AppError("Dependent task not found", 404));
   }
 
+  // Check for circular dependency
   const checkCircularDependency = async (taskId, targetId, visited = new Set()) => {
     if (visited.has(targetId)) return false;
     visited.add(targetId);
@@ -1604,6 +1619,7 @@ exports.addDependency = catchAsync(async (req, res, next) => {
     return next(new AppError("Cannot add dependency: would create circular reference", 400));
   }
 
+  // Check if already exists
   if (task.dependencies.includes(dependentTaskId)) {
     return next(new AppError("This dependency already exists", 400));
   }
@@ -1620,6 +1636,7 @@ exports.addDependency = catchAsync(async (req, res, next) => {
   });
 });
 
+// Remove task dependency
 exports.removeDependency = catchAsync(async (req, res, next) => {
   const { taskId, dependencyId } = req.params;
 
@@ -1644,6 +1661,7 @@ exports.removeDependency = catchAsync(async (req, res, next) => {
   });
 });
 
+// Get available tasks for dependency (excluding self and existing dependencies)
 exports.getAvailableDependencies = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
 
@@ -1652,6 +1670,7 @@ exports.getAvailableDependencies = catchAsync(async (req, res, next) => {
     return next(new AppError("Task not found", 404));
   }
 
+  // Get all tasks except self, already linked dependencies, and completed tasks
   const excludeIds = [taskId, ...(task.dependencies || [])];
 
   const availableTasks = await Task.find({
@@ -1672,6 +1691,11 @@ exports.getAvailableDependencies = catchAsync(async (req, res, next) => {
   });
 });
 
+// ============================================================
+// TASK UPDATE (Enhanced with history)
+// ============================================================
+
+// Enhanced update with history tracking
 exports.updateTaskEnhanced = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
   const updates = req.body;
@@ -1681,6 +1705,7 @@ exports.updateTaskEnhanced = catchAsync(async (req, res, next) => {
     return next(new AppError("Task not found", 404));
   }
 
+  // Track changes for history
   const changes = {};
   const fieldsToTrack = [
     "title", "description", "instruction", "dueDate", "startDate",
@@ -1694,6 +1719,7 @@ exports.updateTaskEnhanced = catchAsync(async (req, res, next) => {
     }
   }
 
+  // Apply updates
   const allowedUpdates = [
     "title", "description", "instruction", "dueDate", "startDate",
     "taskPriority", "status", "category", "estimatedEffort", "matter",
@@ -1706,6 +1732,7 @@ exports.updateTaskEnhanced = catchAsync(async (req, res, next) => {
     }
   }
 
+  // Add history entry if there were changes
   if (Object.keys(changes).length > 0) {
     await task.addHistoryEntry({
       action: "updated",

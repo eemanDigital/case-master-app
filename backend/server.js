@@ -450,6 +450,20 @@ const connectWithRetry = async (retries = 5, delay = 5000) => {
 // Connect to database
 connectWithRetry();
 
+// Start reminder service after database connection
+mongoose.connection.once("open", () => {
+  console.log("✅ Database connected, starting services...");
+  
+  // Start the reminder service (checks every minute)
+  try {
+    const reminderService = require("./services/reminderService");
+    reminderService.start(60000); // Check every 60 seconds
+    console.log("✅ Reminder service started");
+  } catch (error) {
+    console.error("❌ Failed to start reminder service:", error.message);
+  }
+});
+
 // Server startup
 const PORT = process.env.PORT || 5000;
 

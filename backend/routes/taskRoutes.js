@@ -69,4 +69,24 @@ router
   .route("/:taskId/assignees/:userId")
   .delete(taskController.removeAssignee);
 
+// ============================================================
+// Reminder Management
+// ============================================================
+router.route("/:taskId/reminders").get(taskController.getReminders);
+router.route("/:taskId/reminders").post(taskController.createReminder);
+router.route("/:taskId/reminders/:reminderId").delete(taskController.deleteReminder);
+
+// ============================================================
+// Task Dependencies
+// ============================================================
+router.route("/:taskId/dependencies").get(taskController.getDependencies);
+router.route("/:taskId/dependencies").post(taskController.addDependency);
+router.route("/:taskId/dependencies/:dependencyId").delete(taskController.removeDependency);
+router.route("/:taskId/available-dependencies").get(taskController.getAvailableDependencies);
+
+// ============================================================
+// Enhanced Task Update
+// ============================================================
+router.route("/:taskId/enhanced-update").patch(taskController.updateTaskEnhanced);
+
 module.exports = router;
