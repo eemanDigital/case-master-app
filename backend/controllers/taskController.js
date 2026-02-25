@@ -1154,16 +1154,31 @@ exports.reviewTask = catchAsync(async (req, res, next) => {
     (assignee) =>
       assignee.assignedBy && assignee.assignedBy.toString() === req.user.id
   );
+  const isAdmin = ["admin", "super-admin"].includes(req.user.role);
 
-  if (!isCreator && !isAssignedBy) {
+  if (!isCreator && !isAssignedBy && !isAdmin) {
     return next(
       new AppError("Only task creator/assigner can review tasks", 403)
     );
   }
 
-  // Check if task is in review status
-  if (task.status !== "under-review") {
-    return next(new AppError("Task is not currently under review", 400));
+  // Validate status transition
+  const validTransitions = {
+    "under-review": ["completed", "rejected"],
+    "in-progress": ["under-review", "pending"],
+    rejected: ["in-progress", "under-review"],
+  };
+
+  const allowedNextStatuses = validTransitions[task.status];
+  const targetStatus = approve ? "completed" : "rejected";
+
+  if (!allowedNextStatuses?.includes(targetStatus)) {
+    return next(
+      new AppError(
+        `Cannot ${approve ? "approve" : "reject"} task from ${task.status} status. Task must be under review.`,
+        400
+      )
+    );
   }
 
   // Update task based on review decision
@@ -1414,5 +1429,304 @@ exports.getTaskHistory = catchAsync(async (req, res, next) => {
     status: "success",
     results: history.length,
     data: history,
+  });
+});
+
+// ============================================================
+// REMINDER MANAGEMENT
+// ============================================================
+
+exports.createReminder = catchAsync(async (req, res, next) => {
+  const taskId = req.params.taskId;
+  const { message, scheduledFor } = req.body;
+
+  if (!message || !scheduledFor) {
+    return next(new AppError("Message and scheduledFor are required", 400));
+  }
+
+  const scheduledDate = new Date(scheduledFor);
+  if (scheduledDate <= new Date()) {
+    return next(new AppError("Scheduled time must be in the future", 400));
+  }
+
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  const isAssigned = task.isUserAssigned(req.user.id);
+  const isCreator = task.createdBy.toString() === req.user.id;
+  const isAdmin = ["admin", "super-admin"].includes(req.user.role);
+
+  if (!isAssigned && !isCreator && !isAdmin) {
+    return next(new AppError("Not authorized to create reminders for this task", 403));
+  }
+
+  const reminder = {
+    message: message.substring(0, 150),
+    scheduledFor: scheduledDate,
+    sender: req.user.id,
+    timestamp: new Date(),
+    isSent: false,
+  };
+
+  task.reminders.push(reminder);
+  await task.save();
+
+  const createdReminder = task.reminders[task.reminders.length - 1];
+  await task.populate("reminders.sender", "firstName lastName email");
+
+  res.status(201).json({
+    status: "success",
+    message: "Reminder created successfully",
+    data: {
+      _id: createdReminder._id,
+      message: createdReminder.message,
+      scheduledFor: createdReminder.scheduledFor,
+      isSent: createdReminder.isSent,
+      sender: task.reminders.find(r => r._id.toString() === createdReminder._id.toString())?.sender,
+    },
+  });
+});
+
+exports.getReminders = catchAsync(async (req, res, next) => {
+  const taskId = req.params.taskId;
+
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId })
+    .populate("reminders.sender", "firstName lastName email");
+
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    results: task.reminders.length,
+    data: task.reminders,
+  });
+});
+
+exports.deleteReminder = catchAsync(async (req, res, next) => {
+  const { taskId, reminderId } = req.params;
+
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  const reminder = task.reminders.id(reminderId);
+  if (!reminder) {
+    return next(new AppError("Reminder not found", 404));
+  }
+
+  const isSender = reminder.sender?.toString() === req.user.id;
+  const isAdmin = ["admin", "super-admin"].includes(req.user.role);
+
+  if (!isSender && !isAdmin) {
+    return next(new AppError("Not authorized to delete this reminder", 403));
+  }
+
+  if (reminder.isSent) {
+    return next(new AppError("Cannot delete a reminder that has already been sent", 400));
+  }
+
+  task.reminders.pull({ _id: reminderId });
+  await task.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Reminder deleted successfully",
+    data: null,
+  });
+});
+
+// ============================================================
+// TASK DEPENDENCY MANAGEMENT
+// ============================================================
+
+exports.getDependencies = catchAsync(async (req, res, next) => {
+  const taskId = req.params.taskId;
+
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId })
+    .populate("dependencies", "title status dueDate taskPriority category");
+
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    results: task.dependencies.length,
+    data: task.dependencies,
+  });
+});
+
+exports.addDependency = catchAsync(async (req, res, next) => {
+  const taskId = req.params.taskId;
+  const { dependentTaskId } = req.body;
+
+  if (!dependentTaskId) {
+    return next(new AppError("dependentTaskId is required", 400));
+  }
+
+  if (taskId === dependentTaskId) {
+    return next(new AppError("A task cannot depend on itself", 400));
+  }
+
+  const [task, dependentTask] = await Promise.all([
+    Task.findOne({ _id: taskId, firmId: req.firmId }),
+    Task.findOne({ _id: dependentTaskId, firmId: req.firmId }),
+  ]);
+
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  if (!dependentTask) {
+    return next(new AppError("Dependent task not found", 404));
+  }
+
+  const checkCircularDependency = async (taskId, targetId, visited = new Set()) => {
+    if (visited.has(targetId)) return false;
+    visited.add(targetId);
+
+    const targetTask = await Task.findById(targetId);
+    if (!targetTask) return false;
+
+    for (const depId of targetTask.dependencies || []) {
+      if (depId.toString() === taskId.toString()) return true;
+      if (await checkCircularDependency(taskId, depId, visited)) return true;
+    }
+    return false;
+  };
+
+  if (await checkCircularDependency(taskId, dependentTaskId)) {
+    return next(new AppError("Cannot add dependency: would create circular reference", 400));
+  }
+
+  if (task.dependencies.includes(dependentTaskId)) {
+    return next(new AppError("This dependency already exists", 400));
+  }
+
+  task.dependencies.push(dependentTaskId);
+  await task.save();
+
+  await task.populate("dependencies", "title status dueDate taskPriority category");
+
+  res.status(201).json({
+    status: "success",
+    message: "Dependency added successfully",
+    data: task.dependencies,
+  });
+});
+
+exports.removeDependency = catchAsync(async (req, res, next) => {
+  const { taskId, dependencyId } = req.params;
+
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  if (!task.dependencies.includes(dependencyId)) {
+    return next(new AppError("Dependency not found", 404));
+  }
+
+  task.dependencies.pull(dependencyId);
+  await task.save();
+
+  await task.populate("dependencies", "title status dueDate taskPriority category");
+
+  res.status(200).json({
+    status: "success",
+    message: "Dependency removed successfully",
+    data: task.dependencies,
+  });
+});
+
+exports.getAvailableDependencies = catchAsync(async (req, res, next) => {
+  const taskId = req.params.taskId;
+
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  const excludeIds = [taskId, ...(task.dependencies || [])];
+
+  const availableTasks = await Task.find({
+    firmId: req.firmId,
+    _id: { $nin: excludeIds },
+    status: { $nin: ["completed", "cancelled"] },
+    isDeleted: { $ne: true },
+  })
+    .select("title status dueDate taskPriority category matter")
+    .populate("matter", "matterNumber title")
+    .sort({ dueDate: 1 })
+    .limit(50);
+
+  res.status(200).json({
+    status: "success",
+    results: availableTasks.length,
+    data: availableTasks,
+  });
+});
+
+exports.updateTaskEnhanced = catchAsync(async (req, res, next) => {
+  const taskId = req.params.taskId;
+  const updates = req.body;
+
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  const changes = {};
+  const fieldsToTrack = [
+    "title", "description", "instruction", "dueDate", "startDate",
+    "taskPriority", "status", "category", "estimatedEffort", "matter",
+    "matterType", "litigationDetailId", "customCaseReference"
+  ];
+
+  for (const field of fieldsToTrack) {
+    if (updates[field] !== undefined && updates[field] !== task[field]) {
+      changes[field] = { from: task[field], to: updates[field] };
+    }
+  }
+
+  const allowedUpdates = [
+    "title", "description", "instruction", "dueDate", "startDate",
+    "taskPriority", "status", "category", "estimatedEffort", "matter",
+    "matterType", "litigationDetailId", "customCaseReference", "tags"
+  ];
+
+  for (const key of allowedUpdates) {
+    if (updates[key] !== undefined) {
+      task[key] = updates[key];
+    }
+  }
+
+  if (Object.keys(changes).length > 0) {
+    await task.addHistoryEntry({
+      action: "updated",
+      description: "Task details updated",
+      by: req.user.id,
+      changes,
+    });
+  }
+
+  await task.save();
+
+  const updatedTask = await Task.findOne({ _id: taskId, firmId: req.firmId })
+    .populate("createdBy", "firstName lastName email position")
+    .populate("assignees.user", "firstName lastName email position")
+    .populate("matter", "matterNumber title matterType status")
+    .populate("litigationDetailId", "suitNo courtName courtNo")
+    .populate("referenceDocuments");
+
+  res.status(200).json({
+    status: "success",
+    message: "Task updated successfully",
+    data: updatedTask,
   });
 });
