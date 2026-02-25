@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   Modal,
@@ -29,90 +29,87 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import apiService from "../services/api";
-import { selectUser } from "../redux/features/auth/authSlice";
+
+import {
+  fetchReminders,
+  createReminder,
+  deleteReminder,
+  selectReminders,
+  selectTaskActionLoading,
+} from "../../redux/features/task/taskSlice";
 
 dayjs.extend(relativeTime);
 
-const { Text, Title } = Typography;
-const { TextArea } = Input;
+const { Text } = Typography;
+const TextArea = Input.TextArea;
 
 const TaskReminders = ({ taskId, taskTitle, open, onClose, onSuccess }) => {
   const dispatch = useDispatch();
-  const user = useSelector(selectUser);
   const [form] = Form.useForm();
-  const [reminders, setReminders] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
 
+  // Driven entirely by Redux — no local state copies of reminders
+  const reminders = useSelector(selectReminders);
+  const actionLoading = useSelector(selectTaskActionLoading);
+
+  // Fetch reminders when modal opens
   useEffect(() => {
     if (open && taskId) {
-      fetchReminders();
+      dispatch(fetchReminders(taskId));
     }
-  }, [open, taskId]);
+  }, [open, taskId, dispatch]);
 
-  const fetchReminders = async () => {
-    setLoading(true);
-    try {
-      const response = await apiService.get(`/tasks/${taskId}`);
-      if (response.data?.reminders) {
-        setReminders(response.data.reminders);
-      }
-    } catch (error) {
-      console.error("Failed to fetch reminders:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddReminder = async (values) => {
-    setSubmitting(true);
-    try {
-      const reminderData = {
-        message: values.message,
-        scheduledFor: values.scheduledFor.toISOString(),
-      };
-
-      await apiService.post(`/tasks/${taskId}/reminders`, reminderData);
-      message.success("Reminder added successfully");
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!open) {
       form.resetFields();
-      fetchReminders();
-      onSuccess?.();
-    } catch (error) {
-      message.error(error.response?.data?.message || "Failed to add reminder");
-    } finally {
-      setSubmitting(false);
     }
-  };
+  }, [open, form]);
 
-  const handleDeleteReminder = async (reminderId) => {
-    try {
-      await apiService.delete(`/tasks/${taskId}/reminders/${reminderId}`);
-      message.success("Reminder deleted");
-      setReminders(reminders.filter((r) => r._id !== reminderId));
-    } catch (error) {
-      message.error("Failed to delete reminder");
-    }
-  };
+  const handleAddReminder = useCallback(
+    async (values) => {
+      try {
+        await dispatch(
+          createReminder({
+            taskId,
+            data: {
+              message: values.message,
+              scheduledFor: values.scheduledFor.toISOString(),
+            },
+          }),
+        ).unwrap();
 
-  const handleMarkAsSent = async (reminderId) => {
-    try {
-      await apiService.patch(`/tasks/${taskId}/reminders/${reminderId}`, {
-        isSent: true,
-        sentAt: new Date(),
-      });
-      fetchReminders();
-    } catch (error) {
-      message.error("Failed to update reminder");
-    }
-  };
+        message.success("Reminder added successfully");
+        form.resetFields();
+        onSuccess?.();
+        // taskSlice.createReminder.fulfilled already pushes to Redux state
+      } catch (error) {
+        message.error(error?.message || "Failed to add reminder");
+      }
+    },
+    [dispatch, taskId, form, onSuccess],
+  );
+
+  const handleDeleteReminder = useCallback(
+    async (reminderId) => {
+      try {
+        await dispatch(deleteReminder({ taskId, reminderId })).unwrap();
+        message.success("Reminder deleted");
+        // taskSlice.deleteReminder.fulfilled already filters Redux state
+      } catch (error) {
+        message.error("Failed to delete reminder");
+      }
+    },
+    [dispatch, taskId],
+  );
 
   const upcomingReminders = reminders
     .filter((r) => !r.isSent && dayjs(r.scheduledFor).isAfter(dayjs()))
+    .slice()
     .sort((a, b) => new Date(a.scheduledFor) - new Date(b.scheduledFor));
 
   const pastReminders = reminders
     .filter((r) => r.isSent || dayjs(r.scheduledFor).isBefore(dayjs()))
+    .slice()
     .sort((a, b) => new Date(b.scheduledFor) - new Date(a.scheduledFor));
 
   return (
@@ -120,7 +117,7 @@ const TaskReminders = ({ taskId, taskTitle, open, onClose, onSuccess }) => {
       title={
         <Space>
           <BellOutlined className="text-blue-500" />
-          <span>Task Reminders</span>
+          <span>Task Reminders{taskTitle ? ` — ${taskTitle}` : ""}</span>
         </Space>
       }
       open={open}
@@ -143,7 +140,10 @@ const TaskReminders = ({ taskId, taskTitle, open, onClose, onSuccess }) => {
                 label="Reminder Message"
                 rules={[
                   { required: true, message: "Please enter reminder message" },
-                  { max: 150, message: "Message cannot exceed 150 characters" },
+                  {
+                    max: 150,
+                    message: "Message cannot exceed 150 characters",
+                  },
                 ]}>
                 <TextArea
                   rows={2}
@@ -176,7 +176,7 @@ const TaskReminders = ({ taskId, taskTitle, open, onClose, onSuccess }) => {
                 <Button
                   type="primary"
                   htmlType="submit"
-                  loading={submitting}
+                  loading={actionLoading}
                   icon={<PlusOutlined />}
                   className="w-full">
                   Add Reminder
@@ -189,9 +189,7 @@ const TaskReminders = ({ taskId, taskTitle, open, onClose, onSuccess }) => {
 
       {/* Reminders List */}
       <div className="max-h-[400px] overflow-y-auto">
-        {loading ? (
-          <div className="text-center py-8">Loading...</div>
-        ) : reminders.length === 0 ? (
+        {reminders.length === 0 ? (
           <Empty
             image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={
@@ -250,9 +248,7 @@ const TaskReminders = ({ taskId, taskTitle, open, onClose, onSuccess }) => {
                           />
                         }
                         title={
-                          <div className="flex items-center gap-2">
-                            <Text className="text-sm">{reminder.message}</Text>
-                          </div>
+                          <Text className="text-sm">{reminder.message}</Text>
                         }
                         description={
                           <div className="flex items-center gap-2 text-xs">
@@ -274,7 +270,7 @@ const TaskReminders = ({ taskId, taskTitle, open, onClose, onSuccess }) => {
               </div>
             )}
 
-            {/* Past/Sent Reminders */}
+            {/* Past / Sent Reminders */}
             {pastReminders.length > 0 && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
@@ -301,11 +297,9 @@ const TaskReminders = ({ taskId, taskTitle, open, onClose, onSuccess }) => {
                           />
                         }
                         title={
-                          <div className="flex items-center gap-2">
-                            <Text className="text-sm text-gray-500 strikethrough">
-                              {reminder.message}
-                            </Text>
-                          </div>
+                          <Text delete className="text-sm text-gray-500">
+                            {reminder.message}
+                          </Text>
                         }
                         description={
                           <div className="flex items-center gap-2 text-xs text-gray-400">

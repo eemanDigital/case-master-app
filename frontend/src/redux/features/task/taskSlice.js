@@ -3,7 +3,11 @@ import {
   createAsyncThunk,
   createEntityAdapter,
 } from "@reduxjs/toolkit";
+import * as taskApi from "./taskService";
 
+// ============================================================
+// Entity Adapter
+// ============================================================
 const taskAdapter = createEntityAdapter({
   selectId: (task) => task._id,
   sortComparer: (a, b) => new Date(b.dateCreated) - new Date(a.dateCreated),
@@ -42,18 +46,27 @@ const initialState = taskAdapter.getInitialState({
   error: null,
 });
 
+// ============================================================
+// Helper — unwrap apiService response uniformly
+// Handles both { data } envelopes and raw objects
+// ============================================================
+const unwrap = (res) => res?.data ?? res;
+
+// ============================================================
+// Core Task Thunks
+// ============================================================
 export const fetchTasks = createAsyncThunk(
   "task/fetchTasks",
   async (params, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        `/api/tasks${params ? `?${new URLSearchParams(params)}` : ""}`,
-      );
-      const data = await response.json();
-      if (!response.ok) throw data;
-      return data;
+      const res = await taskApi.getAllTasks(params);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to fetch tasks");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to fetch tasks",
+      );
     }
   },
 );
@@ -62,12 +75,14 @@ export const fetchTask = createAsyncThunk(
   "task/fetchTask",
   async (taskId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}`);
-      const data = await response.json();
-      if (!response.ok) throw data;
-      return data;
+      const res = await taskApi.getTask(taskId);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to fetch task");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to fetch task",
+      );
     }
   },
 );
@@ -76,16 +91,14 @@ export const createTask = createAsyncThunk(
   "task/createTask",
   async (data, { rejectWithValue }) => {
     try {
-      const response = await fetch("/api/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.createTask(data);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to create task");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to create task",
+      );
     }
   },
 );
@@ -94,16 +107,14 @@ export const updateTask = createAsyncThunk(
   "task/updateTask",
   async ({ taskId, data }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.updateTask(taskId, data);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to update task");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to update task",
+      );
     }
   },
 );
@@ -112,30 +123,33 @@ export const deleteTask = createAsyncThunk(
   "task/deleteTask",
   async (taskId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: "DELETE",
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return { taskId, ...result };
+      const res = await taskApi.deleteTask(taskId);
+      return { taskId, ...unwrap(res) };
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to delete task");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to delete task",
+      );
     }
   },
 );
 
+// ============================================================
+// Filtered Task List Thunks
+// ============================================================
 export const fetchMyTasks = createAsyncThunk(
   "task/fetchMyTasks",
   async (params, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        `/api/tasks/my-tasks${params ? `?${new URLSearchParams(params)}` : ""}`,
-      );
-      const data = await response.json();
-      if (!response.ok) throw data;
-      return data;
+      const res = await taskApi.getMyTasks(params);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to fetch my tasks");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to fetch my tasks",
+      );
     }
   },
 );
@@ -144,14 +158,14 @@ export const fetchOverdueTasks = createAsyncThunk(
   "task/fetchOverdueTasks",
   async (params, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        `/api/tasks/overdue${params ? `?${new URLSearchParams(params)}` : ""}`,
-      );
-      const data = await response.json();
-      if (!response.ok) throw data;
-      return data;
+      const res = await taskApi.getOverdueTasks(params);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to fetch overdue tasks");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to fetch overdue tasks",
+      );
     }
   },
 );
@@ -160,34 +174,33 @@ export const fetchPendingReviewTasks = createAsyncThunk(
   "task/fetchPendingReviewTasks",
   async (params, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        `/api/tasks/pending-review${params ? `?${new URLSearchParams(params)}` : ""}`,
-      );
-      const data = await response.json();
-      if (!response.ok) throw data;
-      return data;
+      const res = await taskApi.getTasksPendingReview(params);
+      return unwrap(res);
     } catch (error) {
       return rejectWithValue(
-        error.message || "Failed to fetch pending review tasks",
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to fetch pending review tasks",
       );
     }
   },
 );
 
+// ============================================================
+// Assignee Thunks
+// ============================================================
 export const addTaskAssignee = createAsyncThunk(
   "task/addAssignee",
   async ({ taskId, data }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/assignees`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.addAssignee(taskId, data);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to add assignee");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to add assignee",
+      );
     }
   },
 );
@@ -196,32 +209,33 @@ export const removeTaskAssignee = createAsyncThunk(
   "task/removeAssignee",
   async ({ taskId, userId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/assignees/${userId}`, {
-        method: "DELETE",
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return { taskId, userId, ...result };
+      const res = await taskApi.removeAssignee(taskId, userId);
+      return { taskId, userId, ...unwrap(res) };
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to remove assignee");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to remove assignee",
+      );
     }
   },
 );
 
+// ============================================================
+// Task Response Thunks
+// ============================================================
 export const submitTaskResponse = createAsyncThunk(
   "task/submitResponse",
   async ({ taskId, data }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/responses`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.submitTaskResponse(taskId, data);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to submit response");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to submit response",
+      );
     }
   },
 );
@@ -230,17 +244,14 @@ export const deleteTaskResponse = createAsyncThunk(
   "task/deleteResponse",
   async ({ taskId, responseId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        `/api/tasks/${taskId}/responses/${responseId}`,
-        {
-          method: "DELETE",
-        },
-      );
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return { taskId, responseId, ...result };
+      const res = await taskApi.deleteTaskResponse(taskId, responseId);
+      return { taskId, responseId, ...unwrap(res) };
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to delete response");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to delete response",
+      );
     }
   },
 );
@@ -249,37 +260,33 @@ export const reviewTaskResponse = createAsyncThunk(
   "task/reviewResponse",
   async ({ taskId, responseIndex, data }, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        `/api/tasks/${taskId}/responses/${responseIndex}/review`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
-        },
-      );
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.reviewTaskResponse(taskId, responseIndex, data);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to review response");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to review response",
+      );
     }
   },
 );
 
+// ============================================================
+// Review Workflow Thunks
+// ============================================================
 export const submitForReview = createAsyncThunk(
   "task/submitForReview",
   async ({ taskId, data }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/submit-review`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.submitTaskForReview(taskId, data);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to submit for review");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to submit for review",
+      );
     }
   },
 );
@@ -288,16 +295,14 @@ export const reviewTaskComplete = createAsyncThunk(
   "task/reviewComplete",
   async ({ taskId, data }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/review`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.reviewTask(taskId, data);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to review task");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to review task",
+      );
     }
   },
 );
@@ -306,30 +311,33 @@ export const forceCompleteTask = createAsyncThunk(
   "task/forceComplete",
   async ({ taskId, data }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/force-complete`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.forceCompleteTask(taskId, data);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to force complete task");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to force complete task",
+      );
     }
   },
 );
 
+// ============================================================
+// Document Thunks
+// ============================================================
 export const fetchTaskDocuments = createAsyncThunk(
   "task/fetchDocuments",
   async (taskId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/documents`);
-      const data = await response.json();
-      if (!response.ok) throw data;
-      return data;
+      const res = await taskApi.getTaskDocuments(taskId);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to fetch documents");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to fetch documents",
+      );
     }
   },
 );
@@ -338,15 +346,14 @@ export const uploadTaskReferenceDocs = createAsyncThunk(
   "task/uploadReferenceDocs",
   async ({ taskId, formData }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/reference-documents`, {
-        method: "POST",
-        body: formData,
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.uploadReferenceDocuments(taskId, formData);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to upload documents");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to upload reference documents",
+      );
     }
   },
 );
@@ -355,29 +362,33 @@ export const uploadTaskResponseDocs = createAsyncThunk(
   "task/uploadResponseDocs",
   async ({ taskId, formData }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/response-documents`, {
-        method: "POST",
-        body: formData,
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.uploadResponseDocuments(taskId, formData);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to upload documents");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to upload response documents",
+      );
     }
   },
 );
 
+// ============================================================
+// History & Access Thunks
+// ============================================================
 export const fetchTaskHistory = createAsyncThunk(
   "task/fetchHistory",
   async (taskId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/history`);
-      const data = await response.json();
-      if (!response.ok) throw data;
-      return data;
+      const res = await taskApi.getTaskHistory(taskId);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to fetch task history");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to fetch task history",
+      );
     }
   },
 );
@@ -386,27 +397,34 @@ export const checkTaskAccess = createAsyncThunk(
   "task/checkAccess",
   async (taskId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/access`);
-      const data = await response.json();
-      if (!response.ok) throw data;
-      return data;
+      const res = await taskApi.checkTaskAccess(taskId);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to check access");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to check task access",
+      );
     }
   },
 );
 
+// ============================================================
 // Reminder Thunks
+// ============================================================
 export const fetchReminders = createAsyncThunk(
   "task/fetchReminders",
   async (taskId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/reminders`);
-      const data = await response.json();
-      if (!response.ok) throw data;
-      return { taskId, reminders: data.data };
+      const res = await taskApi.getReminders(taskId);
+      const data = unwrap(res);
+      return { taskId, reminders: data.data ?? data };
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to fetch reminders");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to fetch reminders",
+      );
     }
   },
 );
@@ -415,16 +433,14 @@ export const createReminder = createAsyncThunk(
   "task/createReminder",
   async ({ taskId, data }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/reminders`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.createReminder(taskId, data);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to create reminder");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to create reminder",
+      );
     }
   },
 );
@@ -433,32 +449,34 @@ export const deleteReminder = createAsyncThunk(
   "task/deleteReminder",
   async ({ taskId, reminderId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        `/api/tasks/${taskId}/reminders/${reminderId}`,
-        {
-          method: "DELETE",
-        },
-      );
-      const result = await response.json();
-      if (!response.ok) throw result;
+      await taskApi.deleteReminder(taskId, reminderId);
       return { taskId, reminderId };
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to delete reminder");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to delete reminder",
+      );
     }
   },
 );
 
+// ============================================================
 // Dependency Thunks
+// ============================================================
 export const fetchDependencies = createAsyncThunk(
   "task/fetchDependencies",
   async (taskId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/dependencies`);
-      const data = await response.json();
-      if (!response.ok) throw data;
-      return { taskId, dependencies: data.data };
+      const res = await taskApi.getDependencies(taskId);
+      const data = unwrap(res);
+      return { taskId, dependencies: data.data ?? data };
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to fetch dependencies");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to fetch dependencies",
+      );
     }
   },
 );
@@ -467,16 +485,14 @@ export const addDependency = createAsyncThunk(
   "task/addDependency",
   async ({ taskId, dependentTaskId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/dependencies`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dependentTaskId }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.addDependency(taskId, dependentTaskId);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to add dependency");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to add dependency",
+      );
     }
   },
 );
@@ -485,17 +501,14 @@ export const removeDependency = createAsyncThunk(
   "task/removeDependency",
   async ({ taskId, dependencyId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        `/api/tasks/${taskId}/dependencies/${dependencyId}`,
-        {
-          method: "DELETE",
-        },
-      );
-      const result = await response.json();
-      if (!response.ok) throw result;
+      await taskApi.removeDependency(taskId, dependencyId);
       return { taskId, dependencyId };
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to remove dependency");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to remove dependency",
+      );
     }
   },
 );
@@ -504,38 +517,40 @@ export const fetchAvailableDependencies = createAsyncThunk(
   "task/fetchAvailableDependencies",
   async (taskId, { rejectWithValue }) => {
     try {
-      const response = await fetch(
-        `/api/tasks/${taskId}/available-dependencies`,
-      );
-      const data = await response.json();
-      if (!response.ok) throw data;
-      return data;
+      const res = await taskApi.getAvailableDependencies(taskId);
+      return unwrap(res);
     } catch (error) {
       return rejectWithValue(
-        error.message || "Failed to fetch available dependencies",
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to fetch available dependencies",
       );
     }
   },
 );
 
+// ============================================================
+// Enhanced Update Thunk
+// ============================================================
 export const updateTaskEnhanced = createAsyncThunk(
   "task/updateTaskEnhanced",
   async ({ taskId, data }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/enhanced-update`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const result = await response.json();
-      if (!response.ok) throw result;
-      return result;
+      const res = await taskApi.updateTaskEnhanced(taskId, data);
+      return unwrap(res);
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to update task");
+      return rejectWithValue(
+        error?.response?.data?.message ||
+          error.message ||
+          "Failed to update task",
+      );
     }
   },
 );
 
+// ============================================================
+// Slice
+// ============================================================
 const taskSlice = createSlice({
   name: "task",
   initialState,
@@ -559,6 +574,7 @@ const taskSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // ── fetchTasks ──────────────────────────────────────────
       .addCase(fetchTasks.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -578,6 +594,7 @@ const taskSlice = createSlice({
         state.error = action.payload;
       })
 
+      // ── fetchTask ───────────────────────────────────────────
       .addCase(fetchTask.pending, (state) => {
         state.selectedTaskLoading = true;
         state.error = null;
@@ -592,6 +609,7 @@ const taskSlice = createSlice({
         state.error = action.payload;
       })
 
+      // ── createTask ──────────────────────────────────────────
       .addCase(createTask.pending, (state) => {
         state.actionLoading = true;
       })
@@ -605,6 +623,7 @@ const taskSlice = createSlice({
         state.error = action.payload;
       })
 
+      // ── updateTask ──────────────────────────────────────────
       .addCase(updateTask.pending, (state) => {
         state.actionLoading = true;
       })
@@ -620,11 +639,13 @@ const taskSlice = createSlice({
         state.error = action.payload;
       })
 
+      // ── deleteTask ──────────────────────────────────────────
       .addCase(deleteTask.fulfilled, (state, action) => {
         taskAdapter.removeOne(state, action.payload.taskId);
         state.pagination.total = Math.max(0, state.pagination.total - 1);
       })
 
+      // ── fetchMyTasks ────────────────────────────────────────
       .addCase(fetchMyTasks.pending, (state) => {
         state.loading = true;
       })
@@ -637,10 +658,12 @@ const taskSlice = createSlice({
         state.error = action.payload;
       })
 
+      // ── fetchOverdueTasks ───────────────────────────────────
       .addCase(fetchOverdueTasks.fulfilled, (state, action) => {
         state.overdueTasks = action.payload.data || [];
       })
 
+      // ── fetchPendingReviewTasks ─────────────────────────────
       .addCase(fetchPendingReviewTasks.pending, (state) => {
         state.loading = true;
       })
@@ -654,13 +677,13 @@ const taskSlice = createSlice({
         state.error = action.payload;
       })
 
+      // ── assignees ───────────────────────────────────────────
       .addCase(addTaskAssignee.fulfilled, (state, action) => {
         taskAdapter.updateOne(state, {
           id: action.payload.data._id,
           changes: action.payload.data,
         });
       })
-
       .addCase(removeTaskAssignee.fulfilled, (state, action) => {
         taskAdapter.updateOne(state, {
           id: action.payload.data._id,
@@ -668,6 +691,7 @@ const taskSlice = createSlice({
         });
       })
 
+      // ── task responses ──────────────────────────────────────
       .addCase(submitTaskResponse.pending, (state) => {
         state.actionLoading = true;
       })
@@ -683,6 +707,7 @@ const taskSlice = createSlice({
         state.error = action.payload;
       })
 
+      // ── review workflow ─────────────────────────────────────
       .addCase(submitForReview.pending, (state) => {
         state.actionLoading = true;
       })
@@ -726,15 +751,15 @@ const taskSlice = createSlice({
         );
       })
 
+      // ── history & access ────────────────────────────────────
       .addCase(fetchTaskHistory.fulfilled, (state, action) => {
         state.taskHistory = action.payload.data || [];
       })
-
       .addCase(checkTaskAccess.fulfilled, (state, action) => {
         state.taskAccess = action.payload.data;
       })
 
-      // Reminder reducers
+      // ── reminders ───────────────────────────────────────────
       .addCase(fetchReminders.fulfilled, (state, action) => {
         state.reminders = action.payload.reminders || [];
       })
@@ -757,7 +782,7 @@ const taskSlice = createSlice({
         );
       })
 
-      // Dependency reducers
+      // ── dependencies ────────────────────────────────────────
       .addCase(fetchDependencies.fulfilled, (state, action) => {
         state.dependencies = action.payload.dependencies || [];
       })
@@ -783,7 +808,7 @@ const taskSlice = createSlice({
         state.availableDependencies = action.payload.data || [];
       })
 
-      // Enhanced update
+      // ── enhanced update ─────────────────────────────────────
       .addCase(updateTaskEnhanced.pending, (state) => {
         state.actionLoading = true;
       })
@@ -801,6 +826,9 @@ const taskSlice = createSlice({
   },
 });
 
+// ============================================================
+// Actions
+// ============================================================
 export const {
   setTaskFilters,
   clearTaskFilters,
@@ -810,6 +838,9 @@ export const {
   updateTaskOptimistic,
 } = taskSlice.actions;
 
+// ============================================================
+// Selectors
+// ============================================================
 export const {
   selectAll: selectAllTasks,
   selectById: selectTaskById,

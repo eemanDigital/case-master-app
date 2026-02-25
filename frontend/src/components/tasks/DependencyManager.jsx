@@ -6,6 +6,7 @@ import {
   Form,
   Select,
   List,
+  Alert,
   Tag,
   Space,
   Popconfirm,
@@ -31,7 +32,7 @@ import {
   selectDependencies,
   selectAvailableDependencies,
   selectTaskActionLoading,
-} from "../redux/features/task/taskSlice";
+} from "../../redux/features/task/taskSlice";
 import { formatDate } from "../../utils/formatDate";
 
 const { Text } = Typography;
@@ -46,7 +47,11 @@ const getStatusTag = (status) => {
     cancelled: { color: "default", icon: <DeleteOutlined /> },
   };
   const c = config[status] || config.pending;
-  return <Tag color={c.color} icon={c.icon}>{status?.toUpperCase()}</Tag>;
+  return (
+    <Tag color={c.color} icon={c.icon}>
+      {status?.toUpperCase()}
+    </Tag>
+  );
 };
 
 const getPriorityTag = (priority) => {
@@ -56,7 +61,9 @@ const getPriorityTag = (priority) => {
     medium: "blue",
     low: "green",
   };
-  return <Tag color={colors[priority] || "default"}>{priority?.toUpperCase()}</Tag>;
+  return (
+    <Tag color={colors[priority] || "default"}>{priority?.toUpperCase()}</Tag>
+  );
 };
 
 const DependencyManager = ({ taskId, onSuccess }) => {
@@ -87,7 +94,7 @@ const DependencyManager = ({ taskId, onSuccess }) => {
           addDependency({
             taskId,
             dependentTaskId: values.dependentTask,
-          })
+          }),
         ).unwrap();
 
         message.success("Dependency added successfully");
@@ -101,15 +108,13 @@ const DependencyManager = ({ taskId, onSuccess }) => {
         setLoading(false);
       }
     },
-    [dispatch, taskId, fetchDependencyData, onSuccess]
+    [dispatch, taskId, fetchDependencyData, onSuccess],
   );
 
   const handleRemoveDependency = useCallback(
     async (dependencyId) => {
       try {
-        await dispatch(
-          removeDependency({ taskId, dependencyId })
-        ).unwrap();
+        await dispatch(removeDependency({ taskId, dependencyId })).unwrap();
 
         message.success("Dependency removed successfully");
         fetchDependencyData();
@@ -117,7 +122,7 @@ const DependencyManager = ({ taskId, onSuccess }) => {
         message.error(error?.message || "Failed to remove dependency");
       }
     },
-    [dispatch, taskId, fetchDependencyData]
+    [dispatch, taskId, fetchDependencyData],
   );
 
   const [form] = Form.useForm();
@@ -129,7 +134,10 @@ const DependencyManager = ({ taskId, onSuccess }) => {
           <LinkOutlined />
           <Text strong>Task Dependencies</Text>
           {dependencies.length > 0 && (
-            <Badge count={dependencies.length} style={{ backgroundColor: "#1890ff" }} />
+            <Badge
+              count={dependencies.length}
+              style={{ backgroundColor: "#1890ff" }}
+            />
           )}
         </Space>
         <Button
@@ -202,16 +210,11 @@ const DependencyManager = ({ taskId, onSuccess }) => {
         footer={null}
         destroyOnClose
         width={500}>
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleAddDependency}>
+        <Form form={form} layout="vertical" onFinish={handleAddDependency}>
           <Form.Item
             name="dependentTask"
             label="Select Task to Link"
-            rules={[
-              { required: true, message: "Please select a task" },
-            ]}>
+            rules={[{ required: true, message: "Please select a task" }]}>
             <Select
               showSearch
               placeholder="Search tasks..."

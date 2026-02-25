@@ -4,7 +4,6 @@ import {
   Button,
   Modal,
   Form,
-  Input,
   DatePicker,
   List,
   Tag,
@@ -14,6 +13,7 @@ import {
   Empty,
   Alert,
   Typography,
+  Input,
 } from "antd";
 import {
   BellOutlined,
@@ -21,7 +21,6 @@ import {
   DeleteOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
-  ExclamationCircleOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -31,34 +30,33 @@ import {
   deleteReminder,
   selectReminders,
   selectTaskActionLoading,
-} from "../redux/features/task/taskSlice";
+} from "../../redux/features/task/taskSlice";
 import { formatDate } from "../../utils/formatDate";
 
-const { Text, TextArea } = Typography;
+const { Text } = Typography;
+const TextArea = Input.TextArea;
 
 const ReminderManager = ({ taskId, onSuccess }) => {
   const dispatch = useDispatch();
   const [form] = Form.useForm();
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [localLoading, setLocalLoading] = useState(false);
 
+  // Redux state — no local copy needed; Redux slice handles optimistic updates
   const reminders = useSelector(selectReminders);
   const actionLoading = useSelector(selectTaskActionLoading);
 
-  const fetchReminderData = useCallback(() => {
+  // Only fetch on mount — Redux state kept in sync by thunk reducers
+  React.useEffect(() => {
     if (taskId) {
       dispatch(fetchReminders(taskId));
     }
   }, [dispatch, taskId]);
 
-  React.useEffect(() => {
-    fetchReminderData();
-  }, [fetchReminderData]);
-
   const handleCreateReminder = useCallback(
     async (values) => {
+      setLocalLoading(true);
       try {
-        setLoading(true);
         await dispatch(
           createReminder({
             taskId,
@@ -66,44 +64,46 @@ const ReminderManager = ({ taskId, onSuccess }) => {
               message: values.message,
               scheduledFor: values.scheduledFor.toISOString(),
             },
-          })
+          }),
         ).unwrap();
 
         message.success("Reminder created successfully");
         form.resetFields();
         setOpen(false);
-        fetchReminderData();
         onSuccess?.();
+        // No manual re-fetch: taskSlice.createReminder.fulfilled pushes to state.reminders
       } catch (error) {
         message.error(error?.message || "Failed to create reminder");
       } finally {
-        setLoading(false);
+        setLocalLoading(false);
       }
     },
-    [dispatch, taskId, form, fetchReminderData, onSuccess]
+    [dispatch, taskId, form, onSuccess],
   );
 
   const handleDeleteReminder = useCallback(
     async (reminderId) => {
       try {
-        await dispatch(
-          deleteReminder({ taskId, reminderId })
-        ).unwrap();
-
+        await dispatch(deleteReminder({ taskId, reminderId })).unwrap();
         message.success("Reminder deleted successfully");
-        fetchReminderData();
+        // No manual re-fetch: taskSlice.deleteReminder.fulfilled filters state.reminders
       } catch (error) {
         message.error(error?.message || "Failed to delete reminder");
       }
     },
-    [dispatch, taskId, fetchReminderData]
+    [dispatch, taskId],
   );
 
-  const pendingReminders = reminders.filter((r) => !r.isSent);
-  const sentReminders = reminders.filter((r) => r.isSent);
+  const pendingReminders = reminders.filter(
+    (r) => !r.isSent && dayjs(r.scheduledFor).isAfter(dayjs()),
+  );
+  const sentReminders = reminders.filter(
+    (r) => r.isSent || dayjs(r.scheduledFor).isBefore(dayjs()),
+  );
 
   return (
     <div>
+      {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <Space>
           <BellOutlined />
@@ -121,6 +121,7 @@ const ReminderManager = ({ taskId, onSuccess }) => {
         </Button>
       </div>
 
+      {/* Reminder List */}
       {reminders.length === 0 ? (
         <Empty
           image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -128,6 +129,7 @@ const ReminderManager = ({ taskId, onSuccess }) => {
         />
       ) : (
         <div className="space-y-3">
+          {/* Pending */}
           {pendingReminders.length > 0 && (
             <div>
               <Text type="secondary" className="text-xs uppercase">
@@ -143,7 +145,9 @@ const ReminderManager = ({ taskId, onSuccess }) => {
                       <Popconfirm
                         key="delete"
                         title="Delete this reminder?"
-                        onConfirm={() => handleDeleteReminder(reminder._id)}>
+                        onConfirm={() => handleDeleteReminder(reminder._id)}
+                        okText="Yes"
+                        cancelText="No">
                         <Button
                           type="text"
                           danger
@@ -153,12 +157,10 @@ const ReminderManager = ({ taskId, onSuccess }) => {
                       </Popconfirm>,
                     ]}>
                     <List.Item.Meta
-                      avatar={<ClockCircleOutlined className="text-yellow-600" />}
-                      title={
-                        <Space>
-                          <Text>{reminder.message}</Text>
-                        </Space>
+                      avatar={
+                        <ClockCircleOutlined className="text-yellow-600" />
                       }
+                      title={<Text>{reminder.message}</Text>}
                       description={
                         <Space direction="vertical" size={0}>
                           <Text type="secondary" className="text-xs">
@@ -177,6 +179,7 @@ const ReminderManager = ({ taskId, onSuccess }) => {
             </div>
           )}
 
+          {/* Sent / Past */}
           {sentReminders.length > 0 && (
             <div>
               <Text type="secondary" className="text-xs uppercase">
@@ -188,12 +191,20 @@ const ReminderManager = ({ taskId, onSuccess }) => {
                 renderItem={(reminder) => (
                   <List.Item className="bg-green-50 rounded px-3 py-2">
                     <List.Item.Meta
-                      avatar={<CheckCircleOutlined className="text-green-600" />}
-                      title={<Text>{reminder.message}</Text>}
+                      avatar={
+                        <CheckCircleOutlined className="text-green-600" />
+                      }
+                      title={
+                        <Text delete className="text-gray-400">
+                          {reminder.message}
+                        </Text>
+                      }
                       description={
                         <Space direction="vertical" size={0}>
                           <Text type="secondary" className="text-xs">
-                            Sent: {formatDate(reminder.sentAt)}
+                            {reminder.isSent
+                              ? `Sent: ${formatDate(reminder.sentAt)}`
+                              : `Scheduled: ${formatDate(reminder.scheduledFor)}`}
                           </Text>
                           <Text type="secondary" className="text-xs">
                             By: {reminder.sender?.firstName}{" "}
@@ -210,6 +221,7 @@ const ReminderManager = ({ taskId, onSuccess }) => {
         </div>
       )}
 
+      {/* Create Reminder Modal */}
       <Modal
         title="Add Reminder"
         open={open}
@@ -252,8 +264,9 @@ const ReminderManager = ({ taskId, onSuccess }) => {
               format="YYYY-MM-DD HH:mm"
               className="w-full"
               disabledDate={(current) =>
-                current && current < dayjs().startOf("minute")
+                current && current < dayjs().startOf("day")
               }
+              placeholder="Select date and time"
             />
           </Form.Item>
 
@@ -266,7 +279,10 @@ const ReminderManager = ({ taskId, onSuccess }) => {
 
           <div className="flex justify-end gap-3">
             <Button onClick={() => setOpen(false)}>Cancel</Button>
-            <Button type="primary" htmlType="submit" loading={loading}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={localLoading || actionLoading}>
               Create Reminder
             </Button>
           </div>

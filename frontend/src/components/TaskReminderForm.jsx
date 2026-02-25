@@ -1,83 +1,82 @@
 import PropTypes from "prop-types";
 import { useState, useCallback } from "react";
-import { useDataFetch } from "../hooks/useDataFetch";
+import { useDispatch, useSelector } from "react-redux";
 import { MdNotificationsNone } from "react-icons/md";
-import { Button, Input, Form, Modal, Card, Tooltip } from "antd";
+import { Button, Input, Form, Modal, Card, Tooltip, DatePicker } from "antd";
 import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import dayjs from "dayjs";
+import {
+  createReminder,
+  selectTaskActionLoading,
+} from "../redux/features/task/taskSlice";
 
 const { TextArea } = Input;
 
 const TaskReminderForm = ({ taskId }) => {
+  const dispatch = useDispatch();
+  const loading = useSelector(selectTaskActionLoading);
   const [open, setOpen] = useState(false);
-  const { dataFetcher, loading } = useDataFetch();
-
-  const showModal = () => {
-    setOpen(true);
-  };
-
-  const handleCancel = () => {
-    setOpen(false);
-  };
-
   const [form] = Form.useForm();
 
-  const handleSubmission = useCallback(
-    (result) => {
-      if (result?.error) {
-        toast.error("Failed to send the reminder! Please try again.");
-      } else {
-        toast.success("Reminder sent successfully!");
+  const handleCancel = useCallback(() => {
+    form.resetFields();
+    setOpen(false);
+  }, [form]);
+
+  const onSubmit = useCallback(
+    async (values) => {
+      try {
+        await dispatch(
+          createReminder({
+            taskId,
+            data: {
+              message: values.message,
+              scheduledFor: values.scheduledFor.toISOString(),
+            },
+          }),
+        ).unwrap();
+
+        toast.success("Reminder created successfully!");
         form.resetFields();
         setOpen(false);
+      } catch (error) {
+        toast.error(
+          error?.message || "Failed to create reminder. Please try again.",
+        );
       }
     },
-    [form]
+    [dispatch, form, taskId],
   );
-
-  const onSubmit = useCallback(async () => {
-    let values;
-    try {
-      values = await form.validateFields();
-    } catch (errorInfo) {
-      toast.error("Please correct the form errors before submitting.");
-      return;
-    }
-
-    // Updated to match backend route structure
-    const result = await dataFetcher(
-      `tasks/${taskId}/reminder`,
-      "POST",
-      values.reminder
-    );
-    handleSubmission(result);
-  }, [form, handleSubmission, dataFetcher, taskId]);
 
   return (
     <>
       <Tooltip title="Send Reminder">
         <Button
           icon={<MdNotificationsNone size={20} />}
-          onClick={showModal}
+          onClick={() => setOpen(true)}
           className="bg-blue-200 text-blue-600"
         />
       </Tooltip>
+
       <Modal
-        title="Send Reminder on Task"
+        title="Add Task Reminder"
         open={open}
         footer={null}
-        confirmLoading={loading}
-        onCancel={handleCancel}>
+        onCancel={handleCancel}
+        destroyOnClose>
         <section className="flex justify-center sm:justify-between gap-8">
           <Form
             layout="vertical"
             form={form}
             name="task_reminder_form"
             className="w-full max-w-lg"
-            onFinish={onSubmit}>
+            onFinish={onSubmit}
+            initialValues={{
+              scheduledFor: dayjs().add(1, "hour").startOf("hour"),
+            }}>
             <Card bordered={false} className="w-full">
               <Form.Item
-                name={["reminder", "message"]}
+                name="message"
                 label="Reminder Message"
                 rules={[
                   {
@@ -85,15 +84,35 @@ const TaskReminderForm = ({ taskId }) => {
                     message: "Please provide a reminder message!",
                   },
                   {
-                    max: 200,
-                    message: "Message should not exceed 200 characters",
+                    max: 150,
+                    message: "Message should not exceed 150 characters",
                   },
                 ]}>
                 <TextArea
-                  rows={5}
+                  rows={4}
                   placeholder="Enter your reminder message here..."
                   showCount
-                  maxLength={200}
+                  maxLength={150}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="scheduledFor"
+                label="Remind At"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please select a date and time for the reminder",
+                  },
+                ]}>
+                <DatePicker
+                  showTime={{ format: "HH:mm" }}
+                  format="YYYY-MM-DD HH:mm"
+                  className="w-full"
+                  disabledDate={(current) =>
+                    current && current < dayjs().startOf("day")
+                  }
+                  placeholder="Select date and time"
                 />
               </Form.Item>
 
@@ -102,7 +121,7 @@ const TaskReminderForm = ({ taskId }) => {
                   loading={loading}
                   className="blue-btn"
                   htmlType="submit">
-                  Send Reminder
+                  Create Reminder
                 </Button>
               </Form.Item>
             </Card>
