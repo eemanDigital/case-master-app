@@ -1,6 +1,6 @@
 import React from "react";
 import { Card, Typography, Tag, Badge, Button, Progress } from "antd";
-import { FileSyncOutlined, ReloadOutlined } from "@ant-design/icons";
+import { FileSyncOutlined, ReloadOutlined, EditOutlined } from "@ant-design/icons";
 import GoBackButton from "../GoBackButton";
 
 const { Title, Text, Paragraph } = Typography;
@@ -17,6 +17,8 @@ const TaskDetailsHeader = ({
   timeMetrics,
   actionButtons,
   isTemplate,
+  onEditClick,
+  canEdit,
 }) => {
   return (
     <Card className="mb-6 shadow-sm border-0">
@@ -31,6 +33,15 @@ const TaskDetailsHeader = ({
               size="small">
               {screens.xs ? "" : "Refresh"}
             </Button>
+            {canEdit && (
+              <Button
+                type="primary"
+                icon={<EditOutlined />}
+                onClick={onEditClick}
+                size="small">
+                {screens.xs ? "" : "Edit"}
+              </Button>
+            )}
           </div>
 
           <div className="flex flex-wrap items-center gap-2 mb-3">

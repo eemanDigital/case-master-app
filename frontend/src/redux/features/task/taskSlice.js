@@ -33,6 +33,9 @@ const initialState = taskAdapter.getInitialState({
   pendingReviewTasks: [],
   taskHistory: [],
   taskAccess: null,
+  reminders: [],
+  dependencies: [],
+  availableDependencies: [],
   loading: false,
   selectedTaskLoading: false,
   actionLoading: false,
@@ -393,6 +396,136 @@ export const checkTaskAccess = createAsyncThunk(
   },
 );
 
+// Reminder Thunks
+export const fetchReminders = createAsyncThunk(
+  "task/fetchReminders",
+  async (taskId, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/reminders`);
+      const data = await response.json();
+      if (!response.ok) throw data;
+      return { taskId, reminders: data.data };
+    } catch (error) {
+      return rejectWithValue(error.message || "Failed to fetch reminders");
+    }
+  },
+);
+
+export const createReminder = createAsyncThunk(
+  "task/createReminder",
+  async ({ taskId, data }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/reminders`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return result;
+    } catch (error) {
+      return rejectWithValue(error.message || "Failed to create reminder");
+    }
+  },
+);
+
+export const deleteReminder = createAsyncThunk(
+  "task/deleteReminder",
+  async ({ taskId, reminderId }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/reminders/${reminderId}`, {
+        method: "DELETE",
+      });
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return { taskId, reminderId };
+    } catch (error) {
+      return rejectWithValue(error.message || "Failed to delete reminder");
+    }
+  },
+);
+
+// Dependency Thunks
+export const fetchDependencies = createAsyncThunk(
+  "task/fetchDependencies",
+  async (taskId, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/dependencies`);
+      const data = await response.json();
+      if (!response.ok) throw data;
+      return { taskId, dependencies: data.data };
+    } catch (error) {
+      return rejectWithValue(error.message || "Failed to fetch dependencies");
+    }
+  },
+);
+
+export const addDependency = createAsyncThunk(
+  "task/addDependency",
+  async ({ taskId, dependentTaskId }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/dependencies`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dependentTaskId }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return result;
+    } catch (error) {
+      return rejectWithValue(error.message || "Failed to add dependency");
+    }
+  },
+);
+
+export const removeDependency = createAsyncThunk(
+  "task/removeDependency",
+  async ({ taskId, dependencyId }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/dependencies/${dependencyId}`, {
+        method: "DELETE",
+      });
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return { taskId, dependencyId };
+    } catch (error) {
+      return rejectWithValue(error.message || "Failed to remove dependency");
+    }
+  },
+);
+
+export const fetchAvailableDependencies = createAsyncThunk(
+  "task/fetchAvailableDependencies",
+  async (taskId, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/available-dependencies`);
+      const data = await response.json();
+      if (!response.ok) throw data;
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.message || "Failed to fetch available dependencies");
+    }
+  },
+);
+
+export const updateTaskEnhanced = createAsyncThunk(
+  "task/updateTaskEnhanced",
+  async ({ taskId, data }, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`/api/tasks/${taskId}/enhanced-update`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await response.json();
+      if (!response.ok) throw result;
+      return result;
+    } catch (error) {
+      return rejectWithValue(error.message || "Failed to update task");
+    }
+  },
+);
+
 const taskSlice = createSlice({
   name: "task",
   initialState,
@@ -589,6 +722,71 @@ const taskSlice = createSlice({
 
       .addCase(checkTaskAccess.fulfilled, (state, action) => {
         state.taskAccess = action.payload.data;
+      })
+
+      // Reminder reducers
+      .addCase(fetchReminders.fulfilled, (state, action) => {
+        state.reminders = action.payload.reminders || [];
+      })
+      .addCase(createReminder.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(createReminder.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        if (action.payload.data) {
+          state.reminders = [...state.reminders, action.payload.data];
+        }
+      })
+      .addCase(createReminder.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(deleteReminder.fulfilled, (state, action) => {
+        state.reminders = state.reminders.filter(
+          (r) => r._id !== action.payload.reminderId
+        );
+      })
+
+      // Dependency reducers
+      .addCase(fetchDependencies.fulfilled, (state, action) => {
+        state.dependencies = action.payload.dependencies || [];
+      })
+      .addCase(addDependency.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(addDependency.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        if (action.payload.data) {
+          state.dependencies = action.payload.data;
+        }
+      })
+      .addCase(addDependency.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(removeDependency.fulfilled, (state, action) => {
+        state.dependencies = state.dependencies.filter(
+          (d) => d._id !== action.payload.dependencyId
+        );
+      })
+      .addCase(fetchAvailableDependencies.fulfilled, (state, action) => {
+        state.availableDependencies = action.payload.data || [];
+      })
+
+      // Enhanced update
+      .addCase(updateTaskEnhanced.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(updateTaskEnhanced.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        taskAdapter.updateOne(state, {
+          id: action.payload.data._id,
+          changes: action.payload.data,
+        });
+      })
+      .addCase(updateTaskEnhanced.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
       });
   },
 });
@@ -624,6 +822,9 @@ export const selectPendingReviewTasks = (state) =>
   state.task.pendingReviewTasks;
 export const selectTaskHistory = (state) => state.task.taskHistory;
 export const selectTaskAccess = (state) => state.task.taskAccess;
+export const selectReminders = (state) => state.task.reminders;
+export const selectDependencies = (state) => state.task.dependencies;
+export const selectAvailableDependencies = (state) => state.task.availableDependencies;
 export const selectTaskLoading = (state) => state.task.loading;
 export const selectSelectedTaskLoading = (state) =>
   state.task.selectedTaskLoading;

@@ -69,6 +69,9 @@ import TaskStatusTracker from "../components/tasks/TaskStatusTracker";
 import AssigneesSection from "../components/tasks/AssigneesSection";
 import TaskDetailsHeader from "../components/tasks/TaskDetailsHeader";
 import TaskMetricsCard from "../components/tasks/TaskMetricsCard";
+import TaskEditModal from "../components/tasks/TaskEditModal";
+import ReminderManager from "../components/tasks/ReminderManager";
+import DependencyManager from "../components/tasks/DependencyManager";
 
 const { Title, Text, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
@@ -189,6 +192,7 @@ const TaskDetails = () => {
   const currentUser = user?.data?._id;
   const [activeTab, setActiveTab] = useState("overview");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const screens = useBreakpoint();
 
   const fileManager = useFileManager("Task", id, {
@@ -390,6 +394,8 @@ const TaskDetails = () => {
           timeMetrics={timeMetrics}
           actionButtons={actionButtons}
           isTemplate={task?.isTemplate}
+          onEditClick={() => setEditModalOpen(true)}
+          canEdit={isTaskCreator || isAssignedToCurrentUser}
         />
         {/* Task Metrics */}
         <TaskMetricsCard taskMetrics={taskMetrics} screens={screens} />
@@ -530,60 +536,47 @@ const TaskDetails = () => {
                       screens={screens}
                     />
 
-                    {/* Tags and Dependencies */}
-                    {(task?.tags?.length > 0 ||
-                      task?.dependencies?.length > 0) && (
+                    {/* Tags Section */}
+                    {(task?.tags?.length > 0) && (
                       <Collapse ghost className="mb-6">
                         <Panel
                           header={
                             <Space>
                               <TagOutlined />
-                              <Text strong>Tags & Dependencies</Text>
+                              <Text strong>Tags</Text>
                             </Space>
                           }
                           key="tags">
-                          <Row gutter={[16, 16]}>
-                            {task?.tags?.length > 0 && (
-                              <Col xs={24} lg={12}>
-                                <Card size="small" title="Tags">
-                                  <Space wrap>
-                                    {task.tags.map((tag, index) => (
-                                      <Tag
-                                        key={index}
-                                        color="blue"
-                                        icon={<TagOutlined />}>
-                                        {tag}
-                                      </Tag>
-                                    ))}
-                                  </Space>
-                                </Card>
-                              </Col>
-                            )}
-                            {task?.dependencies?.length > 0 && (
-                              <Col xs={24} lg={12}>
-                                <Card size="small" title="Dependencies">
-                                  <List
-                                    size="small"
-                                    dataSource={task.dependencies}
-                                    renderItem={(dep) => (
-                                      <List.Item>
-                                        <List.Item.Meta
-                                          avatar={<LinkOutlined />}
-                                          title={
-                                            <Text strong>{dep.title}</Text>
-                                          }
-                                          description={`Status: ${dep.status}`}
-                                        />
-                                      </List.Item>
-                                    )}
-                                  />
-                                </Card>
-                              </Col>
-                            )}
-                          </Row>
+                          <Space wrap>
+                            {task.tags.map((tag, index) => (
+                              <Tag
+                                key={index}
+                                color="blue"
+                                icon={<TagOutlined />}>
+                                {tag}
+                              </Tag>
+                            ))}
+                          </Space>
                         </Panel>
                       </Collapse>
                     )}
+
+                    {/* Dependencies Section */}
+                    <Collapse ghost className="mb-6">
+                      <Panel
+                        header={
+                          <Space>
+                            <LinkOutlined />
+                            <Text strong>Dependencies</Text>
+                          </Space>
+                        }
+                        key="dependencies">
+                        <DependencyManager
+                          taskId={task?._id}
+                          onSuccess={refreshTask}
+                        />
+                      </Panel>
+                    </Collapse>
 
                     {/* Task Responses */}
                     <TaskResponse
@@ -784,41 +777,31 @@ const TaskDetails = () => {
 
           {/* Reminders Section */}
           {task?.reminders && task.reminders.length > 0 && (
-            <div className="mt-6">
-              <Divider orientation="left">
-                <MailOutlined className="mr-2" />
-                Reminders
-              </Divider>
-              <div className="space-y-3">
-                {task.reminders.map((reminder, index) => (
-                  <Alert
-                    key={index}
-                    message={`Reminder: ${reminder.message}`}
-                    description={
-                      <Space direction="vertical" size={0}>
-                        <Text>
-                          Scheduled for: {formatDate(reminder.scheduledFor)}
-                        </Text>
-                        <Text type="secondary">
-                          Sent by: {reminder.sender?.firstName}{" "}
-                          {reminder.sender?.lastName}
-                        </Text>
-                        {reminder.isSent && (
-                          <Text type="secondary">
-                            Sent on: {formatDate(reminder.sentAt)}
-                          </Text>
-                        )}
-                      </Space>
-                    }
-                    type={reminder.isSent ? "success" : "warning"}
-                    showIcon
-                    size="small"
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Reminders Section */}
+          <Collapse ghost className="mt-6">
+            <Panel
+              header={
+                <Space>
+                  <MailOutlined />
+                  <Text strong>Reminders</Text>
+                </Space>
+              }
+              key="reminders">
+              <ReminderManager
+                taskId={task?._id}
+                onSuccess={refreshTask}
+              />
+            </Panel>
+          </Collapse>
         </Card>
+
+        {/* Edit Task Modal */}
+        <TaskEditModal
+          open={editModalOpen}
+          onClose={() => setEditModalOpen(false)}
+          task={task}
+          onSuccess={refreshTask}
+        />
       </div>
     </div>
   );
