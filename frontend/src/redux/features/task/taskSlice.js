@@ -433,9 +433,12 @@ export const deleteReminder = createAsyncThunk(
   "task/deleteReminder",
   async ({ taskId, reminderId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/reminders/${reminderId}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/tasks/${taskId}/reminders/${reminderId}`,
+        {
+          method: "DELETE",
+        },
+      );
       const result = await response.json();
       if (!response.ok) throw result;
       return { taskId, reminderId };
@@ -482,9 +485,12 @@ export const removeDependency = createAsyncThunk(
   "task/removeDependency",
   async ({ taskId, dependencyId }, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/dependencies/${dependencyId}`, {
-        method: "DELETE",
-      });
+      const response = await fetch(
+        `/api/tasks/${taskId}/dependencies/${dependencyId}`,
+        {
+          method: "DELETE",
+        },
+      );
       const result = await response.json();
       if (!response.ok) throw result;
       return { taskId, dependencyId };
@@ -498,12 +504,16 @@ export const fetchAvailableDependencies = createAsyncThunk(
   "task/fetchAvailableDependencies",
   async (taskId, { rejectWithValue }) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}/available-dependencies`);
+      const response = await fetch(
+        `/api/tasks/${taskId}/available-dependencies`,
+      );
       const data = await response.json();
       if (!response.ok) throw data;
       return data;
     } catch (error) {
-      return rejectWithValue(error.message || "Failed to fetch available dependencies");
+      return rejectWithValue(
+        error.message || "Failed to fetch available dependencies",
+      );
     }
   },
 );
@@ -743,7 +753,7 @@ const taskSlice = createSlice({
       })
       .addCase(deleteReminder.fulfilled, (state, action) => {
         state.reminders = state.reminders.filter(
-          (r) => r._id !== action.payload.reminderId
+          (r) => r._id !== action.payload.reminderId,
         );
       })
 
@@ -766,7 +776,7 @@ const taskSlice = createSlice({
       })
       .addCase(removeDependency.fulfilled, (state, action) => {
         state.dependencies = state.dependencies.filter(
-          (d) => d._id !== action.payload.dependencyId
+          (d) => d._id !== action.payload.dependencyId,
         );
       })
       .addCase(fetchAvailableDependencies.fulfilled, (state, action) => {
@@ -824,7 +834,8 @@ export const selectTaskHistory = (state) => state.task.taskHistory;
 export const selectTaskAccess = (state) => state.task.taskAccess;
 export const selectReminders = (state) => state.task.reminders;
 export const selectDependencies = (state) => state.task.dependencies;
-export const selectAvailableDependencies = (state) => state.task.availableDependencies;
+export const selectAvailableDependencies = (state) =>
+  state.task.availableDependencies;
 export const selectTaskLoading = (state) => state.task.loading;
 export const selectSelectedTaskLoading = (state) =>
   state.task.selectedTaskLoading;
