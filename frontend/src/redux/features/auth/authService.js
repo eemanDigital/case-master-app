@@ -133,7 +133,7 @@ const sendLoginCode = async (email) => {
 };
 
 const loginWithCode = async (code, email) => {
-  const response = await axios.post(API_URL + `loginWithCode/${email}`, code);
+  const response = await axios.post(API_URL + `loginWithCode/${email}`, { loginCode: code });
   return response.data;
 };
 

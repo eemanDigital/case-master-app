@@ -5,7 +5,6 @@ import { toast } from "react-toastify";
 import {
   login,
   RESET,
-  sendLoginCode,
   getUser,
 } from "../redux/features/auth/authSlice";
 import useTogglePassword from "../hooks/useTogglePassword";
@@ -62,17 +61,10 @@ const Login = () => {
 
       const email = inputValue.email;
 
-      // Send the code then navigate — RESET only after both are done
-      dispatch(sendLoginCode(email))
-        .unwrap()
-        .catch(() => {
-          // sendLoginCode failure is non-fatal; user can resend on the next screen
-        })
-        .finally(() => {
-          dispatch(RESET());
-          // ✅ FIX: navigate with the full absolute path including the email
-          navigate(`/loginWithCode/${encodeURIComponent(email)}`);
-        });
+      // The backend already sent the code in the login response.
+      // Just navigate to the code entry page.
+      dispatch(RESET());
+      navigate(`/loginWithCode/${encodeURIComponent(email)}`);
 
       return;
     }

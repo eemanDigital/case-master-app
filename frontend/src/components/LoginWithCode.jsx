@@ -39,115 +39,90 @@ const LoginWithCode = () => {
   const [loginCode, setLoginCode] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const { email } = useParams();
 
-  console.log("LoginWithCode rendered with email:", email);
+  // ✅ Decode email in case it was URI-encoded (e.g. user+tag@domain.com)
+  const { email: rawEmail } = useParams();
+  const email = decodeURIComponent(rawEmail || "");
 
-  const hasAutoSubmitted = useRef(false);
-  const lastSubmittedCode = useRef("");
-  const hasShownSuccessToast = useRef(false);
-  const isNavigating = useRef(false);
+  const isSubmitting = useRef(false);
+  const hasNavigated = useRef(false);
 
-  // ── Countdown timer ─────────────────────────────────────────────────────
+  // ── Countdown timer ────────────────────────────────────────────────────
   useEffect(() => {
     if (countdown <= 0) return;
-    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
-    return () => clearTimeout(timer);
+    const t = setTimeout(() => setCountdown((c) => c - 1), 1000);
+    return () => clearTimeout(t);
   }, [countdown]);
 
-  // ── Success → navigate ──────────────────────────────────────────────────
+  // ── Navigate on success ────────────────────────────────────────────────
   useEffect(() => {
-    if (
-      isSuccess &&
-      isLoggedIn &&
-      !hasShownSuccessToast.current &&
-      !isNavigating.current
-    ) {
-      hasShownSuccessToast.current = true;
-      isNavigating.current = true;
+    if (isSuccess && isLoggedIn && !hasNavigated.current) {
+      hasNavigated.current = true;
       toast.success("Login successful!");
       setTimeout(() => {
-        navigate("/dashboard");
         dispatch(RESET());
+        navigate("/dashboard");
       }, 100);
     }
   }, [isSuccess, isLoggedIn, navigate, dispatch]);
 
-  // ── Resend code ─────────────────────────────────────────────────────────
-  const reSendUserLoginCode = async () => {
-    if (countdown > 0) return;
+  // ── Submit handler ─────────────────────────────────────────────────────
+  const submitCode = async (codeToSubmit) => {
+    const code = String(codeToSubmit || loginCode).trim();
+
+    if (!/^\d{6}$/.test(code)) {
+      toast.error("Please enter a valid 6-digit code");
+      return;
+    }
+
+    if (isSubmitting.current || hasNavigated.current) return;
+    isSubmitting.current = true;
+
+    try {
+      // ✅ `code` is always a plain string "123456"
+      // authService.loginWithCode(code, email) must send: { loginCode: "123456" }
+      await dispatch(loginWithCode({ code, email })).unwrap();
+    } catch {
+      isSubmitting.current = false;
+    }
+  };
+
+  // ── Resend (user-initiated only — never auto-fires on mount) ───────────
+  const reSendCode = async () => {
+    if (countdown > 0 || resendLoading) return;
     setResendLoading(true);
+    setLoginCode("");
+    isSubmitting.current = false;
+
     try {
       await dispatch(sendLoginCode(email)).unwrap();
-      toast.success("Verification code sent successfully!");
-      setCountdown(30);
+      toast.success("New verification code sent!");
+      setCountdown(60);
     } catch {
-      toast.error("Failed to send verification code. Please try again.");
+      toast.error("Failed to send code. Please try again.");
     } finally {
       setResendLoading(false);
       dispatch(RESET());
     }
   };
 
-  // ── Submit handler ──────────────────────────────────────────────────────
-  const loginUserWithCode = async () => {
-    if (!loginCode || loginCode.trim() === "") {
-      toast.error("Please enter your verification code");
-      return;
-    }
-    if (loginCode.length !== 6) {
-      toast.error("Verification code must be exactly 6 digits");
-      return;
-    }
-    if (!/^\d+$/.test(loginCode)) {
-      toast.error("Verification code must contain only numbers");
-      return;
-    }
-
-    // Prevent duplicate submissions for the same code
-    if (lastSubmittedCode.current === loginCode) return;
-    lastSubmittedCode.current = loginCode;
-
-    try {
-      // ✅ FIX: Pass loginCode as a plain string inside the expected object shape.
-      //    The thunk signature is loginWithCode({ code, email }) and the backend
-      //    controller reads req.body.loginCode.
-      //    Previously: code = { loginCode: "123456" } → body was nested wrong.
-      //    Now:        code = "123456" → body becomes { loginCode: "123456" }
-      await dispatch(loginWithCode({ code: loginCode, email })).unwrap();
-    } catch {
-      // Reset flags so user can retry with the same or different code
-      lastSubmittedCode.current = "";
-      hasAutoSubmitted.current = false;
-      hasShownSuccessToast.current = false;
-    }
-  };
-
-  // ── Input change ────────────────────────────────────────────────────────
+  // ── Input change ───────────────────────────────────────────────────────
   const handleCodeChange = (e) => {
-    const numericValue = e.target.value.replace(/\D/g, "").slice(0, 6);
-    setLoginCode(numericValue);
-
-    // Reset submission guard when user edits the code
-    if (numericValue !== lastSubmittedCode.current) {
-      hasAutoSubmitted.current = false;
-      lastSubmittedCode.current = "";
-    }
+    const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setLoginCode(val);
+    if (val.length < 6) isSubmitting.current = false;
   };
 
-  // ── Auto-submit when all 6 digits entered ───────────────────────────────
+  // ── Auto-submit on 6 digits ────────────────────────────────────────────
   useEffect(() => {
     if (
       loginCode.length === 6 &&
       !isLoading &&
-      !hasAutoSubmitted.current &&
-      lastSubmittedCode.current !== loginCode &&
-      !isNavigating.current
+      !isSubmitting.current &&
+      !hasNavigated.current
     ) {
-      hasAutoSubmitted.current = true;
-      loginUserWithCode();
+      submitCode(loginCode);
     }
-    // loginUserWithCode is stable (no deps change it), safe to omit from array
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginCode, isLoading]);
 
@@ -179,20 +154,19 @@ const LoginWithCode = () => {
         {isError && message && (
           <Alert
             message="Verification Failed"
-            description={
-              message || "Invalid verification code. Please try again."
-            }
+            description={message}
             type="error"
             showIcon
             closable
+            onClose={() => dispatch(RESET())}
           />
         )}
 
-        {/* Form card */}
+        {/* Form */}
         <Card
           className="shadow-xl border-0 rounded-2xl"
           bodyStyle={{ padding: "32px" }}>
-          <Form layout="vertical" onFinish={loginUserWithCode}>
+          <Form layout="vertical" onFinish={() => submitCode(loginCode)}>
             <Form.Item
               label={
                 <Text strong className="text-gray-700">
@@ -209,16 +183,16 @@ const LoginWithCode = () => {
               <Input
                 size="large"
                 type="text"
+                inputMode="numeric"
+                pattern="\d*"
                 placeholder="000000"
                 value={loginCode}
                 onChange={handleCodeChange}
                 maxLength={6}
-                pattern="\d*"
-                inputMode="numeric"
-                className="text-center text-2xl font-bold tracking-widest h-14"
                 autoFocus
                 autoComplete="one-time-code"
-                disabled={isLoading || isNavigating.current}
+                className="text-center text-2xl font-bold tracking-widest h-14"
+                disabled={isLoading || hasNavigated.current}
               />
             </Form.Item>
 
@@ -240,7 +214,7 @@ const LoginWithCode = () => {
                 htmlType="submit"
                 loading={isLoading}
                 disabled={
-                  loginCode.length !== 6 || isLoading || isNavigating.current
+                  loginCode.length !== 6 || isLoading || hasNavigated.current
                 }
                 size="large"
                 block
@@ -254,28 +228,27 @@ const LoginWithCode = () => {
           <Divider className="my-6" />
 
           <Space direction="vertical" size="middle" className="w-full">
-            <div className="flex justify-between items-center">
-              <Button
-                type="link"
-                onClick={reSendUserLoginCode}
-                loading={resendLoading}
-                disabled={countdown > 0 || isLoading || isNavigating.current}
-                icon={<ReloadOutlined />}
-                className="p-0 h-auto">
-                Resend Verification Code
-                {countdown > 0 && (
-                  <Text type="secondary" className="ml-2">
-                    ({countdown}s)
-                  </Text>
-                )}
-              </Button>
-            </div>
+            <Button
+              type="link"
+              onClick={reSendCode}
+              loading={resendLoading}
+              disabled={countdown > 0 || isLoading || hasNavigated.current}
+              icon={<ReloadOutlined />}
+              className="p-0 h-auto">
+              Resend Verification Code
+              {countdown > 0 && (
+                <Text type="secondary" className="ml-2">
+                  ({countdown}s)
+                </Text>
+              )}
+            </Button>
+
             <div className="text-center">
               <Link to="/users/login">
                 <Button
                   type="text"
                   icon={<ArrowLeftOutlined />}
-                  disabled={isLoading || isNavigating.current}>
+                  disabled={isLoading}>
                   Back to Login
                 </Button>
               </Link>
@@ -287,7 +260,7 @@ const LoginWithCode = () => {
           <div className="text-center">
             <Text type="secondary" className="text-sm">
               <SafetyCertificateOutlined className="mr-1" />
-              For your security, this code will expire in 60 minutes
+              For your security, this code expires in 60 minutes
             </Text>
           </div>
         </Card>
