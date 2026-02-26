@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
@@ -16,70 +16,91 @@ const Login = () => {
   const { showPassword, togglePassword } = useTogglePassword();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { isError, isSuccess, isLoading, message, isLoggedIn, twoFactor } =
-    useSelector((state) => state.auth);
+  const { isError, isSuccess, isLoggedIn, isLoading, twoFactor } = useSelector(
+    (state) => state.auth,
+  );
   const [inputValue, setInputValue] = useState({ email: "", password: "" });
 
-  // Remove space from password field
+  // Guard refs — prevent the effect from firing more than once per login attempt
+  const hasHandled = useRef(false);
+
+  // Remove spaces from password field
   useEffect(() => {
-    const password = inputValue.password;
-    if (password.includes(" ")) {
-      setInputValue((prevValue) => ({
-        ...prevValue,
-        password: password.replace(/\s/g, ""),
+    if (inputValue.password.includes(" ")) {
+      setInputValue((prev) => ({
+        ...prev,
+        password: prev.password.replace(/\s/g, ""),
       }));
     }
   }, [inputValue.password]);
 
-  // Handle input change
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setInputValue((prevValue) => ({ ...prevValue, [name]: value }));
-  };
-
-  // Login user handler
+  // Reset the guard whenever the user starts a new login attempt
   const loginUser = async (e) => {
     e.preventDefault();
     if (!inputValue.email || !inputValue.password) {
       toast.error("Enter both your email and password");
       return;
     }
+    hasHandled.current = false; // allow the effect to run for this attempt
     await dispatch(login(inputValue));
   };
 
-  // ✅ FIXED: Handle success and error - fetch fresh user data after login
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setInputValue((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // ── Post-login effect ────────────────────────────────────────────────────
   useEffect(() => {
-    const handleLoginSuccess = async () => {
-      if (isSuccess && isLoggedIn) {
-        try {
-          // ✅ Fetch fresh user data to get latest verification status
-          await dispatch(getUser()).unwrap();
-          navigate("/dashboard");
-        } catch (error) {
-          console.error("Failed to fetch user data:", error);
-          // Still navigate even if user fetch fails
-          navigate("/dashboard");
-        }
-      }
+    // Only run once per login attempt
+    if (hasHandled.current) return;
 
-      if (isError && twoFactor) {
-        dispatch(sendLoginCode(inputValue.email));
-        navigate(`/loginWithCode/${inputValue.email}`);
-      }
+    // ── 2FA path: new device detected ───────────────────────────────────
+    // isError + twoFactor means the backend returned 400 "New device detected"
+    if (isError && twoFactor) {
+      hasHandled.current = true;
 
+      const email = inputValue.email;
+
+      // Send the code then navigate — RESET only after both are done
+      dispatch(sendLoginCode(email))
+        .unwrap()
+        .catch(() => {
+          // sendLoginCode failure is non-fatal; user can resend on the next screen
+        })
+        .finally(() => {
+          dispatch(RESET());
+          // ✅ FIX: navigate with the full absolute path including the email
+          navigate(`/loginWithCode/${encodeURIComponent(email)}`);
+        });
+
+      return;
+    }
+
+    // ── Success path: known device, login approved ───────────────────────
+    if (isSuccess && isLoggedIn) {
+      hasHandled.current = true;
+
+      dispatch(getUser())
+        .unwrap()
+        .catch((err) => {
+          console.error("Failed to fetch user after login:", err);
+        })
+        .finally(() => {
+          dispatch(RESET());
+          navigate("/dashboard");
+        });
+
+      return;
+    }
+
+    // ── Error path: wrong password, inactive account, etc. ───────────────
+    // isError without twoFactor is a real login failure — just reset state.
+    if (isError && !twoFactor) {
+      hasHandled.current = true;
       dispatch(RESET());
-    };
-
-    handleLoginSuccess();
-  }, [
-    isSuccess,
-    isLoggedIn,
-    isError,
-    twoFactor,
-    dispatch,
-    navigate,
-    inputValue.email,
-  ]);
+    }
+  }, [isError, isSuccess, isLoggedIn, twoFactor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center px-4 sm:px-6 lg:px-8">
@@ -89,8 +110,10 @@ const Login = () => {
             Sign in to your account
           </h2>
         </div>
+
         <form className="mt-8 space-y-6" onSubmit={loginUser}>
           <div className="rounded-md shadow-sm -space-y-px">
+            {/* Email */}
             <div>
               <label htmlFor="email-address" className="sr-only">
                 Email Address
@@ -112,6 +135,8 @@ const Login = () => {
                 />
               </div>
             </div>
+
+            {/* Password */}
             <div>
               <label htmlFor="password" className="sr-only">
                 Password
@@ -178,7 +203,6 @@ const Login = () => {
               </span>
             </div>
           </div>
-
           <div className="mt-6">
             <GoogleUserLogin />
           </div>

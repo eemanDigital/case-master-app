@@ -70,21 +70,17 @@ import TaskFileUploader from "../components/TaskFileUploader";
 import useFileManager from "../hooks/useFileManager";
 import TaskAttachmentsCard from "../components/TaskAttachmentsCard ";
 
-import TaskDetailItem, {
-  CaseDetailItem,
-} from "../components/tasks/TaskDetailItem";
 import TaskReviewActions from "../components/tasks/TaskReviewActions";
 import TaskStatusTracker from "../components/tasks/TaskStatusTracker";
 import AssigneesSection from "../components/tasks/AssigneesSection";
-import TaskDetailsHeader from "../components/tasks/TaskDetailsHeader";
-import TaskMetricsCard from "../components/tasks/TaskMetricsCard";
+
 import TaskEditModal from "../components/tasks/TaskEditModal";
 import ReminderManager from "../components/tasks/ReminderManager";
 import DependencyManager from "../components/tasks/DependencyManager";
 
 const { Title, Text, Paragraph } = Typography;
 const { useBreakpoint } = Grid;
-const { Panel } = Collapse;
+// const { Panel } = Collapse;
 
 const getPriorityConfig = (priority) => {
   const configs = {
@@ -235,6 +231,8 @@ const TaskDetails = () => {
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [viewMode, setViewMode] = useState("split");
   const screens = useBreakpoint();
+
+  console.log("Task Data:", task);
 
   const fileManager = useFileManager("Task", id, {
     enableNotifications: true,

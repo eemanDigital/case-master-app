@@ -6,10 +6,10 @@ import dayjs from "dayjs";
 
 import TaskFormBase from "./TaskFormBase";
 import {
-  updateTaskEnhanced,
+  updateTask,
   selectTaskActionLoading,
-  clearSelectedTask, // Use existing action
-  clearTaskError, // Use existing action
+  clearSelectedTask,
+  clearTaskError,
 } from "../../redux/features/task/taskSlice";
 
 const TaskEditModal = ({ open, onClose, task, onSuccess }) => {
@@ -37,36 +37,31 @@ const TaskEditModal = ({ open, onClose, task, onSuccess }) => {
         estimatedEffort: task.estimatedEffort,
         tags: task.tags || [],
         status: task.status || "pending",
-        // Add assignee if it exists in the task structure
         assignee: task.assignees
           ?.map((a) => a.user?._id || a.user)
           .filter(Boolean),
       });
     } else if (!open) {
       form.resetFields();
-      // Reset loading states
       setSubmitting(false);
-      dispatch(clearSelectedTask()); // Use existing action
-      dispatch(clearTaskError()); // Use existing action
+      dispatch(clearSelectedTask());
+      dispatch(clearTaskError());
     }
   }, [open, task, form, dispatch]);
 
   const handleSubmit = useCallback(
     async (values) => {
-      // Prevent double submission
       if (submitting) return;
 
       setSubmitting(true);
 
       try {
-        // Validate required fields
         if (!values.title || !values.instruction || !values.dueDate) {
           message.error("Please fill in all required fields");
           setSubmitting(false);
           return;
         }
 
-        // Prepare update data
         const updateData = {
           title: values.title,
           description: values.description || "",
@@ -82,7 +77,6 @@ const TaskEditModal = ({ open, onClose, task, onSuccess }) => {
           estimatedEffort: values.estimatedEffort || 0,
           tags: values.tags || [],
           status: values.status || "pending",
-          // Update assignees if changed
           ...(values.assignee && {
             assignees: values.assignee.map((userId) => ({
               user: userId,
@@ -92,12 +86,11 @@ const TaskEditModal = ({ open, onClose, task, onSuccess }) => {
           }),
         };
 
-        // Dispatch update action
         const result = await dispatch(
-          updateTaskEnhanced({ taskId: task._id, data: updateData }),
+          updateTask({ taskId: task._id, data: updateData }),
         );
 
-        if (updateTaskEnhanced.fulfilled.match(result)) {
+        if (updateTask.fulfilled.match(result)) {
           message.success("Task updated successfully");
           onSuccess?.();
           onClose();
@@ -118,8 +111,8 @@ const TaskEditModal = ({ open, onClose, task, onSuccess }) => {
   const handleCancel = useCallback(() => {
     form.resetFields();
     setSubmitting(false);
-    dispatch(clearSelectedTask()); // Use existing action
-    dispatch(clearTaskError()); // Use existing action
+    dispatch(clearSelectedTask());
+    dispatch(clearTaskError());
     onClose();
   }, [form, dispatch, onClose]);
 

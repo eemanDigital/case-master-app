@@ -33,91 +33,29 @@ const LoginWithCode = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { isSuccess, isLoggedIn, isLoading, message, isError } = useSelector(
-    (state) => state.auth
+    (state) => state.auth,
   );
 
-  const [userLoginCode, setUserLoginCode] = useState({ loginCode: "" });
+  const [loginCode, setLoginCode] = useState("");
   const [resendLoading, setResendLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const { email } = useParams();
 
-  // ✅ Prevent auto-submit infinite loop
+  console.log("LoginWithCode rendered with email:", email);
+
   const hasAutoSubmitted = useRef(false);
   const lastSubmittedCode = useRef("");
-
-  // ✅ NEW: Prevent repeated success toast
   const hasShownSuccessToast = useRef(false);
   const isNavigating = useRef(false);
 
-  const { loginCode } = userLoginCode;
-
-  // Countdown timer for resend
+  // ── Countdown timer ─────────────────────────────────────────────────────
   useEffect(() => {
-    let timer;
-    if (countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    }
+    if (countdown <= 0) return;
+    const timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
     return () => clearTimeout(timer);
   }, [countdown]);
 
-  // Function to resend user login code
-  const reSendUserLoginCode = async () => {
-    if (countdown > 0) return;
-
-    setResendLoading(true);
-    try {
-      await dispatch(sendLoginCode(email)).unwrap();
-      toast.success("Verification code sent successfully!");
-      setCountdown(30); // 30 seconds countdown
-    } catch (error) {
-      toast.error("Failed to send verification code");
-    } finally {
-      setResendLoading(false);
-      dispatch(RESET());
-    }
-  };
-
-  // Function to login user with code
-  const loginUserWithCode = async (e) => {
-    if (e && e.preventDefault) {
-      e.preventDefault();
-    }
-
-    if (!loginCode || loginCode.trim() === "") {
-      toast.error("Please enter your verification code");
-      return;
-    }
-
-    if (loginCode.length !== 6) {
-      toast.error("Verification code must be exactly 6 digits");
-      return;
-    }
-
-    if (!/^\d+$/.test(loginCode)) {
-      toast.error("Verification code must contain only numbers");
-      return;
-    }
-
-    // ✅ Prevent duplicate submissions
-    if (lastSubmittedCode.current === loginCode) {
-      console.log("Code already submitted, skipping...");
-      return;
-    }
-
-    const code = { loginCode };
-    lastSubmittedCode.current = loginCode;
-
-    try {
-      await dispatch(loginWithCode({ code, email })).unwrap();
-    } catch (error) {
-      // Reset on error so user can retry
-      lastSubmittedCode.current = "";
-      hasAutoSubmitted.current = false;
-      hasShownSuccessToast.current = false; // ✅ Reset success flag on error
-    }
-  };
-
-  // ✅ FIXED: Redirect user to dashboard if login is successful (ONLY ONCE)
+  // ── Success → navigate ──────────────────────────────────────────────────
   useEffect(() => {
     if (
       isSuccess &&
@@ -125,13 +63,9 @@ const LoginWithCode = () => {
       !hasShownSuccessToast.current &&
       !isNavigating.current
     ) {
-      // Mark that we're showing the toast and navigating
       hasShownSuccessToast.current = true;
       isNavigating.current = true;
-
       toast.success("Login successful!");
-
-      // Small delay to ensure toast is visible before navigation
       setTimeout(() => {
         navigate("/dashboard");
         dispatch(RESET());
@@ -139,39 +73,88 @@ const LoginWithCode = () => {
     }
   }, [isSuccess, isLoggedIn, navigate, dispatch]);
 
-  // Auto-focus first input and format code input
-  const handleCodeChange = (e) => {
-    const { value } = e.target;
-    // Only allow numbers and limit to 6 digits
-    const numericValue = value.replace(/\D/g, "").slice(0, 6);
-    setUserLoginCode({ loginCode: numericValue });
+  // ── Resend code ─────────────────────────────────────────────────────────
+  const reSendUserLoginCode = async () => {
+    if (countdown > 0) return;
+    setResendLoading(true);
+    try {
+      await dispatch(sendLoginCode(email)).unwrap();
+      toast.success("Verification code sent successfully!");
+      setCountdown(30);
+    } catch {
+      toast.error("Failed to send verification code. Please try again.");
+    } finally {
+      setResendLoading(false);
+      dispatch(RESET());
+    }
+  };
 
-    // ✅ Reset submission flags when user changes code
-    if (numericValue.length < 6) {
+  // ── Submit handler ──────────────────────────────────────────────────────
+  const loginUserWithCode = async () => {
+    if (!loginCode || loginCode.trim() === "") {
+      toast.error("Please enter your verification code");
+      return;
+    }
+    if (loginCode.length !== 6) {
+      toast.error("Verification code must be exactly 6 digits");
+      return;
+    }
+    if (!/^\d+$/.test(loginCode)) {
+      toast.error("Verification code must contain only numbers");
+      return;
+    }
+
+    // Prevent duplicate submissions for the same code
+    if (lastSubmittedCode.current === loginCode) return;
+    lastSubmittedCode.current = loginCode;
+
+    try {
+      // ✅ FIX: Pass loginCode as a plain string inside the expected object shape.
+      //    The thunk signature is loginWithCode({ code, email }) and the backend
+      //    controller reads req.body.loginCode.
+      //    Previously: code = { loginCode: "123456" } → body was nested wrong.
+      //    Now:        code = "123456" → body becomes { loginCode: "123456" }
+      await dispatch(loginWithCode({ code: loginCode, email })).unwrap();
+    } catch {
+      // Reset flags so user can retry with the same or different code
+      lastSubmittedCode.current = "";
+      hasAutoSubmitted.current = false;
+      hasShownSuccessToast.current = false;
+    }
+  };
+
+  // ── Input change ────────────────────────────────────────────────────────
+  const handleCodeChange = (e) => {
+    const numericValue = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setLoginCode(numericValue);
+
+    // Reset submission guard when user edits the code
+    if (numericValue !== lastSubmittedCode.current) {
       hasAutoSubmitted.current = false;
       lastSubmittedCode.current = "";
     }
   };
 
-  // ✅ Auto-submit when 6 digits are entered (only once)
+  // ── Auto-submit when all 6 digits entered ───────────────────────────────
   useEffect(() => {
     if (
       loginCode.length === 6 &&
       !isLoading &&
       !hasAutoSubmitted.current &&
       lastSubmittedCode.current !== loginCode &&
-      !isNavigating.current // ✅ Don't auto-submit if already navigating
+      !isNavigating.current
     ) {
-      console.log("Auto-submitting code:", loginCode);
       hasAutoSubmitted.current = true;
       loginUserWithCode();
     }
+    // loginUserWithCode is stable (no deps change it), safe to omit from array
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loginCode, isLoading]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-6">
-        {/* Header Section */}
+        {/* Header */}
         <div className="text-center">
           <div className="flex justify-center mb-4">
             <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
@@ -192,8 +175,8 @@ const LoginWithCode = () => {
           </div>
         </div>
 
-        {/* Error Alert */}
-        {isError && (
+        {/* Error alert */}
+        {isError && message && (
           <Alert
             message="Verification Failed"
             description={
@@ -205,12 +188,11 @@ const LoginWithCode = () => {
           />
         )}
 
-        {/* Main Form Card */}
+        {/* Form card */}
         <Card
           className="shadow-xl border-0 rounded-2xl"
           bodyStyle={{ padding: "32px" }}>
           <Form layout="vertical" onFinish={loginUserWithCode}>
-            {/* Code Input */}
             <Form.Item
               label={
                 <Text strong className="text-gray-700">
@@ -240,19 +222,18 @@ const LoginWithCode = () => {
               />
             </Form.Item>
 
-            {/* Progress Dots */}
+            {/* Progress dots */}
             <div className="flex justify-center gap-2 mb-6">
-              {Array.from({ length: 6 }).map((_, index) => (
+              {Array.from({ length: 6 }).map((_, i) => (
                 <div
-                  key={index}
+                  key={i}
                   className={`w-3 h-3 rounded-full transition-colors ${
-                    index < loginCode.length ? "bg-blue-500" : "bg-gray-300"
+                    i < loginCode.length ? "bg-blue-500" : "bg-gray-300"
                   }`}
                 />
               ))}
             </div>
 
-            {/* Submit Button */}
             <Form.Item className="mb-4">
               <Button
                 type="primary"
@@ -272,9 +253,7 @@ const LoginWithCode = () => {
 
           <Divider className="my-6" />
 
-          {/* Action Links */}
           <Space direction="vertical" size="middle" className="w-full">
-            {/* Resend Code */}
             <div className="flex justify-between items-center">
               <Button
                 type="link"
@@ -291,8 +270,6 @@ const LoginWithCode = () => {
                 )}
               </Button>
             </div>
-
-            {/* Back to Login */}
             <div className="text-center">
               <Link to="/users/login">
                 <Button
@@ -306,12 +283,11 @@ const LoginWithCode = () => {
           </Space>
         </Card>
 
-        {/* Security Notice */}
         <Card size="small" className="border-0 bg-transparent shadow-none">
           <div className="text-center">
             <Text type="secondary" className="text-sm">
               <SafetyCertificateOutlined className="mr-1" />
-              For your security, this code will expire in 10 minutes
+              For your security, this code will expire in 60 minutes
             </Text>
           </div>
         </Card>

@@ -4,6 +4,10 @@ const path = require("path");
 const handlebars = require("handlebars");
 const fs = require("fs").promises;
 
+const getBaseDir = () => {
+  return path.resolve(__dirname, "..");
+};
+
 // Brevo API method using HTTP API (works on Render)
 const sendViaBrevoAPI = async (
   subject,
@@ -28,6 +32,9 @@ const sendViaBrevoAPI = async (
     htmlContent: htmlContent,
     replyTo: reply_to ? { email: reply_to } : undefined,
   };
+
+  console.log("Sender email:", send_from);
+  console.log("Recipient email:", send_to);
 
   // Add attachments if provided
   if (attachments.length > 0) {
@@ -76,8 +83,10 @@ const sendViaSMTP = async (
   template,
   context,
   attachments = [],
+  baseDir = getBaseDir(),
 ) => {
   console.log("🔧 Using SMTP for email (development mode)");
+  console.log("Base directory:", baseDir);
 
   const transporter = nodemailer.createTransport({
     host: process.env.EMAIL_HOST,
@@ -95,10 +104,10 @@ const sendViaSMTP = async (
   const handlebarsOptions = {
     viewEngine: {
       extName: ".handlebars",
-      partialsDir: path.resolve("./views/emails"),
+      partialsDir: path.resolve(baseDir, "views/emails"),
       defaultLayout: false,
     },
-    viewPath: path.resolve("./views/emails"),
+    viewPath: path.resolve(baseDir, "views/emails"),
     extName: ".handlebars",
   };
 
@@ -149,13 +158,20 @@ const sendMail = async (
     if (process.env.BREVO_API_KEY) {
       console.log("🚀 Using Brevo API (Render-compatible)");
 
+      const baseDir = getBaseDir();
+      console.log("Base directory:", baseDir);
+      
       const templatePath = path.resolve(
-        "./views/emails",
+        baseDir,
+        "views/emails",
         `${template}.handlebars`,
       );
+      console.log("Template path:", templatePath);
       const templateSource = await fs.readFile(templatePath, "utf8");
       const compiledTemplate = handlebars.compile(templateSource);
-      const htmlContent = compiledTemplate(context || {});
+      const htmlContent = compiledTemplate({ ...context, year: new Date().getFullYear() });
+
+      console.log("HTML content length:", htmlContent.length);
 
       return await sendViaBrevoAPI(
         subject,
@@ -167,13 +183,16 @@ const sendMail = async (
     }
 
     console.log("⚠️  BREVO_API_KEY not found, falling back to SMTP");
+    const baseDir = getBaseDir();
     return await sendViaSMTP(
       subject,
       send_to,
       send_from,
       reply_to,
       template,
-      context || {},
+      { ...(context || {}), year: new Date().getFullYear() },
+      [],
+      baseDir,
     );
   } catch (err) {
     console.error("❌ Email sending failed:", err.message);

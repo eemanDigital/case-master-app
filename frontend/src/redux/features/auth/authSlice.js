@@ -313,6 +313,9 @@ export const loginWithCode = createAsyncThunk(
   "auth/loginWithCode",
   async ({ code, email }, thunkAPI) => {
     try {
+      // `code` is now a plain string e.g. "123456"
+      // authService.loginWithCode should post { loginCode: code } to
+      // PATCH /api/v1/users/loginWithCode/:email
       const response = await authService.loginWithCode(code, email);
       await thunkAPI.dispatch(getUser());
       return response;

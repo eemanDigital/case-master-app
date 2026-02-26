@@ -12,7 +12,7 @@ const Firm = require("../models/firmModel");
 
 const { createSendToken, hashToken } = require("../utils/handleSendToken");
 const Token = require("../models/tokenModel");
-const sendMail = require("../utils/email");
+const { sendMail } = require("../utils/email");
 const { OAuth2Client } = require("google-auth-library");
 
 dotenv.config({ path: "./config.env" });
@@ -684,7 +684,7 @@ exports.login = catchAsync(async (req, res, next) => {
     );
   }
 
-  // 4) Disallow login for inactive users (except clients - they might be inactive but need access)
+  // 4) Disallow login for inactive users (except clients)
   if (user.isActive === false && user.userType !== "client") {
     return next(
       new AppError(
@@ -700,31 +700,50 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError("Incorrect email or password", 401));
   }
 
-  // 6) Check if user is verified (optional for clients, required for staff/lawyers/admins)
-  if (!user.isVerified && user.userType !== "client") {
-    return next(
-      new AppError("Please verify your email address before logging in", 401),
-    );
-  }
-
-  // 7) Trigger 2FA for unknown user agent
+  // 6) ✅ DEVICE / 2FA CHECK — must come BEFORE the verification check.
+  //    This ensures users on a new device always get the code flow,
+  //    whether or not their email has been verified yet.
   const currentUserAgent = parser(req.headers["user-agent"]).ua;
-  const isAllowedAgent = user.userAgent.includes(currentUserAgent);
+  const isKnownDevice = user.userAgent.includes(currentUserAgent);
 
-  if (!isAllowedAgent) {
+  if (!isKnownDevice) {
     const loginCode = Math.floor(100000 + Math.random() * 900000);
-    console.log(loginCode);
+    console.log("🔐 2FA Code:", loginCode);
 
     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
 
+    // Replace any existing token
     await Token.deleteMany({ userId: user._id });
 
     await new Token({
       userId: user._id,
       loginToken: encryptedLoginCode,
       createAt: Date.now(),
-      expiresAt: Date.now() + 60 * 60 * 1000,
+      expiresAt: Date.now() + 60 * 60 * 1000, // 1 hour
     }).save();
+
+    // Send the code via email (best-effort — don't block the response)
+    try {
+      const { sendMail } = require("../utils/email");
+      await sendMail(
+        "Your Login Verification Code - CaseMaster",
+        user.email,
+        process.env.SENDINBLUE_EMAIL,
+        "noreply@casemaster.ng",
+        "loginCode",
+        {
+          name: user.firstName,
+          code: loginCode,
+          expiresIn: "60 minutes",
+          year: new Date().getFullYear(),
+          companyName: process.env.COMPANY_NAME || "CaseMaster",
+        },
+      );
+    } catch (emailErr) {
+      console.error("❌ Failed to send 2FA code email:", emailErr.message);
+      // We still return the 400 so the frontend redirects to the code entry page.
+      // The user can use "Resend Code" from that screen.
+    }
 
     return next(
       new AppError(
@@ -734,12 +753,20 @@ exports.login = catchAsync(async (req, res, next) => {
     );
   }
 
-  // 8) Update last login
+  // 7) Email verification check — only reached on KNOWN devices.
+  //    Clients are exempt (they may operate without verifying).
+  if (!user.isVerified && user.userType !== "client") {
+    return next(
+      new AppError("Please verify your email address before logging in", 401),
+    );
+  }
+
+  // 8) Update last login metadata
   user.lastLogin = new Date();
   user.loginCount = (user.loginCount || 0) + 1;
   await user.save({ validateBeforeSave: false });
 
-  // 9) Send token to client
+  // 9) Issue JWT
   createSendToken(user, 200, res);
 });
 

@@ -23,7 +23,7 @@ export const sendAutomatedEmail = createAsyncThunk(
         error.toString();
       return thunkAPI.rejectWithValue(message);
     }
-  }
+  },
 );
 
 export const sendAutomatedCustomEmail = createAsyncThunk(
@@ -40,7 +40,7 @@ export const sendAutomatedCustomEmail = createAsyncThunk(
         error.toString();
       return thunkAPI.rejectWithValue(message);
     }
-  }
+  },
 );
 
 // New thunk for custom emails with HTML and attachments
@@ -58,7 +58,7 @@ export const sendCustomEmail = createAsyncThunk(
         error.toString();
       return thunkAPI.rejectWithValue(message);
     }
-  }
+  },
 );
 
 const emailSlice = createSlice({

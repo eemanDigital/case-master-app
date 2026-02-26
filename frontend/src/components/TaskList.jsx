@@ -1,4 +1,3 @@
-// TaskList.jsx
 import {
   useState,
   useEffect,
@@ -50,7 +49,6 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   SyncOutlined,
-  UserOutlined,
   FileTextOutlined,
   PlusOutlined,
   AppstoreOutlined,
@@ -79,7 +77,7 @@ import {
 
 // Lazy load components
 const TaskReminderForm = lazy(() => import("./TaskReminderForm"));
-const TaskActions = lazy(() => import("./TaskActions"));
+// const TaskActions = lazy(() => import("./TaskActions"));
 const TaskStatusFlow = lazy(() => import("./TaskStatusFlow"));
 const CreateTaskForm = lazy(() => import("../pages/CreateTaskForm"));
 
@@ -112,6 +110,8 @@ const TaskList = () => {
   const error = useSelector(selectTaskError);
   const pagination = useSelector(selectTaskPagination);
   const { user } = useSelector((state) => state.auth);
+
+  console.log(tasks);
 
   // Hooks
   useRedirectLogoutUser("/users/login");
@@ -521,9 +521,11 @@ const TaskList = () => {
                       const userName =
                         userData?.firstName || userData?.email || "User";
                       const initial = userName.charAt(0).toUpperCase();
+                      const assigneeId =
+                        userData?._id || assignee.user || index;
                       return (
                         <Tooltip
-                          key={index}
+                          key={assigneeId}
                           title={`${userName} ${assignee.role === "primary" ? "(Primary)" : ""}`}>
                           <Avatar
                             style={{
@@ -619,7 +621,7 @@ const TaskList = () => {
 
           if (hasEditPermission) {
             menuItems.push(
-              { type: "divider" },
+              { key: "divider", type: "divider" },
               {
                 key: "edit",
                 icon: <EditOutlined />,
@@ -713,13 +715,14 @@ const TaskList = () => {
           className="task-card group hover:shadow-xl transition-all duration-300 border border-gray-200 hover:border-blue-200 overflow-hidden"
           styles={{ body: { padding: 0 } }}
           actions={[
-            <Tooltip title="View Details">
+            <Tooltip key="view" title="View Details">
               <EyeOutlined
-                onClick={() => navigate(`/dashboard/tasks/${task._id}`)}
+                onClick={() => navigate(`/dashboard/tasks/${task._id}/details`)}
                 className="hover:text-blue-500"
               />
             </Tooltip>,
             <Tooltip
+              key="favorite"
               title={isFavorite ? "Remove from Favorites" : "Add to Favorites"}>
               {isFavorite ? (
                 <StarFilled
@@ -733,27 +736,23 @@ const TaskList = () => {
                 />
               )}
             </Tooltip>,
-            hasEditPermission && (
-              <Tooltip title="Edit">
-                <EditOutlined
-                  onClick={() => navigate(`/dashboard/tasks/${task._id}/edit`)}
-                  className="hover:text-blue-500"
-                />
-              </Tooltip>
-            ),
-            hasEditPermission && (
-              <Tooltip title="Delete">
+            hasEditPermission ? (
+              <Tooltip key="edit" title="Edit"></Tooltip>
+            ) : null,
+            hasEditPermission ? (
+              <Tooltip key="delete" title="Delete">
                 <DeleteOutlined
                   onClick={() => handleDelete(task._id, task.title)}
                   className="hover:text-red-500"
                 />
               </Tooltip>
-            ),
+            ) : null,
           ].filter(Boolean)}>
           <div className="p-4">
             {/* Header with status and priority */}
             <div className="flex justify-between items-start mb-3">
               <Badge.Ribbon
+                key="ribbon"
                 text={statusConfig.text}
                 color={statusConfig.color}
                 className="text-xs">
@@ -871,9 +870,11 @@ const TaskList = () => {
                       const userName =
                         userData?.firstName || userData?.email || "User";
                       const initial = userName.charAt(0).toUpperCase();
+                      const assigneeId =
+                        userData?._id || assignee.user || index;
                       return (
                         <Tooltip
-                          key={index}
+                          key={assigneeId}
                           title={`${userName} ${assignee.role === "primary" ? "(Primary)" : ""}`}>
                           <Avatar
                             style={{
