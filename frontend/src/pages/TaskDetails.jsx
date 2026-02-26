@@ -225,14 +225,11 @@ const TaskDetails = () => {
   const { id } = useParams();
   const { user } = useSelector((state) => state.auth);
   const task = data?.data;
-  const currentUser = user?.data?._id;
+  const currentUser = user?._id || user?.data?._id;
   const [activeTab, setActiveTab] = useState("overview");
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [editModalOpen, setEditModalOpen] = useState(false);
-  const [viewMode, setViewMode] = useState("split");
   const screens = useBreakpoint();
-
-  console.log("Task Data:", task);
 
   const fileManager = useFileManager("Task", id, {
     enableNotifications: true,

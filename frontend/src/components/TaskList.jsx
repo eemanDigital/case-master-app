@@ -433,7 +433,7 @@ const TaskList = () => {
             />
             <div>
               <Link
-                to={`/dashboard/tasks/${record._id}`}
+                to={`/dashboard/tasks/${record._id}/details`}
                 className="text-blue-600 hover:text-blue-800 font-medium line-clamp-2 text-sm md:text-base">
                 {text || "Untitled Task"}
               </Link>
@@ -768,7 +768,7 @@ const TaskList = () => {
 
             {/* Title */}
             <Link
-              to={`/dashboard/tasks/${task._id}`}
+              to={`/dashboard/tasks/${task._id}/details`}
               className="block mb-3 group-hover:text-blue-600 transition-colors">
               <Title level={5} className="!mb-1 line-clamp-2">
                 {task.title || "Untitled Task"}

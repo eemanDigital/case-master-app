@@ -122,7 +122,7 @@ router.post(
 
 router.post(
   "/sendVerificationEmail/:email",
-  restrictTo("admin", "super-admin"),
+
   sendVerificationEmail,
 );
 

@@ -851,7 +851,8 @@ exports.loginWithCode = catchAsync(async (req, res, next) => {
   const { email } = req.params;
   const { loginCode } = req.body;
 
-  if (!loginCode || loginCode.length !== 6) {
+  const codeString = String(loginCode);
+  if (!loginCode || codeString.length !== 6 || !/^\d{6}$/.test(codeString)) {
     return next(new AppError("Please enter a valid 6-digit code", 400));
   }
 
@@ -883,7 +884,7 @@ exports.loginWithCode = catchAsync(async (req, res, next) => {
     return next(new AppError("Invalid verification code", 400));
   }
 
-  if (loginCode !== decryptedLoginCode) {
+  if (String(loginCode) !== decryptedLoginCode) {
     return next(new AppError("Incorrect verification code", 400));
   }
 

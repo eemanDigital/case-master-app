@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Space, Modal, Tooltip, Dropdown } from "antd";
+import { Button, Space, Modal, Dropdown } from "antd";
 import {
   SendOutlined,
   FileSearchOutlined,
@@ -26,15 +26,25 @@ const TaskReviewActions = ({
   const { dataFetcher } = useDataFetch();
   const [reviewModalVisible, setReviewModalVisible] = useState(false);
 
-  const isCreator = task?.createdBy?._id === userId;
+  const userIdStr = String(userId || "");
+
+  const isCreator = task?.createdBy?._id
+    ? String(task.createdBy._id) === userIdStr
+    : String(task?.createdBy) === userIdStr;
+
   const isAssignedBy = task?.assignees?.some(
-    (assignee) => assignee.assignedBy?._id === userId
-  );
-  const isAssignee = task?.assignees?.some(
-    (assignee) => assignee.user?._id === userId
+    (assignee) =>
+      (assignee.assignedBy?._id &&
+        String(assignee.assignedBy._id) === userIdStr) ||
+      String(assignee.assignedBy) === userIdStr,
   );
 
-  // Check permissions
+  const isAssignee = task?.assignees?.some(
+    (assignee) =>
+      (assignee.user?._id && String(assignee.user._id) === userIdStr) ||
+      String(assignee.user) === userIdStr,
+  );
+
   const canReviewTask =
     (isCreator || isAssignedBy) && task?.status === "under-review";
   const canSubmitForReview =
@@ -55,13 +65,9 @@ const TaskReviewActions = ({
           const response = await dataFetcher(
             `tasks/${task._id}/submit-review`,
             "PUT",
-            {
-              comment: "Submitted for review",
-            }
+            { comment: "Submitted for review" },
           );
-
           if (response.error) throw new Error(response.error);
-
           toast.success("Task submitted for review!");
           onStatusChange && onStatusChange();
         } catch (error) {
@@ -82,13 +88,9 @@ const TaskReviewActions = ({
           const response = await dataFetcher(
             `tasks/${task._id}/force-complete`,
             "POST",
-            {
-              completionComment: "Task force completed",
-            }
+            { completionComment: "Task force completed" },
           );
-
           if (response.error) throw new Error(response.error);
-
           toast.success("Task marked as completed!");
           onStatusChange && onStatusChange();
         } catch (error) {
@@ -135,19 +137,21 @@ const TaskReviewActions = ({
           key: "status-pending",
           label: "Mark as Pending",
           disabled: task?.status === "pending",
-          onClick: () => onStatusChange(task._id, "pending"),
+          onClick: () => onStatusChange && onStatusChange(task._id, "pending"),
         },
         {
           key: "status-in-progress",
           label: "Mark as In Progress",
           disabled: task?.status === "in-progress",
-          onClick: () => onStatusChange(task._id, "in-progress"),
+          onClick: () =>
+            onStatusChange && onStatusChange(task._id, "in-progress"),
         },
         {
           key: "status-completed",
           label: "Mark as Completed",
           disabled: task?.status === "completed",
-          onClick: () => onStatusChange(task._id, "completed"),
+          onClick: () =>
+            onStatusChange && onStatusChange(task._id, "completed"),
         },
       ],
     });
@@ -176,7 +180,7 @@ const TaskReviewActions = ({
   return (
     <>
       <Space
-        direction={screens.xs ? "vertical" : "horizontal"}
+        direction={screens?.xs ? "vertical" : "horizontal"}
         size="small"
         className="w-full">
         {/* Submit for Review Button */}
@@ -185,9 +189,9 @@ const TaskReviewActions = ({
             type="primary"
             icon={<SendOutlined />}
             onClick={handleSubmitForReview}
-            size={screens.xs ? "small" : "middle"}
+            size={screens?.xs ? "small" : "middle"}
             className="bg-blue-600 hover:bg-blue-700">
-            {screens.xs ? "Submit" : "Submit for Review"}
+            {screens?.xs ? "Submit" : "Submit for Review"}
           </Button>
         )}
 
@@ -196,10 +200,13 @@ const TaskReviewActions = ({
           <Button
             type="primary"
             icon={<FileSearchOutlined />}
-            onClick={() => setReviewModalVisible(true)}
-            size={screens.xs ? "small" : "middle"}
+            onClick={() => {
+              console.log("Review button clicked, setting modal visible");
+              setReviewModalVisible(true);
+            }}
+            size={screens?.xs ? "small" : "middle"}
             className="bg-orange-600 hover:bg-orange-700 border-orange-600">
-            {screens.xs ? "Review" : "Review Task"}
+            {screens?.xs ? "Review" : "Review Task"}
           </Button>
         )}
 
@@ -209,9 +216,9 @@ const TaskReviewActions = ({
             type="default"
             icon={<CheckCircleOutlined />}
             onClick={handleForceComplete}
-            size={screens.xs ? "small" : "middle"}
+            size={screens?.xs ? "small" : "middle"}
             className="border-green-500 text-green-600 hover:border-green-600 hover:text-green-700">
-            {screens.xs ? "Complete" : "Force Complete"}
+            {screens?.xs ? "Complete" : "Force Complete"}
           </Button>
         )}
 
@@ -223,24 +230,24 @@ const TaskReviewActions = ({
           <Button
             type="text"
             icon={<MoreOutlined />}
-            size={screens.xs ? "small" : "middle"}
+            size={screens?.xs ? "small" : "middle"}
           />
         </Dropdown>
       </Space>
 
-      {/* Review Modal */}
-      {reviewModalVisible && (
-        <TaskReviewModal
-          task={task}
-          visible={reviewModalVisible}
-          onClose={() => setReviewModalVisible(false)}
-          onReviewComplete={() => {
-            onReviewComplete && onReviewComplete();
-            setReviewModalVisible(false);
-          }}
-          currentUserId={userId}
-        />
-      )}
+      {/* Review Modal
+          ✅ FIX: Use `open` not `visible` — Ant Design v5 renamed the prop.
+          `visible` is silently ignored, so the modal never showed. */}
+      <TaskReviewModal
+        task={task}
+        open={reviewModalVisible}
+        onClose={() => setReviewModalVisible(false)}
+        onReviewComplete={() => {
+          onReviewComplete && onReviewComplete();
+          setReviewModalVisible(false);
+        }}
+        currentUserId={userId}
+      />
     </>
   );
 };

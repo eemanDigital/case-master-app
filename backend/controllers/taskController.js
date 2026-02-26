@@ -1128,7 +1128,7 @@ exports.submitTaskForReview = catchAsync(async (req, res, next) => {
   // Create a task response entry for this submission
   const responseData = {
     submittedBy: req.user.id,
-    status: "under-review",
+    status: "needs-review",
     comment: comment || "Task submitted for review",
     documents: documentIds,
     submittedAt: new Date(),
@@ -1141,7 +1141,7 @@ exports.submitTaskForReview = catchAsync(async (req, res, next) => {
     action: "submitted_for_review",
     description: "Task submitted for review and approval",
     by: req.user.id,
-    changes: { status: "under-review" },
+    changes: { status: "needs-review" },
   });
 
   await task.save();
@@ -1231,7 +1231,7 @@ exports.reviewTask = catchAsync(async (req, res, next) => {
     task.taskResponses.forEach((response) => {
       if (
         response.status === "in-progress" ||
-        response.status === "under-review"
+        response.status === "needs-review"
       ) {
         response.status = "completed";
         response.completionPercentage = 100;
@@ -1251,7 +1251,7 @@ exports.reviewTask = catchAsync(async (req, res, next) => {
     task.taskResponses.forEach((response) => {
       if (
         response.status === "in-progress" ||
-        response.status === "under-review"
+        response.status === "needs-review"
       ) {
         response.status = "needs-review";
         response.reviewedBy = req.user.id;
