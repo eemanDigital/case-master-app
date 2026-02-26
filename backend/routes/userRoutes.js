@@ -128,7 +128,7 @@ router.post(
 
 router.get(
   "/statistics/general",
-  restrictTo("admin", "super-admin", "hr"),
+  restrictTo("admin", "super-admin", "hr", "lawyer"),
   getUserStatistics,
 );
 router.get(

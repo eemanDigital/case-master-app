@@ -454,6 +454,20 @@ const TaskDetails = () => {
             wrap="gap"
             className="mb-4">
             <Space wrap>
+              {task?.matter && (
+                <Tag
+                  icon={<FileTextOutlined />}
+                  style={{
+                    background: "#f0fdf4",
+                    color: "#16a34a",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "4px 12px",
+                    fontWeight: 600,
+                  }}>
+                  {task.matter?.title || task.matter?.matterNumber || "Matter"}
+                </Tag>
+              )}
               <Tag
                 icon={statusConfig.icon}
                 style={{
@@ -841,6 +855,41 @@ const TaskDetails = () => {
                       currentUser={currentUser}
                       screens={screens}
                     />
+
+                    {task?.matter && (
+                      <Collapse
+                        ghost
+                        className="mb-6"
+                        items={[
+                          {
+                            key: "matter",
+                            label: (
+                              <Space>
+                                <FileTextOutlined />
+                                <Text strong>Related Matter</Text>
+                              </Space>
+                            ),
+                            children: (
+                              <Card size="small" style={{ borderRadius: 10 }}>
+                                <Space direction="vertical" className="w-full">
+                                  <Text strong>
+                                    {task.matter.title || task.matter.matterNumber || "Matter"}
+                                  </Text>
+                                  <Text type="secondary">
+                                    {task.matter.matterType}
+                                  </Text>
+                                  {task.matter.client && (
+                                    <Text type="secondary">
+                                      Client: {task.matter.client.firstName} {task.matter.client.lastName}
+                                    </Text>
+                                  )}
+                                </Space>
+                              </Card>
+                            ),
+                          },
+                        ]}
+                      />
+                    )}
 
                     {task?.tags?.length > 0 && (
                       <Collapse

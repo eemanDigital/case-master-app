@@ -56,30 +56,36 @@ exports.createTask = catchAsync(async (req, res, next) => {
     taskData.hearingId = hearingId;
   }
 
-  // Build assignees array directly — creator is always primary
-  const allAssignees = [
-    {
-      user: req.user.id,
-      role: "primary",
-      assignedBy: req.user.id,
-      assignedAt: new Date(),
-      isClient: false,
-    },
-  ];
-
-  // Add additional assignees, skipping creator if duplicated
-  for (const assigneeData of assignees) {
-    const isDuplicate =
-      assigneeData.user?.toString() === req.user.id?.toString();
-    if (!isDuplicate) {
-      allAssignees.push({
-        user: assigneeData.user,
-        role: assigneeData.role || "collaborator",
+  // Build assignees array - only add creator as primary if no assignees provided
+  let allAssignees = [];
+  
+  // If assignees are provided, use them (frontend already includes creator if needed)
+  if (assignees && assignees.length > 0) {
+    for (const assigneeData of assignees) {
+      const isDuplicate = allAssignees.some(
+        (a) => a.user?.toString() === assigneeData.user?.toString()
+      );
+      if (!isDuplicate) {
+        allAssignees.push({
+          user: assigneeData.user,
+          role: assigneeData.role || "collaborator",
+          assignedBy: req.user.id,
+          assignedAt: new Date(),
+          isClient: assigneeData.isClient || false,
+        });
+      }
+    }
+  } else {
+    // No assignees provided - add creator as primary
+    allAssignees = [
+      {
+        user: req.user.id,
+        role: "primary",
         assignedBy: req.user.id,
         assignedAt: new Date(),
-        isClient: assigneeData.isClient || false,
-      });
-    }
+        isClient: false,
+      },
+    ];
   }
 
   taskData.assignees = allAssignees;

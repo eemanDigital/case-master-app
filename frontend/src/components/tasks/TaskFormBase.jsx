@@ -26,6 +26,7 @@ import {
   BankOutlined,
   TagOutlined,
   ClockCircleOutlined,
+  LinkOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -623,6 +624,14 @@ const TaskFormBase = ({
                 <Select.Option value="cancelled">Cancelled</Select.Option>
               </Select>
             </Form.Item>
+
+            <Alert
+              message="Linking Tasks"
+              description="To link this task to other tasks, save the task first, then open it from the task list and use the Dependencies section to add linked tasks."
+              type="info"
+              showIcon
+              className="mt-4"
+            />
           </div>
         ),
       },
