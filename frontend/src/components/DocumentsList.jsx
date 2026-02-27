@@ -68,7 +68,56 @@ const DocumentsList = ({
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [batchActionLoading, setBatchActionLoading] = useState([]);
+  const [batchActionLoading, setBatchActionLoading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  // Fetch preview URL when file is selected for preview
+  useEffect(() => {
+    const fetchPreviewUrl = async () => {
+      if (!selectedFile || !previewModalVisible) {
+        setPreviewUrl(null);
+        return;
+      }
+
+      // Only fetch preview URL for Office documents
+      const isOfficeDoc = 
+        ["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(selectedFile.fileType?.toLowerCase()) ||
+        selectedFile.mimeType?.includes("word") ||
+        selectedFile.mimeType?.includes("excel") ||
+        selectedFile.mimeType?.includes("powerpoint");
+
+      if (!isOfficeDoc) {
+        setPreviewUrl(null);
+        return;
+      }
+
+      setPreviewLoading(true);
+      try {
+        const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
+        const response = await fetch(`${baseURL}/files/${selectedFile._id}/preview`, {
+          credentials: "include",
+        });
+        const data = await response.json();
+        if (data.status === "success" && data.data.previewUrl) {
+          setPreviewUrl(data.data.previewUrl);
+        }
+      } catch (error) {
+        console.error("Error fetching preview URL:", error);
+      } finally {
+        setPreviewLoading(false);
+      }
+    };
+
+    fetchPreviewUrl();
+  }, [selectedFile, previewModalVisible]);
+
+  // Reset preview URL when modal closes
+  useEffect(() => {
+    if (!previewModalVisible) {
+      setPreviewUrl(null);
+    }
+  }, [previewModalVisible]);
 
   // Firm storage info hook
   const {
@@ -129,10 +178,29 @@ const DocumentsList = ({
       return <FileExcelOutlined style={{ ...iconStyle, color: "#52c41a" }} />;
     }
     if (
+      extension === "ppt" ||
+      extension === "pptx" ||
+      mimeType?.includes("powerpoint")
+    ) {
+      return <FileWordOutlined style={{ ...iconStyle, color: "#d46b08" }} />;
+    }
+    if (
       ["jpg", "jpeg", "png", "gif", "webp", "bmp", "svg"].includes(extension) ||
       mimeType?.includes("image")
     ) {
       return <FileImageOutlined style={{ ...iconStyle, color: "#faad14" }} />;
+    }
+    if (
+      ["mp4", "avi", "mov", "wmv", "flv", "mkv", "webm"].includes(extension) ||
+      mimeType?.includes("video")
+    ) {
+      return <FileOutlined style={{ ...iconStyle, color: "#eb2f96" }} />;
+    }
+    if (
+      ["mp3", "wav", "ogg", "flac", "aac", "m4a"].includes(extension) ||
+      mimeType?.includes("audio")
+    ) {
+      return <FileOutlined style={{ ...iconStyle, color: "#13c2c2" }} />;
     }
     if (
       extension === "zip" ||
@@ -147,6 +215,9 @@ const DocumentsList = ({
     }
     if (extension === "txt" || mimeType?.includes("text")) {
       return <FileOutlined style={{ ...iconStyle, color: "#8c8c8c" }} />;
+    }
+    if (["json", "xml", "html", "css", "js", "md", "py"].includes(extension)) {
+      return <FileOutlined style={{ ...iconStyle, color: "#2f54eb" }} />;
     }
     return <FileOutlined style={{ ...iconStyle, color: "#13c2c2" }} />;
   };
@@ -538,8 +609,53 @@ const DocumentsList = ({
     if (!selectedFile) return null;
 
     const isImage = selectedFile.mimeType?.startsWith("image/");
-    const isPDF =
-      selectedFile.fileType === "pdf" || selectedFile.mimeType?.includes("pdf");
+    const isPDF = selectedFile.fileType === "pdf" || selectedFile.mimeType?.includes("pdf");
+    const isVideo = selectedFile.mimeType?.startsWith("video/");
+    const isAudio = selectedFile.mimeType?.startsWith("audio/");
+    const isWord = ["doc", "docx"].includes(selectedFile.fileType?.toLowerCase()) || 
+                   selectedFile.mimeType?.includes("word");
+    const isExcel = ["xls", "xlsx"].includes(selectedFile.fileType?.toLowerCase()) || 
+                    selectedFile.mimeType?.includes("excel");
+    const isPowerPoint = ["ppt", "pptx"].includes(selectedFile.fileType?.toLowerCase()) || 
+                         selectedFile.mimeType?.includes("powerpoint");
+    const isText = selectedFile.mimeType?.startsWith("text/") || 
+                   ["txt", "json", "xml", "html", "css", "js", "md"].includes(selectedFile.fileType?.toLowerCase());
+    
+    // Use preview URL from backend for Office documents
+    const fileUrlForOffice = previewUrl || selectedFile.fileUrl;
+    const encodedUrl = encodeURIComponent(fileUrlForOffice);
+    
+    // Microsoft Office Online Viewer
+    const officeViewerUrl = `https://view.officeapps.live.com/op/embed.aspx?src=${encodedUrl}`;
+    
+    // Show loading state while fetching preview URL
+    if (previewLoading && (isWord || isExcel || isPowerPoint)) {
+      return (
+        <Modal
+          title={
+            <Space>
+              {getFileIcon(selectedFile)}
+              <span>{selectedFile.fileName}</span>
+            </Space>
+          }
+          open={previewModalVisible}
+          onCancel={() => setPreviewModalVisible(false)}
+          footer={[
+            <Button key="close" onClick={() => setPreviewModalVisible(false)}>
+              Close
+            </Button>,
+          ]}
+          width={900}
+          style={{ top: 20 }}>
+          <div className="flex items-center justify-center h-96">
+            <div className="text-center">
+              <div className="text-lg">Loading preview...</div>
+              <div className="text-gray-500 text-sm mt-2">Fetching secure preview URL</div>
+            </div>
+          </div>
+        </Modal>
+      );
+    }
 
     return (
       <Modal
@@ -579,25 +695,28 @@ const DocumentsList = ({
             </Popconfirm>
           ),
         ].filter(Boolean)}
-        width={800}
-        className="file-preview-modal">
-        <div className="space-y-6">
-          {/* File Preview */}
-          {isImage ? (
+        width={900}
+        className="file-preview-modal"
+        style={{ top: 20 }}>
+        <div className="space-y-6" style={{ maxHeight: "70vh", overflow: "auto" }}>
+          {/* Image Preview */}
+          {isImage && (
             <div className="text-center">
               <img
                 src={selectedFile.fileUrl}
                 alt={selectedFile.fileName}
-                className="max-w-full max-h-96 mx-auto rounded shadow"
+                className="max-w-full max-h-[60vh] mx-auto rounded shadow"
                 onError={(e) => {
                   e.target.onerror = null;
-                  e.target.src =
-                    "https://via.placeholder.com/400x300?text=Image+Not+Available";
+                  e.target.src = "https://via.placeholder.com/400x300?text=Image+Not+Available";
                 }}
               />
             </div>
-          ) : isPDF ? (
-            <div className="h-96">
+          )}
+
+          {/* PDF Preview */}
+          {isPDF && (
+            <div style={{ height: "60vh" }}>
               <iframe
                 src={`${selectedFile.fileUrl}#view=fitH`}
                 title={selectedFile.fileName}
@@ -605,11 +724,104 @@ const DocumentsList = ({
                 frameBorder="0"
               />
             </div>
-          ) : (
+          )}
+
+          {/* Video Preview */}
+          {isVideo && (
+            <div className="text-center">
+              <video
+                controls
+                className="max-w-full max-h-[60vh] mx-auto rounded"
+                src={selectedFile.fileUrl}
+              >
+                Your browser does not support video playback.
+              </video>
+            </div>
+          )}
+
+          {/* Audio Preview */}
+          {isAudio && (
+            <div className="text-center p-8 bg-gray-50 rounded">
+              <FileOutlined style={{ fontSize: "64px", color: "#1890ff" }} />
+              <div className="mt-4">
+                <audio controls className="w-full max-w-md">
+                  <source src={selectedFile.fileUrl} type={selectedFile.mimeType} />
+                  Your browser does not support audio playback.
+                </audio>
+              </div>
+            </div>
+          )}
+
+          {/* Word Document Preview */}
+          {isWord && (
+            <div style={{ height: "60vh" }}>
+              <iframe
+                src={officeViewerUrl}
+                title={selectedFile.fileName}
+                className="w-full h-full border rounded"
+                frameBorder="0"
+              />
+              <div className="text-center mt-2 text-sm text-gray-500">
+                If the document doesn't load,{' '}
+                <Button type="link" onClick={() => window.open(selectedFile.fileUrl, '_blank')}>
+                  click here to open in new tab
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Excel Spreadsheet Preview */}
+          {isExcel && (
+            <div style={{ height: "60vh" }}>
+              <iframe
+                src={officeViewerUrl}
+                title={selectedFile.fileName}
+                className="w-full h-full border rounded"
+                frameBorder="0"
+              />
+              <div className="text-center mt-2 text-sm text-gray-500">
+                If the spreadsheet doesn't load,{' '}
+                <Button type="link" onClick={() => window.open(selectedFile.fileUrl, '_blank')}>
+                  click here to open in new tab
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* PowerPoint Preview */}
+          {isPowerPoint && (
+            <div style={{ height: "60vh" }}>
+              <iframe
+                src={officeViewerUrl}
+                title={selectedFile.fileName}
+                className="w-full h-full border rounded"
+                frameBorder="0"
+              />
+              <div className="text-center mt-2 text-sm text-gray-500">
+                If the presentation doesn't load,{' '}
+                <Button type="link" onClick={() => window.open(selectedFile.fileUrl, '_blank')}>
+                  click here to open in new tab
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Text/Code Preview */}
+          {isText && !isPDF && (
+            <div className="bg-gray-50 rounded p-4" style={{ maxHeight: "60vh", overflow: "auto" }}>
+              <pre className="whitespace-pre-wrap text-sm font-mono">
+                {/* We'll load text content via fetch */}
+                <TextPreview url={selectedFile.fileUrl} />
+              </pre>
+            </div>
+          )}
+
+          {/* Unsupported File Type */}
+          {!isImage && !isPDF && !isVideo && !isAudio && !isWord && !isExcel && !isPowerPoint && !isText && (
             <div className="text-center p-8 bg-gray-50 rounded">
               <FileOutlined style={{ fontSize: "64px", color: "#8c8c8c" }} />
               <div className="mt-4 text-gray-600">
-                Preview not available for this file type
+                Preview not available for this file type ({selectedFile.fileType})
               </div>
               <Button
                 type="link"
@@ -621,7 +833,7 @@ const DocumentsList = ({
           )}
 
           {/* File Information */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6 pt-6 border-t">
             <div className="space-y-4">
               <div>
                 <Text strong className="block mb-1">
@@ -641,10 +853,6 @@ const DocumentsList = ({
                     <Text className="uppercase">
                       {selectedFile.fileType || "Unknown"}
                     </Text>
-                  </div>
-                  <div className="flex justify-between">
-                    <Text type="secondary">MIME Type:</Text>
-                    <Text>{selectedFile.mimeType || "Unknown"}</Text>
                   </div>
                 </div>
               </div>
@@ -688,27 +896,19 @@ const DocumentsList = ({
                     <Text type="secondary">Downloads:</Text>
                     <Text>{selectedFile.downloadCount || 0}</Text>
                   </div>
-                  {selectedFile.lastDownloadedAt && (
-                    <div className="flex justify-between">
-                      <Text type="secondary">Last Downloaded:</Text>
-                      <Text>{formatDate(selectedFile.lastDownloadedAt)}</Text>
-                    </div>
-                  )}
                 </div>
               </div>
 
               <div>
                 <Text strong className="block mb-1">
-                  Categories & Tags
+                  Category
                 </Text>
                 <div className="bg-gray-50 p-3 rounded">
-                  <div className="mb-2">
-                    <Tag color="blue" className="capitalize">
-                      {selectedFile.category?.replace("-", " ") || "general"}
-                    </Tag>
-                  </div>
+                  <Tag color="blue" className="capitalize">
+                    {selectedFile.category?.replace("-", " ") || "general"}
+                  </Tag>
                   {selectedFile.tags && selectedFile.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1 mt-2">
                       {selectedFile.tags.map((tag, index) => (
                         <Tag key={index} color="geekblue">
                           {tag}
@@ -723,6 +923,43 @@ const DocumentsList = ({
         </div>
       </Modal>
     );
+  };
+
+  // Text File Preview Component
+  const TextPreview = ({ url }) => {
+    const [content, setContent] = useState("");
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+      const fetchContent = async () => {
+        try {
+          setLoading(true);
+          const response = await fetch(url);
+          const text = await response.text();
+          setContent(text);
+        } catch (err) {
+          setError("Failed to load file content");
+          console.error("Error loading text file:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      if (url) {
+        fetchContent();
+      }
+    }, [url]);
+
+    if (loading) {
+      return <div className="text-gray-500">Loading content...</div>;
+    }
+
+    if (error) {
+      return <div className="text-red-500">{error}</div>;
+    }
+
+    return <>{content}</>;
   };
 
   // Calculate statistics

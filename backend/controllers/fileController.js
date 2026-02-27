@@ -75,9 +75,9 @@ const multerFilter = (req, file, cb) => {
     cb(
       new AppError(
         `Invalid file type. File type ${file.mimetype} (${fileExtension}) is not allowed.`,
-        400
+        400,
       ),
-      false
+      false,
     );
   }
 };
@@ -129,7 +129,7 @@ const checkStorageLimit = async (firmId, fileSizeBytes) => {
   if (!firm.isSubscriptionActive()) {
     throw new AppError(
       "Your subscription has expired. Please renew to upload files.",
-      403
+      403,
     );
   }
 
@@ -142,7 +142,7 @@ const checkStorageLimit = async (firmId, fileSizeBytes) => {
       `Storage limit exceeded. You have ${(
         firm.limits.storageGB - firm.usage.storageUsedGB
       ).toFixed(2)}GB available.`,
-      403
+      403,
     );
   }
 
@@ -201,7 +201,7 @@ exports.uploadFile = async (req, res, next) => {
           uploadedBy: req.user._id.toString(),
           firmId: req.firmId.toString(),
         },
-      }
+      },
     );
 
     // Create file record in database
@@ -255,7 +255,7 @@ exports.uploadFile = async (req, res, next) => {
     if (error.name === "ValidationError") {
       const messages = Object.values(error.errors).map((err) => err.message);
       return next(
-        new AppError(`Validation Error: ${messages.join(", ")}`, 400)
+        new AppError(`Validation Error: ${messages.join(", ")}`, 400),
       );
     }
 
@@ -305,7 +305,7 @@ exports.uploadMultipleFiles = async (req, res, next) => {
             metadata: {
               firmId: req.firmId.toString(),
             },
-          }
+          },
         );
 
         // Create file record
@@ -362,7 +362,7 @@ exports.uploadMultipleFiles = async (req, res, next) => {
     if (error.name === "ValidationError") {
       const messages = Object.values(error.errors).map((err) => err.message);
       return next(
-        new AppError(`Validation Error: ${messages.join(", ")}`, 400)
+        new AppError(`Validation Error: ${messages.join(", ")}`, 400),
       );
     }
 
@@ -409,6 +409,78 @@ exports.getFileDownloadUrl = async (req, res, next) => {
         fileName: file.fileName,
         fileType: file.fileType,
         fileSize: file.fileSize,
+      },
+    });
+  } catch (error) {
+    console.error("Get download URL error:", error);
+    next(new AppError(error.message || "Failed to get download URL", 500));
+  }
+};
+
+/**
+ * Get file preview URL (longer expiration for external viewers)
+ */
+exports.getFilePreviewUrl = async (req, res, next) => {
+  try {
+    const file = await File.findOne({
+      _id: req.params.id,
+      firmId: req.firmId,
+    });
+
+    if (!file) {
+      return next(new AppError("File not found", 404));
+    }
+
+    if (file.isDeleted) {
+      return next(new AppError("This file has been deleted", 410));
+    }
+
+    // Generate presigned URL valid for 5 hours (Office Viewer needs longer expiration)
+    const previewUrl = await s3Service.getPresignedUrl(file.s3Key, 18000);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        previewUrl,
+        expiresIn: 18000,
+        fileName: file.fileName,
+        fileType: file.fileType,
+        mimeType: file.mimeType,
+      },
+    });
+  } catch (error) {
+    console.error("Get preview URL error:", error);
+    next(new AppError(error.message || "Failed to get preview URL", 500));
+  }
+};
+
+// Reconstructed missing function
+exports.getFileDownloadUrl = async (req, res, next) => {
+  try {
+    const file = await File.findOne({
+      _id: req.params.id,
+      firmId: req.firmId,
+    });
+
+    if (!file) {
+      return next(new AppError("File not found", 404));
+    }
+
+    if (file.isDeleted) {
+      return next(new AppError("This file has been deleted", 410));
+    }
+
+    // Generate presigned URL valid for 1 hour (3600 seconds)
+    const downloadUrl = await s3Service.getPresignedUrl(file.s3Key, 3600);
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        downloadUrl,
+        expiresIn: 3600,
+        fileName: file.fileName,
+        fileType: file.fileType,
+        fileSize: file.fileSize, // Kept this exactly as it was in your snippet
       },
     });
   } catch (error) {
@@ -565,7 +637,7 @@ exports.deleteFile = async (req, res, next) => {
       !["admin", "super-admin"].includes(req.user.role)
     ) {
       return next(
-        new AppError("You do not have permission to delete this file", 403)
+        new AppError("You do not have permission to delete this file", 403),
       );
     }
 
@@ -612,8 +684,8 @@ exports.permanentlyDeleteFile = async (req, res, next) => {
       return next(
         new AppError(
           "You do not have permission to permanently delete files",
-          403
-        )
+          403,
+        ),
       );
     }
 
@@ -637,7 +709,7 @@ exports.permanentlyDeleteFile = async (req, res, next) => {
   } catch (error) {
     console.error("Permanently delete file error:", error);
     next(
-      new AppError(error.message || "Failed to permanently delete file", 500)
+      new AppError(error.message || "Failed to permanently delete file", 500),
     );
   }
 };
@@ -658,7 +730,7 @@ exports.toggleArchive = async (req, res, next) => {
 
     if (file.uploadedBy.toString() !== req.user._id.toString()) {
       return next(
-        new AppError("You do not have permission to modify this file", 403)
+        new AppError("You do not have permission to modify this file", 403),
       );
     }
 
@@ -763,7 +835,7 @@ exports.uploadTaskReferenceDocuments = async (req, res, next) => {
             taskId: taskId,
             firmId: req.firmId.toString(),
           },
-        }
+        },
       );
 
       // Create file record
@@ -800,7 +872,7 @@ exports.uploadTaskReferenceDocuments = async (req, res, next) => {
       // Add to task's reference documents
       await Task.findOneAndUpdate(
         { _id: taskId, firmId: req.firmId },
-        { $addToSet: { referenceDocuments: fileRecord._id } }
+        { $addToSet: { referenceDocuments: fileRecord._id } },
       );
 
       return fileRecord;
@@ -823,8 +895,8 @@ exports.uploadTaskReferenceDocuments = async (req, res, next) => {
     next(
       new AppError(
         error.message || "Failed to upload task reference documents",
-        500
-      )
+        500,
+      ),
     );
   }
 };
@@ -879,7 +951,7 @@ exports.uploadTaskResponseDocuments = async (req, res, next) => {
             responseId: responseId,
             firmId: req.firmId.toString(),
           },
-        }
+        },
       );
 
       // Create file record
@@ -938,8 +1010,8 @@ exports.uploadTaskResponseDocuments = async (req, res, next) => {
     next(
       new AppError(
         error.message || "Failed to upload task response documents",
-        500
-      )
+        500,
+      ),
     );
   }
 };
@@ -953,7 +1025,7 @@ exports.bulkDeleteFiles = async (req, res, next) => {
 
     if (!fileIds || !Array.isArray(fileIds) || fileIds.length === 0) {
       return next(
-        new AppError("Please provide an array of file IDs to delete", 400)
+        new AppError("Please provide an array of file IDs to delete", 400),
       );
     }
 
@@ -967,15 +1039,15 @@ exports.bulkDeleteFiles = async (req, res, next) => {
     const unauthorizedFiles = files.filter(
       (file) =>
         file.uploadedBy.toString() !== req.user._id.toString() &&
-        !["admin", "super-admin"].includes(req.user.role)
+        !["admin", "super-admin"].includes(req.user.role),
     );
 
     if (unauthorizedFiles.length > 0) {
       return next(
         new AppError(
           `You don't have permission to delete ${unauthorizedFiles.length} file(s)`,
-          403
-        )
+          403,
+        ),
       );
     }
 
@@ -1018,7 +1090,7 @@ exports.restoreFile = async (req, res, next) => {
 
     if (file.uploadedBy.toString() !== req.user._id.toString()) {
       return next(
-        new AppError("You do not have permission to restore this file", 403)
+        new AppError("You do not have permission to restore this file", 403),
       );
     }
 
@@ -1064,7 +1136,7 @@ exports.updateFile = async (req, res, next) => {
 
     if (file.uploadedBy.toString() !== req.user._id.toString()) {
       return next(
-        new AppError("You do not have permission to update this file", 403)
+        new AppError("You do not have permission to update this file", 403),
       );
     }
 
@@ -1103,7 +1175,7 @@ exports.getFirmFiles = async (req, res, next) => {
     // Only admins can view all firm files
     if (!["admin", "super-admin"].includes(req.user.role)) {
       return next(
-        new AppError("You do not have permission to view all firm files", 403)
+        new AppError("You do not have permission to view all firm files", 403),
       );
     }
 

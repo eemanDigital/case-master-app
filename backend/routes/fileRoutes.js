@@ -63,6 +63,9 @@ router
   .get(fileController.getFileDownloadUrl)
   .delete(fileController.deleteFile);
 
+// Preview URL endpoint (for Office Viewer)
+router.get("/:id/preview", fileController.getFilePreviewUrl);
+
 router.patch("/:id/archive", fileController.toggleArchive);
 
 // Admin only routes
