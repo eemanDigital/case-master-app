@@ -342,7 +342,25 @@ exports.deleteTask = catchAsync(async (req, res, next) => {
     );
   }
 
-  // Soft delete
+  // Get all document IDs associated with this task
+  const allDocumentIds = [
+    ...(task.referenceDocuments || []),
+    ...task.taskResponses.flatMap(r => r.documents || [])
+  ];
+
+  // Soft delete all associated documents
+  if (allDocumentIds.length > 0) {
+    await File.updateMany(
+      { _id: { $in: allDocumentIds } },
+      { 
+        isDeleted: true, 
+        deletedAt: new Date(),
+        deletedBy: req.user.id
+      }
+    );
+  }
+
+  // Soft delete the task
   task.isDeleted = true;
   task.deletedAt = new Date();
   task.deletedBy = req.user.id;
@@ -350,8 +368,67 @@ exports.deleteTask = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Task deleted successfully",
-    data: null,
+    message: "Task and all associated documents deleted successfully",
+    data: {
+      deletedTaskId: task._id,
+      deletedDocumentsCount: allDocumentIds.length
+    },
+  });
+});
+
+// Restore soft-deleted task
+exports.restoreTask = catchAsync(async (req, res, next) => {
+  const task = await Task.findOne({
+    _id: req.params.taskId,
+    firmId: req.firmId,
+    isDeleted: true,
+  });
+
+  if (!task) {
+    return next(new AppError("No deleted task found with that ID", 404));
+  }
+
+  // Check if user is creator or has permission
+  const isCreator = task.createdBy.toString() === req.user.id;
+  const isAdmin = ["admin", "super-admin"].includes(req.user.role);
+
+  if (!isCreator && !isAdmin) {
+    return next(
+      new AppError("You are not authorized to restore this task", 403),
+    );
+  }
+
+  // Get all document IDs associated with this task
+  const allDocumentIds = [
+    ...(task.referenceDocuments || []),
+    ...task.taskResponses.flatMap(r => r.documents || [])
+  ];
+
+  // Restore all associated documents
+  if (allDocumentIds.length > 0) {
+    await File.updateMany(
+      { _id: { $in: allDocumentIds } },
+      { 
+        isDeleted: false, 
+        deletedAt: null,
+        deletedBy: null
+      }
+    );
+  }
+
+  // Restore the task
+  task.isDeleted = false;
+  task.deletedAt = null;
+  task.deletedBy = null;
+  await task.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Task and all associated documents restored successfully",
+    data: {
+      restoredTaskId: task._id,
+      restoredDocumentsCount: allDocumentIds.length
+    },
   });
 });
 
@@ -1012,6 +1089,19 @@ exports.deleteTaskResponse = catchAsync(async (req, res, next) => {
     );
   }
 
+  // Soft delete all documents associated with this response
+  const responseDocumentIds = response.documents || [];
+  if (responseDocumentIds.length > 0) {
+    await File.updateMany(
+      { _id: { $in: responseDocumentIds } },
+      { 
+        isDeleted: true, 
+        deletedAt: new Date(),
+        deletedBy: req.user.id
+      }
+    );
+  }
+
   // Remove the response from the array
   task.taskResponses.splice(responseIndex, 1);
 
@@ -1031,8 +1121,121 @@ exports.deleteTaskResponse = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Task response deleted successfully",
-    data: updatedTask,
+    message: "Task response and associated documents deleted successfully",
+    data: {
+      task: updatedTask,
+      deletedDocumentsCount: responseDocumentIds.length
+    },
+  });
+});
+
+// Delete single document from task response
+exports.deleteTaskResponseDocument = catchAsync(async (req, res, next) => {
+  const { taskId, responseId, documentId } = req.params;
+
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  // Find the response
+  const response = task.taskResponses.id(responseId);
+  if (!response) {
+    return next(new AppError("Response not found", 404));
+  }
+
+  // Check authorization
+  const userId = req.user.id.toString();
+  let isSubmitter = false;
+
+  if (response.submittedBy) {
+    if (typeof response.submittedBy === "object" && response.submittedBy._id) {
+      isSubmitter = response.submittedBy._id.toString() === userId;
+    } else {
+      isSubmitter = response.submittedBy.toString() === userId;
+    }
+  }
+
+  const isCreator = task.createdBy.toString() === userId;
+  const isAdmin = ["admin", "super-admin"].includes(req.user.role);
+
+  if (!isSubmitter && !isCreator && !isAdmin) {
+    return next(
+      new AppError("You are not authorized to delete this document", 403),
+    );
+  }
+
+  // Check if document exists in response
+  const documentIndex = response.documents.findIndex(
+    (docId) => docId.toString() === documentId
+  );
+
+  if (documentIndex === -1) {
+    return next(new AppError("Document not found in this response", 404));
+  }
+
+  // Soft delete the document
+  await File.findByIdAndUpdate(documentId, {
+    isDeleted: true,
+    deletedAt: new Date(),
+    deletedBy: req.user.id
+  });
+
+  // Remove document from response array
+  response.documents.splice(documentIndex, 1);
+  await task.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Document deleted successfully",
+    data: { documentId },
+  });
+});
+
+// Delete reference document from task
+exports.deleteTaskReferenceDocument = catchAsync(async (req, res, next) => {
+  const { taskId, documentId } = req.params;
+
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  // Check authorization - only task creator or admin can delete reference documents
+  const userId = req.user.id.toString();
+  const isCreator = task.createdBy.toString() === userId;
+  const isAdmin = ["admin", "super-admin"].includes(req.user.role);
+
+  if (!isCreator && !isAdmin) {
+    return next(
+      new AppError("You are not authorized to delete reference documents", 403),
+    );
+  }
+
+  // Check if document exists in referenceDocuments
+  const documentIndex = task.referenceDocuments.findIndex(
+    (docId) => docId.toString() === documentId
+  );
+
+  if (documentIndex === -1) {
+    return next(new AppError("Document not found in task references", 404));
+  }
+
+  // Soft delete the document
+  await File.findByIdAndUpdate(documentId, {
+    isDeleted: true,
+    deletedAt: new Date(),
+    deletedBy: req.user.id
+  });
+
+  // Remove document from task's referenceDocuments array
+  task.referenceDocuments.splice(documentIndex, 1);
+  await task.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Reference document deleted successfully",
+    data: { documentId },
   });
 });
 

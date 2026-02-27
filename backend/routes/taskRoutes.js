@@ -25,6 +25,9 @@ router
   .patch(taskController.updateTask)
   .delete(taskController.deleteTask);
 
+// Restore soft-deleted task
+router.route("/:taskId/restore").post(taskController.restoreTask);
+
 // Task documents
 router.route("/:taskId/documents").get(taskController.getTaskDocuments);
 
@@ -45,6 +48,11 @@ router
   .route("/:taskId/reference-documents")
   .post(fileController.uploadMultiple, taskController.uploadReferenceDocuments);
 
+// Delete reference document from task
+router
+  .route("/:taskId/reference-documents/:documentId")
+  .delete(taskController.deleteTaskReferenceDocument);
+
 // Upload response documents
 router
   .route("/:taskId/response-documents")
@@ -58,6 +66,11 @@ router
   .route("/:taskId/responses/:responseId")
   .put(taskController.updateTaskResponse)
   .delete(taskController.deleteTaskResponse);
+
+// Delete single document from task response
+router
+  .route("/:taskId/responses/:responseId/documents/:documentId")
+  .delete(taskController.deleteTaskResponseDocument);
 
 // Review task response
 router

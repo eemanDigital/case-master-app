@@ -13,14 +13,11 @@ import {
   Divider,
   List,
   Avatar,
-  Timeline,
   Badge,
   Row,
   Col,
-  Checkbox,
   Spin,
   Alert,
-  Radio,
   Select,
 } from "antd";
 const { Option } = Select;
@@ -28,13 +25,10 @@ const { Option } = Select;
 import {
   CheckCircleOutlined,
   CloseCircleOutlined,
-  ClockCircleOutlined,
   UserOutlined,
   FileTextOutlined,
-  HistoryOutlined,
   DownloadOutlined,
   StarOutlined,
-  SendOutlined,
   EyeOutlined,
   EditOutlined,
   FilePdfOutlined,
@@ -48,7 +42,6 @@ import {
   fetchTaskHistory,
   reviewTaskComplete,
   selectTaskHistory,
-  selectTaskActionLoading,
 } from "../redux/features/task/taskSlice";
 
 import { formatDate } from "../utils/formatDate";
@@ -67,13 +60,7 @@ const TaskReviewModal = ({
   const dispatch = useDispatch();
   const [form] = Form.useForm();
 
-  // ✅ FIX 1: Don't use selectedTask or selectedTaskLoading at all.
-  //    The modal already receives `task` as a prop with full data.
-  //    fetchTask was causing loading:true to get stuck because either
-  //    the thunk failed silently or selectSelectedTaskLoading tracked
-  //    the wrong flag. Use the prop directly.
   const taskHistory = useSelector(selectTaskHistory);
-  const actionLoading = useSelector(selectTaskActionLoading);
 
   const [historyLoading, setHistoryLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -89,8 +76,9 @@ const TaskReviewModal = ({
   const [editForm] = Form.useForm();
   const [isEditing, setIsEditing] = useState(false);
 
-  // Check if current user is an assignee (can edit their response)
   const userIdStr = String(currentUserId || "");
+
+  // Check if current user is an assignee
   const isAssignee = task?.assignees?.some(
     (assignee) =>
       (assignee.user?._id && String(assignee.user._id) === userIdStr) ||
@@ -101,7 +89,9 @@ const TaskReviewModal = ({
   const canEditResponse = (response) => {
     if (!isAssignee || !response) return false;
     const responseUserId = response.submittedBy?._id || response.submittedBy;
-    return String(responseUserId) === userIdStr && task?.status !== "under-review";
+    return (
+      String(responseUserId) === userIdStr && task?.status !== "under-review"
+    );
   };
 
   // Handle edit response
@@ -122,13 +112,17 @@ const TaskReviewModal = ({
       const values = await editForm.validateFields();
       setIsSubmitting(true);
 
-      const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
-      const response = await fetch(`${baseURL}/tasks/${task._id}/responses/${editingResponse._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(values),
-      });
+      const baseURL =
+        import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
+      const response = await fetch(
+        `${baseURL}/tasks/${task._id}/responses/${editingResponse._id}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(values),
+        },
+      );
 
       const data = await response.json();
 
@@ -157,17 +151,25 @@ const TaskReviewModal = ({
 
   // Get file icon based on type
   const getFileIcon = (file) => {
-    const extension = file.fileType?.toLowerCase();
-    const mimeType = file.mimeType?.toLowerCase();
+    const extension = file?.fileType?.toLowerCase();
+    const mimeType = file?.mimeType?.toLowerCase();
     const iconStyle = { fontSize: 20 };
 
     if (extension === "pdf" || mimeType?.includes("pdf")) {
       return <FilePdfOutlined style={{ ...iconStyle, color: "#ff4d4f" }} />;
     }
-    if (extension === "doc" || extension === "docx" || mimeType?.includes("word")) {
+    if (
+      extension === "doc" ||
+      extension === "docx" ||
+      mimeType?.includes("word")
+    ) {
       return <FileWordOutlined style={{ ...iconStyle, color: "#1890ff" }} />;
     }
-    if (extension === "xls" || extension === "xlsx" || mimeType?.includes("excel")) {
+    if (
+      extension === "xls" ||
+      extension === "xlsx" ||
+      mimeType?.includes("excel")
+    ) {
       return <FileExcelOutlined style={{ ...iconStyle, color: "#52c41a" }} />;
     }
     if (
@@ -187,8 +189,10 @@ const TaskReviewModal = ({
         return;
       }
 
-      const isOfficeDoc = 
-        ["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(previewFile.fileType?.toLowerCase()) ||
+      const isOfficeDoc =
+        ["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(
+          previewFile.fileType?.toLowerCase(),
+        ) ||
         previewFile.mimeType?.includes("word") ||
         previewFile.mimeType?.includes("excel") ||
         previewFile.mimeType?.includes("powerpoint");
@@ -200,10 +204,12 @@ const TaskReviewModal = ({
 
       setPreviewLoading(true);
       try {
-        const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
-        const response = await fetch(`${baseURL}/files/${previewFile._id}/preview`, {
-          credentials: "include",
-        });
+        const baseURL =
+          import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
+        const response = await fetch(
+          `${baseURL}/files/${previewFile._id}/preview`,
+          { credentials: "include" },
+        );
         const data = await response.json();
         if (data.status === "success" && data.data.previewUrl) {
           setPreviewUrl(data.data.previewUrl);
@@ -218,15 +224,16 @@ const TaskReviewModal = ({
     fetchPreviewUrl();
   }, [previewFile, previewModalVisible]);
 
-  // Download file function
+  // Download file
   const handleDownload = async (file) => {
     try {
-      const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
+      const baseURL =
+        import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
       const response = await fetch(`${baseURL}/files/${file._id}`, {
         credentials: "include",
       });
       const data = await response.json();
-      
+
       if (data.status === "success" && data.data.downloadUrl) {
         const link = document.createElement("a");
         link.href = data.data.downloadUrl;
@@ -235,12 +242,10 @@ const TaskReviewModal = ({
         link.click();
         document.body.removeChild(link);
       } else {
-        // Fallback to direct URL
         window.open(file.fileUrl, "_blank");
       }
     } catch (error) {
       console.error("Download error:", error);
-      // Fallback
       window.open(file.fileUrl, "_blank");
     }
   };
@@ -251,8 +256,7 @@ const TaskReviewModal = ({
     setPreviewModalVisible(true);
   };
 
-  // ✅ FIX 2: Only fetch task history (not the full task again).
-  //    Track history loading locally so we don't block the whole modal.
+  // Fetch task history when modal opens
   useEffect(() => {
     if (!open || !task?._id) return;
 
@@ -262,7 +266,6 @@ const TaskReviewModal = ({
         await dispatch(fetchTaskHistory(task._id)).unwrap();
       } catch (err) {
         console.warn("Failed to load task history:", err);
-        // Non-fatal — modal still shows without history
       } finally {
         setHistoryLoading(false);
       }
@@ -299,7 +302,6 @@ const TaskReviewModal = ({
         onReviewComplete && onReviewComplete();
         onClose();
       } catch (error) {
-        // Error toast handled by slice
         console.error("Review submission failed:", error);
       } finally {
         setIsSubmitting(false);
@@ -308,15 +310,11 @@ const TaskReviewModal = ({
     [dispatch, task, onClose, onReviewComplete, form],
   );
 
-  // ✅ FIX 3: isAssignedBy — task data shows assignedBy is a plain string ID,
-  //    not a populated object. Handle both cases.
-  const userIdStr = String(currentUserId || "");
   const isCreator = task?.createdBy?._id
     ? String(task.createdBy._id) === userIdStr
     : String(task?.createdBy) === userIdStr;
 
   const isAssignedBy = task?.assignees?.some((assignee) => {
-    // assignedBy can be a plain string ID or a populated object
     const assignedById = assignee.assignedBy?._id
       ? String(assignee.assignedBy._id)
       : String(assignee.assignedBy);
@@ -328,6 +326,48 @@ const TaskReviewModal = ({
   if (!task) return null;
 
   const taskResponses = task.taskResponses || [];
+
+  // ─── Render helpers ──────────────────────────────────────────────────────────
+
+  const renderDocumentList = (documents) => (
+    <List
+      size="small"
+      dataSource={documents}
+      renderItem={(doc, docIndex) => (
+        <List.Item
+          key={doc._id || docIndex}
+          className="border rounded px-3 py-2 mb-2 hover:bg-gray-50"
+          actions={[
+            <Button
+              key="preview"
+              type="text"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => openPreview(doc)}
+              title="Preview"
+            />,
+            <Button
+              key="download"
+              type="text"
+              size="small"
+              icon={<DownloadOutlined />}
+              onClick={() => handleDownload(doc)}
+              title="Download"
+            />,
+          ]}>
+          <Space>
+            {getFileIcon(doc)}
+            <div>
+              <Text className="block">{doc.fileName}</Text>
+              <Text type="secondary" className="text-xs">
+                {doc.fileSizeMB ? `${doc.fileSizeMB} MB` : ""} {doc.fileType}
+              </Text>
+            </div>
+          </Space>
+        </List.Item>
+      )}
+    />
+  );
 
   return (
     <Modal
@@ -347,8 +387,6 @@ const TaskReviewModal = ({
       closable={!isSubmitting}>
       <Divider className="!my-4" />
 
-      {/* ✅ No more full-modal spinner — modal always shows content */}
-
       {/* Permission warning */}
       {!canReview && (
         <Alert
@@ -360,7 +398,7 @@ const TaskReviewModal = ({
         />
       )}
 
-      {/* Task Overview */}
+      {/* ── Task Overview ───────────────────────────────────────────────────── */}
       <Card size="small" className="mb-4">
         <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
           <div className="flex-1">
@@ -429,54 +467,18 @@ const TaskReviewModal = ({
           </div>
         )}
 
-        {/* Task Reference Documents */}
+        {/* Reference Documents */}
         {task.referenceDocuments?.length > 0 && (
           <div className="mt-4 pt-3 border-t border-gray-100">
             <Text strong className="block text-xs text-gray-500 mb-2">
               Reference Documents
             </Text>
-            <List
-              size="small"
-              dataSource={task.referenceDocuments}
-              renderItem={(doc, docIndex) => (
-                <List.Item
-                  key={doc._id || docIndex}
-                  className="border rounded px-3 py-2 mb-2 hover:bg-gray-50"
-                  actions={[
-                    <Button
-                      key="preview"
-                      type="text"
-                      size="small"
-                      icon={<EyeOutlined />}
-                      onClick={() => openPreview(doc)}
-                      title="Preview"
-                    />,
-                    <Button
-                      key="download"
-                      type="text"
-                      size="small"
-                      icon={<DownloadOutlined />}
-                      onClick={() => handleDownload(doc)}
-                      title="Download"
-                    />,
-                  ]}>
-                  <Space>
-                    {getFileIcon(doc)}
-                    <div>
-                      <Text className="block">{doc.fileName}</Text>
-                      <Text type="secondary" className="text-xs">
-                        {doc.fileSizeMB ? `${doc.fileSizeMB} MB` : ""}
-                      </Text>
-                    </div>
-                  </Space>
-                </List.Item>
-              )}
-            />
+            {renderDocumentList(task.referenceDocuments)}
           </div>
         )}
       </Card>
 
-      {/* Task Responses */}
+      {/* ── Task Responses ──────────────────────────────────────────────────── */}
       {taskResponses.length > 0 && (
         <Card
           size="small"
@@ -491,19 +493,18 @@ const TaskReviewModal = ({
           <List
             dataSource={taskResponses}
             renderItem={(response, index) => (
-              <List.Item 
+              <List.Item
                 key={response._id || index}
                 extra={
-                  canEditResponse(response) && !isEditing && (
+                  canEditResponse(response) && !isEditing ? (
                     <Button
                       type="text"
                       icon={<EditOutlined />}
                       onClick={() => handleEditResponse(response)}
                       title="Edit Response"
                     />
-                  )
-                }
-              >
+                  ) : null
+                }>
                 <Card className="w-full" size="small">
                   {/* Edit Form */}
                   {isEditing && editingResponse?._id === response._id ? (
@@ -513,7 +514,9 @@ const TaskReviewModal = ({
                       </Form.Item>
                       <Row gutter={16}>
                         <Col span={8}>
-                          <Form.Item name="completionPercentage" label="Completion %">
+                          <Form.Item
+                            name="completionPercentage"
+                            label="Completion %">
                             <Input type="number" min={0} max={100} />
                           </Form.Item>
                         </Col>
@@ -533,7 +536,10 @@ const TaskReviewModal = ({
                         </Col>
                       </Row>
                       <Space>
-                        <Button type="primary" onClick={handleSaveEdit} loading={isSubmitting}>
+                        <Button
+                          type="primary"
+                          onClick={handleSaveEdit}
+                          loading={isSubmitting}>
                           Save Changes
                         </Button>
                         <Button onClick={handleCancelEdit}>Cancel</Button>
@@ -554,80 +560,56 @@ const TaskReviewModal = ({
                             {formatDate(response.submittedAt)}
                           </Text>
                         </div>
-                        <Paragraph className="mb-2">{response.comment}</Paragraph>
 
-                      <div className="flex flex-wrap gap-4 mb-3">
-                        <div>
-                          <Text strong className="block text-xs text-gray-500">
-                            Completion
-                          </Text>
-                          <Text>{response.completionPercentage}%</Text>
+                        <Paragraph className="mb-2">
+                          {response.comment}
+                        </Paragraph>
+
+                        <div className="flex flex-wrap gap-4 mb-3">
+                          <div>
+                            <Text
+                              strong
+                              className="block text-xs text-gray-500">
+                              Completion
+                            </Text>
+                            <Text>{response.completionPercentage}%</Text>
+                          </div>
+                          <div>
+                            <Text
+                              strong
+                              className="block text-xs text-gray-500">
+                              Time Spent
+                            </Text>
+                            <Text>{response.timeSpent || 0} minutes</Text>
+                          </div>
+                          <div>
+                            <Text
+                              strong
+                              className="block text-xs text-gray-500">
+                              Status
+                            </Text>
+                            <Tag
+                              color={
+                                response.status === "completed"
+                                  ? "green"
+                                  : "blue"
+                              }>
+                              {response.status}
+                            </Tag>
+                          </div>
                         </div>
-                        <div>
-                          <Text strong className="block text-xs text-gray-500">
-                            Time Spent
-                          </Text>
-                          <Text>{response.timeSpent || 0} minutes</Text>
-                        </div>
-                        <div>
-                          <Text strong className="block text-xs text-gray-500">
-                            Status
-                          </Text>
-                          <Tag
-                            color={
-                              response.status === "completed" ? "green" : "blue"
-                            }>
-                            {response.status}
-                          </Tag>
-                        </div>
+
+                        {response.documents?.length > 0 && (
+                          <div className="mt-3">
+                            <Text
+                              strong
+                              className="block text-xs text-gray-500 mb-2">
+                              Attached Documents ({response.documents.length})
+                            </Text>
+                            {renderDocumentList(response.documents)}
+                          </div>
+                        )}
                       </div>
-
-                      {response.documents?.length > 0 && (
-                        <div className="mt-3">
-                          <Text
-                            strong
-                            className="block text-xs text-gray-500 mb-2">
-                            Attached Documents ({response.documents.length})
-                          </Text>
-                          <List
-                            size="small"
-                            dataSource={response.documents}
-                            renderItem={(doc, docIndex) => (
-                              <List.Item
-                                key={doc._id || docIndex}
-                                className="border rounded px-3 py-2 mb-2 hover:bg-gray-50"
-                                actions={[
-                                  <Button
-                                    key="preview"
-                                    type="text"
-                                    size="small"
-                                    icon={<EyeOutlined />}
-                                    onClick={() => openPreview(doc)}
-                                    title="Preview"
-                                  />,
-                                  <Button
-                                    key="download"
-                                    type="text"
-                                    size="small"
-                                    icon={<DownloadOutlined />}
-                                    onClick={() => handleDownload(doc)}
-                                    title="Download"
-                                  />,
-                                ]}>
-                                <Space>
-                                  {getFileIcon(doc)}
-                                  <div>
-                                    <Text className="block">{doc.fileName}</Text>
-                                    <Text type="secondary" className="text-xs">
-                                      {doc.fileSizeMB ? `${doc.fileSizeMB} MB` : ""} {doc.fileType}
-                                    </Text>
-                                  </div>
-                                </Space>
-                              </List.Item>
-                            )}
-                          />
-                        </div>
-                      )}
                     </div>
                   )}
                 </Card>
@@ -637,7 +619,83 @@ const TaskReviewModal = ({
         </Card>
       )}
 
-      {/* Document Preview Modal */}
+      {/* ── Review Form (approve / reject) ─────────────────────────────────── */}
+      {canReview && (
+        <Card
+          size="small"
+          title={
+            <Space>
+              <StarOutlined />
+              <Text strong>Submit Review</Text>
+            </Space>
+          }
+          className="mb-4">
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleReviewSubmit}
+            initialValues={{ approve: true, sendNotification: true }}>
+            {/* Approve / Reject */}
+            <Form.Item
+              name="approve"
+              label="Decision"
+              rules={[{ required: true, message: "Please select a decision" }]}>
+              <Select placeholder="Select decision">
+                <Option value={true}>
+                  <Space>
+                    <CheckCircleOutlined style={{ color: "#52c41a" }} />
+                    Approve
+                  </Space>
+                </Option>
+                <Option value={false}>
+                  <Space>
+                    <CloseCircleOutlined style={{ color: "#ff4d4f" }} />
+                    Reject
+                  </Space>
+                </Option>
+              </Select>
+            </Form.Item>
+
+            {/* Rating */}
+            <Form.Item name="rating" label="Rating (optional)">
+              <Rate allowHalf />
+            </Form.Item>
+
+            {/* Comment */}
+            <Form.Item name="reviewComment" label="Review Comment (optional)">
+              <TextArea
+                rows={3}
+                placeholder="Add any feedback or notes for the assignee…"
+              />
+            </Form.Item>
+
+            {/* Notification toggle */}
+            <Form.Item name="sendNotification" valuePropName="checked">
+              <Select defaultValue={true}>
+                <Option value={true}>Notify assignee</Option>
+                <Option value={false}>Do not notify assignee</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item className="!mb-0">
+              <Space>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={isSubmitting}
+                  disabled={isSubmitting}>
+                  Submit Review
+                </Button>
+                <Button onClick={onClose} disabled={isSubmitting}>
+                  Cancel
+                </Button>
+              </Space>
+            </Form.Item>
+          </Form>
+        </Card>
+      )}
+
+      {/* ── Document Preview Modal ──────────────────────────────────────────── */}
       <Modal
         title={
           <Space>
@@ -672,7 +730,7 @@ const TaskReviewModal = ({
             </div>
           ) : (
             <>
-              {/* Image Preview */}
+              {/* Image */}
               {previewFile?.mimeType?.startsWith("image/") && (
                 <div className="text-center">
                   <img
@@ -683,8 +741,9 @@ const TaskReviewModal = ({
                 </div>
               )}
 
-              {/* PDF Preview */}
-              {(previewFile?.fileType === "pdf" || previewFile?.mimeType?.includes("pdf")) && (
+              {/* PDF */}
+              {(previewFile?.fileType === "pdf" ||
+                previewFile?.mimeType?.includes("pdf")) && (
                 <iframe
                   src={`${previewFile.fileUrl}#view=fitH`}
                   title={previewFile.fileName}
@@ -693,42 +752,47 @@ const TaskReviewModal = ({
                 />
               )}
 
-              {/* Office Document Preview */}
-              {(["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(previewFile?.fileType?.toLowerCase()) ||
+              {/* Office documents */}
+              {(["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(
+                previewFile?.fileType?.toLowerCase(),
+              ) ||
                 previewFile?.mimeType?.includes("word") ||
                 previewFile?.mimeType?.includes("excel") ||
-                previewFile?.mimeType?.includes("powerpoint")) && (
-                <>
-                  {previewUrl ? (
-                    <iframe
-                      src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewUrl)}`}
-                      title={previewFile.fileName}
-                      className="w-full h-full border rounded"
-                      frameBorder="0"
+                previewFile?.mimeType?.includes("powerpoint")) &&
+                (previewUrl ? (
+                  <iframe
+                    src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewUrl)}`}
+                    title={previewFile.fileName}
+                    className="w-full h-full border rounded"
+                    frameBorder="0"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full bg-gray-50 rounded">
+                    <FileTextOutlined
+                      style={{ fontSize: 64, color: "#8c8c8c" }}
                     />
-                  ) : (
-                    <div className="flex flex-col items-center justify-center h-full bg-gray-50 rounded">
-                      <FileTextOutlined style={{ fontSize: 64, color: "#8c8c8c" }} />
-                      <Text className="mt-4">Preview not available</Text>
-                      <Button
-                        type="link"
-                        icon={<DownloadOutlined />}
-                        onClick={() => handleDownload(previewFile)}
-                        className="mt-2">
-                        Download to view
-                      </Button>
-                    </div>
-                  )}
-                </>
-              )}
+                    <Text className="mt-4">Preview not available</Text>
+                    <Button
+                      type="link"
+                      icon={<DownloadOutlined />}
+                      onClick={() => handleDownload(previewFile)}
+                      className="mt-2">
+                      Download to view
+                    </Button>
+                  </div>
+                ))}
 
-              {/* Other file types */}
+              {/* Unsupported types */}
               {!previewFile?.mimeType?.startsWith("image/") &&
                 !previewFile?.fileType?.toLowerCase().includes("pdf") &&
-                !["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(previewFile?.fileType?.toLowerCase()) && (
+                !["doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(
+                  previewFile?.fileType?.toLowerCase(),
+                ) && (
                   <div className="flex flex-col items-center justify-center h-full bg-gray-50 rounded">
                     {getFileIcon(previewFile || {})}
-                    <Text className="mt-4">Preview not available for this file type</Text>
+                    <Text className="mt-4">
+                      Preview not available for this file type
+                    </Text>
                     <Button
                       type="link"
                       icon={<DownloadOutlined />}
