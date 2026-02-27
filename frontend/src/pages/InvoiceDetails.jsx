@@ -70,14 +70,10 @@ const InvoiceDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { user } = useSelector((state) => state.auth);
   const isClient = user?.data?.role === "client";
-  const isSuperOrAdmin =
-    user?.data?.additionalRoles?.includes("super-admin", "admin") ||
-    user?.data?.role === "admin";
 
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const {
     handleDownloadPdf,
-    loading: loadingPdf,
     error: pdfError,
   } = useDownloadPdfHandler();
   useRedirectLogoutUser("/users/login");
@@ -197,35 +193,29 @@ const InvoiceDetails = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="container mx-auto py-6 max-w-7xl">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200">
+      <div className="container mx-auto py-6 max-w-7xl px-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200">
           <GoBackButton />
 
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full sm:w-auto">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                 <FileTextOutlined className="text-blue-600 text-lg" />
               </div>
               <div>
-                <Title level={2} className="m-0 text-gray-900">
+                <Title level={4} className="m-0 text-gray-900">
                   Invoice Details
                 </Title>
-                <Text className="text-gray-500">{invoice?.invoiceNumber}</Text>
+                <Text className="text-gray-500 text-sm">{invoice?.invoiceNumber}</Text>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Tag
-                color={getStatusColor(invoice?.status)}
-                className="text-sm font-semibold">
+            <div className="flex flex-wrap items-center gap-2 mt-2 sm:mt-0">
+              <Tag color={getStatusColor(invoice?.status)} className="text-sm font-semibold">
                 {invoice?.status?.replace("_", " ")?.toUpperCase()}
               </Tag>
               {invoice?.dueDate && (
                 <Tag
-                  color={
-                    invoice?.status?.toLowerCase() === "overdue"
-                      ? "red"
-                      : "blue"
-                  }
+                  color={invoice?.status?.toLowerCase() === "overdue" ? "red" : "blue"}
                   className="text-sm">
                   Due: {formatDate(invoice?.dueDate)}
                 </Tag>
@@ -238,10 +228,11 @@ const InvoiceDetails = () => {
             </div>
           </div>
 
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
             {invoice?.status === "draft" && !isClient && (
               <Button
                 type="primary"
+                size="small"
                 icon={<FileTextOutlined />}
                 onClick={() => handleQuickStatusChange("sent")}
                 className="bg-orange-500 hover:bg-orange-600 border-0">
@@ -252,6 +243,7 @@ const InvoiceDetails = () => {
             {invoice?.status === "sent" && !isClient && (
               <Button
                 type="primary"
+                size="small"
                 icon={<CheckCircleOutlined />}
                 onClick={() => handleQuickStatusChange("paid")}
                 className="bg-green-600 hover:bg-green-700 border-0">
@@ -265,6 +257,7 @@ const InvoiceDetails = () => {
               !isClient && (
                 <Button
                   type="primary"
+                  size="small"
                   icon={<PlusOutlined />}
                   onClick={() => setPaymentModalVisible(true)}
                   className="bg-green-600 hover:bg-green-700 border-0">
@@ -275,6 +268,7 @@ const InvoiceDetails = () => {
             <Dropdown menu={{ items: downloadMenuItems }} trigger={["click"]}>
               <Button
                 type="primary"
+                size="small"
                 icon={<DownloadOutlined />}
                 className="bg-blue-600 hover:bg-blue-700 border-0">
                 Download
@@ -284,6 +278,7 @@ const InvoiceDetails = () => {
             {!isClient && (
               <Link to={`../billings/invoices/${invoice?._id}/update`}>
                 <Button
+                  size="small"
                   icon={<EditOutlined />}
                   className="border-blue-300 text-blue-600 hover:text-blue-700">
                   Edit Invoice
