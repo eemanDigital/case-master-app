@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { Table, Modal, Space, Button, Tag, Progress } from "antd";
+import { Table, Modal, Space, Button, Tag, Progress, Tooltip } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import {
@@ -8,6 +8,7 @@ import {
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import moment from "moment";
 import ButtonWithIcon from "../components/ButtonWithIcon";
@@ -19,13 +20,15 @@ import { deleteData } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 
+const downloadURL = import.meta.env.VITE_BASE_URL;
+
 const InvoiceList = () => {
   const {
     invoices,
     loading: loadingInvoices,
     error: errorInvoices,
     fetchData,
-  } = useDataGetterHook(); //custom hook to fetch data
+  } = useDataGetterHook();
 
   const [searchResults, setSearchResults] = useState([]);
   const { isLoading, isError, isSuccess, message } = useSelector(
@@ -33,24 +36,17 @@ const InvoiceList = () => {
   );
 
   const dispatch = useDispatch();
-  // const { isClient, isSuperOrAdmin } = useAdminHook();
   const { user } = useSelector((state) => state.auth);
-  // const isClient = user?.data?.role === "client";
-  const isSuperOrAdmin = user?.data?.additionalRoles.includes(
+  const isSuperOrAdmin = user?.data?.additionalRoles?.includes(
     "super-admin",
-    "admin",
-  );
+  ) || user?.data?.role === "admin";
 
-  console.log("User role:", user?.data?.role, user);
+  useRedirectLogoutUser("/users/login");
 
-  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
-
-  // fetch data
   useEffect(() => {
     fetchData("invoices", "invoices");
-  }, []);
+  }, [fetchData]);
 
-  // handle search handler
   useEffect(() => {
     if (invoices?.data) {
       setSearchResults(invoices.data);
@@ -75,6 +71,7 @@ const InvoiceList = () => {
           .includes(searchTerm);
         const titleMatch = d.title?.toLowerCase().includes(searchTerm);
         const caseMatch = d.case?.suitNo?.toLowerCase().includes(searchTerm);
+        const matterMatch = d.matter?.matterNumber?.toLowerCase().includes(searchTerm);
         const statusMatch = d.status
           ?.toLowerCase()
           .includes(searchTerm.toLowerCase());
@@ -84,6 +81,7 @@ const InvoiceList = () => {
           invoiceNumberMatch ||
           titleMatch ||
           caseMatch ||
+          matterMatch ||
           statusMatch
         );
       });
@@ -93,11 +91,6 @@ const InvoiceList = () => {
     [invoices?.data],
   );
 
-  // const filteredInvoiceForClient = searchResults.filter(
-  //   (item) => item.client?.id === loggedInClientId
-  // );
-
-  // handle delete
   const deleteInvoice = async (id) => {
     try {
       await dispatch(deleteData(`invoices/${id}`));
@@ -112,12 +105,10 @@ const InvoiceList = () => {
     }
     if (isSuccess) {
       toast.success(message);
-      // Refetch the data after any successful operation
       fetchData();
     }
   }, [isError, isSuccess, message, fetchData]);
 
-  // Get status color and text
   const getStatusConfig = (status, dueDate, balance) => {
     const today = moment();
     const isOverdue = moment(dueDate).isBefore(today) && balance > 0;
@@ -144,6 +135,13 @@ const InvoiceList = () => {
     }
   };
 
+  const handleDownloadBillOfCharges = (invoiceNumber, id) => {
+    window.open(
+      `${downloadURL}/invoices/bill-of-charges/${id}`,
+      "_blank"
+    );
+  };
+
   const columns = [
     {
       title: "Invoice Number",
@@ -162,11 +160,33 @@ const InvoiceList = () => {
       responsive: ["md"],
     },
     {
-      title: "Case",
-      dataIndex: "case",
-      key: "case",
-      render: (caseData) => caseData?.suitNo || "No Case",
-      responsive: ["md"],
+      title: "Matter/Case",
+      key: "matterCase",
+      render: (_, record) => (
+        <div>
+          {record.matter && (
+            <div className="text-xs">
+              <span className="text-purple-600 font-medium">
+                {record.matter.matterNumber}
+              </span>
+              <div className="text-gray-500 truncate max-w-[120px]">
+                {record.matter.title}
+              </div>
+            </div>
+          )}
+          {record.case && !record.matter && (
+            <div className="text-xs">
+              <span className="text-blue-600 font-medium">
+                {record.case.suitNo}
+              </span>
+            </div>
+          )}
+          {!record.matter && !record.case && (
+            <span className="text-gray-400">-</span>
+          )}
+        </div>
+      ),
+      responsive: ["lg"],
     },
     {
       title: "Title",
@@ -198,8 +218,8 @@ const InvoiceList = () => {
       dataIndex: "total",
       key: "total",
       render: (total) => `₦${total?.toLocaleString()}`,
-      responsive: ["lg"],
       sorter: (a, b) => a.total - b.total,
+      responsive: ["lg"],
     },
     {
       title: "Balance",
@@ -219,7 +239,7 @@ const InvoiceList = () => {
       sorter: (a, b) => a.balance - b.balance,
     },
     {
-      title: "Payment Progress",
+      title: "Progress",
       dataIndex: "paymentProgress",
       key: "paymentProgress",
       render: (_, record) => {
@@ -237,8 +257,8 @@ const InvoiceList = () => {
                 progress >= 100
                   ? "#52c41a"
                   : progress > 0
-                    ? "#1890ff"
-                    : "#d9d9d9"
+                  ? "#1890ff"
+                  : "#d9d9d9"
               }
             />
             <div className="text-xs text-gray-500 text-center">
@@ -276,15 +296,28 @@ const InvoiceList = () => {
       key: "action",
       render: (text, record) => (
         <Space size="small">
-          <Button type="link" icon={<EyeOutlined />} className="text-blue-600">
+          <Button type="link" icon={<EyeOutlined />} className="text-blue-600 p-0">
             <Link to={`invoices/${record?._id}/details`}>View</Link>
           </Button>
+
+          {isSuperOrAdmin && (
+            <>
+              <Tooltip title="Download Bill of Charges">
+                <Button
+                  type="link"
+                  icon={<FilePdfOutlined />}
+                  className="text-purple-600 p-0"
+                  onClick={() => handleDownloadBillOfCharges(record.invoiceNumber, record._id)}
+                />
+              </Tooltip>
+            </>
+          )}
 
           {isSuperOrAdmin && record.status === "draft" && (
             <Button
               type="link"
               icon={<EditOutlined />}
-              className="text-green-600">
+              className="text-green-600 p-0">
               <Link to={`invoices/${record?._id}/update`}>Edit</Link>
             </Button>
           )}
@@ -305,16 +338,17 @@ const InvoiceList = () => {
               type="link"
               danger
               icon={<DeleteOutlined />}
-              loading={isLoading}></Button>
+              loading={isLoading}
+              className="p-0"
+            />
           )}
         </Space>
       ),
-      width: 95,
+      width: 120,
       fixed: "right",
     },
   ];
 
-  // loading state
   if (loadingInvoices.invoices) return <LoadingSpinner />;
 
   return (
@@ -326,7 +360,6 @@ const InvoiceList = () => {
         />
       ) : (
         <div className="p-4">
-          {/* Header Section */}
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold text-gray-800">Invoices</h1>
@@ -350,7 +383,6 @@ const InvoiceList = () => {
             </div>
           </div>
 
-          {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="bg-white p-4 rounded-lg shadow-sm border">
               <div className="text-sm text-gray-600">Total Invoices</div>
@@ -358,15 +390,6 @@ const InvoiceList = () => {
                 {searchResults.length}
               </div>
             </div>
-            {/* <div className="bg-white p-4 rounded-lg shadow-sm border">
-              <div className="text-sm text-gray-600">Outstanding Balance</div>
-              <div className="text-2xl font-bold text-red-600">
-                ₦
-                {searchResults
-                  .reduce((sum, inv) => sum + (inv.balance || 0), 0)
-                  .toLocaleString()}
-              </div>
-            </div> */}
             <div className="bg-white p-4 rounded-lg shadow-sm border">
               <div className="text-sm text-gray-600">Overdue</div>
               <div className="text-2xl font-bold text-red-600">
@@ -378,9 +401,25 @@ const InvoiceList = () => {
                 }
               </div>
             </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border">
+              <div className="text-sm text-gray-600">Paid</div>
+              <div className="text-2xl font-bold text-green-600">
+                {
+                  searchResults.filter((inv) => inv.status === "paid").length
+                }
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border">
+              <div className="text-sm text-gray-600">Outstanding</div>
+              <div className="text-2xl font-bold text-orange-600">
+                ₦
+                {searchResults
+                  .reduce((sum, inv) => sum + (inv.balance || 0), 0)
+                  .toLocaleString()}
+              </div>
+            </div>
           </div>
 
-          {/* Invoices Table */}
           <div className="bg-white rounded-lg shadow-sm border">
             <Table
               className="font-medium font-poppins"
@@ -392,8 +431,8 @@ const InvoiceList = () => {
                 pageSize: 10,
                 showSizeChanger: true,
                 showQuickJumper: true,
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} of ${total} invoices`,
+                showTotal: (total, ranges) =>
+                  `${ranges[0]}-${ranges[1]} of ${total} invoices`,
               }}
             />
           </div>

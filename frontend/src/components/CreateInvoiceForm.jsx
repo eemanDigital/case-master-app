@@ -15,11 +15,11 @@ import {
   Col,
   Switch,
   Space,
+  Alert,
 } from "antd";
 
-// import { invoiceOptions } from "../data/options";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
-// import useClientSelectOptions from "../hooks/useClientSelectOptions";
+import useMattersSelectOptions from "../hooks/useMattersSelectOptions";
 import { invoiceInitialValue } from "../utils/initialValues";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import useHandleSubmit from "../hooks/useHandleSubmit";
@@ -31,21 +31,22 @@ const CreateInvoiceForm = () => {
   const { fetchData } = useDataGetterHook();
   const [formData, setFormData] = useState(invoiceInitialValue);
   const [publishOnSave, setPublishOnSave] = useState(false);
+  const [showMatterField, setShowMatterField] = useState(true);
   const { casesOptions } = useCaseSelectOptions();
-  const { data: clientOptions, loading: clientsLoading } = useUserSelectOptions(
-    {
-      type: "clients",
-    }
-  );
+  const { mattersOptions, loading: mattersLoading } = useMattersSelectOptions({
+    status: "active",
+    limit: 100,
+  });
+  const { data: clientOptions, loading: clientsLoading } = useUserSelectOptions({
+    type: "clients",
+  });
   const navigate = useNavigate();
 
   const { form, onSubmit, loading, data } = useHandleSubmit("invoices", "post");
 
-  // Filter options in select fields (case options and client options)
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
 
-  // Navigate to invoices dashboard on success
   useEffect(() => {
     if (data?.message === "success") {
       fetchData("invoices");
@@ -53,16 +54,31 @@ const CreateInvoiceForm = () => {
     }
   }, [data, navigate, fetchData]);
 
-  // Handle form submission with publish option
   const handleFormSubmit = async () => {
     try {
       const values = await form.validateFields();
 
-      // Set status based on publish option
       const finalValues = {
         ...values,
-        status: publishOnSave ? "sent" : "draft", // Changed from "unpaid" to "sent"
-        issueDate: publishOnSave ? new Date() : null, // Changed from "issuedDate" to "issueDate"
+        case: values.case || undefined,
+        matter: values.matter || undefined,
+        status: publishOnSave ? "sent" : "draft",
+        issueDate: publishOnSave ? new Date().toISOString() : undefined,
+        dueDate: values.dueDate ? values.dueDate.toISOString() : undefined,
+        billingPeriodStart: values.billingPeriodStart
+          ? values.billingPeriodStart.toISOString()
+          : undefined,
+        billingPeriodEnd: values.billingPeriodEnd
+          ? values.billingPeriodEnd.toISOString()
+          : undefined,
+        services: values.services?.map((s) => ({
+          ...s,
+          date: s.date ? s.date.toISOString() : undefined,
+        })),
+        expenses: values.expenses?.map((e) => ({
+          ...e,
+          date: e.date ? e.date.toISOString() : undefined,
+        })),
       };
 
       await onSubmit(finalValues);
@@ -71,7 +87,6 @@ const CreateInvoiceForm = () => {
     }
   };
 
-  // Validation rules
   const requiredRule = [{ required: true, message: "This field is required" }];
 
   return (
@@ -84,37 +99,64 @@ const CreateInvoiceForm = () => {
         <Card>
           <Row gutter={[16, 16]}>
             <Col xs={24} md={12}>
-              {/* Case */}
-              <Form.Item name="case" label="Case" initialValue={formData?.case}>
+              <Form.Item
+                label="Link to Matter"
+                name="matter"
+                tooltip="Select a matter to link this invoice to">
                 <Select
-                  placeholder="Select case"
+                  placeholder="Select matter (optional)"
+                  showSearch
+                  filterOption={filterOption}
+                  options={mattersOptions}
+                  allowClear
+                  loading={mattersLoading}
+                  onChange={(value) => {
+                    if (value) {
+                      form.setFieldsValue({ case: null });
+                    }
+                  }}
+                />
+              </Form.Item>
+            </Col>
+            <Col xs={24} md={12}>
+              <Form.Item
+                label="Link to Case"
+                name="case"
+                tooltip="Select a case to link this invoice to">
+                <Select
+                  placeholder="Select case (optional)"
                   showSearch
                   filterOption={filterOption}
                   options={casesOptions}
                   allowClear
+                  onChange={(value) => {
+                    if (value) {
+                      form.setFieldsValue({ matter: null });
+                    }
+                  }}
                 />
               </Form.Item>
             </Col>
-            {/* client field */}
             <Col xs={24} md={12}>
               <Form.Item
                 name="client"
                 label="Client"
-                initialValue={formData?.client}
-                rules={requiredRule}>
+                rules={requiredRule}
+                initialValue={formData?.client}>
                 <Select
                   placeholder="Select client"
                   showSearch
                   filterOption={filterOption}
                   options={clientOptions}
                   allowClear
+                  loading={clientsLoading}
                 />
               </Form.Item>
             </Col>
-            <Col xs={24}>
+            <Col xs={24} md={12}>
               <Form.Item
                 label="Invoice Title"
-                name="title" // Changed from "workTitle" to "title"
+                name="title"
                 rules={requiredRule}
                 initialValue={formData?.title}>
                 <Input placeholder="e.g., Legal Consultation & Court Representation" />
@@ -123,7 +165,7 @@ const CreateInvoiceForm = () => {
             <Col xs={24}>
               <Form.Item
                 label="Description"
-                name="description" // Added description field
+                name="description"
                 initialValue={formData?.description}>
                 <TextArea
                   rows={3}

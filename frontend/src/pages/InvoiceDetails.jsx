@@ -7,13 +7,13 @@ import {
   Row,
   Col,
   Typography,
-  Alert,
   Tag,
   Modal,
-  Badge,
   Progress,
   Descriptions,
   Timeline,
+  Space,
+  Dropdown,
 } from "antd";
 import {
   DownloadOutlined,
@@ -24,6 +24,9 @@ import {
   CalculatorOutlined,
   PlusOutlined,
   CheckCircleOutlined,
+  FilePdfOutlined,
+  FileExcelOutlined,
+  MoreOutlined,
 } from "@ant-design/icons";
 import {
   DocumentArrowDownIcon,
@@ -41,6 +44,7 @@ import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import { useDownloadPdfHandler } from "../hooks/useDownloadPdfHandler";
 import CreatePaymentForm from "./CreatePaymentForm";
 import { useSelector } from "react-redux";
+import { toast } from "react-toastify";
 
 const { Title, Text } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
@@ -65,6 +69,8 @@ const InvoiceDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { user } = useSelector((state) => state.auth);
   const isClient = user?.data?.role === "client";
+  const isSuperOrAdmin = user?.data?.additionalRoles?.includes("super-admin", "admin") || 
+                         user?.data?.role === "admin";
 
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const {
@@ -80,6 +86,20 @@ const InvoiceDetails = () => {
 
   const refreshInvoiceData = () => {
     dataFetcher(`invoices/${id}`, "GET");
+  };
+
+  const handleDownloadBillOfCharges = () => {
+    window.open(
+      `${downloadURL}/invoices/bill-of-charges/${id}`,
+      "_blank"
+    );
+  };
+
+  const handleDownloadReceipt = (paymentId) => {
+    window.open(
+      `${downloadURL}/payments/receipt/${paymentId}`,
+      "_blank"
+    );
   };
 
   if (loading) return <LoadingSpinner />;
@@ -144,57 +164,73 @@ const InvoiceDetails = () => {
     return methods[method] || method;
   };
 
+  const downloadMenuItems = [
+    {
+      key: "invoice",
+      icon: <FilePdfOutlined />,
+      label: "Download Invoice PDF",
+      onClick: () => {
+        handleDownloadPdf(
+          null,
+          `${downloadURL}/invoices/pdf/${invoice?._id}`,
+          `invoice-${invoice?.invoiceNumber}.pdf`
+        );
+      },
+    },
+    {
+      key: "bill",
+      icon: <FileExcelOutlined />,
+      label: "Download Bill of Charges",
+      onClick: handleDownloadBillOfCharges,
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <div className="container mx-auto py-6 max-w-7xl">
-        {/* Header Section */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 p-4 bg-white rounded-2xl shadow-sm border border-gray-200">
           <GoBackButton />
 
-          <div className="flex items-center gap-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <FileTextOutlined className="text-blue-600 text-lg" />
-                </div>
-                <div>
-                  <Title level={2} className="m-0 text-gray-900">
-                    Invoice Details
-                  </Title>
-                  <Text className="text-gray-500">
-                    {invoice?.invoiceNumber}
-                  </Text>
-                </div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                <FileTextOutlined className="text-blue-600 text-lg" />
               </div>
-              <div className="flex items-center gap-2">
+              <div>
+                <Title level={2} className="m-0 text-gray-900">
+                  Invoice Details
+                </Title>
+                <Text className="text-gray-500">
+                  {invoice?.invoiceNumber}
+                </Text>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Tag
+                color={getStatusColor(invoice?.status)}
+                className="text-sm font-semibold">
+                {invoice?.status?.replace("_", " ")?.toUpperCase()}
+              </Tag>
+              {invoice?.dueDate && (
                 <Tag
-                  color={getStatusColor(invoice?.status)}
-                  className="text-sm font-semibold">
-                  {invoice?.status?.replace("_", " ")?.toUpperCase()}
+                  color={
+                    invoice?.status?.toLowerCase() === "overdue"
+                      ? "red"
+                      : "blue"
+                  }
+                  className="text-sm">
+                  Due: {formatDate(invoice?.dueDate)}
                 </Tag>
-                {invoice?.dueDate && (
-                  <Tag
-                    color={
-                      invoice?.status?.toLowerCase() === "overdue"
-                        ? "red"
-                        : "blue"
-                    }
-                    className="text-sm">
-                    Due: {formatDate(invoice?.dueDate)}
-                  </Tag>
-                )}
-                {invoice?.issueDate && (
-                  <Tag color="green" className="text-sm">
-                    Issued: {formatDate(invoice?.issueDate)}
-                  </Tag>
-                )}
-              </div>
+              )}
+              {invoice?.issueDate && (
+                <Tag color="green" className="text-sm">
+                  Issued: {formatDate(invoice?.issueDate)}
+                </Tag>
+              )}
             </div>
           </div>
 
           <div className="flex gap-3 flex-wrap">
-            {/* Record Payment Button */}
-
             {invoice?.status !== "paid" &&
               invoice?.status !== "draft" &&
               invoice?.status !== "cancelled" &&
@@ -208,25 +244,16 @@ const InvoiceDetails = () => {
                 </Button>
               )}
 
-            {/* Download PDF Button */}
-            <Button
-              type="primary"
-              loading={loadingPdf}
-              icon={<DownloadOutlined />}
-              onClick={(event) =>
-                handleDownloadPdf(
-                  event,
-                  `${downloadURL}/invoices/pdf/${invoice?._id}`,
-                  `invoice-${invoice?.invoiceNumber}.pdf`
-                )
-              }
-              className="bg-blue-600 hover:bg-blue-700 border-0">
-              <DocumentArrowDownIcon className="w-4 h-4" />
-              Download PDF
-            </Button>
+            <Dropdown menu={{ items: downloadMenuItems }} trigger={["click"]}>
+              <Button
+                type="primary"
+                icon={<DownloadOutlined />}
+                className="bg-blue-600 hover:bg-blue-700 border-0">
+                Download
+              </Button>
+            </Dropdown>
 
-            {/* Update Invoice Button */}
-            {!isClient && (
+            {!isClient && invoice?.status === "draft" && (
               <Link to={`../billings/invoices/${invoice?._id}/update`}>
                 <Button
                   icon={<EditOutlined />}
@@ -236,7 +263,6 @@ const InvoiceDetails = () => {
               </Link>
             )}
 
-            {/* Add Payment Modal (always rendered, controlled by state) */}
             <Modal
               open={paymentModalVisible}
               onCancel={() => setPaymentModalVisible(false)}
@@ -247,6 +273,7 @@ const InvoiceDetails = () => {
                 invoiceId={invoice?._id}
                 clientId={invoice?.client?._id}
                 caseId={invoice?.case?._id}
+                matterId={invoice?.matter?._id}
                 invoiceNumber={invoice?.invoiceNumber}
                 currentBalance={invoice?.balance}
                 onSuccess={() => {
@@ -263,7 +290,6 @@ const InvoiceDetails = () => {
           <PageErrorAlert errorCondition={error} errorMessage={error} />
         ) : (
           <div className="space-y-6">
-            {/* Invoice Overview */}
             <Card className="border-0 rounded-2xl shadow-sm bg-gradient-to-br from-white to-blue-50/50">
               <div className="flex items-center gap-3 mb-6">
                 <FileTextOutlined className="text-blue-600" />
@@ -288,36 +314,45 @@ const InvoiceDetails = () => {
                     </div>
                   </div>
                 </Col>
-                <Col xs={24} md={8}>
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-                    <BuildingLibraryIcon className="w-4 h-4 text-purple-600" />
-                    <div>
-                      <Text className="text-sm font-medium text-gray-600 block">
-                        Case
-                      </Text>
-                      <Text className="font-semibold text-gray-900">
-                        {invoice?.case?.suitNo || "No Case"}
-                      </Text>
-                      <Text className="text-xs text-gray-500 block">
-                        {invoice?.case?.firstParty?.name?.[0]?.name} vs{" "}
-                        {invoice?.case?.secondParty?.name?.[0]?.name}
-                      </Text>
+                
+                {invoice?.matter && (
+                  <Col xs={24} md={8}>
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-purple-200">
+                      <BuildingLibraryIcon className="w-4 h-4 text-purple-600" />
+                      <div>
+                        <Text className="text-sm font-medium text-gray-600 block">
+                          Matter
+                        </Text>
+                        <Text className="font-semibold text-gray-900">
+                          {invoice?.matter?.matterNumber}
+                        </Text>
+                        <Text className="text-xs text-gray-500 block truncate max-w-[200px]">
+                          {invoice?.matter?.title}
+                        </Text>
+                      </div>
                     </div>
-                  </div>
-                </Col>
-                <Col xs={24} md={8}>
-                  <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200">
-                    <DocumentTextIcon className="w-4 h-4 text-orange-600" />
-                    <div>
-                      <Text className="text-sm font-medium text-gray-600 block">
-                        Title
-                      </Text>
-                      <Text className="font-semibold text-gray-900">
-                        {invoice?.title}
-                      </Text>
+                  </Col>
+                )}
+
+                {invoice?.case && (
+                  <Col xs={24} md={8}>
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-blue-200">
+                      <DocumentTextIcon className="w-4 h-4 text-blue-600" />
+                      <div>
+                        <Text className="text-sm font-medium text-gray-600 block">
+                          Case
+                        </Text>
+                        <Text className="font-semibold text-gray-900">
+                          {invoice?.case?.suitNo || "No Case"}
+                        </Text>
+                        <Text className="text-xs text-gray-500 block">
+                          {invoice?.case?.firstParty?.name?.[0]?.name} vs{" "}
+                          {invoice?.case?.secondParty?.name?.[0]?.name}
+                        </Text>
+                      </div>
                     </div>
-                  </div>
-                </Col>
+                  </Col>
+                )}
               </Row>
               {invoice?.description && (
                 <Row gutter={[16, 16]} className="mt-4">
@@ -335,7 +370,6 @@ const InvoiceDetails = () => {
               )}
             </Card>
 
-            {/* Financial Summary */}
             <Card className="border-0 rounded-2xl shadow-sm">
               <div className="flex items-center gap-3 mb-6">
                 <CalculatorOutlined className="text-green-600" />
@@ -404,6 +438,119 @@ const InvoiceDetails = () => {
                 </Col>
               </Row>
             </Card>
+
+            {invoice?.payments && invoice.payments.length > 0 && (
+              <Card className="border-0 rounded-2xl shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <DollarOutlined className="text-green-600" />
+                  <Title level={3} className="m-0 text-gray-900">
+                    Payment History ({invoice.payments.length})
+                  </Title>
+                </div>
+
+                <Timeline
+                  mode="left"
+                  items={invoice.payments.map((payment, index) => ({
+                    color:
+                      payment.status === "completed"
+                        ? "green"
+                        : payment.status === "pending"
+                        ? "orange"
+                        : "red",
+                    dot:
+                      payment.status === "completed" ? (
+                        <CheckCircleOutlined style={{ fontSize: "16px" }} />
+                      ) : (
+                        <ClockIcon className="w-4 h-4" />
+                      ),
+                    children: (
+                      <Card
+                        className="border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
+                        size="small">
+                        <Row gutter={[16, 16]}>
+                          <Col xs={24} sm={12} md={6}>
+                            <div className="space-y-1">
+                              <Text className="text-sm text-gray-600">
+                                Amount
+                              </Text>
+                              <Text
+                                strong
+                                className={`block text-lg ${
+                                  payment.status === "completed"
+                                    ? "text-green-600"
+                                    : payment.status === "pending"
+                                    ? "text-orange-600"
+                                    : "text-red-600"
+                                }`}>
+                                {formatCurrency(payment.amount)}
+                              </Text>
+                            </div>
+                          </Col>
+                          <Col xs={24} sm={12} md={6}>
+                            <div className="space-y-1">
+                              <Text className="text-sm text-gray-600">
+                                Date
+                              </Text>
+                              <Text strong className="text-gray-900 block">
+                                {formatDate(payment.paymentDate)}
+                              </Text>
+                            </div>
+                          </Col>
+                          <Col xs={24} sm={12} md={4}>
+                            <div className="space-y-1">
+                              <Text className="text-sm text-gray-600">
+                                Method
+                              </Text>
+                              <Tag color="blue">
+                                {getPaymentMethodLabel(payment.method)}
+                              </Tag>
+                            </div>
+                          </Col>
+                          <Col xs={24} sm={12} md={4}>
+                            <div className="space-y-1">
+                              <Text className="text-sm text-gray-600">
+                                Status
+                              </Text>
+                              <Tag
+                                color={
+                                  payment.status === "completed"
+                                    ? "green"
+                                    : payment.status === "pending"
+                                    ? "orange"
+                                    : "red"
+                                }>
+                                {payment.status?.toUpperCase()}
+                              </Tag>
+                            </div>
+                          </Col>
+                          {payment.reference && (
+                            <Col xs={24} sm={12} md={6}>
+                              <div className="space-y-1">
+                                <Text className="text-sm text-gray-600">
+                                  Reference
+                                </Text>
+                                <Text strong className="text-gray-900 block">
+                                  {payment.reference}
+                                </Text>
+                              </div>
+                            </Col>
+                          )}
+                          <Col xs={24} sm={12} md={4}>
+                            <Button
+                              type="link"
+                              icon={<DownloadOutlined />}
+                              size="small"
+                              onClick={() => handleDownloadReceipt(payment._id)}>
+                              Receipt
+                            </Button>
+                          </Col>
+                        </Row>
+                      </Card>
+                    ),
+                  }))}
+                />
+              </Card>
+            )}
 
             {/* Payment History Section */}
             {invoice?.payments && invoice.payments.length > 0 && (

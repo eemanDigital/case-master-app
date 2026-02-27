@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import moment from "moment-timezone";
 import {
@@ -12,11 +12,12 @@ import {
   DatePicker,
   Row,
   Col,
-  Modal,
   Input,
+  Alert,
 } from "antd";
 import { paymentInitialValue } from "../utils/initialValues";
 import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
+import useMattersSelectOptions from "../hooks/useMattersSelectOptions";
 import useClientSelectOptions from "../hooks/useClientSelectOptions";
 import useInvoiceRefSelectOptions from "../hooks/useInvoiceRefSelectOptions";
 import { PlusOutlined } from "@ant-design/icons";
@@ -28,33 +29,58 @@ import ButtonWithIcon from "../components/ButtonWithIcon";
 
 const { TextArea } = Input;
 
-const CreatePaymentForm = () => {
+const CreatePaymentForm = ({
+  invoiceId,
+  clientId,
+  caseId,
+  matterId,
+  invoiceNumber,
+  currentBalance,
+  onSuccess,
+  onCancel,
+}) => {
   const [formData, setFormData] = useState(paymentInitialValue);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [form] = Form.useForm();
   const { fetchData } = useDataGetterHook();
   const { dataFetcher, loading } = useDataFetch();
   const { casesOptions } = useCaseSelectOptions();
+  const { mattersOptions, loading: mattersLoading } = useMattersSelectOptions({
+    status: "active",
+    limit: 100,
+  });
   const { clientOptions } = useClientSelectOptions();
   const { invoiceRefOptions } = useInvoiceRefSelectOptions();
-  const { open, showModal, handleOk, handleCancel } = useModal();
+  const { open, showModal, handleOk, handleCancel: closeModal } = useModal();
 
-  // Function to handle form submission
+  useEffect(() => {
+    if (invoiceId) {
+      const selected = invoiceRefOptions.find((opt) => opt.value === invoiceId);
+      if (selected) {
+        setSelectedInvoice(selected);
+        form.setFieldsValue({
+          invoice: invoiceId,
+          client: clientId,
+          case: caseId,
+          matter: matterId,
+        });
+      }
+    }
+  }, [invoiceId, clientId, caseId, matterId, invoiceRefOptions, form]);
+
   const onSubmit = useCallback(async () => {
     let values;
     try {
-      // Validate form fields
       values = await form.validateFields();
     } catch (errorInfo) {
-      // Exit if validation fails
       return;
     }
 
-    // Format the data according to the new schema
     const paymentData = {
       invoice: values.invoice,
       client: values.client,
-      case: values.case,
+      case: values.case || undefined,
+      matter: values.matter || undefined,
       amount: values.amount,
       method: values.method,
       paymentDate: values.paymentDate
@@ -66,66 +92,35 @@ const CreatePaymentForm = () => {
       transactionId: values.transactionId || "",
     };
 
-    // Submit form data
     const result = await dataFetcher("payments", "POST", paymentData);
-    // Fetch updated data
     await fetchData("payments", "payments");
 
-    // Handle the result of the submission
     if (result?.error) {
-      // Display error message if submission failed
       toast.error("Submission Failed: " + (result?.error || result));
     } else {
-      // Display success message if submission succeeded
       toast.success("Payment recorded successfully!");
-      handleCancel();
-      // Reset form fields
+      if (onSuccess) {
+        onSuccess();
+      }
       form.resetFields();
       setSelectedInvoice(null);
     }
-  }, [form, dataFetcher, fetchData, handleCancel]);
+  }, [form, dataFetcher, fetchData, onSuccess]);
 
-  // Function to filter options in select inputs
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
 
-  // Handle invoice selection to auto-populate client and case
-  // const handleInvoiceChange = (invoiceId) => {
-  //   if (invoiceId) {
-  //     // Find the selected invoice from options to get client and case info
-  //     const selected = invoiceRefOptions.find(
-  //       (option) => option.value === invoiceId
-  //     );
-  //     if (selected) {
-  //       setSelectedInvoice(selected);
-  //       // Auto-populate client and case if available in the option data
-  //       form.setFieldsValue({
-  //         client: selected.clientId,
-  //         case: selected.caseId,
-  //       });
-  //     }
-  //   } else {
-  //     setSelectedInvoice(null);
-  //     form.setFieldsValue({
-  //       client: undefined,
-  //       case: undefined,
-  //     });
-  //   }
-  // };
-
-  // Handle invoice selection to auto-populate client and case
   const handleInvoiceChange = (invoiceId) => {
     if (invoiceId) {
-      // Find the selected invoice from options to get client and case info
       const selected = invoiceRefOptions.find(
         (option) => option.value === invoiceId
       );
       if (selected) {
         setSelectedInvoice(selected);
-        // Auto-populate client and case if available in the option data
         form.setFieldsValue({
           client: selected.clientId,
           case: selected.caseId,
+          matter: selected.matterId,
         });
       }
     } else {
@@ -133,11 +128,11 @@ const CreatePaymentForm = () => {
       form.setFieldsValue({
         client: undefined,
         case: undefined,
+        matter: undefined,
       });
     }
   };
 
-  // Validation rule for required fields
   const requiredRule = [{ required: true, message: "This field is required" }];
 
   return (
@@ -154,59 +149,70 @@ const CreatePaymentForm = () => {
         </Divider>
         <Card>
           <Row gutter={[16, 16]}>
-            {/* Invoice Selection */}
             <Col xs={24} md={12}>
               <Form.Item
                 name="invoice"
                 label="Invoice"
                 rules={requiredRule}
-                initialValue={formData?.invoice}>
+                initialValue={invoiceId || formData?.invoice}>
                 <Select
                   placeholder="Select invoice"
                   showSearch
                   filterOption={filterOption}
                   options={invoiceRefOptions.map((option) => ({
-                    value: option.value, // This is now the _id (ObjectId)
-                    label: option.label || option.invoiceNumber, // Display invoice number
+                    value: option.value,
+                    label: option.label || option.invoiceNumber,
                   }))}
                   allowClear
                   onChange={handleInvoiceChange}
+                  disabled={!!invoiceId}
                 />
               </Form.Item>
             </Col>
 
-            {/* Client (auto-populated from invoice) */}
             <Col xs={24} md={12}>
               <Form.Item
                 name="client"
                 label="Client"
-                initialValue={formData?.client}>
+                initialValue={clientId || formData?.client}>
                 <Select
                   placeholder="Client will be auto-filled from invoice"
                   showSearch
                   filterOption={filterOption}
                   options={clientOptions}
                   allowClear
-                  disabled={!!selectedInvoice}
+                  disabled={!!invoiceId}
                 />
               </Form.Item>
             </Col>
 
-            {/* Case (auto-populated from invoice) */}
             <Col xs={24} md={12}>
-              <Form.Item name="case" label="Case" initialValue={formData?.case}>
+              <Form.Item name="matter" label="Matter" initialValue={matterId || formData?.matter}>
                 <Select
-                  placeholder="Case will be auto-filled from invoice"
+                  placeholder="Matter (optional)"
+                  showSearch
+                  filterOption={filterOption}
+                  options={mattersOptions}
+                  allowClear
+                  loading={mattersLoading}
+                  disabled={!!invoiceId}
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Form.Item name="case" label="Case" initialValue={caseId || formData?.case}>
+                <Select
+                  placeholder="Case (optional)"
                   showSearch
                   filterOption={filterOption}
                   options={casesOptions}
                   allowClear
-                  disabled={!!selectedInvoice}
+                  disabled={!!invoiceId}
                 />
               </Form.Item>
             </Col>
 
-            {/* Payment Amount */}
             <Col xs={24} md={12}>
               <Form.Item
                 name="amount"
@@ -233,7 +239,6 @@ const CreatePaymentForm = () => {
               </Form.Item>
             </Col>
 
-            {/* Payment Date */}
             <Col xs={24} md={12}>
               <Form.Item
                 name="paymentDate"
@@ -254,13 +259,12 @@ const CreatePaymentForm = () => {
               </Form.Item>
             </Col>
 
-            {/* Payment Method */}
             <Col xs={24} md={12}>
               <Form.Item
                 name="method"
                 label="Payment Method"
                 rules={requiredRule}
-                initialValue={formData?.method}>
+                initialValue={formData?.method || "bank_transfer"}>
                 <Select
                   placeholder="Select payment method"
                   options={methodOptions}
@@ -269,7 +273,6 @@ const CreatePaymentForm = () => {
               </Form.Item>
             </Col>
 
-            {/* Payment Status */}
             <Col xs={24} md={12}>
               <Form.Item
                 name="status"
@@ -282,7 +285,6 @@ const CreatePaymentForm = () => {
               </Form.Item>
             </Col>
 
-            {/* Transaction Reference */}
             <Col xs={24} md={12}>
               <Form.Item
                 name="reference"
@@ -292,7 +294,6 @@ const CreatePaymentForm = () => {
               </Form.Item>
             </Col>
 
-            {/* Transaction ID */}
             <Col xs={24} md={12}>
               <Form.Item
                 name="transactionId"
@@ -302,7 +303,6 @@ const CreatePaymentForm = () => {
               </Form.Item>
             </Col>
 
-            {/* Notes */}
             <Col xs={24}>
               <Form.Item
                 name="notes"
@@ -316,7 +316,6 @@ const CreatePaymentForm = () => {
             </Col>
           </Row>
 
-          {/* Invoice Balance Information */}
           {selectedInvoice && (
             <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <Typography.Text strong className="text-blue-700">
@@ -343,7 +342,12 @@ const CreatePaymentForm = () => {
         <Form.Item className="text-right mb-0">
           <Button
             onClick={() => {
-              handleCancel();
+              if (onCancel) {
+                onCancel();
+              } else {
+                closeModal();
+              }
+              form.resetFields();
               setSelectedInvoice(null);
             }}
             className="mr-2">
