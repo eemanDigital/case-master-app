@@ -5,236 +5,709 @@ html(lang="en")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
     title Invoice - #{invoice.invoiceNumber}
     style.
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+      
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: 'Georgia', 'Times New Roman', serif; line-height: 1.4; color: #2c3e50; background: #ffffff; font-size: 14px; }
-      .container { max-width: 1000px; margin: 0 auto; padding: 30px; background: #ffffff; }
-      .letterhead { border-bottom: 3px solid #{firm && firm.settings && firm.settings.primaryColor ? firm.settings.primaryColor : '#8b4513'}; padding-bottom: 20px; margin-bottom: 30px; text-align: center; }
-      .firm-name { font-size: 28px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; letter-spacing: 1px; }
-      .firm-description { font-size: 16px; color: #7f8c8d; margin-bottom: 10px; font-style: italic; }
-      .firm-address { font-size: 14px; color: #34495e; line-height: 1.6; }
-      .invoice-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #{firm && firm.settings && firm.settings.primaryColor ? firm.settings.primaryColor : '#8b4513'}; }
-      .client-info h3, .invoice-info h3 { font-size: 16px; color: #2c3e50; margin-bottom: 10px; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; }
-      .client-details p, .invoice-details p { margin: 6px 0; font-size: 14px; color: #34495e; }
-      .case-info { background: #fffaf0; border: 1px solid #e67e22; border-radius: 6px; padding: 20px; margin-bottom: 25px; }
-      .case-info h3 { color: #d35400; font-size: 16px; margin-bottom: 15px; }
-      .case-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; font-size: 14px; }
-      .case-item { display: flex; flex-direction: column; }
-      .case-label { font-weight: bold; color: #2c3e50; margin-bottom: 3px; }
-      .case-value { color: #34495e; }
-      .section-title { font-size: 18px; color: #2c3e50; margin: 25px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #ecf0f1; }
-      table { width: 100%; border-collapse: collapse; margin: 15px 0 25px 0; font-size: 13px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-      th { background: #34495e; color: #ffffff; font-weight: bold; padding: 12px 15px; text-align: left; font-size: 13px; }
-      td { padding: 12px 15px; border-bottom: 1px solid #ecf0f1; color: #2c3e50; }
-      tr:nth-child(even) { background: #f8f9fa; }
-      tr:hover { background: #f1f8ff; }
-      .amount { text-align: right; font-family: 'Courier New', monospace; font-weight: bold; }
-      .financial-summary { background: #f8f9fa; border: 1px solid #bdc3c7; border-radius: 8px; padding: 25px; margin: 25px 0; }
-      .financial-summary h3 { color: #2c3e50; font-size: 18px; margin-bottom: 20px; text-align: center; }
-      .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px; }
-      .summary-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #bdc3c7; }
-      .summary-label { font-weight: bold; color: #2c3e50; }
-      .summary-value { font-family: 'Courier New', monospace; font-weight: bold; color: #2c3e50; }
-      .total-row { border-top: 2px solid #2c3e50; border-bottom: none; font-size: 16px; background: #e8f4fd; margin-top: 10px; padding: 15px; border-radius: 4px; }
-      .due-row { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; margin-top: 10px; }
-      .payment-section { background: #e8f5e8; border: 1px solid #27ae60; border-radius: 8px; padding: 25px; margin: 25px 0; }
-      .payment-section h3 { color: #27ae60; font-size: 18px; margin-bottom: 15px; }
-      .bank-details { background: #ffffff; padding: 20px; border-radius: 6px; margin: 15px 0; border: 1px solid #bdc3c7; }
-      .bank-item { display: flex; margin: 8px 0; align-items: center; }
-      .bank-label { font-weight: bold; min-width: 150px; color: #2c3e50; }
-      .bank-value { color: #34495e; font-family: 'Courier New', monospace; }
-      .terms { margin-top: 20px; padding-top: 15px; border-top: 1px solid #bdc3c7; }
-      .terms h4 { color: #2c3e50; margin-bottom: 10px; }
-      .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #bdc3c7; text-align: center; color: #7f8c8d; font-size: 12px; }
+      
+      :root {
+        --primary: #{firm && firm.settings && firm.settings.primaryColor ? firm.settings.primaryColor : '#1a365d'};
+        --primary-light: #{firm && firm.settings && firm.settings.primaryColor ? firm.settings.primaryColor + '15' : '#1a365d15'};
+        --secondary: #64748b;
+        --success: #059669;
+        --warning: #d97706;
+        --danger: #dc2626;
+        --gray-50: #f8fafc;
+        --gray-100: #f1f5f9;
+        --gray-200: #e2e8f0;
+        --gray-300: #cbd5e1;
+        --gray-700: #334155;
+        --gray-900: #0f172a;
+      }
+      
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        line-height: 1.6;
+        color: var(--gray-900);
+        background: #ffffff;
+        font-size: 14px;
+        -webkit-font-smoothing: antialiased;
+      }
+      
+      .invoice-wrapper {
+        max-width: 850px;
+        margin: 0 auto;
+        padding: 40px;
+        background: #ffffff;
+      }
+      
+      /* Header Section */
+      .invoice-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding-bottom: 30px;
+        border-bottom: 2px solid var(--gray-200);
+        margin-bottom: 40px;
+      }
+      
+      .firm-brand {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      
+      .firm-logo {
+        width: 60px;
+        height: 60px;
+        background: var(--primary);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 24px;
+      }
+      
+      .firm-details h1 {
+        font-size: 22px;
+        font-weight: 700;
+        color: var(--gray-900);
+        letter-spacing: -0.5px;
+      }
+      
+      .firm-details p {
+        font-size: 13px;
+        color: var(--secondary);
+        margin-top: 2px;
+      }
+      
+      .firm-meta {
+        margin-top: 8px;
+        font-size: 12px;
+        color: var(--gray-700);
+      }
+      
+      .invoice-title-section {
+        text-align: right;
+      }
+      
+      .invoice-title {
+        font-size: 36px;
+        font-weight: 700;
+        color: var(--primary);
+        letter-spacing: -1px;
+        text-transform: uppercase;
+      }
+      
+      .invoice-number {
+        font-size: 14px;
+        color: var(--secondary);
+        margin-top: 4px;
+        font-family: 'Courier New', monospace;
+        background: var(--gray-50);
+        padding: 6px 12px;
+        border-radius: 6px;
+        display: inline-block;
+      }
+      
+      /* Status Badge */
+      .status-badge {
+        display: inline-block;
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 12px;
+      }
+      
+      .status-paid { background: #d1fae5; color: #065f46; }
+      .status-sent { background: #dbeafe; color: #1e40af; }
+      .status-overdue { background: #fee2e2; color: #991b1b; }
+      .status-draft { background: #f1f5f9; color: #475569; }
+      .status-partial { background: #fef3c7; color: #92400e; }
+      
+      /* Info Cards */
+      .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        margin-bottom: 32px;
+      }
+      
+      .info-card {
+        background: var(--gray-50);
+        border-radius: 12px;
+        padding: 24px;
+        border: 1px solid var(--gray-200);
+      }
+      
+      .info-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--gray-200);
+      }
+      
+      .info-card-icon {
+        width: 32px;
+        height: 32px;
+        background: var(--primary);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 14px;
+      }
+      
+      .info-card-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        font-size: 14px;
+      }
+      
+      .info-label {
+        color: var(--secondary);
+        font-weight: 500;
+      }
+      
+      .info-value {
+        color: var(--gray-900);
+        font-weight: 600;
+        text-align: right;
+      }
+      
+      /* Matter/Case Info */
+      .matter-card {
+        background: linear-gradient(135deg, var(--primary-light) 0%, #f0f9ff 100%);
+        border: 1px solid var(--primary);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 32px;
+      }
+      
+      .matter-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      
+      .matter-card-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--primary);
+      }
+      
+      .matter-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 12px;
+      }
+      
+      .matter-item {
+        font-size: 13px;
+      }
+      
+      .matter-label {
+        color: var(--secondary);
+        display: block;
+        margin-bottom: 2px;
+      }
+      
+      .matter-value {
+        color: var(--gray-900);
+        font-weight: 600;
+      }
+      
+      /* Services Table */
+      .section-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin: 32px 0 20px 0;
+        padding-bottom: 12px;
+        border-bottom: 2px solid var(--primary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .section-icon {
+        width: 28px;
+        height: 28px;
+        background: var(--primary);
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 12px;
+      }
+      
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 24px;
+        font-size: 13px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+      
+      thead {
+        background: var(--primary);
+        color: white;
+      }
+      
+      th {
+        padding: 14px 16px;
+        text-align: left;
+        font-weight: 600;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+      
+      td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--gray-100);
+        color: var(--gray-700);
+      }
+      
+      tbody tr:hover {
+        background: var(--gray-50);
+      }
+      
+      tbody tr:last-child td {
+        border-bottom: none;
+      }
+      
+      .amount-cell {
+        text-align: right;
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        color: var(--gray-900);
+      }
+      
       .text-right { text-align: right; }
       .text-center { text-align: center; }
-      .text-bold { font-weight: bold; }
-      .text-large { font-size: 16px; }
-      .text-xlarge { font-size: 18px; }
-      .color-primary { color: #{firm && firm.settings && firm.settings.primaryColor ? firm.settings.primaryColor : '#8b4513'}; }
-      .color-success { color: #27ae60; }
-      .color-warning { color: #e67e22; }
-      .color-danger { color: #e74c3c; }
+      
+      /* Financial Summary */
+      .summary-section {
+        background: var(--gray-50);
+        border-radius: 16px;
+        padding: 28px;
+        margin: 32px 0;
+        border: 1px solid var(--gray-200);
+      }
+      
+      .summary-header {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 20px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--gray-200);
+      }
+      
+      .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px dashed var(--gray-200);
+      }
+      
+      .summary-row:last-child {
+        border-bottom: none;
+      }
+      
+      .summary-label {
+        color: var(--secondary);
+        font-weight: 500;
+      }
+      
+      .summary-value {
+        font-weight: 600;
+        font-family: 'Courier New', monospace;
+        color: var(--gray-900);
+      }
+      
+      .summary-row.total {
+        background: var(--primary);
+        color: white;
+        margin: 12px -16px -16px -16px;
+        padding: 20px;
+        border-radius: 0 0 12px 12px;
+        border-bottom: none;
+      }
+      
+      .summary-row.total .summary-label,
+      .summary-row.total .summary-value {
+        color: white;
+        font-size: 16px;
+      }
+      
+      .summary-row.balance {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        margin: 16px -16px -16px -16px;
+        padding: 20px;
+        border-radius: 0 0 12px 12px;
+        border: 2px solid #f59e0b;
+      }
+      
+      .summary-row.balance .summary-label {
+        color: #92400e;
+        font-weight: 600;
+      }
+      
+      .summary-row.balance .summary-value {
+        color: #b45309;
+        font-size: 18px;
+      }
+      
+      /* Payment Info */
+      .payment-section {
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        border: 2px solid var(--success);
+        border-radius: 16px;
+        padding: 28px;
+        margin: 32px 0;
+      }
+      
+      .payment-header {
+        font-size: 16px;
+        font-weight: 600;
+        color: #065f46;
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      
+      .bank-box {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin: 16px 0;
+        border: 1px solid var(--gray-200);
+      }
+      
+      .bank-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--gray-100);
+        font-size: 14px;
+      }
+      
+      .bank-row:last-child {
+        border-bottom: none;
+      }
+      
+      .bank-label {
+        color: var(--secondary);
+        font-weight: 500;
+      }
+      
+      .bank-value {
+        color: var(--gray-900);
+        font-weight: 600;
+        font-family: 'Courier New', monospace;
+      }
+      
+      /* Terms */
+      .terms-section {
+        margin-top: 24px;
+        padding-top: 20px;
+        border-top: 1px solid var(--gray-200);
+      }
+      
+      .terms-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--gray-900);
+        margin-bottom: 8px;
+      }
+      
+      .terms-text {
+        font-size: 12px;
+        color: var(--secondary);
+        line-height: 1.6;
+      }
+      
+      /* Footer */
+      .invoice-footer {
+        margin-top: 48px;
+        padding-top: 24px;
+        border-top: 2px solid var(--gray-200);
+        text-align: center;
+      }
+      
+      .footer-message {
+        font-size: 14px;
+        color: var(--gray-700);
+        margin-bottom: 8px;
+      }
+      
+      .footer-firm {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--primary);
+      }
+      
+      .footer-date {
+        font-size: 12px;
+        color: var(--secondary);
+        margin-top: 12px;
+      }
+      
+      /* Watermark */
+      .watermark {
+        position: fixed;
+        bottom: 40px;
+        right: 40px;
+        opacity: 0.03;
+        font-size: 80px;
+        font-weight: 700;
+        color: var(--primary);
+        text-transform: uppercase;
+        transform: rotate(-15deg);
+        pointer-events: none;
+      }
+      
+      @media print {
+        body { -webkit-print-color-adjust: exact; }
+        .invoice-wrapper { padding: 20px; }
+      }
 
   body
-    .container
-      .letterhead
-        .firm-name #{firm && firm.name ? firm.name : 'Law Firm'}
-        .firm-description Barristers, Solicitors & Advocates
-        .firm-address
-          if firm && firm.contact && firm.contact.address
-            | #{firm.contact.address.street || ''}, #{firm.contact.address.city || ''}, #{firm.contact.address.state || ''}
-            br
-          if firm && firm.contact
-            | Phone: #{firm.contact.phone || 'N/A'} | Email: #{firm.contact.email || 'N/A'}
-            br
-          | RC Number: #{firm && firm.contact && firm.contact.rcNumber ? firm.contact.rcNumber : 'N/A'}
-
+    .invoice-wrapper
+      .watermark #{firm && firm.name ? firm.name : 'Law Firm'}
+    
+      //- Header
       .invoice-header
-        .client-info
-          h3 INVOICE TO:
-          .client-details
-            p.text-bold #{invoice.client.firstName} #{invoice.client.lastName}
-            p #{invoice.client.address || 'Address not provided'}
-            p Phone: #{invoice.client.phone || 'N/A'}
-            p Email: #{invoice.client.email || 'N/A'}
+        .firm-brand
+          .firm-logo #{firm && firm.name ? firm.name.charAt(0) : 'L'}
+          .firm-details
+            h1 #{firm && firm.name ? firm.name : 'Law Firm'}
+            p Barristers, Solicitors & Advocates
+            .firm-meta
+              if firm && firm.contact
+                | #{firm.contact.address ? firm.contact.address.street + ', ' + firm.contact.address.city : ''}
+                br
+                | #{firm.contact.phone || ''} | #{firm.contact.email || ''}
+                br
+                | RC: #{firm.contact.rcNumber || 'N/A'}
         
-        .invoice-info
-          h3 INVOICE DETAILS:
-          .invoice-details
-            p
-              strong Invoice No: 
-              | #{invoice.invoiceNumber || 'N/A'}
-            p
-              strong Invoice Date: 
-              | #{invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString('en-GB') : (invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-GB') : 'N/A')}
-            p
-              strong Due Date: 
-              | #{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-GB') : 'Upon Receipt'}
-            p
-              strong Status: 
-              span(class=invoice.status === 'paid' ? 'color-success' : invoice.status === 'overdue' ? 'color-danger' : 'color-warning') #{invoice.status ? invoice.status.toUpperCase() : 'DRAFT'}
-
-      if invoice.case
-        .case-info
-          h3 CASE INFORMATION
-          .case-details
-            .case-item
-              .case-label Case:
-              .case-value #{invoice.case.firstParty && invoice.case.firstParty.name && invoice.case.firstParty.name[0] ? invoice.case.firstParty.name[0].name : 'N/A'} vs #{invoice.case.secondParty && invoice.case.secondParty.name && invoice.case.secondParty.name[0] ? invoice.case.secondParty.name[0].name : 'N/A'}
-            .case-item
-              .case-label Suit No:
-              .case-value #{invoice.case.suitNo || 'N/A'}
-            .case-item
-              .case-label Court:
-              .case-value #{invoice.case.courtName || 'N/A'}
-            .case-item
-              .case-label Case Status:
-              .case-value #{invoice.case.caseStatus || 'Active'}
-
-      if invoice.matter
-        .case-info
-          h3 MATTER INFORMATION
-          .case-details
-            .case-item
-              .case-label Matter Number:
-              .case-value #{invoice.matter.matterNumber || 'N/A'}
-            .case-item
-              .case-label Title:
-              .case-value #{invoice.matter.title || 'N/A'}
-            .case-item
-              .case-label Type:
-              .case-value #{invoice.matter.matterType || 'N/A'}
-
+        .invoice-title-section
+          .invoice-title INVOICE
+          .invoice-number #{invoice.invoiceNumber || 'N/A'}
+          - var statusClass = 'status-' + (invoice.status === 'paid' ? 'paid' : invoice.status === 'overdue' ? 'overdue' : invoice.status === 'sent' ? 'sent' : invoice.status === 'partially_paid' ? 'partial' : 'draft')
+          span.status-badge(class=statusClass) #{invoice.status || 'Draft'}
+    
+      //- Client & Invoice Info
+      .info-grid
+        .info-card
+          .info-card-header
+            .info-card-icon ✓
+            .info-card-title Bill To
+          .info-row
+            .info-label Client Name
+            .info-value #{invoice.client.firstName} #{invoice.client.lastName}
+          if invoice.client.email
+            .info-row
+              .info-label Email
+              .info-value #{invoice.client.email}
+          if invoice.client.phone
+            .info-row
+              .info-label Phone
+              .info-value #{invoice.client.phone}
+          if invoice.client.address
+            .info-row
+              .info-label Address
+              .info-value #{invoice.client.address}
+        
+        .info-card
+          .info-card-header
+            .info-card-icon #
+            .info-card-title Invoice Details
+          .info-row
+            .info-label Invoice Number
+            .info-value #{invoice.invoiceNumber || 'N/A'}
+          .info-row
+            .info-label Invoice Date
+            .info-value #{invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString('en-GB') : (invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-GB') : 'N/A')}
+          .info-row
+            .info-label Due Date
+            .info-value #{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-GB') : 'Upon Receipt'}
+          .info-row
+            .info-label Payment Terms
+            .info-value #{invoice.paymentTerms || 'Due on Receipt'}
+    
+      //- Matter or Other Activity
+      if invoice.matter || invoice.otherActivity
+        .matter-card
+          if invoice.matter
+            .matter-card-header
+              .matter-card-title 📋 MATTER INFORMATION
+            .matter-details
+              .matter-item
+                span.matter-label Matter Number
+                span.matter-value #{invoice.matter.matterNumber || 'N/A'}
+              .matter-item
+                span.matter-label Title
+                span.matter-value #{invoice.matter.title || 'N/A'}
+              .matter-item
+                span.matter-label Type
+                span.matter-value #{invoice.matter.matterType || 'N/A'}
+          else if invoice.otherActivity
+            .matter-card-header
+              .matter-card-title 📋 OTHER ACTIVITY
+            .matter-details
+              .matter-item
+                span.matter-label Activity
+                span.matter-value #{invoice.otherActivity}
+    
+      //- Services
       if invoice.services && invoice.services.length > 0
-        h3.section-title PROFESSIONAL SERVICES
+        .section-title
+          .section-icon S
+          | PROFESSIONAL SERVICES
         table
           thead
             tr
               th Description
               th Date
-              th Hours/Qty
-              th Rate (₦)
-              th Amount (₦)
+              th Type
+              th.text-right Hours/Qty
+              th.text-right Rate (₦)
+              th.text-right Amount (₦)
           tbody
             each service in invoice.services
               tr
-                td= service.description || 'Legal Service'
+                td= service.description || 'Professional Service'
                 td= service.date ? new Date(service.date).toLocaleDateString('en-GB') : 'N/A'
-                td= service.billingMethod === 'hourly' ? (service.hours || 0) : (service.quantity || 1)
-                td.amount= ((service.billingMethod === 'hourly' ? service.rate : service.unitPrice) || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})
-                td.amount= (service.amount || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})
-
+                td= service.billingMethod ? service.billingMethod.replace('_', ' ').toUpperCase() : 'N/A'
+                td.amount-cell= service.billingMethod === 'hourly' ? (service.hours || 0) : (service.quantity || 1)
+                td.amount-cell= ((service.billingMethod === 'hourly' ? service.rate : service.unitPrice) || 0).toLocaleString('en-NG')
+                td.amount-cell= (service.amount || 0).toLocaleString('en-NG')
+    
+      //- Expenses
       if invoice.expenses && invoice.expenses.length > 0
-        h3.section-title EXPENSES & DISBURSEMENTS
+        .section-title
+          .section-icon E
+          | EXPENSES & DISBURSEMENTS
         table
           thead
             tr
               th Description
+              th Category
               th Date
-              th Amount (₦)
+              th.text-right Amount (₦)
           tbody
             each expense in invoice.expenses
               tr
                 td= expense.description || 'Expense'
+                td= expense.category ? expense.category.replace('_', ' ').toUpperCase() : 'General'
                 td= expense.date ? new Date(expense.date).toLocaleDateString('en-GB') : 'N/A'
-                td.amount= (expense.amount || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})
-
-      .financial-summary
-        h3 FINANCIAL SUMMARY
-        
+                td.amount-cell= (expense.amount || 0).toLocaleString('en-NG')
+    
+      //- Financial Summary
+      .summary-section
+        .summary-header FINANCIAL SUMMARY
         .summary-grid
-          .summary-item
-            .summary-label Professional Services:
-            .summary-value ₦#{(invoice.services ? invoice.services.reduce((sum, s) => sum + (s.amount || 0), 0) : 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+          .summary-row
+            .summary-label Professional Services
+            .summary-value ₦#{(invoice.services ? invoice.services.reduce((sum, s) => sum + (s.amount || 0), 0) : 0).toLocaleString('en-NG')}
           
-          .summary-item
-            .summary-label Expenses:
-            .summary-value ₦#{(invoice.expenses ? invoice.expenses.reduce((sum, e) => sum + (e.amount || 0), 0) : 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+          .summary-row
+            .summary-label Expenses
+            .summary-value ₦#{(invoice.expenses ? invoice.expenses.reduce((sum, e) => sum + (e.amount || 0), 0) : 0).toLocaleString('en-NG')}
           
           if invoice.previousBalance && invoice.previousBalance > 0
-            .summary-item
-              .summary-label Previous Balance:
-              .summary-value ₦#{invoice.previousBalance.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+            .summary-row
+              .summary-label Previous Balance
+              .summary-value ₦#{invoice.previousBalance.toLocaleString('en-NG')}
           
           if invoice.discount && invoice.discount > 0
-            .summary-item
-              .summary-label Discount (#{invoice.discountType === 'percentage' ? invoice.discount + '%' : 'Fixed'}):
-              .summary-value -₦#{invoice.discount.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+            .summary-row
+              .summary-label Discount (#{invoice.discountType === 'percentage' ? invoice.discount + '%' : 'Fixed'})
+              .summary-value -₦#{invoice.discount.toLocaleString('en-NG')}
           
           if invoice.taxAmount && invoice.taxAmount > 0
-            .summary-item
-              .summary-label Tax (#{invoice.taxRate || 0}%):
-              .summary-value ₦#{invoice.taxAmount.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+            .summary-row
+              .summary-label Tax (#{invoice.taxRate || 0}%)
+              .summary-value ₦#{invoice.taxAmount.toLocaleString('en-NG')}
           
-          .summary-item.total-row
-            .summary-label Total Invoice Amount:
-            .summary-value ₦#{invoice.total ? invoice.total.toLocaleString('en-NG', {minimumFractionDigits: 2}) : '0.00'}
+          .summary-row.total
+            .summary-label TOTAL AMOUNT
+            .summary-value ₦#{invoice.total ? invoice.total.toLocaleString('en-NG') : '0'}
           
           if invoice.amountPaid && invoice.amountPaid > 0
-            .summary-item
-              .summary-label Amount Paid:
-              .summary-value.color-success ₦#{invoice.amountPaid.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+            .summary-row
+              .summary-label Amount Paid
+              .summary-value ₦#{invoice.amountPaid.toLocaleString('en-NG')}
           
-          .summary-item.due-row
-            .summary-label.text-large BALANCE DUE:
-            .summary-value.text-large ₦#{invoice.balance ? invoice.balance.toLocaleString('en-NG', {minimumFractionDigits: 2}) : '0.00'}
-
+          .summary-row.balance
+            .summary-label BALANCE DUE
+            .summary-value ₦#{invoice.balance ? invoice.balance.toLocaleString('en-NG') : '0'}
+    
+      //- Payment Instructions
       .payment-section
-        h3 PAYMENT INSTRUCTIONS
-        .bank-details
+        .payment-header 💳 PAYMENT INSTRUCTIONS
+        .bank-box
           if firm && firm.settings && firm.settings.bankDetails
-            .bank-item
-              .bank-label Bank:
+            .bank-row
+              .bank-label Bank Name
               .bank-value #{firm.settings.bankDetails.bankName || 'N/A'}
-            .bank-item
-              .bank-label Account Name:
+            .bank-row
+              .bank-label Account Name
               .bank-value #{firm.settings.bankDetails.accountName || 'N/A'}
-            .bank-item
-              .bank-label Account Number:
+            .bank-row
+              .bank-label Account Number
               .bank-value #{firm.settings.bankDetails.accountNumber || 'N/A'}
             if firm.settings.bankDetails.sortCode
-              .bank-item
-                .bank-label Sort Code:
+              .bank-row
+                .bank-label Sort Code
                 .bank-value #{firm.settings.bankDetails.sortCode}
           else
-            .bank-item
-              .bank-label Bank:
+            .bank-row
+              .bank-label Bank
               .bank-value Contact firm for bank details
-            .bank-item
-              .bank-label Account Name:
+            .bank-row
+              .bank-label Account Name
               .bank-value #{firm && firm.name ? firm.name : 'Law Firm'}
+          .bank-row
+            .bank-label Payment Reference
+            .bank-value #{invoice.invoiceNumber}
         
-        .bank-item
-          .bank-label Reference:
-          .bank-value #{invoice.invoiceNumber}
-        
-        .terms
-          h4 Terms & Conditions:
-          p #{firm && firm.settings && firm.settings.defaultPaymentTerms ? firm.settings.defaultPaymentTerms : 'Payment is due upon receipt. Late payments may be subject to interest charges as permitted by law.'}
-          if firm && firm.settings && firm.settings.invoiceFooter
-            p #{firm.settings.invoiceFooter}
-
-      .footer
-        p Thank you for your business. Please contact us with any questions.
-        p #{firm && firm.name ? firm.name : 'Law Firm'} - Your trusted legal partners.
-        p Generated on: #{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+        .terms-section
+          .terms-title Terms & Conditions
+          .terms-text #{firm && firm.settings && firm.settings.defaultPaymentTerms ? firm.settings.defaultPaymentTerms : 'Payment is due upon receipt. Please include invoice number as payment reference. Late payments may attract interest charges.'}
+    
+      //- Footer
+      .invoice-footer
+        .footer-message Thank you for your patronage
+        .footer-firm #{firm && firm.name ? firm.name : 'Law Firm'} - Your trusted legal partners
+        .footer-date Generated on: #{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}

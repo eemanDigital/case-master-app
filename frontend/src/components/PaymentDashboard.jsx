@@ -102,10 +102,8 @@ const PaymentDashboard = () => {
     error,
     refresh,
     summary,
-    analytics,
     topPerformers,
     recentActivity,
-    collectionRate,
     totalOutstanding,
     totalPaid,
     overdueAmount,
@@ -348,8 +346,8 @@ const PaymentDashboard = () => {
                 collectionEfficiency >= 80
                   ? "success"
                   : collectionEfficiency >= 50
-                  ? "active"
-                  : "exception"
+                    ? "active"
+                    : "exception"
               }
             />
             <div className="flex justify-between items-center mt-2">
@@ -357,8 +355,8 @@ const PaymentDashboard = () => {
                 {collectionEfficiency >= 80
                   ? "Excellent"
                   : collectionEfficiency >= 50
-                  ? "Good"
-                  : "Needs Attention"}
+                    ? "Good"
+                    : "Needs Attention"}
               </Text>
               {getTrendIndicator(collectionEfficiency - 70).icon}
             </div>
@@ -831,7 +829,7 @@ const PaymentDashboard = () => {
                         </Text>
                         <Text className="text-xs text-gray-400 block mt-1">
                           {moment(payment.paymentDate).format(
-                            "MMM DD, YYYY HH:mm"
+                            "MMM DD, YYYY HH:mm",
                           )}
                         </Text>
                       </div>

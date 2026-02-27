@@ -76,8 +76,9 @@ export const ShowAdminComponent = ({ children }) => {
   const user = useSelector(selectUser);
 
   if (
-    (isLoggedIn && user?.data?.role === "admin") ||
-    user?.data?.role === "super-admin"
+    (isLoggedIn && user?.data?.additionalRoles.includes("super-admin")) ||
+    user?.data?.role === "super-admin" ||
+    user?.data?.role === "admin"
   ) {
     return <>{children}</>;
   }
