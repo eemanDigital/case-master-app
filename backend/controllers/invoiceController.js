@@ -112,7 +112,7 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
     isDeleted: { $ne: true },
   })
     .populate("client", "firstName lastName email phone address")
-    .populate("case", "firstParty secondParty suitNo caseStatus");
+    .populate("matter", "matterNumber title matterType");
 
   if (!invoice) {
     return next(new AppError("No invoice found with that ID", 404));
@@ -153,15 +153,15 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
 
 exports.createInvoice = catchAsync(async (req, res, next) => {
   const {
-    case: caseId,
     matter: matterId,
     client: clientId,
+    otherActivity,
     ...invoiceData
   } = req.body;
 
   const firmId = getFirmId(req);
 
-  console.log("Received data:", { caseId, matterId, clientId, invoiceData });
+  console.log("Received data:", { matterId, clientId, otherActivity, invoiceData });
 
   // Validate matter and client relationships if provided
   if (matterId) {
@@ -194,35 +194,6 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Validate case and client relationships if provided
-  if (caseId) {
-    const caseData = await Case.findOne({
-      _id: caseId,
-      firmId,
-    }).populate("client");
-
-    if (!caseData) {
-      return next(new AppError("No case found with that ID in your firm", 404));
-    }
-
-    if (
-      clientId &&
-      caseData.client &&
-      caseData.client._id.toString() !== clientId
-    ) {
-      return next(
-        new AppError(
-          "Client in the case does not match the provided client ID",
-          400,
-        ),
-      );
-    }
-
-    if (!clientId && caseData.client) {
-      invoiceData.client = caseData.client._id;
-    }
-  }
-
   // Validate client exists if explicitly provided
   if (clientId) {
     const clientData = await User.findOne({
@@ -248,8 +219,8 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
   const newInvoice = await Invoice.create({
     ...invoiceData,
     firmId,
-    case: caseId || undefined,
     matter: matterId || undefined,
+    otherActivity: otherActivity || undefined,
     client: invoiceData.client,
     createdBy: req.user.id,
   });
@@ -263,9 +234,9 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
 // Update invoice data
 exports.updateInvoice = catchAsync(async (req, res, next) => {
   const {
-    case: caseId,
     matter: matterId,
     client: clientId,
+    otherActivity,
     ...updateData
   } = req.body;
   const { id } = req.params;
@@ -324,34 +295,12 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Validate case and client relationships if changing
-  if (caseId) {
-    const caseData = await Case.findOne({
-      _id: caseId,
-      firmId,
-    }).populate("client");
-
-    if (!caseData) {
-      return next(new AppError("No case found with that ID in your firm", 404));
-    }
-
-    if (
-      clientId &&
-      caseData.client &&
-      caseData.client._id.toString() !== clientId
-    ) {
-      return next(
-        new AppError(
-          "Client in the case does not match the provided client ID",
-          400,
-        ),
-      );
-    }
-
-    invoice.case = caseId;
-
-    if (!clientId && caseData.client) {
-      invoice.client = caseData.client._id;
+  // Handle otherActivity
+  if (otherActivity !== undefined) {
+    invoice.otherActivity = otherActivity;
+    // Clear matter if otherActivity is set
+    if (otherActivity && matterId === undefined) {
+      invoice.matter = undefined;
     }
   }
 

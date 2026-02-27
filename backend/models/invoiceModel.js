@@ -142,10 +142,6 @@ const invoiceSchema = new Schema(
       ref: "User",
       required: true,
     },
-    case: {
-      type: Schema.Types.ObjectId,
-      ref: "Case",
-    },
     matter: {
       type: Schema.Types.ObjectId,
       ref: "Matter",

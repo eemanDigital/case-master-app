@@ -86,7 +86,7 @@ module.exports = {
     height: "20mm",
     contents: `
       <div style="text-align: center; font-size: 10pt; color: #666; border-bottom: 1px solid #ddd; padding-bottom: 10px;">
-        CONFIDENTIAL - A.T LUKMAN & CO. LEGAL INVOICE
+        
       </div>
     `,
   },

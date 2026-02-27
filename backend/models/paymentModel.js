@@ -21,10 +21,6 @@ const paymentSchema = new Schema(
       ref: "User",
       required: true,
     },
-    case: {
-      type: Schema.Types.ObjectId,
-      ref: "Case",
-    },
     matter: {
       type: Schema.Types.ObjectId,
       ref: "Matter",
@@ -71,7 +67,6 @@ const paymentSchema = new Schema(
 
 paymentSchema.index({ invoice: 1 });
 paymentSchema.index({ client: 1 });
-paymentSchema.index({ case: 1 });
 paymentSchema.index({ matter: 1 });
 paymentSchema.index({ paymentDate: -1 });
 
@@ -95,15 +90,11 @@ paymentSchema.pre("save", async function (next) {
     return next(new Error("Payment client does not match invoice client"));
   }
 
-  if (this.case && invoice.case && invoice.case.toString() !== this.case.toString()) {
-    return next(new Error("Payment case does not match invoice case"));
-  }
-
   if (this.matter && invoice.matter && invoice.matter.toString() !== this.matter.toString()) {
     return next(new Error("Payment matter does not match invoice matter"));
   }
 
-  if (this.otherActivity && invoice.otherActivity && invoice.otherActivity !== invoice.otherActivity) {
+  if (this.otherActivity && invoice.otherActivity && invoice.otherActivity !== this.otherActivity) {
     return next(new Error("Payment other activity does not match invoice other activity"));
   }
 

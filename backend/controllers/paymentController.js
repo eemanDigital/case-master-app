@@ -24,15 +24,13 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     notes,
     client: clientFromBody,
     clientId,
-    case: caseFromBody,
-    caseId,
     matter: matterFromBody,
     matterId,
+    otherActivity,
   } = req.body;
 
   const invoice_id = invoiceFromBody || invoiceId;
   const client_id = clientFromBody || clientId;
-  const case_id = caseFromBody || caseId;
   const matter_id = matterFromBody || matterId;
 
   if (!invoice_id || !amount || !method) {
@@ -52,7 +50,6 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     firmId,
     isDeleted: { $ne: true },
   })
-    .populate("case")
     .populate("client")
     .populate("matter");
 
@@ -78,11 +75,33 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     return next(new AppError("Cannot make payment to cancelled invoice", 400));
   }
 
-  if (case_id && invoice.case && invoice.case._id.toString() !== case_id) {
-    return next(new AppError("Case does not match the invoice case", 400));
+  if (
+    matter_id &&
+    invoice.matter &&
+    invoice.matter._id.toString() !== matter_id
+  ) {
+    return next(new AppError("Matter does not match the invoice matter", 400));
   }
 
-  if (matter_id && invoice.matter && invoice.matter._id.toString() !== matter_id) {
+  // Check otherActivity match
+  if (
+    otherActivity &&
+    invoice.otherActivity &&
+    invoice.otherActivity !== otherActivity
+  ) {
+    return next(
+      new AppError(
+        "Other activity does not match the invoice other activity",
+        400,
+      ),
+    );
+  }
+
+  if (
+    matter_id &&
+    invoice.matter &&
+    invoice.matter._id.toString() !== matter_id
+  ) {
     return next(new AppError("Matter does not match the invoice matter", 400));
   }
 
@@ -113,8 +132,8 @@ exports.createPayment = catchAsync(async (req, res, next) => {
       firmId,
       invoice: invoice_id,
       client: invoice.client._id,
-      case: invoice.case ? invoice.case._id : undefined,
       matter: invoice.matter ? invoice.matter._id : undefined,
+      otherActivity: invoice.otherActivity || undefined,
       amount,
       method,
       reference: reference || "",
@@ -129,7 +148,7 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     const updatedInvoice = await Invoice.findByIdAndUpdate(
       invoice_id,
       { $inc: { amountPaid: amount } },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true },
     );
 
     const today = new Date();
@@ -156,12 +175,12 @@ exports.createPayment = catchAsync(async (req, res, next) => {
           balance: Math.max(0, newBalance),
         },
       },
-      { new: true }
+      { new: true },
     );
 
     await payment.populate(
       "invoice",
-      "invoiceNumber title total balance status amountPaid"
+      "invoiceNumber title total balance status amountPaid",
     );
     await payment.populate("client", "firstName lastName email");
     if (payment.case) {

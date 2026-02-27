@@ -257,6 +257,82 @@ const CreatePaymentForm = ({
                 />
               </Form.Item>
             </Col>
+
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="paymentDate"
+                label="Payment Date"
+                rules={requiredRule}
+                initialValue={
+                  formData?.paymentDate
+                    ? moment(formData.paymentDate).local()
+                    : moment()
+                }>
+                <DatePicker
+                  className="w-full"
+                  format="YYYY-MM-DD"
+                  disabledDate={(current) =>
+                    current && current > moment().endOf("day")
+                  }
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="method"
+                label="Payment Method"
+                rules={requiredRule}
+                initialValue={formData?.method || "bank_transfer"}>
+                <Select
+                  placeholder="Select payment method"
+                  options={methodOptions}
+                  allowClear
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="status"
+                label="Payment Status"
+                initialValue="completed">
+                <Select
+                  placeholder="Select payment status"
+                  options={paymentStatusOptions}
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="reference"
+                label="Payment Reference"
+                initialValue={formData?.reference}>
+                <Input placeholder="e.g., BT-20240115-001, CHQ-789456" />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Form.Item
+                name="transactionId"
+                label="Transaction ID"
+                initialValue={formData?.transactionId}>
+                <Input placeholder="Bank transaction ID, cheque number, etc." />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24}>
+              <Form.Item
+                name="notes"
+                label="Notes"
+                initialValue={formData?.notes}>
+                <TextArea
+                  rows={3}
+                  placeholder="Additional notes about this payment..."
+                />
+              </Form.Item>
+            </Col>
           </Row>
 
           {selectedInvoice && (
