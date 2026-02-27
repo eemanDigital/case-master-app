@@ -70,7 +70,7 @@ const InvoiceList = () => {
           ?.toLowerCase()
           .includes(searchTerm);
         const titleMatch = d.title?.toLowerCase().includes(searchTerm);
-        const caseMatch = d.case?.suitNo?.toLowerCase().includes(searchTerm);
+        const otherActivityMatch = d.otherActivity?.toLowerCase().includes(searchTerm);
         const matterMatch = d.matter?.matterNumber?.toLowerCase().includes(searchTerm);
         const statusMatch = d.status
           ?.toLowerCase()
@@ -80,7 +80,7 @@ const InvoiceList = () => {
           clientNameMatch ||
           invoiceNumberMatch ||
           titleMatch ||
-          caseMatch ||
+          otherActivityMatch ||
           matterMatch ||
           statusMatch
         );
@@ -160,8 +160,8 @@ const InvoiceList = () => {
       responsive: ["md"],
     },
     {
-      title: "Matter/Case",
-      key: "matterCase",
+      title: "Matter/Other",
+      key: "matterOther",
       render: (_, record) => (
         <div>
           {record.matter && (
@@ -174,14 +174,14 @@ const InvoiceList = () => {
               </div>
             </div>
           )}
-          {record.case && !record.matter && (
+          {record.otherActivity && !record.matter && (
             <div className="text-xs">
               <span className="text-blue-600 font-medium">
-                {record.case.suitNo}
+                {record.otherActivity}
               </span>
             </div>
           )}
-          {!record.matter && !record.case && (
+          {!record.matter && !record.otherActivity && (
             <span className="text-gray-400">-</span>
           )}
         </div>

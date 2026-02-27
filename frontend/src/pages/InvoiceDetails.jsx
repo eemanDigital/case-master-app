@@ -272,8 +272,8 @@ const InvoiceDetails = () => {
               <CreatePaymentForm
                 invoiceId={invoice?._id}
                 clientId={invoice?.client?._id}
-                caseId={invoice?.case?._id}
                 matterId={invoice?.matter?._id}
+                otherActivity={invoice?.otherActivity}
                 invoiceNumber={invoice?.invoiceNumber}
                 currentBalance={invoice?.balance}
                 onSuccess={() => {
@@ -334,20 +334,16 @@ const InvoiceDetails = () => {
                   </Col>
                 )}
 
-                {invoice?.case && (
+                {invoice?.otherActivity && (
                   <Col xs={24} md={8}>
                     <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-blue-200">
                       <DocumentTextIcon className="w-4 h-4 text-blue-600" />
                       <div>
                         <Text className="text-sm font-medium text-gray-600 block">
-                          Case
+                          Other Activity
                         </Text>
                         <Text className="font-semibold text-gray-900">
-                          {invoice?.case?.suitNo || "No Case"}
-                        </Text>
-                        <Text className="text-xs text-gray-500 block">
-                          {invoice?.case?.firstParty?.name?.[0]?.name} vs{" "}
-                          {invoice?.case?.secondParty?.name?.[0]?.name}
+                          {invoice?.otherActivity}
                         </Text>
                       </div>
                     </div>

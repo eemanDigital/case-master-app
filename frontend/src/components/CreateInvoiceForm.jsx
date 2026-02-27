@@ -15,10 +15,8 @@ import {
   Col,
   Switch,
   Space,
-  Alert,
 } from "antd";
 
-import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useMattersSelectOptions from "../hooks/useMattersSelectOptions";
 import { invoiceInitialValue } from "../utils/initialValues";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
@@ -31,8 +29,7 @@ const CreateInvoiceForm = () => {
   const { fetchData } = useDataGetterHook();
   const [formData, setFormData] = useState(invoiceInitialValue);
   const [publishOnSave, setPublishOnSave] = useState(false);
-  const [showMatterField, setShowMatterField] = useState(true);
-  const { casesOptions } = useCaseSelectOptions();
+  const [linkType, setLinkType] = useState("matter"); // matter, other
   const { mattersOptions, loading: mattersLoading } = useMattersSelectOptions({
     status: "active",
     limit: 100,
@@ -60,8 +57,8 @@ const CreateInvoiceForm = () => {
 
       const finalValues = {
         ...values,
-        case: values.case || undefined,
         matter: values.matter || undefined,
+        otherActivity: values.otherActivity || undefined,
         status: publishOnSave ? "sent" : "draft",
         issueDate: publishOnSave ? new Date().toISOString() : undefined,
         dueDate: values.dueDate ? values.dueDate.toISOString() : undefined,
@@ -100,43 +97,52 @@ const CreateInvoiceForm = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24} md={12}>
               <Form.Item
-                label="Link to Matter"
-                name="matter"
-                tooltip="Select a matter to link this invoice to">
+                label="Link To"
+                name="linkType"
+                initialValue="matter">
                 <Select
-                  placeholder="Select matter (optional)"
-                  showSearch
-                  filterOption={filterOption}
-                  options={mattersOptions}
-                  allowClear
-                  loading={mattersLoading}
                   onChange={(value) => {
-                    if (value) {
-                      form.setFieldsValue({ case: null });
-                    }
-                  }}
-                />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={12}>
-              <Form.Item
-                label="Link to Case"
-                name="case"
-                tooltip="Select a case to link this invoice to">
-                <Select
-                  placeholder="Select case (optional)"
-                  showSearch
-                  filterOption={filterOption}
-                  options={casesOptions}
-                  allowClear
-                  onChange={(value) => {
-                    if (value) {
+                    setLinkType(value);
+                    if (value === "matter") {
+                      form.setFieldsValue({ otherActivity: "" });
+                    } else {
                       form.setFieldsValue({ matter: null });
                     }
-                  }}
-                />
+                  }}>
+                  <Select.Option value="matter">Matter</Select.Option>
+                  <Select.Option value="other">Other Activity</Select.Option>
+                </Select>
               </Form.Item>
             </Col>
+            
+            {linkType === "matter" ? (
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Select Matter"
+                  name="matter"
+                  tooltip="Select a matter to link this invoice to">
+                  <Select
+                    placeholder="Select matter (optional)"
+                    showSearch
+                    filterOption={filterOption}
+                    options={mattersOptions}
+                    allowClear
+                    loading={mattersLoading}
+                  />
+                </Form.Item>
+              </Col>
+            ) : (
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Other Activity Name"
+                  name="otherActivity"
+                  rules={[{ required: true, message: "Please enter activity name" }]}
+                  tooltip="Enter a custom activity name">
+                  <Input placeholder="e.g., Contract Review, Legal Advisory, etc." />
+                </Form.Item>
+              </Col>
+            )}
+            
             <Col xs={24} md={12}>
               <Form.Item
                 name="client"

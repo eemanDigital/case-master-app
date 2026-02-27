@@ -1,6 +1,6 @@
 export const invoiceInitialValue = {
-  case: null,
   matter: null,
+  otherActivity: "",
   client: "",
   title: "",
   description: "",
@@ -44,7 +44,6 @@ export const invoiceInitialValue = {
   paymentTerms: "Net 30 days",
   notes: "",
   internalNotes: "",
-  matterReference: "",
   status: "draft",
   issueDate: null,
 };
@@ -52,8 +51,8 @@ export const invoiceInitialValue = {
 export const paymentInitialValue = {
   invoice: null,
   client: null,
-  case: null,
   matter: null,
+  otherActivity: "",
   amount: 0,
   method: "bank_transfer",
   paymentDate: null,

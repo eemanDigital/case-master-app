@@ -13,10 +13,8 @@ import {
   Row,
   Col,
   Input,
-  Alert,
 } from "antd";
 import { paymentInitialValue } from "../utils/initialValues";
-import useCaseSelectOptions from "../hooks/useCaseSelectOptions";
 import useMattersSelectOptions from "../hooks/useMattersSelectOptions";
 import useClientSelectOptions from "../hooks/useClientSelectOptions";
 import useInvoiceRefSelectOptions from "../hooks/useInvoiceRefSelectOptions";
@@ -32,8 +30,8 @@ const { TextArea } = Input;
 const CreatePaymentForm = ({
   invoiceId,
   clientId,
-  caseId,
   matterId,
+  otherActivity,
   invoiceNumber,
   currentBalance,
   onSuccess,
@@ -41,10 +39,10 @@ const CreatePaymentForm = ({
 }) => {
   const [formData, setFormData] = useState(paymentInitialValue);
   const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [linkType, setLinkType] = useState("matter");
   const [form] = Form.useForm();
   const { fetchData } = useDataGetterHook();
   const { dataFetcher, loading } = useDataFetch();
-  const { casesOptions } = useCaseSelectOptions();
   const { mattersOptions, loading: mattersLoading } = useMattersSelectOptions({
     status: "active",
     limit: 100,
@@ -61,12 +59,12 @@ const CreatePaymentForm = ({
         form.setFieldsValue({
           invoice: invoiceId,
           client: clientId,
-          case: caseId,
           matter: matterId,
+          otherActivity: otherActivity,
         });
       }
     }
-  }, [invoiceId, clientId, caseId, matterId, invoiceRefOptions, form]);
+  }, [invoiceId, clientId, matterId, otherActivity, invoiceRefOptions, form]);
 
   const onSubmit = useCallback(async () => {
     let values;
@@ -79,8 +77,8 @@ const CreatePaymentForm = ({
     const paymentData = {
       invoice: values.invoice,
       client: values.client,
-      case: values.case || undefined,
       matter: values.matter || undefined,
+      otherActivity: values.otherActivity || undefined,
       amount: values.amount,
       method: values.method,
       paymentDate: values.paymentDate
@@ -119,16 +117,16 @@ const CreatePaymentForm = ({
         setSelectedInvoice(selected);
         form.setFieldsValue({
           client: selected.clientId,
-          case: selected.caseId,
           matter: selected.matterId,
+          otherActivity: selected.otherActivity,
         });
       }
     } else {
       setSelectedInvoice(null);
       form.setFieldsValue({
         client: undefined,
-        case: undefined,
         matter: undefined,
+        otherActivity: undefined,
       });
     }
   };
@@ -187,31 +185,52 @@ const CreatePaymentForm = ({
             </Col>
 
             <Col xs={24} md={12}>
-              <Form.Item name="matter" label="Matter" initialValue={matterId || formData?.matter}>
+              <Form.Item
+                name="linkType"
+                label="Link To"
+                initialValue="matter">
                 <Select
-                  placeholder="Matter (optional)"
-                  showSearch
-                  filterOption={filterOption}
-                  options={mattersOptions}
-                  allowClear
-                  loading={mattersLoading}
-                  disabled={!!invoiceId}
-                />
+                  onChange={(value) => {
+                    setLinkType(value);
+                    if (value === "matter") {
+                      form.setFieldsValue({ otherActivity: "" });
+                    } else {
+                      form.setFieldsValue({ matter: null });
+                    }
+                  }}>
+                  <Select.Option value="matter">Matter</Select.Option>
+                  <Select.Option value="other">Other Activity</Select.Option>
+                </Select>
               </Form.Item>
             </Col>
 
-            <Col xs={24} md={12}>
-              <Form.Item name="case" label="Case" initialValue={caseId || formData?.case}>
-                <Select
-                  placeholder="Case (optional)"
-                  showSearch
-                  filterOption={filterOption}
-                  options={casesOptions}
-                  allowClear
-                  disabled={!!invoiceId}
-                />
-              </Form.Item>
-            </Col>
+            {linkType === "matter" ? (
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="matter"
+                  label="Matter"
+                  initialValue={matterId || formData?.matter}>
+                  <Select
+                    placeholder="Matter (optional)"
+                    showSearch
+                    filterOption={filterOption}
+                    options={mattersOptions}
+                    allowClear
+                    loading={mattersLoading}
+                    disabled={!!invoiceId}
+                  />
+                </Form.Item>
+              </Col>
+            ) : (
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="otherActivity"
+                  label="Other Activity"
+                  initialValue={otherActivity || formData?.otherActivity}>
+                  <Input placeholder="e.g., Contract Review, Legal Advisory, etc." />
+                </Form.Item>
+              </Col>
+            )}
 
             <Col xs={24} md={12}>
               <Form.Item
@@ -235,82 +254,6 @@ const CreatePaymentForm = ({
                   }
                   parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
                   placeholder="0.00"
-                />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="paymentDate"
-                label="Payment Date"
-                rules={requiredRule}
-                initialValue={
-                  formData?.paymentDate
-                    ? moment(formData.paymentDate).local()
-                    : moment()
-                }>
-                <DatePicker
-                  className="w-full"
-                  format="YYYY-MM-DD"
-                  disabledDate={(current) =>
-                    current && current > moment().endOf("day")
-                  }
-                />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="method"
-                label="Payment Method"
-                rules={requiredRule}
-                initialValue={formData?.method || "bank_transfer"}>
-                <Select
-                  placeholder="Select payment method"
-                  options={methodOptions}
-                  allowClear
-                />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="status"
-                label="Payment Status"
-                initialValue="completed">
-                <Select
-                  placeholder="Select payment status"
-                  options={paymentStatusOptions}
-                />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="reference"
-                label="Payment Reference"
-                initialValue={formData?.reference}>
-                <Input placeholder="e.g., BT-20240115-001, CHQ-789456" />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="transactionId"
-                label="Transaction ID"
-                initialValue={formData?.transactionId}>
-                <Input placeholder="Bank transaction ID, cheque number, etc." />
-              </Form.Item>
-            </Col>
-
-            <Col xs={24}>
-              <Form.Item
-                name="notes"
-                label="Notes"
-                initialValue={formData?.notes}>
-                <TextArea
-                  rows={3}
-                  placeholder="Additional notes about this payment..."
                 />
               </Form.Item>
             </Col>
