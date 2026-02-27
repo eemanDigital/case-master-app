@@ -53,9 +53,10 @@ router
 // Task responses
 router.route("/:taskId/responses").post(taskController.submitTaskResponse);
 
-// Delete task response
+// Update task response (for assignee to edit their submission)
 router
   .route("/:taskId/responses/:responseId")
+  .put(taskController.updateTaskResponse)
   .delete(taskController.deleteTaskResponse);
 
 // Review task response

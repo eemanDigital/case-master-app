@@ -1036,6 +1036,102 @@ exports.deleteTaskResponse = catchAsync(async (req, res, next) => {
   });
 });
 
+// Update task response (for assignee to edit their submission)
+exports.updateTaskResponse = catchAsync(async (req, res, next) => {
+  const { taskId, responseId } = req.params;
+  const { comment, status, completionPercentage, timeSpent, addDocumentIds = [], removeDocumentIds = [] } = req.body;
+
+  const task = await Task.findOne({ _id: taskId, firmId: req.firmId });
+  if (!task) {
+    return next(new AppError("Task not found", 404));
+  }
+
+  // Find the response
+  const responseIndex = task.taskResponses.findIndex(
+    (response) => response._id.toString() === responseId,
+  );
+
+  if (responseIndex === -1) {
+    return next(new AppError("Response not found", 404));
+  }
+
+  const response = task.taskResponses[responseIndex];
+
+  // Check authorization - only the submitter can update
+  const userId = req.user.id.toString();
+  let isSubmitter = false;
+
+  if (response.submittedBy) {
+    if (typeof response.submittedBy === "object" && response.submittedBy._id) {
+      isSubmitter = response.submittedBy._id.toString() === userId;
+    } else {
+      isSubmitter = response.submittedBy.toString() === userId;
+    }
+  }
+
+  // Also allow task creator and admin to update
+  const isCreator = task.createdBy.toString() === userId;
+  const isAdmin = req.user.role && ["admin", "super-admin"].includes(req.user.role);
+
+  if (!isSubmitter && !isCreator && !isAdmin) {
+    return next(new AppError("You are not authorized to update this response", 403));
+  }
+
+  // Check if task is in a state that allows updates (not under review or completed)
+  if (task.status === "under-review") {
+    return next(new AppError("Cannot update response while task is under review", 400));
+  }
+
+  // Update fields if provided
+  if (comment !== undefined) response.comment = comment;
+  if (status !== undefined) response.status = status;
+  if (completionPercentage !== undefined) response.completionPercentage = completionPercentage;
+  if (timeSpent !== undefined) response.timeSpent = timeSpent;
+
+  // Add new documents
+  if (addDocumentIds.length > 0) {
+    addDocumentIds.forEach((docId) => {
+      if (!response.documents.includes(docId)) {
+        response.documents.push(docId);
+      }
+    });
+  }
+
+  // Remove documents
+  if (removeDocumentIds.length > 0) {
+    response.documents = response.documents.filter(
+      (docId) => !removeDocumentIds.includes(docId.toString())
+    );
+  }
+
+  // Update timestamp
+  response.updatedAt = new Date();
+
+  await task.save();
+
+  // Get updated task
+  const updatedTask = await Task.findOne({ _id: taskId, firmId: req.firmId })
+    .populate({
+      path: "taskResponses.documents",
+      match: { isArchived: false },
+    })
+    .populate({
+      path: "taskResponses.submittedBy",
+      select: "firstName lastName email position",
+    })
+    .populate({
+      path: "taskResponses.reviewedBy",
+      select: "firstName lastName email position",
+    })
+    .populate("createdBy", "firstName lastName email position");
+
+  res.status(200).json({
+    status: "success",
+    message: "Task response updated successfully",
+    data: updatedTask,
+  });
+});
+
 // Check task access and permissions
 exports.checkTaskAccess = catchAsync(async (req, res, next) => {
   const taskId = req.params.taskId;
