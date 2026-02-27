@@ -834,8 +834,8 @@ exports.generateReceiptPdf = catchAsync(async (req, res, next) => {
   generatePdf(
     { receipt: receiptData, firm },
     res,
-    path.join(__dirname, "../views/receipt.pug"),
-    path.join(__dirname, `../output/${receiptData.receiptNumber}_receipt.pdf`),
+    path.resolve(__dirname, "../views/receipt.pug"),
+    path.resolve(__dirname, `../output/${receiptData.receiptNumber}_receipt.pdf`),
   );
 });
 
@@ -850,7 +850,6 @@ exports.generateBillOfChargesPdf = catchAsync(async (req, res, next) => {
     isDeleted: { $ne: true },
   })
     .populate("client", "firstName lastName email phone address")
-    .populate("case", "firstParty secondParty suitNo courtName caseStatus")
     .populate("matter", "title matterNumber matterType");
 
   if (!invoice) {

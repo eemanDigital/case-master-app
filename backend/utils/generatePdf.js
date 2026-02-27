@@ -38,7 +38,11 @@ exports.generatePdf = (dataValue, res, templateFile, fileOutPath) => {
         console.error("Pug render error:", err);
         res.status(500).json({ error: err.message });
       } else {
-        const options = pdfoptions;
+        // Get firm from dataValue and pass to pdfoptions
+        const firm = dataValue?.firm || {};
+        const options = typeof pdfoptions === 'function' ? pdfoptions(firm) : pdfoptions;
+
+        console.log("PDF options:", JSON.stringify(options, null, 2));
 
         const document = {
           html: html,
