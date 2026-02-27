@@ -20,6 +20,8 @@ import {
   Empty,
   Dropdown,
   Menu,
+  Progress,
+  Alert,
 } from "antd";
 import {
   SearchOutlined,
@@ -35,12 +37,14 @@ import {
   MoreOutlined,
   ReloadOutlined,
   FolderOutlined,
-  // CloudUploadOutlined,
   FilterOutlined,
   SortAscendingOutlined,
+  WarningOutlined,
+  CloudOutlined,
 } from "@ant-design/icons";
 import { formatDate } from "../utils/formatDate";
 import useFileManager from "../hooks/useFileManager";
+import useFirmStorage from "../hooks/useFirmStorage";
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import FileUploader from "./FileUpload";
@@ -64,7 +68,20 @@ const DocumentsList = ({
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewModalVisible, setPreviewModalVisible] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [batchActionLoading, setBatchActionLoading] = useState(false);
+  const [batchActionLoading, setBatchActionLoading] = useState([]);
+
+  // Firm storage info hook
+  const {
+    storageInfo,
+    loading: storageLoading,
+    refresh: refreshStorage,
+    isNearLimit,
+    isAtLimit,
+    usagePercentage,
+    storageUsedGB,
+    storageLimitGB,
+    plan,
+  } = useFirmStorage();
 
   // Initialize file manager - Use fetchGeneralFiles for documents without entity
   const {
@@ -167,6 +184,7 @@ const DocumentsList = ({
       if (success) {
         toast.success(`${file.fileName} deleted successfully`);
         setSelectedFiles((prev) => prev.filter((id) => id !== file._id));
+        refreshStorage(); // Refresh storage after deletion
       }
     } catch (error) {
       console.error("Delete failed:", error);
@@ -187,6 +205,7 @@ const DocumentsList = ({
       if (success) {
         toast.success(`Successfully deleted ${selectedFiles.length} file(s)`);
         setSelectedFiles([]);
+        refreshStorage(); // Refresh storage after bulk delete
       }
     } catch (error) {
       console.error("Bulk delete failed:", error);
@@ -778,6 +797,39 @@ const DocumentsList = ({
 
   return (
     <div className="documents-list">
+      {/* Storage Limit Warning */}
+      {isNearLimit && !isAtLimit && (
+        <Alert
+          message="Storage Warning"
+          description={`You've used ${usagePercentage}% of your ${storageLimitGB}GB storage. Consider upgrading your plan.`}
+          type="warning"
+          showIcon
+          icon={<WarningOutlined />}
+          className="mb-4"
+          action={
+            <Button size="small" type="ghost">
+              Upgrade
+            </Button>
+          }
+        />
+      )}
+
+      {isAtLimit && (
+        <Alert
+          message="Storage Limit Reached"
+          description={`You've reached your ${storageLimitGB}GB storage limit. Upgrade your plan to continue uploading files.`}
+          type="error"
+          showIcon
+          icon={<WarningOutlined />}
+          className="mb-4"
+          action={
+            <Button size="small" type="primary" danger>
+              Upgrade Now
+            </Button>
+          }
+        />
+      )}
+
       {/* Header Section */}
       <Row gutter={[16, 16]} className="mb-6">
         <Col span={24}>
@@ -800,6 +852,26 @@ const DocumentsList = ({
                     {totalStorageMB.toFixed(2)} MB total storage
                   </span>
                 </div>
+                {/* Storage Usage Bar */}
+                {!storageLoading && storageInfo && (
+                  <div className="mt-3">
+                    <div className="flex justify-between items-center mb-1">
+                      <Text type="secondary" className="text-xs">
+                        Storage: {storageUsedGB} GB / {storageLimitGB} GB ({usagePercentage}%)
+                      </Text>
+                      <Tag color={isAtLimit ? "red" : isNearLimit ? "orange" : "blue"}>
+                        {plan} Plan
+                      </Tag>
+                    </div>
+                    <Progress 
+                      percent={usagePercentage} 
+                      size="small"
+                      status={isAtLimit ? "exception" : isNearLimit ? "normal" : "success"}
+                      showInfo={false}
+                      strokeColor={isAtLimit ? "#ff4d4f" : isNearLimit ? "#faad14" : "#52c41a"}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-2">
@@ -809,14 +881,26 @@ const DocumentsList = ({
                     entityId={entityId}
                     category="general"
                     buttonText="Upload Documents"
-                    buttonProps={{ type: "primary" }}
+                    buttonProps={{ 
+                      type: "primary",
+                      disabled: isAtLimit,
+                      icon: isAtLimit ? <CloudOutlined /> : undefined
+                    }}
                     multiple={true}
                     onUploadSuccess={() => {
                       fetchFiles();
+                      refreshStorage();
                       toast.success("Files uploaded successfully");
                     }}
                     onUploadError={(error) => {
-                      toast.error(error.message || "Upload failed");
+                      // Check if it's a storage limit error
+                      const errorMessage = error?.response?.data?.message || "";
+                      if (errorMessage.includes("storage") || errorMessage.includes("limit")) {
+                        toast.error("Storage limit reached. Please upgrade your plan to upload more files.");
+                      } else {
+                        toast.error(error.message || "Upload failed");
+                      }
+                      refreshStorage();
                     }}
                     {...uploaderProps}
                   />

@@ -189,18 +189,18 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
         },
       ],
     },
-    {
-      key: "cases",
-      icon: <BankOutlined />,
-      label: "Cases",
-      path: "/dashboard/cases",
-    },
-    {
-      key: "reports",
-      icon: <FileTextOutlined />,
-      label: "Reports",
-      path: "/dashboard/case-reports",
-    },
+    // {
+    //   key: "cases",
+    //   icon: <BankOutlined />,
+    //   label: "Cases",
+    //   path: "/dashboard/cases",
+    // },
+    // {
+    //   key: "reports",
+    //   icon: <FileTextOutlined />,
+    //   label: "Reports",
+    //   path: "/dashboard/case-reports",
+    // },
     {
       key: "staff",
       icon: <TeamOutlined />,
@@ -234,12 +234,12 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
         },
       ],
     },
-    {
-      key: "cause-list",
-      icon: <CalendarOutlined />,
-      label: "Cause List",
-      path: "/dashboard/cause-list",
-    },
+    // {
+    //   key: "cause-list",
+    //   icon: <CalendarOutlined />,
+    //   label: "Cause List",
+    //   path: "/dashboard/cause-list",
+    // },
     {
       key: "tasks",
       icon: <CheckSquareOutlined />,
@@ -335,25 +335,23 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
   return (
     <div
       className={`h-full flex flex-col ${
-        isDarkMode 
-          ? "bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800" 
+        isDarkMode
+          ? "bg-gradient-to-b from-gray-900 via-gray-900 to-gray-800"
           : "bg-gradient-to-b from-white via-white to-gray-50"
       }`}
       style={{
         boxShadow: isDarkMode
           ? "4px 0 24px rgba(0, 0, 0, 0.5)"
           : "4px 0 24px rgba(0, 0, 0, 0.08)",
-      }}
-    >
+      }}>
       {/* Logo Section */}
       <div
         className={`flex items-center px-6 border-b ${
-          isDarkMode 
-            ? "border-gray-800 bg-gray-900/50" 
+          isDarkMode
+            ? "border-gray-800 bg-gray-900/50"
             : "border-gray-200 bg-white"
         }`}
-        style={{ height: 64, minHeight: 64 }}
-      >
+        style={{ height: 64, minHeight: 64 }}>
         {!collapsed ? (
           <div className="flex items-center gap-3 w-full">
             <div
@@ -366,8 +364,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
                 boxShadow: isDarkMode
                   ? "0 4px 14px rgba(59, 130, 246, 0.4)"
                   : "0 4px 14px rgba(59, 130, 246, 0.3)",
-              }}
-            >
+              }}>
               <HomeOutlined className="text-white text-xl" />
             </div>
             <div className="flex-1 min-w-0">
@@ -375,15 +372,13 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
                 strong
                 className={`block text-lg leading-tight font-semibold ${
                   isDarkMode ? "text-white" : "text-gray-900"
-                }`}
-              >
+                }`}>
                 LawMaster
               </Text>
               <Text
                 className={`block text-xs ${
                   isDarkMode ? "text-primary-400" : "text-primary-600"
-                }`}
-              >
+                }`}>
                 Legal Suite Pro
               </Text>
             </div>
@@ -399,8 +394,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
               boxShadow: isDarkMode
                 ? "0 4px 14px rgba(59, 130, 246, 0.4)"
                 : "0 4px 14px rgba(59, 130, 246, 0.3)",
-            }}
-          >
+            }}>
             <HomeOutlined className="text-white text-xl" />
           </div>
         )}
@@ -440,8 +434,8 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           }
 
           .ant-menu-light .ant-menu-item:hover {
-            background: ${isDarkMode 
-              ? "rgba(59, 130, 246, 0.1)" 
+            background: ${isDarkMode
+              ? "rgba(59, 130, 246, 0.1)"
               : "rgba(59, 130, 246, 0.08)"};
             color: ${isDarkMode ? "#93c5fd" : "#2563eb"};
           }
@@ -485,7 +479,11 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           }
 
           .ant-menu-dark .ant-menu-item-selected {
-            background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(37, 99, 235, 0.15) 100%);
+            background: linear-gradient(
+              90deg,
+              rgba(59, 130, 246, 0.2) 0%,
+              rgba(37, 99, 235, 0.15) 100%
+            );
             color: #60a5fa;
             font-weight: 600;
             border-left: 3px solid #3b82f6;
@@ -516,8 +514,8 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           }
 
           .ant-menu-light .ant-menu-submenu-title:hover {
-            background: ${isDarkMode 
-              ? "rgba(59, 130, 246, 0.1)" 
+            background: ${isDarkMode
+              ? "rgba(59, 130, 246, 0.1)"
               : "rgba(59, 130, 246, 0.08)"};
             color: ${isDarkMode ? "#93c5fd" : "#2563eb"};
           }
@@ -552,7 +550,9 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
             color: ${isDarkMode ? "#9ca3af" : "#6b7280"};
           }
 
-          .ant-menu-submenu-open > .ant-menu-submenu-title .ant-menu-submenu-arrow {
+          .ant-menu-submenu-open
+            > .ant-menu-submenu-title
+            .ant-menu-submenu-arrow {
             color: ${isDarkMode ? "#60a5fa" : "#2563eb"};
           }
         `}</style>
@@ -561,11 +561,10 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
       {/* Logout Section */}
       <div
         className={`px-3 py-3 border-t ${
-          isDarkMode 
-            ? "border-gray-800 bg-gray-900/30" 
+          isDarkMode
+            ? "border-gray-800 bg-gray-900/30"
             : "border-gray-200 bg-gray-50"
-        }`}
-      >
+        }`}>
         <button
           onClick={handleLogout}
           className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
@@ -574,31 +573,33 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
               : "hover:bg-red-50 text-red-600 hover:text-red-700 border border-red-200 hover:border-red-300"
           }`}
           style={{
-            boxShadow: isDarkMode 
-              ? "0 2px 8px rgba(239, 68, 68, 0.1)" 
+            boxShadow: isDarkMode
+              ? "0 2px 8px rgba(239, 68, 68, 0.1)"
               : "0 2px 8px rgba(239, 68, 68, 0.08)",
-          }}
-        >
+          }}>
           <LogoutOutlined className="text-base group-hover:scale-110 transition-transform" />
-          {!collapsed && (
-            <span className="text-sm font-medium">Logout</span>
-          )}
+          {!collapsed && <span className="text-sm font-medium">Logout</span>}
         </button>
 
         {!collapsed && (
           <div className="mt-3 text-center">
-            <div className={`flex items-center justify-center gap-2 ${
-              isDarkMode ? "text-gray-600" : "text-gray-400"
-            }`}>
-              <div className={`w-2 h-2 rounded-full ${
-                isDarkMode ? "bg-green-500" : "bg-green-500"
-              }`} style={{
-                boxShadow: "0 0 8px rgba(34, 197, 94, 0.5)",
-                animation: "pulse 2s ease-in-out infinite"
-              }}/>
-              <Text className={`text-xs font-medium ${
-                isDarkMode ? "text-gray-500" : "text-gray-400"
+            <div
+              className={`flex items-center justify-center gap-2 ${
+                isDarkMode ? "text-gray-600" : "text-gray-400"
               }`}>
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  isDarkMode ? "bg-green-500" : "bg-green-500"
+                }`}
+                style={{
+                  boxShadow: "0 0 8px rgba(34, 197, 94, 0.5)",
+                  animation: "pulse 2s ease-in-out infinite",
+                }}
+              />
+              <Text
+                className={`text-xs font-medium ${
+                  isDarkMode ? "text-gray-500" : "text-gray-400"
+                }`}>
                 v2.1.0 • Active
               </Text>
             </div>
@@ -608,8 +609,13 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
 
       <style jsx>{`
         @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.5; }
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
         }
       `}</style>
     </div>

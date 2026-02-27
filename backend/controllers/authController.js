@@ -1596,11 +1596,12 @@ exports.checkStorageLimit = catchAsync(async (req, res, next) => {
   }
 
   const fileSizeGB = req.file ? req.file.size / (1024 * 1024 * 1024) : 0;
+  const availableGB = firm.limits.storageGB - firm.usage.storageUsedGB;
 
   if (!firm.hasStorageAvailable(fileSizeGB)) {
     return next(
       new AppError(
-        `Your firm has reached the storage limit (${firm.limits.storageGB}GB). Please upgrade your plan.`,
+        `Storage limit exceeded. Your plan includes ${firm.limits.storageGB}GB, you have ${availableGB.toFixed(2)}GB available. Please upgrade your plan to upload more files.`,
         403,
       ),
     );
