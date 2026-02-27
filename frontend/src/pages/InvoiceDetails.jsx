@@ -12,7 +12,8 @@ import {
   Progress,
   Descriptions,
   Timeline,
-  Space,
+  Alert,
+  Badge,
   Dropdown,
 } from "antd";
 import {
@@ -69,8 +70,9 @@ const InvoiceDetails = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { user } = useSelector((state) => state.auth);
   const isClient = user?.data?.role === "client";
-  const isSuperOrAdmin = user?.data?.additionalRoles?.includes("super-admin", "admin") || 
-                         user?.data?.role === "admin";
+  const isSuperOrAdmin =
+    user?.data?.additionalRoles?.includes("super-admin", "admin") ||
+    user?.data?.role === "admin";
 
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const {
@@ -88,18 +90,26 @@ const InvoiceDetails = () => {
     dataFetcher(`invoices/${id}`, "GET");
   };
 
+  const handleQuickStatusChange = async (newStatus) => {
+    try {
+      const result = await dataFetcher(`invoices/${id}`, "PATCH", { status: newStatus });
+      if (result?.error) {
+        toast.error("Failed to update status: " + result.error);
+      } else {
+        toast.success(`Invoice marked as ${newStatus}`);
+        refreshInvoiceData();
+      }
+    } catch (err) {
+      toast.error("Failed to update status");
+    }
+  };
+
   const handleDownloadBillOfCharges = () => {
-    window.open(
-      `${downloadURL}/invoices/bill-of-charges/${id}`,
-      "_blank"
-    );
+    window.open(`${downloadURL}/invoices/bill-of-charges/${id}`, "_blank");
   };
 
   const handleDownloadReceipt = (paymentId) => {
-    window.open(
-      `${downloadURL}/payments/receipt/${paymentId}`,
-      "_blank"
-    );
+    window.open(`${downloadURL}/payments/receipt/${paymentId}`, "_blank");
   };
 
   if (loading) return <LoadingSpinner />;
@@ -173,7 +183,7 @@ const InvoiceDetails = () => {
         handleDownloadPdf(
           null,
           `${downloadURL}/invoices/pdf/${invoice?._id}`,
-          `invoice-${invoice?.invoiceNumber}.pdf`
+          `invoice-${invoice?.invoiceNumber}.pdf`,
         );
       },
     },
@@ -200,9 +210,7 @@ const InvoiceDetails = () => {
                 <Title level={2} className="m-0 text-gray-900">
                   Invoice Details
                 </Title>
-                <Text className="text-gray-500">
-                  {invoice?.invoiceNumber}
-                </Text>
+                <Text className="text-gray-500">{invoice?.invoiceNumber}</Text>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -231,6 +239,26 @@ const InvoiceDetails = () => {
           </div>
 
           <div className="flex gap-3 flex-wrap">
+            {invoice?.status === "draft" && !isClient && (
+              <Button
+                type="primary"
+                icon={<FileTextOutlined />}
+                onClick={() => handleQuickStatusChange("sent")}
+                className="bg-orange-500 hover:bg-orange-600 border-0">
+                Mark as Sent
+              </Button>
+            )}
+
+            {invoice?.status === "sent" && !isClient && (
+              <Button
+                type="primary"
+                icon={<CheckCircleOutlined />}
+                onClick={() => handleQuickStatusChange("paid")}
+                className="bg-green-600 hover:bg-green-700 border-0">
+                Mark as Paid
+              </Button>
+            )}
+
             {invoice?.status !== "paid" &&
               invoice?.status !== "draft" &&
               invoice?.status !== "cancelled" &&
@@ -253,12 +281,12 @@ const InvoiceDetails = () => {
               </Button>
             </Dropdown>
 
-            {!isClient && invoice?.status === "draft" && (
+            {!isClient && (
               <Link to={`../billings/invoices/${invoice?._id}/update`}>
                 <Button
                   icon={<EditOutlined />}
                   className="border-blue-300 text-blue-600 hover:text-blue-700">
-                  Update Invoice
+                  Edit Invoice
                 </Button>
               </Link>
             )}
@@ -314,7 +342,7 @@ const InvoiceDetails = () => {
                     </div>
                   </div>
                 </Col>
-                
+
                 {invoice?.matter && (
                   <Col xs={24} md={8}>
                     <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-purple-200">
@@ -451,8 +479,8 @@ const InvoiceDetails = () => {
                       payment.status === "completed"
                         ? "green"
                         : payment.status === "pending"
-                        ? "orange"
-                        : "red",
+                          ? "orange"
+                          : "red",
                     dot:
                       payment.status === "completed" ? (
                         <CheckCircleOutlined style={{ fontSize: "16px" }} />
@@ -475,8 +503,8 @@ const InvoiceDetails = () => {
                                   payment.status === "completed"
                                     ? "text-green-600"
                                     : payment.status === "pending"
-                                    ? "text-orange-600"
-                                    : "text-red-600"
+                                      ? "text-orange-600"
+                                      : "text-red-600"
                                 }`}>
                                 {formatCurrency(payment.amount)}
                               </Text>
@@ -512,8 +540,8 @@ const InvoiceDetails = () => {
                                   payment.status === "completed"
                                     ? "green"
                                     : payment.status === "pending"
-                                    ? "orange"
-                                    : "red"
+                                      ? "orange"
+                                      : "red"
                                 }>
                                 {payment.status?.toUpperCase()}
                               </Tag>
@@ -536,7 +564,9 @@ const InvoiceDetails = () => {
                               type="link"
                               icon={<DownloadOutlined />}
                               size="small"
-                              onClick={() => handleDownloadReceipt(payment._id)}>
+                              onClick={() =>
+                                handleDownloadReceipt(payment._id)
+                              }>
                               Receipt
                             </Button>
                           </Col>
@@ -565,8 +595,8 @@ const InvoiceDetails = () => {
                       payment.status === "completed"
                         ? "green"
                         : payment.status === "pending"
-                        ? "orange"
-                        : "red",
+                          ? "orange"
+                          : "red",
                     dot:
                       payment.status === "completed" ? (
                         <CheckCircleOutlined style={{ fontSize: "16px" }} />
@@ -589,8 +619,8 @@ const InvoiceDetails = () => {
                                   payment.status === "completed"
                                     ? "text-green-600"
                                     : payment.status === "pending"
-                                    ? "text-orange-600"
-                                    : "text-red-600"
+                                      ? "text-orange-600"
+                                      : "text-red-600"
                                 }`}>
                                 {formatCurrency(payment.amount)}
                               </Text>
@@ -626,8 +656,8 @@ const InvoiceDetails = () => {
                                   payment.status === "completed"
                                     ? "green"
                                     : payment.status === "pending"
-                                    ? "orange"
-                                    : "red"
+                                      ? "orange"
+                                      : "red"
                                 }>
                                 {payment.status?.toUpperCase()}
                               </Tag>

@@ -29,6 +29,11 @@ const paymentSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Matter",
     },
+    otherActivity: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+    },
     amount: {
       type: Number,
       required: true,
@@ -96,6 +101,15 @@ paymentSchema.pre("save", async function (next) {
 
   if (this.matter && invoice.matter && invoice.matter.toString() !== this.matter.toString()) {
     return next(new Error("Payment matter does not match invoice matter"));
+  }
+
+  if (this.otherActivity && invoice.otherActivity && invoice.otherActivity !== invoice.otherActivity) {
+    return next(new Error("Payment other activity does not match invoice other activity"));
+  }
+
+  // Data integrity: Ensure either matter OR otherActivity is set, not both
+  if (this.matter && this.otherActivity) {
+    this.matter = undefined; // Clear matter if otherActivity is set
   }
 
   next();

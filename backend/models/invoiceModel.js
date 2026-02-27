@@ -150,6 +150,11 @@ const invoiceSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Matter",
     },
+    otherActivity: {
+      type: String,
+      trim: true,
+      maxlength: 200,
+    },
     title: {
       type: String,
       required: [true, "Invoice title is required"],
@@ -289,6 +294,12 @@ invoiceSchema.pre("validate", async function (next) {
       this.firmId
     );
   }
+  
+  // Data integrity: Ensure either matter OR otherActivity is set, not both
+  if (this.matter && this.otherActivity) {
+    this.matter = undefined; // Clear matter if otherActivity is set
+  }
+  
   next();
 });
 

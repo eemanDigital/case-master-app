@@ -123,7 +123,7 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
     // Check if client owns this invoice
     if (invoice.client._id.toString() !== req.user.id) {
       return next(
-        new AppError("You are not authorized to view this invoice", 403)
+        new AppError("You are not authorized to view this invoice", 403),
       );
     }
 
@@ -152,7 +152,12 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
 });
 
 exports.createInvoice = catchAsync(async (req, res, next) => {
-  const { case: caseId, matter: matterId, client: clientId, ...invoiceData } = req.body;
+  const {
+    case: caseId,
+    matter: matterId,
+    client: clientId,
+    ...invoiceData
+  } = req.body;
 
   const firmId = getFirmId(req);
 
@@ -166,7 +171,9 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
     }).populate("client");
 
     if (!matterData) {
-      return next(new AppError("No matter found with that ID in your firm", 404));
+      return next(
+        new AppError("No matter found with that ID in your firm", 404),
+      );
     }
 
     if (
@@ -177,8 +184,8 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
       return next(
         new AppError(
           "Client in the matter does not match the provided client ID",
-          400
-        )
+          400,
+        ),
       );
     }
 
@@ -206,8 +213,8 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
       return next(
         new AppError(
           "Client in the case does not match the provided client ID",
-          400
-        )
+          400,
+        ),
       );
     }
 
@@ -226,7 +233,7 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
 
     if (!clientData) {
       return next(
-        new AppError("No client found with that ID in your firm", 404)
+        new AppError("No client found with that ID in your firm", 404),
       );
     }
     invoiceData.client = clientId;
@@ -255,7 +262,12 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
 
 // Update invoice data
 exports.updateInvoice = catchAsync(async (req, res, next) => {
-  const { case: caseId, matter: matterId, client: clientId, ...updateData } = req.body;
+  const {
+    case: caseId,
+    matter: matterId,
+    client: clientId,
+    ...updateData
+  } = req.body;
   const { id } = req.params;
 
   const firmId = getFirmId(req);
@@ -268,14 +280,14 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
 
   if (!invoice) {
     return next(
-      new AppError("No invoice found with that ID in your firm", 404)
+      new AppError("No invoice found with that ID in your firm", 404),
     );
   }
 
   const nonEditableStatuses = ["paid", "cancelled", "void"];
   if (nonEditableStatuses.includes(invoice.status)) {
     return next(
-      new AppError(`Cannot edit invoice with status: ${invoice.status}`, 400)
+      new AppError(`Cannot edit invoice with status: ${invoice.status}`, 400),
     );
   }
 
@@ -287,7 +299,9 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
     }).populate("client");
 
     if (!matterData) {
-      return next(new AppError("No matter found with that ID in your firm", 404));
+      return next(
+        new AppError("No matter found with that ID in your firm", 404),
+      );
     }
 
     if (
@@ -298,8 +312,8 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
       return next(
         new AppError(
           "Client in the matter does not match the provided client ID",
-          400
-        )
+          400,
+        ),
       );
     }
 
@@ -329,8 +343,8 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
       return next(
         new AppError(
           "Client in the case does not match the provided client ID",
-          400
-        )
+          400,
+        ),
       );
     }
 
@@ -352,7 +366,7 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
 
     if (!clientData) {
       return next(
-        new AppError("No client found with that ID in your firm", 404)
+        new AppError("No client found with that ID in your firm", 404),
       );
     }
 
@@ -440,8 +454,8 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
           `Cannot change status from ${invoice.status} to ${
             updateData.status
           }. Allowed transitions: ${allowedNextStatuses.join(", ") || "none"}`,
-          400
-        )
+          400,
+        ),
       );
     }
 
@@ -456,7 +470,7 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
     .populate("client", "firstName lastName email phone address company")
     .populate(
       "case",
-      "firstParty secondParty suitNo caseStatus matterReference"
+      "firstParty secondParty suitNo caseStatus matterReference",
     )
     .populate("timekeeper", "firstName lastName email position")
     .populate("billingAttorney", "firstName lastName email position");
@@ -481,7 +495,7 @@ exports.deleteInvoice = catchAsync(async (req, res, next) => {
 
   if (!invoice) {
     return next(
-      new AppError("No invoice found with that ID in your firm", 404)
+      new AppError("No invoice found with that ID in your firm", 404),
     );
   }
 
@@ -495,8 +509,8 @@ exports.deleteInvoice = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         `Cannot delete invoice with ${paymentCount} existing payment(s). Please void the invoice instead.`,
-        400
-      )
+        400,
+      ),
     );
   }
 
@@ -525,14 +539,14 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
 
   if (!invoice) {
     return next(
-      new AppError("No invoice found with that ID in your firm", 404)
+      new AppError("No invoice found with that ID in your firm", 404),
     );
   }
 
   if (req.user.role === "client") {
     if (invoice.client._id.toString() !== req.user.id) {
       return next(
-        new AppError("You are not authorized to view this invoice", 403)
+        new AppError("You are not authorized to view this invoice", 403),
       );
     }
 
@@ -550,11 +564,11 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
 
   const currentServices = invoice.services.reduce(
     (sum, s) => sum + (s.amount || 0),
-    0
+    0,
   );
   const currentExpenses = invoice.expenses.reduce(
     (sum, e) => sum + (e.amount || 0),
-    0
+    0,
   );
   const currentSubtotal = currentServices + currentExpenses;
 
@@ -589,8 +603,8 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
   generatePdf(
     { invoice: safeInvoice, firm },
     res,
-    path.join(__dirname, "../views/invoice.pug"),
-    path.join(__dirname, `../output/${invoice.invoiceNumber}_invoice.pdf`)
+    path.resolve(__dirname, "../views/invoice.pug"),
+    path.resolve(__dirname, `../output/${invoice.invoiceNumber}_invoice.pdf`),
   );
 });
 
@@ -739,7 +753,7 @@ exports.checkOverdueInvoices = catchAsync(async (req, res, next) => {
       balance: { $gt: 0 },
       isDeleted: { $ne: true },
     },
-    { status: "overdue" }
+    { status: "overdue" },
   );
 
   // Optional: Return info about what was updated
@@ -769,7 +783,7 @@ exports.sendInvoice = catchAsync(async (req, res, next) => {
 
   if (!invoice) {
     return next(
-      new AppError("No invoice found with that ID in your firm", 404)
+      new AppError("No invoice found with that ID in your firm", 404),
     );
   }
 
@@ -804,13 +818,13 @@ exports.voidInvoice = catchAsync(async (req, res, next) => {
 
   if (!invoice) {
     return next(
-      new AppError("No invoice found with that ID in your firm", 404)
+      new AppError("No invoice found with that ID in your firm", 404),
     );
   }
 
   if (invoice.status === "paid") {
     return next(
-      new AppError("Cannot void a paid invoice. Issue a refund instead.", 400)
+      new AppError("Cannot void a paid invoice. Issue a refund instead.", 400),
     );
   }
 
@@ -845,12 +859,16 @@ exports.generateReceiptPdf = catchAsync(async (req, res, next) => {
     .populate("matter", "title matterNumber");
 
   if (!payment) {
-    return next(new AppError("No payment found with that ID in your firm", 404));
+    return next(
+      new AppError("No payment found with that ID in your firm", 404),
+    );
   }
 
   if (req.user.role === "client") {
     if (payment.client._id.toString() !== req.user.id) {
-      return next(new AppError("You are not authorized to view this receipt", 403));
+      return next(
+        new AppError("You are not authorized to view this receipt", 403),
+      );
     }
   }
 
@@ -859,14 +877,16 @@ exports.generateReceiptPdf = catchAsync(async (req, res, next) => {
   const receiptData = {
     ...payment.toObject(),
     firm,
-    receiptNumber: payment.paymentReference || `RCT-${payment._id.toString().slice(-8).toUpperCase()}`,
+    receiptNumber:
+      payment.paymentReference ||
+      `RCT-${payment._id.toString().slice(-8).toUpperCase()}`,
   };
 
   generatePdf(
     { receipt: receiptData, firm },
     res,
     path.join(__dirname, "../views/receipt.pug"),
-    path.join(__dirname, `../output/${receiptData.receiptNumber}_receipt.pdf`)
+    path.join(__dirname, `../output/${receiptData.receiptNumber}_receipt.pdf`),
   );
 });
 
@@ -886,14 +906,17 @@ exports.generateBillOfChargesPdf = catchAsync(async (req, res, next) => {
 
   if (!invoice) {
     return next(
-      new AppError("No invoice found with that ID in your firm", 404)
+      new AppError("No invoice found with that ID in your firm", 404),
     );
   }
 
   if (req.user.role === "client") {
     if (invoice.client._id.toString() !== req.user.id) {
       return next(
-        new AppError("You are not authorized to view this bill of charges", 403)
+        new AppError(
+          "You are not authorized to view this bill of charges",
+          403,
+        ),
       );
     }
 
@@ -907,7 +930,10 @@ exports.generateBillOfChargesPdf = catchAsync(async (req, res, next) => {
   generatePdf(
     { invoice: invoice.toObject(), firm },
     res,
-    path.join(__dirname, "../views/billOfCharges.pug"),
-    path.join(__dirname, `../output/${invoice.invoiceNumber}_bill_of_charges.pdf`)
+    path.resolve(__dirname, "../views/billOfCharges.pug"),
+    path.resolve(
+      __dirname,
+      `../output/${invoice.invoiceNumber}_bill_of_charges.pdf`,
+    ),
   );
 });
