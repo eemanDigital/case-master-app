@@ -1,0 +1,336 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title Receipt - #{receipt.invoiceNumber}
+    style.
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Georgia', 'Times New Roman', serif;
+        line-height: 1.4;
+        color: #2c3e50;
+        background: #ffffff;
+        font-size: 14px;
+      }
+      
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 30px;
+        background: #ffffff;
+      }
+      
+      .letterhead {
+        border-bottom: 3px solid #{firm.settings.primaryColor || '#8b4513'};
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+        text-align: center;
+      }
+      
+      .firm-name {
+        font-size: 28px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+        letter-spacing: 1px;
+      }
+      
+      .firm-description {
+        font-size: 16px;
+        color: #7f8c8d;
+        margin-bottom: 10px;
+        font-style: italic;
+      }
+      
+      .firm-address {
+        font-size: 14px;
+        color: #34495e;
+        line-height: 1.6;
+      }
+
+      .receipt-header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .receipt-title {
+        font-size: 32px;
+        color: #27ae60;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 3px;
+        margin-bottom: 10px;
+      }
+
+      .receipt-number {
+        font-size: 18px;
+        color: #34495e;
+        font-family: 'Courier New', monospace;
+      }
+
+      .receipt-box {
+        background: #f8f9fa;
+        border: 2px solid #27ae60;
+        border-radius: 8px;
+        padding: 25px;
+        margin: 25px 0;
+      }
+
+      .receipt-status {
+        display: inline-block;
+        padding: 8px 20px;
+        background: #27ae60;
+        color: white;
+        font-weight: bold;
+        border-radius: 4px;
+        font-size: 14px;
+        text-transform: uppercase;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin: 20px 0;
+      }
+
+      .info-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 6px;
+        border-left: 4px solid #{firm.settings.primaryColor || '#8b4513'};
+      }
+
+      .info-section h4 {
+        color: #2c3e50;
+        margin-bottom: 12px;
+        font-size: 16px;
+        border-bottom: 1px solid #bdc3c7;
+        padding-bottom: 8px;
+      }
+
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 8px 0;
+        font-size: 14px;
+      }
+
+      .info-label {
+        color: #7f8c8d;
+        font-weight: bold;
+      }
+
+      .info-value {
+        color: #2c3e50;
+      }
+
+      .amount-box {
+        background: #e8f5e8;
+        border: 2px solid #27ae60;
+        border-radius: 8px;
+        padding: 30px;
+        margin: 30px 0;
+        text-align: center;
+      }
+
+      .amount-label {
+        font-size: 18px;
+        color: #27ae60;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+      }
+
+      .amount-value {
+        font-size: 36px;
+        color: #2c3e50;
+        font-weight: bold;
+        font-family: 'Courier New', monospace;
+      }
+
+      .payment-details {
+        background: #ffffff;
+        border: 1px solid #bdc3c7;
+        border-radius: 6px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+
+      .payment-details h4 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-size: 16px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+      }
+
+      th {
+        background: #34495e;
+        color: #ffffff;
+        font-weight: bold;
+        padding: 10px 15px;
+        text-align: left;
+        font-size: 13px;
+      }
+
+      td {
+        padding: 10px 15px;
+        border-bottom: 1px solid #ecf0f1;
+        color: #2c3e50;
+      }
+
+      .amount {
+        text-align: right;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+      }
+
+      .balance-section {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 6px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+
+      .balance-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        font-size: 16px;
+      }
+
+      .balance-row.total {
+        border-top: 2px solid #2c3e50;
+        font-weight: bold;
+        font-size: 18px;
+        margin-top: 10px;
+        padding-top: 15px;
+      }
+
+      .footer {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 2px solid #bdc3c7;
+        text-align: center;
+        color: #7f8c8d;
+        font-size: 12px;
+      }
+
+      .text-success { color: #27ae60; }
+      .text-bold { font-weight: bold; }
+      .text-large { font-size: 18px; }
+
+  body
+    .container
+      .letterhead
+        .firm-name #{firm.name || 'Law Firm'}
+        .firm-description #{firm.description || 'Barristers, Solicitors & Advocates'}
+        .firm-address
+          if firm.contact && firm.contact.address
+            | #{firm.contact.address.street || ''}, #{firm.contact.address.city || ''}, #{firm.contact.address.state || ''}
+            br
+          if firm.contact
+            | Phone: #{firm.contact.phone || 'N/A'} | Email: #{firm.contact.email || 'N/A'}
+            br
+          | RC Number: #{firm.contact.rcNumber || 'N/A'}
+
+      .receipt-header
+        .receipt-title RECEIPT
+        .receipt-number #{receipt.receiptNumber || receipt.paymentReference}
+
+      .receipt-box
+        .text-center
+          .receipt-status PAYMENT RECEIVED
+
+      .info-grid
+        .info-section
+          h4 CLIENT DETAILS
+          .info-row
+            .info-label Name:
+            .info-value #{receipt.client.firstName} #{receipt.client.lastName}
+          .info-row
+            .info-label Email:
+            .info-value #{receipt.client.email || 'N/A'}
+        
+        .info-section
+          h4 INVOICE DETAILS
+          .info-row
+            .info-label Invoice Number:
+            .info-value #{receipt.invoice.invoiceNumber}
+          .info-row
+            .info-label Invoice Date:
+            .info-value #{new Date(receipt.invoice.issueDate || receipt.invoice.createdAt).toLocaleDateString('en-GB')}
+          .info-row
+            .info-label Due Date:
+            .info-value #{receipt.invoice.dueDate ? new Date(receipt.invoice.dueDate).toLocaleDateString('en-GB') : 'N/A'}
+
+      if receipt.case || receipt.matter
+        .info-grid
+          if receipt.case
+            .info-section
+              h4 CASE DETAILS
+              .info-row
+                .info-label Case:
+                .info-value #{receipt.case.suitNo || 'N/A'}
+              .info-row
+                .info-label Parties:
+                .info-value #{receipt.case.firstParty && receipt.case.firstParty.name ? receipt.case.firstParty.name[0].name : 'N/A'} vs #{receipt.case.secondParty && receipt.case.secondParty.name ? receipt.case.secondParty.name[0].name : 'N/A'}
+          if receipt.matter
+            .info-section
+              h4 MATTER DETAILS
+              .info-row
+                .info-label Matter Number:
+                .info-value #{receipt.matter.matterNumber || 'N/A'}
+              .info-row
+                .info-label Title:
+                .info-value #{receipt.matter.title || 'N/A'}
+
+      .amount-box
+        .amount-label Amount Paid
+        .amount-value ₦#{receipt.amount.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+
+      .payment-details
+        h4 PAYMENT DETAILS
+        table
+          tbody
+            tr
+              td Payment Date
+              td.amount #{new Date(receipt.paymentDate).toLocaleDateString('en-GB')}
+            tr
+              td Payment Method
+              td.amount #{receipt.method.toUpperCase()}
+            tr
+              td Reference/Ref No
+              td.amount #{receipt.reference || 'N/A'}
+            if receipt.notes
+              tr
+                td Notes
+                td.amount #{receipt.notes}
+
+      .balance-section
+        .balance-row
+          span Invoice Total:
+          span ₦#{(receipt.invoice.total || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+        .balance-row
+          span Amount Paid:
+          span.text-success ₦#{(receipt.invoice.amountPaid || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+        .balance-row.total
+          span Remaining Balance:
+          span ₦#{(receipt.invoice.balance || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+
+      .footer
+        p Thank you for your business.
+        p This receipt is valid upon payment confirmation.
+        p Generated on: #{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}

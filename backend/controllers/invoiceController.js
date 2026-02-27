@@ -1,6 +1,8 @@
 const Invoice = require("../models/invoiceModel");
 const Case = require("../models/caseModel");
+const Matter = require("../models/matterModel");
 const User = require("../models/userModel");
+const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const { generatePdf } = require("../utils/generatePdf");
@@ -150,16 +152,43 @@ exports.getInvoice = catchAsync(async (req, res, next) => {
 });
 
 exports.createInvoice = catchAsync(async (req, res, next) => {
-  const { case: caseId, client: clientId, ...invoiceData } = req.body;
+  const { case: caseId, matter: matterId, client: clientId, ...invoiceData } = req.body;
 
-  // ✅ Multi-tenant: Get firmId from authenticated user
   const firmId = getFirmId(req);
 
-  console.log("Received data:", { caseId, clientId, invoiceData });
+  console.log("Received data:", { caseId, matterId, clientId, invoiceData });
+
+  // Validate matter and client relationships if provided
+  if (matterId) {
+    const matterData = await Matter.findOne({
+      _id: matterId,
+      firmId,
+    }).populate("client");
+
+    if (!matterData) {
+      return next(new AppError("No matter found with that ID in your firm", 404));
+    }
+
+    if (
+      clientId &&
+      matterData.client &&
+      matterData.client._id.toString() !== clientId
+    ) {
+      return next(
+        new AppError(
+          "Client in the matter does not match the provided client ID",
+          400
+        )
+      );
+    }
+
+    if (!clientId && matterData.client) {
+      invoiceData.client = matterData.client._id;
+    }
+  }
 
   // Validate case and client relationships if provided
   if (caseId) {
-    // ✅ Multi-tenant: Ensure case belongs to the same firm
     const caseData = await Case.findOne({
       _id: caseId,
       firmId,
@@ -169,7 +198,6 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
       return next(new AppError("No case found with that ID in your firm", 404));
     }
 
-    // If client is also provided, validate consistency
     if (
       clientId &&
       caseData.client &&
@@ -183,7 +211,6 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
       );
     }
 
-    // If no client provided, use case's client
     if (!clientId && caseData.client) {
       invoiceData.client = caseData.client._id;
     }
@@ -191,7 +218,6 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
 
   // Validate client exists if explicitly provided
   if (clientId) {
-    // ✅ Multi-tenant: Ensure client belongs to the same firm
     const clientData = await User.findOne({
       _id: clientId,
       firmId,
@@ -211,11 +237,12 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
     return next(new AppError("Client is required for invoice creation", 400));
   }
 
-  // ✅ Multi-tenant: Create invoice with firmId and createdBy
+  // Create invoice with firmId and createdBy
   const newInvoice = await Invoice.create({
     ...invoiceData,
     firmId,
-    case: caseId,
+    case: caseId || undefined,
+    matter: matterId || undefined,
     client: invoiceData.client,
     createdBy: req.user.id,
   });
@@ -228,13 +255,11 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
 
 // Update invoice data
 exports.updateInvoice = catchAsync(async (req, res, next) => {
-  const { case: caseId, client: clientId, ...updateData } = req.body;
+  const { case: caseId, matter: matterId, client: clientId, ...updateData } = req.body;
   const { id } = req.params;
 
-  // ✅ Multi-tenant: Get firmId
   const firmId = getFirmId(req);
 
-  // Find existing invoice (with firm isolation)
   const invoice = await Invoice.findOne({
     _id: id,
     firmId,
@@ -247,7 +272,6 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
     );
   }
 
-  // Check if invoice is editable (not in certain statuses)
   const nonEditableStatuses = ["paid", "cancelled", "void"];
   if (nonEditableStatuses.includes(invoice.status)) {
     return next(
@@ -255,9 +279,39 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
     );
   }
 
+  // Validate matter and client relationships if changing
+  if (matterId) {
+    const matterData = await Matter.findOne({
+      _id: matterId,
+      firmId,
+    }).populate("client");
+
+    if (!matterData) {
+      return next(new AppError("No matter found with that ID in your firm", 404));
+    }
+
+    if (
+      clientId &&
+      matterData.client &&
+      matterData.client._id.toString() !== clientId
+    ) {
+      return next(
+        new AppError(
+          "Client in the matter does not match the provided client ID",
+          400
+        )
+      );
+    }
+
+    invoice.matter = matterId;
+
+    if (!clientId && matterData.client) {
+      invoice.client = matterData.client._id;
+    }
+  }
+
   // Validate case and client relationships if changing
   if (caseId) {
-    // ✅ Multi-tenant: Ensure case belongs to the same firm
     const caseData = await Case.findOne({
       _id: caseId,
       firmId,
@@ -267,7 +321,6 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
       return next(new AppError("No case found with that ID in your firm", 404));
     }
 
-    // Validate client consistency
     if (
       clientId &&
       caseData.client &&
@@ -283,7 +336,6 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
 
     invoice.case = caseId;
 
-    // Also set client from case if clientId not provided
     if (!clientId && caseData.client) {
       invoice.client = caseData.client._id;
     }
@@ -459,7 +511,6 @@ exports.deleteInvoice = catchAsync(async (req, res, next) => {
 
 // Generate invoice in PDF format
 exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
-  // ✅ Multi-tenant: Get firmId
   const firmId = getFirmId(req);
   const path = require("path");
 
@@ -469,7 +520,8 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
     isDeleted: { $ne: true },
   })
     .populate("client", "firstName lastName email phone address")
-    .populate("case", "firstParty secondParty suitNo");
+    .populate("case", "firstParty secondParty suitNo courtName caseStatus")
+    .populate("matter", "title matterNumber matterType");
 
   if (!invoice) {
     return next(
@@ -477,7 +529,6 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
     );
   }
 
-  // Authorization check: clients can only view their own invoices
   if (req.user.role === "client") {
     if (invoice.client._id.toString() !== req.user.id) {
       return next(
@@ -490,14 +541,13 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
     }
   }
 
+  const firm = await Firm.findById(firmId);
+
   const payments = await Payment.find({
     invoice: invoice._id,
     firmId,
-  }).sort({
-    paymentDate: -1,
-  });
+  }).sort({ paymentDate: -1 });
 
-  // CALCULATE CURRENT CHARGES ONLY (Excluding previous balance)
   const currentServices = invoice.services.reduce(
     (sum, s) => sum + (s.amount || 0),
     0
@@ -508,7 +558,6 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
   );
   const currentSubtotal = currentServices + currentExpenses;
 
-  // Calculate discount for CURRENT items
   let currentDiscount = 0;
   if (invoice.discountType === "percentage") {
     currentDiscount = currentSubtotal * (invoice.discount / 100);
@@ -522,8 +571,8 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
 
   const safeInvoice = {
     ...invoice.toObject(),
+    firm,
     payments,
-    // Clarified terminology for the PDF template
     currentCharges: {
       services: currentServices,
       expenses: currentExpenses,
@@ -533,12 +582,12 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
       total: totalForThisInvoice,
     },
     previousBalance: invoice.previousBalance || 0,
-    grandTotalOutstanding: invoice.balance, // This is the final amount due (Total + Previous Balance - Paid)
+    grandTotalOutstanding: invoice.balance,
     amountPaidToDate: invoice.amountPaid || 0,
   };
 
   generatePdf(
-    { invoice: safeInvoice },
+    { invoice: safeInvoice, firm },
     res,
     path.join(__dirname, "../views/invoice.pug"),
     path.join(__dirname, `../output/${invoice.invoiceNumber}_invoice.pdf`)
@@ -772,4 +821,93 @@ exports.voidInvoice = catchAsync(async (req, res, next) => {
     message: "Invoice voided successfully",
     data: invoice,
   });
+});
+
+// Generate receipt PDF for a specific payment
+exports.generateReceiptPdf = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req);
+  const path = require("path");
+
+  const payment = await Payment.findOne({
+    _id: req.params.paymentId,
+    firmId,
+  })
+    .populate({
+      path: "invoice",
+      populate: [
+        { path: "client", select: "firstName lastName email phone address" },
+        { path: "case", select: "firstParty secondParty suitNo courtName" },
+        { path: "matter", select: "title matterNumber matterType" },
+      ],
+    })
+    .populate("client", "firstName lastName email phone")
+    .populate("case", "firstParty secondParty suitNo")
+    .populate("matter", "title matterNumber");
+
+  if (!payment) {
+    return next(new AppError("No payment found with that ID in your firm", 404));
+  }
+
+  if (req.user.role === "client") {
+    if (payment.client._id.toString() !== req.user.id) {
+      return next(new AppError("You are not authorized to view this receipt", 403));
+    }
+  }
+
+  const firm = await Firm.findById(firmId);
+
+  const receiptData = {
+    ...payment.toObject(),
+    firm,
+    receiptNumber: payment.paymentReference || `RCT-${payment._id.toString().slice(-8).toUpperCase()}`,
+  };
+
+  generatePdf(
+    { receipt: receiptData, firm },
+    res,
+    path.join(__dirname, "../views/receipt.pug"),
+    path.join(__dirname, `../output/${receiptData.receiptNumber}_receipt.pdf`)
+  );
+});
+
+// Generate bill of charges PDF
+exports.generateBillOfChargesPdf = catchAsync(async (req, res, next) => {
+  const firmId = getFirmId(req);
+  const path = require("path");
+
+  const invoice = await Invoice.findOne({
+    _id: req.params.id,
+    firmId,
+    isDeleted: { $ne: true },
+  })
+    .populate("client", "firstName lastName email phone address")
+    .populate("case", "firstParty secondParty suitNo courtName caseStatus")
+    .populate("matter", "title matterNumber matterType");
+
+  if (!invoice) {
+    return next(
+      new AppError("No invoice found with that ID in your firm", 404)
+    );
+  }
+
+  if (req.user.role === "client") {
+    if (invoice.client._id.toString() !== req.user.id) {
+      return next(
+        new AppError("You are not authorized to view this bill of charges", 403)
+      );
+    }
+
+    if (invoice.status === "draft") {
+      return next(new AppError("You cannot view draft bill of charges", 403));
+    }
+  }
+
+  const firm = await Firm.findById(firmId);
+
+  generatePdf(
+    { invoice: invoice.toObject(), firm },
+    res,
+    path.join(__dirname, "../views/billOfCharges.pug"),
+    path.join(__dirname, `../output/${invoice.invoiceNumber}_bill_of_charges.pdf`)
+  );
 });

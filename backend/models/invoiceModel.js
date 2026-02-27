@@ -146,6 +146,10 @@ const invoiceSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Case",
     },
+    matter: {
+      type: Schema.Types.ObjectId,
+      ref: "Matter",
+    },
     title: {
       type: String,
       required: [true, "Invoice title is required"],
@@ -325,25 +329,26 @@ invoiceSchema.pre("save", function (next) {
     0
   );
 
-  this.subtotal = servicesTotal + expensesTotal + (this.previousBalance || 0);
+  const currentCharges = servicesTotal + expensesTotal;
+  this.subtotal = currentCharges + (this.previousBalance || 0);
 
-  // Apply discount
+  // Apply discount - only to current charges, not previous balance
   let discountAmount = 0;
   if (this.discount && this.discount > 0) {
     if (this.discountType === "percentage") {
-      discountAmount = this.subtotal * (this.discount / 100);
-    } else if (this.discountType === "fixed" || this.discountType === "none") {
-      discountAmount = this.discount;
-      if (this.discountType === "none" && this.discount > 0) {
-        this.discountType = "fixed";
-      }
+      discountAmount = currentCharges * (this.discount / 100);
+    } else if (this.discountType === "fixed") {
+      discountAmount = Math.min(this.discount, currentCharges);
     }
-    discountAmount = Math.min(discountAmount, this.subtotal);
+    discountAmount = Math.min(discountAmount, currentCharges);
   }
 
-  const taxableAmount = Math.max(0, this.subtotal - discountAmount);
-  this.taxAmount = taxableAmount * ((this.taxRate || 0) / 100);
-  this.total = taxableAmount + this.taxAmount;
+  const taxableAmount = currentCharges - discountAmount;
+  const taxAmount = taxableAmount * ((this.taxRate || 0) / 100);
+  
+  // Total includes: current charges (after discount) + tax + previous balance
+  this.taxAmount = taxAmount;
+  this.total = taxableAmount + taxAmount + (this.previousBalance || 0);
   this.balance = Math.max(0, this.total - (this.amountPaid || 0));
 
   // Auto-update status
@@ -375,7 +380,7 @@ invoiceSchema.pre("save", function (next) {
 // ✅ Static methods with firm isolation
 invoiceSchema.statics.generateInvoiceNumber = async function (firmId) {
   const firm = await mongoose.model("Firm").findById(firmId);
-  const firmPrefix = firm?.invoicePrefix || "INV";
+  const firmPrefix = firm?.settings?.invoicePrefix || "INV";
   const year = new Date().getFullYear();
 
   const count = await this.countDocuments({
@@ -398,7 +403,8 @@ invoiceSchema.methods.addPayment = async function (paymentData) {
     firmId: this.firmId,
     invoice: this._id,
     client: this.client,
-    case: this.case,
+    case: this.case || undefined,
+    matter: this.matter || undefined,
   });
 
   await payment.save();
@@ -445,6 +451,7 @@ invoiceSchema.index({ firmId: 1, dueDate: 1 });
 invoiceSchema.index({ firmId: 1, status: 1, dueDate: 1 });
 invoiceSchema.index({ firmId: 1, isDeleted: 1 });
 invoiceSchema.index({ firmId: 1, case: 1 });
+invoiceSchema.index({ firmId: 1, matter: 1 });
 invoiceSchema.index({ firmId: 1, createdBy: 1 });
 
 module.exports = mongoose.model("Invoice", invoiceSchema);

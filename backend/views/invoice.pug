@@ -3,339 +3,72 @@ html(lang="en")
   head
     meta(charset="UTF-8")
     meta(name="viewport" content="width=device-width, initial-scale=1.0")
-    title Professional Invoice - A.T Lukman & Co.
+    title Invoice - #{invoice.invoiceNumber}
     style.
-      /* Reset and Base Styles */
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-      
-      body {
-        font-family: 'Georgia', 'Times New Roman', serif;
-        line-height: 1.4;
-        color: #2c3e50;
-        background: #ffffff;
-        font-size: 14px;
-      }
-      
-      .container {
-        max-width: 1000px;
-        margin: 0 auto;
-        padding: 30px;
-        background: #ffffff;
-      }
-      
-      /* Header Styles */
-      .letterhead {
-        border-bottom: 3px solid #8b4513;
-        padding-bottom: 20px;
-        margin-bottom: 30px;
-        text-align: center;
-      }
-      
-      .firm-name {
-        font-size: 28px;
-        font-weight: bold;
-        color: #2c3e50;
-        margin-bottom: 5px;
-        letter-spacing: 1px;
-      }
-      
-      .firm-description {
-        font-size: 16px;
-        color: #7f8c8d;
-        margin-bottom: 10px;
-        font-style: italic;
-      }
-      
-      .firm-address {
-        font-size: 14px;
-        color: #34495e;
-        line-height: 1.6;
-      }
-      
-      /* Invoice Details */
-      .invoice-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-bottom: 30px;
-        background: #f8f9fa;
-        padding: 20px;
-        border-radius: 8px;
-        border-left: 4px solid #8b4513;
-      }
-      
-      .client-info h3, .invoice-info h3 {
-        font-size: 16px;
-        color: #2c3e50;
-        margin-bottom: 10px;
-        border-bottom: 1px solid #bdc3c7;
-        padding-bottom: 5px;
-      }
-      
-      .client-details p, .invoice-details p {
-        margin: 6px 0;
-        font-size: 14px;
-        color: #34495e;
-      }
-      
-      /* Case Information */
-      .case-info {
-        background: #fffaf0;
-        border: 1px solid #e67e22;
-        border-radius: 6px;
-        padding: 20px;
-        margin-bottom: 25px;
-      }
-      
-      .case-info h3 {
-        color: #d35400;
-        font-size: 16px;
-        margin-bottom: 15px;
-      }
-      
-      .case-details {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
-        font-size: 14px;
-      }
-      
-      .case-item {
-        display: flex;
-        flex-direction: column;
-      }
-      
-      .case-label {
-        font-weight: bold;
-        color: #2c3e50;
-        margin-bottom: 3px;
-      }
-      
-      .case-value {
-        color: #34495e;
-      }
-      
-      /* Tables */
-      .section-title {
-        font-size: 18px;
-        color: #2c3e50;
-        margin: 25px 0 15px 0;
-        padding-bottom: 8px;
-        border-bottom: 2px solid #ecf0f1;
-      }
-      
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 15px 0 25px 0;
-        font-size: 13px;
-        background: #ffffff;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-      }
-      
-      th {
-        background: #34495e;
-        color: #ffffff;
-        font-weight: bold;
-        padding: 12px 15px;
-        text-align: left;
-        font-size: 13px;
-      }
-      
-      td {
-        padding: 12px 15px;
-        border-bottom: 1px solid #ecf0f1;
-        color: #2c3e50;
-      }
-      
-      tr:nth-child(even) {
-        background: #f8f9fa;
-      }
-      
-      tr:hover {
-        background: #f1f8ff;
-      }
-      
-      .amount {
-        text-align: right;
-        font-family: 'Courier New', monospace;
-        font-weight: bold;
-      }
-      
-      /* Financial Summary */
-      .financial-summary {
-        background: #f8f9fa;
-        border: 1px solid #bdc3c7;
-        border-radius: 8px;
-        padding: 25px;
-        margin: 25px 0;
-      }
-      
-      .financial-summary h3 {
-        color: #2c3e50;
-        font-size: 18px;
-        margin-bottom: 20px;
-        text-align: center;
-      }
-      
-      .summary-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 15px;
-        margin-bottom: 20px;
-      }
-      
-      .summary-item {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px 0;
-        border-bottom: 1px dashed #bdc3c7;
-      }
-      
-      .summary-label {
-        font-weight: bold;
-        color: #2c3e50;
-      }
-      
-      .summary-value {
-        font-family: 'Courier New', monospace;
-        font-weight: bold;
-        color: #2c3e50;
-      }
-      
-      .total-row {
-        border-top: 2px solid #2c3e50;
-        border-bottom: none;
-        font-size: 16px;
-        background: #e8f4fd;
-        margin-top: 10px;
-        padding: 15px;
-        border-radius: 4px;
-      }
-      
-      .due-row {
-        background: #fff3cd;
-        border: 1px solid #ffeaa7;
-        border-radius: 4px;
-        margin-top: 10px;
-      }
-      
-      /* Payment Instructions */
-      .payment-section {
-        background: #e8f5e8;
-        border: 1px solid #27ae60;
-        border-radius: 8px;
-        padding: 25px;
-        margin: 25px 0;
-      }
-      
-      .payment-section h3 {
-        color: #27ae60;
-        font-size: 18px;
-        margin-bottom: 15px;
-      }
-      
-      .bank-details {
-        background: #ffffff;
-        padding: 20px;
-        border-radius: 6px;
-        margin: 15px 0;
-        border: 1px solid #bdc3c7;
-      }
-      
-      .bank-item {
-        display: flex;
-        margin: 8px 0;
-        align-items: center;
-      }
-      
-      .bank-label {
-        font-weight: bold;
-        min-width: 150px;
-        color: #2c3e50;
-      }
-      
-      .bank-value {
-        color: #34495e;
-        font-family: 'Courier New', monospace;
-      }
-      
-      .terms {
-        margin-top: 20px;
-        padding-top: 15px;
-        border-top: 1px solid #bdc3c7;
-      }
-      
-      .terms h4 {
-        color: #2c3e50;
-        margin-bottom: 10px;
-      }
-      
-      /* Footer */
-      .footer {
-        margin-top: 40px;
-        padding-top: 20px;
-        border-top: 2px solid #bdc3c7;
-        text-align: center;
-        color: #7f8c8d;
-        font-size: 12px;
-      }
-      
-      /* Utility Classes */
-      .text-right {
-        text-align: right;
-      }
-      
-      .text-center {
-        text-align: center;
-      }
-      
-      .text-bold {
-        font-weight: bold;
-      }
-      
-      .text-large {
-        font-size: 16px;
-      }
-      
-      .text-xlarge {
-        font-size: 18px;
-      }
-      
-      .color-primary {
-        color: #8b4513;
-      }
-      
-      .color-success {
-        color: #27ae60;
-      }
-      
-      .color-warning {
-        color: #e67e22;
-      }
-      
-      .color-danger {
-        color: #e74c3c;
-      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Georgia', 'Times New Roman', serif; line-height: 1.4; color: #2c3e50; background: #ffffff; font-size: 14px; }
+      .container { max-width: 1000px; margin: 0 auto; padding: 30px; background: #ffffff; }
+      .letterhead { border-bottom: 3px solid #{firm && firm.settings && firm.settings.primaryColor ? firm.settings.primaryColor : '#8b4513'}; padding-bottom: 20px; margin-bottom: 30px; text-align: center; }
+      .firm-name { font-size: 28px; font-weight: bold; color: #2c3e50; margin-bottom: 5px; letter-spacing: 1px; }
+      .firm-description { font-size: 16px; color: #7f8c8d; margin-bottom: 10px; font-style: italic; }
+      .firm-address { font-size: 14px; color: #34495e; line-height: 1.6; }
+      .invoice-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #{firm && firm.settings && firm.settings.primaryColor ? firm.settings.primaryColor : '#8b4513'}; }
+      .client-info h3, .invoice-info h3 { font-size: 16px; color: #2c3e50; margin-bottom: 10px; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; }
+      .client-details p, .invoice-details p { margin: 6px 0; font-size: 14px; color: #34495e; }
+      .case-info { background: #fffaf0; border: 1px solid #e67e22; border-radius: 6px; padding: 20px; margin-bottom: 25px; }
+      .case-info h3 { color: #d35400; font-size: 16px; margin-bottom: 15px; }
+      .case-details { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; font-size: 14px; }
+      .case-item { display: flex; flex-direction: column; }
+      .case-label { font-weight: bold; color: #2c3e50; margin-bottom: 3px; }
+      .case-value { color: #34495e; }
+      .section-title { font-size: 18px; color: #2c3e50; margin: 25px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid #ecf0f1; }
+      table { width: 100%; border-collapse: collapse; margin: 15px 0 25px 0; font-size: 13px; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+      th { background: #34495e; color: #ffffff; font-weight: bold; padding: 12px 15px; text-align: left; font-size: 13px; }
+      td { padding: 12px 15px; border-bottom: 1px solid #ecf0f1; color: #2c3e50; }
+      tr:nth-child(even) { background: #f8f9fa; }
+      tr:hover { background: #f1f8ff; }
+      .amount { text-align: right; font-family: 'Courier New', monospace; font-weight: bold; }
+      .financial-summary { background: #f8f9fa; border: 1px solid #bdc3c7; border-radius: 8px; padding: 25px; margin: 25px 0; }
+      .financial-summary h3 { color: #2c3e50; font-size: 18px; margin-bottom: 20px; text-align: center; }
+      .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 20px; }
+      .summary-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px dashed #bdc3c7; }
+      .summary-label { font-weight: bold; color: #2c3e50; }
+      .summary-value { font-family: 'Courier New', monospace; font-weight: bold; color: #2c3e50; }
+      .total-row { border-top: 2px solid #2c3e50; border-bottom: none; font-size: 16px; background: #e8f4fd; margin-top: 10px; padding: 15px; border-radius: 4px; }
+      .due-row { background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; margin-top: 10px; }
+      .payment-section { background: #e8f5e8; border: 1px solid #27ae60; border-radius: 8px; padding: 25px; margin: 25px 0; }
+      .payment-section h3 { color: #27ae60; font-size: 18px; margin-bottom: 15px; }
+      .bank-details { background: #ffffff; padding: 20px; border-radius: 6px; margin: 15px 0; border: 1px solid #bdc3c7; }
+      .bank-item { display: flex; margin: 8px 0; align-items: center; }
+      .bank-label { font-weight: bold; min-width: 150px; color: #2c3e50; }
+      .bank-value { color: #34495e; font-family: 'Courier New', monospace; }
+      .terms { margin-top: 20px; padding-top: 15px; border-top: 1px solid #bdc3c7; }
+      .terms h4 { color: #2c3e50; margin-bottom: 10px; }
+      .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #bdc3c7; text-align: center; color: #7f8c8d; font-size: 12px; }
+      .text-right { text-align: right; }
+      .text-center { text-align: center; }
+      .text-bold { font-weight: bold; }
+      .text-large { font-size: 16px; }
+      .text-xlarge { font-size: 18px; }
+      .color-primary { color: #{firm && firm.settings && firm.settings.primaryColor ? firm.settings.primaryColor : '#8b4513'}; }
+      .color-success { color: #27ae60; }
+      .color-warning { color: #e67e22; }
+      .color-danger { color: #e74c3c; }
 
   body
     .container
-      //- Letterhead
       .letterhead
-        .firm-name A.T LUKMAN & CO.
+        .firm-name #{firm && firm.name ? firm.name : 'Law Firm'}
         .firm-description Barristers, Solicitors & Advocates
         .firm-address
-          | No. 32, Allen Street, Maitama, Abuja
-          br
-          | Phone: +234 123 456 7890 | Email: info@atlukman.com
-          br
-          | www.atlukman.com
+          if firm && firm.contact && firm.contact.address
+            | #{firm.contact.address.street || ''}, #{firm.contact.address.city || ''}, #{firm.contact.address.state || ''}
+            br
+          if firm && firm.contact
+            | Phone: #{firm.contact.phone || 'N/A'} | Email: #{firm.contact.email || 'N/A'}
+            br
+          | RC Number: #{firm && firm.contact && firm.contact.rcNumber ? firm.contact.rcNumber : 'N/A'}
 
-      //- Invoice Header
       .invoice-header
         .client-info
           h3 INVOICE TO:
@@ -350,36 +83,48 @@ html(lang="en")
           .invoice-details
             p
               strong Invoice No: 
-              | #{invoice.invoiceReference || 'N/A'}
+              | #{invoice.invoiceNumber || 'N/A'}
             p
               strong Invoice Date: 
-              | #{new Date(invoice.createdAt).toLocaleDateString('en-GB')}
+              | #{invoice.issueDate ? new Date(invoice.issueDate).toLocaleDateString('en-GB') : (invoice.createdAt ? new Date(invoice.createdAt).toLocaleDateString('en-GB') : 'N/A')}
             p
               strong Due Date: 
               | #{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-GB') : 'Upon Receipt'}
             p
               strong Status: 
-              span(class=invoice.status === 'paid' ? 'color-success' : invoice.status === 'overdue' ? 'color-danger' : 'color-warning') #{invoice.status.toUpperCase()}
+              span(class=invoice.status === 'paid' ? 'color-success' : invoice.status === 'overdue' ? 'color-danger' : 'color-warning') #{invoice.status ? invoice.status.toUpperCase() : 'DRAFT'}
 
-      //- Case Information
       if invoice.case
         .case-info
           h3 CASE INFORMATION
           .case-details
             .case-item
-              .case-label Case Title:
+              .case-label Case:
               .case-value #{invoice.case.firstParty && invoice.case.firstParty.name && invoice.case.firstParty.name[0] ? invoice.case.firstParty.name[0].name : 'N/A'} vs #{invoice.case.secondParty && invoice.case.secondParty.name && invoice.case.secondParty.name[0] ? invoice.case.secondParty.name[0].name : 'N/A'}
             .case-item
               .case-label Suit No:
               .case-value #{invoice.case.suitNo || 'N/A'}
             .case-item
-              .case-label Work Title:
-              .case-value #{invoice.workTitle || 'Legal Services'}
+              .case-label Court:
+              .case-value #{invoice.case.courtName || 'N/A'}
             .case-item
               .case-label Case Status:
               .case-value #{invoice.case.caseStatus || 'Active'}
 
-      //- Services Section
+      if invoice.matter
+        .case-info
+          h3 MATTER INFORMATION
+          .case-details
+            .case-item
+              .case-label Matter Number:
+              .case-value #{invoice.matter.matterNumber || 'N/A'}
+            .case-item
+              .case-label Title:
+              .case-value #{invoice.matter.title || 'N/A'}
+            .case-item
+              .case-label Type:
+              .case-value #{invoice.matter.matterType || 'N/A'}
+
       if invoice.services && invoice.services.length > 0
         h3.section-title PROFESSIONAL SERVICES
         table
@@ -387,19 +132,18 @@ html(lang="en")
             tr
               th Description
               th Date
-              th Hours
+              th Hours/Qty
               th Rate (₦)
               th Amount (₦)
           tbody
-            each service, index in invoice.services
+            each service in invoice.services
               tr
-                td= service.serviceDescriptions || 'Legal Service'
-                td= new Date(service.date).toLocaleDateString('en-GB')
-                td= service.hours || '0'
-                td.amount= (service.feeRatePerHour || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})
+                td= service.description || 'Legal Service'
+                td= service.date ? new Date(service.date).toLocaleDateString('en-GB') : 'N/A'
+                td= service.billingMethod === 'hourly' ? (service.hours || 0) : (service.quantity || 1)
+                td.amount= ((service.billingMethod === 'hourly' ? service.rate : service.unitPrice) || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})
                 td.amount= (service.amount || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})
 
-      //- Expenses Section
       if invoice.expenses && invoice.expenses.length > 0
         h3.section-title EXPENSES & DISBURSEMENTS
         table
@@ -409,78 +153,88 @@ html(lang="en")
               th Date
               th Amount (₦)
           tbody
-            each expense, index in invoice.expenses
+            each expense in invoice.expenses
               tr
                 td= expense.description || 'Expense'
-                td= new Date(expense.date).toLocaleDateString('en-GB')
+                td= expense.date ? new Date(expense.date).toLocaleDateString('en-GB') : 'N/A'
                 td.amount= (expense.amount || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})
 
-      //- Financial Summary
       .financial-summary
         h3 FINANCIAL SUMMARY
+        
         .summary-grid
-          if invoice.services && invoice.services.length > 0
-            .summary-item
-              .summary-label Total Professional Fees:
-              .summary-value ₦#{invoice.totalProfessionalFees ? invoice.totalProfessionalFees.toLocaleString('en-NG', {minimumFractionDigits: 2}) : '0.00'}
-            
-            .summary-item
-              .summary-label Total Hours:
-              .summary-value #{invoice.totalHours || 0}
-          
-          if invoice.expenses && invoice.expenses.length > 0
-            .summary-item
-              .summary-label Total Expenses:
-              .summary-value ₦#{invoice.totalExpenses ? invoice.totalExpenses.toLocaleString('en-NG', {minimumFractionDigits: 2}) : '0.00'}
+          .summary-item
+            .summary-label Professional Services:
+            .summary-value ₦#{(invoice.services ? invoice.services.reduce((sum, s) => sum + (s.amount || 0), 0) : 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}
           
           .summary-item
-            .summary-label Subtotal:
-            .summary-value ₦#{((invoice.totalProfessionalFees || 0) + (invoice.totalExpenses || 0)).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+            .summary-label Expenses:
+            .summary-value ₦#{(invoice.expenses ? invoice.expenses.reduce((sum, e) => sum + (e.amount || 0), 0) : 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+          
+          if invoice.previousBalance && invoice.previousBalance > 0
+            .summary-item
+              .summary-label Previous Balance:
+              .summary-value ₦#{invoice.previousBalance.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+          
+          if invoice.discount && invoice.discount > 0
+            .summary-item
+              .summary-label Discount (#{invoice.discountType === 'percentage' ? invoice.discount + '%' : 'Fixed'}):
+              .summary-value -₦#{invoice.discount.toLocaleString('en-NG', {minimumFractionDigits: 2})}
           
           if invoice.taxAmount && invoice.taxAmount > 0
             .summary-item
-              .summary-label Tax (#{invoice.taxType || 'VAT'}):
+              .summary-label Tax (#{invoice.taxRate || 0}%):
               .summary-value ₦#{invoice.taxAmount.toLocaleString('en-NG', {minimumFractionDigits: 2})}
           
           .summary-item.total-row
             .summary-label Total Invoice Amount:
-            .summary.value ₦#{invoice.totalInvoiceAmount ? invoice.totalInvoiceAmount.toLocaleString('en-NG', {minimumFractionDigits: 2}) : '0.00'}
+            .summary-value ₦#{invoice.total ? invoice.total.toLocaleString('en-NG', {minimumFractionDigits: 2}) : '0.00'}
           
-          .summary-item
-            .summary.label Amount Already Paid:
-            .summary-value ₦#{invoice.amountPaid ? invoice.amountPaid.toLocaleString('en-NG', {minimumFractionDigits: 2}) : '0.00'}
-          
-          .summary-item
-            .summary-label Previous Balance:
-            .summary-value ₦#{invoice.previousBalance ? invoice.previousBalance.toLocaleString('en-NG', {minimumFractionDigits: 2}) : '0.00'}
+          if invoice.amountPaid && invoice.amountPaid > 0
+            .summary-item
+              .summary-label Amount Paid:
+              .summary-value.color-success ₦#{invoice.amountPaid.toLocaleString('en-NG', {minimumFractionDigits: 2})}
           
           .summary-item.due-row
-            .summary-label.text-large TOTAL AMOUNT DUE:
-            .summary-value.text-large ₦#{invoice.totalAmountDue ? invoice.totalAmountDue.toLocaleString('en-NG', {minimumFractionDigits: 2}) : '0.00'}
+            .summary-label.text-large BALANCE DUE:
+            .summary-value.text-large ₦#{invoice.balance ? invoice.balance.toLocaleString('en-NG', {minimumFractionDigits: 2}) : '0.00'}
 
-      //- Payment Instructions
       .payment-section
         h3 PAYMENT INSTRUCTIONS
         .bank-details
-          .bank-item
-            .bank-label Bank:
-            .bank-value #{invoice.accountDetails.bank || 'To be provided'}
-          .bank-item
-            .bank-label Account Name:
-            .bank-value #{invoice.accountDetails.accountName || 'A.T Lukman & Co.'}
-          .bank-item
-            .bank-label Account Number:
-            .bank-value #{invoice.accountDetails.accountNumber || 'To be provided'}
-          .bank-item
-            .bank-label Reference:
-            .bank-value #{invoice.accountDetails.reference || invoice.invoiceReference || 'N/A'}
+          if firm && firm.settings && firm.settings.bankDetails
+            .bank-item
+              .bank-label Bank:
+              .bank-value #{firm.settings.bankDetails.bankName || 'N/A'}
+            .bank-item
+              .bank-label Account Name:
+              .bank-value #{firm.settings.bankDetails.accountName || 'N/A'}
+            .bank-item
+              .bank-label Account Number:
+              .bank-value #{firm.settings.bankDetails.accountNumber || 'N/A'}
+            if firm.settings.bankDetails.sortCode
+              .bank-item
+                .bank-label Sort Code:
+                .bank-value #{firm.settings.bankDetails.sortCode}
+          else
+            .bank-item
+              .bank-label Bank:
+              .bank-value Contact firm for bank details
+            .bank-item
+              .bank-label Account Name:
+              .bank-value #{firm && firm.name ? firm.name : 'Law Firm'}
+        
+        .bank-item
+          .bank-label Reference:
+          .bank-value #{invoice.invoiceNumber}
         
         .terms
           h4 Terms & Conditions:
-          p= invoice.paymentInstructionTAndC || 'Payment is due upon receipt. Late payments may be subject to interest charges as permitted by law.'
+          p #{firm && firm.settings && firm.settings.defaultPaymentTerms ? firm.settings.defaultPaymentTerms : 'Payment is due upon receipt. Late payments may be subject to interest charges as permitted by law.'}
+          if firm && firm.settings && firm.settings.invoiceFooter
+            p #{firm.settings.invoiceFooter}
 
-      //- Footer
       .footer
         p Thank you for your business. Please contact us with any questions.
-        p A.T Lukman & Co. - Your trusted legal partners.
+        p #{firm && firm.name ? firm.name : 'Law Firm'} - Your trusted legal partners.
         p Generated on: #{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}

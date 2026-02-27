@@ -1,0 +1,416 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title Bill of Charges - #{invoice.invoiceNumber}
+    style.
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      
+      body {
+        font-family: 'Georgia', 'Times New Roman', serif;
+        line-height: 1.4;
+        color: #2c3e50;
+        background: #ffffff;
+        font-size: 14px;
+      }
+      
+      .container {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 30px;
+        background: #ffffff;
+      }
+      
+      .letterhead {
+        border-bottom: 3px solid #{firm.settings.primaryColor || '#8b4513'};
+        padding-bottom: 20px;
+        margin-bottom: 30px;
+        text-align: center;
+      }
+      
+      .firm-name {
+        font-size: 28px;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 5px;
+        letter-spacing: 1px;
+      }
+      
+      .firm-description {
+        font-size: 16px;
+        color: #7f8c8d;
+        margin-bottom: 10px;
+        font-style: italic;
+      }
+      
+      .firm-address {
+        font-size: 14px;
+        color: #34495e;
+        line-height: 1.6;
+      }
+
+      .doc-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding: 20px;
+        background: #f8f9fa;
+        border-radius: 8px;
+      }
+
+      .doc-title {
+        font-size: 28px;
+        color: #2c3e50;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+      }
+
+      .doc-subtitle {
+        font-size: 16px;
+        color: #7f8c8d;
+      }
+
+      .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 25px;
+      }
+
+      .info-box {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        border-left: 3px solid #{firm.settings.primaryColor || '#8b4513'};
+      }
+
+      .info-box h4 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+        font-size: 14px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        margin: 6px 0;
+        font-size: 13px;
+      }
+
+      .info-label {
+        color: #7f8c8d;
+      }
+
+      .info-value {
+        color: #2c3e50;
+        font-weight: bold;
+      }
+
+      .billing-period {
+        background: #fffaf0;
+        border: 1px solid #e67e22;
+        border-radius: 6px;
+        padding: 15px;
+        margin: 20px 0;
+        text-align: center;
+      }
+
+      .billing-period h4 {
+        color: #d35400;
+        margin-bottom: 8px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        font-size: 13px;
+      }
+
+      th {
+        background: #34495e;
+        color: #ffffff;
+        font-weight: bold;
+        padding: 12px 10px;
+        text-align: left;
+        font-size: 12px;
+        text-transform: uppercase;
+      }
+
+      td {
+        padding: 10px;
+        border-bottom: 1px solid #ecf0f1;
+        color: #2c3e50;
+        vertical-align: top;
+      }
+
+      tr:nth-child(even) {
+        background: #f8f9fa;
+      }
+
+      .amount {
+        text-align: right;
+        font-family: 'Courier New', monospace;
+      }
+
+      .text-right { text-align: right; }
+      .text-center { text-align: center; }
+      .text-bold { font-weight: bold; }
+
+      .section-divider {
+        border-bottom: 2px solid #34495e;
+        margin: 30px 0 20px 0;
+      }
+
+      .summary-section {
+        background: #f8f9fa;
+        border: 1px solid #bdc3c7;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+
+      .summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px dashed #bdc3c7;
+      }
+
+      .summary-row:last-child {
+        border-bottom: none;
+      }
+
+      .summary-label {
+        color: #34495e;
+      }
+
+      .summary-value {
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        color: #2c3e50;
+      }
+
+      .summary-row.total {
+        border-top: 2px solid #2c3e50;
+        border-bottom: none;
+        margin-top: 10px;
+        padding-top: 15px;
+        font-size: 16px;
+      }
+
+      .summary-row.due {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 4px;
+        padding: 15px;
+        margin-top: 15px;
+      }
+
+      .legal-warning {
+        background: #fff3cd;
+        border-left: 4px solid #e67e22;
+        padding: 15px;
+        margin: 25px 0;
+        font-size: 12px;
+        color: #7f8c8d;
+      }
+
+      .footer {
+        margin-top: 40px;
+        padding-top: 20px;
+        border-top: 2px solid #bdc3c7;
+        text-align: center;
+        color: #7f8c8d;
+        font-size: 11px;
+      }
+
+  body
+    .container
+      .letterhead
+        .firm-name #{firm.name || 'Law Firm'}
+        .firm-description #{firm.description || 'Barristers, Solicitors & Advocates'}
+        .firm-address
+          if firm.contact && firm.contact.address
+            | #{firm.contact.address.street || ''}, #{firm.contact.address.city || ''}, #{firm.contact.address.state || ''}
+            br
+          if firm.contact
+            | Phone: #{firm.contact.phone || 'N/A'} | Email: #{firm.contact.email || 'N/A'}
+            br
+          | RC Number: #{firm.contact.rcNumber || 'N/A'}
+
+      .doc-header
+        .doc-title BILL OF CHARGES
+        .doc-subtitle Detailed breakdown of legal services and expenses
+
+      .info-grid
+        .info-box
+          h4 Bill To
+          .info-row
+            .info-label Client:
+            .info-value #{invoice.client.firstName} #{invoice.client.lastName}
+          if invoice.client.email
+            .info-row
+              .info-label Email:
+              .info-value #{invoice.client.email}
+          if invoice.client.phone
+            .info-row
+              .info-label Phone:
+              .info-value #{invoice.client.phone}
+        
+        .info-box
+          h4 Bill Details
+          .info-row
+            .info-label Invoice #:
+            .info-value #{invoice.invoiceNumber}
+          .info-row
+            .info-label Date:
+            .info-value #{new Date(invoice.issueDate || invoice.createdAt).toLocaleDateString('en-GB')}
+          .info-row
+            .info-label Due Date:
+            .info-value #{invoice.dueDate ? new Date(invoice.dueDate).toLocaleDateString('en-GB') : 'Upon Receipt'}
+          .info-row
+            .info-label Status:
+            .info-value #{invoice.status.toUpperCase()}
+
+      if invoice.case || invoice.matter
+        .info-grid
+          if invoice.case
+            .info-box
+              h4 Case Information
+              .info-row
+                .info-label Suit No:
+                .info-value #{invoice.case.suitNo || 'N/A'}
+              .info-row
+                .info-label Court:
+                .info-value #{invoice.case.courtName || 'N/A'}
+              .info-row
+                .info-label Parties:
+                .info-value #{invoice.case.firstParty && invoice.case.firstParty.name ? invoice.case.firstParty.name[0].name : 'N/A'} vs #{invoice.case.secondParty && invoice.case.secondParty.name ? invoice.case.secondParty.name[0].name : 'N/A'}
+          if invoice.matter
+            .info-box
+              h4 Matter Information
+              .info-row
+                .info-label Matter #:
+                .info-value #{invoice.matter.matterNumber || 'N/A'}
+              .info-row
+                .info-label Type:
+                .info-value #{invoice.matter.matterType || 'N/A'}
+              .info-row
+                .info-label Title:
+                .info-value #{invoice.matter.title || 'N/A'}
+
+      if invoice.billingPeriodStart || invoice.billingPeriodEnd
+        .billing-period
+          h4 Billing Period
+          p #{invoice.billingPeriodStart ? new Date(invoice.billingPeriodStart).toLocaleDateString('en-GB') : 'N/A'} - #{invoice.billingPeriodEnd ? new Date(invoice.billingPeriodEnd).toLocaleDateString('en-GB') : 'N/A'}
+
+      if invoice.services && invoice.services.length > 0
+        .section-divider
+        h3 PROFESSIONAL SERVICES RENDERED
+        table
+          thead
+            tr
+              th #
+              th Description
+              th Category
+              th Billing Method
+              th.text-right Hours/Qty
+              th.text-right Rate
+              th.text-right Amount
+          tbody
+            each service, index in invoice.services
+              tr
+                td #{index + 1}
+                td #{service.description || 'Professional Service'}
+                td #{service.category ? service.category.replace('_', ' ').toUpperCase() : 'General'}
+                td #{service.billingMethod ? service.billingMethod.replace('_', ' ').toUpperCase() : 'N/A'}
+                td.text-right #{service.billingMethod === 'hourly' ? (service.hours || 0) : (service.quantity || 1)}
+                td.amount ₦#{((service.billingMethod === 'hourly' ? service.rate : service.unitPrice) || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+                td.amount ₦#{(service.amount || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+          tfoot
+            tr
+              td(colspan="6", class="text-bold") Total Professional Fees:
+              td.text-right.text-bold ₦#{(invoice.services.reduce((sum, s) => sum + (s.amount || 0), 0)).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+
+      if invoice.expenses && invoice.expenses.length > 0
+        .section-divider
+        h3 EXPENSES & DISBURSEMENTS
+        table
+          thead
+            tr
+              th #
+              th Description
+              th Category
+              th Date
+              th.text-right Amount
+          tbody
+            each expense, index in invoice.expenses
+              tr
+                td #{index + 1}
+                td #{expense.description || 'Expense'}
+                td #{expense.category ? expense.category.replace('_', ' ').toUpperCase() : 'General'}
+                td #{expense.date ? new Date(expense.date).toLocaleDateString('en-GB') : 'N/A'}
+                td.amount ₦#{(expense.amount || 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+          tfoot
+            tr
+              td(colspan="4", class="text-bold") Total Expenses:
+              td.text-right.text-bold ₦#{(invoice.expenses.reduce((sum, e) => sum + (e.amount || 0), 0)).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+
+      .summary-section
+        h3 FINANCIAL SUMMARY
+        .summary-row
+          span.summary-label Professional Services:
+          span.summary-value ₦#{(invoice.services ? invoice.services.reduce((sum, s) => sum + (s.amount || 0), 0) : 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+        .summary-row
+          span.summary-label Expenses & Disbursements:
+          span.summary-value ₦#{(invoice.expenses ? invoice.expenses.reduce((sum, e) => sum + (e.amount || 0), 0) : 0).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+        .summary-row
+          span.summary-label Subtotal:
+          span.summary-value ₦#{((invoice.services ? invoice.services.reduce((sum, s) => sum + (s.amount || 0), 0) : 0) + (invoice.expenses ? invoice.expenses.reduce((sum, e) => sum + (e.amount || 0), 0) : 0)).toLocaleString('en-NG', {minimumFractionDigits: 2})}
+        
+        if invoice.previousBalance && invoice.previousBalance > 0
+          .summary-row
+            span.summary-label Previous Balance:
+            span.summary-value ₦#{invoice.previousBalance.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+        
+        if invoice.discount && invoice.discount > 0
+          .summary-row
+            span.summary-label Discount (#{invoice.discountType === 'percentage' ? invoice.discount + '%' : 'Fixed'}):
+            span.summary-value -₦#{invoice.discount.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+        
+        if invoice.taxAmount && invoice.taxAmount > 0
+          .summary-row
+            span.summary-label Tax:
+            span.summary-value ₦#{invoice.taxAmount.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+        
+        .summary-row.total
+          span.summary-label TOTAL AMOUNT:
+          span.summary-value ₦#{invoice.total.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+        
+        if invoice.amountPaid && invoice.amountPaid > 0
+          .summary-row
+            span.summary-label Amount Paid:
+            span.summary-value.text-success ₦#{invoice.amountPaid.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+        
+        .summary-row.due
+          span.summary-label.text-large BALANCE DUE:
+          span.summary-value.text-large ₦#{invoice.balance.toLocaleString('en-NG', {minimumFractionDigits: 2})}
+
+      if invoice.notes
+        .legal-warning
+          h4 Notes:
+          p #{invoice.notes}
+
+      .footer
+        p This Bill of Charges is subject to the terms and conditions of engagement.
+        p #{firm.name || 'Law Firm'} - #{firm.contact && firm.contact.address ? firm.contact.address.city + ', ' + firm.contact.address.state : ''}
+        p Generated on: #{new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}

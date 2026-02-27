@@ -8,7 +8,7 @@ const paymentSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: "Firm",
       required: true,
-      index: true, // ✅ Add index for performance
+      index: true,
     },
 
     invoice: {
@@ -24,7 +24,10 @@ const paymentSchema = new Schema(
     case: {
       type: Schema.Types.ObjectId,
       ref: "Case",
-      required: true,
+    },
+    matter: {
+      type: Schema.Types.ObjectId,
+      ref: "Matter",
     },
     amount: {
       type: Number,
@@ -48,7 +51,6 @@ const paymentSchema = new Schema(
       enum: ["completed", "pending", "failed", "refunded"],
       default: "completed",
     },
-    // For reconciliation
     transactionId: String,
     processedBy: {
       type: Schema.Types.ObjectId,
@@ -59,88 +61,44 @@ const paymentSchema = new Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  },
+  }
 );
 
-// Indexes for performance
 paymentSchema.index({ invoice: 1 });
 paymentSchema.index({ client: 1 });
 paymentSchema.index({ case: 1 });
+paymentSchema.index({ matter: 1 });
 paymentSchema.index({ paymentDate: -1 });
 
-// Virtual for formatted payment reference
 paymentSchema.virtual("paymentReference").get(function () {
-  return `PAY-${this.paymentDate.getTime()}-${this._id.toString().slice(-6)}`;
+  return `PAY-${this.paymentDate.getTime().toString(36).toUpperCase()}-${this._id.toString().slice(-6).toUpperCase()}`;
 });
 
-// Pre-save middleware for data validation
 paymentSchema.pre("save", async function (next) {
-  // Validate that invoice, client, and case relationships are consistent
   const Invoice = mongoose.model("Invoice");
-  const invoice = await Invoice.findById(this.invoice)
-    .populate("client")
-    .populate("case");
+  const invoice = await Invoice.findById(this.invoice);
 
   if (!invoice) {
-    throw new Error("Invalid invoice reference");
+    return next(new Error("Invalid invoice reference"));
   }
 
-  // paymentSchema.pre("save", async function (next) {
+  if (this.status === "completed" && this.amount > invoice.balance) {
+    return next(new Error("Payment exceeds remaining balance"));
+  }
 
-  //   // Validate that invoice, client, and case relationships are consistent
-  //   const Invoice = mongoose.model("Invoice");
-  //   const invoice = await Invoice.findById(this.invoice)
-  //     .populate("client")
-  //     .populate("case");
+  if (invoice.client.toString() !== this.client.toString()) {
+    return next(new Error("Payment client does not match invoice client"));
+  }
 
-  //   if (!invoice) {
-  //     throw new Error("Invalid invoice reference");
-  //   }
+  if (this.case && invoice.case && invoice.case.toString() !== this.case.toString()) {
+    return next(new Error("Payment case does not match invoice case"));
+  }
 
-  //   // Add balance validation here:
-  //   if (this.amount > invoice.balance) {
-  //     return next(new Error("Payment exceeds remaining balance"));
-  //   }
+  if (this.matter && invoice.matter && invoice.matter.toString() !== this.matter.toString()) {
+    return next(new Error("Payment matter does not match invoice matter"));
+  }
 
-  //   // Validate client matches invoice client
-  //   if (invoice.client._id.toString() !== this.client.toString()) {
-  //     throw new Error("Payment client does not match invoice client");
-  //   }
-
-  //   // Validate case matches invoice case (if invoice has a case)
-  //   if (invoice.case && invoice.case._id.toString() !== this.case.toString()) {
-  //     throw new Error("Payment case does not match invoice case");
-  //   }
-
-  //   next();
-  // });
-
-  paymentSchema.pre("save", async function (next) {
-    const Invoice = mongoose.model("Invoice");
-    const invoice = await Invoice.findById(this.invoice)
-      .populate("client")
-      .populate("case");
-
-    if (!invoice) {
-      throw new Error("Invalid invoice reference");
-    }
-
-    // Only validate balance for completed payments
-    if (this.status === "completed" && this.amount > invoice.balance) {
-      return next(new Error("Payment exceeds remaining balance"));
-    }
-
-    // Validate relationships
-    if (invoice.client._id.toString() !== this.client.toString()) {
-      throw new Error("Payment client does not match invoice client");
-    }
-
-    if (invoice.case && invoice.case._id.toString() !== this.case.toString()) {
-      throw new Error("Payment case does not match invoice case");
-    }
-
-    next();
-  });
+  next();
 });
 
 module.exports = mongoose.model("Payment", paymentSchema);

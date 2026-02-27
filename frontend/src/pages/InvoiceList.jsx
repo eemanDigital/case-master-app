@@ -29,15 +29,19 @@ const InvoiceList = () => {
 
   const [searchResults, setSearchResults] = useState([]);
   const { isLoading, isError, isSuccess, message } = useSelector(
-    (state) => state.delete
+    (state) => state.delete,
   );
 
   const dispatch = useDispatch();
   // const { isClient, isSuperOrAdmin } = useAdminHook();
   const { user } = useSelector((state) => state.auth);
   // const isClient = user?.data?.role === "client";
-  const isSuperOrAdmin =
-    user?.data?.role === "super-admin" || user?.data?.role === "admin";
+  const isSuperOrAdmin = user?.data?.additionalRoles.includes(
+    "super-admin",
+    "admin",
+  );
+
+  console.log("User role:", user?.data?.role, user);
 
   useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
 
@@ -86,7 +90,7 @@ const InvoiceList = () => {
 
       setSearchResults(results);
     },
-    [invoices?.data]
+    [invoices?.data],
   );
 
   // const filteredInvoiceForClient = searchResults.filter(
@@ -233,8 +237,8 @@ const InvoiceList = () => {
                 progress >= 100
                   ? "#52c41a"
                   : progress > 0
-                  ? "#1890ff"
-                  : "#d9d9d9"
+                    ? "#1890ff"
+                    : "#d9d9d9"
               }
             />
             <div className="text-xs text-gray-500 text-center">
@@ -369,7 +373,7 @@ const InvoiceList = () => {
                 {
                   searchResults.filter(
                     (inv) =>
-                      moment(inv.dueDate).isBefore(moment()) && inv.balance > 0
+                      moment(inv.dueDate).isBefore(moment()) && inv.balance > 0,
                   ).length
                 }
               </div>

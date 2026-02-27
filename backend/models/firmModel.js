@@ -89,21 +89,68 @@ const firmSchema = new mongoose.Schema(
     settings: {
       timezone: {
         type: String,
-        default: "Africa/Lagos", // ✅ Perfect for Nigeria
+        default: "Africa/Lagos",
       },
       dateFormat: {
         type: String,
-        default: "DD/MM/YYYY", // ✅ Nigerian standard
+        default: "DD/MM/YYYY",
       },
       currency: {
         type: String,
-        default: "NGN", // ✅ Naira
+        default: "NGN",
       },
-      // ✅ ADDED: Language preference (English/Pidgin/Yoruba/Hausa/Igbo)
       language: {
         type: String,
-        enum: ["en", "yo", "ha", "ig", "pcm"], // pcm = Pidgin
+        enum: ["en", "yo", "ha", "ig", "pcm"],
         default: "en",
+      },
+      invoicePrefix: {
+        type: String,
+        default: "INV",
+        maxlength: 10,
+      },
+      receiptPrefix: {
+        type: String,
+        default: "RCT",
+        maxlength: 10,
+      },
+      billOfChargesPrefix: {
+        type: String,
+        default: "BOC",
+        maxlength: 10,
+      },
+      firmLogo: {
+        type: String,
+      },
+      firmStamp: {
+        type: String,
+      },
+      firmSignature: {
+        type: String,
+      },
+      bankDetails: {
+        bankName: String,
+        accountName: String,
+        accountNumber: String,
+        sortCode: String,
+        iban: String,
+        swiftCode: String,
+      },
+      taxId: {
+        type: String,
+      },
+      taxRate: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 100,
+      },
+      defaultPaymentTerms: {
+        type: String,
+        default: "Payment due within 30 days",
+      },
+      invoiceFooter: {
+        type: String,
       },
     },
 

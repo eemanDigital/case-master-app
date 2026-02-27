@@ -26,11 +26,14 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     clientId,
     case: caseFromBody,
     caseId,
+    matter: matterFromBody,
+    matterId,
   } = req.body;
 
   const invoice_id = invoiceFromBody || invoiceId;
   const client_id = clientFromBody || clientId;
   const case_id = caseFromBody || caseId;
+  const matter_id = matterFromBody || matterId;
 
   if (!invoice_id || !amount || !method) {
     const missing = [];
@@ -50,7 +53,8 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     isDeleted: { $ne: true },
   })
     .populate("case")
-    .populate("client");
+    .populate("client")
+    .populate("matter");
 
   if (!invoice) {
     return next(
@@ -78,6 +82,10 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     return next(new AppError("Case does not match the invoice case", 400));
   }
 
+  if (matter_id && invoice.matter && invoice.matter._id.toString() !== matter_id) {
+    return next(new AppError("Matter does not match the invoice matter", 400));
+  }
+
   if (
     client_id &&
     invoice.client &&
@@ -101,31 +109,27 @@ exports.createPayment = catchAsync(async (req, res, next) => {
   }
 
   try {
-    // ✅ Create payment with firmId
     const payment = new Payment({
-      firmId, // ✅ Add firmId
+      firmId,
       invoice: invoice_id,
       client: invoice.client._id,
       case: invoice.case ? invoice.case._id : undefined,
+      matter: invoice.matter ? invoice.matter._id : undefined,
       amount,
       method,
       reference: reference || "",
       notes: notes || "",
       paymentDate: new Date(),
       status: "completed",
+      processedBy: req.user.id,
     });
 
     await payment.save();
 
     const updatedInvoice = await Invoice.findByIdAndUpdate(
       invoice_id,
-      {
-        $inc: { amountPaid: amount },
-        $set: {
-          balance: invoice.total - (invoice.amountPaid + amount),
-        },
-      },
-      { new: true, runValidators: true },
+      { $inc: { amountPaid: amount } },
+      { new: true, runValidators: true }
     );
 
     const today = new Date();
@@ -133,14 +137,15 @@ exports.createPayment = catchAsync(async (req, res, next) => {
     const newBalance = updatedInvoice.total - updatedInvoice.amountPaid;
 
     let newStatus = updatedInvoice.status;
-    if (newBalance <= 0) {
-      newStatus = "paid";
-    } else if (newBalance < updatedInvoice.total) {
-      newStatus = "partially_paid";
-    } else if (dueDate < today) {
-      newStatus = "overdue";
-    } else if (updatedInvoice.status === "draft") {
+    if (updatedInvoice.status === "draft") {
       newStatus = "sent";
+    }
+    if (newBalance <= 0 && updatedInvoice.total > 0) {
+      newStatus = "paid";
+    } else if (newBalance > 0 && newBalance < updatedInvoice.total) {
+      newStatus = "partially_paid";
+    } else if (dueDate < today && newBalance > 0) {
+      newStatus = "overdue";
     }
 
     const finalInvoice = await Invoice.findByIdAndUpdate(
@@ -148,26 +153,22 @@ exports.createPayment = catchAsync(async (req, res, next) => {
       {
         $set: {
           status: newStatus,
-          balance: newBalance,
-          paymentProgress:
-            (updatedInvoice.amountPaid / updatedInvoice.total) * 100,
-          isOverdue: newStatus === "overdue",
-          daysOverdue:
-            newStatus === "overdue"
-              ? Math.floor((today - dueDate) / (1000 * 60 * 60 * 24))
-              : 0,
+          balance: Math.max(0, newBalance),
         },
       },
-      { new: true },
+      { new: true }
     );
 
     await payment.populate(
       "invoice",
-      "invoiceNumber title total balance status amountPaid paymentProgress isOverdue daysOverdue",
+      "invoiceNumber title total balance status amountPaid"
     );
     await payment.populate("client", "firstName lastName email");
     if (payment.case) {
       await payment.populate("case", "firstParty secondParty suitNo");
+    }
+    if (payment.matter) {
+      await payment.populate("matter", "title matterNumber");
     }
 
     res.status(201).json({
@@ -181,9 +182,6 @@ exports.createPayment = catchAsync(async (req, res, next) => {
           amountPaid: finalInvoice.amountPaid,
           balance: finalInvoice.balance,
           status: finalInvoice.status,
-          paymentProgress: finalInvoice.paymentProgress,
-          isOverdue: finalInvoice.isOverdue,
-          daysOverdue: finalInvoice.daysOverdue,
         },
       },
     });
