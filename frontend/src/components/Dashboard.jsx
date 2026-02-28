@@ -1,4 +1,3 @@
-// Dashboard.jsx (updated section)
 import { useEffect, createContext, useRef, useMemo } from "react";
 import { Col } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
@@ -26,6 +25,7 @@ import PaymentDashboard from "./PaymentDashboard";
 import CourtHearingsWidget from "./calender/CourtHearingsWidget";
 import { getMatterStats } from "../redux/features/matter/matterSlice";
 import { getUserStatistics } from "../redux/features/auth/authSlice";
+import MyMattersDashboard from "./MyMattersDashboard";
 
 export const PaymentFiltersContext = createContext();
 
@@ -38,14 +38,9 @@ const Dashboard = () => {
     (state) => state.matter,
   );
 
-  // Debug logging
-  console.log("Redux matter stats:", matterStats);
-
   const authState = useSelector((state) => state.auth);
   const userStatistics = authState.userStatistics;
   const statisticsLoading = authState.statisticsLoading;
-
-  console.log("User Statistics from auth:", userStatistics);
 
   const userId = user?.data?._id;
   const lawFirmName = user?.data?.firmId?.name;
@@ -152,6 +147,8 @@ const Dashboard = () => {
               userStats={userStatistics}
               loading={isLoading}
             />
+
+            <MyMattersDashboard />
 
             <div className="container mx-auto mt-2">
               <div className="flex flex-wrap -mx-4">

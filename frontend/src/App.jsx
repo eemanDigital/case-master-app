@@ -558,8 +558,6 @@ const router = createBrowserRouter(
               </Suspense>
             }
           />
-
-          {/* Litigation Management */}
           <Route path="matters/litigation">
             <Route
               index

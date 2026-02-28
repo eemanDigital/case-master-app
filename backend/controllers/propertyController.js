@@ -2,8 +2,11 @@ const PaginationServiceFactory = require("../services/PaginationServiceFactory")
 const modelConfigs = require("../config/modelConfigs");
 const Matter = require("../models/matterModel");
 const PropertyDetail = require("../models/propertyDetailModel");
+const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const { generatePdf } = require("../utils/generatePdf");
+const path = require("path");
 
 // Initialize pagination services
 const matterPaginationService = PaginationServiceFactory.createService(
@@ -1226,6 +1229,70 @@ exports.bulkUpdatePropertyMatters = catchAsync(async (req, res, next) => {
       modifiedCount: result.modifiedCount,
     },
   });
+});
+
+// ============================================
+// PROPERTY REPORT PDF GENERATION
+// ============================================
+
+/**
+ * @desc    Generate property report PDF
+ * @route   GET /api/property/:matterId/report
+ * @access  Private
+ */
+exports.generatePropertyReportPdf = catchAsync(async (req, res, next) => {
+  const firmId = req.firmId;
+  const { matterId } = req.params;
+
+  // Fetch matter with all related data
+  const matter = await Matter.findOne({
+    _id: matterId,
+    firmId,
+    matterType: "property",
+    isDeleted: { $ne: true },
+  })
+    .populate("client", "firstName lastName email phone address")
+    .populate("assignedTo", "firstName lastName email")
+    .populate("createdBy", "firstName lastName");
+
+  if (!matter) {
+    return next(new AppError("No property matter found with that ID", 404));
+  }
+
+  // Fetch property details
+  const propertyDetails = await PropertyDetail.findOne({ matter: matterId });
+
+  // Fetch firm data
+  const firm = await Firm.findById(firmId);
+
+  // Calculate financial summary - handle nested objects
+  const purchasePrice = propertyDetails?.purchasePrice?.amount || propertyDetails?.purchasePrice || 0;
+  const rentAmount = propertyDetails?.rentAmount?.amount || propertyDetails?.rentAmount || 0;
+  const totalAmount = purchasePrice || rentAmount || 0;
+  const amountPaid = propertyDetails?.paymentSchedule
+    ?.filter(p => p.status === "paid")
+    ?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+
+  const reportData = {
+    matter: matter.toObject(),
+    propertyDetails: {
+      ...propertyDetails?.toObject(),
+      purchasePrice,
+      rentAmount,
+      amountPaid,
+      balance: totalAmount - amountPaid,
+    },
+    firm,
+  };
+
+  const filename = `${matter.matterNumber}_property_report_${Date.now()}.pdf`;
+
+  generatePdf(
+    reportData,
+    res,
+    path.resolve(__dirname, "../views/propertyReport.pug"),
+    path.resolve(__dirname, `../output/${filename}`),
+  );
 });
 
 module.exports = exports;

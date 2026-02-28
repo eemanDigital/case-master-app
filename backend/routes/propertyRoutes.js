@@ -15,6 +15,12 @@ propertyRouter.post("/search", propertyController.searchPropertyMatters);
 propertyRouter.get("/stats", propertyController.getPropertyStats);
 propertyRouter.get("/pending-consents", propertyController.getPendingConsents);
 
+// Property report PDF - must be before /:matterId routes
+propertyRouter.get(
+  "/:matterId/report",
+  propertyController.generatePropertyReportPdf,
+);
+
 // Property details CRUD
 propertyRouter
   .route("/:matterId/details")
@@ -135,6 +141,12 @@ propertyRouter.patch(
   "/bulk-update",
   restrictTo("admin", "lawyer"),
   propertyController.bulkUpdatePropertyMatters,
+);
+
+// Property report PDF
+propertyRouter.get(
+  "/:id/report",
+  propertyController.generatePropertyReportPdf,
 );
 
 module.exports = propertyRouter;

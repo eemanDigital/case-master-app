@@ -2,13 +2,13 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getMyMattersSummary } from "../redux/features/matter/matterSlice";
 import { Card, Table, Tag, Progress, Skeleton, Empty, Tooltip } from "antd";
-import { 
-  FaBriefcase, 
-  FaClock, 
-  FaCheckCircle, 
+import {
+  FaBriefcase,
+  FaClock,
+  FaCheckCircle,
   FaExclamationTriangle,
   FaFire,
-  FaArrowRight 
+  FaArrowRight,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
@@ -41,7 +41,7 @@ const getPriorityColor = (priority) => {
 const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  
+
   const { myMattersSummary, isLoading } = useSelector((state) => state.matter);
 
   useEffect(() => {
@@ -121,7 +121,9 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
               <FaBriefcase className="text-xl text-white" />
             </div>
             <div className="text-white">
-              <div className="text-2xl font-bold">{summary.totalMatters || 0}</div>
+              <div className="text-2xl font-bold">
+                {summary.totalMatters || 0}
+              </div>
               <div className="text-xs opacity-90">Total Matters</div>
             </div>
           </div>
@@ -133,7 +135,9 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
               <FaCheckCircle className="text-xl text-white" />
             </div>
             <div className="text-white">
-              <div className="text-2xl font-bold">{summary.activeMatters || 0}</div>
+              <div className="text-2xl font-bold">
+                {summary.activeMatters || 0}
+              </div>
               <div className="text-xs opacity-90">Active</div>
             </div>
           </div>
@@ -145,7 +149,9 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
               <FaClock className="text-xl text-white" />
             </div>
             <div className="text-white">
-              <div className="text-2xl font-bold">{summary.pendingMatters || 0}</div>
+              <div className="text-2xl font-bold">
+                {summary.pendingMatters || 0}
+              </div>
               <div className="text-xs opacity-90">Pending</div>
             </div>
           </div>
@@ -157,7 +163,9 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
               <FaCheckCircle className="text-xl text-white" />
             </div>
             <div className="text-white">
-              <div className="text-2xl font-bold">{summary.completedMatters || 0}</div>
+              <div className="text-2xl font-bold">
+                {summary.completedMatters || 0}
+              </div>
               <div className="text-xs opacity-90">Completed</div>
             </div>
           </div>
@@ -169,7 +177,9 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
               <FaFire className="text-xl text-white" />
             </div>
             <div className="text-white">
-              <div className="text-2xl font-bold">{summary.urgentMatters || 0}</div>
+              <div className="text-2xl font-bold">
+                {summary.urgentMatters || 0}
+              </div>
               <div className="text-xs opacity-90">Urgent</div>
             </div>
           </div>
@@ -181,7 +191,9 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
               <FaExclamationTriangle className="text-xl text-white" />
             </div>
             <div className="text-white">
-              <div className="text-2xl font-bold">{summary.highPriorityMatters || 0}</div>
+              <div className="text-2xl font-bold">
+                {summary.highPriorityMatters || 0}
+              </div>
               <div className="text-xs opacity-90">High Priority</div>
             </div>
           </div>
@@ -196,11 +208,11 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
             {summary.completionRate || 0}%
           </span>
         </div>
-        <Progress 
-          percent={summary.completionRate || 0} 
+        <Progress
+          percent={summary.completionRate || 0}
           strokeColor={{
-            '0%': '#108ee9',
-            '100%': '#87d068',
+            "0%": "#108ee9",
+            "100%": "#87d068",
           }}
           trailColor="#f0f0f0"
         />
@@ -208,20 +220,18 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
 
       {/* Recent Matters Table */}
       {showHeader && (
-        <Card 
+        <Card
           className="rounded-2xl shadow-lg"
           title={
             <div className="flex items-center justify-between">
               <span className="text-lg font-semibold">My Recent Matters</span>
-              <button 
-                onClick={() => navigate('/matters?tab=my-matters')}
-                className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1"
-              >
+              <button
+                onClick={() => navigate("/matters?tab=my-matters")}
+                className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
                 View All <FaArrowRight />
               </button>
             </div>
-          }
-        >
+          }>
           {recentMatters.length > 0 ? (
             <Table
               dataSource={recentMatters}
@@ -231,7 +241,7 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
               size="small"
               className="mt-4"
               onRow={(record) => ({
-                onClick: () => navigate(`/cases/${record._id}`),
+                onClick: () => navigate(`/dashboard/matters/${record._id}`),
                 className: "cursor-pointer hover:bg-gray-50",
               })}
             />
@@ -247,7 +257,9 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
           {byStatus.length > 0 ? (
             <div className="space-y-3">
               {byStatus.map((item) => (
-                <div key={item._id} className="flex items-center justify-between">
+                <div
+                  key={item._id}
+                  className="flex items-center justify-between">
                   <Tag color={getStatusColor(item._id)} className="uppercase">
                     {item._id}
                   </Tag>
@@ -264,7 +276,9 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
           {byType.length > 0 ? (
             <div className="space-y-3">
               {byType.slice(0, 6).map((item) => (
-                <div key={item._id} className="flex items-center justify-between">
+                <div
+                  key={item._id}
+                  className="flex items-center justify-between">
                   <span className="capitalize">{item._id}</span>
                   <span className="font-semibold">{item.count}</span>
                 </div>

@@ -75,6 +75,9 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
     } else if (path.includes("/dashboard/matters")) {
       setSelectedKeys(["all-matters"]);
       setOpenKeys(["matters"]);
+    } else if (path.includes("/dashboard/matters-with-officers")) {
+      setSelectedKeys(["matters-with-officers"]);
+      setOpenKeys(["matters"]);
     }
     // Calendar paths
     else if (path.includes("/dashboard/calendar/dashboard")) {
@@ -150,6 +153,12 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           icon: <ReconciliationOutlined />,
           label: "All Matters",
           path: "/dashboard/matters",
+        },
+        {
+          key: "matters-with-officers",
+          icon: <TeamOutlined />,
+          label: "Matters & Officers",
+          path: "/dashboard/matters-with-officers",
         },
         {
           key: "litigation",

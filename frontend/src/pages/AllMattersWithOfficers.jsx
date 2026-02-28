@@ -228,7 +228,7 @@ const AllMattersWithOfficers = () => {
           <Button
             type="text"
             icon={<FaEye />}
-            onClick={() => navigate(`/cases/${record._id}`)}
+            onClick={() => navigate(`/dashboard/matters/${record._id}`)}
             className="text-blue-600 hover:text-blue-800"
           />
         </Tooltip>
@@ -483,7 +483,7 @@ const AllMattersWithOfficers = () => {
             scroll={{ x: 1200 }}
             className="mt-4"
             onRow={(record) => ({
-              onClick: () => navigate(`/cases/${record._id}`),
+              onClick: () => navigate(`/dashboard/matters/${record._id}`),
               className: "cursor-pointer hover:bg-gray-50",
             })}
           />
@@ -494,7 +494,7 @@ const AllMattersWithOfficers = () => {
           >
             <Button 
               type="primary" 
-              onClick={() => navigate('/cases/new')}
+              onClick={() => navigate('/dashboard/matters/create')}
             >
               Create New Matter
             </Button>

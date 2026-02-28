@@ -129,12 +129,11 @@ const PropertyDetails = () => {
     window.print();
   };
 
-  // Export details
+  // Export details - Download Property Report PDF
   const handleExport = () => {
-    Modal.info({
-      title: "Export Property Details",
-      content: "Export feature will be implemented soon.",
-    });
+    const baseUrl = import.meta.env.VITE_BASE_URL;
+    const url = `${baseUrl}/property/${matterId}/report`;
+    window.open(url, "_blank");
   };
 
   // Handle transaction completion
@@ -306,8 +305,13 @@ const PropertyDetails = () => {
             <Button icon={<PrinterOutlined />} onClick={handlePrint}>
               Print
             </Button>
-            <Button icon={<DownloadOutlined />} onClick={handleExport}>
-              Export
+            <Button 
+              type="primary" 
+              icon={<DownloadOutlined />} 
+              onClick={handleExport}
+              className="bg-blue-600 hover:bg-blue-700 border-0"
+            >
+              Download Report
             </Button>
             {!editMode && propertyDetails && (
               <Button
