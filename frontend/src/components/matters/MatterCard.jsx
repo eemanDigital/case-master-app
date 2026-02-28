@@ -8,7 +8,7 @@ import {
   Tag,
   Typography,
   Badge,
-  Grid,
+  Progress,
   Checkbox,
 } from "antd";
 import {
@@ -23,18 +23,58 @@ import {
   TeamOutlined,
   FileTextOutlined,
   StarOutlined,
+  RiseOutlined,
+  FallOutlined,
+  RightOutlined,
 } from "@ant-design/icons";
-import { format } from "date-fns";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../providers/ThemeProvider";
-import {
-  formatCurrency,
-  getStatusColor,
-  getPriorityColor,
-} from "../../config/matterConfig";
 
-const { Text } = Typography;
-const { useBreakpoint } = Grid;
+dayjs.extend(relativeTime);
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
+
+const { Text, Title } = Typography;
+
+const getStatusConfig = (status) => {
+  const configs = {
+    active: { color: "#10b981", bg: "#d1fae5", label: "Active", dot: "success" },
+    pending: { color: "#f59e0b", bg: "#fef3c7", label: "Pending", dot: "warning" },
+    "on-hold": { color: "#6366f1", bg: "#e0e7ff", label: "On Hold", dot: "processing" },
+    completed: { color: "#3b82f6", bg: "#dbeafe", label: "Completed", dot: "success" },
+    closed: { color: "#64748b", bg: "#f1f5f9", label: "Closed", dot: "default" },
+    archived: { color: "#94a3b8", bg: "#f8fafc", label: "Archived", dot: "default" },
+    settled: { color: "#8b5cf6", bg: "#ede9fe", label: "Settled", dot: "success" },
+    withdrawn: { color: "#ec4899", bg: "#fce7f3", label: "Withdrawn", dot: "default" },
+    won: { color: "#22c55e", bg: "#dcfce7", label: "Won", dot: "success" },
+    lost: { color: "#ef4444", bg: "#fee2e2", label: "Lost", dot: "error" },
+  };
+  return configs[status] || { color: "#64748b", bg: "#f1f5f9", label: status, dot: "default" };
+};
+
+const getPriorityConfig = (priority) => {
+  const configs = {
+    high: { color: "#ef4444", label: "High", icon: "🔴" },
+    medium: { color: "#f59e0b", label: "Medium", icon: "🟡" },
+    low: { color: "#22c55e", label: "Low", icon: "🟢" },
+  };
+  return configs[priority] || { color: "#64748b", label: priority, icon: "⚪" };
+};
+
+const getMatterTypeConfig = (type) => {
+  const configs = {
+    litigation: { icon: "⚖️", color: "#6366f1", label: "Litigation" },
+    advisory: { icon: "💡", color: "#8b5cf6", label: "Advisory" },
+    transactional: { icon: "📝", color: "#10b981", label: "Transactional" },
+    compliance: { icon: "✅", color: "#f59e0b", label: "Compliance" },
+    regulatory: { icon: "📋", color: "#3b82f6", label: "Regulatory" },
+  };
+  return configs[type] || { icon: "📁", color: "#64748b", label: type };
+};
 
 const MatterCard = memo(
   ({
@@ -49,49 +89,19 @@ const MatterCard = memo(
   }) => {
     const navigate = useNavigate();
     const { isDarkMode } = useTheme();
-    const screens = useBreakpoint();
 
-    const getDaysDifference = (date) => {
-      if (!date) return null;
-      const today = new Date();
-      const targetDate = new Date(date);
-      const diffTime = targetDate - today;
-      return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    };
+    const statusConfig = useMemo(() => getStatusConfig(matter.status), [matter.status]);
+    const priorityConfig = useMemo(() => getPriorityConfig(matter.priority), [matter.priority]);
+    const typeConfig = useMemo(() => getMatterTypeConfig(matter.matterType), [matter.matterType]);
 
-    const formatDate = (dateString) => {
-      const date = new Date(dateString);
-      if (screens.xs) return format(date, "MM/dd/yy");
-      if (screens.sm) return format(date, "MMM dd");
-      return format(date, "MMM dd, yyyy");
-    };
+    const daysDifference = useMemo(() => {
+      if (!matter.expectedClosureDate) return null;
+      const diff = dayjs(matter.expectedClosureDate).diff(dayjs(), "day");
+      return diff;
+    }, [matter.expectedClosureDate]);
 
-    const getStatusDisplay = (status) => {
-      const statusMap = {
-        active: "Active",
-        pending: "Pending",
-        "on-hold": "On Hold",
-        completed: "Completed",
-        closed: "Closed",
-        archived: "Archived",
-        settled: "Settled",
-        withdrawn: "Withdrawn",
-        won: "Won",
-        lost: "Lost",
-      };
-      return statusMap[status] || status;
-    };
-
-    const getMatterTypeIcon = (type) => {
-      const icons = {
-        litigation: <FileTextOutlined />,
-        advisory: <StarOutlined />,
-        transactional: <DollarOutlined />,
-        compliance: <FileTextOutlined />,
-        regulatory: <StarOutlined />,
-      };
-      return icons[type] || <FileTextOutlined />;
-    };
+    const isOverdue = daysDifference !== null && daysDifference < 0;
+    const isDueSoon = daysDifference !== null && daysDifference >= 0 && daysDifference <= 7;
 
     const menuItems = useMemo(
       () => [
@@ -99,16 +109,13 @@ const MatterCard = memo(
           key: "view",
           label: "View Details",
           icon: <EyeOutlined />,
-          onClick: () =>
-            onView?.(matter) || navigate(`/dashboard/matters/${matter._id}`),
+          onClick: () => onView?.(matter) || navigate(`/dashboard/matters/${matter._id}`),
         },
         {
           key: "edit",
           label: "Edit Matter",
           icon: <EditOutlined />,
-          onClick: () =>
-            onEdit?.(matter) ||
-            navigate(`/dashboard/matters/${matter._id}/edit`),
+          onClick: () => onEdit?.(matter) || navigate(`/dashboard/matters/${matter._id}/edit`),
         },
         { type: "divider" },
         {
@@ -137,124 +144,98 @@ const MatterCard = memo(
       onSelect?.(matter._id);
     };
 
-    const daysDifference = matter.expectedClosureDate
-      ? getDaysDifference(matter.expectedClosureDate)
-      : null;
-    const isOverdue = daysDifference !== null && daysDifference < 0;
-
-    const cardStyle = useMemo(
-      () => ({
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        minHeight: compact ? "120px" : "320px",
-      }),
-      [compact],
-    );
+    // Premium Card Styles
+    const cardStyles = {
+      borderRadius: "16px",
+      border: selected 
+        ? `2px solid ${typeConfig.color}` 
+        : `1px solid ${isDarkMode ? "#374151" : "#e5e7eb"}`,
+      background: isDarkMode 
+        ? "linear-gradient(145deg, #1f2937 0%, #111827 100%)"
+        : "linear-gradient(145deg, #ffffff 0%, #f9fafb 100%)",
+      boxShadow: selected
+        ? `0 8px 30px ${typeConfig.color}30`
+        : isDarkMode
+          ? "0 4px 20px rgba(0, 0, 0, 0.3)"
+          : "0 4px 20px rgba(0, 0, 0, 0.08)",
+      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+    };
 
     if (compact) {
       return (
         <Card
           className={`
-            matter-card-compact transition-all duration-200 
-            hover:shadow-md cursor-pointer relative
-            ${selected ? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20" : ""}
-            ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white"}
+            matter-card-compact cursor-pointer group
+            hover:shadow-lg hover:-translate-y-1
+            ${selected ? "ring-2 ring-offset-2" : ""}
+            ${isDarkMode ? "dark-card" : "bg-white"}
             ${className}
           `}
-          bodyStyle={{
-            padding: "12px",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-          }}
+          bodyStyle={{ padding: "14px" }}
           onClick={handleCardClick}
-          style={cardStyle}>
-          <div className="flex justify-between items-start mb-2">
-            <div className="flex items-start gap-2 flex-1 min-w-0">
-              <Checkbox
-                checked={selected}
-                onChange={handleCheckboxChange}
-                onClick={(e) => e.stopPropagation()}
-                className="mt-0.5 flex-shrink-0"
-              />
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1 mb-1 flex-wrap">
-                  <Tag
-                    color={getStatusColor(matter.status)}
-                    className="capitalize text-xs font-medium px-1.5 py-0 flex-shrink-0">
-                    {getStatusDisplay(matter.status).charAt(0)}
-                  </Tag>
-
-                  {matter.priority === "high" && (
-                    <Badge
-                      status="error"
-                      size="small"
-                      className="flex-shrink-0"
-                    />
-                  )}
-
-                  <Text
-                    type="secondary"
-                    className="text-xs ml-auto truncate flex-shrink-0">
-                    {matter.matterNumber}
+          style={cardStyles}>
+          <div className="flex items-start gap-3">
+            <Checkbox
+              checked={selected}
+              onChange={handleCheckboxChange}
+              onClick={(e) => e.stopPropagation()}
+              className="mt-0.5"
+            />
+            
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-2">
+                <div 
+                  className="w-2 h-2 rounded-full"
+                  style={{ backgroundColor: statusConfig.color }}
+                />
+                <Text className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  {matter.matterNumber}
+                </Text>
+                {matter.priority === "high" && (
+                  <Badge status="error" />
+                )}
+              </div>
+              
+              <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-2 line-clamp-1">
+                {matter.title}
+              </h4>
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Avatar
+                    size="small"
+                    src={matter.client?.photo}
+                    icon={<UserOutlined />}
+                    className="bg-gradient-to-br from-blue-400 to-blue-600">
+                    {matter.client?.firstName?.[0]}
+                  </Avatar>
+                  <Text className="text-xs text-gray-600 dark:text-gray-400 truncate">
+                    {matter.client?.firstName} {matter.client?.lastName}
                   </Text>
                 </div>
-
-                <h4
-                  className={`font-medium text-sm mb-1 line-clamp-2 ${
-                    isDarkMode ? "text-gray-100" : "text-gray-900"
-                  }`}>
-                  {matter.title}
-                </h4>
+                
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<EyeOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/dashboard/matters/${matter._id}`);
+                    }}
+                    className="action-button opacity-0 group-hover:opacity-100 transition-opacity"
+                  />
+                  <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomRight">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<MoreOutlined />}
+                      onClick={(e) => e.stopPropagation()}
+                      className="action-button"
+                    />
+                  </Dropdown>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between mt-auto">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <Avatar
-                size="small"
-                src={matter.client?.photo}
-                icon={<UserOutlined />}
-                className={`${isDarkMode ? "bg-blue-900" : "bg-blue-100"} flex-shrink-0`}>
-                {matter.client?.firstName?.[0]}
-                {matter.client?.lastName?.[0]}
-              </Avatar>
-
-              <div className="min-w-0 flex-1">
-                <Text
-                  className={`text-xs block truncate ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
-                  {matter.client?.firstName} {matter.client?.lastName}
-                </Text>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-              <Button
-                type="text"
-                size="small"
-                icon={<EyeOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`/dashboard/matters/${matter._id}`);
-                }}
-                className="action-button p-1"
-              />
-
-              <Dropdown
-                menu={{ items: menuItems }}
-                trigger={["click"]}
-                placement="bottomRight">
-                <Button
-                  type="text"
-                  size="small"
-                  icon={<MoreOutlined />}
-                  onClick={(e) => e.stopPropagation()}
-                  className="action-button p-1"
-                />
-              </Dropdown>
             </div>
           </div>
         </Card>
@@ -264,267 +245,259 @@ const MatterCard = memo(
     return (
       <Card
         className={`
-          matter-card-full transition-all duration-300 
-          hover:shadow-lg hover:-translate-y-1 cursor-pointer relative
-          ${selected ? "ring-2 ring-blue-500 bg-blue-50 dark:bg-blue-900/20" : ""}
-          ${isDarkMode ? "bg-gray-800 border-gray-700" : "bg-white"}
+          matter-card-full cursor-pointer group
+          hover:shadow-xl hover:-translate-y-2
+          ${selected ? "ring-2 ring-offset-2" : ""}
+          ${isDarkMode ? "dark-card" : "bg-white"}
           ${className}
         `}
-        bodyStyle={{
-          padding: "16px",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-        }}
+        bodyStyle={{ padding: "20px", height: "100%" }}
         onClick={handleCardClick}
-        style={cardStyle}>
-        <div className="absolute top-3 left-3 z-10">
-          <Checkbox
-            checked={selected}
-            onChange={handleCheckboxChange}
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-
-        <div className="flex justify-between items-start mb-4 pl-8">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-3 flex-wrap">
-              <Tag
-                color={getStatusColor(matter.status)}
-                className="capitalize text-xs font-medium flex-shrink-0">
-                {getStatusDisplay(matter.status)}
-              </Tag>
-
-              {matter.priority === "high" && (
-                <Tag
-                  color={getPriorityColor(matter.priority)}
-                  className="text-xs flex-shrink-0">
-                  ⚡ Urgent
-                </Tag>
-              )}
-
-              {matter.isConfidential && (
-                <Tag color="warning" className="text-xs flex-shrink-0">
-                  🔒 Confidential
-                </Tag>
-              )}
+        style={cardStyles}>
+        {/* Header */}
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              checked={selected}
+              onChange={handleCheckboxChange}
+              onClick={(e) => e.stopPropagation()}
+            />
+            <div 
+              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
+              style={{ 
+                background: `linear-gradient(135deg, ${typeConfig.color}20 0%, ${typeConfig.color}40 100%)`,
+                color: typeConfig.color
+              }}
+            >
+              {typeConfig.icon}
             </div>
-
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex items-center gap-2 min-w-0">
-                <div
-                  className={`p-2 rounded-lg flex-shrink-0 ${
-                    isDarkMode
-                      ? "bg-gray-700 text-gray-200"
-                      : "bg-gray-100 text-gray-800"
-                  }`}>
-                  {getMatterTypeIcon(matter.matterType)}
-                </div>
-                <div className="min-w-0">
-                  <Text
-                    strong
-                    className={`text-sm block truncate ${isDarkMode ? "text-gray-100" : ""}`}>
-                    {matter.matterNumber}
-                  </Text>
-                  <Text
-                    type="secondary"
-                    className="text-xs capitalize truncate block">
-                    {matter.matterType}
-                  </Text>
-                </div>
-              </div>
+            <div>
+              <Text className="text-xs font-mono text-gray-500 dark:text-gray-400 block">
+                {matter.matterNumber}
+              </Text>
+              <Text className="text-xs text-gray-400 capitalize">
+                {typeConfig.label}
+              </Text>
             </div>
           </div>
-
-          <Dropdown
-            menu={{ items: menuItems }}
-            trigger={["click"]}
-            placement="bottomRight">
+          
+          <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomRight">
             <Button
               type="text"
               icon={<MoreOutlined />}
               onClick={(e) => e.stopPropagation()}
-              className="action-button flex-shrink-0"
+              className="action-button opacity-0 group-hover:opacity-100 transition-opacity"
             />
           </Dropdown>
         </div>
 
-        <h3
-          className={`font-semibold mb-3 line-clamp-2 text-base ${isDarkMode ? "text-gray-100" : "text-gray-900"}`}>
-          {matter.title}
-        </h3>
+        {/* Title & Description */}
+        <div className="mb-4">
+          <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2 line-clamp-2 leading-tight">
+            {matter.title}
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+            {matter.description || "No description provided"}
+          </p>
+        </div>
 
-        <p
-          className={`text-sm mb-4 line-clamp-2 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}>
-          {matter.description || "No description provided"}
-        </p>
+        {/* Status & Priority Tags */}
+        <div className="flex flex-wrap gap-2 mb-4">
+          <Tag 
+            color={statusConfig.bg}
+            style={{ 
+              color: statusConfig.color, 
+              border: 'none',
+              fontWeight: 600,
+              fontSize: '11px',
+              padding: '2px 10px',
+              borderRadius: '20px'
+            }}
+          >
+            <Badge status={statusConfig.dot} />
+            {statusConfig.label}
+          </Tag>
+          
+          <Tag
+            style={{ 
+              background: `${priorityConfig.color}15`,
+              color: priorityConfig.color,
+              border: 'none',
+              fontWeight: 600,
+              fontSize: '11px',
+              padding: '2px 10px',
+              borderRadius: '20px'
+            }}
+          >
+            {priorityConfig.icon} {priorityConfig.label}
+          </Tag>
 
-        <div className="flex items-center gap-3 mb-4">
+          {matter.isConfidential && (
+            <Tag color="warning" className="text-xs">
+              🔒 Confidential
+            </Tag>
+          )}
+        </div>
+
+        {/* Client Info */}
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 mb-4">
           <Avatar
-            size={screens.xs ? "small" : "default"}
+            size={40}
             src={matter.client?.photo}
             icon={<UserOutlined />}
-            className={`${isDarkMode ? "bg-blue-900" : "bg-blue-100"} flex-shrink-0`}>
+            className="bg-gradient-to-br from-indigo-400 to-indigo-600 ring-2 ring-white dark:ring-gray-700">
             {matter.client?.firstName?.[0]}
-            {matter.client?.lastName?.[0]}
           </Avatar>
-          <div className="min-w-0 flex-1">
-            <Text
-              strong
-              className={`text-sm block truncate ${isDarkMode ? "text-gray-100" : ""}`}>
+          <div className="flex-1 min-w-0">
+            <Text strong className="text-sm block truncate dark:text-white">
               {matter.client?.firstName} {matter.client?.lastName}
             </Text>
             {matter.client?.companyName && (
-              <Text type="secondary" className="text-xs truncate block">
+              <Text className="text-xs text-gray-500 dark:text-gray-400 truncate block">
                 {matter.client.companyName}
               </Text>
             )}
           </div>
         </div>
 
+        {/* Team Members */}
         {matter.accountOfficer && matter.accountOfficer.length > 0 && (
           <div className="mb-4">
-            <Text type="secondary" className="text-xs block mb-2">
+            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">
               <TeamOutlined className="mr-1" />
-              Assigned Officers
+              Team ({matter.accountOfficer.length})
             </Text>
             <Avatar.Group
-              maxCount={screens.xs ? 2 : 3}
-              size={screens.xs ? "small" : "default"}
-              className="avatar-group">
-              {matter.accountOfficer
-                .slice(0, screens.xs ? 2 : 3)
-                .map((officer, index) => (
-                  <Tooltip
-                    key={officer._id || index}
-                    title={`${officer.firstName} ${officer.lastName}${officer.position ? ` (${officer.position})` : ""}`}>
-                    <Avatar
-                      src={officer.photo}
-                      className="flex-shrink-0"
-                      style={{
-                        zIndex: matter.accountOfficer.length - index,
-                        border: isDarkMode
-                          ? "2px solid #1f2937"
-                          : "2px solid white",
-                        backgroundColor: isDarkMode ? "#374151" : "#f3f4f6",
-                      }}>
-                      {officer.firstName?.[0]}
-                      {officer.lastName?.[0]}
-                    </Avatar>
-                  </Tooltip>
-                ))}
-              {matter.accountOfficer.length > (screens.xs ? 2 : 3) && (
-                <Avatar
-                  className="flex-shrink-0"
-                  style={{
-                    backgroundColor: isDarkMode ? "#4b5563" : "#9ca3af",
-                    color: isDarkMode ? "#d1d5db" : "white",
-                    border: isDarkMode
-                      ? "2px solid #1f2937"
-                      : "2px solid white",
-                  }}>
-                  +{matter.accountOfficer.length - (screens.xs ? 2 : 3)}
-                </Avatar>
-              )}
+              maxCount={4}
+              size={32}
+              className="avatar-group"
+            >
+              {matter.accountOfficer.map((officer, idx) => (
+                <Tooltip
+                  key={officer._id || idx}
+                  title={`${officer.firstName} ${officer.lastName}`}
+                >
+                  <Avatar
+                    src={officer.photo}
+                    style={{
+                      border: isDarkMode ? "2px solid #1f2937" : "2px solid white",
+                    }}
+                    className="ring-2 ring-offset-1 ring-blue-500"
+                  >
+                    {officer.firstName?.[0]}
+                  </Avatar>
+                </Tooltip>
+              ))}
             </Avatar.Group>
           </div>
         )}
 
-        <div className="mt-auto">
-          <div
-            className={`pt-4 border-t ${isDarkMode ? "border-gray-700" : "border-gray-200"}`}>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col">
-                <Text
-                  type="secondary"
-                  className="text-xs flex items-center gap-1 mb-1">
-                  <CalendarOutlined />
-                  Opened
-                </Text>
-                <Text
-                  className={`text-xs font-medium ${isDarkMode ? "text-gray-100" : ""}`}>
-                  {formatDate(matter.dateOpened)}
-                </Text>
+        {/* Timeline & Stats */}
+        <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-700">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Date Opened */}
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
+                <CalendarOutlined className="text-blue-500 text-sm" />
               </div>
-
-              {matter.expectedClosureDate && (
-                <div className="flex flex-col">
-                  <Text
-                    type="secondary"
-                    className="text-xs flex items-center gap-1 mb-1">
-                    <ClockCircleOutlined />
-                    {isOverdue ? "Overdue" : "Due In"}
-                  </Text>
-                  <Text
-                    className={`text-xs font-medium ${
-                      isOverdue
-                        ? "text-red-600"
-                        : daysDifference <= 7
-                          ? "text-orange-600"
-                          : isDarkMode
-                            ? "text-gray-300"
-                            : "text-gray-700"
-                    }`}>
-                    {isOverdue
-                      ? `${Math.abs(daysDifference)}d ago`
-                      : `${daysDifference}d`}
-                  </Text>
-                </div>
-              )}
-
-              {matter.estimatedValue && (
-                <div className="flex flex-col">
-                  <Text
-                    type="secondary"
-                    className="text-xs flex items-center gap-1 mb-1">
-                    <DollarOutlined />
-                    Value
-                  </Text>
-                  <Text
-                    className={`text-xs font-medium truncate ${isDarkMode ? "text-green-400" : "text-green-600"}`}>
-                    {formatCurrency(matter.estimatedValue, matter.currency)}
-                  </Text>
-                </div>
-              )}
-
-              <div className="flex flex-col">
-                <Text type="secondary" className="text-xs mb-1">
-                  Category
-                </Text>
-                <Text
-                  className={`text-xs font-medium truncate ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
-                  {matter.category || "N/A"}
+              <div>
+                <Text className="text-xs text-gray-500 dark:text-gray-400 block">Opened</Text>
+                <Text strong className="text-xs dark:text-white">
+                  {dayjs(matter.dateOpened).format("MMM DD, YYYY")}
                 </Text>
               </div>
             </div>
 
-            {screens.md && (
-              <div className="mt-3 pt-3 border-t border-dashed border-gray-300 dark:border-gray-600">
-                <div className="flex items-center justify-between gap-2">
-                  <Text type="secondary" className="text-xs truncate">
-                    Nature:{" "}
-                    <span
-                      className={
-                        isDarkMode ? "text-gray-300" : "text-gray-700"
-                      }>
-                      {matter.natureOfMatter || "N/A"}
-                    </span>
+            {/* Due Date */}
+            {matter.expectedClosureDate && (
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-8 h-8 rounded-lg flex items-center justify-center"
+                  style={{ 
+                    background: isOverdue 
+                      ? '#fee2e2' 
+                      : isDueSoon 
+                        ? '#fef3c7' 
+                        : isDarkMode ? '#1f2937' : '#f1f5f9'
+                  }}
+                >
+                  <ClockCircleOutlined 
+                    className="text-sm"
+                    style={{ 
+                      color: isOverdue 
+                        ? '#ef4444' 
+                        : isDueSoon 
+                          ? '#f59e0b' 
+                          : isDarkMode ? '#9ca3af' : '#64748b'
+                    }}
+                  />
+                </div>
+                <div>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 block">
+                    {isOverdue ? "Overdue" : "Due"}
                   </Text>
-                  {matter.billingType && (
-                    <Text type="secondary" className="text-xs truncate">
-                      Billing:{" "}
-                      <span
-                        className={
-                          isDarkMode ? "text-gray-300" : "text-gray-700"
-                        }>
-                        {matter.billingType}
-                      </span>
-                    </Text>
-                  )}
+                  <Text 
+                    strong 
+                    className="text-xs"
+                    style={{ 
+                      color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : undefined
+                    }}
+                  >
+                    {isOverdue 
+                      ? `${Math.abs(daysDifference)}d ago` 
+                      : dayjs(matter.expectedClosureDate).format("MMM DD")
+                    }
+                  </Text>
                 </div>
               </div>
             )}
+
+            {/* Estimated Value */}
+            {matter.estimatedValue && (
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
+                  <DollarOutlined className="text-green-500 text-sm" />
+                </div>
+                <div>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 block">Value</Text>
+                  <Text strong className="text-xs text-green-600 dark:text-green-400">
+                    ₦{matter.estimatedValue.toLocaleString()}
+                  </Text>
+                </div>
+              </div>
+            )}
+
+            {/* Category */}
+            <div className="flex items-center gap-2">
+              <div 
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ background: isDarkMode ? '#1f2937' : '#f1f5f9' }}
+              >
+                <FileTextOutlined className="text-gray-500 text-sm" />
+              </div>
+              <div>
+                <Text className="text-xs text-gray-500 dark:text-gray-400 block">Category</Text>
+                <Text strong className="text-xs dark:text-white truncate">
+                  {matter.category || "N/A"}
+                </Text>
+              </div>
+            </div>
           </div>
+        </div>
+
+        {/* View Details Button */}
+        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <Button 
+            type="link" 
+            className="w-full h-10 text-blue-600 dark:text-blue-400 font-semibold flex items-center justify-center gap-2 p-0 hover:text-blue-700"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/dashboard/matters/${matter._id}`);
+            }}
+          >
+            View Full Details
+            <RightOutlined className="text-xs" />
+          </Button>
         </div>
       </Card>
     );

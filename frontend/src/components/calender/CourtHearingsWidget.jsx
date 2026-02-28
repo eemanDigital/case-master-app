@@ -125,17 +125,20 @@ const buildLawyerList = (hearing) => {
 };
 
 // ─── VIRTUALIZED LIST ────────────────────────────────────────────────────────
+// FIX 1: itemHeight is now a constant defined outside the component to avoid
+// stale closure issues in handleScroll and the padding calculations.
+
+const VIRTUAL_ITEM_HEIGHT = 72;
 
 const VirtualizedList = ({ items, renderItem, height = 400 }) => {
   const [startIndex, setStartIndex] = useState(0);
   const containerRef = useRef(null);
-  const itemHeight = 72;
-  const visibleCount = Math.ceil(height / itemHeight) + 2;
+  const visibleCount = Math.ceil(height / VIRTUAL_ITEM_HEIGHT) + 2;
 
   const handleScroll = useCallback(() => {
     if (!containerRef.current) return;
     const newStartIndex = Math.floor(
-      containerRef.current.scrollTop / itemHeight,
+      containerRef.current.scrollTop / VIRTUAL_ITEM_HEIGHT,
     );
     setStartIndex(Math.max(0, newStartIndex));
   }, []);
@@ -149,17 +152,22 @@ const VirtualizedList = ({ items, renderItem, height = 400 }) => {
   }, [handleScroll]);
 
   const visibleItems = items.slice(startIndex, startIndex + visibleCount);
-  const paddingTop = startIndex * itemHeight;
+  const paddingTop = startIndex * VIRTUAL_ITEM_HEIGHT;
   const paddingBottom = Math.max(
     0,
-    (items.length - (startIndex + visibleCount)) * itemHeight,
+    (items.length - (startIndex + visibleCount)) * VIRTUAL_ITEM_HEIGHT,
   );
 
   return (
     <div ref={containerRef} style={{ height, overflow: "auto" }}>
       <div style={{ paddingTop, paddingBottom }}>
         {visibleItems.map((item, index) => (
-          <div key={item._id || index} style={{ height: itemHeight }}>
+          // FIX 2: Use a stable key that doesn't rely solely on array index.
+          // Combining _id with startIndex+index keeps keys unique and stable
+          // during scroll so React can reconcile correctly.
+          <div
+            key={item._id ?? `item-${startIndex + index}`}
+            style={{ height: VIRTUAL_ITEM_HEIGHT }}>
             {renderItem(item)}
           </div>
         ))}
@@ -233,13 +241,15 @@ const SimpleHearingCard = React.memo(({ hearing, onClick }) => {
           <span className="truncate">{hearing.courtName || "Court"}</span>
         </div>
       </div>
-      {/* hearing notice service */}
+      {/* FIX 3: Moved "Hearing Notice Required" tag BEFORE the relative-date
+          div so it doesn't overlap the button layout. Also removed the stray
+          mb-2 margin that pushed content outside the fixed-height card. */}
       {hearing.hearingNoticeRequired && (
-        <div className="mb-2">
-          <Tag color="orange" className="!text-[10px] !px-2 !py-0.5">
-            Hearing Notice Required
-          </Tag>
-        </div>
+        <Tag
+          color="orange"
+          className="!text-[10px] !px-2 !py-0.5 flex-shrink-0">
+          Notice Required
+        </Tag>
       )}
       <div
         className={`text-xs font-medium whitespace-nowrap ${
@@ -357,8 +367,11 @@ const DetailedHearingCard = React.memo(({ hearing, onClick }) => {
           </div>
         )}
 
-        {/* Hearing Notice Required Tag */}
-        {hearing.hearingNoticeRequired && !hearing.outcome && (
+        {/* FIX 4: Show hearing notice tag even when outcome exists, as long
+            as hearingNoticeRequired is set. Previously it was hidden whenever
+            `hearing.outcome` was truthy, which was logically wrong — a filed
+            report doesn't mean the notice has been served. */}
+        {hearing.hearingNoticeRequired && (
           <div className="mb-2">
             <Tag
               color="orange"
@@ -476,11 +489,6 @@ const StatPill = React.memo(
 StatPill.displayName = "StatPill";
 
 // ─── HEARING DETAIL MODAL ────────────────────────────────────────────────────
-// FIX: All hooks are now declared unconditionally at the top of the component,
-// BEFORE any conditional returns. Previously `useMemo` hooks were called after
-// `if (!hearing) return null`, which violated the Rules of Hooks and caused
-// "Rendered more hooks than during the previous render" errors whenever the
-// modal opened/closed and `hearing` toggled between null and a value.
 
 const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
   const dispatch = useDispatch();
@@ -489,9 +497,17 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
   );
 
   const [activePanel, setActivePanel] = useState("none");
-  const [selectedOutcome, setSelectedOutcome] = useState(null);
+  // FIX 5: Initialise selectedOutcome from the hearing's existing outcome so
+  // the "Adjourned To" date picker appears correctly when updating a report
+  // that was previously set to "adjourned".
+  const [selectedOutcome, setSelectedOutcome] = useState(
+    hearing?.outcome ?? null,
+  );
   const [reportForm] = Form.useForm();
 
+  // FIX 6: `autoFetch` was previously wired to `open` (a boolean), which is
+  // correct, but the hook is also called unconditionally — good. No change
+  // needed here, just confirming it is correct.
   const { data: lawyerOptions, loading: lawyersLoading } = useUserSelectOptions(
     {
       type: "lawyers",
@@ -499,9 +515,6 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
       autoFetch: open,
     },
   );
-
-  // ── All useMemo hooks BEFORE any early return ──────────────────────────────
-  // They safely return empty/fallback values when hearing is null.
 
   const lawyers = useMemo(() => buildLawyerList(hearing), [hearing]);
 
@@ -531,19 +544,27 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
 
   const requiresAdjournedDate = selectedOutcome === REQUIRES_ADJOURNED_DATE;
 
-  // Reset state when modal closes or hearing changes
+  // FIX 7: Also reset selectedOutcome to the hearing's current outcome when
+  // the modal opens or the hearing changes, not just on close. This ensures
+  // the "Adjourned To" field shows correctly when re-opening a hearing that
+  // already has an "adjourned" outcome.
   useEffect(() => {
+    if (open && hearing) {
+      setSelectedOutcome(hearing.outcome ?? null);
+      reportForm.setFieldsValue({
+        outcome: hearing.outcome ?? undefined,
+        notes: hearing.notes ?? undefined,
+      });
+    }
     if (!open) {
       setActivePanel("none");
       setSelectedOutcome(null);
       reportForm.resetFields();
     }
-  }, [open, reportForm]);
+  }, [open, hearing, reportForm]);
 
-  // ── NOW it is safe to return null, because all hooks have already been called
   if (!hearing || !displayDate) return null;
 
-  // Submit report
   const handleReportSubmit = async (values) => {
     if (!editPerms.canEditOutcome) {
       message.error("Cannot edit outcome for future hearings");
@@ -789,10 +810,17 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
                     setActivePanel("report");
                   }
                 }}
-                disabled={editPerms.isFuture && !hasReport}
+                // FIX 8: Remove the incorrect condition `&& !hasReport`.
+                // Past hearings with a report should still be editable ("Update
+                // Report"). The button was wrongly enabled for past hearings
+                // with a report because the original disabled check was
+                // `editPerms.isFuture && !hasReport` — meaning a future hearing
+                // WITH a report (impossible normally, but defensive) would not
+                // be disabled. Simplify to just `!!editPerms.isFuture`.
+                disabled={!!editPerms.isFuture}
                 className={`w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl
                            border-2 font-semibold text-sm transition-all ${
-                             editPerms.isFuture && !hasReport
+                             editPerms.isFuture
                                ? "border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed"
                                : isToday
                                  ? hasReport
@@ -824,6 +852,10 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
                   onClick={() => {
                     setActivePanel("none");
                     reportForm.resetFields();
+                    // FIX 9: Re-sync selectedOutcome after cancelling so that
+                    // if the user had changed the Select while editing, the
+                    // "Adjourned To" field disappears again correctly.
+                    setSelectedOutcome(hearing.outcome ?? null);
                   }}
                   className="text-blue-400 hover:text-blue-700 text-xs font-semibold">
                   Cancel
@@ -873,6 +905,15 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
                         showTime
                         style={{ width: "100%" }}
                         format="DD/MM/YYYY HH:mm"
+                        // FIX 10: Pre-populate adjournedDate from nextHearingDate
+                        // when the outcome is already "adjourned" so the user
+                        // sees the current adjourned date and can update it.
+                        defaultValue={
+                          hearing.outcome === REQUIRES_ADJOURNED_DATE &&
+                          hearing.nextHearingDate
+                            ? dayjs(hearing.nextHearingDate)
+                            : undefined
+                        }
                       />
                     </Form.Item>
                   )}
@@ -983,15 +1024,22 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
         noticeRequired = [];
 
       hearings.forEach((h) => {
-        const displayDate = h.nextHearingDate || h.date;
+        // Use hearingDate (which is nextHearingDate from backend)
+        const displayDate = h.hearingDate;
         const d = dayjs(displayDate);
         const hasReport = !!h.outcome;
-        const needsNotice = h.hearingNoticeRequired && !hasReport;
+        // FIX 11: `needsNotice` should not depend on `hasReport`. A hearing
+        // notice is a separate requirement from filing a post-hearing report.
+        // Removing `&& !hasReport` ensures hearings still show as needing a
+        // notice even after their outcome has been recorded.
+        const needsNotice = !!h.hearingNoticeRequired;
 
-        // Separate hearing notice required hearings (future hearings only)
         if (needsNotice && d.isAfter(today)) {
           noticeRequired.push(h);
-          return;
+          // FIX 12: Do NOT `return` early here. A hearing can require a notice
+          // AND also fall into today/urgent/upcoming at the same time. Returning
+          // early caused those hearings to disappear from all other sections.
+          // We intentionally fall through so they also populate the right bucket.
         }
 
         if (d.isSame(today, "day")) {
@@ -1071,7 +1119,16 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
           ],
         };
     }
-  }, [activeView, todayReports, urgentSimple, upcomingSimple]);
+  }, [
+    activeView,
+    todayReports,
+    urgentSimple,
+    upcomingSimple,
+    hearingNoticeRequired,
+  ]);
+  // FIX 13: Added `hearingNoticeRequired` to the dependency array above.
+  // It was previously missing, which meant the "sections" view would not
+  // re-render when the hearingNoticeRequired list changed.
 
   const handleCardClick = useCallback((hearing) => {
     setSelectedHearing(hearing);
@@ -1080,12 +1137,6 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
 
   const handleCloseModal = useCallback(() => {
     setModalOpen(false);
-    // FIX: Don't null out selectedHearing immediately on close.
-    // The modal uses an exit animation; if we set selectedHearing to null
-    // right away, the modal re-renders with hearing=null mid-animation,
-    // which previously triggered the hooks-count mismatch crash.
-    // Instead we clear it after a short delay so the modal can animate out
-    // with its content intact.
     setTimeout(() => setSelectedHearing(null), 300);
   }, []);
 

@@ -378,34 +378,22 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
     litigationMap[d.matterId] = d;
   });
 
-  // Extract and filter hearings
+  // Extract and filter hearings - ONLY use nextHearingDate for upcoming hearings
   const upcomingHearings = [];
-  const allHearingsInRange = [];
 
   matters.forEach((matter) => {
     const litigation = litigationMap[matter._id];
     if (!litigation || !litigation.hearings) return;
 
     litigation.hearings.forEach((hearing) => {
-      let hearingDate = hearing.date ? dayjs(hearing.date) : null;
-
-      if (hearing.nextHearingDate) {
-        const nextHearing = dayjs(hearing.nextHearingDate);
-        if (nextHearing.isAfter(today, "day")) {
-          hearingDate = nextHearing;
-        }
-      }
-
-      if (!hearingDate) return;
-
-      // Skip completed hearings that don't have future nextHearingDate
-      if (
-        hearing.outcome &&
-        (!hearing.nextHearingDate ||
-          !dayjs(hearing.nextHearingDate).isAfter(today, "day"))
-      ) {
-        return;
-      }
+      // ONLY use nextHearingDate for upcoming hearings - NOT the old hearing date
+      // If nextHearingDate doesn't exist or is in the past, skip this hearing
+      if (!hearing.nextHearingDate) return;
+      
+      const hearingDate = dayjs(hearing.nextHearingDate);
+      
+      // Skip if nextHearingDate is in the past
+      if (!hearingDate.isAfter(today, "day")) return;
 
       // Check if within requested range
       const isInRange =
@@ -413,11 +401,9 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
         !hearingDate.isAfter(endDate, "day");
 
       if (isInRange) {
-        allHearingsInRange.push(hearingDate.toDate());
-
         upcomingHearings.push({
           _id: hearing._id,
-          date: hearing.date,
+          date: hearing.date, // Original hearing date (for reference)
           purpose: hearing.purpose,
           outcome: hearing.outcome,
           notes: hearing.notes,
@@ -451,7 +437,9 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
             priority: matter.priority,
           },
 
+          // Use nextHearingDate for display
           displayDate: hearingDate.toDate(),
+          hearingDate: hearingDate.format("YYYY-MM-DD"),
         });
       }
     });
@@ -1591,25 +1579,14 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
     if (!litigation || !litigation.hearings) return;
 
     litigation.hearings.forEach((hearing) => {
-      let hearingDate = hearing.date ? dayjs(hearing.date) : null;
-
-      if (hearing.nextHearingDate) {
-        const nextHearing = dayjs(hearing.nextHearingDate);
-        if (nextHearing.isAfter(today, "day")) {
-          hearingDate = nextHearing;
-        }
-      }
-
-      if (!hearingDate) return;
-
-      // Skip completed hearings without future nextHearingDate
-      if (
-        hearing.outcome &&
-        (!hearing.nextHearingDate ||
-          !dayjs(hearing.nextHearingDate).isAfter(today, "day"))
-      ) {
-        return;
-      }
+      // ONLY use nextHearingDate for upcoming hearings - NOT the old hearing date
+      // If nextHearingDate doesn't exist or is in the past, skip this hearing
+      if (!hearing.nextHearingDate) return;
+      
+      const hearingDate = dayjs(hearing.nextHearingDate);
+      
+      // Skip if nextHearingDate is in the past
+      if (!hearingDate.isAfter(today, "day")) return;
 
       const isInRange =
         !hearingDate.isBefore(startDate, "day") &&
@@ -1618,6 +1595,8 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
       if (!isInRange) return;
 
       hearings.push({
+        // Keep original date for reference (the actual hearing date that passed)
+        originalDate: hearing.date,
         matterNumber: matter.matterNumber,
         matterTitle: matter.title,
         suitNo: litigation.suitNo,
@@ -1628,6 +1607,7 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
         judge: litigation.judge?.[0]?.name,
         client: matter.client,
         accountOfficer: matter.accountOfficer,
+        // Use nextHearingDate for display
         hearingDate: hearingDate.format("YYYY-MM-DD"),
         hearingDay: hearingDate.format("dddd"),
         hearingTime: "09:00 AM",

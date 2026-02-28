@@ -674,7 +674,8 @@ const MatterListView = () => {
       />
 
       <Card
-        className={`shadow-sm border-0 ${isDarkMode ? "bg-gray-800" : "bg-white"}`}>
+        className={`shadow-sm border-0 rounded-2xl ${isDarkMode ? "bg-gray-800" : "bg-white"}`}
+        bodyStyle={{ padding: screens.xs ? "12px" : "20px" }}>
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
             <Spin size="large" />
@@ -699,19 +700,18 @@ const MatterListView = () => {
             </div>
 
             {viewMode === "grid" ? (
-              <Row gutter={[16, 16]}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
                 {paginatedMatters?.map((matter) => (
-                  <Col key={matter._id} xs={24} sm={12} md={8} lg={6} xl={4}>
-                    <MatterCard
-                      matter={matter}
-                      onDelete={() => handleDeleteMatter(matter._id)}
-                      onSelect={handleSelectMatter}
-                      selected={selectedMatters.includes(matter._id)}
-                      compact={!screens.md}
-                    />
-                  </Col>
+                  <MatterCard
+                    key={matter._id}
+                    matter={matter}
+                    onDelete={() => handleDeleteMatter(matter._id)}
+                    onSelect={handleSelectMatter}
+                    selected={selectedMatters.includes(matter._id)}
+                    compact={!screens.lg}
+                  />
                 ))}
-              </Row>
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table
