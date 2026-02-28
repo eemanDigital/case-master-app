@@ -47,6 +47,16 @@ const matterService = {
     return res.data;
   },
 
+  getMyMattersSummary: async () => {
+    const res = await API.get("/matters/my-matters-summary");
+    return res.data;
+  },
+
+  getAllMattersWithOfficers: async (filters = {}) => {
+    const res = await API.get("/matters/with-officers", { params: filters });
+    return res.data;
+  },
+
   getMatterStats: async () => {
     const res = await API.get("/matters/stats");
     return res.data;

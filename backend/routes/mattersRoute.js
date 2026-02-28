@@ -63,6 +63,12 @@ matterRouter.post(
 
 matterRouter.get("/stats", matterController.getMatterStats);
 matterRouter.get("/my-matters", matterController.getMyMatters);
+matterRouter.get("/my-matters-summary", matterController.getMyMattersSummary);
+matterRouter.get(
+  "/with-officers",
+  restrictTo("admin", "lawyer", "hr", "staff"),
+  matterController.getAllMattersWithOfficers,
+);
 
 matterRouter.get(
   "/",

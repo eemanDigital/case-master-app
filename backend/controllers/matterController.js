@@ -691,6 +691,245 @@ exports.getMyMatters = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
+// GET ALL MATTERS WITH ACCOUNT OFFICERS
+// ============================================
+
+/**
+ * @desc    Get all matters with populated account officers (for admin dashboard)
+ * @route   GET /api/matters/with-officers
+ * @access  Private (Admin/Lawyer/Staff)
+ */
+exports.getAllMattersWithOfficers = catchAsync(async (req, res, next) => {
+  const {
+    page = 1,
+    limit = 50,
+    sort = "-dateOpened",
+    status,
+    priority,
+    matterType,
+    search,
+    startDate,
+    endDate,
+    officerId,
+  } = req.query;
+
+  // Build custom filter
+  const customFilter = {};
+
+  // Filter by account officer if provided
+  if (officerId) {
+    customFilter.accountOfficer = officerId;
+  }
+
+  // Use pagination service with always-populated accountOfficer
+  const result = await matterPaginationService.paginate(
+    {
+      page,
+      limit,
+      sort,
+      populate: "accountOfficer,client",
+      select: "matterNumber title description status priority matterType natureOfMatter dateOpened expectedClosureDate client accountOfficer",
+      status,
+      priority,
+      matterType,
+      search,
+      startDate,
+      endDate,
+    },
+    customFilter,
+    req.firmId,
+  );
+
+  // Aggregate account officer statistics
+  const officerStats = await Matter.aggregate([
+    { $match: { firmId: req.firmId, isDeleted: false } },
+    { $unwind: "$accountOfficer" },
+    {
+      $group: {
+        _id: "$accountOfficer",
+        matterCount: { $sum: 1 },
+        activeCount: {
+          $sum: { $cond: [{ $eq: ["$status", "active"] }, 1, 0] },
+        },
+        pendingCount: {
+          $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] },
+        },
+        completedCount: {
+          $sum: { $cond: [{ $eq: ["$status", "completed"] }, 1, 0] },
+        },
+      },
+    },
+    {
+      $lookup: {
+        from: "users",
+        localField: "_id",
+        foreignField: "_id",
+        as: "officer",
+      },
+    },
+    { $unwind: "$officer" },
+    {
+      $project: {
+        _id: 0,
+        officerId: "$_id",
+        officerName: { $concat: ["$officer.firstName", " ", "$officer.lastName"] },
+        officerEmail: "$officer.email",
+        officerPhoto: "$officer.photo",
+        officerRole: "$officer.role",
+        officerPosition: "$officer.position",
+        matterCount: 1,
+        activeCount: 1,
+        pendingCount: 1,
+        completedCount: 1,
+      },
+    },
+    { $sort: { matterCount: -1 } },
+  ]);
+
+  res.status(200).json({
+    status: "success",
+    ...result,
+    officerStatistics: officerStats,
+  });
+});
+
+// ============================================
+// GET USER'S MATTERS SUMMARY (For Dashboard)
+// ============================================
+
+/**
+ * @desc    Get summary of matters assigned to logged-in user for dashboard
+ * @route   GET /api/matters/my-matters-summary
+ * @access  Private
+ */
+exports.getMyMattersSummary = catchAsync(async (req, res, next) => {
+  const userId = req.user._id;
+  const firmQuery = { firmId: req.firmId, isDeleted: false };
+
+  // Get all matters assigned to this user
+  const [
+    totalMatters,
+    activeMatters,
+    pendingMatters,
+    completedMatters,
+    urgentMatters,
+    highPriorityMatters,
+    recentMatters,
+    byType,
+    byStatus,
+  ] = await Promise.all([
+    // Total matters assigned to user
+    Matter.countDocuments({
+      ...firmQuery,
+      accountOfficer: userId,
+    }),
+
+    // Active matters
+    Matter.countDocuments({
+      ...firmQuery,
+      accountOfficer: userId,
+      status: "active",
+    }),
+
+    // Pending matters
+    Matter.countDocuments({
+      ...firmQuery,
+      accountOfficer: userId,
+      status: "pending",
+    }),
+
+    // Completed matters
+    Matter.countDocuments({
+      ...firmQuery,
+      accountOfficer: userId,
+      status: "completed",
+    }),
+
+    // Urgent matters
+    Matter.countDocuments({
+      ...firmQuery,
+      accountOfficer: userId,
+      priority: "urgent",
+    }),
+
+    // High priority matters
+    Matter.countDocuments({
+      ...firmQuery,
+      accountOfficer: userId,
+      priority: "high",
+    }),
+
+    // Recent matters (last 5)
+    Matter.find({
+      ...firmQuery,
+      accountOfficer: userId,
+    })
+      .sort("-dateOpened")
+      .limit(5)
+      .select("matterNumber title status priority matterType dateOpened")
+      .populate("client", "firstName lastName")
+      .lean(),
+
+    // Matters by type
+    Matter.aggregate([
+      {
+        $match: {
+          ...firmQuery,
+          accountOfficer: userId,
+        },
+      },
+      {
+        $group: {
+          _id: "$matterType",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]),
+
+    // Matters by status
+    Matter.aggregate([
+      {
+        $match: {
+          ...firmQuery,
+          accountOfficer: userId,
+        },
+      },
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]),
+  ]);
+
+  // Calculate completion rate
+  const completionRate = totalMatters > 0 
+    ? Math.round((completedMatters / totalMatters) * 100) 
+    : 0;
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      summary: {
+        totalMatters,
+        activeMatters,
+        pendingMatters,
+        completedMatters,
+        urgentMatters,
+        highPriorityMatters,
+        completionRate,
+      },
+      recentMatters,
+      byType,
+      byStatus,
+    },
+  });
+});
+
+// ============================================
 // SEARCH MATTERS (Advanced)
 // ============================================
 

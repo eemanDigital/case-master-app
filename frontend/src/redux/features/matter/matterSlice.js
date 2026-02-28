@@ -7,6 +7,9 @@ const initialState = {
   matters: [],
   currentMatter: null,
   stats: null,
+  myMattersSummary: null,
+  mattersWithOfficers: [],
+  officerStatistics: [],
   isLoading: false,
   isError: false,
   isSuccess: false,
@@ -193,6 +196,32 @@ export const getMatterStats = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch stats",
+      );
+    }
+  },
+);
+
+export const getMyMattersSummary = createAsyncThunk(
+  "matter/myMattersSummary",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await matterService.getMyMattersSummary();
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch my matters summary",
+      );
+    }
+  },
+);
+
+export const getAllMattersWithOfficers = createAsyncThunk(
+  "matter/withOfficers",
+  async (filters = {}, { rejectWithValue }) => {
+    try {
+      return await matterService.getAllMattersWithOfficers(filters);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch matters with officers",
       );
     }
   },
@@ -610,6 +639,41 @@ const matterSlice = createSlice({
         state.isError = true;
         state.message = action.payload || "Failed to fetch stats";
         message.error(state.message);
+      })
+
+      // ── Get My Matters Summary ────────────────────
+      .addCase(getMyMattersSummary.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+      })
+      .addCase(getMyMattersSummary.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.myMattersSummary = action.payload?.data || null;
+      })
+      .addCase(getMyMattersSummary.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload || "Failed to fetch my matters summary";
+      })
+
+      // ── Get All Matters With Officers ──────────────
+      .addCase(getAllMattersWithOfficers.pending, (state) => {
+        state.isLoading = true;
+        state.isError = false;
+      })
+      .addCase(getAllMattersWithOfficers.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.mattersWithOfficers =
+          action.payload.data?.matters || action.payload.data || [];
+        state.officerStatistics = action.payload.officerStatistics || [];
+        state.pagination = action.payload.data?.pagination || state.pagination;
+      })
+      .addCase(getAllMattersWithOfficers.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload || "Failed to fetch matters with officers";
       })
 
       // ── Search Matters ───────────────────────────
