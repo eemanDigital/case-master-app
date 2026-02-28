@@ -200,6 +200,7 @@ const DocumentRecordDetails = lazy(
 const NoteForm = lazy(() => import("./pages/NoteForm.jsx"));
 const NoteList = lazy(() => import("./pages/NoteList.jsx"));
 const UpdateNote = lazy(() => import("./pages/UpdateNote.jsx"));
+const NoteDetail = lazy(() => import("./pages/NoteDetail.jsx"));
 
 // Calendar & Events
 const EventDetail = lazy(() => import("./pages/EventDetail.jsx"));
@@ -1064,10 +1065,18 @@ const router = createBrowserRouter(
             }
           />
           <Route
-            path="note-list"
+            path="notes"
             element={
               <Suspense fallback={<PageLoader />}>
                 <NoteList />
+              </Suspense>
+            }
+          />
+          <Route
+            path="note/:id"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <NoteDetail />
               </Suspense>
             }
           />

@@ -14,7 +14,6 @@ import {
   Tag,
   Empty,
   Spin,
-  Dropdown,
   Space,
   Segmented,
   Badge,
@@ -25,20 +24,15 @@ import {
   EditOutlined,
   PlusOutlined,
   SearchOutlined,
-  FilterOutlined,
   SortAscendingOutlined,
   StarFilled,
   PushpinFilled,
   StarOutlined,
-  MoreOutlined,
-  EyeOutlined,
-  InboxOutlined,
   AppstoreOutlined,
   UnorderedListOutlined,
-  FireOutlined,
 } from "@ant-design/icons";
 
-import { useDebounce } from "../hooks/Usedebouncedvalue";
+import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import {
   fetchNotes,
   deleteNote,
@@ -49,7 +43,7 @@ import {
   restoreNote,
   setFilters,
 } from "../redux/features/notes/notesSlice";
-import SearchBar from "../components/SearchBar";
+
 import ButtonWithIcon from "../components/ButtonWithIcon";
 import GoBackButton from "../components/GoBackButton";
 
@@ -63,6 +57,11 @@ const CATEGORIES = [
   { value: "procedure", label: "Procedure", color: "orange" },
   { value: "general", label: "General", color: "default" },
 ];
+
+const CATEGORY_OPTIONS = CATEGORIES.map(c => ({
+  value: c.value,
+  label: c.label,
+}));
 
 const SORT_OPTIONS = [
   { value: "newest", label: "Newest First" },
@@ -83,12 +82,12 @@ const NoteList = () => {
 
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("grid");
-  const [showFilters, setShowFilters] = useState(false);
+
   const [activeTab, setActiveTab] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [sortBy, setSortBy] = useState("newest");
 
-  const debouncedSearch = useDebounce(searchTerm, 400);
+  const debouncedSearch = useDebouncedValue(searchTerm, 400);
 
   const fetchParams = useMemo(
     () => ({
@@ -256,18 +255,40 @@ const NoteList = () => {
 
   const renderNoteCard = (note) => {
     const categoryInfo = getCategoryInfo(note.category);
+    
+    const unescapeHtml = (str) => {
+      if (!str) return "";
+      return str
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'");
+    };
+    
+    const getPlainText = (html) => {
+      if (!html) return "";
+      const unescaped = unescapeHtml(html);
+      return unescaped.replace(/<[^>]*>/g, "").trim();
+    };
+    
+    const plainContent = getPlainText(note.content);
+    
     return (
       <List.Item>
         <Card
           hoverable
           className="w-full h-full shadow-md transition-all duration-300 ease-in-out hover:shadow-lg border-t-4"
-          style={{ borderTopColor: note.color || "#3b82f6" }}
+          style={{ 
+            borderTopColor: note.color || "#3b82f6",
+            backgroundColor: note.color && note.color !== "#ffffff" ? note.color : undefined
+          }}
           actions={
             activeTab === "trash" ? getTrashActions(note) : getNoteActions(note)
           }
           onClick={() =>
             activeTab !== "trash" &&
-            navigate(`/dashboard/update-note/${note._id}`)
+            navigate(`/dashboard/note/${note._id}`)
           }>
           <Card.Meta
             title={
@@ -313,20 +334,18 @@ const NoteList = () => {
                     </span>
                   )}
                 </Text>
-                <Text
-                  className="text-gray-700 text-base line-clamp-3"
+                <div
+                  className="text-gray-700 text-base m-0"
                   style={{
                     display: "-webkit-box",
                     WebkitLineClamp: 3,
                     WebkitBoxOrient: "vertical",
                     overflow: "hidden",
                   }}
-                  dangerouslySetInnerHTML={{
-                    __html:
-                      note.content?.replace(/<[^>]*>/g, "").substring(0, 150) +
-                      "...",
-                  }}
-                />
+                >
+                  {plainContent.substring(0, 150)}
+                  {plainContent.length > 150 && "..."}
+                </div>
               </div>
             }
           />
@@ -382,7 +401,7 @@ const NoteList = () => {
             value={selectedCategory || undefined}
             onChange={handleCategoryFilter}
             allowClear
-            options={CATEGORIES}
+            options={CATEGORY_OPTIONS}
             className="w-40"
           />
           <Select

@@ -3,11 +3,11 @@ import { Form, Input, Button, Card, Select, Space, Typography, message, Tooltip,
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 import { 
-  SaveOutlined, BgColorsOutlined, 
+  SaveOutlined, 
   PushpinOutlined, StarOutlined, StarFilled, 
-  PushpinFilled, QuestionCircleOutlined, LoadingOutlined,
-  ArrowLeftOutlined 
+  PushpinFilled, QuestionCircleOutlined
 } from "@ant-design/icons";
 import { fetchNote, updateNote } from "../redux/features/notes/notesSlice";
 import createMaxLengthRule from "../utils/createMaxLengthRule";
@@ -16,12 +16,12 @@ import GoBackButton from "../components/GoBackButton";
 const { Title, Text } = Typography;
 
 const CATEGORIES = [
-  { value: "case-notes", label: "Case Notes", color: "blue", description: "Notes related to specific cases" },
-  { value: "legal-research", label: "Legal Research", color: "purple", description: "Research findings and case law" },
-  { value: "client-info", label: "Client Info", color: "green", description: "Client-related information" },
-  { value: "court-ruling", label: "Court Ruling", color: "red", description: "Court decisions and judgments" },
-  { value: "procedure", label: "Procedure", color: "orange", description: "Legal procedures and processes" },
-  { value: "general", label: "General", color: "default", description: "General notes" },
+  { value: "case-notes", label: "Case Notes", color: "blue" },
+  { value: "legal-research", label: "Legal Research", color: "purple" },
+  { value: "client-info", label: "Client Info", color: "green" },
+  { value: "court-ruling", label: "Court Ruling", color: "red" },
+  { value: "procedure", label: "Procedure", color: "orange" },
+  { value: "general", label: "General", color: "default" },
 ];
 
 const COLORS = [
@@ -58,15 +58,30 @@ const UpdateNote = () => {
   const [selectedColor, setSelectedColor] = useState("#ffffff");
   const [selectedCategory, setSelectedCategory] = useState("general");
   const [tags, setTags] = useState([]);
+  const [quillValue, setQuillValue] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   
   const { currentNote } = useSelector((state) => state.notes);
   const autoSaveTimerRef = useRef(null);
+  const initialLoadRef = useRef(true);
+  const originalNoteRef = useRef(null);
 
-  const contentValue = Form.useWatch("content", form) || "";
-  const titleValue = Form.useWatch("title", form) || "";
+  const handleQuillChange = (value) => {
+    setQuillValue(value);
+    form.setFieldValue("content", value);
+    if (!isDirty && initialLoadRef.current === false) {
+      setHasUnsavedChanges(true);
+    }
+  };
+
+  const handleTitleChange = () => {
+    if (!isDirty && initialLoadRef.current === false) {
+      setHasUnsavedChanges(true);
+    }
+  };
 
   useEffect(() => {
     const loadNote = async () => {
@@ -84,27 +99,33 @@ const UpdateNote = () => {
   }, [dispatch, id, navigate]);
 
   useEffect(() => {
-    if (currentNote) {
+    if (currentNote && initialLoadRef.current) {
       form.setFieldsValue({
         title: currentNote.title,
         content: currentNote.content,
       });
+      setQuillValue(currentNote.content || "");
       setIsPinned(currentNote.isPinned || false);
       setIsFavorite(currentNote.isFavorite || false);
       setSelectedColor(currentNote.color || "#ffffff");
       setSelectedCategory(currentNote.category || "general");
       setTags(currentNote.tags || []);
+      originalNoteRef.current = {
+        title: currentNote.title,
+        content: currentNote.content,
+        category: currentNote.category,
+        color: currentNote.color,
+        isPinned: currentNote.isPinned,
+        isFavorite: currentNote.isFavorite,
+        tags: currentNote.tags,
+      };
+      setIsDirty(true);
+      initialLoadRef.current = false;
     }
   }, [currentNote, form]);
 
   useEffect(() => {
-    if (contentValue || titleValue) {
-      setHasUnsavedChanges(true);
-    }
-  }, [contentValue, titleValue]);
-
-  useEffect(() => {
-    if (autoSaveEnabled && hasUnsavedChanges && (titleValue || contentValue)) {
+    if (autoSaveEnabled && hasUnsavedChanges && isDirty && !initialLoadRef.current) {
       if (autoSaveTimerRef.current) {
         clearTimeout(autoSaveTimerRef.current);
       }
@@ -117,16 +138,17 @@ const UpdateNote = () => {
         clearTimeout(autoSaveTimerRef.current);
       }
     };
-  }, [autoSaveEnabled, titleValue, contentValue, hasUnsavedChanges]);
+  }, [autoSaveEnabled, hasUnsavedChanges, isDirty, quillValue, selectedCategory, selectedColor, isPinned, isFavorite, tags]);
 
   const handleAutoSave = useCallback(async () => {
     try {
-      const values = form.getFieldsValue(["title", "content"]);
-      if (values.title && values.content) {
+      const title = form.getFieldValue("title");
+      if (title && quillValue) {
         await dispatch(updateNote({
           id,
           noteData: {
-            ...values,
+            title,
+            content: quillValue,
             category: selectedCategory,
             color: selectedColor,
             isPinned,
@@ -136,12 +158,12 @@ const UpdateNote = () => {
         })).unwrap();
         setLastSaved(new Date());
         setHasUnsavedChanges(false);
-        message.success("Draft auto-saved");
+        message.success("Changes auto-saved");
       }
     } catch (error) {
       console.error("Auto-save failed", error);
     }
-  }, [dispatch, id, form, selectedCategory, selectedColor, isPinned, isFavorite, tags]);
+  }, [dispatch, id, form, quillValue, selectedCategory, selectedColor, isPinned, isFavorite, tags]);
 
   const onFinish = async (values) => {
     setIsSubmitting(true);
@@ -150,7 +172,7 @@ const UpdateNote = () => {
         id,
         noteData: {
           title: values.title,
-          content: values.content,
+          content: quillValue,
           category: selectedCategory,
           color: selectedColor,
           isPinned,
@@ -168,14 +190,14 @@ const UpdateNote = () => {
     }
   };
 
-  const handleSaveAndContinue = async () => {
+  const handleSaveChanges = async () => {
     try {
       await form.validateFields();
-      const values = form.getFieldsValue(["title", "content"]);
       await dispatch(updateNote({
         id,
         noteData: {
-          ...values,
+          title: form.getFieldValue("title"),
+          content: quillValue,
           category: selectedCategory,
           color: selectedColor,
           isPinned,
@@ -185,6 +207,7 @@ const UpdateNote = () => {
       })).unwrap();
       message.success("Changes saved!");
       setHasUnsavedChanges(false);
+      setLastSaved(new Date());
     } catch (error) {
       message.error("Please fill in required fields first");
     }
@@ -206,9 +229,8 @@ const UpdateNote = () => {
         <div className="flex items-center justify-between mb-6">
           <Title level={3} className="mb-0">Update Note</Title>
           <Space>
-            {hasUnsavedChanges && (
+            {hasUnsavedChanges && isDirty && (
               <Text type="secondary" className="text-sm">
-                <LoadingOutlined className="mr-1" />
                 Unsaved changes
               </Text>
             )}
@@ -241,6 +263,7 @@ const UpdateNote = () => {
                   size="large"
                   showCount
                   maxLength={100}
+                  onChange={handleTitleChange}
                 />
               </Form.Item>
             </div>
@@ -286,22 +309,18 @@ const UpdateNote = () => {
             >
               <Select
                 value={selectedCategory}
-                onChange={setSelectedCategory}
-                options={CATEGORIES.map(c => ({
-                  value: c.value,
-                  label: (
-                    <Space>
-                      <span style={{ 
-                        display: 'inline-block', 
-                        width: 8, 
-                        height: 8, 
-                        borderRadius: '50%',
-                        backgroundColor: c.color === 'default' ? '#d9d9d9' : c.color 
-                      }} />
-                      {c.label}
-                    </Space>
-                  ),
-                }))}
+                onChange={(val) => {
+                  setSelectedCategory(val);
+                  if (!isDirty && initialLoadRef.current === false) setHasUnsavedChanges(true);
+                }}
+                options={[
+                  { value: "case-notes", label: "Case Notes" },
+                  { value: "legal-research", label: "Legal Research" },
+                  { value: "client-info", label: "Client Info" },
+                  { value: "court-ruling", label: "Court Ruling" },
+                  { value: "procedure", label: "Procedure" },
+                  { value: "general", label: "General" },
+                ]}
                 placeholder="Select category"
               />
             </Form.Item>
@@ -312,7 +331,10 @@ const UpdateNote = () => {
             >
               <Select
                 value={selectedColor}
-                onChange={setSelectedColor}
+                onChange={(val) => {
+                  setSelectedColor(val);
+                  if (!isDirty && initialLoadRef.current === false) setHasUnsavedChanges(true);
+                }}
                 className="w-full"
               >
                 {COLORS.map(color => (
@@ -342,7 +364,10 @@ const UpdateNote = () => {
               <Select
                 mode="tags"
                 value={tags}
-                onChange={setTags}
+                onChange={(val) => {
+                  setTags(val);
+                  if (!isDirty && initialLoadRef.current === false) setHasUnsavedChanges(true);
+                }}
                 placeholder="Add tags..."
                 tokenSeparators={[',']}
                 style={{ width: '100%' }}
@@ -356,12 +381,15 @@ const UpdateNote = () => {
             rules={[
               { required: true, message: "Please provide content for the note!" },
             ]}
+            getValueFromEvent={(e) => e || quillValue}
           >
             <ReactQuill
               theme="snow"
               modules={QUILL_MODULES}
               placeholder="Enter note content..."
               style={{ height: "300px" }}
+              value={quillValue}
+              onChange={handleQuillChange}
             />
           </Form.Item>
 
@@ -374,7 +402,7 @@ const UpdateNote = () => {
 
           <div className="flex justify-between items-center pt-4 border-t">
             <Button 
-              onClick={handleSaveAndContinue}
+              onClick={handleSaveChanges}
               icon={<SaveOutlined />}
             >
               Save Changes

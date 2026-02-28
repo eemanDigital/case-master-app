@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Form, Input, Button, Card, Select, Tag, Checkbox, Space, Typography, message, Tooltip } from "antd";
-import { useDispatch, useSelector } from "react-redux";
+import { Form, Input, Button, Card, Select, Tag, Space, Typography, message, Tooltip } from "antd";
+import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import ReactQuill from "react-quill";
+import "react-quill/dist/quill.snow.css";
 import { 
-  SaveOutlined, BgColorsOutlined, TagsOutlined, 
+  SaveOutlined, 
   PushpinOutlined, StarOutlined, StarFilled, 
-  PushpinFilled, QuestionCircleOutlined, LoadingOutlined 
+  PushpinFilled, QuestionCircleOutlined 
 } from "@ant-design/icons";
 import { createNote } from "../redux/features/notes/notesSlice";
 import createMaxLengthRule from "../utils/createMaxLengthRule";
@@ -15,12 +16,12 @@ import GoBackButton from "../components/GoBackButton";
 const { Title, Text } = Typography;
 
 const CATEGORIES = [
-  { value: "case-notes", label: "Case Notes", color: "blue", description: "Notes related to specific cases" },
-  { value: "legal-research", label: "Legal Research", color: "purple", description: "Research findings and case law" },
-  { value: "client-info", label: "Client Info", color: "green", description: "Client-related information" },
-  { value: "court-ruling", label: "Court Ruling", color: "red", description: "Court decisions and judgments" },
-  { value: "procedure", label: "Procedure", color: "orange", description: "Legal procedures and processes" },
-  { value: "general", label: "General", color: "default", description: "General notes" },
+  { value: "case-notes", label: "Case Notes", color: "blue" },
+  { value: "legal-research", label: "Legal Research", color: "purple" },
+  { value: "client-info", label: "Client Info", color: "green" },
+  { value: "court-ruling", label: "Court Ruling", color: "red" },
+  { value: "procedure", label: "Procedure", color: "orange" },
+  { value: "general", label: "General", color: "default" },
 ];
 
 const COLORS = [
@@ -55,38 +56,28 @@ const NoteForm = () => {
   const [selectedColor, setSelectedColor] = useState("#ffffff");
   const [selectedCategory, setSelectedCategory] = useState("general");
   const [tags, setTags] = useState([]);
-  const [tagInput, setTagInput] = useState("");
+  const [quillValue, setQuillValue] = useState("");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   
   const autoSaveTimerRef = useRef(null);
-  const draftRef = useRef(null);
+  const initialLoadRef = useRef(true);
 
-  const contentValue = Form.useWatch("content", form) || "";
-  const titleValue = Form.useWatch("title", form) || "";
-
-  useEffect(() => {
-    if (contentValue || titleValue) {
+  const handleQuillChange = (value) => {
+    setQuillValue(value);
+    form.setFieldValue("content", value);
+    if (!isDirty && initialLoadRef.current === false) {
       setHasUnsavedChanges(true);
     }
-  }, [contentValue, titleValue]);
+  };
 
-  useEffect(() => {
-    if (autoSaveEnabled && hasUnsavedChanges && (titleValue || contentValue)) {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-      autoSaveTimerRef.current = setTimeout(() => {
-        handleAutoSave();
-      }, 5000);
+  const handleTitleChange = () => {
+    if (!isDirty && initialLoadRef.current === false) {
+      setHasUnsavedChanges(true);
     }
-    return () => {
-      if (autoSaveTimerRef.current) {
-        clearTimeout(autoSaveTimerRef.current);
-      }
-    };
-  }, [autoSaveEnabled, titleValue, contentValue, hasUnsavedChanges]);
+  };
 
   useEffect(() => {
     const savedDraft = localStorage.getItem("note_draft");
@@ -94,25 +85,44 @@ const NoteForm = () => {
       try {
         const draft = JSON.parse(savedDraft);
         form.setFieldsValue({
-          title: draft.title,
-          content: draft.content,
+          title: draft.title || "",
+          content: draft.content || "",
         });
+        setQuillValue(draft.content || "");
         setSelectedCategory(draft.category || "general");
         setSelectedColor(draft.color || "#ffffff");
         setIsPinned(draft.isPinned || false);
         setIsFavorite(draft.isFavorite || false);
         setTags(draft.tags || []);
+        setIsDirty(true);
         message.info("Draft restored from previous session");
       } catch (e) {
         console.error("Failed to restore draft", e);
       }
     }
+    initialLoadRef.current = false;
   }, [form]);
 
-  const saveDraft = useCallback(() => {
+  useEffect(() => {
+    if (autoSaveEnabled && hasUnsavedChanges && isDirty) {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+      autoSaveTimerRef.current = setTimeout(() => {
+        saveDraft(true);
+      }, 5000);
+    }
+    return () => {
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+      }
+    };
+  }, [autoSaveEnabled, hasUnsavedChanges, isDirty, quillValue, selectedCategory, selectedColor, isPinned, isFavorite, tags]);
+
+  const saveDraft = useCallback((isAutoSave = false) => {
     const draft = {
       title: form.getFieldValue("title"),
-      content: form.getFieldValue("content"),
+      content: quillValue,
       category: selectedCategory,
       color: selectedColor,
       isPinned,
@@ -121,43 +131,23 @@ const NoteForm = () => {
       timestamp: Date.now(),
     };
     localStorage.setItem("note_draft", JSON.stringify(draft));
-    draftRef.current = draft;
     setLastSaved(new Date());
     setHasUnsavedChanges(false);
-  }, [form, selectedCategory, selectedColor, isPinned, isFavorite, tags]);
-
-  const handleAutoSave = useCallback(() => {
-    saveDraft();
-    message.success("Draft auto-saved");
-  }, [saveDraft]);
+    if (isAutoSave) {
+      message.success("Draft auto-saved");
+    }
+  }, [form, quillValue, selectedCategory, selectedColor, isPinned, isFavorite, tags]);
 
   const clearDraft = useCallback(() => {
     localStorage.removeItem("note_draft");
-    draftRef.current = null;
   }, []);
-
-  const handleTagInput = (value) => {
-    setTagInput(value);
-  };
-
-  const handleAddTag = () => {
-    const newTag = tagInput.trim().toLowerCase();
-    if (newTag && !tags.includes(newTag) && tags.length < 10) {
-      setTags([...tags, newTag]);
-      setTagInput("");
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove) => {
-    setTags(tags.filter(tag => tag !== tagToRemove));
-  };
 
   const onFinish = async (values) => {
     setIsSubmitting(true);
     try {
       await dispatch(createNote({
         title: values.title,
-        content: values.content,
+        content: quillValue,
         category: selectedCategory,
         color: selectedColor,
         isPinned,
@@ -175,14 +165,9 @@ const NoteForm = () => {
     }
   };
 
-  const handleSaveAndContinue = async () => {
-    try {
-      await form.validateFields();
-      saveDraft();
-      message.success("Draft saved! You can continue editing.");
-    } catch (error) {
-      message.error("Please fill in required fields first");
-    }
+  const handleSaveDraft = () => {
+    saveDraft();
+    message.success("Draft saved! You can continue editing.");
   };
 
   return (
@@ -193,9 +178,8 @@ const NoteForm = () => {
         <div className="flex items-center justify-between mb-6">
           <Title level={3} className="mb-0">Create Note</Title>
           <Space>
-            {hasUnsavedChanges && (
+            {hasUnsavedChanges && isDirty && (
               <Text type="secondary" className="text-sm">
-                <LoadingOutlined className="mr-1" />
                 Unsaved changes
               </Text>
             )}
@@ -212,7 +196,6 @@ const NoteForm = () => {
           layout="vertical"
           name="create_note_form"
           onFinish={onFinish}
-          initialValues={{ title: "", content: "" }}
         >
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="md:col-span-3">
@@ -229,6 +212,7 @@ const NoteForm = () => {
                   size="large"
                   showCount
                   maxLength={100}
+                  onChange={handleTitleChange}
                 />
               </Form.Item>
             </div>
@@ -275,14 +259,15 @@ const NoteForm = () => {
               <Select
                 value={selectedCategory}
                 onChange={setSelectedCategory}
-                options={CATEGORIES.map(c => ({
-                  value: c.value,
-                  label: (
-                    <Space>
-                      <Tag color={c.color}>{c.label}</Tag>
-                    </Space>
-                  ),
-                }))}
+                labelInValue={false}
+                options={[
+                  { value: "case-notes", label: "Case Notes" },
+                  { value: "legal-research", label: "Legal Research" },
+                  { value: "client-info", label: "Client Info" },
+                  { value: "court-ruling", label: "Court Ruling" },
+                  { value: "procedure", label: "Procedure" },
+                  { value: "general", label: "General" },
+                ]}
                 placeholder="Select category"
               />
             </Form.Item>
@@ -337,18 +322,21 @@ const NoteForm = () => {
             rules={[
               { required: true, message: "Please provide content for the note!" },
             ]}
+            getValueFromEvent={(e) => e || quillValue}
           >
             <ReactQuill
               theme="snow"
               modules={QUILL_MODULES}
               placeholder="Enter note content..."
               style={{ height: "300px" }}
+              value={quillValue}
+              onChange={handleQuillChange}
             />
           </Form.Item>
 
           <div className="flex justify-between items-center pt-4 border-t">
             <Button 
-              onClick={handleSaveAndContinue}
+              onClick={handleSaveDraft}
               icon={<SaveOutlined />}
             >
               Save Draft
