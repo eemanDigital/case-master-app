@@ -202,11 +202,6 @@ const NoteList = lazy(() => import("./pages/NoteList.jsx"));
 const UpdateNote = lazy(() => import("./pages/UpdateNote.jsx"));
 
 // Calendar & Events
-const CauseList = lazy(() =>
-  import("./components/CauseList.jsx").then((module) => ({
-    default: module.CauseList,
-  })),
-);
 const EventDetail = lazy(() => import("./pages/EventDetail.jsx"));
 
 // Support
@@ -1086,16 +1081,6 @@ const router = createBrowserRouter(
           />
 
           {/* Cause List & Events */}
-          <Route
-            path="cause-list"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
-                  <CauseList />
-                </ShowOnlyVerifiedUser>
-              </Suspense>
-            }
-          />
           <Route
             path="events/:id/details"
             element={

@@ -11,6 +11,7 @@ import {
   CalendarOutlined,
   BellOutlined,
   ScheduleOutlined,
+  DownloadOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -28,6 +29,8 @@ import {
   clearFilters,
 } from "../../../redux/features/litigation/litigationSlice";
 
+import { useDownloadPdfHandler } from "../../../hooks/useDownloadPdfHandler";
+
 import LitigationDashboardHeader from "../../../components/litigation/dashboard/LitigationDashboardHeader";
 import LitigationStatsGrid from "../../../components/litigation/dashboard/LitigationStatsGrid";
 import LitigationTable from "../../../components/litigation/LitigationTable";
@@ -44,12 +47,40 @@ const { TabPane } = Tabs;
 const LitigationDashboardPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { handleDownloadPdf, loading: downloadLoading } = useDownloadPdfHandler();
 
   // Local state
   const [activeView, setActiveView] = useState("list");
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [filterVisible, setFilterVisible] = useState(true);
   const [searchText, setSearchText] = useState("");
+
+  // Download handlers
+  const downloadUrl = import.meta.env.VITE_BASE_URL;
+
+  const handleDownloadThisWeek = (e) => {
+    handleDownloadPdf(
+      e,
+      `${downloadUrl}/litigation/upcoming-hearings/download?range=this-week`,
+      `hearings-this-week-${new Date().toISOString().split('T')[0]}.pdf`
+    );
+  };
+
+  const handleDownloadNextWeek = (e) => {
+    handleDownloadPdf(
+      e,
+      `${downloadUrl}/litigation/upcoming-hearings/download?range=next-week`,
+      `hearings-next-week-${new Date().toISOString().split('T')[0]}.pdf`
+    );
+  };
+
+  const handleDownloadThisMonth = (e) => {
+    handleDownloadPdf(
+      e,
+      `${downloadUrl}/litigation/upcoming-hearings/download?range=this-month`,
+      `hearings-this-month-${new Date().toISOString().split('T')[0]}.pdf`
+    );
+  };
 
   // Redux state
   const matters = useSelector(selectLitigationMatters);
@@ -254,6 +285,32 @@ const LitigationDashboardPage = () => {
                     <Text type="secondary" className="text-xs">
                       Next 7 days
                     </Text>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="small"
+                      icon={<DownloadOutlined />}
+                      onClick={handleDownloadThisWeek}
+                      loading={downloadLoading}
+                    >
+                      This Week
+                    </Button>
+                    <Button
+                      size="small"
+                      icon={<DownloadOutlined />}
+                      onClick={handleDownloadNextWeek}
+                      loading={downloadLoading}
+                    >
+                      Next Week
+                    </Button>
+                    <Button
+                      size="small"
+                      icon={<DownloadOutlined />}
+                      onClick={handleDownloadThisMonth}
+                      loading={downloadLoading}
+                    >
+                      Month
+                    </Button>
                   </div>
                 </div>
               </div>

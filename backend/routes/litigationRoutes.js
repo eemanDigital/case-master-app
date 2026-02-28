@@ -19,6 +19,12 @@ litigationRouter.get(
   litigationController.getUpcomingHearings,
 );
 
+// Download upcoming hearings as PDF
+litigationRouter.get(
+  "/upcoming-hearings/download",
+  litigationController.downloadUpcomingHearingsPdf,
+);
+
 // ============================================
 // LITIGATION SEARCH
 // ============================================
