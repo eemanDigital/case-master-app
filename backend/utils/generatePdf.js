@@ -12,7 +12,32 @@ const ensureOutputDir = (filePath) => {
   }
 };
 
-// pdf generator
+// Clean up old PDF files (older than 1 hour)
+const cleanupOldPdfs = () => {
+  const outputDir = path.resolve(__dirname, "../output");
+  if (!fs.existsSync(outputDir)) return;
+  
+  const oneHourAgo = Date.now() - 60 * 60 * 1000;
+  try {
+    const files = fs.readdirSync(outputDir);
+    files.forEach(file => {
+      if (file.endsWith(".pdf")) {
+        const filePath = path.join(outputDir, file);
+        const stats = fs.statSync(filePath);
+        if (stats.mtimeMs < oneHourAgo) {
+          fs.unlinkSync(filePath);
+        }
+      }
+    });
+  } catch (err) {
+    console.error("Error cleaning up old PDFs:", err);
+  }
+};
+
+// Run cleanup on startup
+cleanupOldPdfs();
+
+// pdf generator with timeout
 exports.generatePdf = (dataValue, res, templateFile, fileOutPath) => {
   // Handle template path - use as-is if absolute, resolve if relative
   const templatePath = path.isAbsolute(templateFile) 
@@ -30,37 +55,53 @@ exports.generatePdf = (dataValue, res, templateFile, fileOutPath) => {
   // Ensure output directory exists
   ensureOutputDir(outputPath);
   
+  // Set timeout for pug rendering
+  const pugTimeout = setTimeout(() => {
+    console.error("Pug rendering timeout");
+    res.status(500).json({ error: "PDF generation timeout. Please try again." });
+  }, 30000); // 30 seconds
+  
   pug.renderFile(
     templatePath,
     dataValue,
     function (err, html) {
+      clearTimeout(pugTimeout);
+      
       if (err) {
         console.error("Pug render error:", err);
-        res.status(500).json({ error: err.message });
-      } else {
-        // Get firm from dataValue and pass to pdfoptions
-        const firm = dataValue?.firm || {};
-        const options = typeof pdfoptions === 'function' ? pdfoptions(firm) : pdfoptions;
-
-        console.log("PDF options:", JSON.stringify(options, null, 2));
-
-        const document = {
-          html: html,
-          data: dataValue,
-          path: outputPath,
-        };
-
-        pdf
-          .create(document, options)
-          .then((result) => {
-            console.log("PDF created:", result);
-            res.sendFile(outputPath);
-          })
-          .catch((error) => {
-            console.error("PDF creation error:", error);
-            res.status(500).json({ error: error.message });
-          });
+        return res.status(500).json({ error: err.message });
       }
+      
+      // Get firm from dataValue and pass to pdfoptions
+      const firm = dataValue?.firm || {};
+      const options = typeof pdfoptions === 'function' ? pdfoptions(firm) : pdfoptions;
+
+      console.log("PDF options:", JSON.stringify(options, null, 2));
+
+      const document = {
+        html: html,
+        data: dataValue,
+        path: outputPath,
+      };
+
+      // Set timeout for PDF creation
+      const pdfTimeout = setTimeout(() => {
+        console.error("PDF creation timeout");
+        res.status(500).json({ error: "PDF generation timeout. Please try again." });
+      }, 60000); // 60 seconds
+
+      pdf
+        .create(document, options)
+        .then((result) => {
+          clearTimeout(pdfTimeout);
+          console.log("PDF created:", result);
+          res.sendFile(outputPath);
+        })
+        .catch((error) => {
+          clearTimeout(pdfTimeout);
+          console.error("PDF creation error:", error);
+          res.status(500).json({ error: error.message });
+        });
     }
   );
 };

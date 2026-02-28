@@ -74,6 +74,7 @@ const InvoiceDetails = () => {
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const {
     handleDownloadPdf,
+    loading: loadingPdf,
     error: pdfError,
   } = useDownloadPdfHandler();
   useRedirectLogoutUser("/users/login");
@@ -101,6 +102,7 @@ const InvoiceDetails = () => {
   };
 
   const handleDownloadBillOfCharges = () => {
+    toast.info("Generating bill of charges PDF...", { autoClose: 2000 });
     window.open(`${downloadURL}/invoices/bill-of-charges/${id}`, "_blank");
   };
 
@@ -176,6 +178,7 @@ const InvoiceDetails = () => {
       icon: <FilePdfOutlined />,
       label: "Download Invoice PDF",
       onClick: () => {
+        toast.info("Generating invoice PDF...", { autoClose: 2000 });
         handleDownloadPdf(
           null,
           `${downloadURL}/invoices/pdf/${invoice?._id}`,
@@ -187,7 +190,10 @@ const InvoiceDetails = () => {
       key: "bill",
       icon: <FileExcelOutlined />,
       label: "Download Bill of Charges",
-      onClick: handleDownloadBillOfCharges,
+      onClick: () => {
+        toast.info("Generating bill of charges PDF...", { autoClose: 2000 });
+        handleDownloadBillOfCharges();
+      },
     },
   ];
 
@@ -265,13 +271,15 @@ const InvoiceDetails = () => {
                 </Button>
               )}
 
-            <Dropdown menu={{ items: downloadMenuItems }} trigger={["click"]}>
+            <Dropdown menu={{ items: downloadMenuItems }} trigger={["click"]} disabled={loadingPdf}>
               <Button
                 type="primary"
                 size="small"
-                icon={<DownloadOutlined />}
-                className="bg-blue-600 hover:bg-blue-700 border-0">
-                Download
+                icon={loadingPdf ? <span className="animate-spin">⏳</span> : <DownloadOutlined />}
+                className="bg-blue-600 hover:bg-blue-700 border-0"
+                loading={loadingPdf}
+              >
+                {loadingPdf ? "Downloading..." : "Download"}
               </Button>
             </Dropdown>
 
