@@ -32,7 +32,6 @@ import {
   CheckCircleOutlined,
   EditOutlined,
   FileTextOutlined,
-  BellOutlined,
 } from "@ant-design/icons";
 import {
   fetchUpcomingHearings,
@@ -290,7 +289,9 @@ const DetailedHearingCard = React.memo(({ hearing, onClick }) => {
       {isToday && (
         <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-emerald-500 animate-pulse" />
       )}
-      {!isToday && <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-blue-500" />}
+      {!isToday && (
+        <div className="absolute left-0 top-3 bottom-3 w-1 rounded-full bg-blue-500" />
+      )}
 
       <div
         className={`flex-shrink-0 w-11 h-11 rounded-xl flex flex-col items-center
@@ -564,7 +565,7 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
         }),
       ).unwrap();
       message.success("Hearing report filed and calendar synced");
-      dispatch(fetchUpcomingHearings({ limit: 50, days: 30 }));
+      dispatch(fetchUpcomingHearings({ range: "all", limit: 50 }));
       dispatch(getAllEvents({}));
       setActivePanel("none");
       onClose();
@@ -800,7 +801,11 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
                                  : "border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100 hover:border-blue-300"
                            }`}>
                 <EditOutlined />
-                {hasReport ? "Update Report" : isToday ? "File Today's Report" : "File Report"}
+                {hasReport
+                  ? "Update Report"
+                  : isToday
+                    ? "File Today's Report"
+                    : "File Report"}
               </button>
             </div>
           )}
@@ -965,7 +970,7 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchUpcomingHearings({ limit: 50, days: 30 }));
+    dispatch(fetchUpcomingHearings({ range: "all", limit: 50 }));
   }, [dispatch]);
 
   const { todayReports, urgentSimple, upcomingSimple, hearingNoticeRequired } =
@@ -1217,7 +1222,7 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
                         size="small"
                         onClick={() =>
                           dispatch(
-                            fetchUpcomingHearings({ limit: 50, days: 30 }),
+                            fetchUpcomingHearings({ range: "all", limit: 50 }),
                           )
                         }>
                         Retry

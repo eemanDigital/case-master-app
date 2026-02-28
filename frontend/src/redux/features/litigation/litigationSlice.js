@@ -23,7 +23,7 @@ const initialState = {
   stats: null,
   dashboard: null,
   upcomingHearings: [],
-  hearingsStats: { total: 0, today: 0, thisWeek: 0, pending: 0, completed: 0 },
+  hearingsStats: { total: 0, today: 0, thisWeek: 0, nextWeek: 0, thisMonth: 0, pending: 0, completed: 0 },
   matterHearings: [],
   matterHearingsStats: {
     total: 0,
@@ -955,13 +955,15 @@ const litigationSlice = createSlice({
       })
       .addCase(fetchUpcomingHearings.fulfilled, (state, action) => {
         state.loading = false;
-        // New API returns { data: { hearings: [], counts: {} } }
-        const responseData = action.payload.data;
-        state.upcomingHearings = responseData?.hearings || responseData || [];
-        state.hearingsStats = responseData?.counts || {
+        // API returns { status, results, stats, data: [] }
+        const responseData = action.payload;
+        state.upcomingHearings = responseData?.data || [];
+        state.hearingsStats = responseData?.stats || {
           total: 0,
           today: 0,
           thisWeek: 0,
+          nextWeek: 0,
+          thisMonth: 0,
           pending: 0,
           completed: 0,
         };
@@ -974,6 +976,8 @@ const litigationSlice = createSlice({
           total: 0,
           today: 0,
           thisWeek: 0,
+          nextWeek: 0,
+          thisMonth: 0,
           pending: 0,
           completed: 0,
         };

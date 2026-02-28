@@ -108,15 +108,15 @@ html(lang="en")
 
 body
   .header
-    h1= firmName
-    .subtitle LEGAL PRACTITIONERS & SOLICITORS
+    h1= firm ? firm.name : firmName
+    .subtitle #{firm && firm.address ? firm.address : 'LEGAL PRACTITIONERS & SOLICITORS'}
   
   .period
     .period-name UPCOMING HEARINGS - #{periodName}
     .period-dates #{startDate} - #{endDate}
   
   .stats
-    .stat Total Cases: #{hearings.length}
+    .stat Total Cases: #{totalHearings || hearings.length}
   
   if hearings && hearings.length > 0
     table

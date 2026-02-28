@@ -11,72 +11,106 @@ import {
 import { getRelativeTime, formatName } from "../../../utils/formatters";
 
 const UpcomingHearingsWidget = ({ hearings = [], loading, onViewAll }) => {
-  // Process hearings to extract upcoming ones with assigned lawyers
+  // Process hearings - supports both old format (nested) and new format (flat)
   const processUpcomingHearings = () => {
     const upcoming = [];
-    const hearingsCopy = [...hearings];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    hearingsCopy.forEach((matter) => {
-      if (!matter) return;
+    hearings.forEach((item) => {
+      if (!item) return;
 
-      const litigationDetail = { ...matter };
-      const hearingsList = litigationDetail?.hearings
-        ? [...litigationDetail.hearings]
-        : [];
+      // Check if it's the new flat format (has matterId directly)
+      const isNewFormat = item.matterId && item.suitNo;
+      
+      if (isNewFormat) {
+        // New flat format from getUpcomingHearings API
+        const displayDate = item.nextHearingDate || item.date;
+        if (!displayDate) return;
 
-      const matterDetails = litigationDetail?.matter
-        ? { ...litigationDetail.matter }
-        : {};
+        const displayDateObj = new Date(displayDate);
+        displayDateObj.setHours(0, 0, 0, 0);
 
-      if (litigationDetail.nextHearingDate) {
-        // Find the hearing with this next date to get assigned lawyers
-        const hearingWithNextDate = hearingsList.find(
-          (h) =>
-            h.nextHearingDate &&
-            new Date(h.nextHearingDate).getTime() ===
-              new Date(litigationDetail.nextHearingDate).getTime(),
-        );
+        // Only include future hearings
+        if (displayDateObj >= today) {
+          upcoming.push({
+            id: item._id || `hearing-${Date.now()}-${Math.random()}`,
+            suitNo: item.suitNo || "—",
+            courtName: item.courtName || "",
+            courtNo: item.courtNo || "",
+            courtLocation: item.courtLocation || "",
+            state: item.state || "",
+            nextHearingDate: displayDate,
+            lastHearingDate: null,
+            currentStage: item.currentStage || "unknown",
+            matterId: item.matterId || null,
+            matterNumber: item.matter?.matterNumber || "—",
+            matterTitle: item.matter?.title || item.matterTitle || "Untitled Matter",
+            client: item.matter?.client || item.client || null,
+            accountOfficer: item.matter?.accountOfficer || [],
+            assignedLawyers: [],
+            status: item.matter?.status || "unknown",
+            priority: item.matter?.priority || "medium",
+            lawyersPresent: item.lawyerPresent || [],
+            purpose: item.purpose || "",
+            outcome: item.outcome || null,
+          });
+        }
+      } else {
+        // Old nested format
+        const litigationDetail = { ...item };
+        const hearingsList = litigationDetail?.hearings
+          ? [...litigationDetail.hearings]
+          : [];
 
-        const upcomingHearing = {
-          id: litigationDetail._id || `hearing-${Date.now()}-${Math.random()}`,
-          suitNo: litigationDetail.suitNo || "—",
-          courtName: litigationDetail.courtName || "",
-          courtNo: litigationDetail.courtNo || "",
-          courtLocation: litigationDetail.courtLocation || "",
-          state: litigationDetail.state || "",
-          nextHearingDate: litigationDetail.nextHearingDate,
-          lastHearingDate: litigationDetail.lastHearingDate || null,
-          currentStage: litigationDetail.currentStage || "unknown",
-          matterId: matterDetails._id || null,
-          matterNumber: matterDetails.matterNumber || "—",
-          matterTitle: matterDetails.title || "Untitled Matter",
-          client: matterDetails.client || null,
-          accountOfficer: matterDetails.accountOfficer || [],
-          assignedLawyers: matterDetails.assignedLawyers || [],
-          status: matterDetails.status || "unknown",
-          priority: matterDetails.priority || "medium",
-          // Lawyers assigned to appear in court
-          lawyersPresent: hearingWithNextDate?.lawyerPresent || [],
-          purpose: hearingWithNextDate?.purpose || "",
-          latestHearing:
-            hearingsList.length > 0
-              ? {
-                  ...hearingsList.sort(
-                    (a, b) => new Date(b.date || 0) - new Date(a.date || 0),
-                  )[0],
-                }
-              : null,
-        };
+        const matterDetails = litigationDetail?.matter
+          ? { ...litigationDetail.matter }
+          : {};
 
-        upcoming.push(upcomingHearing);
+        if (litigationDetail.nextHearingDate) {
+          const hearingWithNextDate = hearingsList.find(
+            (h) =>
+              h.nextHearingDate &&
+              new Date(h.nextHearingDate).getTime() ===
+                new Date(litigationDetail.nextHearingDate).getTime(),
+          );
+
+          const upcomingHearing = {
+            id: litigationDetail._id || `hearing-${Date.now()}-${Math.random()}`,
+            suitNo: litigationDetail.suitNo || "—",
+            courtName: litigationDetail.courtName || "",
+            courtNo: litigationDetail.courtNo || "",
+            courtLocation: litigationDetail.courtLocation || "",
+            state: litigationDetail.state || "",
+            nextHearingDate: litigationDetail.nextHearingDate,
+            lastHearingDate: litigationDetail.lastHearingDate || null,
+            currentStage: litigationDetail.currentStage || "unknown",
+            matterId: matterDetails._id || null,
+            matterNumber: matterDetails.matterNumber || "—",
+            matterTitle: matterDetails.title || "Untitled Matter",
+            client: matterDetails.client || null,
+            accountOfficer: matterDetails.accountOfficer || [],
+            assignedLawyers: matterDetails.assignedLawyers || [],
+            status: matterDetails.status || "unknown",
+            priority: matterDetails.priority || "medium",
+            lawyersPresent: hearingWithNextDate?.lawyerPresent || [],
+            purpose: hearingWithNextDate?.purpose || "",
+            latestHearing:
+              hearingsList.length > 0
+                ? {
+                    ...hearingsList.sort(
+                      (a, b) => new Date(b.date || 0) - new Date(a.date || 0),
+                    )[0],
+                  }
+                : null,
+          };
+
+          upcoming.push(upcomingHearing);
+        }
       }
     });
 
-    const filtered = upcoming.filter(
-      (m) => m.nextHearingDate && new Date(m.nextHearingDate) > new Date(),
-    );
-
-    return [...filtered].sort((a, b) => {
+    return [...upcoming].sort((a, b) => {
       const dateA = new Date(a.nextHearingDate || 0).getTime();
       const dateB = new Date(b.nextHearingDate || 0).getTime();
       return dateA - dateB;
