@@ -955,8 +955,10 @@ const litigationSlice = createSlice({
       })
       .addCase(fetchUpcomingHearings.fulfilled, (state, action) => {
         state.loading = false;
-        state.upcomingHearings = action.payload.data || [];
-        state.hearingsStats = action.payload.stats || {
+        // New API returns { data: { hearings: [], counts: {} } }
+        const responseData = action.payload.data;
+        state.upcomingHearings = responseData?.hearings || responseData || [];
+        state.hearingsStats = responseData?.counts || {
           total: 0,
           today: 0,
           thisWeek: 0,
