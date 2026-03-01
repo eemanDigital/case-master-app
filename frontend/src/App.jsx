@@ -190,7 +190,7 @@ const PaymentMadeOnCase = lazy(() => import("./pages/PaymentMadeOnCase.jsx"));
 
 // Documents Management
 const DocumentsList = lazy(() => import("./components/DocumentsList.jsx"));
-const DocumentRecord = lazy(() => import("./pages/DocumentRecord.jsx"));
+const DocumentRecordForm = lazy(() => import("./pages/DocumentRecordForm.jsx"));
 const DocumentRecordList = lazy(() => import("./pages/DocumentRecordList.jsx"));
 const DocumentRecordDetails = lazy(
   () => import("./pages/DocumentRecordDetails.jsx"),
@@ -1034,7 +1034,7 @@ const router = createBrowserRouter(
             path="record-documents"
             element={
               <Suspense fallback={<PageLoader />}>
-                <DocumentRecord />
+                <DocumentRecordForm />
               </Suspense>
             }
           />

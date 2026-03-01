@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import deleteService from "./deleteService";
-// import { toast } from "react-toastify";
 
 const initialState = {
   isLoading: false,
@@ -9,12 +8,62 @@ const initialState = {
   message: "",
 };
 
-// delete Data
 export const deleteData = createAsyncThunk(
   "delete/deleteData",
   async (endpoints, thunkAPI) => {
     try {
       return await deleteService.deleteData(endpoints);
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+export const postData = createAsyncThunk(
+  "delete/postData",
+  async ({ endpoint, data }, thunkAPI) => {
+    try {
+      return await deleteService.postData({ endpoint, data });
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+export const putData = createAsyncThunk(
+  "delete/putData",
+  async ({ endpoint, data }, thunkAPI) => {
+    try {
+      return await deleteService.putData({ endpoint, data });
+    } catch (error) {
+      const message =
+        (error.response &&
+          error.response.data &&
+          error.response.data.message) ||
+        error.message ||
+        error.toString();
+      return thunkAPI.rejectWithValue(message);
+    }
+  }
+);
+
+export const patchData = createAsyncThunk(
+  "delete/patchData",
+  async ({ endpoint, data }, thunkAPI) => {
+    try {
+      return await deleteService.patchData({ endpoint, data });
     } catch (error) {
       const message =
         (error.response &&
@@ -40,7 +89,6 @@ const deleteSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // delete user
       .addCase(deleteData.pending, (state) => {
         state.isLoading = true;
       })
@@ -48,13 +96,50 @@ const deleteSlice = createSlice({
         state.isSuccess = true;
         state.isLoading = false;
         state.message = action.payload;
-        // toast.success(action.payload);
       })
       .addCase(deleteData.rejected, (state, action) => {
         state.isError = true;
         state.isLoading = false;
         state.message = action.payload;
-        // toast.error(action.payload);
+      })
+      .addCase(postData.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(postData.fulfilled, (state, action) => {
+        state.isSuccess = true;
+        state.isLoading = false;
+        state.message = action.payload;
+      })
+      .addCase(postData.rejected, (state, action) => {
+        state.isError = true;
+        state.isLoading = false;
+        state.message = action.payload;
+      })
+      .addCase(putData.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(putData.fulfilled, (state, action) => {
+        state.isSuccess = true;
+        state.isLoading = false;
+        state.message = action.payload;
+      })
+      .addCase(putData.rejected, (state, action) => {
+        state.isError = true;
+        state.isLoading = false;
+        state.message = action.payload;
+      })
+      .addCase(patchData.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(patchData.fulfilled, (state, action) => {
+        state.isSuccess = true;
+        state.isLoading = false;
+        state.message = action.payload;
+      })
+      .addCase(patchData.rejected, (state, action) => {
+        state.isError = true;
+        state.isLoading = false;
+        state.message = action.payload;
       });
   },
 });

@@ -11,6 +11,21 @@ const {
   getDocumentsByRecipient,
   getDocumentsByForwardedTo,
   getDocumentsByDateRange,
+  getDocumentsByStatus,
+  getDocumentsByPriority,
+  updateDocumentStatus,
+  forwardDocument,
+  addInternalNote,
+  addAttachment,
+  bulkUpdateStatus,
+  bulkDelete,
+  bulkPermanentDelete,
+  softDeleteDocumentRecord,
+  restoreDocumentRecord,
+  getTrash,
+  getDocumentStats,
+  exportDocuments,
+  getActivityLog,
 } = require("../controllers/documentRecordController");
 const { protect } = require("../controllers/authController");
 
@@ -18,19 +33,34 @@ const router = express.Router();
 
 router.use(protect);
 
-// CRUD operations
+router.get("/stats", getDocumentStats);
+router.get("/export", exportDocuments);
+router.get("/trash", getTrash);
+router.post("/bulk-update-status", bulkUpdateStatus);
+router.post("/bulk-delete", bulkDelete);
+router.post("/bulk-permanent-delete", bulkPermanentDelete);
+
 router.post("/", addDocumentRecord);
-router.get("/", getAllDocumentRecords); // Main endpoint with pagination, filtering, sorting
+router.get("/", getAllDocumentRecords);
 router.get("/:id", getDocumentRecord);
 router.patch("/:id", updateDocumentRecord);
 router.delete("/:id", deleteDocumentRecord);
 
-// Advanced search and filtering endpoints
-router.post("/search", searchDocumentRecords); // Advanced search with criteria
-router.get("/type/:documentType", getDocumentsByType); // Filter by document type
-router.get("/sender/:sender", getDocumentsBySender); // Filter by sender name
-router.get("/recipient/:recipientId", getDocumentsByRecipient); // Filter by recipient
-router.get("/forwarded-to/:forwardedToId", getDocumentsByForwardedTo); // Filter by forwarded user
-router.get("/date-range/filter", getDocumentsByDateRange); // Filter by date range
+router.patch("/:id/status", updateDocumentStatus);
+router.post("/:id/forward", forwardDocument);
+router.post("/:id/notes", addInternalNote);
+router.post("/:id/attachments", addAttachment);
+router.patch("/:id/restore", restoreDocumentRecord);
+router.delete("/:id/soft-delete", softDeleteDocumentRecord);
+router.get("/:id/activity", getActivityLog);
+
+router.post("/search", searchDocumentRecords);
+router.get("/type/:documentType", getDocumentsByType);
+router.get("/sender/:sender", getDocumentsBySender);
+router.get("/recipient/:recipientId", getDocumentsByRecipient);
+router.get("/forwarded-to/:forwardedToId", getDocumentsByForwardedTo);
+router.get("/date-range/filter", getDocumentsByDateRange);
+router.get("/status/:status", getDocumentsByStatus);
+router.get("/priority/:priority", getDocumentsByPriority);
 
 module.exports = router;
