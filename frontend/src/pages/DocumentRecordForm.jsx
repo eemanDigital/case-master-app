@@ -68,7 +68,7 @@ const DocumentRecordForm = () => {
   const [responseRequired, setResponseRequired] = useState(false);
   const [isUrgent, setIsUrgent] = useState(false);
 
-  const { staff: userData, loading: userLoading } = useUserSelectOptions({
+  const { allUsers: userOptions, loading: userLoading } = useUserSelectOptions({
     fetchAll: true,
   });
 
@@ -309,10 +309,14 @@ const DocumentRecordForm = () => {
                       ]}>
                       <Select
                         placeholder="Select initial recipient"
-                        options={userData}
+                        options={userOptions}
                         allowClear
                         className="w-full"
                         loading={userLoading}
+                        showSearch
+                        filterOption={(input, option) =>
+                          option.label.toLowerCase().includes(input.toLowerCase())
+                        }
                       />
                     </Form.Item>
                   </Col>
@@ -321,10 +325,14 @@ const DocumentRecordForm = () => {
                     <Form.Item label="Forwarded To" name="forwardedTo">
                       <Select
                         placeholder="Select person to forward to"
-                        options={userData}
+                        options={userOptions}
                         allowClear
                         className="w-full"
                         loading={userLoading}
+                        showSearch
+                        filterOption={(input, option) =>
+                          option.label.toLowerCase().includes(input.toLowerCase())
+                        }
                       />
                     </Form.Item>
                   </Col>

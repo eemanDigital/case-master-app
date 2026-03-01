@@ -106,7 +106,7 @@ const DocumentRecordList = () => {
   const { Column } = Table;
   const dispatch = useDispatch();
   const isInitialMount = useRef(true);
-  const { staff: userData } = useUserSelectOptions({ fetchAll: true });
+  const { allUsers: userOptions } = useUserSelectOptions({ fetchAll: true });
 
   useRedirectLogoutUser("/users/login");
 

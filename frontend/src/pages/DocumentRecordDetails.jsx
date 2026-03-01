@@ -80,7 +80,7 @@ const DocumentRecordDetails = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get("tab") || "details";
   const { dataFetcher, data, loading, error } = useDataFetch();
-  const { staff: userData } = useUserSelectOptions({ fetchAll: true });
+  const { allUsers: userOptions } = useUserSelectOptions({ fetchAll: true });
   const dispatch = useDispatch();
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [forwardModalVisible, setForwardModalVisible] = useState(false);
@@ -569,7 +569,7 @@ const DocumentRecordDetails = () => {
           >
             <Select
               placeholder="Select recipient"
-              options={userData}
+              options={userOptions}
               showSearch
             />
           </Form.Item>
