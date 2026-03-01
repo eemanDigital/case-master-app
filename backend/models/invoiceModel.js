@@ -410,7 +410,6 @@ invoiceSchema.methods.addPayment = async function (paymentData) {
     firmId: this.firmId,
     invoice: this._id,
     client: this.client,
-    case: this.case || undefined,
     matter: this.matter || undefined,
   });
 
@@ -457,7 +456,6 @@ invoiceSchema.index({ firmId: 1, client: 1, status: 1 });
 invoiceSchema.index({ firmId: 1, dueDate: 1 });
 invoiceSchema.index({ firmId: 1, status: 1, dueDate: 1 });
 invoiceSchema.index({ firmId: 1, isDeleted: 1 });
-invoiceSchema.index({ firmId: 1, case: 1 });
 invoiceSchema.index({ firmId: 1, matter: 1 });
 invoiceSchema.index({ firmId: 1, createdBy: 1 });
 

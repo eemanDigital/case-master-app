@@ -54,12 +54,12 @@ const PaymentMadeOnMatter = () => {
 
   const paymentInvoiceIds = paymentData.map((item) => item.invoiceId);
   const matchedInvoices = invoices?.data?.filter((invoice) =>
-    paymentInvoiceIds?.includes(invoice?._id)
+    paymentInvoiceIds?.includes(invoice?._id),
   );
 
   const totalAmountDue = matchedInvoices?.reduce(
     (acc, invoice) => acc + invoice?.totalAmountDue,
-    0
+    0,
   );
 
   const balance = totalAmountDue - totalPayment;

@@ -168,7 +168,7 @@ const CreateInvoiceForm = lazy(
 );
 const InvoiceDetails = lazy(() => import("./pages/InvoiceDetails.jsx"));
 const UpdateInvoice = lazy(() => import("./pages/UpdateInvoice.jsx"));
-const PaymentMadeOnMatter = lazy(() => import("./pages/PaymentMadeOnCase.jsx"));
+const PaymentMadeOnMatter = lazy(() => import("./pages/PaymentMadeOnMatter.jsx"));
 
 // Documents Management
 const DocumentsList = lazy(() => import("./components/DocumentsList.jsx"));
@@ -186,6 +186,10 @@ const NoteDetail = lazy(() => import("./pages/NoteDetail.jsx"));
 
 // Calendar & Events
 const EventDetail = lazy(() => import("./pages/EventDetail.jsx"));
+
+// Settings & Integrations
+const AuditLogList = lazy(() => import("./pages/AuditLogList.jsx"));
+const WebhookList = lazy(() => import("./pages/WebhookList.jsx"));
 
 // Support
 const ContactForm = lazy(() => import("./components/ContactForm.jsx"));
@@ -1001,6 +1005,28 @@ const router = createBrowserRouter(
             element={
               <Suspense fallback={<PageLoader />}>
                 <EventDetail />
+              </Suspense>
+            }
+          />
+
+          {/* Settings & Integrations */}
+          <Route
+            path="settings/audit-logs"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProtectedStaffRoute>
+                  <AuditLogList />
+                </ProtectedStaffRoute>
+              </Suspense>
+            }
+          />
+          <Route
+            path="settings/webhooks"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProtectedStaffRoute>
+                  <WebhookList />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />

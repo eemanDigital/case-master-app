@@ -21,6 +21,8 @@ import {
   GlobalOutlined,
   ReconciliationOutlined,
   ProfileOutlined,
+  SettingOutlined,
+  ApiOutlined,
 } from "@ant-design/icons";
 import { logout, RESET } from "../redux/features/auth/authSlice";
 import { useTheme } from "../providers/ThemeProvider";
@@ -96,12 +98,6 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
     // Other paths
     else if (path.includes("/dashboard/case-reports")) {
       setSelectedKeys(["reports"]);
-      setOpenKeys([]);
-    } else if (path.includes("/dashboard/cases")) {
-      setSelectedKeys(["cases"]);
-      setOpenKeys([]);
-    } else if (path.includes("/dashboard/cause-list")) {
-      setSelectedKeys(["cause-list"]);
       setOpenKeys([]);
     } else if (path.includes("/dashboard/tasks")) {
       setSelectedKeys(["tasks"]);
@@ -299,6 +295,25 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
       icon: <DollarOutlined />,
       label: "Billing",
       path: "/dashboard/billings",
+    },
+    {
+      key: "settings",
+      icon: <SettingOutlined />,
+      label: "Settings",
+      children: [
+        {
+          key: "audit-logs",
+          icon: <AuditOutlined />,
+          label: "Audit Logs",
+          path: "/dashboard/settings/audit-logs",
+        },
+        {
+          key: "webhooks",
+          icon: <ApiOutlined />,
+          label: "Webhooks",
+          path: "/dashboard/settings/webhooks",
+        },
+      ],
     },
     {
       key: "support",

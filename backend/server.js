@@ -33,6 +33,7 @@ const contactRouter = require("./routes/contactRoutes");
 const noteRouter = require("./routes/noteRoutes");
 const documentRecordRouter = require("./routes/documentRecordRoute");
 const webhookRouter = require("./routes/webhookRoutes");
+const auditLogRouter = require("./routes/auditLogRoutes");
 
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
@@ -326,6 +327,7 @@ app.use("/api/v1/events", eventRouter);
 app.use("/api/v1/notes", noteRouter);
 app.use("/api/v1/documentRecord", documentRecordRouter);
 app.use("/api/v1/webhooks", webhookRouter);
+app.use("/api/v1/audit-logs", auditLogRouter);
 
 // Root endpoint
 app.get("/", (req, res) => {

@@ -26,7 +26,6 @@ exports.getAllInvoices = catchAsync(async (req, res, next) => {
     search,
     status,
     client,
-    case: caseId,
     sort = "-createdAt",
   } = req.query;
 
@@ -68,11 +67,6 @@ exports.getAllInvoices = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Case filter
-  if (caseId) {
-    filter.case = caseId;
-  }
-
   // ✅ Exclude soft-deleted invoices
   filter.isDeleted = { $ne: true };
 
@@ -80,7 +74,7 @@ exports.getAllInvoices = catchAsync(async (req, res, next) => {
 
   const invoices = await Invoice.find(filter)
     .populate("client", "firstName lastName email phone")
-    .populate("case", "firstParty secondParty suitNo")
+
     .sort(sort)
     .skip(skip)
     .limit(parseInt(limit));
@@ -421,10 +415,7 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
   // Populate the saved invoice
   const updatedInvoice = await Invoice.findById(invoice._id)
     .populate("client", "firstName lastName email phone address company")
-    .populate(
-      "case",
-      "firstParty secondParty suitNo caseStatus matterReference",
-    )
+
     .populate("timekeeper", "firstName lastName email position")
     .populate("billingAttorney", "firstName lastName email position");
 
@@ -487,7 +478,7 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
     isDeleted: { $ne: true },
   })
     .populate("client", "firstName lastName email phone address")
-    .populate("case", "firstParty secondParty suitNo courtName caseStatus")
+
     .populate("matter", "title matterNumber matterType");
 
   if (!invoice) {
@@ -632,7 +623,7 @@ exports.getInvoicesByStatus = catchAsync(async (req, res, next) => {
 
   const invoices = await Invoice.find(filter)
     .populate("client", "firstName lastName email")
-    .populate("case", "firstParty secondParty suitNo")
+
     .sort({ dueDate: 1 })
     .skip(skip)
     .limit(parseInt(limit));
@@ -673,7 +664,7 @@ exports.getOverdueInvoices = catchAsync(async (req, res, next) => {
 
   const overdueInvoices = await Invoice.find(filter)
     .populate("client", "firstName lastName email phone")
-    .populate("case", "firstParty secondParty suitNo")
+
     .sort({ dueDate: 1 })
     .skip(skip)
     .limit(parseInt(limit));
@@ -803,12 +794,12 @@ exports.generateReceiptPdf = catchAsync(async (req, res, next) => {
       path: "invoice",
       populate: [
         { path: "client", select: "firstName lastName email phone address" },
-        { path: "case", select: "firstParty secondParty suitNo courtName" },
+
         { path: "matter", select: "title matterNumber matterType" },
       ],
     })
     .populate("client", "firstName lastName email phone")
-    .populate("case", "firstParty secondParty suitNo")
+
     .populate("matter", "title matterNumber");
 
   if (!payment) {

@@ -2,9 +2,7 @@ const pdf = require("pdf-creator-node");
 const path = require("path");
 const pug = require("pug");
 const fs = require("fs");
-const pdfoptions = require("./pdfoptions");
 
-// Ensure output directory exists
 const ensureOutputDir = (filePath) => {
   const dir = path.dirname(filePath);
   if (!fs.existsSync(dir)) {
@@ -12,7 +10,6 @@ const ensureOutputDir = (filePath) => {
   }
 };
 
-// Clean up old PDF files (older than 1 hour)
 const cleanupOldPdfs = () => {
   const outputDir = path.resolve(__dirname, "../output");
   if (!fs.existsSync(outputDir)) return;
@@ -34,17 +31,13 @@ const cleanupOldPdfs = () => {
   }
 };
 
-// Run cleanup on startup
 cleanupOldPdfs();
 
-// pdf generator with timeout
 exports.generatePdf = (dataValue, res, templateFile, fileOutPath) => {
-  // Handle template path - use as-is if absolute, resolve if relative
   const templatePath = path.isAbsolute(templateFile) 
     ? templateFile 
     : path.resolve(__dirname, templateFile);
   
-  // Handle output path - use as-is if absolute, resolve if relative
   const outputPath = path.isAbsolute(fileOutPath)
     ? fileOutPath
     : path.resolve(__dirname, fileOutPath);
@@ -52,56 +45,52 @@ exports.generatePdf = (dataValue, res, templateFile, fileOutPath) => {
   console.log("Template path:", templatePath);
   console.log("Output path:", outputPath);
   
-  // Ensure output directory exists
   ensureOutputDir(outputPath);
   
-  // Set timeout for pug rendering
-  const pugTimeout = setTimeout(() => {
-    console.error("Pug rendering timeout");
-    res.status(500).json({ error: "PDF generation timeout. Please try again." });
-  }, 30000); // 30 seconds
+  let html;
+  try {
+    html = pug.renderFile(templatePath, dataValue);
+  } catch (err) {
+    console.error("Pug render error:", err);
+    return res.status(500).json({ error: err.message });
+  }
   
-  pug.renderFile(
-    templatePath,
-    dataValue,
-    function (err, html) {
-      clearTimeout(pugTimeout);
-      
-      if (err) {
-        console.error("Pug render error:", err);
-        return res.status(500).json({ error: err.message });
-      }
-      
-      // Get firm from dataValue and pass to pdfoptions
-      const firm = dataValue?.firm || {};
-      const options = typeof pdfoptions === 'function' ? pdfoptions(firm) : pdfoptions;
+  const firm = dataValue?.firm || {};
+  const options = {
+    format: "A4",
+    orientation: "portrait",
+    border: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" },
+    header: {
+      height: "15mm",
+      contents: `<div style="text-align: center; font-size: 10pt; color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 8px; font-weight: 600;">${firm.name || 'Law Firm'}</div>`
+    },
+    footer: {
+      height: "12mm",
+      contents: `<div style="text-align: center; font-size: 9pt; color: #777; border-top: 1px solid #ddd; padding-top: 6px;">Page <span style="font-weight: bold;">{{page}}</span> of <span style="font-weight: bold;">{{pages}}</span></div>`
+    },
+    timeout: 180000,
+  };
 
-      console.log("PDF options:", JSON.stringify(options, null, 2));
+  const document = {
+    html: html,
+    data: dataValue,
+    path: outputPath,
+  };
 
-      const document = {
-        html: html,
-        data: dataValue,
-        path: outputPath,
-      };
+  const pdfTimeout = setTimeout(() => {
+    console.error("PDF creation timeout");
+    res.status(500).json({ error: "PDF generation timeout. Please try again." });
+  }, 180000);
 
-      // Set timeout for PDF creation
-      const pdfTimeout = setTimeout(() => {
-        console.error("PDF creation timeout");
-        res.status(500).json({ error: "PDF generation timeout. Please try again." });
-      }, 60000); // 60 seconds
-
-      pdf
-        .create(document, options)
-        .then((result) => {
-          clearTimeout(pdfTimeout);
-          console.log("PDF created:", result);
-          res.sendFile(outputPath);
-        })
-        .catch((error) => {
-          clearTimeout(pdfTimeout);
-          console.error("PDF creation error:", error);
-          res.status(500).json({ error: error.message });
-        });
-    }
-  );
+  pdf.create(document, options)
+    .then((result) => {
+      clearTimeout(pdfTimeout);
+      console.log("PDF created:", result);
+      res.sendFile(outputPath);
+    })
+    .catch((error) => {
+      clearTimeout(pdfTimeout);
+      console.error("PDF creation error:", error);
+      res.status(500).json({ error: "PDF generation failed: " + error.message });
+    });
 };
