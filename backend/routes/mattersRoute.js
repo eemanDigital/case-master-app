@@ -72,7 +72,7 @@ matterRouter.get(
 
 matterRouter.get(
   "/",
-  restrictTo("admin", "lawyer", "hr", "staff"),
+  restrictTo("admin", "lawyer", "hr", "staff", "client"),
   matterController.getAllMatters,
 );
 

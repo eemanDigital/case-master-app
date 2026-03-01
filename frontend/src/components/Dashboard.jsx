@@ -20,7 +20,7 @@ import { Alert, Skeleton } from "antd";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import VerifyAccountNotice from "./VerifyAccountNotice";
 import QuickActionsPanel from "./QuickActionsPanel";
-import ClientCaseDashboard from "./clientDashboard/ClientCaseDashboard";
+import ClientMatterDashboard from "./clientDashboard/ClientMatterDashboard";
 import PaymentDashboard from "./PaymentDashboard";
 import CourtHearingsWidget from "./calender/CourtHearingsWidget";
 import { getMatterStats } from "../redux/features/matter/matterSlice";
@@ -78,16 +78,11 @@ const Dashboard = () => {
       try {
         // Fetch all essential data in parallel
         await Promise.all([
-          fetchData("cases/dashboard-stats", "dashboardStats"),
+          fetchData("matters/stats", "matterStats"),
           fetchBatch([
             { endpoint: "users", key: "users" },
-            { endpoint: "reports", key: "reports" },
             { endpoint: "tasks", key: "tasks" },
-            { endpoint: "reports/upcoming", key: "causeList" },
-            {
-              endpoint: "cases/account-officers/aggregate",
-              key: "accountOfficerAggregates",
-            },
+            { endpoint: "matters", key: "matters" },
           ]),
         ]);
       } catch (error) {
@@ -138,7 +133,7 @@ const Dashboard = () => {
           <ScrollingEvents />
         </ShowStaff>
 
-        {isClient && <ClientCaseDashboard />}
+        {isClient && <ClientMatterDashboard />}
 
         {isStaff && (
           <>
