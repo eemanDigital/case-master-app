@@ -2,12 +2,9 @@ import PropTypes from "prop-types";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import moment from "moment";
 import {
-  List,
-  Tag,
   Card,
   Avatar,
   Progress,
-  Empty,
   Button,
   Tabs,
   Row,
@@ -15,10 +12,10 @@ import {
   Tooltip,
   Dropdown,
   Modal,
-  Space,
 } from "antd";
 import {
   ClockCircleOutlined,
+  CheckCircleFilled,
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   CalendarOutlined,
@@ -30,9 +27,7 @@ import {
   EyeOutlined,
   EditOutlined,
   MoreOutlined,
-  FileTextOutlined,
   SyncOutlined,
-  ExclamationCircleFilled,
   FileSearchOutlined,
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";

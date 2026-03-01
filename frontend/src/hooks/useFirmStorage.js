@@ -37,6 +37,14 @@ const useFirmStorage = () => {
     fetchStorageInfo();
   };
 
+  // Helper to format storage display
+  const formatStorage = (gb) => {
+    if (gb < 1) {
+      return `${(gb * 1024).toFixed(1)} MB`;
+    }
+    return `${gb} GB`;
+  };
+
   return {
     storageInfo,
     loading,
@@ -46,9 +54,12 @@ const useFirmStorage = () => {
     isAtLimit: storageInfo?.isAtLimit || false,
     usagePercentage: storageInfo?.usagePercentage || 0,
     storageUsedGB: storageInfo?.storageUsedGB || 0,
+    storageUsedMB: storageInfo?.storageUsedMB || 0,
     storageLimitGB: storageInfo?.storageLimitGB || 0,
     storageAvailableGB: storageInfo?.storageAvailableGB || 0,
     plan: storageInfo?.plan || "FREE",
+    totalFiles: storageInfo?.totalFiles || 0,
+    formatStorage,
   };
 };
 

@@ -1038,7 +1038,7 @@ const DocumentsList = ({
       {isNearLimit && !isAtLimit && (
         <Alert
           message="Storage Warning"
-          description={`You've used ${usagePercentage}% of your ${storageLimitGB}GB storage. Consider upgrading your plan.`}
+          description={`You've used ${usagePercentage}% of your ${storageLimitGB}GB storage (${storageUsedGB < 1 ? `${(storageUsedGB * 1024).toFixed(1)} MB` : `${storageUsedGB} GB`}). Consider upgrading your plan.`}
           type="warning"
           showIcon
           icon={<WarningOutlined />}
@@ -1094,7 +1094,9 @@ const DocumentsList = ({
                   <div className="mt-3">
                     <div className="flex justify-between items-center mb-1">
                       <Text type="secondary" className="text-xs">
-                        Storage: {storageUsedGB} GB / {storageLimitGB} GB ({usagePercentage}%)
+                        Storage: {storageUsedGB < 1 
+                          ? `${(storageUsedGB * 1024).toFixed(1)} MB` 
+                          : `${storageUsedGB} GB`} / {storageLimitGB} GB ({usagePercentage}%)
                       </Text>
                       <Tag color={isAtLimit ? "red" : isNearLimit ? "orange" : "blue"}>
                         {plan} Plan

@@ -1595,7 +1595,17 @@ exports.checkStorageLimit = catchAsync(async (req, res, next) => {
     return next(new AppError("Firm not found", 404));
   }
 
-  const fileSizeGB = req.file ? req.file.size / (1024 * 1024 * 1024) : 0;
+  // Handle single file, multiple files, or no file
+  let fileSizeBytes = 0;
+  if (req.file) {
+    // Single file upload
+    fileSizeBytes = req.file.size;
+  } else if (req.files && Array.isArray(req.files)) {
+    // Multiple files upload
+    fileSizeBytes = req.files.reduce((sum, f) => sum + f.size, 0);
+  }
+
+  const fileSizeGB = fileSizeBytes / (1024 * 1024 * 1024);
   const availableGB = firm.limits.storageGB - firm.usage.storageUsedGB;
 
   if (!firm.hasStorageAvailable(fileSizeGB)) {

@@ -69,6 +69,7 @@ export const useAdminHook = () => {
     "hr",
     "secretary",
     "super-admin",
+    "lawyer",
   ]);
   const isLawyer = hasRole("lawyer") || isLawyerFlag;
   const isSecretary = hasRole("secretary");

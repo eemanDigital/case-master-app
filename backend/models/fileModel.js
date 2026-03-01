@@ -194,11 +194,14 @@ fileSchema.methods.incrementDownloadCount = async function () {
 
 // Static methods
 fileSchema.statics.getUserStorageUsage = async function (firmId, userId) {
+  const firmObjectId = new mongoose.Types.ObjectId(firmId);
+  const userObjectId = new mongoose.Types.ObjectId(userId);
+  
   const result = await this.aggregate([
     {
       $match: {
-        firmId: mongoose.Types.ObjectId(firmId),
-        uploadedBy: mongoose.Types.ObjectId(userId),
+        firmId: firmObjectId,
+        uploadedBy: userObjectId,
         isDeleted: false,
       },
     },
@@ -218,6 +221,47 @@ fileSchema.statics.getUserStorageUsage = async function (firmId, userId) {
   ]);
 
   return result[0] || { totalFiles: 0, totalSize: 0, byCategory: [] };
+};
+
+// Get firm-wide storage usage (all users combined)
+fileSchema.statics.getFirmStorageUsage = async function (firmId) {
+  // Always convert to ObjectId — this is the only reliable match
+  let objectId;
+  try {
+    objectId = new mongoose.Types.ObjectId(firmId.toString());
+  } catch (e) {
+    throw new Error(`Invalid firmId: ${firmId}`);
+  }
+  
+  const result = await this.aggregate([
+    {
+      $match: {
+        firmId: objectId,
+        isDeleted: { $ne: true },
+      },
+    },
+    {
+      $group: {
+        _id: null,
+        totalFiles: { $sum: 1 },
+        totalSize: { $sum: "$fileSize" },
+      },
+    },
+  ]);
+
+  return result[0] || { totalFiles: 0, totalSize: 0 };
+};
+
+// Sync firm storage usage from all files (recalculate)
+fileSchema.statics.syncFirmStorageUsage = async function (firmId) {
+  const usage = await this.getFirmStorageUsage(firmId);
+  const usageGB = usage.totalSize / (1024 * 1024 * 1024);
+  
+  await Firm.findByIdAndUpdate(firmId, {
+    "usage.storageUsedGB": usageGB,
+  });
+  
+  return usageGB;
 };
 
 fileSchema.statics.getEntityFiles = async function (

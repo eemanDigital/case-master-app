@@ -154,9 +154,23 @@ const checkStorageLimit = async (firmId, fileSizeBytes) => {
  */
 const updateFirmStorage = async (firmId, fileSizeBytes) => {
   const fileSizeGB = fileSizeBytes / (1024 * 1024 * 1024);
-  const firm = await Firm.findById(firmId);
-  if (firm) {
-    await firm.updateStorageUsage(fileSizeGB);
+  
+  // Use atomic $inc operation
+  await Firm.findByIdAndUpdate(firmId, {
+    $inc: { "usage.storageUsedGB": fileSizeGB },
+  });
+  
+  // Clamp to 0 on deletion to avoid negative values
+  if (fileSizeGB < 0) {
+    await Firm.findByIdAndUpdate(firmId, [
+      {
+        $set: {
+          "usage.storageUsedGB": {
+            $max: [0, "$usage.storageUsedGB"],
+          },
+        },
+      },
+    ]);
   }
 };
 
@@ -755,7 +769,12 @@ exports.toggleArchive = async (req, res, next) => {
  */
 exports.getStorageUsage = async (req, res, next) => {
   try {
-    const usage = await File.getUserStorageUsage(req.firmId, req.user._id);
+    // Get firm-wide storage usage
+    const firmUsage = await File.getFirmStorageUsage(req.firmId);
+    const firmUsageGB = firmUsage.totalSize / (1024 * 1024 * 1024);
+
+    // Get user-specific storage usage (for display)
+    const userUsage = await File.getUserStorageUsage(req.firmId, req.user._id);
 
     // Get firm limits
     const firm = await Firm.findById(req.firmId);
@@ -764,25 +783,22 @@ exports.getStorageUsage = async (req, res, next) => {
           storageGB: firm.limits.storageGB,
           usedGB: firm.usage.storageUsedGB,
           availableGB: firm.limits.storageGB - firm.usage.storageUsedGB,
+          plan: firm.subscription.plan,
         }
       : null;
 
     res.status(200).json({
       status: "success",
       data: {
-        usage,
-        usageMB: {
-          totalFiles: usage.totalFiles || 0,
-          totalSize: usage.totalSize || 0,
-          totalSizeMB: ((usage.totalSize || 0) / (1024 * 1024)).toFixed(2),
-          byCategory:
-            usage.byCategory?.map((cat) => ({
-              category: cat.category,
-              size: cat.size,
-              sizeMB: (cat.size / (1024 * 1024)).toFixed(2),
-            })) || [],
+        firm: {
+          totalFiles: firmUsage.totalFiles || 0,
+          storageUsedGB: parseFloat(firmUsageGB.toFixed(4)),
         },
-        firmLimits: limits,
+        user: {
+          totalFiles: userUsage.totalFiles || 0,
+          totalSizeMB: ((userUsage.totalSize || 0) / (1024 * 1024)).toFixed(2),
+        },
+        limits,
       },
     });
   } catch (error) {

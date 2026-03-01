@@ -243,6 +243,30 @@ const firmSchema = new mongoose.Schema(
   }
 );
 
+// Pre-save hook to auto-apply plan limits
+firmSchema.pre("save", function (next) {
+  // Auto-apply plan limits when plan changes
+  if (this.isModified("subscription.plan")) {
+    this.applyPlanLimits();
+  }
+
+  // Check trial expiration
+  if (this.subscription.status === "TRIAL" && this.subscription.trialEndsAt < new Date()) {
+    this.subscription.status = "EXPIRED";
+  }
+
+  // Check subscription expiration
+  if (
+    this.subscription.status === "ACTIVE" &&
+    this.subscription.expiresAt &&
+    this.subscription.expiresAt < new Date()
+  ) {
+    this.subscription.status = "EXPIRED";
+  }
+
+  next();
+});
+
 /**
  * ======================
  * Indexes (optimized for queries)
@@ -361,6 +385,40 @@ firmSchema.methods.incrementCaseCount = async function () {
 firmSchema.methods.updateStorageUsage = async function (deltaGB) {
   this.usage.storageUsedGB = Math.max(0, this.usage.storageUsedGB + deltaGB);
   await this.save();
+};
+
+// Apply subscription plan limits
+firmSchema.methods.applyPlanLimits = function () {
+  const planLimits = {
+    FREE: {
+      users: 1,
+      storageGB: 5,
+      casesPerMonth: 10,
+    },
+    BASIC: {
+      users: 3,
+      storageGB: 20,
+      casesPerMonth: 50,
+    },
+    PRO: {
+      users: 10,
+      storageGB: 100,
+      casesPerMonth: 999999, // Unlimited
+    },
+    ENTERPRISE: {
+      users: 999999, // Unlimited
+      storageGB: 999999, // Unlimited
+      casesPerMonth: 999999, // Unlimited
+    },
+  };
+
+  const limits = planLimits[this.subscription.plan] || planLimits.FREE;
+  
+  this.limits.users = limits.users;
+  this.limits.storageGB = limits.storageGB;
+  this.limits.casesPerMonth = limits.casesPerMonth;
+  
+  return this;
 };
 
 /**
