@@ -21,9 +21,7 @@ const retainerRouter = require("./routes/retainerRoutes");
 const advisoryRouter = require("./routes/advisoryRoutes");
 const generalRouter = require("./routes/generalRoutes");
 const calendarRouter = require("./routes/calenderRoutes");
-const caseRouter = require("./routes/caseRoutes");
 const taskRouter = require("./routes/taskRoutes");
-const reportRouter = require("./routes/caseReportRoute");
 const leaveRouter = require("./routes/leaveRoutes");
 const invoiceRouter = require("./routes/invoiceRoutes");
 const paymentRouter = require("./routes/paymentRoutes");
@@ -34,6 +32,7 @@ const notificationRouter = require("./routes/notificationRoutes");
 const contactRouter = require("./routes/contactRoutes");
 const noteRouter = require("./routes/noteRoutes");
 const documentRecordRouter = require("./routes/documentRecordRoute");
+const webhookRouter = require("./routes/webhookRoutes");
 
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
@@ -315,9 +314,7 @@ app.use("/api/v1/retainers", retainerRouter);
 app.use("/api/v1/advisory", advisoryRouter);
 app.use("/api/v1/general", generalRouter);
 app.use("/api/v1/calendar", calendarRouter);
-app.use("/api/v1/cases", caseRouter);
 app.use("/api/v1/tasks", taskRouter);
-app.use("/api/v1/reports", reportRouter);
 app.use("/api/v1/leaves", leaveRouter);
 app.use("/api/v1/invoices", invoiceRouter);
 app.use("/api/v1/payments", paymentRouter);
@@ -328,6 +325,7 @@ app.use("/api/v1/contacts", contactRouter);
 app.use("/api/v1/events", eventRouter);
 app.use("/api/v1/notes", noteRouter);
 app.use("/api/v1/documentRecord", documentRecordRouter);
+app.use("/api/v1/webhooks", webhookRouter);
 
 // Root endpoint
 app.get("/", (req, res) => {

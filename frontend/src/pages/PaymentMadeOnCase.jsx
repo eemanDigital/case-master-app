@@ -6,18 +6,18 @@ import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import GoBackButton from "../components/GoBackButton";
 
-const PaymentMadeOnCase = () => {
+const PaymentMadeOnMatter = () => {
   const { dataFetcher, data, loading, error } = useDataFetch();
   const { invoices } = useDataGetterHook();
   const navigate = useNavigate();
-  const { clientId, caseId } = useParams();
-  useRedirectLogoutUser("/users/login"); // redirect to login if user is not logged in
+  const { clientId, matterId } = useParams();
+  useRedirectLogoutUser("/users/login");
 
   useEffect(() => {
-    if (clientId && caseId) {
-      dataFetcher(`payments/client/${clientId}/case/${caseId}`, "GET");
+    if (clientId && matterId) {
+      dataFetcher(`payments/client/${clientId}/matter/${matterId}`, "GET");
     }
-  }, [clientId, caseId, dataFetcher]);
+  }, [clientId, matterId, dataFetcher]);
 
   if (loading) {
     return (
@@ -88,10 +88,10 @@ const PaymentMadeOnCase = () => {
               {payment.client.firstName} {payment.client.secondName}
             </Descriptions.Item>
             <Descriptions.Item label="First Party">
-              {payment.case.firstParty.join(", ")}
+              {payment.matter.firstParty.join(", ")}
             </Descriptions.Item>
             <Descriptions.Item label="Second Party">
-              {payment.case.secondParty.join(", ")}
+              {payment.matter.secondParty.join(", ")}
             </Descriptions.Item>
           </Descriptions>
         ))}
@@ -131,4 +131,4 @@ const PaymentMadeOnCase = () => {
   );
 };
 
-export default PaymentMadeOnCase;
+export default PaymentMadeOnMatter;

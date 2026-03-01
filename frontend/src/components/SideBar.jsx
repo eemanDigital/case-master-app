@@ -609,7 +609,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
                 className={`text-xs font-medium ${
                   isDarkMode ? "text-gray-500" : "text-gray-400"
                 }`}>
-                v2.1.0 • Active
+                v3.0.0 • Active
               </Text>
             </div>
           </div>

@@ -224,10 +224,16 @@ const DocumentsList = ({
 
   // Check if user can delete file
   const canDeleteFile = (file) => {
-    if (!file || !user) return false;
-
-    const isFileOwner =
-      file.uploadedBy?._id?.toString() === user?.data?._id?.toString();
+    if (!file) return false;
+    
+    // Allow if no user (fallback)
+    if (!user) return true;
+    
+    // Check ownership - handle both populated and unpopulated cases
+    const uploadedById = file.uploadedBy?._id || file.uploadedBy;
+    const currentUserId = user?.data?._id;
+    
+    const isFileOwner = uploadedById && String(uploadedById) === String(currentUserId);
     const isAdmin = ["admin", "super-admin"].includes(user?.data?.role);
 
     return isFileOwner || isAdmin;
@@ -255,7 +261,8 @@ const DocumentsList = ({
       if (success) {
         toast.success(`${file.fileName} deleted successfully`);
         setSelectedFiles((prev) => prev.filter((id) => id !== file._id));
-        refreshStorage(); // Refresh storage after deletion
+        // Delay refresh to allow backend to complete storage update
+        setTimeout(() => refreshStorage(), 500);
       }
     } catch (error) {
       console.error("Delete failed:", error);
@@ -276,7 +283,8 @@ const DocumentsList = ({
       if (success) {
         toast.success(`Successfully deleted ${selectedFiles.length} file(s)`);
         setSelectedFiles([]);
-        refreshStorage(); // Refresh storage after bulk delete
+        // Delay refresh to allow backend to complete storage update
+        setTimeout(() => refreshStorage(), 500);
       }
     } catch (error) {
       console.error("Bulk delete failed:", error);
@@ -1128,7 +1136,8 @@ const DocumentsList = ({
                     multiple={true}
                     onUploadSuccess={() => {
                       fetchFiles();
-                      refreshStorage();
+                      // Delay refresh to allow backend to complete storage update
+                      setTimeout(() => refreshStorage(), 500);
                       toast.success("Files uploaded successfully");
                     }}
                     onUploadError={(error) => {
@@ -1139,7 +1148,7 @@ const DocumentsList = ({
                       } else {
                         toast.error(error.message || "Upload failed");
                       }
-                      refreshStorage();
+                      setTimeout(() => refreshStorage(), 500);
                     }}
                     {...uploaderProps}
                   />

@@ -159,7 +159,7 @@ const useFileManager = (entityType = null, entityId = null, options = {}) => {
   const deleteFile = async (file) => {
     const fileId = file._id || file.id;
     if (!fileId) {
-      console.error("❌ File ID required for deletion");
+      console.error("File ID required for deletion");
       return false;
     }
 
@@ -185,8 +185,6 @@ const useFileManager = (entityType = null, entityId = null, options = {}) => {
     } catch (error) {
       // Revert optimistic update on failure
       setFiles((prev) => [...prev, file]);
-
-      console.error("❌ Delete error:", error);
 
       if (enableNotifications) {
         notification.error({

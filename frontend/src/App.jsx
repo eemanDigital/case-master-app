@@ -71,24 +71,6 @@ const LeaveApplicationDetails = lazy(
 );
 const LeaveBalanceList = lazy(() => import("./pages/leaveBalanceList.jsx"));
 
-// Cases Management
-const CaseList = lazy(() => import("./pages/CaseList.jsx"));
-const CreateCaseForm = lazy(() => import("./pages/CreateCaseForm.jsx"));
-const UpdateCase = lazy(() => import("./pages/UpdateCase.jsx"));
-const CaseDetails = lazy(() => import("./pages/CaseDetails.jsx"));
-const SoftDeletedCasesArchive = lazy(
-  () => import("./components/SoftDeletedCasesArchive.jsx"),
-);
-
-// Case Reports
-const MainCaseReportList = lazy(() => import("./pages/MainCaseReportList.jsx"));
-const CreateCaseReportForm = lazy(
-  () => import("./pages/CreateCaseReportForm.jsx"),
-);
-const SoftDeletedReportsArchive = lazy(
-  () => import("./pages/SoftDeletedReportsArchive.jsx"),
-);
-
 // Matters Management
 const MatterListView = lazy(
   () => import("./components/matters/MatterListView.jsx"),
@@ -186,7 +168,7 @@ const CreateInvoiceForm = lazy(
 );
 const InvoiceDetails = lazy(() => import("./pages/InvoiceDetails.jsx"));
 const UpdateInvoice = lazy(() => import("./pages/UpdateInvoice.jsx"));
-const PaymentMadeOnCase = lazy(() => import("./pages/PaymentMadeOnCase.jsx"));
+const PaymentMadeOnMatter = lazy(() => import("./pages/PaymentMadeOnCase.jsx"));
 
 // Documents Management
 const DocumentsList = lazy(() => import("./components/DocumentsList.jsx"));
@@ -833,82 +815,6 @@ const router = createBrowserRouter(
             }
           />
 
-          {/* Cases Management */}
-          <Route
-            path="cases"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
-                  <CaseList />
-                </ShowOnlyVerifiedUser>
-              </Suspense>
-            }
-          />
-          <Route
-            path="cases/add-case"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <CreateCaseForm />
-              </Suspense>
-            }
-          />
-          <Route
-            path="cases/:id/update"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <UpdateCase />
-              </Suspense>
-            }
-          />
-          <Route
-            path="cases/:id/casedetails"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <CaseDetails />
-              </Suspense>
-            }
-          />
-          <Route
-            path="cases/soft-deleted-cases"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
-                  <SoftDeletedCasesArchive />
-                </ShowOnlyVerifiedUser>
-              </Suspense>
-            }
-          />
-
-          {/* Case Reports */}
-          <Route
-            path="case-reports"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
-                  <MainCaseReportList />
-                </ShowOnlyVerifiedUser>
-              </Suspense>
-            }
-          />
-          <Route
-            path="case-reports/add-report"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <CreateCaseReportForm />
-              </Suspense>
-            }
-          />
-          <Route
-            path="case-reports/soft-deleted-items"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
-                  <SoftDeletedReportsArchive />
-                </ShowOnlyVerifiedUser>
-              </Suspense>
-            }
-          />
-
           {/* Tasks Management */}
           <Route
             path="tasks"
@@ -1009,10 +915,10 @@ const router = createBrowserRouter(
             }
           />
           <Route
-            path="billings/payments/client/:clientId/case/:caseId"
+            path="billings/payments/client/:clientId/matter/:matterId"
             element={
               <Suspense fallback={<PageLoader />}>
-                <PaymentMadeOnCase />
+                <PaymentMadeOnMatter />
               </Suspense>
             }
           />

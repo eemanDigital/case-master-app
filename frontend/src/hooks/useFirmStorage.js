@@ -1,5 +1,5 @@
 // hooks/useFirmStorage.js
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 
 const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
@@ -9,7 +9,7 @@ const useFirmStorage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchStorageInfo = async () => {
+  const fetchStorageInfo = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -27,15 +27,16 @@ const useFirmStorage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchStorageInfo();
-  }, []);
+  }, [fetchStorageInfo]);
 
-  const refresh = () => {
+  // Force refresh - call this after upload/delete
+  const refresh = useCallback(() => {
     fetchStorageInfo();
-  };
+  }, [fetchStorageInfo]);
 
   // Helper to format storage display
   const formatStorage = (gb) => {

@@ -1,5 +1,4 @@
 const Invoice = require("../models/invoiceModel");
-const Case = require("../models/caseModel");
 const Matter = require("../models/matterModel");
 const User = require("../models/userModel");
 const Firm = require("../models/firmModel");
@@ -161,7 +160,12 @@ exports.createInvoice = catchAsync(async (req, res, next) => {
 
   const firmId = getFirmId(req);
 
-  console.log("Received data:", { matterId, clientId, otherActivity, invoiceData });
+  console.log("Received data:", {
+    matterId,
+    clientId,
+    otherActivity,
+    invoiceData,
+  });
 
   // Validate matter and client relationships if provided
   if (matterId) {
@@ -835,7 +839,10 @@ exports.generateReceiptPdf = catchAsync(async (req, res, next) => {
     { receipt: receiptData, firm },
     res,
     path.resolve(__dirname, "../views/receipt.pug"),
-    path.resolve(__dirname, `../output/${receiptData.receiptNumber}_receipt.pdf`),
+    path.resolve(
+      __dirname,
+      `../output/${receiptData.receiptNumber}_receipt.pdf`,
+    ),
   );
 });
 
