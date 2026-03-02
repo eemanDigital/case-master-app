@@ -1260,3 +1260,185 @@ body {
   margin-bottom: 16px;
   opacity: 0.5;
 }
+
+/* ============================================ */
+/* PREMIUM DASHBOARD STYLES */
+/* ============================================ */
+
+.dashboard-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.dashboard-glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .dashboard-glass {
+  background: rgba(31, 41, 55, 0.7);
+  border: 1px solid rgba(55, 65, 81, 0.5);
+}
+
+.dashboard-card {
+  @apply bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 transition-all duration-300;
+}
+
+.dashboard-card:hover {
+  @apply shadow-xl border-gray-200 dark:border-gray-600;
+  transform: translateY(-2px);
+}
+
+.stat-card-premium {
+  @apply relative overflow-hidden bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 transition-all duration-300;
+}
+
+.stat-card-premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.stat-card-premium:hover::before {
+  opacity: 1;
+}
+
+.stat-card-premium:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.dark .stat-card-premium:hover {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.section-header {
+  @apply flex items-center gap-3 mb-6;
+}
+
+.section-header-line {
+  @apply w-1 h-8 bg-gradient-to-b from-blue-500 via-indigo-500 to-purple-600 rounded-full;
+}
+
+.section-header-title {
+  @apply text-xl font-bold text-gray-900 dark:text-white;
+}
+
+.dashboard-section {
+  @apply mb-8;
+}
+
+.premium-card-header {
+  @apply flex items-center justify-between pb-4 border-b border-gray-100 dark:border-gray-700;
+}
+
+.premium-stat-value {
+  @apply text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight;
+}
+
+.premium-stat-label {
+  @apply text-sm font-medium text-gray-500 dark:text-gray-400 mt-1;
+}
+
+.premium-stat-change {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium;
+}
+
+.premium-stat-change-positive {
+  @apply bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400;
+}
+
+.premium-stat-change-negative {
+  @apply bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400;
+}
+
+/* Grid patterns for premium feel */
+.dashboard-grid-pattern {
+  background-image: 
+    linear-gradient(rgba(59, 130, 246, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Smooth scroll behavior */
+.dashboard-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Card shine effect on hover */
+.card-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-shine::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: rotate(30deg);
+  transition: transform 0.5s ease;
+  opacity: 0;
+}
+
+.dashboard-card:hover .card-shine::after {
+  transform: rotate(30deg) translateX(100%);
+  opacity: 1;
+}
+
+/* Responsive dashboard */
+@media (max-width: 768px) {
+  .stat-card-premium {
+    @apply p-4;
+  }
+  
+  .premium-stat-value {
+    @apply text-2xl;
+  }
+  
+  .section-header {
+    @apply mb-4;
+  }
+  
+  .section-header-title {
+    @apply text-lg;
+  }
+}
+
+/* Animation delays for staggered reveals */
+.dashboard-animate-1 { animation-delay: 0.1s; }
+.dashboard-animate-2 { animation-delay: 0.2s; }
+.dashboard-animate-3 { animation-delay: 0.3s; }
+.dashboard-animate-4 { animation-delay: 0.4s; }
+
+/* Ant Design Card overrides for premium look */
+.premium-ant-card .ant-card-head {
+  @apply border-b border-gray-100 dark:border-gray-700;
+}
+
+.premium-ant-card .ant-card-head-title {
+  @apply font-bold text-gray-900 dark:text-white;
+}
+
+.premium-ant-card .ant-card-body {
+  @apply p-6;
+}
+
+.dark .premium-ant-card {
+  @apply bg-gray-800 border-gray-700;
+}

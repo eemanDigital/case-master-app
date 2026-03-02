@@ -21,6 +21,7 @@ import {
   Input,
   Timeline,
   message,
+  Progress,
 } from "antd";
 import {
   CalendarOutlined,
@@ -51,14 +52,14 @@ const { Text, Title, Paragraph } = Typography;
 
 const MatterStatusTag = ({ status }) => {
   const statusConfig = {
-    active: { color: "green", text: "Active" },
-    pending: { color: "orange", text: "Pending" },
+    active: { color: "success", text: "Active" },
+    pending: { color: "warning", text: "Pending" },
     "on-hold": { color: "default", text: "On Hold" },
-    completed: { color: "blue", text: "Completed" },
+    completed: { color: "processing", text: "Completed" },
     closed: { color: "default", text: "Closed" },
     settled: { color: "purple", text: "Settled" },
-    won: { color: "green", text: "Won" },
-    lost: { color: "red", text: "Lost" },
+    won: { color: "success", text: "Won" },
+    lost: { color: "error", text: "Lost" },
   };
   const config = statusConfig[status] || { color: "default", text: status };
   return <Tag color={config.color}>{config.text}</Tag>;
@@ -67,9 +68,9 @@ const MatterStatusTag = ({ status }) => {
 const PriorityTag = ({ priority }) => {
   const config = {
     low: { color: "default", text: "Low" },
-    medium: { color: "blue", text: "Medium" },
-    high: { color: "orange", text: "High" },
-    urgent: { color: "red", text: "Urgent" },
+    medium: { color: "processing", text: "Medium" },
+    high: { color: "warning", text: "High" },
+    urgent: { color: "error", text: "Urgent" },
   };
   const p = config[priority] || config.medium;
   return <Tag color={p.color}>{p.text} Priority</Tag>;
@@ -87,49 +88,67 @@ const MatterTypeIcon = ({ type }) => {
   return icons[type] || <FileTextOutlined />;
 };
 
-const StatCard = ({ title, value, icon, color, subtitle, onClick }) => (
+const getMatterTypeStyles = (type) => {
+  const styles = {
+    litigation: { bg: "bg-blue-50", text: "text-blue-500", border: "border-l-blue-500", gradient: "from-blue-500 to-blue-600" },
+    corporate: { bg: "bg-amber-50", text: "text-amber-500", border: "border-l-amber-500", gradient: "from-amber-500 to-amber-600" },
+    property: { bg: "bg-green-50", text: "text-green-500", border: "border-l-green-500", gradient: "from-green-500 to-green-600" },
+    advisory: { bg: "bg-purple-50", text: "text-purple-500", border: "border-l-purple-500", gradient: "from-purple-500 to-purple-600" },
+    retainer: { bg: "bg-emerald-50", text: "text-emerald-500", border: "border-l-emerald-500", gradient: "from-emerald-500 to-emerald-600" },
+    general: { bg: "bg-gray-50", text: "text-gray-500", border: "border-l-gray-500", gradient: "from-gray-500 to-gray-600" },
+  };
+  return styles[type] || styles.general;
+};
+
+const StatCard = ({ title, value, icon, color, subtitle, onClick, gradient }) => (
   <Card
-    className={`stat-card hover-lift h-full transition-all duration-300 ${onClick ? "cursor-pointer" : ""}`}
+    className={`stat-card h-full transition-all duration-300 ${onClick ? "cursor-pointer hover:shadow-md" : ""}`}
     onClick={onClick}
     hoverable={!!onClick}>
-    <Statistic
-      title={title}
-      value={value}
-      prefix={icon}
-      valueStyle={{ color, fontSize: "28px", fontWeight: 600 }}
-    />
-    <p className="text-xs text-gray-500 mt-2 mb-0">{subtitle}</p>
+    {gradient ? (
+      <div className={`bg-gradient-to-br ${gradient} p-4 rounded-xl relative overflow-hidden`}>
+        <div className="absolute -right-2 -top-2 w-16 h-16 bg-white/10 rounded-full blur-lg"></div>
+        <div className="relative z-10 flex items-center justify-between">
+          <div>
+            <div className="text-white/80 text-sm font-medium">{title}</div>
+            <div className="text-white text-2xl font-bold">{value}</div>
+            <div className="text-white/70 text-xs mt-1">{subtitle}</div>
+          </div>
+          <div className="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center text-white text-xl">
+            {icon}
+          </div>
+        </div>
+      </div>
+    ) : (
+      <>
+        <Statistic
+          title={title}
+          value={value}
+          prefix={icon}
+          valueStyle={{ color, fontSize: "28px", fontWeight: 600 }}
+        />
+        <p className="text-xs text-gray-500 mt-2 mb-0">{subtitle}</p>
+      </>
+    )}
   </Card>
 );
 
-const MatterCard = ({ matter, onClick }) => (
-  <Card
-    hoverable
-    className="matter-card shadow-md hover:shadow-lg transition-all duration-300 mb-4 border-l-4"
-    style={{
-      borderLeftColor:
-        matter.priority === "urgent"
-          ? "#ff4d4f"
-          : matter.priority === "high"
-            ? "#fa8c16"
-            : "#1890ff",
-    }}
-    onClick={() => onClick(matter)}>
+const MatterCard = ({ matter, onClick }) => {
+  const typeStyles = getMatterTypeStyles(matter.matterType);
+  const priorityColor = matter.priority === "urgent" ? "#ef4444" : matter.priority === "high" ? "#f97316" : "#3b82f6";
+  
+  return (
+    <Card
+      hoverable
+      className="matter-card shadow-sm hover:shadow-md transition-all duration-300 mb-4 border-l-4"
+      style={{ borderLeftColor: priorityColor }}
+      onClick={() => onClick(matter)}>
     <div className="flex justify-between items-start mb-3">
       <div className="flex items-center gap-2">
-        <div
-          className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-            matter.matterType === "litigation"
-              ? "bg-red-50 text-red-500"
-              : matter.matterType === "corporate"
-                ? "bg-blue-50 text-blue-500"
-                : matter.matterType === "property"
-                  ? "bg-green-50 text-green-500"
-                  : matter.matterType === "advisory"
-                    ? "bg-purple-50 text-purple-500"
-                    : "bg-gray-50 text-gray-500"
-          }`}>
-          <MatterTypeIcon type={matter.matterType} />
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${typeStyles.bg}`}>
+          <span className={typeStyles.text}>
+            <MatterTypeIcon type={matter.matterType} />
+          </span>
         </div>
         <div>
           <Text strong className="block">
@@ -172,7 +191,8 @@ const MatterCard = ({ matter, onClick }) => (
       )}
     </div>
   </Card>
-);
+  );
+};
 
 const ClientMatterDashboard = () => {
   const { user } = useSelector((state) => state.auth);
@@ -370,7 +390,7 @@ const ClientMatterDashboard = () => {
             title="Active Matters"
             value={processedData.activeMatters.length}
             icon={<FolderOpenOutlined />}
-            color="#1890ff"
+            gradient="from-blue-500 to-blue-600"
             subtitle="Ongoing legal matters"
             onClick={handleViewAllMatters}
           />
@@ -380,9 +400,7 @@ const ClientMatterDashboard = () => {
             title="Pending Tasks"
             value={processedData.pendingTasks.length}
             icon={<CheckCircleOutlined />}
-            color={
-              processedData.overdueTasks.length > 0 ? "#ff4d4f" : "#52c41a"
-            }
+            gradient={processedData.overdueTasks.length > 0 ? "from-red-500 to-red-600" : "from-green-500 to-green-600"}
             subtitle={
               processedData.overdueTasks.length > 0
                 ? `${processedData.overdueTasks.length} overdue`
@@ -393,9 +411,9 @@ const ClientMatterDashboard = () => {
         <Col xs={24} sm={12} lg={6}>
           <StatCard
             title="Amount Due"
-            value={processedData.totalDue}
+            value={`₦${processedData.totalDue.toLocaleString()}`}
             icon={<DollarOutlined />}
-            color="#fa8c16"
+            gradient="from-amber-500 to-amber-600"
             subtitle={`${processedData.pendingInvoices.length} pending invoices`}
             onClick={handleViewInvoices}
           />
@@ -405,7 +423,7 @@ const ClientMatterDashboard = () => {
             title="Completed"
             value={processedData.completedMatters.length}
             icon={<TrophyOutlined />}
-            color="#52c41a"
+            gradient="from-purple-500 to-purple-600"
             subtitle="Matters closed"
           />
         </Col>
