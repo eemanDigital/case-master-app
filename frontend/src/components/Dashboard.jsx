@@ -63,11 +63,13 @@ const Dashboard = () => {
 
   const { isAdminOrHr, isStaff, isClient, isVerified } = useAdminHook();
 
-  // Fetch matter and user stats on mount
+  // Fetch matter and user stats on mount (only for staff)
   useEffect(() => {
-    dispatch(getMatterStats());
-    dispatch(getUserStatistics());
-  }, [dispatch]);
+    if (!isClient) {
+      dispatch(getMatterStats());
+      dispatch(getUserStatistics());
+    }
+  }, [dispatch, isClient]);
 
   // ✅ SINGLE initialization effect
   useEffect(() => {
@@ -76,26 +78,28 @@ const Dashboard = () => {
 
     const initializeDashboard = async () => {
       try {
-        // Fetch all essential data in parallel
-        await Promise.all([
-          fetchData("matters/stats", "matterStats"),
-          fetchBatch([
-            { endpoint: "users", key: "users" },
-            { endpoint: "tasks", key: "tasks" },
-            { endpoint: "matters", key: "matters" },
-          ]),
-        ]);
+        // Only fetch staff-specific data for non-clients
+        if (!isClient) {
+          await Promise.all([
+            fetchData("matters/stats", "matterStats"),
+            fetchBatch([
+              { endpoint: "users", key: "users" },
+              { endpoint: "tasks", key: "tasks" },
+              { endpoint: "matters", key: "matters" },
+            ]),
+          ]);
+        }
       } catch (error) {
         console.error("Dashboard initialization error:", error);
       }
     };
 
     initializeDashboard();
-  }, []); // ✅ Only run once on mount
+  }, [isClient]); // Re-run when isClient changes
 
   if (userError) return <Alert message={userError} type="error" showIcon />;
 
-  const isLoading = matterLoading || statisticsLoading;
+  const isLoading = isClient ? false : (matterLoading || statisticsLoading);
 
   return (
     <>

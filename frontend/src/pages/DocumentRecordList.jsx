@@ -47,7 +47,7 @@ import { useDispatch } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "react-toastify";
-import { deleteData, postData, putData } from "../redux/features/delete/deleteSlice";
+import { deleteData, postData, putData, patchData } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import ButtonWithIcon from "../components/ButtonWithIcon";
@@ -265,7 +265,7 @@ const DocumentRecordList = () => {
 
   const restoreRecord = async (id) => {
     try {
-      await dispatch(putData({ endpoint: `documentRecord/${id}/restore`, data: {} }));
+      await dispatch(patchData({ endpoint: `documentRecord/${id}/restore`, data: {} }));
       toast.success("Document restored successfully");
       fetchDocumentRecords();
       fetchStats();
@@ -344,7 +344,7 @@ const DocumentRecordList = () => {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      await dispatch(putData({ 
+      await dispatch(patchData({ 
         endpoint: `documentRecord/${id}/status`, 
         data: { status: newStatus } 
       }));

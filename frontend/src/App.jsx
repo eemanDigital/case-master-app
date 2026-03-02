@@ -941,7 +941,7 @@ const router = createBrowserRouter(
             }
           />
           <Route
-            path="record-documents"
+            path="record-documents/:id?"
             element={
               <Suspense fallback={<PageLoader />}>
                 <DocumentRecordForm />

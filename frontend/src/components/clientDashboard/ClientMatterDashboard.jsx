@@ -18,15 +18,14 @@ import {
   Descriptions,
   Avatar,
   Divider,
-  Progress,
-  Tooltip,
+  Input,
+  Timeline,
+  message,
 } from "antd";
 import {
   CalendarOutlined,
-  ClockCircleOutlined,
   FileTextOutlined,
   TeamOutlined,
-  BellOutlined,
   TrophyOutlined,
   CheckCircleOutlined,
   DollarOutlined,
@@ -39,7 +38,6 @@ import {
   HomeOutlined,
   FolderOpenOutlined,
   SyncOutlined,
-  CloseCircleOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
@@ -187,6 +185,10 @@ const ClientMatterDashboard = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [selectedMatter, setSelectedMatter] = useState(null);
   const [matterDetailsVisible, setMatterDetailsVisible] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [taskDetailsVisible, setTaskDetailsVisible] = useState(false);
+  const [taskResponse, setTaskResponse] = useState("");
+  const [submittingResponse, setSubmittingResponse] = useState(false);
 
   const fetchData = useCallback(async () => {
     if (!clientId) return;
@@ -196,8 +198,14 @@ const ClientMatterDashboard = () => {
       const [mattersRes, invoicesRes, tasksRes] = await Promise.all([
         axios.get(`/api/v1/matters?client=${clientId}&limit=50`),
         axios.get(`/api/v1/invoices?clientId=${clientId}&limit=20`),
-        axios.get(`/api/v1/tasks?assignedTo=${clientId}&status=pending&limit=20`),
+        axios.get(`/api/v1/tasks?limit=50`),
       ]);
+
+      console.log("=== CLIENT DASHBOARD DATA ===");
+      console.log("Matters:", mattersRes?.data?.data?.length || 0);
+      console.log("Invoices:", invoicesRes?.data?.data?.length || 0);
+      console.log("Tasks:", tasksRes?.data?.data?.length || 0);
+      console.log("Tasks full response:", tasksRes?.data);
 
       setMatters(mattersRes?.data?.data || mattersRes?.data || []);
       setInvoices(invoicesRes?.data?.data || invoicesRes?.data || []);
@@ -260,6 +268,31 @@ const ClientMatterDashboard = () => {
   const handleMatterClick = (matter) => {
     setSelectedMatter(matter);
     setMatterDetailsVisible(true);
+  };
+
+  const handleTaskClick = (task) => {
+    setSelectedTask(task);
+    setTaskDetailsVisible(true);
+    setTaskResponse("");
+  };
+
+  const handleTaskResponseSubmit = async () => {
+    if (!taskResponse.trim()) return;
+    
+    setSubmittingResponse(true);
+    try {
+      await axios.post(`/api/v1/tasks/${selectedTask._id}/responses`, {
+        comment: taskResponse,
+        status: "in-progress",
+      });
+      message.success("Response submitted successfully");
+      setTaskDetailsVisible(false);
+      fetchData();
+    } catch (error) {
+      message.error(error.response?.data?.message || "Failed to submit response");
+    } finally {
+      setSubmittingResponse(false);
+    }
   };
 
   const handleViewAllMatters = () => setActiveTab("matters");
@@ -709,7 +742,12 @@ const ClientMatterDashboard = () => {
                 <List
                   dataSource={tasks}
                   renderItem={(task) => (
-                    <Card size="small" className="mb-3">
+                    <Card 
+                      size="small" 
+                      className="mb-3 cursor-pointer hover:shadow-md transition-shadow"
+                      onClick={() => handleTaskClick(task)}
+                      hoverable
+                    >
                       <div className="flex justify-between items-start">
                         <div>
                           <Text strong className="text-lg">
@@ -735,8 +773,8 @@ const ClientMatterDashboard = () => {
                               <Text
                                 type={
                                   dayjs(task.dueDate).isBefore(dayjs(), "day")
-                                    ? "danger"
-                                    : "secondary"
+                                      ? "danger"
+                                      : "secondary"
                                 }>
                                 Due:{" "}
                                 {dayjs(task.dueDate).format("MMM DD, YYYY")}
@@ -759,6 +797,98 @@ const ClientMatterDashboard = () => {
           },
         ]}
       />
+
+      {/* Task Response Modal */}
+      <Modal
+        title={
+          <Space>
+            <CheckCircleOutlined />
+            <span>{selectedTask?.title}</span>
+          </Space>
+        }
+        open={taskDetailsVisible}
+        onCancel={() => setTaskDetailsVisible(false)}
+        width={700}
+        footer={[
+          <Button key="close" onClick={() => setTaskDetailsVisible(false)}>
+            Close
+          </Button>,
+          selectedTask?.status !== "completed" && (
+            <Button 
+              key="respond" 
+              type="primary" 
+              icon={<SendOutlined />}
+              onClick={handleTaskResponseSubmit}
+              loading={submittingResponse}
+            >
+              Submit Response
+            </Button>
+          ),
+        ].filter(Boolean)}
+      >
+        {selectedTask && (
+          <div>
+            <Descriptions column={2} bordered size="small" className="mb-4">
+              <Descriptions.Item label="Status">
+                <Tag color={selectedTask.status === "completed" ? "green" : "blue"}>
+                  {selectedTask.status}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Priority">
+                <Tag color={selectedTask.priority === "high" ? "red" : selectedTask.priority === "medium" ? "orange" : "default"}>
+                  {selectedTask.priority}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Due Date">
+                {selectedTask.dueDate ? dayjs(selectedTask.dueDate).format("MMM DD, YYYY") : "Not set"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Date Created">
+                {selectedTask.dateCreated ? dayjs(selectedTask.dateCreated).format("MMM DD, YYYY") : "N/A"}
+              </Descriptions.Item>
+              <Descriptions.Item label="Description" span={2}>
+                {selectedTask.description || "No description"}
+              </Descriptions.Item>
+            </Descriptions>
+
+            {selectedTask.status !== "completed" && (
+              <div className="mt-4">
+                <Text strong className="block mb-2">Your Response</Text>
+                <Input.TextArea
+                  rows={4}
+                  placeholder="Enter your response or comment..."
+                  value={taskResponse}
+                  onChange={(e) => setTaskResponse(e.target.value)}
+                  maxLength={1000}
+                  showCount
+                />
+                <Text type="secondary" className="text-xs mt-1 block">
+                  Submit your response to let us know the progress or ask questions.
+                </Text>
+              </div>
+            )}
+
+            {selectedTask.responses?.length > 0 && (
+              <div className="mt-4">
+                <Text strong className="block mb-2">Previous Responses</Text>
+                <Timeline
+                  items={selectedTask.responses.map((response) => ({
+                    color: response.status === "completed" ? "green" : "blue",
+                    children: (
+                      <div>
+                        <Text>{response.comment}</Text>
+                        <br />
+                        <Text type="secondary" className="text-xs">
+                          {dayjs(response.submittedAt).format("MMM DD, YYYY HH:mm")}
+                        </Text>
+                      </div>
+                    ),
+                  }))}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
 
       {/* Matter Details Modal */}
       <Modal

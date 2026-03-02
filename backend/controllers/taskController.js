@@ -133,6 +133,7 @@ exports.getTasks = catchAsync(async (req, res, next) => {
     limit = 50,
     page = 1,
     isClient,
+    clientUserId,
   } = req.query;
 
   // Build filter object with firmId
@@ -150,8 +151,24 @@ exports.getTasks = catchAsync(async (req, res, next) => {
   if (priority) filter.taskPriority = priority;
   if (category) filter.category = category;
 
-  // Filter by assignee - simplified to only use assignees array
-  if (assignedTo) {
+  // Filter by client user - check both assignees and matter's client
+  if (clientUserId) {
+    filter.$or = [
+      { "assignees.user": clientUserId },
+      { matter: { $exists: true } } // We'll handle this in a second query
+    ];
+    
+    // Get matters owned by this client and add to filter
+    const Matter = require("../models/matterModel");
+    const clientMatters = await Matter.find({ client: clientUserId }).select("_id");
+    const matterIds = clientMatters.map(m => m._id);
+    
+    filter.$or = [
+      { "assignees.user": clientUserId },
+      { matter: { $in: matterIds } }
+    ];
+  } else if (assignedTo) {
+    // Filter by assignee - simplified to only use assignees array
     filter["assignees.user"] = assignedTo;
 
     // If isClient filter is provided, check the isClient field in assignees
@@ -508,6 +525,8 @@ exports.submitTaskResponse = catchAsync(async (req, res, next) => {
   // 3. Correct assignment verification
   const isAssigned = task.assignees.some((assignee) => {
     if (!assignee.user) return false;
+
+    console.log(assignee)
 
     const assignedUserId =
       typeof assignee.user === "object" && assignee.user._id

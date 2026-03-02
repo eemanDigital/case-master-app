@@ -51,7 +51,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import { useDispatch } from "react-redux";
-import { putData, postData } from "../redux/features/delete/deleteSlice";
+import { putData, postData, patchData } from "../redux/features/delete/deleteSlice";
 import { toast } from "react-toastify";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 
@@ -125,7 +125,7 @@ const DocumentRecordDetails = () => {
 
   const handleStatusChange = async (newStatus) => {
     try {
-      await dispatch(putData({
+      await dispatch(patchData({
         endpoint: `documentRecord/${id}/status`,
         data: { status: newStatus }
       }));
@@ -171,7 +171,7 @@ const DocumentRecordDetails = () => {
 
   const handleRestore = async () => {
     try {
-      await dispatch(putData({ endpoint: `documentRecord/${id}/restore`, data: {} }));
+      await dispatch(patchData({ endpoint: `documentRecord/${id}/restore`, data: {} }));
       message.success("Document restored successfully");
       dataFetcher(`documentRecord/${id}`, "GET");
     } catch (error) {

@@ -9,10 +9,11 @@ const router = express.Router();
 // Protect all routes
 router.use(authController.protect);
 
-// Auto-filter for clients - they can only see tasks assigned to them
-router.use((req, res, next) => {
+// Auto-filter for clients - they can see tasks assigned to them OR linked to their matters
+router.use(async (req, res, next) => {
   if (req.user.role === "client" && req.user.id) {
-    req.query.assignedTo = req.user.id;
+    // For clients, we'll handle the filtering in the controller via a special query param
+    req.query.clientUserId = req.user.id;
   }
   next();
 });

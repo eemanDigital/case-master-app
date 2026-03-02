@@ -57,7 +57,7 @@ const QuickActionsPanel = () => {
 
             {/* Column 3: Navigation - Full width on mobile */}
             <div className="col-span-1 xs:col-span-2 flex flex-col xs:flex-row gap-2">
-              <Link to="note-list" className="flex-1">
+              <Link to="notes" className="flex-1">
                 <Button
                   className="w-full bg-green-500 hover:bg-green-600 text-white border-0 h-9"
                   icon={<PlusOutlined />}>
