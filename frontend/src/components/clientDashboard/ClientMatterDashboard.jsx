@@ -278,7 +278,7 @@ const ClientMatterDashboard = () => {
 
   const handleTaskResponseSubmit = async () => {
     if (!taskResponse.trim()) return;
-    
+
     setSubmittingResponse(true);
     try {
       await axios.post(`/api/v1/tasks/${selectedTask._id}/responses`, {
@@ -289,7 +289,9 @@ const ClientMatterDashboard = () => {
       setTaskDetailsVisible(false);
       fetchData();
     } catch (error) {
-      message.error(error.response?.data?.message || "Failed to submit response");
+      message.error(
+        error.response?.data?.message || "Failed to submit response",
+      );
     } finally {
       setSubmittingResponse(false);
     }
@@ -742,12 +744,11 @@ const ClientMatterDashboard = () => {
                 <List
                   dataSource={tasks}
                   renderItem={(task) => (
-                    <Card 
-                      size="small" 
+                    <Card
+                      size="small"
                       className="mb-3 cursor-pointer hover:shadow-md transition-shadow"
                       onClick={() => handleTaskClick(task)}
-                      hoverable
-                    >
+                      hoverable>
                       <div className="flex justify-between items-start">
                         <div>
                           <Text strong className="text-lg">
@@ -773,8 +774,8 @@ const ClientMatterDashboard = () => {
                               <Text
                                 type={
                                   dayjs(task.dueDate).isBefore(dayjs(), "day")
-                                      ? "danger"
-                                      : "secondary"
+                                    ? "danger"
+                                    : "secondary"
                                 }>
                                 Due:{" "}
                                 {dayjs(task.dueDate).format("MMM DD, YYYY")}
@@ -814,36 +815,48 @@ const ClientMatterDashboard = () => {
             Close
           </Button>,
           selectedTask?.status !== "completed" && (
-            <Button 
-              key="respond" 
-              type="primary" 
+            <Button
+              key="respond"
+              type="primary"
               icon={<SendOutlined />}
               onClick={handleTaskResponseSubmit}
-              loading={submittingResponse}
-            >
+              loading={submittingResponse}>
               Submit Response
             </Button>
           ),
-        ].filter(Boolean)}
-      >
+        ].filter(Boolean)}>
         {selectedTask && (
           <div>
             <Descriptions column={2} bordered size="small" className="mb-4">
               <Descriptions.Item label="Status">
-                <Tag color={selectedTask.status === "completed" ? "green" : "blue"}>
+                <Tag
+                  color={
+                    selectedTask.status === "completed" ? "green" : "blue"
+                  }>
                   {selectedTask.status}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Priority">
-                <Tag color={selectedTask.priority === "high" ? "red" : selectedTask.priority === "medium" ? "orange" : "default"}>
+                <Tag
+                  color={
+                    selectedTask.priority === "high"
+                      ? "red"
+                      : selectedTask.priority === "medium"
+                        ? "orange"
+                        : "default"
+                  }>
                   {selectedTask.priority}
                 </Tag>
               </Descriptions.Item>
               <Descriptions.Item label="Due Date">
-                {selectedTask.dueDate ? dayjs(selectedTask.dueDate).format("MMM DD, YYYY") : "Not set"}
+                {selectedTask.dueDate
+                  ? dayjs(selectedTask.dueDate).format("MMM DD, YYYY")
+                  : "Not set"}
               </Descriptions.Item>
               <Descriptions.Item label="Date Created">
-                {selectedTask.dateCreated ? dayjs(selectedTask.dateCreated).format("MMM DD, YYYY") : "N/A"}
+                {selectedTask.dateCreated
+                  ? dayjs(selectedTask.dateCreated).format("MMM DD, YYYY")
+                  : "N/A"}
               </Descriptions.Item>
               <Descriptions.Item label="Description" span={2}>
                 {selectedTask.description || "No description"}
@@ -852,7 +865,9 @@ const ClientMatterDashboard = () => {
 
             {selectedTask.status !== "completed" && (
               <div className="mt-4">
-                <Text strong className="block mb-2">Your Response</Text>
+                <Text strong className="block mb-2">
+                  Your Response
+                </Text>
                 <Input.TextArea
                   rows={4}
                   placeholder="Enter your response or comment..."
@@ -862,14 +877,17 @@ const ClientMatterDashboard = () => {
                   showCount
                 />
                 <Text type="secondary" className="text-xs mt-1 block">
-                  Submit your response to let us know the progress or ask questions.
+                  Submit your response to let us know the progress or ask
+                  questions.
                 </Text>
               </div>
             )}
 
             {selectedTask.responses?.length > 0 && (
               <div className="mt-4">
-                <Text strong className="block mb-2">Previous Responses</Text>
+                <Text strong className="block mb-2">
+                  Previous Responses
+                </Text>
                 <Timeline
                   items={selectedTask.responses.map((response) => ({
                     color: response.status === "completed" ? "green" : "blue",
@@ -878,7 +896,9 @@ const ClientMatterDashboard = () => {
                         <Text>{response.comment}</Text>
                         <br />
                         <Text type="secondary" className="text-xs">
-                          {dayjs(response.submittedAt).format("MMM DD, YYYY HH:mm")}
+                          {dayjs(response.submittedAt).format(
+                            "MMM DD, YYYY HH:mm",
+                          )}
                         </Text>
                       </div>
                     ),
