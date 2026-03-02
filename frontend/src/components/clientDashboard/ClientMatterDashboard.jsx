@@ -196,16 +196,17 @@ const ClientMatterDashboard = () => {
       const [mattersRes, invoicesRes, tasksRes] = await Promise.all([
         axios.get(`/api/v1/matters?client=${clientId}&limit=50`),
         axios.get(`/api/v1/invoices?clientId=${clientId}&limit=20`),
-        axios.get(
-          `/api/v1/tasks?assignedTo=${clientId}&status=pending&limit=20`,
-        ),
+        axios.get(`/api/v1/tasks?assignedTo=${clientId}&status=pending&limit=20`),
       ]);
 
-      setMatters(mattersRes.data.data || []);
-      setInvoices(invoicesRes.data.data || []);
-      setTasks(tasksRes.data.data || []);
+      setMatters(mattersRes?.data?.data || mattersRes?.data || []);
+      setInvoices(invoicesRes?.data?.data || invoicesRes?.data || []);
+      setTasks(tasksRes?.data?.data || tasksRes?.data || []);
     } catch (error) {
       console.error("Error fetching client data:", error);
+      setMatters([]);
+      setInvoices([]);
+      setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -216,7 +217,7 @@ const ClientMatterDashboard = () => {
   }, [fetchData]);
 
   const processedData = useMemo(() => {
-    const activeMatters = matters.filter((m) =>
+    const activeMatters = matters?.filter((m) =>
       ["active", "pending"].includes(m.status),
     );
     const completedMatters = matters.filter((m) =>

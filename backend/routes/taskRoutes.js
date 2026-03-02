@@ -9,6 +9,14 @@ const router = express.Router();
 // Protect all routes
 router.use(authController.protect);
 
+// Auto-filter for clients - they can only see tasks assigned to them
+router.use((req, res, next) => {
+  if (req.user.role === "client" && req.user.id) {
+    req.query.assignedTo = req.user.id;
+  }
+  next();
+});
+
 // Task CRUD
 router.route("/").get(taskController.getTasks).post(taskController.createTask);
 

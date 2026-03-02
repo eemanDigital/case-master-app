@@ -2,7 +2,7 @@ const express = require("express");
 const matterController = require("../controllers/matterController");
 const {
   protect,
-  restrictTo, // Use the updated version that handles multi-privileges
+  restrictTo,
   canManageCases,
   canViewReports,
   checkPermission,
@@ -14,6 +14,14 @@ const matterRouter = express.Router();
 // MIDDLEWARE
 // ============================================
 matterRouter.use(protect);
+
+// Auto-filter for clients - they can only see their own matters
+matterRouter.use((req, res, next) => {
+  if (req.user.role === "client" && req.user.id) {
+    req.query.client = req.user.id;
+  }
+  next();
+});
 
 // ============================================
 // BULK & REPORTING ROUTES (Specific routes first)

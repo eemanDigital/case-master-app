@@ -382,8 +382,8 @@ exports.updateInvoice = catchAsync(async (req, res, next) => {
     invoice.issueDate = new Date();
   }
 
-  // Validate status transitions
-  if (updateData.status) {
+  // Validate status transitions - only if status is actually being changed
+  if (updateData.status && updateData.status !== invoice.status) {
     const validTransitions = {
       draft: ["sent"],
       sent: ["overdue", "partially_paid", "paid", "cancelled"],

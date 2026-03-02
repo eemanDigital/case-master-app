@@ -20,6 +20,14 @@ const router = express.Router();
 
 router.use(protect);
 
+// Auto-filter for clients - they can only see their own invoices
+router.use((req, res, next) => {
+  if (req.user.role === "client" && req.user.id) {
+    req.query.clientId = req.user.id;
+  }
+  next();
+});
+
 router
   .route("/")
   .get(getAllInvoices)
