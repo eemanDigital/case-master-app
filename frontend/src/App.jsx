@@ -194,6 +194,13 @@ const WebhookList = lazy(() => import("./pages/WebhookList.jsx"));
 // Support
 const ContactForm = lazy(() => import("./components/ContactForm.jsx"));
 
+// Legal Pages
+const TermsOfService = lazy(() => import("./pages/TermsOfService.jsx"));
+const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
+
+// Cookie Consent
+import CookieConsent from "./components/CookieConsent";
+
 // ============================================
 // AXIOS CONFIGURATION
 // ============================================
@@ -355,6 +362,24 @@ const router = createBrowserRouter(
           element={
             <Suspense fallback={<PageLoader />}>
               <HomePage />
+            </Suspense>
+          }
+        />
+
+        {/* Legal Pages */}
+        <Route
+          path="terms-of-service"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <TermsOfService />
+            </Suspense>
+          }
+        />
+        <Route
+          path="privacy-policy"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <PrivacyPolicy />
             </Suspense>
           }
         />

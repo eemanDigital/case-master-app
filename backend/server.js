@@ -330,6 +330,50 @@ app.use("/api/v1/documentRecord", documentRecordRouter);
 app.use("/api/v1/webhooks", webhookRouter);
 app.use("/api/v1/audit-logs", auditLogRouter);
 
+// ==========================================
+// HEALTH CHECK ENDPOINT
+// ==========================================
+app.get("/health", async (req, res) => {
+  const healthcheck = {
+    status: "healthy",
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    service: "LawMaster API",
+    version: "1.0.0",
+    region: "Nigeria (Africa/Lagos)",
+    checks: {
+      database: "unknown",
+      memory: "unknown",
+    },
+  };
+
+  try {
+    // Check database connection
+    const dbState = mongoose.connection.readyState;
+    healthcheck.checks.database = dbState === 1 ? "connected" : "disconnected";
+    
+    // Check memory usage
+    const memUsage = process.memoryUsage();
+    healthcheck.checks.memory = {
+      used: Math.round(memUsage.heapUsed / 1024 / 1024) + " MB",
+      total: Math.round(memUsage.heapTotal / 1024 / 1024) + " MB",
+    };
+
+    healthcheck.status = dbState === 1 ? "healthy" : "unhealthy";
+
+    res.status(dbState === 1 ? 200 : 503).json(healthcheck);
+  } catch (error) {
+    healthcheck.status = "unhealthy";
+    healthcheck.error = error.message;
+    res.status(503).json(healthcheck);
+  }
+});
+
+// Simple JSON health check (for load balancers)
+app.get("/health/json", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 // Root endpoint
 app.get("/", (req, res) => {
   res.status(200).json({

@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 
 // Add this to your existing HomeLayout component
 import { useTheme } from "../providers/ThemeProvider";
+import CookieConsent from "./CookieConsent";
 
 // Inside your HomeLayout component, get the theme
 const HomeLayout = () => {
@@ -16,6 +17,7 @@ const HomeLayout = () => {
           : "bg-white text-gray-900"
       }`}>
       <Outlet />
+      <CookieConsent />
     </div>
   );
 };
