@@ -12,7 +12,6 @@ import {
   message,
   Alert,
   Spin,
-  InputNumber,
 } from "antd";
 import {
   MailOutlined,
@@ -96,7 +95,11 @@ const Register = () => {
 
   const nextStep = async () => {
     try {
-      await form.validateFields();
+      const fieldsToValidate = currentStep === 0 
+        ? ["firstName", "lastName", "email", "password", "passwordConfirm"]
+        : ["firmName", "phone", "state", "city", "address"];
+      
+      await form.validateFields(fieldsToValidate);
       setCurrentStep(currentStep + 1);
     } catch (error) {
       console.log("Validation failed:", error);
@@ -182,146 +185,161 @@ const Register = () => {
               state: "Lagos",
             }}
             requiredMark={false}
+            className="register-form"
           >
             {/* Step 1: Account Info */}
-            {(currentStep === 0 || token) && (
-              <div className={currentStep !== 0 && !token ? "hidden" : ""}>
-                <div className="grid grid-cols-2 gap-4">
-                  <Form.Item
-                    name="firstName"
-                    label="First Name"
-                    rules={[{ required: true, message: "Required" }]}
-                  >
-                    <Input
-                      prefix={<UserOutlined className="text-gray-400" />}
-                      placeholder="John"
-                      size="large"
-                    />
-                  </Form.Item>
-
-                  <Form.Item
-                    name="lastName"
-                    label="Last Name"
-                    rules={[{ required: true, message: "Required" }]}
-                  >
-                    <Input
-                      prefix={<UserOutlined className="text-gray-400" />}
-                      placeholder="Doe"
-                      size="large"
-                    />
-                  </Form.Item>
-                </div>
-
+            <div style={{ display: currentStep === 0 || token ? "block" : "none" }}>
+              <div className="grid grid-cols-2 gap-4">
                 <Form.Item
-                  name="email"
-                  label="Email Address"
-                  rules={[
-                    { required: true, message: "Required" },
-                    { type: "email", message: "Invalid email" },
-                  ]}
-                  initialValue={invitationData?.email}
-                >
-                  <Input
-                    prefix={<MailOutlined className="text-gray-400" />}
-                    placeholder="john@example.com"
-                    size="large"
-                    disabled={!!invitationData?.email}
-                  />
-                </Form.Item>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <Form.Item
-                    name="password"
-                    label="Password"
-                    rules={[
-                      { required: true, message: "Required" },
-                      { min: 8, message: "At least 8 characters" },
-                    ]}
-                  >
-                    <Input.Password
-                      prefix={<LockOutlined className="text-gray-400" />}
-                      placeholder="Create password"
-                      size="large"
-                    />
-                  </Form.Item>
-
-                  <Form.Item
-                    name="passwordConfirm"
-                    label="Confirm Password"
-                    dependencies={["password"]}
-                    rules={[
-                      { required: true, message: "Required" },
-                      ({ getFieldValue }) => ({
-                        validator(_, value) {
-                          if (!value || getFieldValue("password") === value) {
-                            return Promise.resolve();
-                          }
-                          return Promise.reject(new Error("Passwords don't match"));
-                        },
-                      }),
-                    ]}
-                  >
-                    <Input.Password
-                      prefix={<LockOutlined className="text-gray-400" />}
-                      placeholder="Confirm password"
-                      size="large"
-                    />
-                  </Form.Item>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Firm Info (only for new registration) */}
-            {((currentStep === 1 && !token) || (!token && currentStep === 0)) && (
-              <div className={currentStep !== 1 && !token ? "hidden" : ""}>
-                <Form.Item
-                  name="firmName"
-                  label="Firm Name"
+                  name="firstName"
+                  label={<span style={{ color: 'white' }}>First Name</span>}
                   rules={[{ required: true, message: "Required" }]}
                 >
                   <Input
-                    prefix={<BankOutlined className="text-gray-400" />}
+                    prefix={<UserOutlined style={{ color: '#9ca3af' }} />}
+                    placeholder="John"
+                    size="large"
+                    className="bg-transparent"
+                    style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="lastName"
+                  label={<span style={{ color: 'white' }}>Last Name</span>}
+                  rules={[{ required: true, message: "Required" }]}
+                >
+                  <Input
+                    prefix={<UserOutlined style={{ color: '#9ca3af' }} />}
+                    placeholder="Doe"
+                    size="large"
+                    style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                  />
+                </Form.Item>
+              </div>
+
+              <Form.Item
+                name="email"
+                label={<span style={{ color: 'white' }}>Email Address</span>}
+                rules={[
+                  { required: true, message: "Required" },
+                  { type: "email", message: "Invalid email" },
+                ]}
+                initialValue={invitationData?.email}
+              >
+                <Input
+                  prefix={<MailOutlined style={{ color: '#9ca3af' }} />}
+                  placeholder="john@example.com"
+                  size="large"
+                  disabled={!!invitationData?.email}
+                  style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)', color: invitationData?.email ? '#9ca3af' : 'white' }}
+                />
+              </Form.Item>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Form.Item
+                  name="password"
+                  label={<span style={{ color: 'white' }}>Password</span>}
+                  rules={[
+                    { required: true, message: "Required" },
+                    { min: 8, message: "At least 8 characters" },
+                  ]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined style={{ color: '#9ca3af' }} />}
+                    placeholder="Create password"
+                    size="large"
+                    style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  name="passwordConfirm"
+                  label={<span style={{ color: 'white' }}>Confirm Password</span>}
+                  dependencies={["password"]}
+                  rules={[
+                    { required: true, message: "Required" },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (!value || getFieldValue("password") === value) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error("Passwords don't match"));
+                      },
+                    }),
+                  ]}
+                >
+                  <Input.Password
+                    prefix={<LockOutlined style={{ color: '#9ca3af' }} />}
+                    placeholder="Confirm password"
+                    size="large"
+                    style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)', color: 'white' }}
+                  />
+                </Form.Item>
+              </div>
+            </div>
+
+            {/* Step 2: Firm Info (only for new registration) */}
+            {!token && (
+              <div style={{ display: currentStep === 1 ? "block" : "none" }}>
+                <Form.Item
+                  name="firmName"
+                  label={<span style={{ color: 'white' }}>Firm Name</span>}
+                  rules={[{ required: true, message: "Required" }]}
+                >
+                  <Input
+                    prefix={<BankOutlined style={{ color: '#9ca3af' }} />}
                     placeholder="A.T Lukman & Co"
                     size="large"
+                    style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)', color: 'white' }}
                   />
                 </Form.Item>
 
                 <Form.Item
                   name="subdomain"
-                  label="Subdomain (optional)"
-                  extra="Your firm URL will be: [subdomain].lawmaster.ng"
+                  label={<span style={{ color: 'white' }}>Subdomain (optional)</span>}
+                  extra={<span style={{ color: '#9ca3af' }}>Your firm URL will be: [subdomain].lawmaster.ng</span>}
                   rules={[
                     { pattern: /^[a-z0-9-]+$/, message: "Lowercase letters, numbers, hyphens only" },
                   ]}
                 >
                   <Input
-                    prefix={<HomeOutlined className="text-gray-400" />}
+                    prefix={<HomeOutlined style={{ color: '#9ca3af' }} />}
                     placeholder="atlukman"
                     size="large"
+                    style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)', color: 'white' }}
                   />
                 </Form.Item>
 
                 <Form.Item
                   name="phone"
-                  label="Phone Number"
+                  label={<span style={{ color: 'white' }}>Phone Number</span>}
                   rules={[{ required: true, message: "Required" }]}
                 >
                   <Input
-                    prefix={<PhoneOutlined className="text-gray-400" />}
+                    prefix={<PhoneOutlined style={{ color: '#9ca3af' }} />}
                     placeholder="+2348012345678"
                     size="large"
+                    style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)', color: 'white' }}
                   />
                 </Form.Item>
 
                 <div className="grid grid-cols-2 gap-4">
                   <Form.Item
                     name="state"
-                    label="State"
+                    label={<span style={{ color: 'white' }}>State</span>}
                     rules={[{ required: true, message: "Required" }]}
                   >
-                    <Select placeholder="Select state" size="large" showSearch>
+                    <Select 
+                      placeholder="Select state" 
+                      size="large"
+                      showSearch
+                      style={{ background: 'rgba(255,255,255,0.05)' }}
+                      dropdownStyle={{ background: '#1f2937' }}
+                      className="custom-select"
+                    >
                       {nigerianStates.map((state) => (
-                        <Option key={state} value={state}>
+                        <Option key={state} value={state} style={{ color: 'white' }}>
                           {state}
                         </Option>
                       ))}
@@ -330,40 +348,42 @@ const Register = () => {
 
                   <Form.Item
                     name="city"
-                    label="City"
+                    label={<span style={{ color: 'white' }}>City</span>}
                     rules={[{ required: true, message: "Required" }]}
                   >
                     <Input
-                      prefix={<EnvironmentOutlined className="text-gray-400" />}
+                      prefix={<EnvironmentOutlined style={{ color: '#9ca3af' }} />}
                       placeholder="Lagos"
                       size="large"
+                      style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)', color: 'white' }}
                     />
                   </Form.Item>
                 </div>
 
                 <Form.Item
                   name="address"
-                  label="Address"
+                  label={<span style={{ color: 'white' }}>Address</span>}
                   rules={[{ required: true, message: "Required" }]}
                 >
                   <Input.TextArea
                     placeholder="123 Macaulay Street, Surulere"
                     rows={2}
                     size="large"
+                    style={{ background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.2)', color: 'white' }}
                   />
                 </Form.Item>
 
                 <Form.Item
                   name="plan"
-                  label="Select Plan"
+                  label={<span style={{ color: 'white' }}>Select Plan</span>}
                   rules={[{ required: true }]}
                   hidden={!!invitationData}
                 >
-                  <Select size="large">
-                    <Option value="FREE">Free Trial (14 days)</Option>
-                    <Option value="STARTER">Starter - ₦49/month</Option>
-                    <Option value="PROFESSIONAL">Professional - ₦149/month</Option>
-                    <Option value="ENTERPRISE">Enterprise - Custom</Option>
+                  <Select size="large" style={{ background: 'rgba(255,255,255,0.05)' }} dropdownStyle={{ background: '#1f2937' }}>
+                    <Option value="FREE" style={{ color: 'white' }}>Free Trial (14 days)</Option>
+                    <Option value="STARTER" style={{ color: 'white' }}>Starter - ₦49/month</Option>
+                    <Option value="PROFESSIONAL" style={{ color: 'white' }}>Professional - ₦149/month</Option>
+                    <Option value="ENTERPRISE" style={{ color: 'white' }}>Enterprise - Custom</Option>
                   </Select>
                 </Form.Item>
               </div>
@@ -376,7 +396,7 @@ const Register = () => {
                   size="large"
                   icon={<ArrowLeftOutlined />}
                   onClick={prevStep}
-                  className="bg-white/10 border-white/20 text-white"
+                  className="bg-white/10 border-white/20 text-white hover:bg-white/20"
                 >
                   Back
                 </Button>
@@ -432,6 +452,46 @@ const Register = () => {
           </Text>
         </div>
       </div>
+
+      <style>{`
+        .register-form .ant-form-item-label > label {
+          color: white !important;
+        }
+        .register-form .ant-input, 
+        .register-form .ant-input-password,
+        .register-form .ant-select-selector,
+        .register-form .ant-input-textarea textarea {
+          background: rgba(255,255,255,0.05) !important;
+          border-color: rgba(255,255,255,0.2) !important;
+          color: white !important;
+        }
+        .register-form .ant-input::placeholder,
+        .register-form .ant-input-password input::placeholder {
+          color: #9ca3af !important;
+        }
+        .register-form .ant-select-selection-placeholder {
+          color: #9ca3af !important;
+        }
+        .register-form .ant-select-arrow {
+          color: #9ca3af !important;
+        }
+        .register-form .ant-input-prefix, 
+        .register-form .ant-input-password-prefix {
+          color: #9ca3af !important;
+        }
+        .register-form .ant-select-dropdown {
+          background: #1f2937 !important;
+        }
+        .register-form .ant-select-item {
+          color: white !important;
+        }
+        .register-form .ant-select-item-option-active {
+          background: rgba(59, 130, 246, 0.3) !important;
+        }
+        .register-form .ant-form-item-explain-error {
+          color: #f87171 !important;
+        }
+      `}</style>
     </div>
   );
 };

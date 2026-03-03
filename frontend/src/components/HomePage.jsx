@@ -914,7 +914,7 @@ export default function HomePage() {
               <Link to="/users/login" className="lm-btn lm-btn-ghost">
                 Sign in
               </Link>
-              <Link to="/users/login" className="lm-btn lm-btn-primary">
+              <Link to="/register" className="lm-btn lm-btn-primary">
                 Get started →
               </Link>
             </div>

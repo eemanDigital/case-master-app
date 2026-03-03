@@ -38,12 +38,19 @@ dayjs.extend(relativeTime);
 const { Title, Text } = Typography;
 const { Option } = Select;
 
+const baseURL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api/v1";
+
 const InvitationList = () => {
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 });
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 20,
+    total: 0,
+  });
   const [filters, setFilters] = useState({ search: "", status: "" });
   const [form] = Form.useForm();
 
@@ -56,7 +63,7 @@ const InvitationList = () => {
         ...(filters.search && { search: filters.search }),
         ...(filters.status && { status: filters.status }),
       };
-      const response = await axios.get("/api/v1/invitations", { params });
+      const response = await axios.get(`${baseURL}/invitations`, { params });
       setInvitations(response.data.data || []);
       setPagination((prev) => ({
         ...prev,
@@ -77,11 +84,14 @@ const InvitationList = () => {
   const handleGenerateInvitation = async (values) => {
     setSubmitting(true);
     try {
-      const response = await axios.post("/api/v1/invitations/generate", values);
+      const response = await axios.post(
+        `${baseURL}/invitations/generate`,
+        values,
+      );
       message.success("Invitation generated successfully!");
-      
+
       const inviteUrl = `${window.location.origin}/register?token=${response.data.data.inviteUrl.split("token=")[1]}`;
-      
+
       Modal.success({
         title: "Invitation Created",
         content: (
@@ -98,8 +108,7 @@ const InvitationList = () => {
               onClick={() => {
                 navigator.clipboard.writeText(inviteUrl);
                 message.success("Copied to clipboard!");
-              }}
-            >
+              }}>
               Copy Link
             </Button>
           </div>
@@ -111,7 +120,9 @@ const InvitationList = () => {
         },
       });
     } catch (error) {
-      message.error(error.response?.data?.message || "Failed to generate invitation");
+      message.error(
+        error.response?.data?.message || "Failed to generate invitation",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -119,7 +130,7 @@ const InvitationList = () => {
 
   const handleCancelInvitation = async (id) => {
     try {
-      await axios.patch(`/api/v1/invitations/${id}/cancel`);
+      await axios.patch(`${baseURL}/invitations/${id}/cancel`);
       message.success("Invitation cancelled");
       fetchInvitations(pagination.current);
     } catch (error) {
@@ -129,7 +140,7 @@ const InvitationList = () => {
 
   const handleDeleteInvitation = async (id) => {
     try {
-      await axios.delete(`/api/v1/invitations/${id}`);
+      await axios.delete(`${baseURL}/invitations/${id}`);
       message.success("Invitation deleted");
       fetchInvitations(pagination.current);
     } catch (error) {
@@ -139,11 +150,11 @@ const InvitationList = () => {
 
   const handleResendInvitation = async (id) => {
     try {
-      const response = await axios.post(`/api/v1/invitations/resend/${id}`);
+      const response = await axios.post(`${baseURL}/invitations/resend/${id}`);
       message.success("Invitation resent");
-      
+
       const inviteUrl = `${window.location.origin}/register?token=${response.data.data.inviteUrl.split("token=")[1]}`;
-      
+
       Modal.success({
         title: "Invitation Resent",
         content: (
@@ -160,8 +171,7 @@ const InvitationList = () => {
               onClick={() => {
                 navigator.clipboard.writeText(inviteUrl);
                 message.success("Copied to clipboard!");
-              }}
-            >
+              }}>
               Copy Link
             </Button>
           </div>
@@ -174,10 +184,26 @@ const InvitationList = () => {
 
   const getStatusTag = (status) => {
     const config = {
-      pending: { color: "blue", icon: <ClockCircleOutlined />, text: "Pending" },
-      accepted: { color: "green", icon: <CheckCircleOutlined />, text: "Accepted" },
-      expired: { color: "default", icon: <ClockCircleOutlined />, text: "Expired" },
-      cancelled: { color: "red", icon: <CloseCircleOutlined />, text: "Cancelled" },
+      pending: {
+        color: "blue",
+        icon: <ClockCircleOutlined />,
+        text: "Pending",
+      },
+      accepted: {
+        color: "green",
+        icon: <CheckCircleOutlined />,
+        text: "Accepted",
+      },
+      expired: {
+        color: "default",
+        icon: <ClockCircleOutlined />,
+        text: "Expired",
+      },
+      cancelled: {
+        color: "red",
+        icon: <CloseCircleOutlined />,
+        text: "Cancelled",
+      },
     };
     const { color, icon, text } = config[status] || config.pending;
     return (
@@ -220,9 +246,7 @@ const InvitationList = () => {
       title: "Role",
       dataIndex: "role",
       key: "role",
-      render: (role) => (
-        <Tag color="blue">{role?.toUpperCase()}</Tag>
-      ),
+      render: (role) => <Tag color="blue">{role?.toUpperCase()}</Tag>,
     },
     {
       title: "Plan",
@@ -273,8 +297,7 @@ const InvitationList = () => {
               <Tooltip title="Cancel">
                 <Popconfirm
                   title="Cancel this invitation?"
-                  onConfirm={() => handleCancelInvitation(record._id)}
-                >
+                  onConfirm={() => handleCancelInvitation(record._id)}>
                   <Button type="text" danger icon={<CloseCircleOutlined />} />
                 </Popconfirm>
               </Tooltip>
@@ -283,8 +306,7 @@ const InvitationList = () => {
           <Tooltip title="Delete">
             <Popconfirm
               title="Delete this invitation permanently?"
-              onConfirm={() => handleDeleteInvitation(record._id)}
-            >
+              onConfirm={() => handleDeleteInvitation(record._id)}>
               <Button type="text" danger icon={<DeleteOutlined />} />
             </Popconfirm>
           </Tooltip>
@@ -297,14 +319,17 @@ const InvitationList = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <Title level={3} className="!mb-1">Invitations</Title>
-          <Text type="secondary">Manage user invitations and subscription plans</Text>
+          <Title level={3} className="!mb-1">
+            Invitations
+          </Title>
+          <Text type="secondary">
+            Manage user invitations and subscription plans
+          </Text>
         </div>
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => setModalVisible(true)}
-        >
+          onClick={() => setModalVisible(true)}>
           Generate Invitation
         </Button>
       </div>
@@ -322,16 +347,19 @@ const InvitationList = () => {
           <Select
             placeholder="Filter by status"
             value={filters.status || undefined}
-            onChange={(value) => setFilters({ ...filters, status: value || "" })}
+            onChange={(value) =>
+              setFilters({ ...filters, status: value || "" })
+            }
             allowClear
-            className="w-40"
-          >
+            className="w-40">
             <Option value="pending">Pending</Option>
             <Option value="accepted">Accepted</Option>
             <Option value="expired">Expired</Option>
             <Option value="cancelled">Cancelled</Option>
           </Select>
-          <Button icon={<ReloadOutlined />} onClick={() => fetchInvitations(pagination.current)}>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => fetchInvitations(pagination.current)}>
             Refresh
           </Button>
         </div>
@@ -342,8 +370,7 @@ const InvitationList = () => {
           {invitations.length === 0 ? (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description="No invitations yet"
-            >
+              description="No invitations yet">
               <Button type="primary" onClick={() => setModalVisible(true)}>
                 Generate First Invitation
               </Button>
@@ -373,8 +400,7 @@ const InvitationList = () => {
           form.resetFields();
         }}
         footer={null}
-        width={500}
-      >
+        width={500}>
         <Alert
           message="Invitation Link"
           description="The generated link will include the subscription plan. When the user registers using this link, their account will be automatically assigned to the selected plan."
@@ -382,21 +408,19 @@ const InvitationList = () => {
           showIcon
           className="mb-4"
         />
-        
+
         <Form
           form={form}
           layout="vertical"
           onFinish={handleGenerateInvitation}
-          initialValues={{ role: "staff", plan: "STARTER", expiresInDays: 7 }}
-        >
+          initialValues={{ role: "staff", plan: "STARTER", expiresInDays: 7 }}>
           <Form.Item
             name="email"
             label="Email Address"
             rules={[
               { required: true, message: "Please enter email" },
               { type: "email", message: "Please enter a valid email" },
-            ]}
-          >
+            ]}>
             <Input prefix={<MailOutlined />} placeholder="user@example.com" />
           </Form.Item>
 
@@ -410,11 +434,7 @@ const InvitationList = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Form.Item
-              name="role"
-              label="Role"
-              rules={[{ required: true }]}
-            >
+            <Form.Item name="role" label="Role" rules={[{ required: true }]}>
               <Select>
                 <Option value="staff">Staff</Option>
                 <Option value="lawyer">Lawyer</Option>
@@ -427,8 +447,7 @@ const InvitationList = () => {
             <Form.Item
               name="plan"
               label="Subscription Plan"
-              rules={[{ required: true }]}
-            >
+              rules={[{ required: true }]}>
               <Select>
                 <Option value="FREE">Free Trial</Option>
                 <Option value="STARTER">Starter (₦49/mo)</Option>
@@ -441,8 +460,7 @@ const InvitationList = () => {
           <Form.Item
             name="expiresInDays"
             label="Expires In (days)"
-            rules={[{ required: true }]}
-          >
+            rules={[{ required: true }]}>
             <Select>
               <Option value={3}>3 days</Option>
               <Option value={7}>7 days</Option>
@@ -452,12 +470,19 @@ const InvitationList = () => {
           </Form.Item>
 
           <Form.Item name="message" label="Welcome Message (optional)">
-            <Input.TextArea rows={3} placeholder="Optional message for the invitee..." />
+            <Input.TextArea
+              rows={3}
+              placeholder="Optional message for the invitee..."
+            />
           </Form.Item>
 
           <Form.Item className="mb-0 flex justify-end gap-2">
             <Button onClick={() => setModalVisible(false)}>Cancel</Button>
-            <Button type="primary" htmlType="submit" loading={submitting} icon={<UserAddOutlined />}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={submitting}
+              icon={<UserAddOutlined />}>
               Generate Invitation
             </Button>
           </Form.Item>

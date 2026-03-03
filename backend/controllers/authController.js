@@ -12,7 +12,7 @@ const Firm = require("../models/firmModel");
 
 const { createSendToken, hashToken } = require("../utils/handleSendToken");
 const Token = require("../models/tokenModel");
-const { sendMail } = require("../utils/email");
+const { sendMail, sendCustomEmail } = require("../utils/email");
 const { OAuth2Client } = require("google-auth-library");
 
 dotenv.config({ path: "./config.env" });
@@ -186,40 +186,27 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
 
     const newUser = await User.create(userData);
 
-    // 9) Send verification email
+    // 9) Send welcome email (primary email after registration)
     try {
-      const vToken = crypto.randomBytes(32).toString("hex") + newUser._id;
-      const hashedToken = hashToken(vToken);
-
-      await new Token({
-        userId: newUser._id,
-        verificationToken: hashedToken,
-        createAt: Date.now(),
-        expiresAt: Date.now() + 24 * 60 * 60 * 1000,
-      }).save();
-
-      const verificationURL = `${process.env.FRONTEND_URL}/verify-account/${vToken}`;
-
-      const subject = "Verify Your Account - CaseMaster";
-      const send_to = email;
-      const send_from = process.env.SENDINBLUE_EMAIL;
-      const reply_to = "noreply@casemaster.ng";
-      const template = "verifyEmail";
-      const context = {
-        name: firstName,
+      await sendWelcomeEmail({
+        firstName,
+        email,
+        password,
         firmName,
-        link: verificationURL,
-        companyName: "CaseMaster",
         plan: selectedPlan,
         trialDays: limits.trialDays,
-      };
-
-      await sendMail(subject, send_to, send_from, reply_to, template, context);
-    } catch (emailError) {
-      console.error("Failed to send verification email:", emailError);
+        maxUsers: limits.users,
+      });
+    } catch (welcomeEmailError) {
+      console.error("Failed to send welcome email:", welcomeEmailError);
     }
 
-    // 10) Send success response
+    // 10) Skip verification for trial users - they can verify later from dashboard
+    // Optional: Send verification email separately if needed
+    // const vToken = crypto.randomBytes(32).toString("hex") + newUser._id;
+    // ... verification logic can be added later
+
+    // 11) Send success response
     res.status(201).json({
       status: "success",
       message:
@@ -625,7 +612,7 @@ exports.register = catchAsync(async (req, res, next) => {
       name: newUser.firstName,
       firmName: req.firm?.name || "Your Firm",
       link: verificationURL,
-      companyName: "CaseMaster",
+      companyName: "LawMaster",
       position: newUser.position || newUser.userType,
       roles: roles.length > 1 ? roles.join(" & ") : roles[0],
     };
@@ -724,7 +711,7 @@ exports.login = catchAsync(async (req, res, next) => {
 
     // Send the code via email (best-effort — don't block the response)
     try {
-      const { sendMail } = require("../utils/email");
+const { sendMail, sendCustomEmail } = require("../utils/email");
       await sendMail(
         "Your Login Verification Code - CaseMaster",
         user.email,
@@ -736,7 +723,7 @@ exports.login = catchAsync(async (req, res, next) => {
           code: loginCode,
           expiresIn: "60 minutes",
           year: new Date().getFullYear(),
-          companyName: process.env.COMPANY_NAME || "CaseMaster",
+          companyName: process.env.COMPANY_NAME || "LawMaster",
         },
       );
     } catch (emailErr) {
@@ -818,7 +805,7 @@ exports.sendLoginCode = catchAsync(async (req, res, next) => {
       code: loginCode,
       expiresIn: "10 minutes",
       year: new Date().getFullYear(),
-      companyName: process.env.COMPANY_NAME || "CaseMaster",
+      companyName: process.env.COMPANY_NAME || "LawMaster",
     };
 
     await sendMail(subject, send_to, send_from, reply_to, template, context);
@@ -1409,7 +1396,7 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
   const context = {
     name: user.firstName,
     link: verificationURL,
-    companyName: firm?.name || "CaseMaster",
+    companyName: firm?.name || "LawMaster",
     position: user.position || user.userType,
   };
 
@@ -1700,5 +1687,183 @@ exports.updateCurrentUser = catchAsync(async (req, res, next) => {
     data: updatedUser,
   });
 });
+
+// ============================================
+// WELCOME EMAIL TEMPLATE
+// ============================================
+const getWelcomeEmailHTML = ({ firstName, email, password, firmName, plan, trialDays, maxUsers, loginUrl, baseUrl, year }) => {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to LawMaster</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #0f172a; line-height: 1.6; color: #334155; }
+    .wrapper { width: 100%; table-layout: fixed; background-color: #0f172a; padding: 40px 0; }
+    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 40px 40px 60px; text-align: center; position: relative; }
+    .header::after { content: ''; position: absolute; bottom: -20px; left: 0; right: 0; height: 40px; background: #ffffff; border-radius: 20px 20px 0 0; }
+    .logo-text { font-size: 28px; font-weight: 700; color: #ffffff; }
+    .logo-text span { color: #a7f3d0; }
+    .header h1 { font-size: 28px; font-weight: 600; color: #ffffff; margin: 0 0 12px 0; }
+    .header p { font-size: 16px; color: #a7f3d0; margin: 0; }
+    .content { padding: 40px; }
+    .greeting { font-size: 18px; font-weight: 600; color: #1e293b; margin-bottom: 24px; }
+    .message { font-size: 16px; color: #475569; margin-bottom: 24px; line-height: 1.7; }
+    .highlight-box { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; border-radius: 12px; padding: 24px; margin: 24px 0; }
+    .highlight-box h3 { font-size: 14px; font-weight: 600; color: #065f46; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+    .credential { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+    .credential-icon { width: 40px; height: 40px; background: #059669; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 18px; }
+    .credential-info { flex: 1; }
+    .credential-label { font-size: 12px; color: #64748b; margin-bottom: 2px; }
+    .credential-value { font-size: 14px; font-weight: 600; color: #1e293b; }
+    .plan-badge { display: inline-block; background: #059669; color: #ffffff; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; margin-top: 12px; }
+    .cta-button { display: inline-block; background: linear-gradient(135deg, #059669 0%, #10b981 100%); color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 16px 32px; border-radius: 12px; margin: 24px 0; }
+    .cta-button:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(5, 150, 105, 0.3); }
+    .features { display: table; width: 100%; margin: 24px 0; }
+    .feature-row { display: table-row; }
+    .feature { display: table-cell; width: 50%; padding: 16px; text-align: center; }
+    .feature-icon { width: 48px; height: 48px; background: #ecfdf5; border-radius: 12px; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 20px; }
+    .feature-title { font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 4px; }
+    .feature-desc { font-size: 12px; color: #64748b; }
+    .footer { background-color: #f8fafc; padding: 32px 40px; text-align: center; border-top: 1px solid #e2e8f0; }
+    .footer-logo { font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 16px; }
+    .footer-logo span { color: #059669; }
+    .footer-links a { color: #059669; text-decoration: none; font-size: 14px; margin: 0 12px; }
+    .footer-text { font-size: 12px; color: #94a3b8; margin: 0; }
+    .divider { height: 1px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); margin: 24px 0; }
+    @media only screen and (max-width: 600px) {
+      .wrapper { padding: 20px; }
+      .header { padding: 30px 24px 50px; }
+      .content { padding: 24px; }
+      .feature { display: block; width: 100%; padding: 12px 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td align="center">
+          <div class="container">
+            <div class="header">
+              <div class="logo-text">Law<span>Master</span></div>
+              <h1>Welcome to LawMaster!</h1>
+              <p>Your firm's legal practice just got smarter</p>
+            </div>
+            <div class="content">
+              <div class="greeting">Hello ${firstName},</div>
+              <div class="message">
+                <p>Congratulations on starting your journey with LawMaster! 🎉</p>
+                <p>You've successfully created your firm account. LawMaster is designed to help you streamline your legal practice, from matter management to client billing.</p>
+              </div>
+              <div class="highlight-box">
+                <h3>Your Firm & Account</h3>
+                <div class="credential">
+                  <div class="credential-icon">🏢</div>
+                  <div class="credential-info">
+                    <div class="credential-label">Firm Name</div>
+                    <div class="credential-value">${firmName}</div>
+                  </div>
+                </div>
+                <div class="credential">
+                  <div class="credential-icon">📧</div>
+                  <div class="credential-info">
+                    <div class="credential-label">Email Address</div>
+                    <div class="credential-value">${email}</div>
+                  </div>
+                </div>
+                <div class="credential">
+                  <div class="credential-icon">🔐</div>
+                  <div class="credential-info">
+                    <div class="credential-label">Your Password</div>
+                    <div class="credential-value">${password}</div>
+                  </div>
+                </div>
+                <div class="plan-badge">Plan: ${plan}</div>
+              </div>
+              <div style="text-align: center;">
+                <a href="${loginUrl}" class="cta-button">Launch Your Dashboard →</a>
+              </div>
+              <div class="divider"></div>
+              <div class="features">
+                <div class="feature-row">
+                  <div class="feature"><div class="feature-icon">📁</div><div class="feature-title">Matter Management</div><div class="feature-desc">Track all your cases</div></div>
+                  <div class="feature"><div class="feature-icon">👥</div><div class="feature-title">Client Portal</div><div class="feature-desc">Self-service for clients</div></div>
+                </div>
+                <div class="feature-row">
+                  <div class="feature"><div class="feature-icon">📊</div><div class="feature-title">Invoicing</div><div class="feature-desc">Streamlined billing</div></div>
+                  <div class="feature"><div class="feature-icon">📅</div><div class="feature-title">Calendar</div><div class="feature-desc">Court dates & reminders</div></div>
+                </div>
+              </div>
+              <div class="message">
+                <p><strong>Your ${plan} Trial Includes:</strong></p>
+                <p>• ${trialDays} days of full access<br>• ${maxUsers} team members<br>• All premium features unlocked</p>
+              </div>
+              <p class="message">
+                Need help getting started? Our support team is here to assist you.
+              </p>
+              <p class="message">
+                Best regards,<br>
+                <strong>The LawMaster Team</strong>
+              </p>
+            </div>
+            <div class="footer">
+              <div class="footer-logo">Law<span>Master</span></div>
+              <div class="footer-links">
+                <a href="${baseUrl}">Dashboard</a>
+                <a href="${baseUrl}/support">Support</a>
+                <a href="${baseUrl}/terms-of-service">Terms</a>
+                <a href="${baseUrl}/privacy-policy">Privacy</a>
+              </div>
+              <p class="footer-text">© ${year} LawMaster Technologies. All rights reserved.</p>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>`;
+};
+
+// Send welcome email function
+const sendWelcomeEmail = async (userData) => {
+  try {
+    const { firstName, email, password, firmName, plan, trialDays, maxUsers } = userData;
+    const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+    const loginUrl = `${baseUrl}/users/login`;
+    const year = new Date().getFullYear();
+
+    const htmlContent = getWelcomeEmailHTML({
+      firstName,
+      email,
+      password,
+      firmName,
+      plan: plan || "FREE",
+      trialDays: trialDays || 14,
+      maxUsers: maxUsers || 5,
+      loginUrl,
+      baseUrl,
+      year,
+    });
+
+    await sendCustomEmail(
+      "Welcome to LawMaster! 🎉",
+      email,
+      process.env.SENDINBLUE_EMAIL || "noreply@lawmaster.ng",
+      "support@lawmaster.ng",
+      htmlContent
+    );
+
+    console.log("✅ Welcome email sent successfully");
+    return true;
+  } catch (error) {
+    console.error("❌ Failed to send welcome email:", error.message);
+    return false;
+  }
+};
 
 module.exports = exports;

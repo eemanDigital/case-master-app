@@ -199,7 +199,7 @@ const VerifyAccountNotice = () => {
                     </span>
                     ! You've been {isStaff ? "appointed" : "registered"} at{" "}
                     <span className="font-bold text-blue-600">
-                      A.T. Lukman & Co
+                      {user.data?.firmName}
                     </span>
                     .
                   </p>
