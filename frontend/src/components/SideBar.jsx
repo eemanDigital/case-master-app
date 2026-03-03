@@ -23,6 +23,7 @@ import {
   ProfileOutlined,
   SettingOutlined,
   ApiOutlined,
+  UserAddOutlined,
 } from "@ant-design/icons";
 import { logout, RESET } from "../redux/features/auth/authSlice";
 import { useTheme } from "../providers/ThemeProvider";
@@ -312,6 +313,12 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           icon: <ApiOutlined />,
           label: "Webhooks",
           path: "/dashboard/settings/webhooks",
+        },
+        {
+          key: "invitations",
+          icon: <UserAddOutlined />,
+          label: "Invitations",
+          path: "/dashboard/settings/invitations",
         },
       ],
     },

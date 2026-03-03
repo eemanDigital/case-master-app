@@ -36,6 +36,7 @@ import {
 // Auth Pages
 const HomePage = lazy(() => import("./components/HomePage.jsx"));
 const Login = lazy(() => import("./pages/Login.jsx"));
+const Register = lazy(() => import("./pages/Register.jsx"));
 const ForgotPassword = lazy(() => import("./pages/ForgotPassword.jsx"));
 const ForgotPasswordReset = lazy(
   () => import("./pages/ForgotPasswordReset.jsx"),
@@ -192,6 +193,7 @@ const EventDetail = lazy(() => import("./pages/EventDetail.jsx"));
 // Settings & Integrations
 const AuditLogList = lazy(() => import("./pages/AuditLogList.jsx"));
 const WebhookList = lazy(() => import("./pages/WebhookList.jsx"));
+const InvitationList = lazy(() => import("./pages/InvitationList.jsx"));
 
 // Support
 const ContactForm = lazy(() => import("./components/ContactForm.jsx"));
@@ -401,6 +403,14 @@ const router = createBrowserRouter(
           element={
             <Suspense fallback={<PageLoader />}>
               <Login />
+            </Suspense>
+          }
+        />
+        <Route
+          path="register"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <Register />
             </Suspense>
           }
         />
@@ -1062,6 +1072,16 @@ const router = createBrowserRouter(
               <Suspense fallback={<PageLoader />}>
                 <ProtectedStaffRoute>
                   <WebhookList />
+                </ProtectedStaffRoute>
+              </Suspense>
+            }
+          />
+          <Route
+            path="settings/invitations"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProtectedStaffRoute>
+                  <InvitationList />
                 </ProtectedStaffRoute>
               </Suspense>
             }

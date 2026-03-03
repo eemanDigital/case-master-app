@@ -34,6 +34,7 @@ const noteRouter = require("./routes/noteRoutes");
 const documentRecordRouter = require("./routes/documentRecordRoute");
 const webhookRouter = require("./routes/webhookRoutes");
 const auditLogRouter = require("./routes/auditLogRoutes");
+const invitationRouter = require("./routes/invitationRoutes");
 const { auditMiddleware } = require("./middleware/auditMiddleware");
 
 const AppError = require("./utils/appError");
@@ -329,6 +330,11 @@ app.use("/api/v1/notes", noteRouter);
 app.use("/api/v1/documentRecord", documentRecordRouter);
 app.use("/api/v1/webhooks", webhookRouter);
 app.use("/api/v1/audit-logs", auditLogRouter);
+app.use("/api/v1/invitations", invitationRouter);
+
+// Public invitation validation
+app.get("/api/v1/invitations/validate/:token", require("./controllers/invitationController").validateInvitation);
+app.post("/api/v1/invitations/accept/:token", require("./controllers/invitationController").acceptInvitation);
 
 // ==========================================
 // HEALTH CHECK ENDPOINT
