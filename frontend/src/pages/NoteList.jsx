@@ -32,7 +32,7 @@ import {
   UnorderedListOutlined,
 } from "@ant-design/icons";
 
-import { useDebouncedValue } from "../hooks/useDebouncedValue";
+import useDebouncedValue from "../hooks/useDebouncedValue";
 import {
   fetchNotes,
   deleteNote,
@@ -58,7 +58,7 @@ const CATEGORIES = [
   { value: "general", label: "General", color: "default" },
 ];
 
-const CATEGORY_OPTIONS = CATEGORIES.map(c => ({
+const CATEGORY_OPTIONS = CATEGORIES.map((c) => ({
   value: c.value,
   label: c.label,
 }));
@@ -255,7 +255,7 @@ const NoteList = () => {
 
   const renderNoteCard = (note) => {
     const categoryInfo = getCategoryInfo(note.category);
-    
+
     const unescapeHtml = (str) => {
       if (!str) return "";
       return str
@@ -265,30 +265,30 @@ const NoteList = () => {
         .replace(/&quot;/g, '"')
         .replace(/&#39;/g, "'");
     };
-    
+
     const getPlainText = (html) => {
       if (!html) return "";
       const unescaped = unescapeHtml(html);
       return unescaped.replace(/<[^>]*>/g, "").trim();
     };
-    
+
     const plainContent = getPlainText(note.content);
-    
+
     return (
       <List.Item>
         <Card
           hoverable
           className="w-full h-full shadow-md transition-all duration-300 ease-in-out hover:shadow-lg border-t-4"
-          style={{ 
+          style={{
             borderTopColor: note.color || "#3b82f6",
-            backgroundColor: note.color && note.color !== "#ffffff" ? note.color : undefined
+            backgroundColor:
+              note.color && note.color !== "#ffffff" ? note.color : undefined,
           }}
           actions={
             activeTab === "trash" ? getTrashActions(note) : getNoteActions(note)
           }
           onClick={() =>
-            activeTab !== "trash" &&
-            navigate(`/dashboard/note/${note._id}`)
+            activeTab !== "trash" && navigate(`/dashboard/note/${note._id}`)
           }>
           <Card.Meta
             title={
@@ -341,8 +341,7 @@ const NoteList = () => {
                     WebkitLineClamp: 3,
                     WebkitBoxOrient: "vertical",
                     overflow: "hidden",
-                  }}
-                >
+                  }}>
                   {plainContent.substring(0, 150)}
                   {plainContent.length > 150 && "..."}
                 </div>
