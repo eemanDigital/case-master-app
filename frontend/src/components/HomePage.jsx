@@ -1,16 +1,6 @@
-import React, { useState } from "react";
-import {
-  Button,
-  Card,
-  Row,
-  Col,
-  Input,
-  Form,
-  Tag,
-  Progress,
-  Space,
-  Grid,
-} from "antd";
+import React, { useState, useEffect } from "react";
+import { Button, Card, Row, Col, Tag, Space, Typography, Input } from "antd";
+import { Link } from "react-router-dom";
 import {
   SafetyCertificateOutlined,
   FileTextOutlined,
@@ -20,9 +10,7 @@ import {
   LockOutlined,
   ThunderboltOutlined,
   BarChartOutlined,
-  // BriefcaseOutlined,
   EyeOutlined,
-  RightOutlined,
   CloudServerOutlined,
   DatabaseOutlined,
   SecurityScanOutlined,
@@ -33,626 +21,597 @@ import {
   StarOutlined,
   RocketOutlined,
   GlobalOutlined,
+  DollarOutlined,
+  BellOutlined,
+  LinkOutlined,
+  MailOutlined,
+  PhoneOutlined,
+  MenuOutlined,
+  CloseOutlined,
+  ArrowRightOutlined,
+  PlayCircleOutlined,
+  CheckOutlined,
 } from "@ant-design/icons";
 import caseMasterLogo from "../assets/case-master-logo.svg";
 
-const { useBreakpoint } = Grid;
+const { Title, Text, Paragraph } = Typography;
 
 const HomePage = () => {
-  const [email, setEmail] = useState("");
-  const screens = useBreakpoint();
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeFeature, setActiveFeature] = useState(0);
 
-  const coreFeatures = [
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setActiveFeature((prev) => (prev + 1) % features.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const features = [
     {
-      icon: <FileTextOutlined className="text-2xl" />,
-      title: "Case Management",
-      description:
-        "Centralized case files, tracking, and complete matter histories in a unified legal workflow system.",
+      icon: <FileTextOutlined />,
+      title: "Matter Management",
+      description: "Complete lifecycle management for legal matters with automated workflows",
       color: "from-blue-500 to-blue-600",
+      details: ["Case intake & assignment", "Document management", "Deadline tracking", "Status updates"]
     },
     {
-      icon: <TeamOutlined className="text-2xl" />,
-      title: "Client Dashboard",
-      description:
-        "Secure client portal for real-time case updates, documents, and communication tracking.",
+      icon: <TeamOutlined />,
+      title: "Client Portal",
+      description: "Secure self-service portal for clients to track matters and invoices",
       color: "from-purple-500 to-purple-600",
+      details: ["Real-time updates", "Invoice payments", "Document access", "Communication hub"]
     },
     {
-      icon: <CalendarOutlined className="text-2xl" />,
-      title: "Automated Cause List",
-      description:
-        "Dynamic tracking of upcoming hearings and court appearances with automatic updates.",
-      color: "from-green-500 to-green-600",
+      icon: <DollarOutlined />,
+      title: "Billing & Invoices",
+      description: "Streamlined invoicing with multiple payment options and tracking",
+      color: "from-emerald-500 to-emerald-600",
+      details: ["Auto-generated invoices", "Payment tracking", "Online payments", "Financial reports"]
     },
     {
-      icon: <BarChartOutlined className="text-2xl" />,
-      title: "Case Analytics",
-      description:
-        "Comprehensive reporting and statistics for case progress and outcome analysis.",
-      color: "from-orange-500 to-orange-600",
+      icon: <CalendarOutlined />,
+      title: "Calendar & Events",
+      description: "Automated cause lists and court appearance scheduling",
+      color: "from-amber-500 to-amber-600",
+      details: ["Hearing reminders", "Court schedules", "Team calendars", "Auto-sync"]
     },
     {
-      icon: <ScheduleOutlined className="text-2xl" />,
+      icon: <ScheduleOutlined />,
       title: "Task Management",
-      description:
-        "Assign, track, and manage legal tasks with priority settings and deadline management.",
+      description: "Assign, track and manage legal tasks with priority settings",
       color: "from-cyan-500 to-cyan-600",
-    },
-    {
-      icon: <UserSwitchOutlined className="text-2xl" />,
-      title: "Leave Management",
-      description:
-        "Coordinate team schedules, manage leave requests, and ensure optimal resource allocation.",
-      color: "from-pink-500 to-pink-600",
-    },
-  ];
-
-  const securityFeatures = [
-    {
-      icon: <LockOutlined />,
-      text: "End-to-end encryption for all client data",
-    },
-    {
-      icon: <SecurityScanOutlined />,
-      text: "Role-based access controls with granular permissions",
+      details: ["Task assignment", "Due date tracking", "Priority levels", "Progress monitoring"]
     },
     {
       icon: <AuditOutlined />,
-      text: "Complete audit trails and activity logging",
-    },
-    { icon: <GlobalOutlined />, text: "ISO 27001 compliant infrastructure" },
-    {
-      icon: <CloudServerOutlined />,
-      text: "Regular security assessments and compliance checks",
-    },
-    { icon: <DatabaseOutlined />, text: "GDPR and data privacy compliant" },
+      title: "Audit Logging",
+      description: "Complete audit trail for compliance and security",
+      color: "from-rose-500 to-rose-600",
+      details: ["Activity tracking", "User actions", "System changes", "Compliance reports"]
+    }
   ];
 
-  const workflowSteps = [
-    {
-      step: "01",
-      title: "Case Intake",
-      description: "Streamlined case creation with automated client onboarding",
-      icon: <FolderOpenOutlined />,
-    },
-    {
-      step: "02",
-      title: "Activity Tracking",
-      description: "Real-time updates on case progress and communications",
-      icon: <EyeOutlined />,
-    },
-    {
-      step: "03",
-      title: "Reporting",
-      description: "Generate comprehensive case reports automatically",
-      icon: <FileTextOutlined />,
-    },
-    {
-      step: "04",
-      title: "Client Collaboration",
-      description: "Secure portal for client access and feedback",
-      icon: <TeamOutlined />,
-    },
+  const securityFeatures = [
+    { icon: <LockOutlined />, title: "End-to-End Encryption", desc: "All data encrypted at rest and in transit" },
+    { icon: <SecurityScanOutlined />, title: "Role-Based Access", desc: "Granular permissions for every user role" },
+    { icon: <AuditOutlined />, title: "Complete Audit Trails", desc: "Full history of all system activities" },
+    { icon: <CloudServerOutlined />, title: "Cloud Infrastructure", desc: "99.9% uptime with redundant backups" },
+    { icon: <DatabaseOutlined />, title: "Data Privacy", desc: "GDPR & LGPD compliant data handling" },
+    { icon: <GlobalOutlined />, title: "24/7 Security Monitoring", desc: "Continuous threat detection & response" }
   ];
 
   const stats = [
+    { value: "500+", label: "Law Firms", suffix: "" },
+    { value: "99.9%", label: "Uptime", suffix: "" },
+    { value: "50K+", label: "Matters Managed", suffix: "" },
+    { value: "24/7", label: "Support", suffix: "" }
+  ];
+
+  const pricingPlans = [
     {
-      value: "95%",
-      label: "Reduced Admin Time",
-      icon: <ThunderboltOutlined />,
+      name: "Starter",
+      price: "49",
+      period: "/month",
+      description: "Perfect for small law firms",
+      features: [
+        "Up to 5 users",
+        "100 matters",
+        "Client portal",
+        "Basic reporting",
+        "Email support"
+      ],
+      popular: false
     },
     {
-      value: "100%",
-      label: "Deadline Compliance",
-      icon: <CheckCircleOutlined />,
+      name: "Professional",
+      price: "149",
+      period: "/month",
+      description: "For growing practices",
+      features: [
+        "Up to 20 users",
+        "Unlimited matters",
+        "Client portal",
+        "Advanced reporting",
+        "API access",
+        "Priority support",
+        "Custom workflows"
+      ],
+      popular: true
     },
-    { value: "3x", label: "Faster Case Resolution", icon: <RocketOutlined /> },
-    { value: "500+", label: "Law Firms Trust Us", icon: <StarOutlined /> },
+    {
+      name: "Enterprise",
+      price: "Custom",
+      period: "",
+      description: "For large organizations",
+      features: [
+        "Unlimited users",
+        "Unlimited matters",
+        "Dedicated instance",
+        "Custom integrations",
+        "SLA guarantee",
+        "24/7 phone support",
+        "On-premise option"
+      ],
+      popular: false
+    }
+  ];
+
+  const testimonials = [
+    {
+      name: "Sarah Johnson",
+      role: "Managing Partner",
+      firm: "Johnson & Associates",
+      quote: "LawMaster transformed how we manage our caseload. We've reduced administrative time by 60%.",
+      avatar: "SJ"
+    },
+    {
+      name: "Michael Chen",
+      role: "Senior Partner",
+      firm: "Chen Legal Group",
+      quote: "The client portal alone has improved our client satisfaction significantly. Highly recommended.",
+      avatar: "MC"
+    },
+    {
+      name: "Emily Rodriguez",
+      role: "Operations Manager",
+      firm: "Rodriguez & Partners",
+      quote: "Best investment we've made. The billing features alone have streamlined our entire finance workflow.",
+      avatar: "ER"
+    }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950 text-white">
+    <div className="min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-gray-900/90 backdrop-blur-md border-b border-white/10 py-4">
-        <div className="container mx-auto px-4 lg:px-8">
+      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        scrolled ? "bg-[#0a0a0f]/95 backdrop-blur-xl border-b border-white/5 py-3" : "bg-transparent py-5"
+      }`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-700 rounded-xl flex items-center justify-center">
-                <img
-                  src={caseMasterLogo}
-                  alt="case master logo"
-                  className="text-white text-lg"
-                />
+            <Link to="/" className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <span className="text-white font-bold text-lg">L</span>
               </div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent">
-                CaseMaster
+              <span className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                LawMaster
               </span>
-            </div>
+            </Link>
 
             <div className="hidden lg:flex items-center space-x-8">
-              <a
-                href="#features"
-                className="text-gray-300 hover:text-white transition-colors font-medium">
-                Features
-              </a>
-              <a
-                href="#security"
-                className="text-gray-300 hover:text-white transition-colors font-medium">
-                Security
-              </a>
-              <a
-                href="#workflow"
-                className="text-gray-300 hover:text-white transition-colors font-medium">
-                Workflow
-              </a>
-              <Button
-                type="primary"
-                className="bg-gradient-to-r from-blue-600 to-blue-700 border-none h-10 px-6 font-medium">
-                Request Demo
-              </Button>
+              <a href="#features" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Features</a>
+              <a href="#security" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Security</a>
+              <a href="#pricing" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Pricing</a>
+              <a href="#testimonials" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">Testimonials</a>
+              <Link to="/login">
+                <Button className="bg-white/10 border-white/10 text-white hover:bg-white/20 h-10 px-6 font-medium text-sm">
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/login">
+                <Button className="bg-gradient-to-r from-blue-600 to-purple-600 border-none h-10 px-6 font-medium text-sm">
+                  Get Started
+                </Button>
+              </Link>
             </div>
+
+            <button className="lg:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+              {mobileMenuOpen ? <CloseOutlined /> : <MenuOutlined />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden bg-[#0a0a0f]/98 backdrop-blur-xl border-b border-white/5 px-4 py-4">
+            <div className="flex flex-col space-y-4">
+              <a href="#features" className="text-gray-400 hover:text-white text-sm">Features</a>
+              <a href="#security" className="text-gray-400 hover:text-white text-sm">Security</a>
+              <a href="#pricing" className="text-gray-400 hover:text-white text-sm">Pricing</a>
+              <a href="#testimonials" className="text-gray-400 hover:text-white text-sm">Testimonials</a>
+              <Link to="/login">
+                <Button block className="bg-white/10 border-white/10 text-white h-10">Sign In</Button>
+              </Link>
+              <Link to="/login">
+                <Button block className="bg-gradient-to-r from-blue-600 to-purple-600 border-none h-10">Get Started</Button>
+              </Link>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}
-      <div className="relative pt-32 pb-20 overflow-hidden">
-        {/* Background Effects */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-transparent to-purple-900/20"></div>
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+        {/* Animated Background */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-[#0a0a0f] to-[#0a0a0f]"></div>
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px] animate-pulse"></div>
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[100px] animate-pulse" style={{animationDelay: '1s'}}></div>
+        
+        {/* Grid Pattern */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:50px_50px]"></div>
 
-        <div className="container mx-auto px-4 lg:px-8 relative z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="max-w-4xl mx-auto text-center">
-            <Tag
-              icon={<SafetyCertificateOutlined />}
-              className="bg-blue-500/10 border-blue-500/30 text-blue-300 px-4 py-2 rounded-full mb-8 text-base">
-              Trusted by 500+ Law Firms
-            </Tag>
+            <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2 mb-8">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+              <span className="text-gray-300 text-sm">Trusted by 500+ law firms worldwide</span>
+            </div>
 
-            <h1 className="text-5xl lg:text-7xl font-bold mb-6 leading-tight">
-              Legal Case Management
-              <br />
-              <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-purple-500 bg-clip-text text-transparent">
-                Reimagined
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-6 leading-[1.1]">
+              The Modern Platform for
+              <span className="block mt-2 bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                Legal Practice Management
               </span>
             </h1>
 
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-10 leading-relaxed">
-              A monolithic platform that unifies case management, client
-              collaboration, and firm operations in one secure, powerful system
-              designed exclusively for legal professionals.
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+              Streamline your entire legal practice with our all-in-one solution. 
+              From matter management to client billing, everything you need to run a successful law firm.
             </p>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <Button
-                type="primary"
-                size="large"
-                className="bg-gradient-to-r from-blue-600 to-blue-700 border-none h-12 px-8 font-semibold text-base flex items-center gap-2"
-                icon={<RightOutlined />}>
-                Start Free Trial
-              </Button>
-              <Button
-                size="large"
-                className="bg-white/5 border-white/10 text-white h-12 px-8 font-semibold text-base hover:bg-white/10">
-                Schedule Demo
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+              <Link to="/login">
+                <Button size="large" className="bg-gradient-to-r from-blue-600 to-purple-600 border-none h-14 px-8 font-semibold text-base shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-all">
+                  Start Free Trial <ArrowRightOutlined />
+                </Button>
+              </Link>
+              <Button size="large" className="bg-white/5 border-white/10 text-white h-14 px-8 font-semibold text-base hover:bg-white/10 transition-all flex items-center gap-2">
+                <PlayCircleOutlined /> Watch Demo
               </Button>
             </div>
 
-            <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto">
+            {/* Stats */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 max-w-3xl mx-auto pt-8 border-t border-white/10">
               {stats.map((stat, index) => (
                 <div key={index} className="text-center">
-                  <div className="text-3xl font-bold text-white mb-2">
+                  <div className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent mb-1">
                     {stat.value}
                   </div>
-                  <div className="text-gray-400 text-sm">{stat.label}</div>
+                  <div className="text-gray-500 text-sm">{stat.label}</div>
                 </div>
               ))}
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Dashboard Preview */}
-      <div className="py-20 bg-gradient-to-b from-transparent to-gray-900/30">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-                Everything You Need, In One Place
-              </h2>
-              <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-                Experience the power of a truly unified legal management
-                platform
-              </p>
-            </div>
-
-            {/* Dashboard Mockup */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
-              {/* Dashboard Header */}
-              <div className="bg-gray-900/50 border-b border-white/10 p-4 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                </div>
-                <div className="text-sm text-gray-500">
-                  CaseMaster Dashboard
-                </div>
-                <div className="flex items-center gap-1">
-                  <div className="w-1 h-1 bg-gray-600 rounded-full"></div>
-                  <div className="w-1 h-1 bg-gray-600 rounded-full"></div>
-                  <div className="w-1 h-1 bg-gray-600 rounded-full"></div>
-                </div>
-              </div>
-
-              {/* Dashboard Content */}
-              <div className="p-6">
-                <Row gutter={[16, 16]} className="mb-6">
-                  <Col xs={24} sm={12} lg={6}>
-                    <Card className="bg-gray-800/50 border-gray-700 h-full">
-                      <div className="text-gray-400 text-sm mb-2">
-                        Active Cases
-                      </div>
-                      <div className="text-2xl font-bold text-white">142</div>
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={12} lg={6}>
-                    <Card className="bg-gray-800/50 border-gray-700 h-full">
-                      <div className="text-gray-400 text-sm mb-2">
-                        Upcoming Hearings
-                      </div>
-                      <div className="text-2xl font-bold text-white">23</div>
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={12} lg={6}>
-                    <Card className="bg-gray-800/50 border-gray-700 h-full">
-                      <div className="text-gray-400 text-sm mb-2">
-                        Pending Tasks
-                      </div>
-                      <div className="text-2xl font-bold text-white">18</div>
-                    </Card>
-                  </Col>
-                  <Col xs={24} sm={12} lg={6}>
-                    <Card className="bg-gray-800/50 border-gray-700 h-full">
-                      <div className="text-gray-400 text-sm mb-2">
-                        Today's Reports
-                      </div>
-                      <div className="text-2xl font-bold text-white">7</div>
-                    </Card>
-                  </Col>
-                </Row>
-
-                <Row gutter={[16, 16]}>
-                  <Col xs={24} lg={16}>
-                    <Card
-                      title={
-                        <span className="text-white">Recent Case Activity</span>
-                      }
-                      className="bg-gray-800/50 border-gray-700 h-full">
-                      <Space direction="vertical" className="w-full">
-                        {[1, 2, 3].map((i) => (
-                          <div
-                            key={i}
-                            className="flex justify-between items-center">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                              <span className="text-gray-300">
-                                Case #{i}2345 - Status Updated
-                              </span>
-                            </div>
-                            <span className="text-gray-500 text-sm">
-                              2h ago
-                            </span>
-                          </div>
-                        ))}
-                      </Space>
-                    </Card>
-                  </Col>
-                  <Col xs={24} lg={8}>
-                    <Card
-                      title={<span className="text-white">Quick Actions</span>}
-                      className="bg-gray-800/50 border-gray-700 h-full">
-                      <Space direction="vertical" className="w-full">
-                        <Button
-                          block
-                          className="bg-blue-600/20 border-blue-500/30 text-blue-300">
-                          New Case Report
-                        </Button>
-                        <Button
-                          block
-                          className="bg-purple-600/20 border-purple-500/30 text-purple-300">
-                          Update Cause List
-                        </Button>
-                        <Button
-                          block
-                          className="bg-green-600/20 border-green-500/30 text-green-300">
-                          Assign Tasks
-                        </Button>
-                      </Space>
-                    </Card>
-                  </Col>
-                </Row>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Features */}
-      <section id="features" className="py-20">
-        <div className="container mx-auto px-4 lg:px-8">
+      {/* Features Section */}
+      <section id="features" className="py-20 lg:py-32 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-              Comprehensive Legal Management Suite
+            <Tag className="bg-blue-500/10 border-blue-500/20 text-blue-400 px-4 py-1 rounded-full mb-4">
+              FEATURES
+            </Tag>
+            <h2 className="text-4xl lg:text-5xl font-bold mb-4">
+              Everything You Need to Run Your Firm
             </h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-              All the tools your firm needs in a single, integrated platform
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              A comprehensive suite of tools designed specifically for legal professionals
             </p>
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {coreFeatures.map((feature, index) => (
-              <div
+            {features.map((feature, index) => (
+              <div 
                 key={index}
-                className="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 hover:border-blue-500/50 hover:bg-white/[0.08] transition-all duration-300 hover:scale-[1.02] cursor-pointer">
-                <div
-                  className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300`}>
-                  {feature.icon}
+                className="group relative bg-white/5 border border-white/10 rounded-2xl p-6 hover:border-blue-500/30 transition-all duration-300 hover:transform hover:-translate-y-1"
+              >
+                <div className={`w-14 h-14 bg-gradient-to-br ${feature.color} rounded-xl flex items-center justify-center mb-4 shadow-lg`}>
+                  <span className="text-2xl text-white">{feature.icon}</span>
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3">
-                  {feature.title}
-                </h3>
-                <p className="text-gray-400 leading-relaxed">
-                  {feature.description}
-                </p>
-                <RightOutlined className="opacity-0 group-hover:opacity-100 transition-opacity duration-300 absolute top-6 right-6 text-blue-400" />
+                <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
+                <p className="text-gray-400 text-sm mb-4">{feature.description}</p>
+                <ul className="space-y-2">
+                  {feature.details.map((detail, i) => (
+                    <li key={i} className="flex items-center gap-2 text-gray-500 text-sm">
+                      <CheckOutlined className="text-green-400 text-xs" /> {detail}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Workflow */}
-      <section
-        id="workflow"
-        className="py-20 bg-gradient-to-b from-gray-900/50 to-gray-950">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-              Streamlined Legal Workflow
-            </h2>
-            <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-              From case intake to resolution, manage everything efficiently
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {workflowSteps.map((step) => (
-              <div key={step.step} className="text-center">
-                <div className="relative mb-6">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-600 to-blue-800 rounded-2xl flex items-center justify-center mx-auto">
-                    <span className="text-2xl font-bold text-white">
-                      {step.step}
-                    </span>
-                  </div>
-                  <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                    {step.icon}
-                  </div>
-                </div>
-                <h3 className="text-xl font-semibold text-white mb-3">
-                  {step.title}
-                </h3>
-                <p className="text-gray-400">{step.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Security */}
-      <section id="security" className="py-20">
-        <div className="container mx-auto px-4 lg:px-8">
+      {/* Feature Highlight */}
+      <section className="py-20 lg:py-32 bg-gradient-to-b from-transparent via-blue-900/10 to-transparent">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
-              <Tag
-                icon={<SecurityScanOutlined />}
-                className="bg-green-500/10 border-green-500/30 text-green-300 px-4 py-2 rounded-full mb-6 text-base">
-                Enterprise Security
+              <Tag className="bg-purple-500/10 border-purple-500/20 text-purple-400 px-4 py-1 rounded-full mb-4">
+                CLIENT PORTAL
               </Tag>
-
-              <h2 className="text-3xl lg:text-4xl font-bold mb-6">
-                Built with Security at Its Core
+              <h2 className="text-4xl font-bold mb-6">
+                Empower Your Clients with Self-Service Access
               </h2>
-
-              <p className="text-lg text-gray-400 mb-8 leading-relaxed">
-                We understand the sensitivity of legal data. Our platform is
-                engineered with the highest security standards to protect your
-                firm and client information.
+              <p className="text-lg text-gray-400 mb-8">
+                Give your clients a modern portal to track their matters, view invoices, 
+                make payments, and communicate with your team—all in one place.
               </p>
-
               <div className="space-y-4">
-                {securityFeatures.map((feature, index) => (
-                  <div key={index} className="flex items-start gap-3">
-                    <CheckCircleOutlined className="text-green-500 text-lg mt-1 flex-shrink-0" />
-                    <span className="text-gray-300">{feature.text}</span>
+                {[
+                  "Real-time matter status updates",
+                  "Secure document sharing",
+                  "Online invoice payment",
+                  "Two-way communication channel"
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="w-6 h-6 bg-green-500/20 rounded-full flex items-center justify-center">
+                      <CheckOutlined className="text-green-400 text-xs" />
+                    </div>
+                    <span className="text-gray-300">{item}</span>
                   </div>
                 ))}
               </div>
             </div>
-
-            <div>
-              <Card className="bg-gradient-to-br from-blue-900/20 to-purple-900/20 border-white/10 backdrop-blur-sm">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center">
-                    <LockOutlined className="text-blue-400 text-2xl" />
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur-2xl opacity-30"></div>
+              <div className="relative bg-gray-900 border border-white/10 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
+                  <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <TeamOutlined className="text-white" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-white">
-                      Data Protection
-                    </h3>
-                    <p className="text-gray-400">
-                      Multi-layered security architecture
-                    </p>
+                    <div className="font-medium">Client Portal</div>
+                    <div className="text-xs text-gray-500">Welcome back, John</div>
                   </div>
                 </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <div className="flex justify-between text-gray-400 text-sm mb-2">
-                      <span>Encryption Level</span>
-                      <span className="text-white font-semibold">AES-256</span>
-                    </div>
-                    <Progress
-                      percent={100}
-                      showInfo={false}
-                      strokeColor="linear-gradient(90deg, #1890ff 0%, #52c41a 100%)"
-                      className="custom-progress"
-                    />
+                <div className="space-y-4">
+                  <div className="bg-white/5 rounded-xl p-4">
+                    <div className="text-sm text-gray-400 mb-1">Active Matters</div>
+                    <div className="text-2xl font-bold">5</div>
                   </div>
-
-                  <div>
-                    <div className="flex justify-between text-gray-400 text-sm mb-2">
-                      <span>Compliance Coverage</span>
-                      <span className="text-white font-semibold">100%</span>
-                    </div>
-                    <Progress
-                      percent={100}
-                      showInfo={false}
-                      strokeColor="linear-gradient(90deg, #52c41a 0%, #1890ff 100%)"
-                      className="custom-progress"
-                    />
+                  <div className="bg-white/5 rounded-xl p-4">
+                    <div className="text-sm text-gray-400 mb-1">Pending Invoices</div>
+                    <div className="text-2xl font-bold text-amber-400">₦125,000</div>
                   </div>
-
-                  <div>
-                    <div className="flex justify-between text-gray-400 text-sm mb-2">
-                      <span>Uptime SLA</span>
-                      <span className="text-white font-semibold">99.9%</span>
-                    </div>
-                    <Progress
-                      percent={99.9}
-                      showInfo={false}
-                      strokeColor="linear-gradient(90deg, #1890ff 0%, #722ed1 100%)"
-                      className="custom-progress"
-                    />
+                  <div className="bg-white/5 rounded-xl p-4">
+                    <div className="text-sm text-gray-400 mb-1">Recent Activity</div>
+                    <div className="text-sm text-gray-300">Case #MAT-001 status updated</div>
                   </div>
                 </div>
-              </Card>
+              </div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Security Section */}
+      <section id="security" className="py-20 lg:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <Tag className="bg-green-500/10 border-green-500/20 text-green-400 px-4 py-1 rounded-full mb-4">
+              SECURITY
+            </Tag>
+            <h2 className="text-4xl lg:text-5xl font-bold mb-4">
+              Enterprise-Grade Security
+            </h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              Your data is protected with the same security standards used by major financial institutions
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {securityFeatures.map((feature, index) => (
+              <div key={index} className="bg-white/5 border border-white/10 rounded-xl p-6 hover:border-green-500/30 transition-all">
+                <div className="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center mb-4">
+                  <span className="text-xl text-green-400">{feature.icon}</span>
+                </div>
+                <h3 className="text-lg font-semibold mb-2">{feature.title}</h3>
+                <p className="text-gray-400 text-sm">{feature.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section */}
+      <section id="pricing" className="py-20 lg:py-32 bg-gradient-to-b from-transparent via-purple-900/10 to-transparent">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <Tag className="bg-amber-500/10 border-amber-500/20 text-amber-400 px-4 py-1 rounded-full mb-4">
+              PRICING
+            </Tag>
+            <h2 className="text-4xl lg:text-5xl font-bold mb-4">
+              Simple, Transparent Pricing
+            </h2>
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
+              Choose the plan that fits your firm. All plans include a 14-day free trial.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {pricingPlans.map((plan, index) => (
+              <div 
+                key={index} 
+                className={`relative bg-white/5 border rounded-2xl p-8 ${
+                  plan.popular ? "border-purple-500/50 shadow-lg shadow-purple-500/20" : "border-white/10"
+                }`}
+              >
+                {plan.popular && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <Tag className="bg-gradient-to-r from-purple-500 to-pink-500 border-none text-white px-4 py-1">
+                      Most Popular
+                    </Tag>
+                  </div>
+                )}
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-semibold mb-2">{plan.name}</h3>
+                  <p className="text-gray-400 text-sm">{plan.description}</p>
+                </div>
+                <div className="text-center mb-6">
+                  <span className="text-5xl font-bold">${plan.price}</span>
+                  <span className="text-gray-400">{plan.period}</span>
+                </div>
+                <ul className="space-y-3 mb-8">
+                  {plan.features.map((feature, i) => (
+                    <li key={i} className="flex items-center gap-3 text-gray-300">
+                      <CheckOutlined className="text-green-400" /> {feature}
+                    </li>
+                  ))}
+                </ul>
+                <Button 
+                  block 
+                  size="large" 
+                  className={plan.popular 
+                    ? "bg-gradient-to-r from-purple-600 to-pink-600 border-none h-12 font-semibold" 
+                    : "bg-white/10 border-white/10 text-white h-12 hover:bg-white/20"
+                  }
+                >
+                  {plan.price === "Custom" ? "Contact Sales" : "Start Free Trial"}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonials */}
+      <section id="testimonials" className="py-20 lg:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <Tag className="bg-blue-500/10 border-blue-500/20 text-blue-400 px-4 py-1 rounded-full mb-4">
+              TESTIMONIALS
+            </Tag>
+            <h2 className="text-4xl lg:text-5xl font-bold mb-4">
+              Trusted by Industry Leaders
+            </h2>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+              <div key={index} className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center font-bold">
+                    {testimonial.avatar}
+                  </div>
+                  <div>
+                    <div className="font-semibold">{testimonial.name}</div>
+                    <div className="text-xs text-gray-400">{testimonial.role}, {testimonial.firm}</div>
+                  </div>
+                </div>
+                <p className="text-gray-300 italic">"{testimonial.quote}"</p>
+                <div className="flex gap-1 mt-4">
+                  {[1,2,3,4,5].map(i => (
+                    <StarOutlined key={i} className="text-amber-400" />
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-blue-900/10 via-gray-900/20 to-purple-900/10">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            <Card className="bg-white/5 backdrop-blur-sm border-white/10 rounded-3xl p-8 lg:p-12 text-center">
+      <section className="py-20 lg:py-32">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative bg-gradient-to-r from-blue-600 via-purple-600 to-cyan-600 rounded-3xl p-12 lg:p-16 text-center overflow-hidden">
+            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')]"></div>
+            <div className="relative z-10">
               <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-                Ready to Transform Your Legal Practice?
+                Ready to Transform Your Practice?
               </h2>
-              <p className="text-lg text-gray-400 mb-8 max-w-2xl mx-auto">
-                Join forward-thinking law firms already using CaseMaster to
-                streamline their operations and enhance client service.
+              <p className="text-xl text-white/80 mb-8 max-w-xl mx-auto">
+                Join 500+ law firms already using LawMaster to streamline their operations
               </p>
-
-              <Form className="max-w-md mx-auto">
-                <Space.Compact className="w-full">
-                  <Input
-                    size="large"
-                    placeholder="Enter your work email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="bg-white/5 border-white/10 text-white placeholder-gray-500"
-                  />
-                  <Button
-                    type="primary"
-                    size="large"
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 border-none">
-                    Start Free Trial
-                  </Button>
-                </Space.Compact>
-              </Form>
-
-              <p className="text-gray-500 text-sm mt-4">
-                <CheckCircleOutlined className="mr-2" />
-                No credit card required • 14-day free trial • Full access to all
-                features
-              </p>
-            </Card>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button size="large" className="bg-white text-purple-600 border-none h-14 px-8 font-semibold text-base hover:bg-gray-100">
+                  Start Free Trial
+                </Button>
+                <Button size="large" className="bg-white/10 border-white/30 text-white h-14 px-8 font-semibold text-base hover:bg-white/20">
+                  Schedule Demo
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-white/10">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center gap-3 mb-6 md:mb-0">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-700 rounded-lg flex items-center justify-center">
-                <img
-                  src={caseMasterLogo}
-                  alt="case master logo"
-                  className="text-white text-lg"
-                />
+      <footer className="py-16 border-t border-white/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-8 mb-12">
+            <div className="col-span-1 md:col-span-2">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">L</span>
+                </div>
+                <span className="text-2xl font-bold">LawMaster</span>
               </div>
-              <span className="text-xl font-bold text-white">CaseMaster</span>
+              <p className="text-gray-400 text-sm max-w-xs mb-6">
+                The all-in-one legal practice management solution for modern law firms.
+              </p>
+              <div className="flex gap-4">
+                <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-white/10 cursor-pointer transition-colors">
+                  <MailOutlined className="text-gray-400" />
+                </div>
+                <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-white/10 cursor-pointer transition-colors">
+                  <PhoneOutlined className="text-gray-400" />
+                </div>
+                <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center hover:bg-white/10 cursor-pointer transition-colors">
+                  <GlobalOutlined className="text-gray-400" />
+                </div>
+              </div>
             </div>
-
-            <div className="flex items-center gap-6 text-gray-400 mb-6 md:mb-0">
-              <a href="#" className="hover:text-white transition-colors">
-                Privacy Policy
-              </a>
-              <a href="#" className="hover:text-white transition-colors">
-                Terms of Service
-              </a>
-              <a href="#" className="hover:text-white transition-colors">
-                Support
-              </a>
+            <div>
+              <h4 className="font-semibold mb-4">Product</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Security</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
+              </ul>
             </div>
-
-            <div className="text-gray-500 text-sm">
-              © {new Date().getFullYear()} CaseMaster. All rights reserved.
+            <div>
+              <h4 className="font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Privacy Policy</a></li>
+              </ul>
+            </div>
+          </div>
+          <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-gray-500 text-sm">
+              © 2026 LawMaster. All rights reserved.
+            </p>
+            <div className="flex gap-6 text-sm text-gray-500">
+              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-white transition-colors">Cookies</a>
             </div>
           </div>
         </div>
       </footer>
-
-      <style jsx global>{`
-        .custom-progress .ant-progress-bg {
-          height: 8px !important;
-          border-radius: 4px;
-        }
-
-        .custom-progress .ant-progress-outer {
-          height: 8px;
-        }
-
-        .ant-card {
-          background: transparent;
-        }
-
-        .ant-card-head {
-          border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .ant-card-head-title {
-          color: white;
-        }
-
-        .ant-btn {
-          border-radius: 8px;
-        }
-
-        .ant-input {
-          border-radius: 8px;
-        }
-
-        .ant-space-compact {
-          border-radius: 8px;
-          overflow: hidden;
-        }
-      `}</style>
     </div>
   );
 };

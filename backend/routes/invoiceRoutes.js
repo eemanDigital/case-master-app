@@ -24,7 +24,9 @@ router.use(protect);
 // Auto-filter for clients - they can only see their own invoices
 router.use((req, res, next) => {
   if (req.user.role === "client" && req.user.id) {
-    req.query.clientId = req.user.id;
+    req.query.client = req.user.id;
+  } else if (req.query.clientId) {
+    req.query.client = req.query.clientId;
   }
   next();
 });

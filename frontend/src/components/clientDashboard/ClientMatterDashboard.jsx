@@ -21,7 +21,7 @@ import {
   Input,
   Timeline,
   message,
-  Progress,
+  Alert,
 } from "antd";
 import {
   CalendarOutlined,
@@ -90,23 +90,62 @@ const MatterTypeIcon = ({ type }) => {
 
 const getMatterTypeStyles = (type) => {
   const styles = {
-    litigation: { bg: "bg-blue-50", text: "text-blue-500", border: "border-l-blue-500", gradient: "from-blue-500 to-blue-600" },
-    corporate: { bg: "bg-amber-50", text: "text-amber-500", border: "border-l-amber-500", gradient: "from-amber-500 to-amber-600" },
-    property: { bg: "bg-green-50", text: "text-green-500", border: "border-l-green-500", gradient: "from-green-500 to-green-600" },
-    advisory: { bg: "bg-purple-50", text: "text-purple-500", border: "border-l-purple-500", gradient: "from-purple-500 to-purple-600" },
-    retainer: { bg: "bg-emerald-50", text: "text-emerald-500", border: "border-l-emerald-500", gradient: "from-emerald-500 to-emerald-600" },
-    general: { bg: "bg-gray-50", text: "text-gray-500", border: "border-l-gray-500", gradient: "from-gray-500 to-gray-600" },
+    litigation: {
+      bg: "bg-blue-50",
+      text: "text-blue-500",
+      border: "border-l-blue-500",
+      gradient: "from-blue-500 to-blue-600",
+    },
+    corporate: {
+      bg: "bg-amber-50",
+      text: "text-amber-500",
+      border: "border-l-amber-500",
+      gradient: "from-amber-500 to-amber-600",
+    },
+    property: {
+      bg: "bg-green-50",
+      text: "text-green-500",
+      border: "border-l-green-500",
+      gradient: "from-green-500 to-green-600",
+    },
+    advisory: {
+      bg: "bg-purple-50",
+      text: "text-purple-500",
+      border: "border-l-purple-500",
+      gradient: "from-purple-500 to-purple-600",
+    },
+    retainer: {
+      bg: "bg-emerald-50",
+      text: "text-emerald-500",
+      border: "border-l-emerald-500",
+      gradient: "from-emerald-500 to-emerald-600",
+    },
+    general: {
+      bg: "bg-gray-50",
+      text: "text-gray-500",
+      border: "border-l-gray-500",
+      gradient: "from-gray-500 to-gray-600",
+    },
   };
   return styles[type] || styles.general;
 };
 
-const StatCard = ({ title, value, icon, color, subtitle, onClick, gradient }) => (
+const StatCard = ({
+  title,
+  value,
+  icon,
+  color,
+  subtitle,
+  onClick,
+  gradient,
+}) => (
   <Card
     className={`stat-card h-full transition-all duration-300 ${onClick ? "cursor-pointer hover:shadow-md" : ""}`}
     onClick={onClick}
     hoverable={!!onClick}>
     {gradient ? (
-      <div className={`bg-gradient-to-br ${gradient} p-4 rounded-xl relative overflow-hidden`}>
+      <div
+        className={`bg-gradient-to-br ${gradient} p-4 rounded-xl relative overflow-hidden`}>
         <div className="absolute -right-2 -top-2 w-16 h-16 bg-white/10 rounded-full blur-lg"></div>
         <div className="relative z-10 flex items-center justify-between">
           <div>
@@ -135,62 +174,68 @@ const StatCard = ({ title, value, icon, color, subtitle, onClick, gradient }) =>
 
 const MatterCard = ({ matter, onClick }) => {
   const typeStyles = getMatterTypeStyles(matter.matterType);
-  const priorityColor = matter.priority === "urgent" ? "#ef4444" : matter.priority === "high" ? "#f97316" : "#3b82f6";
-  
+  const priorityColor =
+    matter.priority === "urgent"
+      ? "#ef4444"
+      : matter.priority === "high"
+        ? "#f97316"
+        : "#3b82f6";
+
   return (
     <Card
       hoverable
       className="matter-card shadow-sm hover:shadow-md transition-all duration-300 mb-4 border-l-4"
       style={{ borderLeftColor: priorityColor }}
       onClick={() => onClick(matter)}>
-    <div className="flex justify-between items-start mb-3">
-      <div className="flex items-center gap-2">
-        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${typeStyles.bg}`}>
-          <span className={typeStyles.text}>
-            <MatterTypeIcon type={matter.matterType} />
-          </span>
+      <div className="flex justify-between items-start mb-3">
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-10 h-10 rounded-lg flex items-center justify-center ${typeStyles.bg}`}>
+            <span className={typeStyles.text}>
+              <MatterTypeIcon type={matter.matterType} />
+            </span>
+          </div>
+          <div>
+            <Text strong className="block">
+              {matter.matterNumber}
+            </Text>
+            <Text type="secondary" className="text-xs">
+              {matter.matterType?.toUpperCase()}
+            </Text>
+          </div>
         </div>
-        <div>
-          <Text strong className="block">
-            {matter.matterNumber}
-          </Text>
-          <Text type="secondary" className="text-xs">
-            {matter.matterType?.toUpperCase()}
-          </Text>
-        </div>
-      </div>
-      <Space direction="vertical" size={0}>
-        <MatterStatusTag status={matter.status} />
-        <PriorityTag priority={matter.priority} />
-      </Space>
-    </div>
-
-    <Title level={5} className="mb-2 mt-0">
-      {matter.title}
-    </Title>
-
-    <Paragraph ellipsis={2} className="text-gray-500 mb-3 text-sm">
-      {matter.description}
-    </Paragraph>
-
-    <div className="flex justify-between items-center text-xs text-gray-400">
-      <Space>
-        <CalendarOutlined />
-        <span>Opened {dayjs(matter.dateOpened).format("MMM DD, YYYY")}</span>
-      </Space>
-      {matter.accountOfficer?.length > 0 && (
-        <Space>
-          <Avatar size="small" src={matter.accountOfficer[0]?.photo}>
-            {matter.accountOfficer[0]?.firstName?.[0]}
-          </Avatar>
-          <span>
-            {matter.accountOfficer[0]?.firstName}{" "}
-            {matter.accountOfficer[0]?.lastName}
-          </span>
+        <Space direction="vertical" size={0}>
+          <MatterStatusTag status={matter.status} />
+          <PriorityTag priority={matter.priority} />
         </Space>
-      )}
-    </div>
-  </Card>
+      </div>
+
+      <Title level={5} className="mb-2 mt-0">
+        {matter.title}
+      </Title>
+
+      <Paragraph ellipsis={2} className="text-gray-500 mb-3 text-sm">
+        {matter.description}
+      </Paragraph>
+
+      <div className="flex justify-between items-center text-xs text-gray-400">
+        <Space>
+          <CalendarOutlined />
+          <span>Opened {dayjs(matter.dateOpened).format("MMM DD, YYYY")}</span>
+        </Space>
+        {matter.accountOfficer?.length > 0 && (
+          <Space>
+            <Avatar size="small" src={matter.accountOfficer[0]?.photo}>
+              {matter.accountOfficer[0]?.firstName?.[0]}
+            </Avatar>
+            <span>
+              {matter.accountOfficer[0]?.firstName}{" "}
+              {matter.accountOfficer[0]?.lastName}
+            </span>
+          </Space>
+        )}
+      </div>
+    </Card>
   );
 };
 
@@ -223,7 +268,7 @@ const ClientMatterDashboard = () => {
 
       console.log("=== CLIENT DASHBOARD DATA ===");
       console.log("Matters:", mattersRes?.data?.data?.length || 0);
-      console.log("Invoices:", invoicesRes?.data?.data?.length || 0);
+      console.log("Invoices:", invoicesRes?.data?.data || 0);
       console.log("Tasks:", tasksRes?.data?.data?.length || 0);
       console.log("Tasks full response:", tasksRes?.data);
 
@@ -262,11 +307,10 @@ const ClientMatterDashboard = () => {
       (sum, inv) => sum + (inv.balance || 0),
       0,
     );
-    const totalPaid = paidInvoices.reduce(
+    const totalPaid = invoices.reduce(
       (sum, inv) => sum + (inv.amountPaid || 0),
       0,
     );
-
     const pendingTasks = tasks.filter((t) => t.status !== "completed");
     const overdueTasks = pendingTasks.filter(
       (t) => t.dueDate && dayjs(t.dueDate).isBefore(dayjs(), "day"),
@@ -400,7 +444,11 @@ const ClientMatterDashboard = () => {
             title="Pending Tasks"
             value={processedData.pendingTasks.length}
             icon={<CheckCircleOutlined />}
-            gradient={processedData.overdueTasks.length > 0 ? "from-red-500 to-red-600" : "from-green-500 to-green-600"}
+            gradient={
+              processedData.overdueTasks.length > 0
+                ? "from-red-500 to-red-600"
+                : "from-green-500 to-green-600"
+            }
             subtitle={
               processedData.overdueTasks.length > 0
                 ? `${processedData.overdueTasks.length} overdue`
