@@ -1,4 +1,14 @@
 const mongoose = require("mongoose");
+const { encryptField, decryptField } = require("../utils/encryption");
+
+const encryptedField = {
+  type: {
+    iv: String,
+    data: String,
+    authTag: String,
+  },
+  select: false,
+};
 
 const webhookSchema = new mongoose.Schema({
   firmId: {
@@ -23,6 +33,8 @@ const webhookSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+
+  encryptedSecret: encryptedField,
 
   events: [{
     type: String,
@@ -104,6 +116,23 @@ const webhookSchema = new mongoose.Schema({
 
 webhookSchema.index({ firmId: 1, isActive: 1 });
 webhookSchema.index({ firmId: 1, events: 1 });
+
+// Encrypt secret before saving
+webhookSchema.pre("save", async function (next) {
+  if (this.isModified("secret") && this.secret) {
+    this.encryptedSecret = encryptField(this.secret);
+  }
+  next();
+});
+
+// Override toJSON to hide secret
+webhookSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+  if (obj.secret) {
+    obj.secret = "***HIDDEN***";
+  }
+  return obj;
+};
 
 webhookSchema.methods.trigger = async function (event, payload) {
   const WebhookDelivery = mongoose.model("WebhookDelivery");

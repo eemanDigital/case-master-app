@@ -3,6 +3,16 @@ const crypto = require("crypto");
 const mongoose = require("mongoose");
 const validator = require("validator");
 const bcrypt = require("bcryptjs");
+const { encryptField, decryptField } = require("../utils/encryption");
+
+const encryptedField = {
+  type: {
+    iv: String,
+    data: String,
+    authTag: String,
+  },
+  select: false,
+};
 
 const userSchema = new mongoose.Schema(
   {
@@ -67,6 +77,17 @@ const userSchema = new mongoose.Schema(
       required: [true, "Please provide your residential address"],
     },
 
+    encryptedAddress: encryptedField,
+
+    phone: {
+      type: String,
+      trim: true,
+      required: [true, "Phone number is required"],
+      default: "+234",
+    },
+
+    encryptedPhone: encryptedField,
+
     dateOfBirth: {
       type: Date,
       validate: {
@@ -76,6 +97,8 @@ const userSchema = new mongoose.Schema(
         message: "Date of birth cannot be in the future",
       },
     },
+
+    encryptedDateOfBirth: encryptedField,
 
     // ========================
     // USER TYPE & ROLE SYSTEM
@@ -168,6 +191,8 @@ const userSchema = new mongoose.Schema(
       },
       billingAddress: String,
       taxId: String,
+      encryptedBillingAddress: encryptedField,
+      encryptedTaxId: encryptedField,
       referralSource: String,
       clientNotes: String,
       importantDates: [
@@ -529,6 +554,36 @@ const userSchema = new mongoose.Schema(
     toObject: { virtuals: true },
   }
 );
+
+/**
+ * ===============================
+ * ENCRYPTION MIDDLEWARE
+ * ===============================
+ */
+userSchema.pre("save", async function (next) {
+  if (this.isModified("address") && this.address) {
+    this.encryptedAddress = encryptField(this.address);
+  }
+  
+  if (this.isModified("phone") && this.phone) {
+    this.encryptedPhone = encryptField(this.phone);
+  }
+  
+  if (this.isModified("dateOfBirth") && this.dateOfBirth) {
+    this.encryptedDateOfBirth = encryptField(this.dateOfBirth.toISOString());
+  }
+  
+  if (this.isModified("clientDetails")) {
+    if (this.clientDetails?.billingAddress) {
+      this.clientDetails.encryptedBillingAddress = encryptField(this.clientDetails.billingAddress);
+    }
+    if (this.clientDetails?.taxId) {
+      this.clientDetails.encryptedTaxId = encryptField(this.clientDetails.taxId);
+    }
+  }
+  
+  next();
+});
 
 /**
  * ===============================

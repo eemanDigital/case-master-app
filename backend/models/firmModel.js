@@ -1,5 +1,15 @@
 // models/Firm.js
 const mongoose = require("mongoose");
+const { encryptField } = require("../utils/encryption");
+
+const encryptedField = {
+  type: {
+    iv: String,
+    data: String,
+    authTag: String,
+  },
+  select: false,
+};
 
 const firmSchema = new mongoose.Schema(
   {
@@ -135,10 +145,15 @@ const firmSchema = new mongoose.Schema(
         sortCode: String,
         iban: String,
         swiftCode: String,
+        encryptedAccountNumber: encryptedField,
+        encryptedSortCode: encryptedField,
+        encryptedIban: encryptedField,
+        encryptedSwiftCode: encryptedField,
       },
       taxId: {
         type: String,
       },
+      encryptedTaxId: encryptedField,
       taxRate: {
         type: Number,
         default: 0,
@@ -244,7 +259,7 @@ const firmSchema = new mongoose.Schema(
 );
 
 // Pre-save hook to auto-apply plan limits
-firmSchema.pre("save", function (next) {
+firmSchema.pre("save", async function (next) {
   // Auto-apply plan limits when plan changes
   if (this.isModified("subscription.plan")) {
     this.applyPlanLimits();
@@ -262,6 +277,27 @@ firmSchema.pre("save", function (next) {
     this.subscription.expiresAt < new Date()
   ) {
     this.subscription.status = "EXPIRED";
+  }
+
+  // Encrypt sensitive bank details
+  if (this.isModified("settings.bankDetails")) {
+    if (this.settings?.bankDetails?.accountNumber) {
+      this.settings.bankDetails.encryptedAccountNumber = encryptField(this.settings.bankDetails.accountNumber);
+    }
+    if (this.settings?.bankDetails?.sortCode) {
+      this.settings.bankDetails.encryptedSortCode = encryptField(this.settings.bankDetails.sortCode);
+    }
+    if (this.settings?.bankDetails?.iban) {
+      this.settings.bankDetails.encryptedIban = encryptField(this.settings.bankDetails.iban);
+    }
+    if (this.settings?.bankDetails?.swiftCode) {
+      this.settings.bankDetails.encryptedSwiftCode = encryptField(this.settings.bankDetails.swiftCode);
+    }
+  }
+
+  // Encrypt firm tax ID
+  if (this.isModified("settings.taxId") && this.settings?.taxId) {
+    this.encryptedTaxId = encryptField(this.settings.taxId);
   }
 
   next();
