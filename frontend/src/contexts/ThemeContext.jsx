@@ -2,15 +2,142 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 const ThemeContext = createContext();
 
+const lightTheme = {
+  // Brand Colors
+  "--color-primary": "#2563eb",
+  "--color-secondary": "#e11d48",
+  "--color-accent": "#8b5cf6",
+  
+  // Surface Colors
+  "--color-surface": "#ffffff",
+  "--color-surface-elevated": "#ffffff",
+  "--color-surface-subtle": "#f9fafb",
+  "--color-surface-hover": "#f3f4f6",
+  
+  // Background Colors
+  "--color-background": "#f9fafb",
+  "--color-background-subtle": "#f3f4f6",
+  
+  // Text Colors
+  "--color-text-primary": "#111827",
+  "--color-text-secondary": "#4b5563",
+  "--color-text-tertiary": "#9ca3af",
+  "--color-text-inverse": "#ffffff",
+  
+  // Border Colors
+  "--color-border": "#e5e7eb",
+  "--color-border-hover": "#d1d5db",
+  "--color-border-subtle": "#f3f4f6",
+  
+  // Semantic Colors
+  "--color-success": "#22c55e",
+  "--color-warning": "#f59e0b",
+  "--color-error": "#ef4444",
+  "--color-info": "#0ea5e9",
+  
+  // Status Colors
+  "--color-status-active": "#22c55e",
+  "--color-status-pending": "#f59e0b",
+  "--color-status-completed": "#3b82f6",
+  "--color-status-cancelled": "#ef4444",
+  "--color-status-onhold": "#6b7280",
+  "--color-status-suspended": "#f97316",
+  
+  // Priority Colors
+  "--color-priority-urgent": "#ef4444",
+  "--color-priority-high": "#f97316",
+  "--color-priority-medium": "#f59e0b",
+  "--color-priority-low": "#22c55e",
+  "--color-priority-normal": "#6b7280",
+  
+  // Gray Scale
+  "--color-gray-50": "#f9fafb",
+  "--color-gray-100": "#f3f4f6",
+  "--color-gray-200": "#e5e7eb",
+  "--color-gray-300": "#d1d5db",
+  "--color-gray-400": "#9ca3af",
+  "--color-gray-500": "#6b7280",
+  "--color-gray-600": "#4b5563",
+  "--color-gray-700": "#374151",
+  "--color-gray-800": "#1f2937",
+  "--color-gray-900": "#111827",
+  "--color-gray-950": "#030712",
+  
+  // Shadows
+  "--shadow-color": "0, 0, 0",
+};
+
+const darkTheme = {
+  // Brand Colors
+  "--color-primary": "#3b82f6",
+  "--color-secondary": "#f43f5e",
+  "--color-accent": "#a78bfa",
+  
+  // Surface Colors
+  "--color-surface": "#1f2937",
+  "--color-surface-elevated": "#374151",
+  "--color-surface-subtle": "#111827",
+  "--color-surface-hover": "#374151",
+  
+  // Background Colors
+  "--color-background": "#111827",
+  "--color-background-subtle": "#0f172a",
+  
+  // Text Colors
+  "--color-text-primary": "#f9fafb",
+  "--color-text-secondary": "#d1d5db",
+  "--color-text-tertiary": "#6b7280",
+  "--color-text-inverse": "#111827",
+  
+  // Border Colors
+  "--color-border": "#374151",
+  "--color-border-hover": "#4b5563",
+  "--color-border-subtle": "#1f2937",
+  
+  // Semantic Colors
+  "--color-success": "#4ade80",
+  "--color-warning": "#fbbf24",
+  "--color-error": "#f87171",
+  "--color-info": "#38bdf8",
+  
+  // Status Colors
+  "--color-status-active": "#4ade80",
+  "--color-status-pending": "#fbbf24",
+  "--color-status-completed": "#60a5fa",
+  "--color-status-cancelled": "#f87171",
+  "--color-status-onhold": "#9ca3af",
+  "--color-status-suspended": "#fb923c",
+  
+  // Priority Colors
+  "--color-priority-urgent": "#f87171",
+  "--color-priority-high": "#fb923c",
+  "--color-priority-medium": "#fbbf24",
+  "--color-priority-low": "#4ade80",
+  "--color-priority-normal": "#9ca3af",
+  
+  // Gray Scale
+  "--color-gray-50": "#f9fafb",
+  "--color-gray-100": "#f3f4f6",
+  "--color-gray-200": "#e5e7eb",
+  "--color-gray-300": "#d1d5db",
+  "--color-gray-400": "#9ca3af",
+  "--color-gray-500": "#6b7280",
+  "--color-gray-600": "#4b5563",
+  "--color-gray-700": "#374151",
+  "--color-gray-800": "#1f2937",
+  "--color-gray-900": "#111827",
+  "--color-gray-950": "#030712",
+  
+  // Shadows
+  "--shadow-color": "0, 0, 0",
+};
+
 export const ThemeProvider = ({ children }) => {
   const [isDarkMode, setIsDarkMode] = useState(() => {
-    // Check localStorage first
     const saved = localStorage.getItem("darkMode");
     if (saved !== null) {
       return JSON.parse(saved);
     }
-
-    // Check system preference
     const systemPrefersDark = window.matchMedia(
       "(prefers-color-scheme: dark)",
     ).matches;
@@ -18,8 +145,8 @@ export const ThemeProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    // Update class on html element
     const root = document.documentElement;
+    const theme = isDarkMode ? darkTheme : lightTheme;
 
     if (isDarkMode) {
       root.classList.add("dark");
@@ -29,47 +156,21 @@ export const ThemeProvider = ({ children }) => {
       root.classList.remove("dark");
     }
 
-    // Save to localStorage
-    localStorage.setItem("darkMode", JSON.stringify(isDarkMode));
+    Object.entries(theme).forEach(([key, value]) => {
+      root.style.setProperty(key, value);
+    });
 
-    // Update CSS variables for custom styling
-    updateCSSVariables(isDarkMode);
+    localStorage.setItem("darkMode", JSON.stringify(isDarkMode));
   }, [isDarkMode]);
 
   const toggleTheme = () => {
     setIsDarkMode((prev) => !prev);
   };
 
-  const updateCSSVariables = (dark) => {
-    const root = document.documentElement;
-
-    if (dark) {
-      // Dark mode CSS variables
-      root.style.setProperty("--primary-color", "#3b82f6");
-      root.style.setProperty("--secondary-color", "#e11d48");
-      root.style.setProperty("--background-color", "#111827");
-      root.style.setProperty("--surface-color", "#1f2937");
-      root.style.setProperty("--text-primary", "#f9fafb");
-      root.style.setProperty("--text-secondary", "#d1d5db");
-      root.style.setProperty("--border-color", "#374151");
-    } else {
-      // Light mode CSS variables
-      root.style.setProperty("--primary-color", "#2563eb");
-      root.style.setProperty("--secondary-color", "#dc2626");
-      root.style.setProperty("--background-color", "#f9fafb");
-      root.style.setProperty("--surface-color", "#ffffff");
-      root.style.setProperty("--text-primary", "#111827");
-      root.style.setProperty("--text-secondary", "#6b7280");
-      root.style.setProperty("--border-color", "#e5e7eb");
-    }
-  };
-
-  // Listen for system theme changes
   useEffect(() => {
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
 
     const handleChange = (e) => {
-      // Only update if user hasn't manually set a preference
       const saved = localStorage.getItem("darkMode");
       if (saved === null) {
         setIsDarkMode(e.matches);

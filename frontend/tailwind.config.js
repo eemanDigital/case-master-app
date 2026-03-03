@@ -10,10 +10,49 @@ export default {
       },
 
       // ============================================
-      // BRAND COLORS - Primary Brand Palette
+      // CSS VARIABLE-BASED SEMANTIC COLORS
+      // These map to the CSS variables set by ThemeContext
       // ============================================
       colors: {
-        // Primary Blue - Main brand color
+        // Brand Colors - Using CSS variables
+        brand: {
+          primary: "var(--color-primary, #2563eb)",
+          secondary: "var(--color-secondary, #e11d48)",
+          accent: "var(--color-accent, #8b5cf6)",
+        },
+
+        // Surface Colors - Backgrounds and cards
+        surface: {
+          DEFAULT: "var(--color-surface, #ffffff)",
+          elevated: "var(--color-surface-elevated, #ffffff)",
+          subtle: "var(--color-surface-subtle, #f9fafb)",
+          hover: "var(--color-surface-hover, #f3f4f6)",
+        },
+
+        // Background Colors
+        background: {
+          DEFAULT: "var(--color-background, #f9fafb)",
+          subtle: "var(--color-background-subtle, #f3f4f6)",
+        },
+
+        // Text Colors
+        content: {
+          primary: "var(--color-text-primary, #111827)",
+          secondary: "var(--color-text-secondary, #6b7280)",
+          tertiary: "var(--color-text-tertiary, #9ca3af)",
+          inverse: "var(--color-text-inverse, #ffffff)",
+        },
+
+        // Border Colors
+        border: {
+          DEFAULT: "var(--color-border, #e5e7eb)",
+          hover: "var(--color-border-hover, #d1d5db)",
+          subtle: "var(--color-border-subtle, #f3f4f6)",
+        },
+
+        // ============================================
+        // BRAND COLORS - Primary Brand Palette (Fixed values for accents)
+        // ============================================
         primary: {
           50: "#eff6ff",
           100: "#dbeafe",
@@ -26,10 +65,9 @@ export default {
           800: "#1e40af",
           900: "#1e3a8a",
           950: "#172554",
-          DEFAULT: "#2563eb",
+          DEFAULT: "var(--color-primary, #2563eb)",
         },
 
-        // Secondary Rose - Accent color
         secondary: {
           50: "#fff1f2",
           100: "#ffe4e6",
@@ -42,10 +80,9 @@ export default {
           800: "#9f1239",
           900: "#881337",
           950: "#500724",
-          DEFAULT: "#e11d48",
+          DEFAULT: "var(--color-secondary, #e11d48)",
         },
 
-        // Deep Blue - Darker brand variant
         deepBlue: {
           50: "#eff6ff",
           100: "#dbeafe",
@@ -61,7 +98,7 @@ export default {
         },
 
         // ============================================
-        // SEMANTIC COLORS - Light Mode
+        // SEMANTIC COLORS
         // ============================================
         success: {
           50: "#f0fdf4",
@@ -74,7 +111,7 @@ export default {
           700: "#15803d",
           800: "#166534",
           900: "#14532d",
-          DEFAULT: "#22c55e",
+          DEFAULT: "var(--color-success, #22c55e)",
         },
 
         warning: {
@@ -88,7 +125,7 @@ export default {
           700: "#b45309",
           800: "#92400e",
           900: "#78350f",
-          DEFAULT: "#f59e0b",
+          DEFAULT: "var(--color-warning, #f59e0b)",
         },
 
         error: {
@@ -102,7 +139,7 @@ export default {
           700: "#b91c1c",
           800: "#991b1b",
           900: "#7f1d1d",
-          DEFAULT: "#ef4444",
+          DEFAULT: "var(--color-error, #ef4444)",
         },
 
         info: {
@@ -116,47 +153,47 @@ export default {
           700: "#0369a1",
           800: "#075985",
           900: "#0c4a6e",
-          DEFAULT: "#0ea5e9",
+          DEFAULT: "var(--color-info, #0ea5e9)",
         },
 
         // ============================================
-        // GRAY SCALE - Enhanced for dark mode
+        // GRAY SCALE - Using CSS variables for dark mode
         // ============================================
         gray: {
-          50: "#f9fafb",
-          100: "#f3f4f6",
-          200: "#e5e7eb",
-          300: "#d1d5db",
-          400: "#9ca3af",
-          500: "#6b7280",
-          600: "#4b5563",
-          700: "#374151",
-          800: "#1f2937",
-          900: "#111827",
-          950: "#030712",
+          50: "var(--color-gray-50, #f9fafb)",
+          100: "var(--color-gray-100, #f3f4f6)",
+          200: "var(--color-gray-200, #e5e7eb)",
+          300: "var(--color-gray-300, #d1d5db)",
+          400: "var(--color-gray-400, #9ca3af)",
+          500: "var(--color-gray-500, #6b7280)",
+          600: "var(--color-gray-600, #4b5563)",
+          700: "var(--color-gray-700, #374151)",
+          800: "var(--color-gray-800, #1f2937)",
+          900: "var(--color-gray-900, #111827)",
+          950: "var(--color-gray-950, #030712)",
         },
 
         // ============================================
         // STATUS COLORS - For UI states
         // ============================================
         status: {
-          active: "#22c55e",
-          pending: "#f59e0b",
-          completed: "#3b82f6",
-          cancelled: "#ef4444",
-          onHold: "#6b7280",
-          suspended: "#f97316",
+          active: "var(--color-status-active, #22c55e)",
+          pending: "var(--color-status-pending, #f59e0b)",
+          completed: "var(--color-status-completed, #3b82f6)",
+          cancelled: "var(--color-status-cancelled, #ef4444)",
+          onHold: "var(--color-status-onhold, #6b7280)",
+          suspended: "var(--color-status-suspended, #f97316)",
         },
 
         // ============================================
         // PRIORITY COLORS
         // ============================================
         priority: {
-          urgent: "#ef4444",
-          high: "#f97316",
-          medium: "#f59e0b",
-          low: "#22c55e",
-          normal: "#6b7280",
+          urgent: "var(--color-priority-urgent, #ef4444)",
+          high: "var(--color-priority-high, #f97316)",
+          medium: "var(--color-priority-medium, #f59e0b)",
+          low: "var(--color-priority-low, #22c55e)",
+          normal: "var(--color-priority-normal, #6b7280)",
         },
 
         // ============================================
@@ -172,7 +209,7 @@ export default {
         },
 
         // ============================================
-        // SURFACE COLORS - For cards, backgrounds
+        // SURFACE COLORS - Legacy support
         // ============================================
         surface: {
           light: "#ffffff",
