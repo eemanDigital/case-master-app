@@ -34,11 +34,17 @@ import dayjs from "dayjs";
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 
+const baseURL = "";
+
 const AuditLogList = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState([]);
-  const [pagination, setPagination] = useState({ current: 1, pageSize: 20, total: 0 });
+  const [pagination, setPagination] = useState({
+    current: 1,
+    pageSize: 20,
+    total: 0,
+  });
+
   const [filters, setFilters] = useState({
     action: null,
     resource: null,
@@ -60,12 +66,18 @@ const AuditLogList = () => {
       if (filters.resource) params.append("resource", filters.resource);
       if (filters.userId) params.append("userId", filters.userId);
       if (filters.status) params.append("status", filters.status);
-      if (filters.dateRange?.[0]) params.append("startDate", filters.dateRange[0].toISOString());
-      if (filters.dateRange?.[1]) params.append("endDate", filters.dateRange[1].toISOString());
+      if (filters.dateRange?.[0])
+        params.append("startDate", filters.dateRange[0].toISOString());
+      if (filters.dateRange?.[1])
+        params.append("endDate", filters.dateRange[1].toISOString());
 
-      const response = await axios.get(`/api/v1/audit-logs?${params.toString()}`);
+      const response = await axios.get(
+        `${baseURL}/api/v1/audit-logs?${params.toString()}`,
+      );
+
+      console.log("API RESPONSE:", response);
       setLogs(response.data.data || []);
-      setPagination(prev => ({
+      setPagination((prev) => ({
         ...prev,
         current: page,
         total: response.data.pagination?.totalRecords || 0,
@@ -79,7 +91,7 @@ const AuditLogList = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get("/api/v1/audit-logs/stats");
+      const response = await axios.get(`${baseURL}/api/v1/audit-logs/stats`);
       setStats(response.data.data);
     } catch (error) {
       console.error("Failed to fetch stats");
@@ -96,7 +108,7 @@ const AuditLogList = () => {
   };
 
   const handleFilterChange = (key, value) => {
-    setFilters(prev => ({ ...prev, [key]: value }));
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
 
   const applyFilters = () => {
@@ -140,6 +152,8 @@ const AuditLogList = () => {
     PENDING: "warning",
   };
 
+  console.log("AUDIT LOGS:", logs);
+
   const columns = [
     {
       title: "Timestamp",
@@ -149,7 +163,9 @@ const AuditLogList = () => {
       render: (date) => (
         <Space direction="vertical" size={0}>
           <Text>{dayjs(date).format("MMM DD, YYYY")}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>{dayjs(date).format("HH:mm:ss")}</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {dayjs(date).format("HH:mm:ss")}
+          </Text>
         </Space>
       ),
     },
@@ -158,7 +174,8 @@ const AuditLogList = () => {
       dataIndex: "userId",
       key: "user",
       width: 180,
-      render: (user) => user ? `${user.firstName} ${user.lastName}` : "System",
+      render: (user) =>
+        user ? `${user.firstName} ${user.lastName}` : "System",
     },
     {
       title: "Action",
@@ -202,8 +219,7 @@ const AuditLogList = () => {
         <Button
           type="link"
           icon={<EyeOutlined />}
-          onClick={() => viewLogDetails(record)}
-        >
+          onClick={() => viewLogDetails(record)}>
           View
         </Button>
       ),
@@ -235,7 +251,9 @@ const AuditLogList = () => {
           <h1 className="text-2xl font-bold">Audit Logs</h1>
           <Text type="secondary">Track all system activities and changes</Text>
         </div>
-        <Button icon={<DownloadOutlined />} onClick={() => message.info("Export feature coming soon")}>
+        <Button
+          icon={<DownloadOutlined />}
+          onClick={() => message.info("Export feature coming soon")}>
           Export Logs
         </Button>
       </div>
@@ -244,22 +262,38 @@ const AuditLogList = () => {
         <Row gutter={16} className="mb-6">
           <Col span={6}>
             <Card>
-              <Statistic title="Total Actions" value={stats.totalActions} prefix={<AuditOutlined />} />
+              <Statistic
+                title="Total Actions"
+                value={stats.totalActions}
+                prefix={<AuditOutlined />}
+              />
             </Card>
           </Col>
           <Col span={6}>
             <Card>
-              <Statistic title="Today" value={stats.todayCount} prefix={<CalendarOutlined />} />
+              <Statistic
+                title="Today"
+                value={stats.todayCount}
+                prefix={<CalendarOutlined />}
+              />
             </Card>
           </Col>
           <Col span={6}>
             <Card>
-              <Statistic title="This Week" value={stats.weekCount} prefix={<CalendarOutlined />} />
+              <Statistic
+                title="This Week"
+                value={stats.weekCount}
+                prefix={<CalendarOutlined />}
+              />
             </Card>
           </Col>
           <Col span={6}>
             <Card>
-              <Statistic title="Failed Actions" value={stats.failedCount} valueStyle={{ color: "#ff4d4f" }} />
+              <Statistic
+                title="Failed Actions"
+                value={stats.failedCount}
+                valueStyle={{ color: "#ff4d4f" }}
+              />
             </Card>
           </Col>
         </Row>
@@ -325,7 +359,10 @@ const AuditLogList = () => {
             </Col>
           </Row>
           <Space>
-            <Button type="primary" icon={<FilterOutlined />} onClick={applyFilters}>
+            <Button
+              type="primary"
+              icon={<FilterOutlined />}
+              onClick={applyFilters}>
               Apply Filters
             </Button>
             <Button icon={<ReloadOutlined />} onClick={resetFilters}>
@@ -343,22 +380,29 @@ const AuditLogList = () => {
         title="Audit Log Details"
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
-        footer={[<Button key="close" onClick={() => setModalVisible(false)}>Close</Button>]}
-        width={700}
-      >
+        footer={[
+          <Button key="close" onClick={() => setModalVisible(false)}>
+            Close
+          </Button>,
+        ]}
+        width={700}>
         {selectedLog && (
           <Descriptions column={2} bordered size="small">
             <Descriptions.Item label="Timestamp" span={2}>
               {dayjs(selectedLog.createdAt).format("MMMM DD, YYYY HH:mm:ss")}
             </Descriptions.Item>
             <Descriptions.Item label="User">
-              {selectedLog.userId ? `${selectedLog.userId.firstName} ${selectedLog.userId.lastName}` : "System"}
+              {selectedLog.userId
+                ? `${selectedLog.userId.firstName} ${selectedLog.userId.lastName}`
+                : "System"}
             </Descriptions.Item>
             <Descriptions.Item label="Email">
               {selectedLog.userId?.email || "-"}
             </Descriptions.Item>
             <Descriptions.Item label="Action">
-              <Tag color={actionColors[selectedLog.action]}>{selectedLog.action}</Tag>
+              <Tag color={actionColors[selectedLog.action]}>
+                {selectedLog.action}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="Resource">
               <Tag>{selectedLog.resource}</Tag>
@@ -370,7 +414,9 @@ const AuditLogList = () => {
               {selectedLog.description}
             </Descriptions.Item>
             <Descriptions.Item label="Status">
-              <Tag color={statusColors[selectedLog.status]}>{selectedLog.status}</Tag>
+              <Tag color={statusColors[selectedLog.status]}>
+                {selectedLog.status}
+              </Tag>
             </Descriptions.Item>
             <Descriptions.Item label="IP Address">
               {selectedLog.ipAddress || "-"}

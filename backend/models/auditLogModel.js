@@ -56,7 +56,8 @@ const auditLogSchema = new mongoose.Schema({
 
   resourceId: {
     type: mongoose.Schema.Types.ObjectId,
-    required: true,
+    required: false,
+    default: null,
   },
 
   description: {

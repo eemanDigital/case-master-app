@@ -3,6 +3,7 @@ const express = require("express");
 const taskController = require("../controllers/taskController");
 const authController = require("../controllers/authController");
 const fileController = require("../controllers/fileController");
+const { auditMiddleware } = require("../middleware/auditMiddleware");
 
 const router = express.Router();
 
@@ -17,6 +18,8 @@ router.use(async (req, res, next) => {
   }
   next();
 });
+
+router.use(auditMiddleware);
 
 // Task CRUD
 router.route("/").get(taskController.getTasks).post(taskController.createTask);

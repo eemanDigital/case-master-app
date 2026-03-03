@@ -7,6 +7,7 @@ const {
   canViewReports,
   checkPermission,
 } = require("../controllers/authController");
+const { auditMiddleware } = require("../middleware/auditMiddleware");
 
 const matterRouter = express.Router();
 
@@ -22,6 +23,9 @@ matterRouter.use((req, res, next) => {
   }
   next();
 });
+
+// Apply audit middleware
+matterRouter.use(auditMiddleware);
 
 // ============================================
 // BULK & REPORTING ROUTES (Specific routes first)

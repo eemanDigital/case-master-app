@@ -3,6 +3,7 @@ const userController = require("../controllers/userController");
 const authController = require("../controllers/authController");
 const photoController = require("../controllers/photoController");
 const multer = require("multer");
+const { auditMiddleware } = require("../middleware/auditMiddleware");
 
 const router = express.Router();
 
@@ -83,6 +84,7 @@ router.post("/google/callback", loginWithGoogle);
 // PROTECTED ROUTES
 // ============================================
 router.use(protect); // Global protect for all routes below
+router.use(auditMiddleware);
 
 router.get("/logout", logout);
 router.patch("/changepassword", changePassword);

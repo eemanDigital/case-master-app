@@ -2,9 +2,11 @@
 const express = require("express");
 const eventController = require("../controllers/eventController");
 const { protect } = require("../controllers/authController");
+const { auditMiddleware } = require("../middleware/auditMiddleware");
 const router = express.Router();
 
 router.use(protect);
+router.use(auditMiddleware);
 
 router
   .route("/")

@@ -15,6 +15,7 @@ const {
   checkOverdueInvoices,
 } = require("../controllers/invoiceController");
 const { protect, restrictTo } = require("../controllers/authController");
+const { auditMiddleware } = require("../middleware/auditMiddleware");
 
 const router = express.Router();
 
@@ -27,6 +28,8 @@ router.use((req, res, next) => {
   }
   next();
 });
+
+router.use(auditMiddleware);
 
 router
   .route("/")

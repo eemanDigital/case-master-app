@@ -2,10 +2,12 @@ const express = require("express");
 const paymentController = require("../controllers/paymentController");
 const invoiceController = require("../controllers/invoiceController");
 const { protect, restrictTo } = require("../controllers/authController");
+const { auditMiddleware } = require("../middleware/auditMiddleware");
 
 const router = express.Router();
 
 router.use(protect);
+router.use(auditMiddleware);
 
 router.post("/", paymentController.createPayment);
 

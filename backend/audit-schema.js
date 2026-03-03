@@ -2,18 +2,17 @@
 // Enhanced MongoDB schema audit tool
 
 const mongoose = require("mongoose");
-require("dotenv").config(); // For environment variables
+// require("dotenv").config(); // For environment variables
 
 async function auditSchema() {
   let connection = null;
 
   try {
     // 1. Connect to MongoDB
-    const mongoURI =
-      process.env.DATABASE || "mongodb://127.0.0.1:27017/case-master-app";
+    const mongoURI = process.env.DATABASE || process.env.DATABASE_LOCAL;
 
     console.log(
-      `Connecting to MongoDB: ${mongoURI.split("@").pop() || mongoURI}`
+      `Connecting to MongoDB: ${mongoURI.split("@").pop() || mongoURI}`,
     ); // Hide credentials
 
     connection = await mongoose.connect(mongoURI, {
@@ -75,12 +74,12 @@ async function auditSchema() {
         try {
           const stats = await coll.stats();
           console.log(
-            `   💾 Size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`
+            `   💾 Size: ${(stats.size / 1024 / 1024).toFixed(2)} MB`,
           );
           console.log(
             `   🏗️  Avg Document Size: ${(stats.avgObjSize || 0).toFixed(
-              2
-            )} bytes`
+              2,
+            )} bytes`,
           );
         } catch (statsError) {
           // Stats might not be available
@@ -90,7 +89,7 @@ async function auditSchema() {
       } catch (collError) {
         console.error(
           `❌ Error analyzing collection "${collectionName}":`,
-          collError.message
+          collError.message,
         );
         console.log("---\n");
       }
@@ -103,10 +102,10 @@ async function auditSchema() {
       console.log(`Collections: ${dbStats.collections}`);
       console.log(`Total Documents: ${dbStats.objects}`);
       console.log(
-        `Data Size: ${(dbStats.dataSize / 1024 / 1024).toFixed(2)} MB`
+        `Data Size: ${(dbStats.dataSize / 1024 / 1024).toFixed(2)} MB`,
       );
       console.log(
-        `Storage Size: ${(dbStats.storageSize / 1024 / 1024).toFixed(2)} MB`
+        `Storage Size: ${(dbStats.storageSize / 1024 / 1024).toFixed(2)} MB`,
       );
     } catch (dbStatsError) {
       console.log("Could not retrieve database statistics");
@@ -136,8 +135,8 @@ function analyzeFields(documents) {
       const type = Array.isArray(value)
         ? "Array"
         : value === null
-        ? "null"
-        : typeof value;
+          ? "null"
+          : typeof value;
 
       // For objects, check if it's a Date or nested object
       if (type === "object" && value !== null) {
@@ -150,7 +149,7 @@ function analyzeFields(documents) {
           // Recursively analyze nested objects if needed
           if (Object.keys(value).length > 0) {
             fieldTypes[key].add(
-              JSON.stringify(value, null, 0).substring(0, 50) + "..."
+              JSON.stringify(value, null, 0).substring(0, 50) + "...",
             );
           }
         }

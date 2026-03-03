@@ -34,6 +34,7 @@ const noteRouter = require("./routes/noteRoutes");
 const documentRecordRouter = require("./routes/documentRecordRoute");
 const webhookRouter = require("./routes/webhookRoutes");
 const auditLogRouter = require("./routes/auditLogRoutes");
+const { auditMiddleware } = require("./middleware/auditMiddleware");
 
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
@@ -453,7 +454,7 @@ connectWithRetry();
 // Start reminder service after database connection
 mongoose.connection.once("open", () => {
   console.log("✅ Database connected, starting services...");
-  
+
   // Start the reminder service (checks every minute)
   try {
     const reminderService = require("./services/reminderService");
