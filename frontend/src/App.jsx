@@ -168,7 +168,9 @@ const CreateInvoiceForm = lazy(
 );
 const InvoiceDetails = lazy(() => import("./pages/InvoiceDetails.jsx"));
 const UpdateInvoice = lazy(() => import("./pages/UpdateInvoice.jsx"));
-const PaymentMadeOnMatter = lazy(() => import("./pages/PaymentMadeOnMatter.jsx"));
+const PaymentMadeOnMatter = lazy(
+  () => import("./pages/PaymentMadeOnMatter.jsx"),
+);
 
 // Documents Management
 const DocumentsList = lazy(() => import("./components/DocumentsList.jsx"));
@@ -380,6 +382,15 @@ const router = createBrowserRouter(
           element={
             <Suspense fallback={<PageLoader />}>
               <PrivacyPolicy />
+            </Suspense>
+          }
+        />
+
+        <Route
+          path="cookie-policy"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <CookieConsent />
             </Suspense>
           }
         />

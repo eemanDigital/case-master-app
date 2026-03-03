@@ -1420,9 +1420,15 @@ export default function HomePage() {
                 © 2026 LawMaster Technologies Ltd. All rights reserved.
               </p>
               <div className="lm-footer-legal">
-                <a href="#">Terms</a>
-                <a href="#">Privacy</a>
-                <a href="#">Cookies</a>
+                <Link to="/privacy-policy" className="lm-footer-links">
+                  Privacy Policy
+                </Link>
+                <Link to="/terms-of-service" className="lm-footer-links">
+                  Terms of Service
+                </Link>
+                <Link to="/cookie-policy" className="lm-footer-links">
+                  Cookie Policy
+                </Link>
               </div>
             </div>
           </div>
