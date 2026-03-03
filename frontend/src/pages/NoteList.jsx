@@ -32,7 +32,7 @@ import {
   UnorderedListOutlined,
 } from "@ant-design/icons";
 
-import useDebouncedValue from "../hooks/useDebouncedValue.jsx";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
   fetchNotes,
   deleteNote,
