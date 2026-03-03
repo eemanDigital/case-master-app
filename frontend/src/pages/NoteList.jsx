@@ -147,7 +147,7 @@ const NoteList = () => {
         title: "Move to Trash?",
         content:
           "This note will be moved to trash and can be restored within 30 days.",
-        okText: "Move to Trash",
+        okText: "Move to Trash?",
         okType: "default",
         cancelText: "Cancel",
         onOk: async () => {
