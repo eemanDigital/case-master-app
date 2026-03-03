@@ -50,6 +50,8 @@ const auditLogSchema = new mongoose.Schema({
       "SETTINGS",
       "REPORT",
       "NOTE",
+      "INVITATION",
+      "SYSTEM",
     ],
     index: true,
   },

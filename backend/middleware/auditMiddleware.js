@@ -27,6 +27,7 @@ const getResourceFromPath = (path) => {
     "/notes": "NOTE",
     "/webhooks": "NOTIFICATION",
     "/audit-logs": "SETTINGS",
+    "/invitations": "INVITATION",
   };
   
   for (const [key, value] of Object.entries(pathMap)) {
@@ -125,6 +126,8 @@ const auditResources = {
   SETTINGS: "SETTINGS",
   REPORT: "REPORT",
   NOTE: "NOTE",
+  INVITATION: "INVITATION",
+  SYSTEM: "SYSTEM",
 };
 
 module.exports = { auditMiddleware, logAudit, auditActions, auditResources };
