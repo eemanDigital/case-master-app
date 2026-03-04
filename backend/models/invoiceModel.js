@@ -458,4 +458,4 @@ invoiceSchema.index({ firmId: 1, status: 1, dueDate: 1 });
 invoiceSchema.index({ firmId: 1, isDeleted: 1 });
 invoiceSchema.index({ firmId: 1, matter: 1 });
 invoiceSchema.index({ firmId: 1, createdBy: 1 });
-("Invoice", invoiceSchema);
+module.exports = mongoose.model("Invoice", invoiceSchema);

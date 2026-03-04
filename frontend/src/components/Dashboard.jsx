@@ -78,7 +78,7 @@ const Dashboard = () => {
       try {
         if (!isClient) {
           await Promise.all([
-            fetchData("matters/stats", "matterStats"),
+            // fetchData("matters/stats", "matterStats"),
             fetchBatch([
               { endpoint: "users", key: "users" },
               { endpoint: "tasks", key: "tasks" },
