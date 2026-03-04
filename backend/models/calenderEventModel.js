@@ -372,6 +372,12 @@ const calendarEventSchema = new mongoose.Schema(
       },
     ],
 
+    lastReminderSent: {
+      type: Map,
+      of: Date,
+      default: {},
+    },
+
     notifyParticipants: {
       type: Boolean,
       default: true,

@@ -33,6 +33,12 @@ const notificationSchema = new mongoose.Schema(
         ref: "Task",
       },
     ],
+    relatedEvent: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "CalendarEvent",
+      },
+    ],
   },
 
   {
