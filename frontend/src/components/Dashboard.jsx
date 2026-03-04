@@ -38,6 +38,8 @@ const Dashboard = () => {
     (state) => state.matter,
   );
 
+  console.log("Dashboard - matterStats:", matterStats);
+
   const authState = useSelector((state) => state.auth);
   const userStatistics = authState.userStatistics;
   const statisticsLoading = authState.statisticsLoading;

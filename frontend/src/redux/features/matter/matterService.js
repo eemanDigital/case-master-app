@@ -1,415 +1,215 @@
-// features/matter/matterService.js
-import axios from "axios";
-
-const API = axios.create({
-  baseURL: import.meta.env.VITE_BASE_URL || "http://localhost:5000/api/v1",
-  withCredentials: true,
-});
-
-// Response interceptor
-API.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      console.error("Unauthorized – redirecting to login");
-      localStorage.clear();
-      sessionStorage.clear();
-      window.location.href = "/users/login";
-    }
-    return Promise.reject(error);
-  },
-);
+import apiService from "../../../services/api";
 
 const matterService = {
   // ======================
   // CREATE
   // ======================
-  createMatter: async (matterData) => {
-    const res = await API.post("/matters", matterData);
-    return res.data;
-  },
+  createMatter: (matterData) => apiService.post("/matters", matterData),
 
   // ======================
   // READ
   // ======================
-  getAllMatters: async (filters = {}) => {
-    const res = await API.get("/matters", { params: filters });
-    return res.data;
-  },
+  getAllMatters: (filters = {}) =>
+    apiService.get("/matters", { params: filters }),
 
-  getMatter: async (matterId) => {
-    const res = await API.get(`/matters/${matterId}`);
-    return res.data;
-  },
+  getMatter: (matterId) => apiService.get(`/matters/${matterId}`),
 
-  getMyMatters: async (filters = {}) => {
-    const res = await API.get("/matters/my-matters", { params: filters });
-    return res.data;
-  },
+  getMyMatters: (filters = {}) =>
+    apiService.get("/matters/my-matters", { params: filters }),
 
-  getMyMattersSummary: async () => {
-    const res = await API.get("/matters/my-matters-summary");
-    return res.data;
-  },
+  getMyMattersSummary: () => apiService.get("/matters/my-matters-summary"),
 
-  getAllMattersWithOfficers: async (filters = {}) => {
-    const res = await API.get("/matters/with-officers", { params: filters });
-    return res.data;
-  },
+  getAllMattersWithOfficers: (filters = {}) =>
+    apiService.get("/matters/with-officers", { params: filters }),
 
-  getMatterStats: async () => {
-    const res = await API.get("/matters/stats");
-    return res.data;
-  },
+  getMatterStats: () => apiService.get("/matters/stats"),
 
   // ======================
   // UPDATE
   // ======================
-  updateMatter: async ({ matterId, matterData }) => {
-    const res = await API.patch(`/matters/${matterId}`, matterData);
-    return res.data;
-  },
+  updateMatter: ({ matterId, matterData }) =>
+    apiService.patch(`/matters/${matterId}`, matterData),
 
-  restoreMatter: async (matterId) => {
-    const res = await API.patch(`/matters/${matterId}/restore`);
-    return res.data;
-  },
+  restoreMatter: (matterId) => apiService.patch(`/matters/${matterId}/restore`),
 
   // ======================
   // DELETE
   // ======================
-  deleteMatter: async (matterId) => {
-    const res = await API.delete(`/matters/${matterId}`);
-    return res.data;
-  },
+  deleteMatter: (matterId) => apiService.delete(`/matters/${matterId}`),
 
   // ======================
   // SEARCH
   // ======================
-  searchMatters: async (criteria) => {
-    const res = await API.post("/matters/search", criteria);
-    return res.data;
-  },
+  searchMatters: (criteria) => apiService.post("/matters/search", criteria),
 
   // ======================
-  // BULK OPERATIONS - NEW
+  // BULK OPERATIONS
   // ======================
-
-  // Bulk update matters
-  bulkUpdateMatters: async (matterIds, updateData) => {
-    const res = await API.patch("/matters/bulk-update", {
+  bulkUpdateMatters: (matterIds, updateData) =>
+    apiService.patch("/matters/bulk-update", {
       matterIds,
       updates: updateData,
-    });
-    return res.data;
-  },
+    }),
 
-  // Bulk delete matters
-  bulkDeleteMatters: async (matterIds) => {
-    const res = await API.delete("/matters/bulk-delete", {
-      data: { matterIds },
-    });
-    return res.data;
-  },
+  bulkDeleteMatters: (matterIds) =>
+    apiService.delete("/matters/bulk-delete", { data: { matterIds } }),
 
-  // Bulk assign account officer
-  bulkAssignOfficer: async (matterIds, officerId) => {
-    const res = await API.post("/matters/bulk-assign-officer", {
-      matterIds,
-      officerId,
-    });
-    return res.data;
-  },
+  bulkAssignOfficer: (matterIds, officerId) =>
+    apiService.post("/matters/bulk-assign-officer", { matterIds, officerId }),
 
-  // Bulk export matters
+  // bulkExportMatters uses apiService.download but needs POST, so we call
+  // the underlying axios instance directly via apiService.download with a
+  // custom config. Since apiService.download is GET-only, we use apiService.post
+  // with responseType blob handled manually here — the one case where we need
+  // a slight extension of the pattern.
   bulkExportMatters: async (matterIds, format = "csv") => {
-    const res = await API.post(
+    const acceptHeader =
+      format === "pdf"
+        ? "application/pdf"
+        : format === "excel"
+          ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          : "text/csv";
+
+    // apiService.post resolves res.data, but we need blob — pass responseType
+    return apiService.post(
       "/matters/export",
       { matterIds, format },
       {
         responseType: "blob",
-        headers: {
-          Accept:
-            format === "pdf"
-              ? "application/pdf"
-              : format === "excel"
-                ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-                : "text/csv",
-        },
+        headers: { Accept: acceptHeader },
       },
     );
-    // RETURN ONLY DATA
-    return res.data;
-  },
-  // Bulk status change (convenience method)
-  bulkChangeStatus: async (matterIds, status) => {
-    const res = await API.patch("/matters/bulk-update", {
-      matterIds,
-      updates: { status },
-    });
-    return res.data;
   },
 
-  // Bulk priority change (convenience method)
-  bulkChangePriority: async (matterIds, priority) => {
-    const res = await API.patch("/matters/bulk-update", {
-      matterIds,
-      updates: { priority },
-    });
-    return res.data;
-  },
+  // Convenience wrappers — delegate to bulkUpdateMatters
+  bulkChangeStatus: (matterIds, status) =>
+    matterService.bulkUpdateMatters(matterIds, { status }),
 
-  // Bulk add tags/labels (convenience method)
-  bulkAddTags: async (matterIds, tags) => {
-    const res = await API.patch("/matters/bulk-update", {
-      matterIds,
-      updates: {
-        $addToSet: { tags: { $each: tags } },
-      },
-    });
-    return res.data;
-  },
+  bulkChangePriority: (matterIds, priority) =>
+    matterService.bulkUpdateMatters(matterIds, { priority }),
+
+  bulkAddTags: (matterIds, tags) =>
+    matterService.bulkUpdateMatters(matterIds, {
+      $addToSet: { tags: { $each: tags } },
+    }),
 
   // ======================
   // VALIDATION & UTILITIES
   // ======================
+  validateMatterNumber: (matterNumber) =>
+    apiService.get(`/matters/validate-matter-number/${matterNumber}`),
 
-  // Validate matter number uniqueness
-  validateMatterNumber: async (matterNumber) => {
-    const res = await API.get(
-      `/matters/validate-matter-number/${matterNumber}`,
-    );
-    return res.data;
-  },
+  getMatterTimeline: (matterId) =>
+    apiService.get(`/matters/${matterId}/timeline`),
 
-  // Get matter timeline/activity
-  getMatterTimeline: async (matterId) => {
-    const res = await API.get(`/matters/${matterId}/timeline`);
-    return res.data;
-  },
+  getRecentActivity: (days = 7, limit = 10) =>
+    apiService.get("/matters/recent-activity", { params: { days, limit } }),
 
-  // Get recent activity across all matters
-  getRecentActivity: async (days = 7, limit = 10) => {
-    const res = await API.get("/matters/recent-activity", {
-      params: { days, limit },
-    });
-    return res.data;
-  },
+  getMattersByType: (matterType, filters = {}) =>
+    apiService.get(`/matters/type/${matterType}`, { params: filters }),
 
-  // Get matters by type
-  getMattersByType: async (matterType, filters = {}) => {
-    const res = await API.get(`/matters/type/${matterType}`, {
-      params: filters,
-    });
-    return res.data;
-  },
+  getMattersByStatus: (status, filters = {}) =>
+    apiService.get(`/matters/status/${status}`, { params: filters }),
 
-  // Get matters by status
-  getMattersByStatus: async (status, filters = {}) => {
-    const res = await API.get(`/matters/status/${status}`, { params: filters });
-    return res.data;
-  },
+  getPendingMatters: (filters = {}) =>
+    apiService.get("/matters/pending", { params: filters }),
 
-  // Get pending matters (shortcut)
-  getPendingMatters: async (filters = {}) => {
-    const res = await API.get("/matters/pending", { params: filters });
-    return res.data;
-  },
-
-  // Get urgent matters (shortcut)
-  getUrgentMatters: async (filters = {}) => {
-    const res = await API.get("/matters/urgent", { params: filters });
-    return res.data;
-  },
+  getUrgentMatters: (filters = {}) =>
+    apiService.get("/matters/urgent", { params: filters }),
 
   // ======================
   // FILE & ATTACHMENT OPERATIONS
   // ======================
+  uploadDocument: (matterId, formData, onUploadProgress) =>
+    apiService.upload(
+      `/matters/${matterId}/documents`,
+      formData,
+      onUploadProgress,
+    ),
 
-  // Upload matter document
-  uploadDocument: async (matterId, formData) => {
-    const res = await API.post(`/matters/${matterId}/documents`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-    });
-    return res.data;
-  },
+  deleteDocument: (matterId, documentId) =>
+    apiService.delete(`/matters/${matterId}/documents/${documentId}`),
 
-  // Delete matter document
-  deleteDocument: async (matterId, documentId) => {
-    const res = await API.delete(
-      `/matters/${matterId}/documents/${documentId}`,
-    );
-    return res.data;
-  },
-
-  // Get matter documents
-  getDocuments: async (matterId) => {
-    const res = await API.get(`/matters/${matterId}/documents`);
-    return res.data;
-  },
+  getDocuments: (matterId) => apiService.get(`/matters/${matterId}/documents`),
 
   // ======================
   // COLLABORATION & COMMENTS
   // ======================
+  addComment: (matterId, comment) =>
+    apiService.post(`/matters/${matterId}/comments`, { comment }),
 
-  // Add comment to matter
-  addComment: async (matterId, comment) => {
-    const res = await API.post(`/matters/${matterId}/comments`, { comment });
-    return res.data;
-  },
+  getComments: (matterId) => apiService.get(`/matters/${matterId}/comments`),
 
-  // Get matter comments
-  getComments: async (matterId) => {
-    const res = await API.get(`/matters/${matterId}/comments`);
-    return res.data;
-  },
-
-  // Delete comment
-  deleteComment: async (matterId, commentId) => {
-    const res = await API.delete(`/matters/${matterId}/comments/${commentId}`);
-    return res.data;
-  },
+  deleteComment: (matterId, commentId) =>
+    apiService.delete(`/matters/${matterId}/comments/${commentId}`),
 
   // ======================
   // TASK & EVENT MANAGEMENT
   // ======================
+  addTask: (matterId, taskData) =>
+    apiService.post(`/matters/${matterId}/tasks`, taskData),
 
-  // Add task to matter
-  addTask: async (matterId, taskData) => {
-    const res = await API.post(`/matters/${matterId}/tasks`, taskData);
-    return res.data;
-  },
+  getTasks: (matterId) => apiService.get(`/matters/${matterId}/tasks`),
 
-  // Get matter tasks
-  getTasks: async (matterId) => {
-    const res = await API.get(`/matters/${matterId}/tasks`);
-    return res.data;
-  },
+  addEvent: (matterId, eventData) =>
+    apiService.post(`/matters/${matterId}/events`, eventData),
 
-  // Add event to matter
-  addEvent: async (matterId, eventData) => {
-    const res = await API.post(`/matters/${matterId}/events`, eventData);
-    return res.data;
-  },
-
-  // Get matter events
-  getEvents: async (matterId) => {
-    const res = await API.get(`/matters/${matterId}/events`);
-    return res.data;
-  },
+  getEvents: (matterId) => apiService.get(`/matters/${matterId}/events`),
 
   // ======================
   // BILLING & FINANCIAL
   // ======================
+  createInvoice: (matterId, invoiceData) =>
+    apiService.post(`/matters/${matterId}/invoices`, invoiceData),
 
-  // Create invoice for matter
-  createInvoice: async (matterId, invoiceData) => {
-    const res = await API.post(`/matters/${matterId}/invoices`, invoiceData);
-    return res.data;
-  },
+  getInvoices: (matterId) => apiService.get(`/matters/${matterId}/invoices`),
 
-  // Get matter invoices
-  getInvoices: async (matterId) => {
-    const res = await API.get(`/matters/${matterId}/invoices`);
-    return res.data;
-  },
+  updateBilling: (matterId, billingData) =>
+    apiService.patch(`/matters/${matterId}/billing`, billingData),
 
-  // Update matter billing
-  updateBilling: async (matterId, billingData) => {
-    const res = await API.patch(`/matters/${matterId}/billing`, billingData);
-    return res.data;
-  },
-
-  // Get billing summary
-  getBillingSummary: async (matterId) => {
-    const res = await API.get(`/matters/${matterId}/billing/summary`);
-    return res.data;
-  },
+  getBillingSummary: (matterId) =>
+    apiService.get(`/matters/${matterId}/billing/summary`),
 
   // ======================
   // REPORTING & ANALYTICS
   // ======================
+  generateReport: (matterId, reportType) =>
+    apiService.download(`/matters/${matterId}/reports/${reportType}`),
 
-  // Generate matter report
-  generateReport: async (matterId, reportType) => {
-    const res = await API.get(`/matters/${matterId}/reports/${reportType}`, {
-      responseType: "blob",
-    });
-    return res;
-  },
+  getMatterInsights: (matterId) =>
+    apiService.get(`/matters/${matterId}/insights`),
 
-  // Get matter insights/analytics
-  getMatterInsights: async (matterId) => {
-    const res = await API.get(`/matters/${matterId}/insights`);
-    return res.data;
-  },
+  getTimeEntries: (matterId) =>
+    apiService.get(`/matters/${matterId}/time-entries`),
 
-  // Get time tracking data
-  getTimeEntries: async (matterId) => {
-    const res = await API.get(`/matters/${matterId}/time-entries`);
-    return res.data;
-  },
-
-  // Log time entry
-  logTimeEntry: async (matterId, timeData) => {
-    const res = await API.post(`/matters/${matterId}/time-entries`, timeData);
-    return res.data;
-  },
+  logTimeEntry: (matterId, timeData) =>
+    apiService.post(`/matters/${matterId}/time-entries`, timeData),
 
   // ======================
   // NOTIFICATIONS & ALERTS
   // ======================
+  subscribeToMatter: (matterId) =>
+    apiService.post(`/matters/${matterId}/subscribe`),
 
-  // Subscribe to matter updates
-  subscribeToMatter: async (matterId) => {
-    const res = await API.post(`/matters/${matterId}/subscribe`);
-    return res.data;
-  },
+  unsubscribeFromMatter: (matterId) =>
+    apiService.delete(`/matters/${matterId}/subscribe`),
 
-  // Unsubscribe from matter updates
-  unsubscribeFromMatter: async (matterId) => {
-    const res = await API.delete(`/matters/${matterId}/subscribe`);
-    return res.data;
-  },
+  setAlert: (matterId, alertData) =>
+    apiService.post(`/matters/${matterId}/alerts`, alertData),
 
-  // Set matter alerts/reminders
-  setAlert: async (matterId, alertData) => {
-    const res = await API.post(`/matters/${matterId}/alerts`, alertData);
-    return res.data;
-  },
-
-  // Get matter alerts
-  getAlerts: async (matterId) => {
-    const res = await API.get(`/matters/${matterId}/alerts`);
-    return res.data;
-  },
+  getAlerts: (matterId) => apiService.get(`/matters/${matterId}/alerts`),
 
   // ======================
   // PERMISSIONS & SHARING
   // ======================
+  shareMatter: (matterId, userIds, permissions) =>
+    apiService.post(`/matters/${matterId}/share`, { userIds, permissions }),
 
-  // Share matter with other users
-  shareMatter: async (matterId, userIds, permissions) => {
-    const res = await API.post(`/matters/${matterId}/share`, {
-      userIds,
-      permissions,
-    });
-    return res.data;
-  },
+  updateSharing: (matterId, sharingData) =>
+    apiService.patch(`/matters/${matterId}/share`, sharingData),
 
-  // Update sharing permissions
-  updateSharing: async (matterId, sharingData) => {
-    const res = await API.patch(`/matters/${matterId}/share`, sharingData);
-    return res.data;
-  },
-
-  // Get matter collaborators
-  getCollaborators: async (matterId) => {
-    const res = await API.get(`/matters/${matterId}/collaborators`);
-    return res.data;
-  },
+  getCollaborators: (matterId) =>
+    apiService.get(`/matters/${matterId}/collaborators`),
 };
 
 export default matterService;
