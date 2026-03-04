@@ -47,7 +47,12 @@ import { useDispatch } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useEffect, useState, useRef } from "react";
 import { toast } from "react-toastify";
-import { deleteData, postData, putData, patchData } from "../redux/features/delete/deleteSlice";
+import {
+  deleteData,
+  postData,
+  putData,
+  patchData,
+} from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import ButtonWithIcon from "../components/ButtonWithIcon";
@@ -60,10 +65,26 @@ const { TabPane } = Tabs;
 
 const STATUS_CONFIG = {
   received: { color: "default", label: "Received", icon: <InboxOutlined /> },
-  acknowledged: { color: "blue", label: "Acknowledged", icon: <CheckOutlined /> },
-  under_review: { color: "processing", label: "Under Review", icon: <EyeOutlined /> },
-  in_progress: { color: "cyan", label: "In Progress", icon: <ClockCircleOutlined /> },
-  pending_action: { color: "orange", label: "Pending Action", icon: <ExclamationCircleOutlined /> },
+  acknowledged: {
+    color: "blue",
+    label: "Acknowledged",
+    icon: <CheckOutlined />,
+  },
+  under_review: {
+    color: "processing",
+    label: "Under Review",
+    icon: <EyeOutlined />,
+  },
+  in_progress: {
+    color: "cyan",
+    label: "In Progress",
+    icon: <ClockCircleOutlined />,
+  },
+  pending_action: {
+    color: "orange",
+    label: "Pending Action",
+    icon: <ExclamationCircleOutlined />,
+  },
   completed: { color: "green", label: "Completed", icon: <CheckOutlined /> },
   archived: { color: "gold", label: "Archived", icon: <InboxOutlined /> },
 };
@@ -74,6 +95,8 @@ const PRIORITY_CONFIG = {
   high: { color: "orange", label: "High" },
   urgent: { color: "red", label: "Urgent" },
 };
+
+const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
 
 const DocumentRecordList = () => {
   const navigate = useNavigate();
@@ -131,7 +154,7 @@ const DocumentRecordList = () => {
   const fetchStats = async () => {
     setStatsLoading(true);
     try {
-      const response = await fetch(`/api/v1/documentRecord/stats`, {
+      const response = await fetch(`${baseURL}/documentRecord/stats`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -149,7 +172,7 @@ const DocumentRecordList = () => {
 
   const fetchDocumentRecords = () => {
     let queryFilters = { ...filters };
-    
+
     if (activeTab === "all") {
       queryFilters.isDeleted = false;
     } else if (activeTab === "trash") {
@@ -251,11 +274,13 @@ const DocumentRecordList = () => {
 
   const removeRecord = async (id, permanent = false) => {
     try {
-      const endpoint = permanent 
+      const endpoint = permanent
         ? `documentRecord/${id}?permanent=true`
         : `documentRecord/${id}`;
       await dispatch(deleteData(endpoint));
-      toast.success(permanent ? "Document permanently deleted" : "Document moved to trash");
+      toast.success(
+        permanent ? "Document permanently deleted" : "Document moved to trash",
+      );
       fetchDocumentRecords();
       fetchStats();
     } catch (error) {
@@ -265,7 +290,9 @@ const DocumentRecordList = () => {
 
   const restoreRecord = async (id) => {
     try {
-      await dispatch(patchData({ endpoint: `documentRecord/${id}/restore`, data: {} }));
+      await dispatch(
+        patchData({ endpoint: `documentRecord/${id}/restore`, data: {} }),
+      );
       toast.success("Document restored successfully");
       fetchDocumentRecords();
       fetchStats();
@@ -280,11 +307,15 @@ const DocumentRecordList = () => {
       return;
     }
     try {
-      await dispatch(postData({
-        endpoint: "documentRecord/bulk-update-status",
-        data: { documentIds: selectedRowKeys, status }
-      }));
-      toast.success(`${selectedRowKeys.length} document(s) updated to "${status}"`);
+      await dispatch(
+        postData({
+          endpoint: "documentRecord/bulk-update-status",
+          data: { documentIds: selectedRowKeys, status },
+        }),
+      );
+      toast.success(
+        `${selectedRowKeys.length} document(s) updated to "${status}"`,
+      );
       setSelectedRowKeys([]);
       fetchDocumentRecords();
       fetchStats();
@@ -299,10 +330,12 @@ const DocumentRecordList = () => {
       return;
     }
     try {
-      await dispatch(postData({
-        endpoint: "documentRecord/bulk-delete",
-        data: { documentIds: selectedRowKeys }
-      }));
+      await dispatch(
+        postData({
+          endpoint: "documentRecord/bulk-delete",
+          data: { documentIds: selectedRowKeys },
+        }),
+      );
       toast.success(`${selectedRowKeys.length} document(s) moved to trash`);
       setSelectedRowKeys([]);
       fetchDocumentRecords();
@@ -315,10 +348,13 @@ const DocumentRecordList = () => {
   const handleExport = async (format) => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`/api/v1/documentRecord/export?format=${format}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      
+      const response = await fetch(
+        `${baseURL}/documentRecord/export?format=${format}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+
       if (format === "csv") {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -329,7 +365,9 @@ const DocumentRecordList = () => {
         toast.success("Export completed");
       } else {
         const result = await response.json();
-        const blob = new Blob([JSON.stringify(result.data, null, 2)], { type: "application/json" });
+        const blob = new Blob([JSON.stringify(result.data, null, 2)], {
+          type: "application/json",
+        });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
@@ -344,10 +382,12 @@ const DocumentRecordList = () => {
 
   const handleStatusChange = async (id, newStatus) => {
     try {
-      await dispatch(patchData({ 
-        endpoint: `documentRecord/${id}/status`, 
-        data: { status: newStatus } 
-      }));
+      await dispatch(
+        patchData({
+          endpoint: `documentRecord/${id}/status`,
+          data: { status: newStatus },
+        }),
+      );
       toast.success(`Status updated to "${newStatus}"`);
       fetchDocumentRecords();
       fetchStats();
@@ -366,16 +406,24 @@ const DocumentRecordList = () => {
 
   const bulkMenu = (
     <Menu>
-      <Menu.Item key="acknowledged" onClick={() => handleBulkStatusUpdate("acknowledged")}>
+      <Menu.Item
+        key="acknowledged"
+        onClick={() => handleBulkStatusUpdate("acknowledged")}>
         Mark as Acknowledged
       </Menu.Item>
-      <Menu.Item key="in_progress" onClick={() => handleBulkStatusUpdate("in_progress")}>
+      <Menu.Item
+        key="in_progress"
+        onClick={() => handleBulkStatusUpdate("in_progress")}>
         Mark as In Progress
       </Menu.Item>
-      <Menu.Item key="completed" onClick={() => handleBulkStatusUpdate("completed")}>
+      <Menu.Item
+        key="completed"
+        onClick={() => handleBulkStatusUpdate("completed")}>
         Mark as Completed
       </Menu.Item>
-      <Menu.Item key="archived" onClick={() => handleBulkStatusUpdate("archived")}>
+      <Menu.Item
+        key="archived"
+        onClick={() => handleBulkStatusUpdate("archived")}>
         Archive
       </Menu.Item>
       <Menu.Divider />
@@ -407,7 +455,8 @@ const DocumentRecordList = () => {
         total: documentRecord?.pagination.totalRecords,
         showSizeChanger: true,
         showQuickJumper: true,
-        showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} records`,
+        showTotal: (total, range) =>
+          `${range[0]}-${range[1]} of ${total} records`,
         onChange: handlePageChange,
         onShowSizeChange: handlePageChange,
       }
@@ -491,7 +540,11 @@ const DocumentRecordList = () => {
                     <span>
                       <WarningOutlined /> Urgent
                       {stats?.stats?.urgent > 0 && (
-                        <Badge count={stats.stats.urgent} size="small" className="ml-2" />
+                        <Badge
+                          count={stats.stats.urgent}
+                          size="small"
+                          className="ml-2"
+                        />
                       )}
                     </span>
                   ),
@@ -502,7 +555,11 @@ const DocumentRecordList = () => {
                     <span>
                       <ClockCircleOutlined /> Due Today
                       {stats?.stats?.dueToday > 0 && (
-                        <Badge count={stats.stats.dueToday} size="small" className="ml-2" />
+                        <Badge
+                          count={stats.stats.dueToday}
+                          size="small"
+                          className="ml-2"
+                        />
                       )}
                     </span>
                   ),
@@ -534,9 +591,7 @@ const DocumentRecordList = () => {
             <div className="flex flex-col md:flex-row gap-3 items-center">
               {selectedRowKeys.length > 0 && activeTab !== "trash" && (
                 <Dropdown overlay={bulkMenu} trigger={["click"]}>
-                  <Button>
-                    Bulk Actions ({selectedRowKeys.length})
-                  </Button>
+                  <Button>Bulk Actions ({selectedRowKeys.length})</Button>
                 </Dropdown>
               )}
 
@@ -571,10 +626,14 @@ const DocumentRecordList = () => {
             <div className="bg-gray-50 p-4 rounded-lg mb-6 border">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Search
+                  </label>
                   <Input
                     value={filters.search}
-                    onChange={(e) => handleFilterChange("search", e.target.value)}
+                    onChange={(e) =>
+                      handleFilterChange("search", e.target.value)
+                    }
                     placeholder="Search documents..."
                     prefix={<SearchOutlined />}
                     allowClear
@@ -582,10 +641,14 @@ const DocumentRecordList = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Document Type
+                  </label>
                   <Select
                     value={filters.documentType || undefined}
-                    onChange={(value) => handleFilterChange("documentType", value)}
+                    onChange={(value) =>
+                      handleFilterChange("documentType", value)
+                    }
                     placeholder="All types"
                     style={{ width: "100%" }}
                     allowClear>
@@ -593,11 +656,17 @@ const DocumentRecordList = () => {
                       <>
                         <Option value="Court Process">Court Process</Option>
                         <Option value="Client Document">Client Document</Option>
-                        <Option value="Official Correspondence">Official Correspondence</Option>
+                        <Option value="Official Correspondence">
+                          Official Correspondence
+                        </Option>
                         <Option value="Legal Notice">Legal Notice</Option>
-                        <Option value="Contract/Agreement">Contract/Agreement</Option>
+                        <Option value="Contract/Agreement">
+                          Contract/Agreement
+                        </Option>
                         <Option value="Affidavit">Affidavit</Option>
-                        <Option value="Power of Attorney">Power of Attorney</Option>
+                        <Option value="Power of Attorney">
+                          Power of Attorney
+                        </Option>
                         <Option value="Judgement/Order">Judgement/Order</Option>
                         <Option value="Petition">Petition</Option>
                         <Option value="Correspondence">Correspondence</Option>
@@ -608,7 +677,9 @@ const DocumentRecordList = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status
+                  </label>
                   <Select
                     value={filters.status || undefined}
                     onChange={(value) => handleFilterChange("status", value)}
@@ -624,7 +695,9 @@ const DocumentRecordList = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Priority
+                  </label>
                   <Select
                     value={filters.priority || undefined}
                     onChange={(value) => handleFilterChange("priority", value)}
@@ -640,24 +713,35 @@ const DocumentRecordList = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Sender</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sender
+                  </label>
                   <Input
                     value={filters.sender}
-                    onChange={(e) => handleFilterChange("sender", e.target.value)}
+                    onChange={(e) =>
+                      handleFilterChange("sender", e.target.value)
+                    }
                     placeholder="Filter by sender"
                     allowClear
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date Received</label>
-                  <RangePicker onChange={handleDateRangeChange} style={{ width: "100%" }} />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Date Received
+                  </label>
+                  <RangePicker
+                    onChange={handleDateRangeChange}
+                    style={{ width: "100%" }}
+                  />
                 </div>
               </div>
 
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div className="flex-1">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Sort By</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Sort By
+                  </label>
                   <Select
                     value={filters.sort}
                     onChange={(value) => handleFilterChange("sort", value)}
@@ -676,7 +760,10 @@ const DocumentRecordList = () => {
                   <Button onClick={resetFilters} disabled={!hasActiveFilters}>
                     Reset
                   </Button>
-                  <Button type="primary" onClick={applyFilters} loading={loadingDocumentRecord?.documentRecord}>
+                  <Button
+                    type="primary"
+                    onClick={applyFilters}
+                    loading={loadingDocumentRecord?.documentRecord}>
                     Apply Filters
                   </Button>
                 </div>
@@ -693,7 +780,10 @@ const DocumentRecordList = () => {
               rowKey="_id"
               rowSelection={activeTab !== "trash" ? rowSelection : undefined}
               onRow={(record) => ({
-                onClick: () => navigate(`/dashboard/record-document-list/${record._id}/details`),
+                onClick: () =>
+                  navigate(
+                    `/dashboard/record-document-list/${record._id}/details`,
+                  ),
                 style: { cursor: "pointer" },
               })}>
               <Column
@@ -708,7 +798,10 @@ const DocumentRecordList = () => {
                       {record.documentName}
                     </Link>
                     <div className="flex items-center gap-2 mt-1 flex-wrap">
-                      <Tag color={STATUS_CONFIG[record.status]?.color || "default"}>
+                      <Tag
+                        color={
+                          STATUS_CONFIG[record.status]?.color || "default"
+                        }>
                         {STATUS_CONFIG[record.status]?.label || record.status}
                       </Tag>
                       {record.isUrgent && (
@@ -731,9 +824,7 @@ const DocumentRecordList = () => {
                 dataIndex="documentType"
                 key="documentType"
                 width={120}
-                render={(type) => (
-                  <Tag color="blue">{type}</Tag>
-                )}
+                render={(type) => <Tag color="blue">{type}</Tag>}
               />
 
               <Column
@@ -745,7 +836,9 @@ const DocumentRecordList = () => {
                   <div>
                     <div className="font-medium">{sender}</div>
                     {record.senderContact && (
-                      <div className="text-xs text-gray-500">{record.senderContact}</div>
+                      <div className="text-xs text-gray-500">
+                        {record.senderContact}
+                      </div>
                     )}
                   </div>
                 )}
@@ -773,7 +866,10 @@ const DocumentRecordList = () => {
                     <div>{formatDate(date || null)}</div>
                     {date && (
                       <div className="text-xs text-gray-500">
-                        {new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(date).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </div>
                     )}
                   </div>
@@ -786,13 +882,23 @@ const DocumentRecordList = () => {
                 key="dueDate"
                 width={120}
                 render={(dueDate, record) => {
-                  if (!dueDate || !record.responseRequired) return <Text type="secondary">-</Text>;
+                  if (!dueDate || !record.responseRequired)
+                    return <Text type="secondary">-</Text>;
                   const isOverdue = new Date(dueDate) < new Date();
-                  const isDueToday = new Date(dueDate).toDateString() === new Date().toDateString();
+                  const isDueToday =
+                    new Date(dueDate).toDateString() ===
+                    new Date().toDateString();
                   return (
                     <div className="text-sm">
-                      <Tag color={isOverdue ? "red" : isDueToday ? "orange" : "default"}>
-                        {isOverdue ? "Overdue: " : isDueToday ? "Due Today: " : ""}
+                      <Tag
+                        color={
+                          isOverdue ? "red" : isDueToday ? "orange" : "default"
+                        }>
+                        {isOverdue
+                          ? "Overdue: "
+                          : isDueToday
+                            ? "Due Today: "
+                            : ""}
                         {formatDate(dueDate)}
                       </Tag>
                     </div>
@@ -805,7 +911,7 @@ const DocumentRecordList = () => {
                 dataIndex="forwardedTo"
                 key="forwardedTo"
                 width={130}
-                render={(forwardedTo) => (
+                render={(forwardedTo) =>
                   forwardedTo ? (
                     <div className="text-sm">
                       {forwardedTo.firstName} {forwardedTo.lastName}
@@ -813,7 +919,7 @@ const DocumentRecordList = () => {
                   ) : (
                     <Text type="secondary">Not forwarded</Text>
                   )
-                )}
+                }
               />
 
               <Column
@@ -824,8 +930,14 @@ const DocumentRecordList = () => {
                 render={(text, record) => (
                   <Space size="small" onClick={(e) => e.stopPropagation()}>
                     <Tooltip title="View Details">
-                      <Link to={`/dashboard/record-document-list/${record._id}/details`}>
-                        <Button icon={<EyeOutlined />} size="small" type="text" className="text-blue-600" />
+                      <Link
+                        to={`/dashboard/record-document-list/${record._id}/details`}>
+                        <Button
+                          icon={<EyeOutlined />}
+                          size="small"
+                          type="text"
+                          className="text-blue-600"
+                        />
                       </Link>
                     </Tooltip>
 
@@ -834,17 +946,25 @@ const DocumentRecordList = () => {
                         <Tooltip title="Restore">
                           <Popconfirm
                             title="Restore this document?"
-                            onConfirm={() => restoreRecord(record._id)}
-                          >
-                            <Button icon={<ReloadOutlined />} size="small" type="text" className="text-green-600" />
+                            onConfirm={() => restoreRecord(record._id)}>
+                            <Button
+                              icon={<ReloadOutlined />}
+                              size="small"
+                              type="text"
+                              className="text-green-600"
+                            />
                           </Popconfirm>
                         </Tooltip>
                         <Tooltip title="Delete Permanently">
                           <Popconfirm
                             title="Permanently delete this document? This cannot be undone."
-                            onConfirm={() => removeRecord(record._id, true)}
-                          >
-                            <Button icon={<DeleteOutlined />} size="small" type="text" danger />
+                            onConfirm={() => removeRecord(record._id, true)}>
+                            <Button
+                              icon={<DeleteOutlined />}
+                              size="small"
+                              type="text"
+                              danger
+                            />
                           </Popconfirm>
                         </Tooltip>
                       </>
@@ -855,28 +975,37 @@ const DocumentRecordList = () => {
                             <Menu.Item
                               key="edit"
                               icon={<EditOutlined />}
-                              onClick={() => navigate(`/dashboard/record-documents/${record._id}/edit`)}
-                            >
+                              onClick={() =>
+                                navigate(
+                                  `/dashboard/record-documents/${record._id}/edit`,
+                                )
+                              }>
                               Edit
                             </Menu.Item>
                             <Menu.Item
                               key="history"
                               icon={<HistoryOutlined />}
-                              onClick={() => navigate(`/dashboard/record-document-list/${record._id}/details?tab=activity`)}
-                            >
+                              onClick={() =>
+                                navigate(
+                                  `/dashboard/record-document-list/${record._id}/details?tab=activity`,
+                                )
+                              }>
                               View History
                             </Menu.Item>
                             <Menu.Divider />
                             <Menu.SubMenu title="Change Status">
-                              {Object.entries(STATUS_CONFIG).map(([key, config]) => (
-                                <Menu.Item
-                                  key={key}
-                                  onClick={() => handleStatusChange(record._id, key)}
-                                  disabled={record.status === key}
-                                >
-                                  {config.label}
-                                </Menu.Item>
-                              ))}
+                              {Object.entries(STATUS_CONFIG).map(
+                                ([key, config]) => (
+                                  <Menu.Item
+                                    key={key}
+                                    onClick={() =>
+                                      handleStatusChange(record._id, key)
+                                    }
+                                    disabled={record.status === key}>
+                                    {config.label}
+                                  </Menu.Item>
+                                ),
+                              )}
                             </Menu.SubMenu>
                             <Menu.Divider />
                             <Menu.Item
@@ -886,20 +1015,23 @@ const DocumentRecordList = () => {
                               onClick={() => {
                                 Modal.confirm({
                                   title: "Move to Trash",
-                                  content: "Are you sure you want to move this document to trash?",
+                                  content:
+                                    "Are you sure you want to move this document to trash?",
                                   okText: "Move to Trash",
                                   okType: "danger",
                                   onOk: () => removeRecord(record._id),
                                 });
-                              }}
-                            >
+                              }}>
                               Move to Trash
                             </Menu.Item>
                           </Menu>
                         }
-                        trigger={["click"]}
-                      >
-                        <Button icon={<MoreOutlined />} size="small" type="text" />
+                        trigger={["click"]}>
+                        <Button
+                          icon={<MoreOutlined />}
+                          size="small"
+                          type="text"
+                        />
                       </Dropdown>
                     )}
                   </Space>
@@ -910,14 +1042,18 @@ const DocumentRecordList = () => {
 
           {hasActiveFilters && activeTab !== "trash" && (
             <div className="mt-4 flex flex-wrap gap-2 items-center">
-              <span className="text-sm font-medium text-gray-700">Active filters:</span>
+              <span className="text-sm font-medium text-gray-700">
+                Active filters:
+              </span>
               {filters.search && (
                 <Tag closable onClose={() => handleFilterChange("search", "")}>
                   Search: {filters.search}
                 </Tag>
               )}
               {filters.documentType && (
-                <Tag closable onClose={() => handleFilterChange("documentType", "")}>
+                <Tag
+                  closable
+                  onClose={() => handleFilterChange("documentType", "")}>
                   Type: {filters.documentType}
                 </Tag>
               )}
@@ -927,7 +1063,9 @@ const DocumentRecordList = () => {
                 </Tag>
               )}
               {filters.priority && (
-                <Tag closable onClose={() => handleFilterChange("priority", "")}>
+                <Tag
+                  closable
+                  onClose={() => handleFilterChange("priority", "")}>
                   Priority: {PRIORITY_CONFIG[filters.priority]?.label}
                 </Tag>
               )}

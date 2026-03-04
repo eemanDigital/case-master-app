@@ -51,12 +51,18 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import { useDispatch } from "react-redux";
-import { putData, postData, patchData } from "../redux/features/delete/deleteSlice";
+import {
+  putData,
+  postData,
+  patchData,
+} from "../redux/features/delete/deleteSlice";
 import { toast } from "react-toastify";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 
 const { Title, Text, Paragraph } = Typography;
 const { TextArea } = Input;
+
+const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
 
 const STATUS_CONFIG = {
   received: { color: "default", label: "Received", step: 0 },
@@ -104,9 +110,12 @@ const DocumentRecordDetails = () => {
     setActivityLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch(`/api/v1/documentRecord/${id}/activity`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await fetch(
+        `${baseURL}/v1/documentRecord/${id}/activity`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       const result = await response.json();
       if (result.status === "success") {
         setActivityData(result.data.activities || []);
@@ -119,16 +128,19 @@ const DocumentRecordDetails = () => {
   };
 
   if (loading) return <LoadingSpinner />;
-  if (error) return <PageErrorAlert errorCondition={error} errorMessage={error} />;
+  if (error)
+    return <PageErrorAlert errorCondition={error} errorMessage={error} />;
 
   const documentData = data?.data?.docRecord;
 
   const handleStatusChange = async (newStatus) => {
     try {
-      await dispatch(patchData({
-        endpoint: `documentRecord/${id}/status`,
-        data: { status: newStatus }
-      }));
+      await dispatch(
+        patchData({
+          endpoint: `documentRecord/${id}/status`,
+          data: { status: newStatus },
+        }),
+      );
       message.success(`Status updated to ${STATUS_CONFIG[newStatus]?.label}`);
       dataFetcher(`documentRecord/${id}`, "GET");
       fetchActivityLog();
@@ -139,10 +151,12 @@ const DocumentRecordDetails = () => {
 
   const handleAddNote = async (values) => {
     try {
-      await dispatch(postData({
-        endpoint: `documentRecord/${id}/notes`,
-        data: values
-      }));
+      await dispatch(
+        postData({
+          endpoint: `documentRecord/${id}/notes`,
+          data: values,
+        }),
+      );
       message.success("Note added successfully");
       setNoteModalVisible(false);
       noteForm.resetFields();
@@ -155,10 +169,12 @@ const DocumentRecordDetails = () => {
 
   const handleForward = async (values) => {
     try {
-      await dispatch(postData({
-        endpoint: `documentRecord/${id}/forward`,
-        data: values
-      }));
+      await dispatch(
+        postData({
+          endpoint: `documentRecord/${id}/forward`,
+          data: values,
+        }),
+      );
       message.success("Document forwarded successfully");
       setForwardModalVisible(false);
       forwardForm.resetFields();
@@ -171,7 +187,9 @@ const DocumentRecordDetails = () => {
 
   const handleRestore = async () => {
     try {
-      await dispatch(patchData({ endpoint: `documentRecord/${id}/restore`, data: {} }));
+      await dispatch(
+        patchData({ endpoint: `documentRecord/${id}/restore`, data: {} }),
+      );
       message.success("Document restored successfully");
       dataFetcher(`documentRecord/${id}`, "GET");
     } catch (error) {
@@ -259,7 +277,9 @@ const DocumentRecordDetails = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Urgent">
               {documentData?.isUrgent ? (
-                <Tag color="red" icon={<WarningOutlined />}>Urgent</Tag>
+                <Tag color="red" icon={<WarningOutlined />}>
+                  Urgent
+                </Tag>
               ) : (
                 <Text type="secondary">No</Text>
               )}
@@ -268,7 +288,9 @@ const DocumentRecordDetails = () => {
               {documentData?.tags?.length > 0 ? (
                 <Space wrap>
                   {documentData.tags.map((tag) => (
-                    <Tag key={tag} color="blue">{tag}</Tag>
+                    <Tag key={tag} color="blue">
+                      {tag}
+                    </Tag>
                   ))}
                 </Space>
               ) : (
@@ -330,7 +352,9 @@ const DocumentRecordDetails = () => {
         {documentData?.internalNotes?.length > 0 && (
           <Card title="Internal Notes" className="shadow-md mb-4">
             {documentData.internalNotes.map((note, index) => (
-              <div key={index} className="mb-3 pb-3 border-b border-gray-200 last:border-0">
+              <div
+                key={index}
+                className="mb-3 pb-3 border-b border-gray-200 last:border-0">
                 <Space>
                   <Text type="secondary">{formatDate(note.createdAt)}</Text>
                   {note.isPrivate && <Tag color="orange">Private</Tag>}
@@ -344,12 +368,16 @@ const DocumentRecordDetails = () => {
         {documentData?.attachments?.length > 0 && (
           <Card title="Attachments" className="shadow-md mb-4">
             {documentData.attachments.map((attachment, index) => (
-              <div key={index} className="flex items-center justify-between p-2 border rounded mb-2">
+              <div
+                key={index}
+                className="flex items-center justify-between p-2 border rounded mb-2">
                 <Space>
                   <FileTextOutlined />
                   <Text>{attachment.fileName}</Text>
                   {attachment.fileSize && (
-                    <Text type="secondary">({(attachment.fileSize / 1024).toFixed(1)} KB)</Text>
+                    <Text type="secondary">
+                      ({(attachment.fileSize / 1024).toFixed(1)} KB)
+                    </Text>
                   )}
                 </Space>
                 <Button type="link" href={attachment.fileUrl} target="_blank">
@@ -397,7 +425,12 @@ const DocumentRecordDetails = () => {
             </Descriptions.Item>
             <Descriptions.Item label="Due Date">
               {documentData?.dueDate ? (
-                <Tag color={new Date(documentData.dueDate) < new Date() ? "red" : "default"}>
+                <Tag
+                  color={
+                    new Date(documentData.dueDate) < new Date()
+                      ? "red"
+                      : "default"
+                  }>
                   {formatDate(documentData.dueDate)}
                 </Tag>
               ) : (
@@ -428,22 +461,19 @@ const DocumentRecordDetails = () => {
             <Button
               icon={<EditOutlined />}
               onClick={() => setForwardModalVisible(true)}
-              block
-            >
+              block>
               Forward Document
             </Button>
             <Button
               icon={<PlusOutlined />}
               onClick={() => setNoteModalVisible(true)}
-              block
-            >
+              block>
               Add Internal Note
             </Button>
             {documentData?.isDeleted && (
               <Popconfirm
                 title="Restore this document?"
-                onConfirm={handleRestore}
-              >
+                onConfirm={handleRestore}>
                 <Button icon={<ReloadOutlined />} type="primary" block>
                   Restore from Trash
                 </Button>
@@ -466,12 +496,18 @@ const DocumentRecordDetails = () => {
                 size={100}
                 icon={<FileTextOutlined />}
                 className="shadow-md"
-                style={{ backgroundColor: documentData?.isUrgent ? "#ff4d4f" : "#1890ff" }}
+                style={{
+                  backgroundColor: documentData?.isUrgent
+                    ? "#ff4d4f"
+                    : "#1890ff",
+                }}
               />
             </Col>
             <Col xs={24} sm={16} md={18}>
               <Space direction="vertical" size={0}>
-                <Title level={2} className="mb-1">{documentData?.documentName}</Title>
+                <Title level={2} className="mb-1">
+                  {documentData?.documentName}
+                </Title>
                 <Space>
                   <Tag color={STATUS_CONFIG[documentData?.status]?.color}>
                     {STATUS_CONFIG[documentData?.status]?.label}
@@ -484,9 +520,7 @@ const DocumentRecordDetails = () => {
                       URGENT
                     </Tag>
                   )}
-                  {documentData?.isDeleted && (
-                    <Tag color="gold">In Trash</Tag>
-                  )}
+                  {documentData?.isDeleted && <Tag color="gold">In Trash</Tag>}
                 </Space>
               </Space>
             </Col>
@@ -514,7 +548,11 @@ const DocumentRecordDetails = () => {
                 <span>
                   <HistoryOutlined /> Activity Log
                   {activityData.length > 0 && (
-                    <Badge count={activityData.length} size="small" className="ml-2" />
+                    <Badge
+                      count={activityData.length}
+                      size="small"
+                      className="ml-2"
+                    />
                   )}
                 </span>
               ),
@@ -528,17 +566,23 @@ const DocumentRecordDetails = () => {
         title="Add Internal Note"
         open={noteModalVisible}
         onCancel={() => setNoteModalVisible(false)}
-        footer={null}
-      >
+        footer={null}>
         <Form form={noteForm} layout="vertical" onFinish={handleAddNote}>
           <Form.Item
             name="content"
             label="Note"
-            rules={[{ required: true, message: "Please enter a note" }]}
-          >
-            <TextArea rows={4} placeholder="Enter your note..." showCount maxLength={2000} />
+            rules={[{ required: true, message: "Please enter a note" }]}>
+            <TextArea
+              rows={4}
+              placeholder="Enter your note..."
+              showCount
+              maxLength={2000}
+            />
           </Form.Item>
-          <Form.Item name="isPrivate" valuePropName="checked" initialValue={true}>
+          <Form.Item
+            name="isPrivate"
+            valuePropName="checked"
+            initialValue={true}>
             <Space>
               <input type="checkbox" checked={true} readOnly />
               <Text>Private (only visible to staff)</Text>
@@ -559,14 +603,12 @@ const DocumentRecordDetails = () => {
         title="Forward Document"
         open={forwardModalVisible}
         onCancel={() => setForwardModalVisible(false)}
-        footer={null}
-      >
+        footer={null}>
         <Form form={forwardForm} layout="vertical" onFinish={handleForward}>
           <Form.Item
             name="forwardedTo"
             label="Forward To"
-            rules={[{ required: true, message: "Please select a recipient" }]}
-          >
+            rules={[{ required: true, message: "Please select a recipient" }]}>
             <Select
               placeholder="Select recipient"
               options={userOptions}
@@ -581,7 +623,9 @@ const DocumentRecordDetails = () => {
               <Button type="primary" htmlType="submit">
                 Forward
               </Button>
-              <Button onClick={() => setForwardModalVisible(false)}>Cancel</Button>
+              <Button onClick={() => setForwardModalVisible(false)}>
+                Cancel
+              </Button>
             </Space>
           </Form.Item>
         </Form>

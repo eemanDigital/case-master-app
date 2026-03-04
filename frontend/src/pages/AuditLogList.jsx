@@ -34,7 +34,7 @@ import dayjs from "dayjs";
 const { RangePicker } = DatePicker;
 const { Text } = Typography;
 
-const baseURL = "";
+const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
 
 const AuditLogList = () => {
   const [loading, setLoading] = useState(true);
@@ -72,10 +72,9 @@ const AuditLogList = () => {
         params.append("endDate", filters.dateRange[1].toISOString());
 
       const response = await axios.get(
-        `${baseURL}/api/v1/audit-logs?${params.toString()}`,
+        `${baseURL}/audit-logs?${params.toString()}`,
       );
 
-      console.log("API RESPONSE:", response);
       setLogs(response.data.data || []);
       setPagination((prev) => ({
         ...prev,
@@ -91,7 +90,7 @@ const AuditLogList = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await axios.get(`${baseURL}/api/v1/audit-logs/stats`);
+      const response = await axios.get(`${baseURL}/audit-logs/stats`);
       setStats(response.data.data);
     } catch (error) {
       console.error("Failed to fetch stats");

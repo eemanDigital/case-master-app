@@ -56,6 +56,8 @@ const availableEvents = [
   { value: "calendar.event.updated", label: "Calendar Event Updated" },
 ];
 
+const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+
 const WebhookList = () => {
   const [loading, setLoading] = useState(true);
   const [webhooks, setWebhooks] = useState([]);
@@ -73,7 +75,7 @@ const WebhookList = () => {
   const fetchWebhooks = async () => {
     setLoading(true);
     try {
-      const response = await axios.get("/api/v1/webhooks");
+      const response = await axios.get(`${baseURL}/webhooks`);
       setWebhooks(response.data.data || []);
     } catch (error) {
       message.error("Failed to fetch webhooks");
@@ -105,7 +107,7 @@ const WebhookList = () => {
 
   const handleView = async (record) => {
     try {
-      const response = await axios.get(`/api/v1/webhooks/${record._id}`);
+      const response = await axios.get(`${baseURL}/webhooks/${record._id}`);
       setWebhook(response.data.data);
       setDetailsModalVisible(true);
     } catch (error) {
@@ -118,7 +120,9 @@ const WebhookList = () => {
     setDeliveriesLoading(true);
     setDeliveriesModalVisible(true);
     try {
-      const response = await axios.get(`/api/v1/webhooks/${record._id}/deliveries`);
+      const response = await axios.get(
+        `${baseURL}/webhooks/${record._id}/deliveries`,
+      );
       setDeliveries(response.data.data || []);
     } catch (error) {
       message.error("Failed to fetch deliveries");
@@ -129,7 +133,7 @@ const WebhookList = () => {
 
   const handleDelete = async (id) => {
     try {
-      await axios.delete(`/api/v1/webhooks/${id}`);
+      await axios.delete(`${baseURL}/webhooks/${id}`);
       message.success("Webhook deleted successfully");
       fetchWebhooks();
     } catch (error) {
@@ -141,10 +145,10 @@ const WebhookList = () => {
     setSubmitting(true);
     try {
       if (webhook) {
-        await axios.patch(`/api/v1/webhooks/${webhook._id}`, values);
+        await axios.patch(`${baseURL}/webhooks/${webhook._id}`, values);
         message.success("Webhook updated successfully");
       } else {
-        await axios.post("/api/v1/webhooks", values);
+        await axios.post("${baseURL}/webhooks", values);
         message.success("Webhook created successfully");
       }
       setModalVisible(false);
@@ -158,7 +162,9 @@ const WebhookList = () => {
 
   const handleTest = async (record) => {
     try {
-      const response = await axios.post(`/api/v1/webhooks/${record._id}/test`);
+      const response = await axios.post(
+        `${baseURL}/webhooks/${record._id}/test`,
+      );
       if (response.data.success) {
         message.success("Test webhook delivered successfully");
       } else {
@@ -171,7 +177,7 @@ const WebhookList = () => {
 
   const handleToggleActive = async (record) => {
     try {
-      await axios.patch(`/api/v1/webhooks/${record._id}`, {
+      await axios.patch(`${baseURL}/webhooks/${record._id}`, {
         isActive: !record.isActive,
       });
       message.success(`Webhook ${record.isActive ? "disabled" : "enabled"}`);
@@ -183,7 +189,9 @@ const WebhookList = () => {
 
   const handleRegenerateSecret = async () => {
     try {
-      const response = await axios.get(`/api/v1/webhooks/${webhook._id}/regenerate-secret`);
+      const response = await axios.get(
+        `${baseURL}/webhooks/${webhook._id}/regenerate-secret`,
+      );
       setRegeneratedSecret(response.data.data.secret);
       setSecretModalVisible(true);
       fetchWebhooks();
@@ -200,7 +208,9 @@ const WebhookList = () => {
       render: (name, record) => (
         <Space direction="vertical" size={0}>
           <Text strong>{name}</Text>
-          <Text type="secondary" style={{ fontSize: 12 }}>{record.url}</Text>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            {record.url}
+          </Text>
         </Space>
       ),
     },
@@ -236,16 +246,14 @@ const WebhookList = () => {
       dataIndex: "lastTriggeredAt",
       key: "lastTriggeredAt",
       width: 150,
-      render: (date) => date ? dayjs(date).format("MMM DD, HH:mm") : "Never",
+      render: (date) => (date ? dayjs(date).format("MMM DD, HH:mm") : "Never"),
     },
     {
       title: "Trigger Count",
       dataIndex: "triggerCount",
       key: "triggerCount",
       width: 120,
-      render: (count, record) => (
-        <Badge count={count} showZero color="blue" />
-      ),
+      render: (count, record) => <Badge count={count} showZero color="blue" />,
     },
     {
       title: "Last Status",
@@ -271,21 +279,16 @@ const WebhookList = () => {
           <Button
             type="link"
             icon={<EyeOutlined />}
-            onClick={() => handleView(record)}
-          >
+            onClick={() => handleView(record)}>
             View
           </Button>
           <Button
             type="link"
             icon={<PlayCircleOutlined />}
-            onClick={() => handleTest(record)}
-          >
+            onClick={() => handleTest(record)}>
             Test
           </Button>
-          <Button
-            type="link"
-            onClick={() => handleViewDeliveries(record)}
-          >
+          <Button type="link" onClick={() => handleViewDeliveries(record)}>
             Logs
           </Button>
           <Button
@@ -297,8 +300,7 @@ const WebhookList = () => {
             title="Delete this webhook?"
             onConfirm={() => handleDelete(record._id)}
             okText="Yes"
-            cancelText="No"
-          >
+            cancelText="No">
             <Button type="link" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
@@ -324,7 +326,11 @@ const WebhookList = () => {
       dataIndex: "status",
       key: "status",
       render: (status) => {
-        const colors = { SUCCESS: "success", FAILED: "error", PENDING: "processing" };
+        const colors = {
+          SUCCESS: "success",
+          FAILED: "error",
+          PENDING: "processing",
+        };
         return <Badge status={colors[status]} text={status} />;
       },
     },
@@ -353,7 +359,9 @@ const WebhookList = () => {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Webhooks</h1>
-          <Text type="secondary">Manage integrations with external services</Text>
+          <Text type="secondary">
+            Manage integrations with external services
+          </Text>
         </div>
         <Button type="primary" icon={<PlusOutlined />} onClick={handleCreate}>
           Add Webhook
@@ -383,19 +391,16 @@ const WebhookList = () => {
         open={modalVisible}
         onCancel={() => setModalVisible(false)}
         footer={null}
-        width={600}
-      >
+        width={600}>
         <Form
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          initialValues={{ isActive: true }}
-        >
+          initialValues={{ isActive: true }}>
           <Form.Item
             name="name"
             label="Name"
-            rules={[{ required: true, message: "Please enter a name" }]}
-          >
+            rules={[{ required: true, message: "Please enter a name" }]}>
             <Input placeholder="e.g., Slack Notifications" />
           </Form.Item>
 
@@ -405,16 +410,14 @@ const WebhookList = () => {
             rules={[
               { required: true, message: "Please enter URL" },
               { type: "url", message: "Please enter a valid URL" },
-            ]}
-          >
+            ]}>
             <Input placeholder="https://your-service.com/webhook" />
           </Form.Item>
 
           <Form.Item
             name="events"
             label="Events"
-            rules={[{ required: true, message: "Select at least one event" }]}
-          >
+            rules={[{ required: true, message: "Select at least one event" }]}>
             <Select
               mode="multiple"
               placeholder="Select events to trigger webhook"
@@ -445,18 +448,23 @@ const WebhookList = () => {
         open={detailsModalVisible}
         onCancel={() => setDetailsModalVisible(false)}
         footer={[
-          <Button key="test" icon={<PlayCircleOutlined />} onClick={() => handleTest(webhook)}>
+          <Button
+            key="test"
+            icon={<PlayCircleOutlined />}
+            onClick={() => handleTest(webhook)}>
             Send Test
           </Button>,
-          <Button key="secret" icon={<ReloadOutlined />} onClick={handleRegenerateSecret}>
+          <Button
+            key="secret"
+            icon={<ReloadOutlined />}
+            onClick={handleRegenerateSecret}>
             Regenerate Secret
           </Button>,
           <Button key="close" onClick={() => setDetailsModalVisible(false)}>
             Close
           </Button>,
         ]}
-        width={600}
-      >
+        width={600}>
         {webhook && (
           <Descriptions column={2} bordered size="small">
             <Descriptions.Item label="Name" span={2}>
@@ -466,13 +474,20 @@ const WebhookList = () => {
               {webhook.url}
             </Descriptions.Item>
             <Descriptions.Item label="Status">
-              <Badge status={webhook.isActive ? "success" : "default"} text={webhook.isActive ? "Active" : "Inactive"} />
+              <Badge
+                status={webhook.isActive ? "success" : "default"}
+                text={webhook.isActive ? "Active" : "Inactive"}
+              />
             </Descriptions.Item>
             <Descriptions.Item label="Trigger Count">
               {webhook.triggerCount}
             </Descriptions.Item>
             <Descriptions.Item label="Last Triggered" span={2}>
-              {webhook.lastTriggeredAt ? dayjs(webhook.lastTriggeredAt).format("MMMM DD, YYYY HH:mm:ss") : "Never"}
+              {webhook.lastTriggeredAt
+                ? dayjs(webhook.lastTriggeredAt).format(
+                    "MMMM DD, YYYY HH:mm:ss",
+                  )
+                : "Never"}
             </Descriptions.Item>
             <Descriptions.Item label="Last Status" span={2}>
               {webhook.lastStatus || "N/A"}
@@ -497,9 +512,12 @@ const WebhookList = () => {
         title={`Webhook Deliveries - ${webhook?.name}`}
         open={deliveriesModalVisible}
         onCancel={() => setDeliveriesModalVisible(false)}
-        footer={<Button onClick={() => setDeliveriesModalVisible(false)}>Close</Button>}
-        width={900}
-      >
+        footer={
+          <Button onClick={() => setDeliveriesModalVisible(false)}>
+            Close
+          </Button>
+        }
+        width={900}>
         <Spin spinning={deliveriesLoading}>
           <Table
             columns={deliveryColumns}
@@ -514,8 +532,11 @@ const WebhookList = () => {
         title="Webhook Secret Regenerated"
         open={secretModalVisible}
         onCancel={() => setSecretModalVisible(false)}
-        footer={<Button type="primary" onClick={() => setSecretModalVisible(false)}>I have saved my secret</Button>}
-      >
+        footer={
+          <Button type="primary" onClick={() => setSecretModalVisible(false)}>
+            I have saved my secret
+          </Button>
+        }>
         <Alert
           message="Important"
           description="Copy and save this secret securely. You won't be able to see it again!"

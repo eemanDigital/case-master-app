@@ -48,6 +48,8 @@ import axios from "axios";
 dayjs.extend(isToday);
 dayjs.extend(isTomorrow);
 
+const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
+
 const { Text, Title, Paragraph } = Typography;
 
 const MatterStatusTag = ({ status }) => {
@@ -261,9 +263,9 @@ const ClientMatterDashboard = () => {
     setLoading(true);
     try {
       const [mattersRes, invoicesRes, tasksRes] = await Promise.all([
-        axios.get(`/api/v1/matters?client=${clientId}&limit=50`),
-        axios.get(`/api/v1/invoices?clientId=${clientId}&limit=20`),
-        axios.get(`/api/v1/tasks?limit=50`),
+        axios.get(`${baseURL}/matters?client=${clientId}&limit=50`),
+        axios.get(`${baseURL}/invoices?clientId=${clientId}&limit=20`),
+        axios.get(`${baseURL}/tasks?limit=50`),
       ]);
 
       console.log("=== CLIENT DASHBOARD DATA ===");
@@ -345,7 +347,7 @@ const ClientMatterDashboard = () => {
 
     setSubmittingResponse(true);
     try {
-      await axios.post(`/api/v1/tasks/${selectedTask._id}/responses`, {
+      await axios.post(`${baseURL}/v1/tasks/${selectedTask._id}/responses`, {
         comment: taskResponse,
         status: "in-progress",
       });
