@@ -1,18 +1,17 @@
 const Matter = require("../models/matterModel");
 const LitigationDetail = require("../models/litigationDetailModel");
+const mongoose = require("mongoose");
 const catchAsync = require("../utils/catchAsync");
 const dayjs = require("dayjs");
 const isSameOrAfter = require("dayjs/plugin/isSameOrAfter");
 const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
 const AppError = require("../utils/appError");
 const PaginationServiceFactory = require("../services/PaginationServiceFactory");
-const {
-  createCalendarEventFromHearing,
-  updateNextHearingInCalendar,
-  createDeadlineFromCourtOrder,
-  markHearingAsCompleted,
-  deleteCalendarEventForHearing,
-} = require("../controllers/calenderSync");
+const calendarSync = require("../services/calendarSyncService");
+
+// Initialize dayjs plugins
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
 // ============================================
 // INITIALIZE PAGINATION SERVICES
@@ -548,15 +547,30 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     litigationDetail.nextHearingDate = hearingData.nextHearingDate;
   }
 
-  // Set flag to ensure middleware triggers sync
-  litigationDetail._hearingChanges = { hasChanges: true };
-
-  console.log("🔵 About to save litigation with hearings...");
-
-  // ✅ THIS TRIGGERS THE MIDDLEWARE!
+  // Save the litigation detail FIRST
   await litigationDetail.save();
 
-  console.log("🔵 Litigation saved, middleware should have run");
+  // Then explicitly sync to calendar using the new service
+  const latestHearing = litigationDetail.hearings[litigationDetail.hearings.length - 1];
+  
+  let calendarResult = { success: true, message: "Calendar sync skipped" };
+  try {
+    calendarResult = await calendarSync.syncHearing(
+      matterId,
+      req.firmId,
+      latestHearing,
+      litigationDetail
+    );
+    
+    if (!calendarResult.success) {
+      console.warn("⚠️ Calendar sync failed:", calendarResult.message);
+    } else {
+      console.log("✅ Calendar sync:", calendarResult.message);
+    }
+  } catch (syncError) {
+    console.error("❌ Calendar sync error:", syncError);
+    // Don't fail the request if calendar sync fails
+  }
 
   // Update matter last activity
   matter.lastActivityDate = new Date();
@@ -572,7 +586,8 @@ exports.addHearing = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Hearing added and synced to calendar",
+    message: "Hearing added" + (calendarResult.success ? " and synced to calendar" : ""),
+    calendarSync: calendarResult.success ? calendarResult.message : null,
     data: { litigationDetail },
   });
 });
@@ -690,10 +705,6 @@ exports.getMatterHearings = catchAsync(async (req, res, next) => {
 // ============================================
 // UPDATE HEARING (WITH AUTO-CALENDAR SYNC) 🔥
 // ============================================
-
-// 1. Initialize the plugins
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
 
 exports.updateHearing = catchAsync(async (req, res, next) => {
   const { matterId, hearingId } = req.params;
@@ -820,12 +831,28 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     hearing[key] = updateData[key];
   });
 
-  // Set flag to ensure middleware triggers calendar sync
-  litigationDetail._hearingChanges = { hasChanges: true };
-
-  console.log("🔵 About to save updated litigation...");
+  // Save the litigation detail FIRST
   await litigationDetail.save();
-  console.log("🔵 Litigation saved, middleware ran");
+
+  // Explicitly sync to calendar using the new service
+  let calendarResult = { success: true, message: "Calendar sync skipped" };
+  try {
+    calendarResult = await calendarSync.syncHearing(
+      matterId,
+      req.firmId,
+      hearing,
+      litigationDetail
+    );
+    
+    if (!calendarResult.success) {
+      console.warn("⚠️ Calendar sync failed:", calendarResult.message);
+    } else {
+      console.log("✅ Calendar sync:", calendarResult.message);
+    }
+  } catch (syncError) {
+    console.error("❌ Calendar sync error:", syncError);
+    // Don't fail the request if calendar sync fails
+  }
 
   // Update matter
   matter.lastActivityDate = new Date();
@@ -842,7 +869,8 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Hearing updated and synced to calendar",
+    message: "Hearing updated" + (calendarResult.success ? " and synced to calendar" : ""),
+    calendarSync: calendarResult.success ? calendarResult.message : null,
     data: { litigationDetail },
   });
 });
@@ -868,9 +896,10 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
     return next(new AppError("Hearing not found", 404));
   }
 
-  // Delete associated calendar event first
+  // Delete associated calendar event using new service
+  let calendarResult = { success: true };
   try {
-    await deleteCalendarEventForHearing(litigationDetail, hearingId);
+    calendarResult = await calendarSync.deleteEvent(hearingId, req.firmId);
   } catch (calendarError) {
     console.error("❌ Calendar event deletion failed:", calendarError);
   }
@@ -878,10 +907,21 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
   // Delete the hearing
   litigationDetail.hearings.pull({ _id: hearingId });
 
-  // Set flag BEFORE save to trigger middleware for updating nextHearingDate
-  litigationDetail._hearingChanges = { hasChanges: true };
+  // Recalculate nextHearingDate
+  if (litigationDetail.hearings.length > 0) {
+    const now = new Date();
+    const futureNextHearingDates = litigationDetail.hearings
+      .filter(h => h.nextHearingDate && new Date(h.nextHearingDate) > now)
+      .map(h => new Date(h.nextHearingDate))
+      .sort((a, b) => a - b);
+    
+    litigationDetail.nextHearingDate = futureNextHearingDates.length > 0 
+      ? futureNextHearingDates[0] 
+      : null;
+  } else {
+    litigationDetail.nextHearingDate = null;
+  }
 
-  // Save to trigger middleware
   await litigationDetail.save();
 
   // Update matter last activity
@@ -891,7 +931,7 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Hearing deleted and calendar event removed",
+    message: "Hearing deleted" + (calendarResult.success ? " and calendar event removed" : ""),
     data: { litigationDetail },
   });
 });
@@ -925,12 +965,16 @@ exports.addCourtOrder = catchAsync(async (req, res, next) => {
   matter.lastActivityDate = new Date();
   await matter.save();
 
-  // 🔥 AUTO-SYNC: Create deadline if compliance date exists
-  const newOrder =
-    litigationDetail.courtOrders[litigationDetail.courtOrders.length - 1];
+  // AUTO-SYNC: Create deadline if compliance date exists using new service
+  const newOrder = litigationDetail.courtOrders[litigationDetail.courtOrders.length - 1];
+  let calendarResult = { success: true };
+  
   if (newOrder.complianceDeadline) {
     try {
-      await createDeadlineFromCourtOrder(litigationDetail, newOrder, matter);
+      calendarResult = await calendarSync.syncCourtOrderDeadline(matterId, req.firmId, newOrder);
+      if (!calendarResult.success) {
+        console.warn("⚠️ Deadline creation failed:", calendarResult.message);
+      }
     } catch (calendarError) {
       console.error("❌ Deadline creation failed:", calendarError);
     }
@@ -938,9 +982,7 @@ exports.addCourtOrder = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message:
-      "Court order added" +
-      (newOrder.complianceDeadline ? " and deadline created" : ""),
+    message: "Court order added" + (calendarResult.success && newOrder.complianceDeadline ? " and deadline synced to calendar" : ""),
     data: { litigationDetail },
   });
 });
@@ -1144,9 +1186,13 @@ exports.recordJudgment = catchAsync(async (req, res, next) => {
     }
   }
 
-  // 🔥 Mark past hearings as completed
+  // Mark past hearings as completed using new service
+  let calendarResult = { success: true };
   try {
-    await markHearingAsCompleted(litigationDetail, matter);
+    calendarResult = await calendarSync.markPastHearingsCompleted(matterId, req.firmId);
+    if (!calendarResult.success) {
+      console.warn("⚠️ Calendar update failed:", calendarResult.message);
+    }
   } catch (calendarError) {
     console.error("❌ Calendar update failed:", calendarError);
   }
@@ -1192,9 +1238,13 @@ exports.recordSettlement = catchAsync(async (req, res, next) => {
   }
   await matter.save();
 
-  // 🔥 Mark past hearings as completed
+  // Mark past hearings as completed using new service
+  let calendarResult = { success: true };
   try {
-    await markHearingAsCompleted(litigationDetail, matter);
+    calendarResult = await calendarSync.markPastHearingsCompleted(matterId, req.firmId);
+    if (!calendarResult.success) {
+      console.warn("⚠️ Calendar update failed:", calendarResult.message);
+    }
   } catch (calendarError) {
     console.error("❌ Calendar update failed:", calendarError);
   }

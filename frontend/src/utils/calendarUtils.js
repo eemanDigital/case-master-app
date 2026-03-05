@@ -465,3 +465,126 @@ export const convertToICSFormat = (event) => {
     location: event.location?.address || "",
   };
 };
+
+// ============================================
+// LITIGATION SYNC HELPERS
+// ============================================
+
+/**
+ * Check if event is auto-synced from litigation matter
+ */
+export const isLitigationSyncedEvent = (event) => {
+  if (!event) return false;
+  
+  // Check tags for auto-synced
+  if (event.tags?.includes("auto-synced")) return true;
+  
+  // Check event types that come from litigation
+  const litigationEventTypes = ["hearing", "mention", "court_order_deadline"];
+  if (litigationEventTypes.includes(event.eventType)) return true;
+  
+  // Check if has hearing metadata
+  if (event.hearingMetadata || event.customFields?.hearingId) return true;
+  
+  return false;
+};
+
+/**
+ * Get the source of an event (litigation, property, etc.)
+ */
+export const getEventSource = (event) => {
+  if (!event) return { type: "unknown", label: "Unknown", color: "gray" };
+  
+  // Check matter type first
+  if (event.matterType) {
+    const sourceMap = {
+      litigation: { type: "litigation", label: "Litigation", color: "purple" },
+      corporate: { type: "corporate", label: "Corporate", color: "blue" },
+      property: { type: "property", label: "Property", color: "orange" },
+      advisory: { type: "advisory", label: "Advisory", color: "green" },
+      retainer: { type: "retainer", label: "Retainer", color: "cyan" },
+      general: { type: "general", label: "General", color: "default" },
+    };
+    return sourceMap[event.matterType] || { type: event.matterType, label: event.matterType, color: "default" };
+  }
+  
+  // Check event type
+  const eventTypeSourceMap = {
+    hearing: { type: "litigation", label: "Court Hearing", color: "purple" },
+    mention: { type: "litigation", label: "Court Mention", color: "purple" },
+    court_order_deadline: { type: "litigation", label: "Court Order", color: "purple" },
+    client_meeting: { type: "meeting", label: "Client Meeting", color: "green" },
+    internal_meeting: { type: "meeting", label: "Internal Meeting", color: "blue" },
+    task: { type: "task", label: "Task", color: "orange" },
+  };
+  
+  return eventTypeSourceMap[event.eventType] || { type: "manual", label: "Manual", color: "default" };
+};
+
+/**
+ * Get litigation-specific details from event
+ */
+export const getLitigationDetails = (event) => {
+  if (!event) return null;
+  
+  const details = {
+    suitNumber: event.hearingMetadata?.suitNumber || event.customFields?.suitNumber,
+    judge: event.hearingMetadata?.judge,
+    courtRoom: event.hearingMetadata?.courtRoom || event.location?.courtRoom,
+    courtName: event.location?.courtName,
+    hearingType: event.hearingMetadata?.hearingType,
+    isNextHearing: event.hearingMetadata?.isNextHearing,
+    hearingDate: event.hearingMetadata?.originalHearingDate || event.customFields?.originalHearingDate,
+    nextHearingDate: event.hearingMetadata?.nextHearingDate,
+  };
+  
+  return Object.values(details).some(v => v) ? details : null;
+};
+
+/**
+ * Group events by source (litigation, manual, etc.)
+ */
+export const groupEventsBySource = (events) => {
+  const groups = {
+    litigation: [],
+    corporate: [],
+    property: [],
+    advisory: [],
+    retainer: [],
+    meeting: [],
+    task: [],
+    manual: [],
+    other: [],
+  };
+  
+  events.forEach((event) => {
+    const source = getEventSource(event);
+    const groupKey = source.type;
+    
+    if (groups[groupKey]) {
+      groups[groupKey].push(event);
+    } else {
+      groups.other.push(event);
+    }
+  });
+  
+  return groups;
+};
+
+/**
+ * Get color for event based on source
+ */
+export const getEventSourceColor = (event) => {
+  const source = getEventSource(event);
+  const colorMap = {
+    purple: "#722ed1",
+    blue: "#1890ff",
+    green: "#52c41a",
+    orange: "#fa8c16",
+    cyan: "#13c2c2",
+    red: "#ff4d4f",
+    default: event.color || "#1890ff",
+  };
+  
+  return colorMap[source.color] || colorMap.default;
+};

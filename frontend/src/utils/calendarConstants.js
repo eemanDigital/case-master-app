@@ -13,6 +13,23 @@ export const EVENT_TYPES = {
   TASK: "task",
   REMINDER: "reminder",
   COURT_ORDER_DEADLINE: "court_order_deadline",
+  MATTER_CREATED: "matter_created",
+  EXPECTED_CLOSURE: "expected_closure",
+};
+
+export const EVENT_TYPE_COLORS = {
+  hearing: "#722ed1",
+  mention: "#1890ff",
+  adjournment: "#fa8c16",
+  filing_deadline: "#ff4d4f",
+  statutory_deadline: "#ff4d4f",
+  client_meeting: "#52c41a",
+  internal_meeting: "#13c2c2",
+  task: "#2f54eb",
+  reminder: "#eb2f96",
+  court_order_deadline: "#ff5722",
+  matter_created: "#1890ff",
+  expected_closure: "#52c41a",
 };
 
 export const EVENT_STATUS = {
@@ -81,63 +98,52 @@ export const BLOCK_CATEGORIES = {
 };
 
 export const EVENT_TYPE_LABELS = {
-  [EVENT_TYPES.HEARING]: "Court Hearing",
-  [EVENT_TYPES.MENTION]: "Mention",
-  [EVENT_TYPES.ADJOURNMENT]: "Adjournment",
-  [EVENT_TYPES.FILING_DEADLINE]: "Filing Deadline",
-  [EVENT_TYPES.STATUTORY_DEADLINE]: "Statutory Deadline",
-  [EVENT_TYPES.CLIENT_MEETING]: "Client Meeting",
-  [EVENT_TYPES.INTERNAL_MEETING]: "Internal Meeting",
-  [EVENT_TYPES.TASK]: "Task",
-  [EVENT_TYPES.REMINDER]: "Reminder",
-  [EVENT_TYPES.COURT_ORDER_DEADLINE]: "Court Order Deadline",
+  hearing: "Court Hearing",
+  mention: "Mention",
+  adjournment: "Adjournment",
+  filing_deadline: "Filing Deadline",
+  statutory_deadline: "Statutory Deadline",
+  client_meeting: "Client Meeting",
+  internal_meeting: "Internal Meeting",
+  task: "Task",
+  reminder: "Reminder",
+  court_order_deadline: "Court Order Deadline",
+  matter_created: "Matter Created",
+  expected_closure: "Expected Closure",
 };
 
 export const EVENT_STATUS_LABELS = {
-  [EVENT_STATUS.SCHEDULED]: "Scheduled",
-  [EVENT_STATUS.CONFIRMED]: "Confirmed",
-  [EVENT_STATUS.COMPLETED]: "Completed",
-  [EVENT_STATUS.CANCELLED]: "Cancelled",
-  [EVENT_STATUS.RESCHEDULED]: "Rescheduled",
-  [EVENT_STATUS.ADJOURNED]: "Adjourned",
-  [EVENT_STATUS.NO_SHOW]: "No Show",
+  scheduled: "Scheduled",
+  confirmed: "Confirmed",
+  completed: "Completed",
+  cancelled: "Cancelled",
+  rescheduled: "Rescheduled",
+  adjourned: "Adjourned",
+  no_show: "No Show",
 };
 
 export const PRIORITY_LABELS = {
-  [PRIORITY_LEVELS.LOW]: "Low",
-  [PRIORITY_LEVELS.MEDIUM]: "Medium",
-  [PRIORITY_LEVELS.HIGH]: "High",
-  [PRIORITY_LEVELS.URGENT]: "Urgent",
+  low: "Low",
+  medium: "Medium",
+  high: "High",
+  urgent: "Urgent",
 };
 
 export const PRIORITY_COLORS = {
-  [PRIORITY_LEVELS.LOW]: "#52c41a",
-  [PRIORITY_LEVELS.MEDIUM]: "#1890ff",
-  [PRIORITY_LEVELS.HIGH]: "#fa8c16",
-  [PRIORITY_LEVELS.URGENT]: "#f5222d",
-};
-
-export const EVENT_TYPE_COLORS = {
-  [EVENT_TYPES.HEARING]: "#722ed1",
-  [EVENT_TYPES.MENTION]: "#eb2f96",
-  [EVENT_TYPES.ADJOURNMENT]: "#fa541c",
-  [EVENT_TYPES.FILING_DEADLINE]: "#f5222d",
-  [EVENT_TYPES.STATUTORY_DEADLINE]: "#cf1322",
-  [EVENT_TYPES.CLIENT_MEETING]: "#1890ff",
-  [EVENT_TYPES.INTERNAL_MEETING]: "#13c2c2",
-  [EVENT_TYPES.TASK]: "#52c41a",
-  [EVENT_TYPES.REMINDER]: "#faad14",
-  [EVENT_TYPES.COURT_ORDER_DEADLINE]: "#a0d911",
+  low: "#52c41a",
+  medium: "#1890ff",
+  high: "#fa8c16",
+  urgent: "#f5222d",
 };
 
 export const STATUS_COLORS = {
-  [EVENT_STATUS.SCHEDULED]: "#1890ff",
-  [EVENT_STATUS.CONFIRMED]: "#52c41a",
-  [EVENT_STATUS.COMPLETED]: "#595959",
-  [EVENT_STATUS.CANCELLED]: "#f5222d",
-  [EVENT_STATUS.RESCHEDULED]: "#fa8c16",
-  [EVENT_STATUS.ADJOURNED]: "#faad14",
-  [EVENT_STATUS.NO_SHOW]: "#d9d9d9",
+  scheduled: "#1890ff",
+  confirmed: "#52c41a",
+  completed: "#52c41a",
+  cancelled: "#ff4d4f",
+  rescheduled: "#fa8c16",
+  adjourned: "#fa8c16",
+  no_show: "#ff4d4f",
 };
 
 export const RECURRENCE_FREQUENCIES = [

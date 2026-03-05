@@ -50,6 +50,7 @@ import {
   clearMatterHearings,
   selectMatterHearings,
 } from "../../redux/features/litigation/litigationSlice";
+import { getAllEvents } from "../../redux/features/calender/calenderSlice";
 import useUserSelectOptions from "../../hooks/useUserSelectOptions";
 import HearingTimelineItem from "./HearingTimelineItems";
 import HearingHeader from "./HearingHeader";
@@ -461,6 +462,8 @@ const HearingTimeline = ({
               deleteHearing({ matterId: stableMatterId, hearingId }),
             ).unwrap();
             message.success("Hearing deleted successfully");
+            // Refresh calendar to reflect the deletion
+            dispatch(getAllEvents({}));
           } catch (error) {
             message.error(error?.message || "Failed to delete hearing");
           }
@@ -492,8 +495,11 @@ const HearingTimeline = ({
           await dispatch(
             addHearing({ matterId: stableMatterId, hearingData }),
           ).unwrap();
-          message.success("Hearing added successfully");
+          message.success("Hearing added and synced to calendar");
         }
+
+        // Refresh calendar to show the synced event
+        dispatch(getAllEvents({}));
 
         setIsModalVisible(false);
         setEditingHearing(null);
