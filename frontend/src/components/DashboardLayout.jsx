@@ -11,6 +11,7 @@ import {
   Tooltip,
   Typography,
   Input,
+  AutoComplete,
 } from "antd";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -26,6 +27,15 @@ import {
   QuestionCircleOutlined,
   FullscreenOutlined,
   FullscreenExitOutlined,
+  FileTextOutlined,
+  TeamOutlined,
+  CalendarOutlined,
+  CheckSquareOutlined,
+  FileOutlined,
+  DollarOutlined,
+  AuditOutlined,
+  ReconciliationOutlined,
+  HomeOutlined,
 } from "@ant-design/icons";
 import SideBar from "./SideBar.jsx";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser.jsx";
@@ -35,7 +45,7 @@ import BreadcrumbNavigation from "../components/navigation/BreadcrumbNavigation"
 
 const { Header, Content } = Layout;
 const { Text } = Typography;
-const { Search } = Input;
+const { Option } = AutoComplete;
 
 const DashboardLayout = () => {
   useRedirectLogoutUser("/users/login");
@@ -49,6 +59,70 @@ const DashboardLayout = () => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [notifications] = useState(3);
+  const [searchOptions, setSearchOptions] = useState([]);
+  const [searchValue, setSearchValue] = useState("");
+
+  const menuItemsForSearch = [
+    { key: "dashboard", label: "Dashboard", path: "/dashboard", icon: "Dashboard" },
+    { key: "all-matters", label: "All Matters", path: "/dashboard/matters", icon: "FileText" },
+    { key: "matters-with-officers", label: "Matters & Officers", path: "/dashboard/matters-with-officers", icon: "Team" },
+    { key: "litigation", label: "Litigation", path: "/dashboard/matters/litigation", icon: "Audit" },
+    { key: "corporate", label: "Corporate Practice", path: "/dashboard/matters/corporate", icon: "FileText" },
+    { key: "retainership", label: "Retainership", path: "/dashboard/matters/retainers", icon: "FileText" },
+    { key: "property", label: "Property Practice", path: "/dashboard/matters/property", icon: "FileText" },
+    { key: "advisory", label: "Advisory", path: "/dashboard/matters/advisory", icon: "FileText" },
+    { key: "general", label: "General Practice", path: "/dashboard/matters/general", icon: "FileText" },
+    { key: "staff-directory", label: "Staff Directory", path: "/dashboard/staff", icon: "Team" },
+    { key: "staff-status", label: "Staff Status", path: "/dashboard/staff-status", icon: "Team" },
+    { key: "leave-applications", label: "Leave Applications", path: "/dashboard/staff/leave-application", icon: "Team" },
+    { key: "leave-balance", label: "Leave Balance", path: "/dashboard/staff/leave-balance", icon: "Team" },
+    { key: "tasks", label: "Tasks", path: "/dashboard/tasks", icon: "CheckSquare" },
+    { key: "calendar-main", label: "Calendar", path: "/dashboard/calendar", icon: "Calendar" },
+    { key: "calendar-dashboard", label: "Calendar Dashboard", path: "/dashboard/calendar/dashboard", icon: "Calendar" },
+    { key: "blocked-dates", label: "Blocked Dates", path: "/dashboard/calendar/blocked-dates", icon: "Calendar" },
+    { key: "deleted-events", label: "Deleted Events", path: "/dashboard/calendar/deleted", icon: "Calendar" },
+    { key: "clients", label: "Clients", path: "/dashboard/clients", icon: "User" },
+    { key: "documents", label: "Documents", path: "/dashboard/documents", icon: "File" },
+    { key: "billings", label: "Billing", path: "/dashboard/billings", icon: "Dollar" },
+    { key: "audit-logs", label: "Audit Logs", path: "/dashboard/settings/audit-logs", icon: "Audit" },
+    { key: "webhooks", label: "Webhooks", path: "/dashboard/settings/webhooks", icon: "Setting" },
+    { key: "invitations", label: "Invitations", path: "/dashboard/settings/invitations", icon: "Team" },
+    { key: "support", label: "Support", path: "/dashboard/contact-dev", icon: "QuestionCircle" },
+    { key: "profile", label: "My Profile", path: "/dashboard/profile", icon: "User" },
+  ];
+
+  const handleSearch = (value) => {
+    setSearchValue(value);
+    if (!value) {
+      setSearchOptions([]);
+      return;
+    }
+    const filtered = menuItemsForSearch.filter(item =>
+      item.label.toLowerCase().includes(value.toLowerCase())
+    ).map(item => ({
+      value: item.label,
+      label: (
+        <div
+          onClick={() => {
+            navigate(item.path);
+            setSearchValue("");
+            setSearchOptions([]);
+          }}
+          className="flex items-center gap-3 py-2 px-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded cursor-pointer"
+        >
+          <span>{item.label}</span>
+        </div>
+      ),
+      path: item.path,
+    }));
+    setSearchOptions(filtered);
+  };
+
+  const handleSearchSelect = (value, option) => {
+    navigate(option.path);
+    setSearchValue("");
+    setSearchOptions([]);
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -257,13 +331,20 @@ const DashboardLayout = () => {
 
           {/* Center Search */}
           <div className="hidden lg:flex flex-1 max-w-xl mx-4">
-            <Search
-              placeholder="Search cases, clients, documents..."
-              allowClear
-              size="middle"
+            <AutoComplete
+              value={searchValue}
+              options={searchOptions}
+              onSearch={handleSearch}
+              onSelect={handleSearchSelect}
+              placeholder="Search menu, cases, clients..."
               className="w-full"
-              prefix={<SearchOutlined className="text-gray-400" />}
-            />
+              allowClear
+            >
+              <Input
+                prefix={<SearchOutlined className="text-gray-400" />}
+                size="middle"
+              />
+            </AutoComplete>
           </div>
 
           {/* Right Actions */}

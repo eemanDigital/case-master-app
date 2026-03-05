@@ -4,21 +4,36 @@ import { HomeOutlined } from "@ant-design/icons";
 
 const BreadcrumbNavigation = () => {
   const location = useLocation();
-  const pathSnippets = location.pathname.split("/").filter(i => i);
+  const pathSnippets = location.pathname.split("/").filter((i) => i);
 
   const breadcrumbNameMap = {
     dashboard: "Dashboard",
     matters: "Matters",
-    cases: "Cases",
-    "case-reports": "Reports",
+    litigation: "Litigation",
+    corporate: "Corporate Practice",
+    retainers: "Retainership",
+    property: "Property Practice",
+    advisory: "Advisory",
+    general: "General Practice",
+    "matters-with-officers": "Matters & Officers",
     staff: "Staff",
-    "staff-status": "Status",
-    "cause-list": "Cause List",
+    "staff-status": "Staff Status",
+    "leave-application": "Leave Applications",
+    "leave-balance": "Leave Balance",
     tasks: "Tasks",
+    calendar: "Calendar",
+    "calendar-dashboard": "Calendar Dashboard",
+    "blocked-dates": "Blocked Dates",
+    deleted: "Deleted Events",
     clients: "Clients",
     documents: "Documents",
     billings: "Billing",
     profile: "Profile",
+    settings: "Settings",
+    "audit-logs": "Audit Logs",
+    webhooks: "Webhooks",
+    invitations: "Invitations",
+    "contact-dev": "Support",
     create: "Create",
     edit: "Edit",
   };
@@ -27,7 +42,9 @@ const BreadcrumbNavigation = () => {
     const url = `/${pathSnippets.slice(0, index + 1).join("/")}`;
     return {
       key: url,
-      title: breadcrumbNameMap[snippet] || snippet.charAt(0).toUpperCase() + snippet.slice(1),
+      title:
+        breadcrumbNameMap[snippet] ||
+        snippet.charAt(0).toUpperCase() + snippet.slice(1),
     };
   });
 
