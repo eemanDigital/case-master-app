@@ -302,54 +302,9 @@ exports.restoreLitigationDetails = catchAsync(async (req, res, next) => {
 // ============================================
 
 exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
-  const { range, limit = 50, days = 30 } = req.query;
+  const { limit = 500 } = req.query;
   const firmId = req.firmId;
   const today = dayjs().startOf("day");
-
-  // Calculate date ranges
-  const thisWeekStart = today.startOf("week");
-  const thisWeekEnd = today.endOf("week");
-  const nextWeekStart = today.add(1, "week").startOf("week");
-  const nextWeekEnd = today.add(1, "week").endOf("week");
-  const thisMonthStart = today.startOf("month");
-  const thisMonthEnd = today.endOf("month");
-
-  let startDate, endDate, periodName;
-
-  // Handle "all" range: include everything from today through end of next month
-  if (range === "all") {
-    startDate = today;
-    endDate = today.add(2, "month").endOf("month");
-    periodName = "All Upcoming";
-  } else {
-    switch (range) {
-      case "next-week":
-        startDate = nextWeekStart;
-        endDate = nextWeekEnd;
-        periodName = "Next Week";
-        break;
-      case "this-month":
-        startDate = thisMonthStart;
-        endDate = thisMonthEnd;
-        periodName = "This Month";
-        break;
-      case "this-week":
-      default:
-        startDate = thisWeekStart;
-        endDate = thisWeekEnd;
-        periodName = "This Week";
-        break;
-    }
-  }
-
-  // Legacy support: use days parameter if range not provided
-  if (!range) {
-    const futureDate = new Date();
-    futureDate.setDate(futureDate.getDate() + parseInt(days));
-    endDate = dayjs(futureDate);
-    startDate = today;
-    periodName = `Next ${days} Days`;
-  }
 
   // Fetch all active litigation matters
   const matters = await Matter.find({
@@ -377,7 +332,7 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
     litigationMap[d.matterId] = d;
   });
 
-  // Extract and filter hearings - ONLY use nextHearingDate for upcoming hearings
+  // Extract all upcoming hearings using ONLY nextHearingDate
   const upcomingHearings = [];
 
   matters.forEach((matter) => {
@@ -385,66 +340,58 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
     if (!litigation || !litigation.hearings) return;
 
     litigation.hearings.forEach((hearing) => {
-      // ONLY use nextHearingDate for upcoming hearings - NOT the old hearing date
-      // If nextHearingDate doesn't exist or is in the past, skip this hearing
+      // Skip if no nextHearingDate
       if (!hearing.nextHearingDate) return;
-      
+
       const hearingDate = dayjs(hearing.nextHearingDate);
-      
-      // Skip if nextHearingDate is in the past
+
+      // Skip if nextHearingDate is today or in the past
       if (!hearingDate.isAfter(today, "day")) return;
 
-      // Check if within requested range
-      const isInRange =
-        !hearingDate.isBefore(startDate, "day") &&
-        !hearingDate.isAfter(endDate, "day");
+      // No upper date cap — include ALL future hearings
+      upcomingHearings.push({
+        _id: hearing._id,
+        date: hearing.date,
+        purpose: hearing.purpose,
+        outcome: hearing.outcome,
+        notes: hearing.notes,
+        nextHearingDate: hearing.nextHearingDate,
+        hearingNoticeServed: hearing.hearingNoticeServed,
+        hearingNoticeRequired: hearing.hearingNoticeRequired,
+        lawyerPresent: hearing.lawyerPresent,
+        preparedBy: hearing.preparedBy,
+        createdAt: hearing.createdAt,
+        updatedAt: hearing.updatedAt,
 
-      if (isInRange) {
-        upcomingHearings.push({
-          _id: hearing._id,
-          date: hearing.date, // Original hearing date (for reference)
-          purpose: hearing.purpose,
-          outcome: hearing.outcome,
-          notes: hearing.notes,
-          nextHearingDate: hearing.nextHearingDate,
-          hearingNoticeServed: hearing.hearingNoticeServed,
-          hearingNoticeRequired: hearing.hearingNoticeRequired,
-          lawyerPresent: hearing.lawyerPresent,
-          preparedBy: hearing.preparedBy,
-          createdAt: hearing.createdAt,
-          updatedAt: hearing.updatedAt,
+        litigationDetailId: litigation._id,
+        matterId: matter._id,
+        suitNo: litigation.suitNo,
+        courtName: litigation.courtName,
+        courtNo: litigation.courtNo,
+        courtLocation: litigation.courtLocation,
+        state: litigation.state,
+        division: litigation.division,
+        judge: litigation.judge,
+        firstParty: litigation.firstParty,
+        secondParty: litigation.secondParty,
 
-          litigationDetailId: litigation._id,
-          matterId: matter._id,
-          suitNo: litigation.suitNo,
-          courtName: litigation.courtName,
-          courtNo: litigation.courtNo,
-          courtLocation: litigation.courtLocation,
-          state: litigation.state,
-          division: litigation.division,
-          judge: litigation.judge,
-          firstParty: litigation.firstParty,
-          secondParty: litigation.secondParty,
+        matter: {
+          _id: matter._id,
+          matterNumber: matter.matterNumber,
+          title: matter.title,
+          client: matter.client,
+          accountOfficer: matter.accountOfficer,
+          status: matter.status,
+          priority: matter.priority,
+        },
 
-          matter: {
-            _id: matter._id,
-            matterNumber: matter.matterNumber,
-            title: matter.title,
-            client: matter.client,
-            accountOfficer: matter.accountOfficer,
-            status: matter.status,
-            priority: matter.priority,
-          },
-
-          // Use nextHearingDate for display
-          displayDate: hearingDate.toDate(),
-          hearingDate: hearingDate.format("YYYY-MM-DD"),
-        });
-      }
+        displayDate: hearingDate.toDate(),
+        hearingDate: hearingDate.format("YYYY-MM-DD"),
+      });
     });
   });
 
-  // Sort by display date (earliest first)
+  // Sort by nextHearingDate — earliest first
   upcomingHearings.sort(
     (a, b) => new Date(a.displayDate) - new Date(b.displayDate),
   );
@@ -452,18 +399,18 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
   // Apply limit
   const limitedHearings = upcomingHearings.slice(0, parseInt(limit));
 
-  // Calculate statistics
+  // Stats
   const todayStart = new Date();
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date();
   todayEnd.setHours(23, 59, 59, 999);
 
-  const weekStart = thisWeekStart.toDate();
-  const weekEnd = thisWeekEnd.toDate();
-  const nextWeekStartDate = nextWeekStart.toDate();
-  const nextWeekEndDate = nextWeekEnd.toDate();
-  const monthStart = thisMonthStart.toDate();
-  const monthEnd = thisMonthEnd.toDate();
+  const thisWeekStart = today.startOf("week").toDate();
+  const thisWeekEnd = today.endOf("week").toDate();
+  const nextWeekStart = today.add(1, "week").startOf("week").toDate();
+  const nextWeekEnd = today.add(1, "week").endOf("week").toDate();
+  const thisMonthStart = today.startOf("month").toDate();
+  const thisMonthEnd = today.endOf("month").toDate();
 
   const stats = {
     total: limitedHearings.length,
@@ -473,15 +420,15 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
     }).length,
     thisWeek: limitedHearings.filter((h) => {
       const d = new Date(h.displayDate);
-      return d >= weekStart && d <= weekEnd;
+      return d >= thisWeekStart && d <= thisWeekEnd;
     }).length,
     nextWeek: limitedHearings.filter((h) => {
       const d = new Date(h.displayDate);
-      return d >= nextWeekStartDate && d <= nextWeekEndDate;
+      return d >= nextWeekStart && d <= nextWeekEnd;
     }).length,
     thisMonth: limitedHearings.filter((h) => {
       const d = new Date(h.displayDate);
-      return d >= monthStart && d <= monthEnd;
+      return d >= thisMonthStart && d <= thisMonthEnd;
     }).length,
     pending: limitedHearings.filter((h) => !h.outcome).length,
     completed: limitedHearings.filter((h) => !!h.outcome).length,
@@ -551,17 +498,18 @@ exports.addHearing = catchAsync(async (req, res, next) => {
   await litigationDetail.save();
 
   // Then explicitly sync to calendar using the new service
-  const latestHearing = litigationDetail.hearings[litigationDetail.hearings.length - 1];
-  
+  const latestHearing =
+    litigationDetail.hearings[litigationDetail.hearings.length - 1];
+
   let calendarResult = { success: true, message: "Calendar sync skipped" };
   try {
     calendarResult = await calendarSync.syncHearing(
       matterId,
       req.firmId,
       latestHearing,
-      litigationDetail
+      litigationDetail,
     );
-    
+
     if (!calendarResult.success) {
       console.warn("⚠️ Calendar sync failed:", calendarResult.message);
     } else {
@@ -586,7 +534,9 @@ exports.addHearing = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Hearing added" + (calendarResult.success ? " and synced to calendar" : ""),
+    message:
+      "Hearing added" +
+      (calendarResult.success ? " and synced to calendar" : ""),
     calendarSync: calendarResult.success ? calendarResult.message : null,
     data: { litigationDetail },
   });
@@ -841,9 +791,9 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
       matterId,
       req.firmId,
       hearing,
-      litigationDetail
+      litigationDetail,
     );
-    
+
     if (!calendarResult.success) {
       console.warn("⚠️ Calendar sync failed:", calendarResult.message);
     } else {
@@ -869,7 +819,9 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Hearing updated" + (calendarResult.success ? " and synced to calendar" : ""),
+    message:
+      "Hearing updated" +
+      (calendarResult.success ? " and synced to calendar" : ""),
     calendarSync: calendarResult.success ? calendarResult.message : null,
     data: { litigationDetail },
   });
@@ -911,13 +863,12 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
   if (litigationDetail.hearings.length > 0) {
     const now = new Date();
     const futureNextHearingDates = litigationDetail.hearings
-      .filter(h => h.nextHearingDate && new Date(h.nextHearingDate) > now)
-      .map(h => new Date(h.nextHearingDate))
+      .filter((h) => h.nextHearingDate && new Date(h.nextHearingDate) > now)
+      .map((h) => new Date(h.nextHearingDate))
       .sort((a, b) => a - b);
-    
-    litigationDetail.nextHearingDate = futureNextHearingDates.length > 0 
-      ? futureNextHearingDates[0] 
-      : null;
+
+    litigationDetail.nextHearingDate =
+      futureNextHearingDates.length > 0 ? futureNextHearingDates[0] : null;
   } else {
     litigationDetail.nextHearingDate = null;
   }
@@ -931,7 +882,9 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Hearing deleted" + (calendarResult.success ? " and calendar event removed" : ""),
+    message:
+      "Hearing deleted" +
+      (calendarResult.success ? " and calendar event removed" : ""),
     data: { litigationDetail },
   });
 });
@@ -966,12 +919,17 @@ exports.addCourtOrder = catchAsync(async (req, res, next) => {
   await matter.save();
 
   // AUTO-SYNC: Create deadline if compliance date exists using new service
-  const newOrder = litigationDetail.courtOrders[litigationDetail.courtOrders.length - 1];
+  const newOrder =
+    litigationDetail.courtOrders[litigationDetail.courtOrders.length - 1];
   let calendarResult = { success: true };
-  
+
   if (newOrder.complianceDeadline) {
     try {
-      calendarResult = await calendarSync.syncCourtOrderDeadline(matterId, req.firmId, newOrder);
+      calendarResult = await calendarSync.syncCourtOrderDeadline(
+        matterId,
+        req.firmId,
+        newOrder,
+      );
       if (!calendarResult.success) {
         console.warn("⚠️ Deadline creation failed:", calendarResult.message);
       }
@@ -982,7 +940,11 @@ exports.addCourtOrder = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message: "Court order added" + (calendarResult.success && newOrder.complianceDeadline ? " and deadline synced to calendar" : ""),
+    message:
+      "Court order added" +
+      (calendarResult.success && newOrder.complianceDeadline
+        ? " and deadline synced to calendar"
+        : ""),
     data: { litigationDetail },
   });
 });
@@ -1189,7 +1151,10 @@ exports.recordJudgment = catchAsync(async (req, res, next) => {
   // Mark past hearings as completed using new service
   let calendarResult = { success: true };
   try {
-    calendarResult = await calendarSync.markPastHearingsCompleted(matterId, req.firmId);
+    calendarResult = await calendarSync.markPastHearingsCompleted(
+      matterId,
+      req.firmId,
+    );
     if (!calendarResult.success) {
       console.warn("⚠️ Calendar update failed:", calendarResult.message);
     }
@@ -1241,7 +1206,10 @@ exports.recordSettlement = catchAsync(async (req, res, next) => {
   // Mark past hearings as completed using new service
   let calendarResult = { success: true };
   try {
-    calendarResult = await calendarSync.markPastHearingsCompleted(matterId, req.firmId);
+    calendarResult = await calendarSync.markPastHearingsCompleted(
+      matterId,
+      req.firmId,
+    );
     if (!calendarResult.success) {
       console.warn("⚠️ Calendar update failed:", calendarResult.message);
     }
@@ -1461,12 +1429,20 @@ exports.getHearingsCalendar = catchAsync(async (req, res, next) => {
   if (startDate && endDate) {
     start = dayjs(startDate);
     end = dayjs(endDate);
-  } else {
-    // Default to current month
-    const m = month ? parseInt(month) : dayjs().month() + 1;
-    const y = year ? parseInt(year) : dayjs().year();
+  } else if (month && year) {
+    // Specific month requested
+    const m = parseInt(month);
+    const y = parseInt(year);
     start = dayjs(`${y}-${m}-01`);
     end = dayjs(`${y}-${m}-01`).endOf("month");
+  } else {
+    // Default: include current month AND all future upcoming hearings
+    const now = dayjs();
+    start = now.startOf("month");
+    end = now.endOf("month");
+
+    // Also fetch all future hearings beyond current month
+    req.fetchAllFutureHearings = true;
   }
 
   // Get all active litigation matters
@@ -1505,10 +1481,21 @@ exports.getHearingsCalendar = catchAsync(async (req, res, next) => {
       if (!hearing.date) return;
 
       const hearingDate = dayjs(hearing.date);
-      if (
-        hearingDate.isAfter(start.subtract(1, "day")) &&
-        hearingDate.isBefore(end.add(1, "day"))
-      ) {
+      const now = dayjs();
+
+      let isIncluded = false;
+
+      if (req.fetchAllFutureHearings) {
+        // Include current month AND all future hearings
+        isIncluded = hearingDate.isAfter(now.subtract(1, "day"));
+      } else {
+        // Original behavior: only include within date range
+        isIncluded =
+          hearingDate.isAfter(start.subtract(1, "day")) &&
+          hearingDate.isBefore(end.add(1, "day"));
+      }
+
+      if (isIncluded) {
         events.push({
           id: hearing._id,
           matterId: matter._id,
@@ -1632,9 +1619,9 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
       // ONLY use nextHearingDate for upcoming hearings - NOT the old hearing date
       // If nextHearingDate doesn't exist or is in the past, skip this hearing
       if (!hearing.nextHearingDate) return;
-      
+
       const hearingDate = dayjs(hearing.nextHearingDate);
-      
+
       // Skip if nextHearingDate is in the past
       if (!hearingDate.isAfter(today, "day")) return;
 

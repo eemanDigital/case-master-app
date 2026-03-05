@@ -266,6 +266,15 @@ const HearingTimelineItem = React.memo(({ hearing, onEdit, onDelete }) => {
                   className={`hover:bg-blue-50 ${isLocked ? "opacity-50" : ""}`}
                 />
               </Tooltip>
+              <Tooltip title={isLocked ? "Viewing only" : "Assign lawyers"}>
+                <Button
+                  type="text"
+                  icon={<TeamOutlined />}
+                  onClick={() => onEdit(hearing)}
+                  size="small"
+                  className={`hover:bg-blue-50 text-blue-600 ${isLocked ? "opacity-50" : ""}`}
+                />
+              </Tooltip>
               <Tooltip title="Delete hearing">
                 <Button
                   type="text"

@@ -755,8 +755,8 @@ const HearingTimeline = ({
               </Checkbox>
             </Form.Item>
 
-            {/* Next Hearing Date - Available for all future hearings */}
-            {modalPhase === "schedule" && (
+            {/* Next Hearing Date - Available for schedule and report phases */}
+            {(modalPhase === "schedule" || modalPhase === "report" || modalPhase === "edit") && !requiresAdjournedDate && (
               <Form.Item
                 name="nextHearingDate"
                 label={
@@ -765,7 +765,7 @@ const HearingTimeline = ({
                     <span>Next Hearing Date</span>
                   </span>
                 }
-                tooltip="Set or update the next hearing date (for adjourned/postponed cases)">
+                tooltip="Set or update the next hearing date (for future court sessions)">
                 <DatePicker
                   showTime
                   style={{ width: "100%" }}

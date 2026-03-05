@@ -17,21 +17,56 @@ const createCalendarEventFromHearing = async (
   matter,
 ) => {
   try {
-    // Check if calendar event already exists for this hearing (check both fields for compatibility)
-    const existingEvent = await CalendarEvent.findOne({
-      firmId: litigationDetail.firmId,
-      matter: matter._id,
-      $or: [
-        { "hearingMetadata.hearingId": hearing._id },
-        { "customFields.hearingId": hearing._id?.toString() },
-      ],
-      isDeleted: false,
-    });
+    const now = new Date();
+    
+    // Check if there's a future nextHearingDate
+    const hasNextHearingDate = 
+      hearing.nextHearingDate && new Date(hearing.nextHearingDate) > now;
+    
+    // If there's a nextHearingDate, we need separate handling
+    let existingEvent;
+    if (hasNextHearingDate) {
+      // Look for an existing "next hearing" event
+      existingEvent = await CalendarEvent.findOne({
+        firmId: litigationDetail.firmId,
+        matter: matter._id,
+        "customFields.originalHearingId": hearing._id?.toString(),
+        "customFields.isUsingNextHearingDate": true,
+        isDeleted: false,
+      });
+    } else {
+      // Check if calendar event already exists for this hearing
+      existingEvent = await CalendarEvent.findOne({
+        firmId: litigationDetail.firmId,
+        matter: matter._id,
+        $or: [
+          { "hearingMetadata.hearingId": hearing._id },
+          { "customFields.hearingId": hearing._id?.toString() },
+        ],
+        isDeleted: false,
+      });
+    }
 
-    // Determine event type based on hearing purpose
-    const eventType = hearing.purpose?.toLowerCase().includes("mention")
-      ? "mention"
-      : "hearing";
+    // Determine event type - eventType uses "hearing"/"mention", hearingMetadata.hearingType uses specific types
+    let eventType = "hearing"; // Main event type
+    let hearingTypeValue;
+    const purposeLower = hearing.purpose?.toLowerCase() || "";
+    if (purposeLower.includes("mention")) {
+      eventType = "mention";
+      hearingTypeValue = "mention";
+    } else if (purposeLower.includes("trial")) {
+      hearingTypeValue = "trial";
+    } else if (purposeLower.includes("ruling")) {
+      hearingTypeValue = "ruling";
+    } else if (purposeLower.includes("judgment")) {
+      hearingTypeValue = "judgment";
+    } else if (purposeLower.includes("preliminary")) {
+      hearingTypeValue = "preliminary";
+    } else if (purposeLower.includes("appeal")) {
+      hearingTypeValue = "appeal";
+    } else {
+      hearingTypeValue = "trial"; // Default for "hearing" event type
+    }
 
     // Build event data
     const eventData = {
@@ -69,7 +104,7 @@ const createCalendarEventFromHearing = async (
         judge: litigationDetail.judge[0]?.name,
         courtRoom: litigationDetail.courtNo,
         suitNumber: litigationDetail.suitNo,
-        hearingType: eventType === "mention" ? "mention" : "trial",
+        hearingType: hearingTypeValue,
       },
       reminders: [
         {
@@ -85,6 +120,11 @@ const createCalendarEventFromHearing = async (
       color: "#f44336", // Red for court hearings
       notes: hearing.notes,
       createdBy: matter.accountOfficer[0],
+      customFields: hasNextHearingDate ? {
+        originalHearingId: hearing._id?.toString(),
+        isUsingNextHearingDate: true,
+        originalHearingDate: new Date(hearing.date).toISOString(),
+      } : undefined,
     };
 
     if (existingEvent) {
@@ -115,7 +155,7 @@ const updateNextHearingInCalendar = async (litigationDetail, matter) => {
     const latestEvent = await CalendarEvent.findOne({
       firmId: litigationDetail.firmId,
       matter: matter._id,
-      eventType: { $in: ["hearing", "mention"] },
+      eventType: { $in: ["hearing", "mention", "adjournment"] },
       isDeleted: false,
     })
       .sort({ createdAt: -1 })
@@ -142,7 +182,7 @@ const markHearingAsCompleted = async (litigationDetail, matter) => {
     const scheduledEvents = await CalendarEvent.find({
       firmId: litigationDetail.firmId,
       matter: matter._id,
-      eventType: { $in: ["hearing", "mention"] },
+      eventType: { $in: ["hearing", "mention", "adjournment"] },
       status: "scheduled",
       isDeleted: false,
     });

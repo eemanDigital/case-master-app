@@ -137,10 +137,27 @@ class CalendarSyncService {
         ? new Date(hearing.nextHearingDate) 
         : new Date(hearing.date);
 
-      // Determine event type
-      const eventType = hearing.purpose?.toLowerCase().includes("mention")
-        ? "mention"
-        : "hearing";
+      // Determine event type - eventType uses "hearing", hearingMetadata.hearingType uses specific types
+      let eventType = "hearing"; // Main event type
+      let hearingTypeValue;
+      const purposeLower = hearing.purpose?.toLowerCase() || "";
+      
+      if (purposeLower.includes("mention")) {
+        eventType = "mention";
+        hearingTypeValue = "mention";
+      } else if (purposeLower.includes("trial")) {
+        hearingTypeValue = "trial";
+      } else if (purposeLower.includes("ruling")) {
+        hearingTypeValue = "ruling";
+      } else if (purposeLower.includes("judgment")) {
+        hearingTypeValue = "judgment";
+      } else if (purposeLower.includes("preliminary")) {
+        hearingTypeValue = "preliminary";
+      } else if (purposeLower.includes("appeal")) {
+        hearingTypeValue = "appeal";
+      } else {
+        hearingTypeValue = "trial"; // Default for "hearing" event type
+      }
 
       // Set times (using a new Date object to avoid mutating)
       const startDateTime = new Date(hearingDateValue);
@@ -224,7 +241,7 @@ class CalendarSyncService {
           judge: litigationDetail?.judge?.[0]?.name,
           courtRoom: litigationDetail?.courtNo,
           suitNumber: litigationDetail?.suitNo,
-          hearingType: eventType,
+          hearingType: hearingTypeValue,
           outcome: hearing.outcome,
           isNextHearing: hasNextHearingDate,
           originalHearingDate: hearing.date,
@@ -237,6 +254,7 @@ class CalendarSyncService {
         createdBy: matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
         customFields: {
           hearingId: hearing._id?.toString() || `new-${Date.now()}`,
+          originalHearingId: hasNextHearingDate ? hearing._id?.toString() : undefined,
           litigationDetailId: litigationDetail?._id?.toString(),
           isUsingNextHearingDate: hasNextHearingDate,
           originalHearingDate: new Date(hearing.date).toISOString(),
@@ -250,7 +268,15 @@ class CalendarSyncService {
       };
       
       if (hearing._id) {
-        query["customFields.hearingId"] = hearing._id.toString();
+        // If there's a nextHearingDate, we need to handle differently
+        if (hasNextHearingDate) {
+          // For next hearing dates, create a NEW event (don't update existing)
+          // Check if we already have a "next hearing" event for this hearing
+          query["customFields.originalHearingId"] = hearing._id.toString();
+          query["customFields.isUsingNextHearingDate"] = true;
+        } else {
+          query["customFields.hearingId"] = hearing._id.toString();
+        }
       } else {
         // For new hearings without ID, check by matter and date range
         const startOfDay = new Date(hearingDateValue);
