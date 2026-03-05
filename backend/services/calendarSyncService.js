@@ -4,10 +4,10 @@ const LitigationDetail = require("../models/litigationDetailModel");
 
 /**
  * CalendarSyncService - Unified service for syncing legal events to calendar
- * 
+ *
  * This service provides a robust, centralized approach to calendar synchronization
  * for all matter types and their related events.
- * 
+ *
  * Supported Event Types:
  * - Litigation: Court hearings, mentions, deadlines
  * - Corporate: Transaction deadlines, AGMs, board meetings
@@ -21,16 +21,16 @@ class CalendarSyncService {
     this.defaultReminders = {
       court_hearing: [
         { reminderTime: 1440, reminderType: "email" }, // 1 day before
-        { reminderTime: 60, reminderType: "in_app" },   // 1 hour before
+        { reminderTime: 60, reminderType: "in_app" }, // 1 hour before
       ],
       deadline: [
         { reminderTime: 10080, reminderType: "email" }, // 7 days before
-        { reminderTime: 2880, reminderType: "email" },  // 2 days before
-        { reminderTime: 1440, reminderType: "email" },  // 1 day before
+        { reminderTime: 2880, reminderType: "email" }, // 2 days before
+        { reminderTime: 1440, reminderType: "email" }, // 1 day before
       ],
       meeting: [
         { reminderTime: 120, reminderType: "in_app" }, // 2 hours before
-        { reminderTime: 30, reminderType: "push" },      // 30 mins before
+        { reminderTime: 30, reminderType: "push" }, // 30 mins before
       ],
     };
   }
@@ -64,11 +64,11 @@ class CalendarSyncService {
    */
   buildParticipants(matter) {
     const participants = [];
-    
+
     if (matter.accountOfficer?.length > 0) {
       matter.accountOfficer.forEach((officer) => {
         const id = officer._id || officer;
-        if (!participants.some(p => p.user.toString() === id.toString())) {
+        if (!participants.some((p) => p.user.toString() === id.toString())) {
           participants.push({
             user: id,
             role: "organizer",
@@ -81,7 +81,7 @@ class CalendarSyncService {
     if (matter.assignedLawyers?.length > 0) {
       matter.assignedLawyers.forEach((lawyer) => {
         const id = lawyer._id || lawyer;
-        if (!participants.some(p => p.user.toString() === id.toString())) {
+        if (!participants.some((p) => p.user.toString() === id.toString())) {
           participants.push({
             user: id,
             role: "attendee",
@@ -122,26 +122,28 @@ class CalendarSyncService {
   async syncHearing(matterId, firmId, hearingData, litigationDetail) {
     try {
       const matter = await this.getMatterWithRelations(matterId, firmId);
-      
+
       if (matter.matterType !== "litigation") {
         throw new Error("syncHearing is only for litigation matters");
       }
 
-      const hearing = hearingData._id ? hearingData : { ...hearingData, _id: null };
+      const hearing = hearingData._id
+        ? hearingData
+        : { ...hearingData, _id: null };
       const now = new Date();
-      
+
       // Determine which date to use - prefer nextHearingDate if in future
-      const hasNextHearingDate = 
+      const hasNextHearingDate =
         hearing.nextHearingDate && new Date(hearing.nextHearingDate) > now;
-      const hearingDateValue = hasNextHearingDate 
-        ? new Date(hearing.nextHearingDate) 
+      const hearingDateValue = hasNextHearingDate
+        ? new Date(hearing.nextHearingDate)
         : new Date(hearing.date);
 
       // Determine event type - eventType uses "hearing", hearingMetadata.hearingType uses specific types
       let eventType = "hearing"; // Main event type
       let hearingTypeValue;
       const purposeLower = hearing.purpose?.toLowerCase() || "";
-      
+
       if (purposeLower.includes("mention")) {
         eventType = "mention";
         hearingTypeValue = "mention";
@@ -164,9 +166,11 @@ class CalendarSyncService {
       startDateTime.setHours(9, 0, 0, 0);
       const endDateTime = new Date(hearingDateValue);
       endDateTime.setHours(11, 0, 0, 0);
-      const titlePrefix = hasNextHearingDate ? "Court Hearing (Next)" : "Court Hearing";
+      const titlePrefix = hasNextHearingDate
+        ? "Court Hearing (Next)"
+        : "Court Hearing";
       const eventTitle = `${titlePrefix}: ${matter.title || litigationDetail?.suitNo || matter.matterNumber}`;
-      
+
       let description = `Court hearing for ${matter.matterNumber}\n`;
       if (litigationDetail) {
         description += `Court: ${this.formatCourtName(litigationDetail.courtName)}`;
@@ -178,7 +182,7 @@ class CalendarSyncService {
           description += `\nJudge: ${litigationDetail.judge[0].name}`;
         }
       }
-      
+
       if (hearing.purpose) {
         description += `\nPurpose: ${hearing.purpose}`;
       }
@@ -192,9 +196,9 @@ class CalendarSyncService {
       // Determine status and color
       const isCompleted = hearing.outcome && !hasNextHearingDate;
       const eventStatus = isCompleted ? "completed" : "scheduled";
-      const color = hasNextHearingDate 
-        ? "#fa8c16"  // Orange for next hearing
-        : isCompleted 
+      const color = hasNextHearingDate
+        ? "#fa8c16" // Orange for next hearing
+        : isCompleted
           ? "#52c41a" // Green for completed
           : "#722ed1"; // Purple for scheduled
 
@@ -202,7 +206,7 @@ class CalendarSyncService {
       if (hearingData.lawyerPresent?.length > 0) {
         hearingData.lawyerPresent.forEach((lawyer) => {
           const id = lawyer._id || lawyer;
-          if (!participants.some(p => p.user.toString() === id.toString())) {
+          if (!participants.some((p) => p.user.toString() === id.toString())) {
             participants.push({
               user: id,
               role: "attendee",
@@ -225,15 +229,18 @@ class CalendarSyncService {
         endDateTime,
         isAllDay: false,
         timezone: "Africa/Lagos",
-        location: litigationDetail ? {
-          type: "court",
-          courtName: litigationDetail.courtName,
-          courtRoom: litigationDetail.courtNo,
-          address: litigationDetail.courtLocation 
-            ? `${litigationDetail.courtLocation}, ${litigationDetail.state}`
-            : litigationDetail.state,
-        } : undefined,
-        organizer: matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
+        location: litigationDetail
+          ? {
+              type: "court",
+              courtName: litigationDetail.courtName,
+              courtRoom: litigationDetail.courtNo,
+              address: litigationDetail.courtLocation
+                ? `${litigationDetail.courtLocation}, ${litigationDetail.state}`
+                : litigationDetail.state,
+            }
+          : undefined,
+        organizer:
+          matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
         participants,
         visibility: "team",
         hearingMetadata: {
@@ -248,13 +255,20 @@ class CalendarSyncService {
           nextHearingDate: hearing.nextHearingDate,
         },
         reminders: this.defaultReminders.court_hearing,
-        tags: ["court-hearing", "auto-synced", litigationDetail?.courtName || "litigation"],
+        tags: [
+          "court-hearing",
+          "auto-synced",
+          litigationDetail?.courtName || "litigation",
+        ],
         color,
         notes: hearing.notes,
-        createdBy: matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
+        createdBy:
+          matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
         customFields: {
           hearingId: hearing._id?.toString() || `new-${Date.now()}`,
-          originalHearingId: hasNextHearingDate ? hearing._id?.toString() : undefined,
+          originalHearingId: hasNextHearingDate
+            ? hearing._id?.toString()
+            : undefined,
           litigationDetailId: litigationDetail?._id?.toString(),
           isUsingNextHearingDate: hasNextHearingDate,
           originalHearingDate: new Date(hearing.date).toISOString(),
@@ -266,7 +280,7 @@ class CalendarSyncService {
         firmId,
         isDeleted: false,
       };
-      
+
       if (hearing._id) {
         // If there's a nextHearingDate, we need to handle differently
         if (hasNextHearingDate) {
@@ -283,7 +297,7 @@ class CalendarSyncService {
         startOfDay.setHours(0, 0, 0, 0);
         const endOfDay = new Date(hearingDateValue);
         endOfDay.setHours(23, 59, 59, 999);
-        
+
         query.matter = matterId;
         query.startDateTime = { $gte: startOfDay, $lte: endOfDay };
       }
@@ -296,8 +310,8 @@ class CalendarSyncService {
         eventTitle: event.title,
         eventDate: event.startDateTime,
         isNew,
-        message: isNew 
-          ? `Created calendar event for hearing` 
+        message: isNew
+          ? `Created calendar event for hearing`
           : `Updated calendar event for hearing`,
       };
     } catch (error) {
@@ -318,25 +332,37 @@ class CalendarSyncService {
   async syncCourtOrderDeadline(matterId, firmId, courtOrder) {
     try {
       const matter = await this.getMatterWithRelations(matterId, firmId);
-      
+
       if (!courtOrder.complianceDeadline) {
-        return { success: true, message: "No compliance deadline, skipping sync" };
+        return {
+          success: true,
+          message: "No compliance deadline, skipping sync",
+        };
       }
 
       const eventData = {
         firmId,
         eventType: "court_order_deadline",
         title: `Comply with Court Order - ${matter.title}`,
-        description: courtOrder.description || "Court order compliance deadline",
+        description:
+          courtOrder.description || "Court order compliance deadline",
         startDateTime: new Date(courtOrder.complianceDeadline),
-        endDateTime: new Date(new Date(courtOrder.complianceDeadline).getTime() + 24 * 60 * 60 * 1000 - 1),
+        endDateTime: new Date(
+          new Date(courtOrder.complianceDeadline).getTime() +
+            24 * 60 * 60 * 1000 -
+            1,
+        ),
         isAllDay: true,
         matter: matter._id,
         matterType: matter.matterType,
         priority: "urgent",
-        status: courtOrder.complianceStatus === "complied" ? "completed" : "scheduled",
+        status:
+          courtOrder.complianceStatus === "complied"
+            ? "completed"
+            : "scheduled",
         visibility: "team",
-        organizer: matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
+        organizer:
+          matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
         participants: this.buildParticipants(matter),
         deadlineMetadata: {
           courtOrderId: courtOrder._id,
@@ -347,7 +373,8 @@ class CalendarSyncService {
         reminders: this.defaultReminders.deadline,
         tags: ["court-order", "deadline", "urgent", "auto-synced"],
         color: "#ff5722",
-        createdBy: matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
+        createdBy:
+          matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
       };
 
       const { event, isNew } = await this.findOrCreateEvent(
@@ -356,7 +383,7 @@ class CalendarSyncService {
           "deadlineMetadata.courtOrderId": courtOrder._id,
           isDeleted: false,
         },
-        eventData
+        eventData,
       );
 
       return {
@@ -365,8 +392,8 @@ class CalendarSyncService {
         eventTitle: event.title,
         deadlineDate: event.startDateTime,
         isNew,
-        message: isNew 
-          ? `Created deadline calendar event` 
+        message: isNew
+          ? `Created deadline calendar event`
           : `Updated deadline calendar event`,
       };
     } catch (error) {
@@ -393,7 +420,7 @@ class CalendarSyncService {
         firmId,
         eventType: "matter_created",
         title: `New Matter Opened: ${matter.title}`,
-        description: `Matter Type: ${matter.matterType}\nNature: ${matter.natureOfMatter}\nClient: ${matter.client?.firstName} ${matter.client?.lastName || ''}`,
+        description: `Matter Type: ${matter.matterType}\nNature: ${matter.natureOfMatter}\nClient: ${matter.client?.firstName} ${matter.client?.lastName || ""}`,
         startDateTime: matter.dateOpened || new Date(),
         endDateTime: matter.dateOpened || new Date(),
         isAllDay: true,
@@ -402,11 +429,13 @@ class CalendarSyncService {
         priority: "medium",
         status: "completed",
         visibility: "team",
-        organizer: matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
+        organizer:
+          matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
         participants: this.buildParticipants(matter),
         tags: ["matter-created", "auto-synced"],
         color: "#1890ff",
-        createdBy: matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
+        createdBy:
+          matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
       };
 
       // Only create if doesn't exist
@@ -457,7 +486,7 @@ class CalendarSyncService {
         firmId,
         eventType: "expected_closure",
         title: `Matter Expected Closure: ${matter.title}`,
-        description: `Matter ${matter.matterNumber} expected to close\nClient: ${matter.client?.firstName} ${matter.client?.lastName || ''}`,
+        description: `Matter ${matter.matterNumber} expected to close\nClient: ${matter.client?.firstName} ${matter.client?.lastName || ""}`,
         startDateTime: new Date(matter.expectedClosureDate),
         endDateTime: new Date(matter.expectedClosureDate),
         isAllDay: true,
@@ -466,7 +495,8 @@ class CalendarSyncService {
         priority: "medium",
         status: "scheduled",
         visibility: "team",
-        organizer: matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
+        organizer:
+          matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
         participants: this.buildParticipants(matter),
         reminders: [
           { reminderTime: 4320, reminderType: "email" }, // 3 days before
@@ -474,7 +504,8 @@ class CalendarSyncService {
         ],
         tags: ["expected-closure", "auto-synced"],
         color: "#52c41a",
-        createdBy: matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
+        createdBy:
+          matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
         customFields: { matterId: matterId.toString() },
       };
 
@@ -485,14 +516,16 @@ class CalendarSyncService {
           eventType: "expected_closure",
           isDeleted: false,
         },
-        eventData
+        eventData,
       );
 
       return {
         success: true,
         eventId: event._id,
         isNew,
-        message: isNew ? "Created closure date event" : "Updated closure date event",
+        message: isNew
+          ? "Created closure date event"
+          : "Updated closure date event",
       };
     } catch (error) {
       console.error("❌ Error syncing expected closure:", error);
@@ -516,11 +549,16 @@ class CalendarSyncService {
 
       const results = [];
       for (const hearing of litigationDetail.hearings) {
-        const result = await this.syncHearing(matterId, firmId, hearing, litigationDetail);
+        const result = await this.syncHearing(
+          matterId,
+          firmId,
+          hearing,
+          litigationDetail,
+        );
         results.push(result);
       }
 
-      const successCount = results.filter(r => r.success).length;
+      const successCount = results.filter((r) => r.success).length;
       return {
         success: true,
         total: results.length,
@@ -543,7 +581,7 @@ class CalendarSyncService {
       const event = await CalendarEvent.findOneAndUpdate(
         { _id: eventId, firmId, isDeleted: false },
         { isDeleted: true, deletedAt: new Date(), status: "cancelled" },
-        { new: true }
+        { new: true },
       );
 
       if (!event) {
@@ -566,7 +604,7 @@ class CalendarSyncService {
     try {
       const result = await CalendarEvent.updateMany(
         { matter: matterId, firmId, isDeleted: false },
-        { isDeleted: true, deletedAt: new Date(), status: "cancelled" }
+        { isDeleted: true, deletedAt: new Date(), status: "cancelled" },
       );
 
       return {
@@ -619,7 +657,7 @@ class CalendarSyncService {
     if (!courtName) return "Unknown Court";
     return courtName
       .split(" ")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(" ");
   }
 }

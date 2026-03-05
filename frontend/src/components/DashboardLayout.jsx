@@ -81,11 +81,10 @@ const DashboardLayout = () => {
           "Content-Type": "application/json"
         };
 
-        const [mattersRes, tasksRes, calendarRes, clientsRes] = await Promise.allSettled([
-          fetch(`${baseURL}/matters?limit=5&sortBy=createdAt&order=desc`, { headers }),
-          fetch(`${baseURL}/tasks?limit=5&sortBy=createdAt&order=desc`, { headers }),
-          fetch(`${baseURL}/calendar?limit=5&sortBy=date&order=asc`, { headers }),
-          fetch(`${baseURL}/clients?limit=5&sortBy=createdAt&order=desc`, { headers }),
+        const [mattersRes, tasksRes, calendarRes] = await Promise.allSettled([
+          fetch(`${baseURL}/matters?limit=5&sort=-createdAt`, { headers }),
+          fetch(`${baseURL}/tasks?limit=5&sort=-createdAt`, { headers }),
+          fetch(`${baseURL}/calendar/events?limit=5`, { headers }),
         ]);
 
         const notificationItems = [];
@@ -141,22 +140,6 @@ const DashboardLayout = () => {
               meta: event.court || "Court",
               path: `/dashboard/calendar`,
               time: event.time || "All day",
-            });
-          });
-        }
-
-        if (clientsRes.status === "fulfilled" && clientsRes.value.ok) {
-          const clients = await clientsRes.value.json();
-          clients.data?.slice(0, 1).forEach((client) => {
-            notificationItems.push({
-              key: `client-${client._id}`,
-              type: "client",
-              icon: "user",
-              title: `New Client Added`,
-              description: client.name || client.firstName + " " + client.lastName || "New client",
-              meta: client.email || "No email",
-              path: `/dashboard/clients`,
-              time: new Date(client.createdAt).toLocaleDateString(),
             });
           });
         }

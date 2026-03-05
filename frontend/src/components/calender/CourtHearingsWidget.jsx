@@ -1011,8 +1011,11 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
   const [modalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchUpcomingHearings({ range: "all", limit: 50 }));
-  }, [dispatch]);
+    // Only fetch if not already loaded
+    if (!hearings || hearings.length === 0) {
+      dispatch(fetchUpcomingHearings({ range: "all", limit: 50 }));
+    }
+  }, [dispatch, hearings]);
 
   const { todayReports, urgentSimple, upcomingSimple, hearingNoticeRequired } =
     useMemo(() => {

@@ -45,8 +45,11 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
   const { myMattersSummary, isLoading } = useSelector((state) => state.matter);
 
   useEffect(() => {
-    dispatch(getMyMattersSummary());
-  }, [dispatch]);
+    // Only fetch if not already loaded
+    if (!myMattersSummary) {
+      dispatch(getMyMattersSummary());
+    }
+  }, [dispatch, myMattersSummary]);
 
   const summary = myMattersSummary?.summary || {};
   const recentMatters = myMattersSummary?.recentMatters || [];

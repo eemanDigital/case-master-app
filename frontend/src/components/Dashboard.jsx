@@ -67,10 +67,15 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!isClient) {
-      dispatch(getMatterStats());
-      dispatch(getUserStatistics());
+      // Only fetch if not already loaded
+      if (!matterStats) {
+        dispatch(getMatterStats());
+      }
+      if (!userStatistics) {
+        dispatch(getUserStatistics());
+      }
     }
-  }, [dispatch, isClient]);
+  }, [dispatch, isClient, matterStats, userStatistics]);
 
   useEffect(() => {
     if (hasInitialized.current) return;
