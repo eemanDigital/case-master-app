@@ -36,6 +36,12 @@ import {
   AuditOutlined,
   ReconciliationOutlined,
   HomeOutlined,
+  FileDoneOutlined,
+  RiseOutlined,
+  WarningOutlined,
+  ClockCircleOutlined,
+  BankOutlined,
+  MessageOutlined,
 } from "@ant-design/icons";
 import SideBar from "./SideBar.jsx";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser.jsx";
@@ -58,12 +64,116 @@ const DashboardLayout = () => {
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [notifications] = useState(3);
+  const [notifications, setNotifications] = useState([]);
   const [searchOptions, setSearchOptions] = useState([]);
   const [searchValue, setSearchValue] = useState("");
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
+
+  useEffect(() => {
+    const fetchNotificationData = async () => {
+      setLoadingNotifications(true);
+      const token = localStorage.getItem("token");
+      const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
+      
+      try {
+        const headers = { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        };
+
+        const [mattersRes, tasksRes, calendarRes, clientsRes] = await Promise.allSettled([
+          fetch(`${baseURL}/matters?limit=5&sortBy=createdAt&order=desc`, { headers }),
+          fetch(`${baseURL}/tasks?limit=5&sortBy=createdAt&order=desc`, { headers }),
+          fetch(`${baseURL}/calendar?limit=5&sortBy=date&order=asc`, { headers }),
+          fetch(`${baseURL}/clients?limit=5&sortBy=createdAt&order=desc`, { headers }),
+        ]);
+
+        const notificationItems = [];
+
+        if (mattersRes.status === "fulfilled" && mattersRes.value.ok) {
+          const matters = await mattersRes.value.json();
+          matters.data?.slice(0, 2).forEach((matter) => {
+            notificationItems.push({
+              key: `matter-${matter._id}`,
+              type: "matter",
+              icon: "file",
+              title: `New Matter Created`,
+              description: matter.title || matter.caseNumber || "New case",
+              meta: matter.category || "General",
+              path: `/dashboard/matters`,
+              time: new Date(matter.createdAt).toLocaleDateString(),
+            });
+          });
+        }
+
+        if (tasksRes.status === "fulfilled" && tasksRes.value.ok) {
+          const tasks = await tasksRes.value.json();
+          tasks.data?.slice(0, 2).forEach((task) => {
+            notificationItems.push({
+              key: `task-${task._id}`,
+              type: "task",
+              title: `Task ${task.status === "completed" ? "Completed" : "Assigned"}`,
+              description: task.title || task.name || "New task",
+              meta: `Due: ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No due date"}`,
+              path: `/dashboard/tasks`,
+              time: new Date(task.createdAt).toLocaleDateString(),
+            });
+          });
+        }
+
+        if (calendarRes.status === "fulfilled" && calendarRes.value.ok) {
+          const calendar = await calendarRes.value.json();
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const tomorrow = new Date(today);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+
+          calendar.data?.filter(event => {
+            const eventDate = new Date(event.date);
+            return eventDate >= today && eventDate <= tomorrow;
+          }).slice(0, 2).forEach((event) => {
+            notificationItems.push({
+              key: `calendar-${event._id}`,
+              type: "calendar",
+              icon: "calendar",
+              title: `Court Hearing Today`,
+              description: event.title || event.eventType || "Court appearance",
+              meta: event.court || "Court",
+              path: `/dashboard/calendar`,
+              time: event.time || "All day",
+            });
+          });
+        }
+
+        if (clientsRes.status === "fulfilled" && clientsRes.value.ok) {
+          const clients = await clientsRes.value.json();
+          clients.data?.slice(0, 1).forEach((client) => {
+            notificationItems.push({
+              key: `client-${client._id}`,
+              type: "client",
+              icon: "user",
+              title: `New Client Added`,
+              description: client.name || client.firstName + " " + client.lastName || "New client",
+              meta: client.email || "No email",
+              path: `/dashboard/clients`,
+              time: new Date(client.createdAt).toLocaleDateString(),
+            });
+          });
+        }
+
+        setNotifications(notificationItems.slice(0, 6));
+      } catch (error) {
+        console.error("Error fetching notifications:", error);
+        setNotifications([]);
+      } finally {
+        setLoadingNotifications(false);
+      }
+    };
+
+    fetchNotificationData();
+  }, []);
 
   const menuItemsForSearch = [
-    { key: "dashboard", label: "Dashboard", path: "/dashboard", icon: "Dashboard" },
     { key: "all-matters", label: "All Matters", path: "/dashboard/matters", icon: "FileText" },
     { key: "matters-with-officers", label: "Matters & Officers", path: "/dashboard/matters-with-officers", icon: "Team" },
     { key: "litigation", label: "Litigation", path: "/dashboard/matters/litigation", icon: "Audit" },
@@ -197,7 +307,38 @@ const DashboardLayout = () => {
     },
   ];
 
-  const notificationItems = [
+  const getNotificationIcon = (type) => {
+    const iconClass = "text-sm";
+    switch (type) {
+      case "matter":
+        return <FileTextOutlined className={`${iconClass} text-blue-600 dark:text-blue-400`} />;
+      case "task":
+        return <CheckSquareOutlined className={`${iconClass} text-purple-600 dark:text-purple-400`} />;
+      case "calendar":
+        return <CalendarOutlined className={`${iconClass} text-orange-600 dark:text-orange-400`} />;
+      case "client":
+        return <UserOutlined className={`${iconClass} text-green-600 dark:text-green-400`} />;
+      default:
+        return <BellOutlined className={`${iconClass} text-gray-600 dark:text-gray-400`} />;
+    }
+  };
+
+  const getIconBg = (type) => {
+    switch (type) {
+      case "matter":
+        return "bg-blue-100 dark:bg-blue-900";
+      case "task":
+        return "bg-purple-100 dark:bg-purple-900";
+      case "calendar":
+        return "bg-orange-100 dark:bg-orange-900";
+      case "client":
+        return "bg-green-100 dark:bg-green-900";
+      default:
+        return "bg-gray-100 dark:bg-gray-900";
+    }
+  };
+
+  const notificationDropdownItems = [
     {
       key: "header",
       label: (
@@ -206,54 +347,36 @@ const DashboardLayout = () => {
             <Text strong className="text-sm">
               Notifications
             </Text>
-            <Badge count={notifications} size="small" />
+            <Badge count={notifications.length} size="small" />
           </div>
         </div>
       ),
       disabled: true,
     },
-    {
-      key: "1",
+    ...notifications.map((notification) => ({
+      key: notification.key,
       label: (
-        <div className="flex items-start gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-          <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center flex-shrink-0">
-            <BellOutlined className="text-blue-600 dark:text-blue-400 text-sm" />
+        <div 
+          className="flex items-start gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
+          onClick={() => navigate(notification.path)}
+        >
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getIconBg(notification.type)}`}>
+            {getNotificationIcon(notification.type)}
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-medium text-xs text-gray-900 dark:text-gray-100">
-              New case assigned
+              {notification.title}
             </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Jones v. State Corp
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate">
+              {notification.description}
             </p>
             <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              2 min ago
+              {notification.meta} • {notification.time}
             </p>
           </div>
         </div>
       ),
-    },
-    {
-      key: "2",
-      label: (
-        <div className="flex items-start gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-          <div className="w-8 h-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center flex-shrink-0">
-            <BellOutlined className="text-green-600 dark:text-green-400 text-sm" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-medium text-xs text-gray-900 dark:text-gray-100">
-              Document reviewed
-            </p>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              Contract #C-2024-015
-            </p>
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-              1 hour ago
-            </p>
-          </div>
-        </div>
-      ),
-    },
+    })),
     {
       key: "view-all",
       label: (
@@ -270,6 +393,29 @@ const DashboardLayout = () => {
       ),
     },
   ];
+
+  const notificationItems = loadingNotifications ? [
+    {
+      key: "loading",
+      label: (
+        <div className="px-3 py-4 flex justify-center">
+          <Text className="text-xs text-gray-500">Loading notifications...</Text>
+        </div>
+      ),
+      disabled: true,
+    }
+  ] : notifications.length === 0 ? [
+    {
+      key: "empty",
+      label: (
+        <div className="px-3 py-4 flex flex-col items-center">
+          <BellOutlined className="text-2xl text-gray-400 mb-2" />
+          <Text className="text-xs text-gray-500">No new notifications</Text>
+        </div>
+      ),
+      disabled: true,
+    }
+  ] : notificationDropdownItems;
 
   const {
     token: { colorBgContainer },

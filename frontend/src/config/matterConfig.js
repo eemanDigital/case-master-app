@@ -174,6 +174,26 @@ export const MATTER_CONFIG = {
     { value: "closed", label: "Closed" },
   ],
 
+  // Advisory Types
+  ADVISORY_TYPES: [
+    { value: "legal-opinion", label: "Legal Opinion" },
+    { value: "regulatory-compliance", label: "Regulatory Compliance" },
+    { value: "due-diligence", label: "Due Diligence" },
+    { value: "contract-review", label: "Contract Review" },
+    { value: "legal-research", label: "Legal Research" },
+    { value: "policy-development", label: "Policy Development" },
+    { value: "other", label: "Other" },
+  ],
+
+  // Retainer Types
+  RETAINER_TYPES: [
+    { value: "general-retainer", label: "General Retainer" },
+    { value: "general-legal-services", label: "General Legal Services" },
+    { value: "notarial-services", label: "Notarial Services" },
+    { value: "documentation", label: "Documentation" },
+    { value: "other", label: "Other" },
+  ],
+
   // Corporate Transactions (For reference only - may be in CorporateDetail)
   CORPORATE_TRANSACTIONS: [
     { value: "incorporation", label: "Incorporation" },
