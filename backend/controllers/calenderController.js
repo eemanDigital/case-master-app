@@ -5,8 +5,10 @@ const {
 } = require("../models/calenderEventModel");
 const BlockedDate = require("../models/blockedDateModel");
 const Matter = require("../models/matterModel");
+const LitigationDetail = require("../models/litigationDetailModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const dayjs = require("dayjs");
 
 // ============================================
 // HELPER FUNCTIONS
@@ -204,13 +206,110 @@ exports.getAllEvents = catchAsync(async (req, res, next) => {
 
   const total = await CalendarEvent.countDocuments(filter);
 
+  // Also fetch litigation hearings if includeHearings is true
+  let litigationHearings = [];
+  const includeHearings = req.query.includeHearings === "true";
+  
+  if (includeHearings) {
+    try {
+      // Get date range from query or default to current month
+      let startDateVal, endDateVal;
+      
+      if (startDate && endDate) {
+        startDateVal = dayjs(startDate);
+        endDateVal = dayjs(endDate);
+      } else {
+        // Default to current month
+        startDateVal = dayjs().startOf("month");
+        endDateVal = dayjs().endOf("month");
+      }
+
+      // Get all active litigation matters
+      const matters = await Matter.find({
+        firmId: req.user.firmId,
+        matterType: "litigation",
+        isDeleted: { $ne: true },
+      }).select("_id matterNumber title").lean();
+
+      const matterIds = matters.map(m => m._id);
+
+      // Get litigation details with hearings in date range
+      const litigationDetails = await LitigationDetail.find({
+        firmId: req.user.firmId,
+        matterId: { $in: matterIds },
+        "hearings.0": { $exists: true },
+      })
+      .populate("matterId", "matterNumber title client accountOfficer")
+      .lean();
+
+      // Extract hearings within date range
+      const matterMap = {};
+      matters.forEach(m => matterMap[m._id.toString()] = m);
+
+      litigationDetails.forEach(detail => {
+        const matter = matterMap[detail.matterId?._id?.toString()] || detail;
+        
+        detail.hearings?.forEach(hearing => {
+          // Use nextHearingDate if in future, otherwise use hearing date
+          const hearingDate = hearing.nextHearingDate 
+            ? dayjs(hearing.nextHearingDate) 
+            : dayjs(hearing.date);
+          
+          // Check if within range
+          if (hearingDate.isAfter(startDateVal.subtract(1, "day")) && 
+              hearingDate.isBefore(endDateVal.add(1, "day"))) {
+            
+            litigationHearings.push({
+              _id: hearing._id,
+              eventId: `hearing-${hearing._id}`,
+              eventType: "hearing",
+              title: `Court Hearing: ${matter.title || detail.suitNo || matter.matterNumber}`,
+              description: `Court: ${detail.courtName || "N/A"}\nSuit No: ${detail.suitNo}\nPurpose: ${hearing.purpose || "N/A"}`,
+              startDateTime: hearingDate.toDate(),
+              endDateTime: hearingDate.add(2, "hour").toDate(),
+              isAllDay: false,
+              status: hearing.outcome ? "completed" : "scheduled",
+              priority: "high",
+              matter: detail.matterId?._id,
+              matterType: "litigation",
+              location: {
+                type: "court",
+                courtName: detail.courtName,
+                courtRoom: detail.courtNo,
+                address: detail.courtLocation,
+              },
+              hearingMetadata: {
+                hearingId: hearing._id,
+                suitNumber: detail.suitNo,
+                judge: detail.judge?.[0]?.name,
+                isNextHearing: !!hearing.nextHearingDate,
+              },
+              color: hearing.nextHearingDate ? "#fa8c16" : "#722ed1",
+              tags: ["court-hearing", "litigation", "auto-synced"],
+              isLitigationHearing: true,
+              litigationDetailId: detail._id,
+            });
+          }
+        });
+      });
+    } catch (err) {
+      console.error("Error fetching litigation hearings:", err);
+    }
+  }
+
+  // Merge calendar events and litigation hearings
+  const allEvents = [...visibleEvents, ...litigationHearings];
+  
+  // Sort by start date
+  allEvents.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
+
   res.status(200).json({
     status: "success",
-    results: visibleEvents.length,
-    total,
+    results: allEvents.length,
+    total: total + litigationHearings.length,
     page: Number(page),
     data: {
-      events: visibleEvents,
+      events: allEvents,
     },
   });
 });

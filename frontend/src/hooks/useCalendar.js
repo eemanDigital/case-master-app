@@ -47,7 +47,7 @@ export const useCalendarEvents = (params = {}) => {
 
   // Fetch events on mount or when params change
   useEffect(() => {
-    dispatch(getAllEvents(params));
+    dispatch(getAllEvents({ ...params, includeHearings: true }));
   }, [dispatch, JSON.stringify(params)]);
 
   // Handle operation status messages
