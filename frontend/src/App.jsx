@@ -893,7 +893,7 @@ const router = createBrowserRouter(
             }
           />
           <Route
-            path="tasks/:id/update"
+            path="tasks/:id/edit"
             element={
               <Suspense fallback={<PageLoader />}>
                 <EditTaskForm />

@@ -72,13 +72,14 @@ const DashboardLayout = () => {
   useEffect(() => {
     const fetchNotificationData = async () => {
       setLoadingNotifications(true);
-      const token = localStorage.getItem("token");
-      const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
-      
+      const token = localStorage.getItem("jwt");
+      const baseURL =
+        import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
+
       try {
-        const headers = { 
+        const headers = {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         };
 
         const [mattersRes, tasksRes, calendarRes] = await Promise.allSettled([
@@ -127,21 +128,25 @@ const DashboardLayout = () => {
           const tomorrow = new Date(today);
           tomorrow.setDate(tomorrow.getDate() + 1);
 
-          calendar.data?.filter(event => {
-            const eventDate = new Date(event.date);
-            return eventDate >= today && eventDate <= tomorrow;
-          }).slice(0, 2).forEach((event) => {
-            notificationItems.push({
-              key: `calendar-${event._id}`,
-              type: "calendar",
-              icon: "calendar",
-              title: `Court Hearing Today`,
-              description: event.title || event.eventType || "Court appearance",
-              meta: event.court || "Court",
-              path: `/dashboard/calendar`,
-              time: event.time || "All day",
+          calendar.data
+            ?.filter((event) => {
+              const eventDate = new Date(event.date);
+              return eventDate >= today && eventDate <= tomorrow;
+            })
+            .slice(0, 2)
+            .forEach((event) => {
+              notificationItems.push({
+                key: `calendar-${event._id}`,
+                type: "calendar",
+                icon: "calendar",
+                title: `Court Hearing Today`,
+                description:
+                  event.title || event.eventType || "Court appearance",
+                meta: event.court || "Court",
+                path: `/dashboard/calendar`,
+                time: event.time || "All day",
+              });
             });
-          });
         }
 
         setNotifications(notificationItems.slice(0, 6));
@@ -157,31 +162,156 @@ const DashboardLayout = () => {
   }, []);
 
   const menuItemsForSearch = [
-    { key: "all-matters", label: "All Matters", path: "/dashboard/matters", icon: "FileText" },
-    { key: "matters-with-officers", label: "Matters & Officers", path: "/dashboard/matters-with-officers", icon: "Team" },
-    { key: "litigation", label: "Litigation", path: "/dashboard/matters/litigation", icon: "Audit" },
-    { key: "corporate", label: "Corporate Practice", path: "/dashboard/matters/corporate", icon: "FileText" },
-    { key: "retainership", label: "Retainership", path: "/dashboard/matters/retainers", icon: "FileText" },
-    { key: "property", label: "Property Practice", path: "/dashboard/matters/property", icon: "FileText" },
-    { key: "advisory", label: "Advisory", path: "/dashboard/matters/advisory", icon: "FileText" },
-    { key: "general", label: "General Practice", path: "/dashboard/matters/general", icon: "FileText" },
-    { key: "staff-directory", label: "Staff Directory", path: "/dashboard/staff", icon: "Team" },
-    { key: "staff-status", label: "Staff Status", path: "/dashboard/staff-status", icon: "Team" },
-    { key: "leave-applications", label: "Leave Applications", path: "/dashboard/staff/leave-application", icon: "Team" },
-    { key: "leave-balance", label: "Leave Balance", path: "/dashboard/staff/leave-balance", icon: "Team" },
-    { key: "tasks", label: "Tasks", path: "/dashboard/tasks", icon: "CheckSquare" },
-    { key: "calendar-main", label: "Calendar", path: "/dashboard/calendar", icon: "Calendar" },
-    { key: "calendar-dashboard", label: "Calendar Dashboard", path: "/dashboard/calendar/dashboard", icon: "Calendar" },
-    { key: "blocked-dates", label: "Blocked Dates", path: "/dashboard/calendar/blocked-dates", icon: "Calendar" },
-    { key: "deleted-events", label: "Deleted Events", path: "/dashboard/calendar/deleted", icon: "Calendar" },
-    { key: "clients", label: "Clients", path: "/dashboard/clients", icon: "User" },
-    { key: "documents", label: "Documents", path: "/dashboard/documents", icon: "File" },
-    { key: "billings", label: "Billing", path: "/dashboard/billings", icon: "Dollar" },
-    { key: "audit-logs", label: "Audit Logs", path: "/dashboard/settings/audit-logs", icon: "Audit" },
-    { key: "webhooks", label: "Webhooks", path: "/dashboard/settings/webhooks", icon: "Setting" },
-    { key: "invitations", label: "Invitations", path: "/dashboard/settings/invitations", icon: "Team" },
-    { key: "support", label: "Support", path: "/dashboard/contact-dev", icon: "QuestionCircle" },
-    { key: "profile", label: "My Profile", path: "/dashboard/profile", icon: "User" },
+    {
+      key: "all-matters",
+      label: "All Matters",
+      path: "/dashboard/matters",
+      icon: "FileText",
+    },
+    {
+      key: "matters-with-officers",
+      label: "Matters & Officers",
+      path: "/dashboard/matters-with-officers",
+      icon: "Team",
+    },
+    {
+      key: "litigation",
+      label: "Litigation",
+      path: "/dashboard/matters/litigation",
+      icon: "Audit",
+    },
+    {
+      key: "corporate",
+      label: "Corporate Practice",
+      path: "/dashboard/matters/corporate",
+      icon: "FileText",
+    },
+    {
+      key: "retainership",
+      label: "Retainership",
+      path: "/dashboard/matters/retainers",
+      icon: "FileText",
+    },
+    {
+      key: "property",
+      label: "Property Practice",
+      path: "/dashboard/matters/property",
+      icon: "FileText",
+    },
+    {
+      key: "advisory",
+      label: "Advisory",
+      path: "/dashboard/matters/advisory",
+      icon: "FileText",
+    },
+    {
+      key: "general",
+      label: "General Practice",
+      path: "/dashboard/matters/general",
+      icon: "FileText",
+    },
+    {
+      key: "staff-directory",
+      label: "Staff Directory",
+      path: "/dashboard/staff",
+      icon: "Team",
+    },
+    {
+      key: "staff-status",
+      label: "Staff Status",
+      path: "/dashboard/staff-status",
+      icon: "Team",
+    },
+    {
+      key: "leave-applications",
+      label: "Leave Applications",
+      path: "/dashboard/staff/leave-application",
+      icon: "Team",
+    },
+    {
+      key: "leave-balance",
+      label: "Leave Balance",
+      path: "/dashboard/staff/leave-balance",
+      icon: "Team",
+    },
+    {
+      key: "tasks",
+      label: "Tasks",
+      path: "/dashboard/tasks",
+      icon: "CheckSquare",
+    },
+    {
+      key: "calendar-main",
+      label: "Calendar",
+      path: "/dashboard/calendar",
+      icon: "Calendar",
+    },
+    {
+      key: "calendar-dashboard",
+      label: "Calendar Dashboard",
+      path: "/dashboard/calendar/dashboard",
+      icon: "Calendar",
+    },
+    {
+      key: "blocked-dates",
+      label: "Blocked Dates",
+      path: "/dashboard/calendar/blocked-dates",
+      icon: "Calendar",
+    },
+    {
+      key: "deleted-events",
+      label: "Deleted Events",
+      path: "/dashboard/calendar/deleted",
+      icon: "Calendar",
+    },
+    {
+      key: "clients",
+      label: "Clients",
+      path: "/dashboard/clients",
+      icon: "User",
+    },
+    {
+      key: "documents",
+      label: "Documents",
+      path: "/dashboard/documents",
+      icon: "File",
+    },
+    {
+      key: "billings",
+      label: "Billing",
+      path: "/dashboard/billings",
+      icon: "Dollar",
+    },
+    {
+      key: "audit-logs",
+      label: "Audit Logs",
+      path: "/dashboard/settings/audit-logs",
+      icon: "Audit",
+    },
+    {
+      key: "webhooks",
+      label: "Webhooks",
+      path: "/dashboard/settings/webhooks",
+      icon: "Setting",
+    },
+    {
+      key: "invitations",
+      label: "Invitations",
+      path: "/dashboard/settings/invitations",
+      icon: "Team",
+    },
+    {
+      key: "support",
+      label: "Support",
+      path: "/dashboard/contact-dev",
+      icon: "QuestionCircle",
+    },
+    {
+      key: "profile",
+      label: "My Profile",
+      path: "/dashboard/profile",
+      icon: "User",
+    },
   ];
 
   const handleSearch = (value) => {
@@ -190,24 +320,23 @@ const DashboardLayout = () => {
       setSearchOptions([]);
       return;
     }
-    const filtered = menuItemsForSearch.filter(item =>
-      item.label.toLowerCase().includes(value.toLowerCase())
-    ).map(item => ({
-      value: item.label,
-      label: (
-        <div
-          onClick={() => {
-            navigate(item.path);
-            setSearchValue("");
-            setSearchOptions([]);
-          }}
-          className="flex items-center gap-3 py-2 px-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded cursor-pointer"
-        >
-          <span>{item.label}</span>
-        </div>
-      ),
-      path: item.path,
-    }));
+    const filtered = menuItemsForSearch
+      .filter((item) => item.label.toLowerCase().includes(value.toLowerCase()))
+      .map((item) => ({
+        value: item.label,
+        label: (
+          <div
+            onClick={() => {
+              navigate(item.path);
+              setSearchValue("");
+              setSearchOptions([]);
+            }}
+            className="flex items-center gap-3 py-2 px-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded cursor-pointer">
+            <span>{item.label}</span>
+          </div>
+        ),
+        path: item.path,
+      }));
     setSearchOptions(filtered);
   };
 
@@ -294,15 +423,35 @@ const DashboardLayout = () => {
     const iconClass = "text-sm";
     switch (type) {
       case "matter":
-        return <FileTextOutlined className={`${iconClass} text-blue-600 dark:text-blue-400`} />;
+        return (
+          <FileTextOutlined
+            className={`${iconClass} text-blue-600 dark:text-blue-400`}
+          />
+        );
       case "task":
-        return <CheckSquareOutlined className={`${iconClass} text-purple-600 dark:text-purple-400`} />;
+        return (
+          <CheckSquareOutlined
+            className={`${iconClass} text-purple-600 dark:text-purple-400`}
+          />
+        );
       case "calendar":
-        return <CalendarOutlined className={`${iconClass} text-orange-600 dark:text-orange-400`} />;
+        return (
+          <CalendarOutlined
+            className={`${iconClass} text-orange-600 dark:text-orange-400`}
+          />
+        );
       case "client":
-        return <UserOutlined className={`${iconClass} text-green-600 dark:text-green-400`} />;
+        return (
+          <UserOutlined
+            className={`${iconClass} text-green-600 dark:text-green-400`}
+          />
+        );
       default:
-        return <BellOutlined className={`${iconClass} text-gray-600 dark:text-gray-400`} />;
+        return (
+          <BellOutlined
+            className={`${iconClass} text-gray-600 dark:text-gray-400`}
+          />
+        );
     }
   };
 
@@ -339,11 +488,11 @@ const DashboardLayout = () => {
     ...notifications.map((notification) => ({
       key: notification.key,
       label: (
-        <div 
+        <div
           className="flex items-start gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
-          onClick={() => navigate(notification.path)}
-        >
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getIconBg(notification.type)}`}>
+          onClick={() => navigate(notification.path)}>
+          <div
+            className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getIconBg(notification.type)}`}>
             {getNotificationIcon(notification.type)}
           </div>
           <div className="flex-1 min-w-0">
@@ -377,28 +526,36 @@ const DashboardLayout = () => {
     },
   ];
 
-  const notificationItems = loadingNotifications ? [
-    {
-      key: "loading",
-      label: (
-        <div className="px-3 py-4 flex justify-center">
-          <Text className="text-xs text-gray-500">Loading notifications...</Text>
-        </div>
-      ),
-      disabled: true,
-    }
-  ] : notifications.length === 0 ? [
-    {
-      key: "empty",
-      label: (
-        <div className="px-3 py-4 flex flex-col items-center">
-          <BellOutlined className="text-2xl text-gray-400 mb-2" />
-          <Text className="text-xs text-gray-500">No new notifications</Text>
-        </div>
-      ),
-      disabled: true,
-    }
-  ] : notificationDropdownItems;
+  const notificationItems = loadingNotifications
+    ? [
+        {
+          key: "loading",
+          label: (
+            <div className="px-3 py-4 flex justify-center">
+              <Text className="text-xs text-gray-500">
+                Loading notifications...
+              </Text>
+            </div>
+          ),
+          disabled: true,
+        },
+      ]
+    : notifications.length === 0
+      ? [
+          {
+            key: "empty",
+            label: (
+              <div className="px-3 py-4 flex flex-col items-center">
+                <BellOutlined className="text-2xl text-gray-400 mb-2" />
+                <Text className="text-xs text-gray-500">
+                  No new notifications
+                </Text>
+              </div>
+            ),
+            disabled: true,
+          },
+        ]
+      : notificationDropdownItems;
 
   const {
     token: { colorBgContainer },
@@ -467,8 +624,7 @@ const DashboardLayout = () => {
               onSelect={handleSearchSelect}
               placeholder="Search menu, cases, clients..."
               className="w-full"
-              allowClear
-            >
+              allowClear>
               <Input
                 prefix={<SearchOutlined className="text-gray-400" />}
                 size="middle"

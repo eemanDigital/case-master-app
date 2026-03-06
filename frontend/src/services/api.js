@@ -15,7 +15,11 @@ const api = axios.create({
 
 // Helper: Get token from storage
 const getToken = () => {
-  return localStorage.getItem(JWT_KEY) || sessionStorage.getItem(JWT_KEY);
+  const token = localStorage.getItem(JWT_KEY) || sessionStorage.getItem(JWT_KEY);
+  if (token && token.split('.').length === 3) {
+    return token;
+  }
+  return null;
 };
 
 // Request interceptor: Attach JWT to every request

@@ -1,39 +1,49 @@
 import axios from "axios";
+import apiService from "../../../services/api";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 export const API_URL = `${baseURL}/users/`;
+
+const api = axios.create({
+  baseURL,
+  withCredentials: true,
+});
 
 // ============================================
 // AUTH
 // ============================================
 
 const register = async (userData) => {
-  const response = await axios.post(API_URL + "register", userData);
+  const response = await api.post(API_URL + "register", userData);
   return response.data;
 };
 
 const login = async (userData) => {
-  const response = await axios.post(API_URL + "login", userData);
+  const response = await api.post(API_URL + "login", userData);
+  if (response.data.token) {
+    apiService.setToken(response.data.token, true);
+  }
   return response.data;
 };
 
 const logout = async () => {
-  const response = await axios.get(API_URL + "logout");
+  const response = await api.get(API_URL + "logout");
+  apiService.removeToken();
   return response.data.message;
 };
 
 const getLoginStatus = async () => {
-  const response = await axios.get(API_URL + "loginStatus");
+  const response = await api.get(API_URL + "loginStatus");
   return response.data;
 };
 
 const getUser = async () => {
-  const response = await axios.get(API_URL + "getUser");
+  const response = await api.get(API_URL + "getUser");
   return response.data;
 };
 
 const getUsers = async () => {
-  const response = await axios.get(API_URL);
+  const response = await api.get(API_URL);
   return response.data;
 };
 
@@ -43,25 +53,25 @@ const getUsers = async () => {
 
 /** GET /users/statistics/general */
 const getUserStatistics = async () => {
-  const response = await axios.get(API_URL + "statistics/general");
+  const response = await api.get(API_URL + "statistics/general");
   return response.data;
 };
 
 /** GET /users/statistics/staff */
 const getStaffStatistics = async () => {
-  const response = await axios.get(API_URL + "statistics/staff");
+  const response = await api.get(API_URL + "statistics/staff");
   return response.data;
 };
 
 /** GET /users/statistics/clients */
 const getClientStatistics = async () => {
-  const response = await axios.get(API_URL + "statistics/clients");
+  const response = await api.get(API_URL + "statistics/clients");
   return response.data;
 };
 
 /** GET /users/statistics/status */
 const getStatusStatistics = async () => {
-  const response = await axios.get(API_URL + "statistics/status");
+  const response = await api.get(API_URL + "statistics/status");
   return response.data;
 };
 
@@ -70,24 +80,24 @@ const getStatusStatistics = async () => {
 // ============================================
 
 const sendVerificationMail = async (email) => {
-  const response = await axios.post(API_URL + `sendVerificationEmail/${email}`);
+  const response = await api.post(API_URL + `sendVerificationEmail/${email}`);
   return response.data.message;
 };
 
 const verifyUser = async (verificationToken) => {
-  const response = await axios.patch(
+  const response = await api.patch(
     API_URL + `verifyUser/${verificationToken}`,
   );
   return response.data.message;
 };
 
 const forgotUserPassword = async (userData) => {
-  const response = await axios.post(API_URL + "forgotpassword", userData);
+  const response = await api.post(API_URL + "forgotpassword", userData);
   return response.data.message;
 };
 
 const resetPassword = async (resetToken, userData) => {
-  const response = await axios.patch(
+  const response = await api.patch(
     `${API_URL}resetpassword/${resetToken}`,
     userData,
   );
@@ -95,31 +105,31 @@ const resetPassword = async (resetToken, userData) => {
 };
 
 const changePassword = async (userData) => {
-  const response = await axios.patch(API_URL + "changepassword", userData);
+  const response = await api.patch(API_URL + "changepassword", userData);
   return response.data.message;
 };
 
 /** Hard delete — super-admin only  →  DELETE /users/delete/:id */
 const deleteUser = async (id) => {
-  const response = await axios.delete(API_URL + `delete/${id}`);
+  const response = await api.delete(API_URL + `delete/${id}`);
   return response.data.message;
 };
 
 /** Soft delete  →  PATCH /users/soft-delete/:id */
 const softDeleteUser = async (id) => {
-  const response = await axios.patch(API_URL + `soft-delete/${id}`);
+  const response = await api.patch(API_URL + `soft-delete/${id}`);
   return response.data;
 };
 
 /** Restore soft-deleted user  →  PATCH /users/restore/:id */
 const restoreUser = async (id) => {
-  const response = await axios.patch(API_URL + `restore/${id}`);
+  const response = await api.patch(API_URL + `restore/${id}`);
   return response.data;
 };
 
 /** Upgrade / change user role  →  PATCH /users/upgradeUser/:id */
 const upgradeUser = async (id, userData) => {
-  const response = await axios.patch(API_URL + `upgradeUser/${id}`, userData);
+  const response = await api.patch(API_URL + `upgradeUser/${id}`, userData);
   return response.data;
 };
 
@@ -128,17 +138,25 @@ const upgradeUser = async (id, userData) => {
 // ============================================
 
 const sendLoginCode = async (email) => {
-  const response = await axios.post(API_URL + `sendLoginCode/${email}`);
+  const response = await api.post(API_URL + `sendLoginCode/${email}`);
   return response.data.message;
 };
 
 const loginWithCode = async (code, email) => {
-  const response = await axios.post(API_URL + `loginWithCode/${email}`, { loginCode: code });
+  const response = await api.post(API_URL + `loginWithCode/${email}`, {
+    loginCode: code,
+  });
+  if (response.data.token) {
+    apiService.setToken(response.data.token, true);
+  }
   return response.data;
 };
 
 const loginWithGoogle = async (userToken) => {
-  const response = await axios.post(API_URL + "google/callback", userToken);
+  const response = await api.post(API_URL + "google/callback", userToken);
+  if (response.data.token) {
+    apiService.setToken(response.data.token, true);
+  }
   return response.data;
 };
 
