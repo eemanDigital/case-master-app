@@ -23,9 +23,8 @@ import QuickActionsPanel from "./QuickActionsPanel";
 import ClientMatterDashboard from "./clientDashboard/ClientMatterDashboard";
 import PaymentDashboard from "./PaymentDashboard";
 import CourtHearingsWidget from "./calender/CourtHearingsWidget";
-import { getMatterStats, getMatters } from "../redux/features/matter/matterSlice";
+import { getMatterStats } from "../redux/features/matter/matterSlice";
 import { getUserStatistics } from "../redux/features/auth/authSlice";
-import { fetchTasks } from "../redux/features/task/taskSlice";
 import MyMattersDashboard from "./MyMattersDashboard";
 
 export const PaymentFiltersContext = createContext();
@@ -41,8 +40,6 @@ const Dashboard = () => {
 
   const taskState = useSelector((state) => state.task);
   const tasksData = taskState?.entities ? Object.values(taskState.entities) : [];
-
-  console.log("Dashboard - matterStats:", matterStats);
 
   const authState = useSelector((state) => state.auth);
   const userStatistics = authState.userStatistics;
@@ -68,6 +65,9 @@ const Dashboard = () => {
   const { isAdminOrHr, isStaff, isClient, isVerified } = useAdminHook();
 
   useEffect(() => {
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
     if (!isClient) {
       if (!matterStats) {
         dispatch(getMatterStats());
@@ -75,33 +75,9 @@ const Dashboard = () => {
       if (!userStatistics) {
         dispatch(getUserStatistics());
       }
-      if (!tasksData.length) {
-        dispatch(fetchTasks({ limit: 5, sort: "-createdAt" }));
-      }
-      if (!mattersData?.length) {
-        dispatch(getMatters({ limit: 5, sort: "-createdAt" }));
-      }
+      fetchData("users", "users");
     }
-  }, [dispatch, isClient, matterStats, userStatistics, tasksData.length, mattersData]);
-
-  useEffect(() => {
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
-
-    const initializeDashboard = async () => {
-      try {
-        if (!isClient) {
-          await Promise.all([
-            fetchData("users", "users"),
-          ]);
-        }
-      } catch (error) {
-        console.error("Dashboard initialization error:", error);
-      }
-    };
-
-    initializeDashboard();
-  }, [isClient]);
+  }, [dispatch, isClient, matterStats, userStatistics]);
 
   if (userError) return <Alert message={userError} type="error" showIcon />;
 

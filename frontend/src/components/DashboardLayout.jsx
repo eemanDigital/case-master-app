@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Layout,
   Button,
@@ -77,22 +77,16 @@ const DashboardLayout = () => {
   const [searchOptions, setSearchOptions] = useState([]);
   const [searchValue, setSearchValue] = useState("");
   const [loadingNotifications, setLoadingNotifications] = useState(true);
+  const hasInitialized = useRef(false);
 
   useEffect(() => {
-    const tasks = taskState?.entities ? Object.values(taskState.entities) : [];
-    const matters = matterState?.matters || [];
-    const events = calendarState?.events?.data || [];
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
 
-    if (!tasks.length) {
-      dispatch(fetchTasks({ limit: 5, sort: "-createdAt" }));
-    }
-    if (!matters.length) {
-      dispatch(getMatters({ limit: 5, sort: "-createdAt" }));
-    }
-    if (!events.length) {
-      dispatch(getAllEvents({ limit: 5 }));
-    }
-  }, [dispatch, taskState, matterState, calendarState]);
+    dispatch(fetchTasks({ limit: 5, sort: "-createdAt" }));
+    dispatch(getMatters({ limit: 5, sort: "-createdAt" }));
+    dispatch(getAllEvents({ limit: 5 }));
+  }, [dispatch]);
 
   useEffect(() => {
     const tasks = taskState?.entities ? Object.values(taskState.entities) : [];
@@ -667,7 +661,7 @@ const DashboardLayout = () => {
               trigger={["click"]}
               placement="bottomRight"
               overlayStyle={{ width: 320 }}>
-              <Badge count={notifications} size="small" offset={[-5, 5]}>
+              <Badge count={notifications.length} size="small" offset={[-5, 5]}>
                 <Button
                   type="text"
                   icon={<BellOutlined />}
