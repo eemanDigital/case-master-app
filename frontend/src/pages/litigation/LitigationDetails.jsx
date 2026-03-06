@@ -42,6 +42,7 @@ import {
   JUDGMENT_OUTCOMES,
   APPEAL_STATUS,
 } from "../../utils/litigationConstants";
+import LitigationSteps from "../../components/litigation/LitigationSteps";
 
 const { TabPane } = Tabs;
 
@@ -349,6 +350,11 @@ const LitigationDetails = () => {
           </div>
         </div>
       </div>
+
+      <LitigationSteps
+        steps={litigationDetails.steps || []}
+        matterId={matterId}
+      />
 
       {/* ── Modals ──────────────────────────────────────────────────────── */}
       <JudgmentRecordModal

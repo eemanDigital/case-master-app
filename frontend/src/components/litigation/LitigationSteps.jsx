@@ -37,10 +37,26 @@ import DeleteStepModal from "./DeleteStepModal";
 import UpdateStepStatusModal from "./UpdateStepStatusModal";
 
 const STATUS_CONFIG = {
-  pending: { color: "default", icon: <ClockCircleOutlined />, label: "Pending" },
-  "in-progress": { color: "processing", icon: <SyncOutlined spin />, label: "In Progress" },
-  completed: { color: "success", icon: <CheckCircleOutlined />, label: "Completed" },
-  cancelled: { color: "error", icon: <CloseCircleOutlined />, label: "Cancelled" },
+  pending: {
+    color: "default",
+    icon: <ClockCircleOutlined />,
+    label: "Pending",
+  },
+  "in-progress": {
+    color: "processing",
+    icon: <SyncOutlined spin />,
+    label: "In Progress",
+  },
+  completed: {
+    color: "success",
+    icon: <CheckCircleOutlined />,
+    label: "Completed",
+  },
+  cancelled: {
+    color: "error",
+    icon: <CloseCircleOutlined />,
+    label: "Cancelled",
+  },
 };
 
 const PRIORITY_CONFIG = {
@@ -93,13 +109,18 @@ const LitigationSteps = ({ matterId }) => {
       onClick={({ key }) => {
         setEditingStep(step);
         dispatch(
-          updateLitigationStepStatus({ matterId, stepId: step._id, status: key })
-        ).unwrap().then(() => {
-          message.success(`Status updated to ${STATUS_CONFIG[key]?.label}`);
-        });
+          updateLitigationStepStatus({
+            matterId,
+            stepId: step._id,
+            status: key,
+          }),
+        )
+          .unwrap()
+          .then(() => {
+            message.success(`Status updated to ${STATUS_CONFIG[key]?.label}`);
+          });
       }}
-      selectedKeys={[step.status]}
-    >
+      selectedKeys={[step.status]}>
       {Object.entries(STATUS_CONFIG).map(([key, config]) => (
         <Menu.Item key={key} icon={config.icon}>
           {config.label}
@@ -108,7 +129,9 @@ const LitigationSteps = ({ matterId }) => {
     </Menu>
   );
 
-  const sortedSteps = [...steps].sort((a, b) => (a.order || 0) - (b.order || 0));
+  const sortedSteps = [...steps].sort(
+    (a, b) => (a.order || 0) - (b.order || 0),
+  );
 
   return (
     <Card
@@ -122,14 +145,15 @@ const LitigationSteps = ({ matterId }) => {
         <Button type="primary" icon={<PlusOutlined />} onClick={handleAddStep}>
           Add Step
         </Button>
-      }
-    >
+      }>
       {stepsLoading ? (
         <div style={{ textAlign: "center", padding: "40px" }}>
           <Spin size="large" />
         </div>
       ) : sortedSteps.length === 0 ? (
-        <Empty description="No steps added yet" image={Empty.PRESENTED_IMAGE_SIMPLE}>
+        <Empty
+          description="No steps added yet"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}>
           <Button type="primary" onClick={handleAddStep}>
             Add First Step
           </Button>
@@ -138,8 +162,10 @@ const LitigationSteps = ({ matterId }) => {
         <List
           dataSource={sortedSteps}
           renderItem={(step, index) => {
-            const statusConfig = STATUS_CONFIG[step.status] || STATUS_CONFIG.pending;
-            const priorityConfig = PRIORITY_CONFIG[step.priority] || PRIORITY_CONFIG.medium;
+            const statusConfig =
+              STATUS_CONFIG[step.status] || STATUS_CONFIG.pending;
+            const priorityConfig =
+              PRIORITY_CONFIG[step.priority] || PRIORITY_CONFIG.medium;
             const isCompleted = step.status === "completed";
             const isOverdue =
               step.dueDate &&
@@ -179,8 +205,7 @@ const LitigationSteps = ({ matterId }) => {
                       onClick={() => handleDeleteStep(step)}
                     />
                   </Tooltip>,
-                ]}
-              >
+                ]}>
                 <List.Item.Meta
                   avatar={
                     <div
@@ -194,17 +219,21 @@ const LitigationSteps = ({ matterId }) => {
                         alignItems: "center",
                         justifyContent: "center",
                         fontWeight: "bold",
-                      }}
-                    >
+                      }}>
                       {index + 1}
                     </div>
                   }
                   title={
                     <Space>
-                      <span style={{ textDecoration: isCompleted ? "line-through" : "none" }}>
+                      <span
+                        style={{
+                          textDecoration: isCompleted ? "line-through" : "none",
+                        }}>
                         {step.title}
                       </span>
-                      <Tag color={priorityConfig.color}>{priorityConfig.label}</Tag>
+                      <Tag color={priorityConfig.color}>
+                        {priorityConfig.label}
+                      </Tag>
                       {isOverdue && <Tag color="error">Overdue</Tag>}
                     </Space>
                   }
@@ -212,9 +241,11 @@ const LitigationSteps = ({ matterId }) => {
                     <Space direction="vertical" size={4}>
                       {step.description && <span>{step.description}</span>}
                       {step.dueDate && (
-                        <span style={{ color: isOverdue ? "#ff4d4f" : "#8c8c8c" }}>
+                        <span
+                          style={{ color: isOverdue ? "#ff4d4f" : "#8c8c8c" }}>
                           Due: {dayjs(step.dueDate).format("MMM D, YYYY")}
-                          {step.completedDate && ` | Completed: ${dayjs(step.completedDate).format("MMM D, YYYY")}`}
+                          {step.completedDate &&
+                            ` | Completed: ${dayjs(step.completedDate).format("MMM D, YYYY")}`}
                         </span>
                       )}
                       {step.notes && (

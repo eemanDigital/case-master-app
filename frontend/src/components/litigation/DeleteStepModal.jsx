@@ -1,4 +1,4 @@
-import { Modal, message } from "antd";
+import { Modal, message, Space } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -16,7 +16,7 @@ const DeleteStepModal = ({ visible, onCancel, onSuccess, matterId, step }) => {
         deleteLitigationStep({
           matterId,
           stepId: step?._id,
-        })
+        }),
       ).unwrap();
       message.success("Step deleted successfully");
       onSuccess?.();
@@ -39,8 +39,7 @@ const DeleteStepModal = ({ visible, onCancel, onSuccess, matterId, step }) => {
       okText="Delete"
       okType="danger"
       confirmLoading={actionLoading}
-      destroyOnClose
-    >
+      destroyOnClose>
       <p>
         Are you sure you want to delete the step{" "}
         <strong>"{step?.title}"</strong>?
