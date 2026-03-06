@@ -23,8 +23,9 @@ import QuickActionsPanel from "./QuickActionsPanel";
 import ClientMatterDashboard from "./clientDashboard/ClientMatterDashboard";
 import PaymentDashboard from "./PaymentDashboard";
 import CourtHearingsWidget from "./calender/CourtHearingsWidget";
-import { getMatterStats } from "../redux/features/matter/matterSlice";
+import { getMatterStats, getMatters } from "../redux/features/matter/matterSlice";
 import { getUserStatistics } from "../redux/features/auth/authSlice";
+import { fetchTasks } from "../redux/features/task/taskSlice";
 import MyMattersDashboard from "./MyMattersDashboard";
 
 export const PaymentFiltersContext = createContext();
@@ -34,9 +35,12 @@ const Dashboard = () => {
   const dispatch = useDispatch();
 
   const { user } = useSelector((state) => state.auth);
-  const { stats: matterStats, isLoading: matterLoading } = useSelector(
+  const { stats: matterStats, isLoading: matterLoading, matters: mattersData } = useSelector(
     (state) => state.matter,
   );
+
+  const taskState = useSelector((state) => state.task);
+  const tasksData = taskState?.entities ? Object.values(taskState.entities) : [];
 
   console.log("Dashboard - matterStats:", matterStats);
 
@@ -53,9 +57,7 @@ const Dashboard = () => {
 
   const {
     fetchData,
-    fetchBatch,
     users,
-    tasks,
     reports,
     accountOfficerAggregates,
     dashboardStats,
@@ -67,15 +69,20 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!isClient) {
-      // Only fetch if not already loaded
       if (!matterStats) {
         dispatch(getMatterStats());
       }
       if (!userStatistics) {
         dispatch(getUserStatistics());
       }
+      if (!tasksData.length) {
+        dispatch(fetchTasks({ limit: 5, sort: "-createdAt" }));
+      }
+      if (!mattersData?.length) {
+        dispatch(getMatters({ limit: 5, sort: "-createdAt" }));
+      }
     }
-  }, [dispatch, isClient, matterStats, userStatistics]);
+  }, [dispatch, isClient, matterStats, userStatistics, tasksData.length, mattersData]);
 
   useEffect(() => {
     if (hasInitialized.current) return;
@@ -85,12 +92,7 @@ const Dashboard = () => {
       try {
         if (!isClient) {
           await Promise.all([
-            // fetchData("matters/stats", "matterStats"),
-            fetchBatch([
-              { endpoint: "users", key: "users" },
-              { endpoint: "tasks", key: "tasks" },
-              { endpoint: "matters", key: "matters" },
-            ]),
+            fetchData("users", "users"),
           ]);
         }
       } catch (error) {
@@ -274,11 +276,11 @@ const Dashboard = () => {
                         Your Tasks
                       </h2>
                     </div>
-                    {dataLoading.tasks ? (
+                    {taskState.loading ? (
                       <Skeleton active paragraph={{ rows: 6 }} />
                     ) : (
                       <TaskDashboardCard
-                        tasks={tasks?.data || []}
+                        tasks={tasksData.slice(0, 5) || []}
                         userId={userId}
                       />
                     )}

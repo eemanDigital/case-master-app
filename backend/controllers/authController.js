@@ -711,7 +711,7 @@ exports.login = catchAsync(async (req, res, next) => {
 
     // Send the code via email (best-effort — don't block the response)
     try {
-const { sendMail, sendCustomEmail } = require("../utils/email");
+      const { sendMail, sendCustomEmail } = require("../utils/email");
       await sendMail(
         "Your Login Verification Code - CaseMaster",
         user.email,
@@ -1691,7 +1691,18 @@ exports.updateCurrentUser = catchAsync(async (req, res, next) => {
 // ============================================
 // WELCOME EMAIL TEMPLATE
 // ============================================
-const getWelcomeEmailHTML = ({ firstName, email, password, firmName, plan, trialDays, maxUsers, loginUrl, baseUrl, year }) => {
+const getWelcomeEmailHTML = ({
+  firstName,
+  email,
+  password,
+  firmName,
+  plan,
+  trialDays,
+  maxUsers,
+  loginUrl,
+  baseUrl,
+  year,
+}) => {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1832,7 +1843,8 @@ const getWelcomeEmailHTML = ({ firstName, email, password, firmName, plan, trial
 // Send welcome email function
 const sendWelcomeEmail = async (userData) => {
   try {
-    const { firstName, email, password, firmName, plan, trialDays, maxUsers } = userData;
+    const { firstName, email, password, firmName, plan, trialDays, maxUsers } =
+      userData;
     const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
     const loginUrl = `${baseUrl}/users/login`;
     const year = new Date().getFullYear();
@@ -1855,7 +1867,7 @@ const sendWelcomeEmail = async (userData) => {
       email,
       process.env.SENDINBLUE_EMAIL || "noreply@lawmaster.ng",
       "support@lawmaster.ng",
-      htmlContent
+      htmlContent,
     );
 
     console.log("✅ Welcome email sent successfully");

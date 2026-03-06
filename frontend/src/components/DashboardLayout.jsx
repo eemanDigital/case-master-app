@@ -48,6 +48,10 @@ import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser.jsx";
 import { useTheme } from "../providers/ThemeProvider";
 import { useAdminHook } from "../hooks/useAdminHook";
 import BreadcrumbNavigation from "../components/navigation/BreadcrumbNavigation";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchTasks } from "../redux/features/task/taskSlice";
+import { getMatters } from "../redux/features/matter/matterSlice";
+import { getAllEvents } from "../redux/features/calender/calenderSlice";
 
 const { Header, Content } = Layout;
 const { Text } = Typography;
@@ -57,8 +61,13 @@ const DashboardLayout = () => {
   useRedirectLogoutUser("/users/login");
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { isDarkMode, toggleTheme } = useTheme();
   const { userData } = useAdminHook();
+
+  const taskState = useSelector((state) => state.task);
+  const matterState = useSelector((state) => state.matter);
+  const calendarState = useSelector((state) => state.calender);
 
   const [collapsed, setCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
@@ -70,96 +79,82 @@ const DashboardLayout = () => {
   const [loadingNotifications, setLoadingNotifications] = useState(true);
 
   useEffect(() => {
-    const fetchNotificationData = async () => {
-      setLoadingNotifications(true);
-      const token = localStorage.getItem("jwt");
-      const baseURL =
-        import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
+    const tasks = taskState?.entities ? Object.values(taskState.entities) : [];
+    const matters = matterState?.matters || [];
+    const events = calendarState?.events?.data || [];
 
-      try {
-        const headers = {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        };
+    if (!tasks.length) {
+      dispatch(fetchTasks({ limit: 5, sort: "-createdAt" }));
+    }
+    if (!matters.length) {
+      dispatch(getMatters({ limit: 5, sort: "-createdAt" }));
+    }
+    if (!events.length) {
+      dispatch(getAllEvents({ limit: 5 }));
+    }
+  }, [dispatch, taskState, matterState, calendarState]);
 
-        const [mattersRes, tasksRes, calendarRes] = await Promise.allSettled([
-          fetch(`${baseURL}/matters?limit=5&sort=-createdAt`, { headers }),
-          fetch(`${baseURL}/tasks?limit=5&sort=-createdAt`, { headers }),
-          fetch(`${baseURL}/calendar/events?limit=5`, { headers }),
-        ]);
+  useEffect(() => {
+    const tasks = taskState?.entities ? Object.values(taskState.entities) : [];
+    const matters = matterState?.matters || [];
+    const events = calendarState?.events?.data || [];
 
-        const notificationItems = [];
+    if (tasks.length || matters.length || events.length) {
+      const notificationItems = [];
 
-        if (mattersRes.status === "fulfilled" && mattersRes.value.ok) {
-          const matters = await mattersRes.value.json();
-          matters.data?.slice(0, 2).forEach((matter) => {
-            notificationItems.push({
-              key: `matter-${matter._id}`,
-              type: "matter",
-              icon: "file",
-              title: `New Matter Created`,
-              description: matter.title || matter.caseNumber || "New case",
-              meta: matter.category || "General",
-              path: `/dashboard/matters`,
-              time: new Date(matter.createdAt).toLocaleDateString(),
-            });
+      matters.slice(0, 2).forEach((matter) => {
+        notificationItems.push({
+          key: `matter-${matter._id}`,
+          type: "matter",
+          icon: "file",
+          title: `New Matter Created`,
+          description: matter.title || matter.caseNumber || "New case",
+          meta: matter.category || "General",
+          path: `/dashboard/matters`,
+          time: new Date(matter.createdAt).toLocaleDateString(),
+        });
+      });
+
+      tasks.slice(0, 2).forEach((task) => {
+        notificationItems.push({
+          key: `task-${task._id}`,
+          type: "task",
+          title: `Task ${task.status === "completed" ? "Completed" : "Assigned"}`,
+          description: task.title || task.name || "New task",
+          meta: `Due: ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No due date"}`,
+          path: `/dashboard/tasks`,
+          time: new Date(task.createdAt).toLocaleDateString(),
+        });
+      });
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      events
+        ?.filter((event) => {
+          const eventDate = new Date(event.date);
+          return eventDate >= today && eventDate <= tomorrow;
+        })
+        .slice(0, 2)
+        .forEach((event) => {
+          notificationItems.push({
+            key: `calendar-${event._id}`,
+            type: "calendar",
+            icon: "calendar",
+            title: `Court Hearing Today`,
+            description: event.title || event.eventType || "Court appearance",
+            meta: event.court || "Court",
+            path: `/dashboard/calendar`,
+            time: event.time || "All day",
           });
-        }
+        });
 
-        if (tasksRes.status === "fulfilled" && tasksRes.value.ok) {
-          const tasks = await tasksRes.value.json();
-          tasks.data?.slice(0, 2).forEach((task) => {
-            notificationItems.push({
-              key: `task-${task._id}`,
-              type: "task",
-              title: `Task ${task.status === "completed" ? "Completed" : "Assigned"}`,
-              description: task.title || task.name || "New task",
-              meta: `Due: ${task.dueDate ? new Date(task.dueDate).toLocaleDateString() : "No due date"}`,
-              path: `/dashboard/tasks`,
-              time: new Date(task.createdAt).toLocaleDateString(),
-            });
-          });
-        }
-
-        if (calendarRes.status === "fulfilled" && calendarRes.value.ok) {
-          const calendar = await calendarRes.value.json();
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          const tomorrow = new Date(today);
-          tomorrow.setDate(tomorrow.getDate() + 1);
-
-          calendar.data
-            ?.filter((event) => {
-              const eventDate = new Date(event.date);
-              return eventDate >= today && eventDate <= tomorrow;
-            })
-            .slice(0, 2)
-            .forEach((event) => {
-              notificationItems.push({
-                key: `calendar-${event._id}`,
-                type: "calendar",
-                icon: "calendar",
-                title: `Court Hearing Today`,
-                description:
-                  event.title || event.eventType || "Court appearance",
-                meta: event.court || "Court",
-                path: `/dashboard/calendar`,
-                time: event.time || "All day",
-              });
-            });
-        }
-
-        setNotifications(notificationItems.slice(0, 6));
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
-        setNotifications([]);
-      } finally {
-        setLoadingNotifications(false);
-      }
-    };
-
-    fetchNotificationData();
-  }, []);
+      setNotifications(notificationItems.slice(0, 6));
+      setLoadingNotifications(false);
+    }
+  }, [taskState, matterState, calendarState]);
 
   const menuItemsForSearch = [
     {
