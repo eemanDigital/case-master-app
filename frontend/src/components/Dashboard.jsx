@@ -1,5 +1,5 @@
-import { useEffect, createContext, useRef } from "react";
-import { Row, Col, Card, Skeleton, Statistic } from "antd";
+import { useEffect, useMemo } from "react";
+import { Row, Col, Card, Skeleton } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -27,19 +27,19 @@ import { getMatterStats } from "../redux/features/matter/matterSlice";
 import { getUserStatistics } from "../redux/features/auth/authSlice";
 import MyMattersDashboard from "./MyMattersDashboard";
 
-export const PaymentFiltersContext = createContext();
-
 const Dashboard = () => {
   useRedirectLogoutUser("/users/login");
   const dispatch = useDispatch();
 
   const { user } = useSelector((state) => state.auth);
-  const { stats: matterStats, isLoading: matterLoading, matters: mattersData } = useSelector(
+  const { stats: matterStats, isLoading: matterLoading } = useSelector(
     (state) => state.matter,
   );
 
   const taskState = useSelector((state) => state.task);
-  const tasksData = taskState?.entities ? Object.values(taskState.entities) : [];
+  const tasksData = taskState?.entities
+    ? Object.values(taskState.entities).slice(0, 5)
+    : [];
 
   const authState = useSelector((state) => state.auth);
   const userStatistics = authState.userStatistics;
@@ -48,26 +48,22 @@ const Dashboard = () => {
   const userId = user?.data?._id;
   const lawFirmName = user?.data?.firmId?.name;
 
-  const hasInitialized = useRef(false);
+  const { error: userError } = useDataFetch();
 
-  const { error: userError, dataFetcher: dataFetcherUser } = useDataFetch();
-
-  const {
-    fetchData,
-    users,
-    reports,
-    accountOfficerAggregates,
-    dashboardStats,
-    error: dataError,
-    loading: dataLoading,
-  } = useDataGetterHook();
+  const { fetchData } = useDataGetterHook();
 
   const { isAdminOrHr, isStaff, isClient, isVerified } = useAdminHook();
 
-  useEffect(() => {
-    if (hasInitialized.current) return;
-    hasInitialized.current = true;
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  }, []);
 
+  const isLoading = isClient ? false : matterLoading || statisticsLoading;
+
+  useEffect(() => {
     if (!isClient) {
       if (!matterStats) {
         dispatch(getMatterStats());
@@ -77,18 +73,9 @@ const Dashboard = () => {
       }
       fetchData("users", "users");
     }
-  }, [dispatch, isClient, matterStats, userStatistics]);
+  }, [dispatch, isClient, matterStats, userStatistics, fetchData]);
 
   if (userError) return <Alert message={userError} type="error" showIcon />;
-
-  const isLoading = isClient ? false : matterLoading || statisticsLoading;
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  };
 
   return (
     <>
@@ -111,7 +98,7 @@ const Dashboard = () => {
                       <div className="hidden sm:block w-1 h-14 bg-gradient-to-b from-primary-500 via-indigo-500 to-purple-600 rounded-full" />
                       <div>
                         <p className="text-sm font-medium text-content-secondary mb-1">
-                          {getGreeting()}, {user?.data?.firstName}
+                          {greeting}, {user?.data?.firstName}
                         </p>
                         <h1 className="text-2xl sm:text-3xl font-bold text-content-primary tracking-tight">
                           <span className="bg-gradient-to-r from-content-primary via-content-secondary to-content-primary bg-clip-text text-transparent dark:from-white dark:via-gray-200 dark:to-white">
@@ -255,10 +242,7 @@ const Dashboard = () => {
                     {taskState.loading ? (
                       <Skeleton active paragraph={{ rows: 6 }} />
                     ) : (
-                      <TaskDashboardCard
-                        tasks={tasksData.slice(0, 5) || []}
-                        userId={userId}
-                      />
+                      <TaskDashboardCard tasks={tasksData} userId={userId} />
                     )}
                   </Card>
                 </section>

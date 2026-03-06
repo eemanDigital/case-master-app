@@ -12,8 +12,6 @@ import {
 const { Text } = Typography;
 
 const MonthView = ({ currentDate, events, onDateClick, onEventClick }) => {
-  console.log(events, "EVVENTS");
-
   const calendarDays = useMemo(() => {
     return getCalendarDays(currentDate);
   }, [currentDate]);

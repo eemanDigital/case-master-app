@@ -1,252 +1,324 @@
-import { useEffect, useState, useMemo } from "react";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
+/**
+ * ScrollingEvents.jsx
+ *
+ * Consumes useCalendarEvents() — same hook as CalendarPage/MonthView —
+ * so no duplicate API calls are made.
+ *
+ * Handles the inconsistent event shapes returned by the API:
+ *  - Some events have `start`/`end` as ISO strings at the top level
+ *  - Some events have `startDateTime`/`endDateTime` instead
+ *  - Some events have no `title` (derived from description or eventType)
+ *  - Some events have no `end` at all
+ *  - `status: "completed"` events are excluded from the marquee
+ */
+
+import { useMemo } from "react";
+import { useCalendarEvents } from "../hooks/useCalendar";
 import Marquee from "react-fast-marquee";
-import { FaRegCalendar, FaRegClock } from "react-icons/fa";
+import { FaRegCalendar, FaRegClock, FaBolt } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import moment from "moment";
-import LoadingSpinner from "./LoadingSpinner";
+import dayjs from "dayjs";
+import isBetween from "dayjs/plugin/isBetween";
+import isToday from "dayjs/plugin/isToday";
+import isTomorrow from "dayjs/plugin/isTomorrow";
+import { getEventColor } from "../utils/calendarUtils";
 
-const ScrollingEvents = () => {
-  const { events, fetchData, loading } = useDataGetterHook();
-  const [upcomingEvents, setUpcomingEvents] = useState([]);
-  const [currentTime, setCurrentTime] = useState(moment());
+dayjs.extend(isBetween);
+dayjs.extend(isToday);
+dayjs.extend(isTomorrow);
 
-  // Update current time every minute
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(moment());
-    }, 60000); // Update every minute
+// ─── Event type labels ────────────────────────────────────────────────────────
+const EVENT_TYPE_LABELS = {
+  hearing: "Hearing",
+  mention: "Mention",
+  meeting: "Meeting",
+  client_meeting: "Client Meeting",
+  deadline: "Deadline",
+  reminder: "Reminder",
+  court: "Court",
+  task: "Task",
+};
 
-    return () => clearInterval(interval);
-  }, []);
+// ─── Normalise an event into a consistent shape ───────────────────────────────
+// The API returns mixed shapes — this function always produces:
+//   { _id, title, start, end, eventType, status, location, tags }
+// where start/end are valid dayjs-parseable strings.
+const normaliseEvent = (event) => {
+  if (!event || typeof event !== "object") return null;
 
-  // Fetch events data
-  useEffect(() => {
-    fetchData("events", "events");
-  }, [fetchData]);
+  // Resolve start — prefer `start`, fall back to `startDateTime`
+  const rawStart = event.start ?? event.startDateTime ?? null;
+  // Resolve end — prefer `end`, fall back to `endDateTime`
+  const rawEnd = event.end ?? event.endDateTime ?? null;
 
-  // Filter events to get only upcoming and today's events
-  const filteredEvents = useMemo(() => {
-    if (!events?.data) return [];
+  if (!rawStart) return null; // can't render an event with no time
 
-    const now = moment();
+  const start = dayjs(rawStart);
+  if (!start.isValid()) return null;
 
-    return events.data
-      .filter((event) => {
-        const eventStart = moment(event.start);
-        const eventEnd = moment(event.end);
-
-        // Include events that:
-        // 1. Are happening today (started or about to start)
-        // 2. Are in the future
-        // 3. Exclude events that ended more than 1 hour ago
-
-        const isToday = eventStart.isSame(now, "day");
-        const isFuture = eventStart.isAfter(now);
-        const endedRecently = eventEnd.isAfter(now.subtract(1, "hour"));
-
-        return (isToday && endedRecently) || isFuture;
-      })
-      .sort((a, b) => moment(a.start) - moment(b.start));
-  }, [events, currentTime]);
-
-  useEffect(() => {
-    setUpcomingEvents(filteredEvents);
-  }, [filteredEvents]);
-
-  // Format date and time
-  const formatDateTime = (dateString) => {
-    const date = moment(dateString);
-    const now = moment();
-
-    if (date.isSame(now, "day")) {
-      // Show time only for today's events
-      return date.format("h:mm A");
-    } else if (date.isSame(now.add(1, "day"), "day")) {
-      // Show "Tomorrow" and time
-      return `Tomorrow ${date.format("h:mm A")}`;
-    } else {
-      // Show date and time
-      return date.format("MMM D, h:mm A");
-    }
-  };
-
-  // Get event status with better categorization
-  const getEventStatus = (startDate, endDate) => {
-    const now = moment();
-    const start = moment(startDate);
-    const end = moment(endDate);
-
-    // Check if event is currently happening
-    if (now.isBetween(start, end)) {
-      return (
-        <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          Happening Now
-        </span>
-      );
-    }
-
-    const diffMinutes = start.diff(now, "minutes");
-    const diffHours = start.diff(now, "hours");
-    const diffDays = start.diff(now, "days");
-
-    // Event starts within 15 minutes
-    if (diffMinutes > 0 && diffMinutes <= 15) {
-      return (
-        <span className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          Starting Soon
-        </span>
-      );
-    }
-
-    // Event starts within 1 hour
-    if (diffHours === 0 && diffMinutes > 15) {
-      return (
-        <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          In {diffMinutes} min
-        </span>
-      );
-    }
-
-    // Event starts within 24 hours
-    if (diffHours > 0 && diffHours < 24) {
-      return (
-        <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          In {diffHours} hr{diffHours > 1 ? "s" : ""}
-        </span>
-      );
-    }
-
-    // Event starts tomorrow
-    if (diffDays === 1) {
-      return (
-        <span className="bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          Tomorrow
-        </span>
-      );
-    }
-
-    // Event starts in next 7 days
-    if (diffDays > 1 && diffDays <= 7) {
-      return (
-        <span className="bg-indigo-100 text-indigo-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          In {diffDays} days
-        </span>
-      );
-    }
-
-    // Event is far in the future
-    return (
-      <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-        Upcoming
-      </span>
-    );
-  };
-
-  // Get event card background based on status
-  const getEventCardStyle = (startDate, endDate) => {
-    const now = moment();
-    const start = moment(startDate);
-    const end = moment(endDate);
-
-    if (now.isBetween(start, end)) {
-      return "bg-green-50 border-l-4 border-green-500";
-    }
-
-    const diffMinutes = start.diff(now, "minutes");
-    if (diffMinutes > 0 && diffMinutes <= 60) {
-      return "bg-yellow-50 border-l-4 border-yellow-500";
-    }
-
-    return "bg-white border-l-4 border-blue-500";
-  };
-
-  // Display loading if data is being fetched
-  if (loading.events) {
-    return (
-      <div className="font-medium text-center text-gray-500 py-2">
-        <div className="flex items-center justify-center space-x-2">
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-          <span>Loading events...</span>
-        </div>
-      </div>
-    );
+  // Derive a display title
+  let title = "";
+  if (typeof event.title === "string" && event.title.trim()) {
+    title = event.title.trim();
+  } else if (
+    typeof event.description === "string" &&
+    event.description.trim()
+  ) {
+    // Use first line of description as fallback title
+    title = event.description.split("\n")[0].trim();
+  } else {
+    title = EVENT_TYPE_LABELS[event.eventType] ?? "Event";
   }
 
-  // If no events
-  if (!loading.events && upcomingEvents.length === 0) {
-    return (
-      <div className="text-center text-gray-500 py-3">
-        <div className="flex items-center justify-center">
-          <FaRegCalendar className="mr-2 text-gray-400" />
-          <span>No upcoming events scheduled</span>
-        </div>
-      </div>
-    );
-  }
+  return {
+    _id: event._id,
+    title,
+    start: rawStart,
+    end: rawEnd,
+    eventType: typeof event.eventType === "string" ? event.eventType : "",
+    status: typeof event.status === "string" ? event.status : "",
+    location: typeof event.location === "string" ? event.location : "",
+    tags: Array.isArray(event.tags) ? event.tags : [],
+    // Keep original for getEventColor which may inspect other fields
+    _raw: event,
+  };
+};
+
+// ─── Status pill config ───────────────────────────────────────────────────────
+const getStatusConfig = (startStr, endStr, now) => {
+  const s = dayjs(startStr);
+  const e = endStr ? dayjs(endStr) : s.add(1, "hour");
+
+  if (now.isBetween(s, e, null, "[]"))
+    return {
+      label: "Live Now",
+      bg: "bg-emerald-100",
+      text: "text-emerald-800",
+      dot: "bg-emerald-500",
+      pulse: true,
+    };
+
+  const diffMin = s.diff(now, "minute");
+  const diffHr = s.diff(now, "hour");
+  const diffDay = s.diff(now, "day");
+
+  if (diffMin > 0 && diffMin <= 15)
+    return {
+      label: "Starting Soon",
+      bg: "bg-orange-100",
+      text: "text-orange-800",
+      dot: "bg-orange-500",
+      pulse: true,
+    };
+  if (diffMin > 15 && diffHr < 1)
+    return {
+      label: `In ${diffMin} min`,
+      bg: "bg-yellow-100",
+      text: "text-yellow-800",
+      dot: "bg-yellow-500",
+      pulse: false,
+    };
+  if (diffHr >= 1 && diffHr < 24)
+    return {
+      label: `In ${diffHr}h`,
+      bg: "bg-sky-100",
+      text: "text-sky-800",
+      dot: "bg-sky-500",
+      pulse: false,
+    };
+  if (diffDay === 1)
+    return {
+      label: "Tomorrow",
+      bg: "bg-violet-100",
+      text: "text-violet-800",
+      dot: "bg-violet-500",
+      pulse: false,
+    };
+  if (diffDay > 1 && diffDay <= 7)
+    return {
+      label: `In ${diffDay} days`,
+      bg: "bg-indigo-100",
+      text: "text-indigo-800",
+      dot: "bg-indigo-500",
+      pulse: false,
+    };
+  return {
+    label: "Upcoming",
+    bg: "bg-gray-100",
+    text: "text-gray-600",
+    dot: "bg-gray-400",
+    pulse: false,
+  };
+};
+
+// ─── Format start time relative to today ─────────────────────────────────────
+const formatStart = (dateStr) => {
+  const d = dayjs(dateStr);
+  if (!d.isValid()) return "";
+  if (d.isToday()) return d.format("h:mm A");
+  if (d.isTomorrow()) return `Tomorrow ${d.format("h:mm A")}`;
+  return d.format("MMM D, h:mm A");
+};
+
+// ─── Auto-synced hearing check ────────────────────────────────────────────────
+const isAutoSynced = (event) =>
+  (event.eventType === "hearing" || event.eventType === "mention") &&
+  event.tags.includes("auto-synced");
+
+// ─── Event card ───────────────────────────────────────────────────────────────
+const EventCard = ({ event, now }) => {
+  // Pass the original raw event to getEventColor so it can inspect all fields
+  const color = getEventColor(event._raw ?? event);
+  const status = getStatusConfig(event.start, event.end, now);
+  const synced = isAutoSynced(event);
+  const typeLabel = EVENT_TYPE_LABELS[event.eventType] ?? "";
 
   return (
-    <div className="flex justify-between">
-      {upcomingEvents.length > 0 && (
-        <Marquee
-          speed={40}
-          gradient={false}
-          pauseOnHover={true}
-          className="py-2">
-          {upcomingEvents.map((event) => (
-            <div
-              key={event._id}
-              className={`flex items-center justify-between rounded-lg shadow-sm p-2 mr-4 min-w-[320px] ${getEventCardStyle(
-                event.start,
-                event.end
-              )}`}>
-              <div className="mr-3 flex-shrink-0">
-                <FaRegCalendar className="text-blue-500" size={20} />
-              </div>
+    <div
+      className="flex items-stretch mr-3 rounded-xl shadow-sm overflow-hidden min-w-[300px] max-w-[340px] bg-white border border-gray-100 hover:shadow-md transition-shadow duration-200"
+      style={{ borderLeft: `4px solid ${color}` }}>
+      <div className="flex items-start gap-3 p-3 flex-1 min-w-0">
+        {/* Icon */}
+        <div
+          className="mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+          style={{ backgroundColor: `${color}1a` }}>
+          <FaRegCalendar style={{ color }} size={14} />
+        </div>
 
-              <div className="flex-1 min-w-0">
-                <Link
-                  to={`events/${event._id}/details`}
-                  className="font-medium text-gray-800 hover:text-blue-600 truncate block"
-                  title={event.title}>
-                  {event.title}
-                </Link>
-                <div className="flex items-center text-sm text-gray-600 mt-1">
-                  <FaRegClock className="mr-1 flex-shrink-0" size={12} />
-                  <span className="truncate">
-                    {formatDateTime(event.start)}
-                    {event.end && ` - ${moment(event.end).format("h:mm A")}`}
-                  </span>
-                </div>
-                {event.location && (
-                  <div
-                    className="text-xs text-gray-500 mt-1 truncate"
-                    title={event.location}>
-                    📍 {event.location}
-                  </div>
-                )}
-              </div>
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          {/* Title */}
+          <div className="flex items-center gap-1.5 mb-0.5">
+            {synced && (
+              <FaBolt
+                className="text-violet-500 shrink-0"
+                size={10}
+                title="Auto-synced from litigation"
+              />
+            )}
+            <Link
+              to={`/dashboard/events/${event._id}/details`}
+              className="text-sm font-semibold text-gray-800 hover:text-blue-600 truncate block leading-snug"
+              title={event.title}
+              onClick={(e) => e.stopPropagation()}>
+              {event.title}
+            </Link>
+          </div>
 
-              <div className="ml-3 flex-shrink-0">
-                {getEventStatus(event.start, event.end)}
-              </div>
-            </div>
-          ))}
-        </Marquee>
-      )}
+          {/* Time + type */}
+          <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
+            <span className="flex items-center gap-1">
+              <FaRegClock size={10} />
+              {formatStart(event.start)}
+              {event.end ? ` – ${dayjs(event.end).format("h:mm A")}` : ""}
+            </span>
+            {typeLabel && (
+              <>
+                <span className="text-gray-300">·</span>
+                <span className="font-medium" style={{ color }}>
+                  {typeLabel}
+                </span>
+              </>
+            )}
+          </div>
 
-      {/* Static display for debugging - shows count and next event */}
-      <div className="hidden md:flex items-center ml-4">
-        <div className="text-sm text-gray-600 bg-gray-100 px-3 py-1 rounded-lg">
-          <span className="font-medium text-blue-600">
-            {upcomingEvents.length}
-          </span>{" "}
-          upcoming event{upcomingEvents.length !== 1 ? "s" : ""}
-          {upcomingEvents.length > 0 && (
-            <div className="text-xs text-gray-500 mt-1">
-              Next: {moment(upcomingEvents[0]?.start).format("h:mm A")}
+          {/* Location */}
+          {event.location && (
+            <div className="text-xs text-gray-400 mt-0.5 truncate">
+              📍 {event.location}
             </div>
           )}
+        </div>
+
+        {/* Status pill */}
+        <div className="shrink-0 self-center ml-1">
+          <span
+            className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full whitespace-nowrap ${status.bg} ${status.text}`}>
+            {status.pulse && (
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${status.dot} animate-pulse`}
+              />
+            )}
+            {status.label}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─── Main component ───────────────────────────────────────────────────────────
+const ScrollingEvents = () => {
+  const { events, loading } = useCalendarEvents();
+
+  // Stable reference time — dayjs is immutable, no mutation risk
+  const now = useMemo(() => dayjs(), []);
+
+  const upcomingEvents = useMemo(() => {
+    // Handle both flat-array and { data: [] } shapes from the hook
+    const raw = Array.isArray(events)
+      ? events
+      : Array.isArray(events?.data)
+        ? events.data
+        : [];
+
+    return raw
+      .map(normaliseEvent) // normalise mixed shapes
+      .filter(Boolean) // drop nulls (events with no start)
+      .filter((event) => {
+        // Exclude completed/cancelled events from the ticker
+        if (event.status === "completed" || event.status === "cancelled") {
+          return false;
+        }
+        const start = dayjs(event.start);
+        const end = event.end ? dayjs(event.end) : start.add(1, "hour");
+        // Keep: happening now, or starting in the future
+        return now.isBetween(start, end, null, "[]") || start.isAfter(now);
+      })
+      .sort((a, b) => dayjs(a.start).valueOf() - dayjs(b.start).valueOf());
+  }, [events, now]);
+
+  // ── Loading ────────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 py-2 px-4 text-sm text-gray-500">
+        <span className="w-3.5 h-3.5 rounded-full border-2 border-blue-400 border-t-transparent animate-spin" />
+        Loading events…
+      </div>
+    );
+  }
+
+  // ── Empty ──────────────────────────────────────────────────────────────────
+  if (upcomingEvents.length === 0) {
+    return (
+      <div className="flex items-center gap-2 py-2 px-4 text-sm text-gray-400">
+        <FaRegCalendar size={13} />
+        No upcoming events
+      </div>
+    );
+  }
+
+  // ── Marquee ────────────────────────────────────────────────────────────────
+  return (
+    <div className="flex items-center gap-3 w-full">
+      <div className="flex-1 min-w-0">
+        <Marquee speed={38} gradient={false} pauseOnHover>
+          {upcomingEvents.map((event) => (
+            <EventCard key={event._id} event={event} now={now} />
+          ))}
+        </Marquee>
+      </div>
+
+      {/* Count + next event badge */}
+      <div className="hidden md:flex shrink-0 flex-col items-end">
+        <div className="text-xs bg-white border border-gray-200 rounded-lg px-3 py-1.5 shadow-sm text-gray-600 leading-tight">
+          <span className="font-bold text-blue-600">
+            {upcomingEvents.length}
+          </span>{" "}
+          event{upcomingEvents.length !== 1 ? "s" : ""}
+          <div className="text-gray-400 mt-0.5">
+            Next: {formatStart(upcomingEvents[0].start)}
+          </div>
         </div>
       </div>
     </div>
