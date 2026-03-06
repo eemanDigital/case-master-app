@@ -229,7 +229,7 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
             <div className="flex items-center justify-between">
               <span className="text-lg font-semibold">My Recent Matters</span>
               <button
-                onClick={() => navigate("/matters?tab=my-matters")}
+                onClick={() => navigate("/dashboard/matters?tab=my-matters")}
                 className="text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1">
                 View All <FaArrowRight />
               </button>

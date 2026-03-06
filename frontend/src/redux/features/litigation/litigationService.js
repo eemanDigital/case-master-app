@@ -289,6 +289,34 @@ export const deleteLitigationParty = (matterId, partyId) => {
 };
 
 // ============================================
+// LITIGATION STEPS
+// ============================================
+
+export const getLitigationSteps = (matterId) => {
+  return apiService.get(`/litigation/${matterId}/steps`);
+};
+
+export const addLitigationStep = (matterId, stepData) => {
+  return apiService.post(`/litigation/${matterId}/steps`, stepData);
+};
+
+export const updateLitigationStep = (matterId, stepId, stepData) => {
+  return apiService.patch(`/litigation/${matterId}/steps/${stepId}`, stepData);
+};
+
+export const deleteLitigationStep = (matterId, stepId) => {
+  return apiService.delete(`/litigation/${matterId}/steps/${stepId}`);
+};
+
+export const updateLitigationStepStatus = (matterId, stepId, status) => {
+  return apiService.patch(`/litigation/${matterId}/steps/${stepId}/status`, { status });
+};
+
+export const reorderLitigationSteps = (matterId, stepIds) => {
+  return apiService.patch(`/litigation/${matterId}/steps/reorder`, { stepIds });
+};
+
+// ============================================
 // COMPREHENSIVE SERVICE OBJECT
 // ============================================
 
@@ -351,6 +379,14 @@ const litigationService = {
   addLitigationParty,
   updateLitigationParty,
   deleteLitigationParty,
+
+  // Litigation Steps
+  getLitigationSteps,
+  addLitigationStep,
+  updateLitigationStep,
+  deleteLitigationStep,
+  updateLitigationStepStatus,
+  reorderLitigationSteps,
 };
 
 export default litigationService;

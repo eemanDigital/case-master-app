@@ -118,6 +118,52 @@ const courtOrderSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+const litigationStepSchema = new mongoose.Schema(
+  {
+    title: {
+      type: String,
+      trim: true,
+      required: [true, "Step title is required"],
+      maxlength: [500, "Title must be less than 500 characters"],
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [2000, "Description must be less than 2000 characters"],
+    },
+    status: {
+      type: String,
+      enum: ["pending", "in-progress", "completed", "cancelled"],
+      default: "pending",
+    },
+    dueDate: {
+      type: Date,
+    },
+    completedDate: {
+      type: Date,
+    },
+    priority: {
+      type: String,
+      enum: ["low", "medium", "high", "urgent"],
+      default: "medium",
+    },
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    notes: {
+      type: String,
+      trim: true,
+      maxlength: [2000, "Notes must be less than 2000 characters"],
+    },
+    order: {
+      type: Number,
+      default: 0,
+    },
+  },
+  { timestamps: true },
+);
+
 // ============================================
 // LITIGATION DETAIL SCHEMA
 // ============================================
@@ -248,6 +294,8 @@ const litigationDetailSchema = new mongoose.Schema(
     },
 
     courtOrders: [courtOrderSchema],
+
+    litigationSteps: [litigationStepSchema],
 
     judgment: {
       judgmentDate: Date,

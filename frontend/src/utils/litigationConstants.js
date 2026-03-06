@@ -95,6 +95,14 @@ export const MATTER_STATUS = [
   { value: "settled", label: "Settled", color: "cyan" },
 ];
 
+// Priority Levels
+export const PRIORITY_LEVELS = [
+  { value: "low", label: "Low", color: "green" },
+  { value: "medium", label: "Medium", color: "gold" },
+  { value: "high", label: "High", color: "orange" },
+  { value: "urgent", label: "Urgent", color: "red" },
+];
+
 // Party Types
 export const PARTY_TYPES = [
   { value: "firstParty", label: "First Party (Plaintiff/Applicant)" },

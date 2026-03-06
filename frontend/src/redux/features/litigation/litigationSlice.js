@@ -33,6 +33,8 @@ const initialState = {
     completed: 0,
     pending: 0,
   },
+  litigationSteps: [],
+  stepsLoading: false,
   loading: false,
   detailsLoading: false,
   statsLoading: false,
@@ -471,6 +473,108 @@ export const fetchMatterHearings = createAsyncThunk(
       return rejectWithValue(
         error.response?.data || "Failed to fetch matter hearings",
       );
+    }
+  },
+);
+
+// ============================================
+// LITIGATION STEPS
+// ============================================
+
+export const fetchLitigationSteps = createAsyncThunk(
+  "litigation/fetchSteps",
+  async (matterId, { rejectWithValue }) => {
+    try {
+      const response = await litigationService.getLitigationSteps(matterId);
+      return { matterId, steps: response.data?.data || [] };
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || "Failed to fetch litigation steps",
+      );
+    }
+  },
+);
+
+export const addLitigationStep = createAsyncThunk(
+  "litigation/addStep",
+  async ({ matterId, stepData }, { rejectWithValue }) => {
+    try {
+      const response = await litigationService.addLitigationStep(
+        matterId,
+        stepData,
+      );
+      message.success("Step added successfully");
+      return { matterId, step: response.data };
+    } catch (error) {
+      message.error(error.response?.data?.message || "Failed to add step");
+      return rejectWithValue(error.response?.data || "Failed to add step");
+    }
+  },
+);
+
+export const updateLitigationStep = createAsyncThunk(
+  "litigation/updateStep",
+  async ({ matterId, stepId, stepData }, { rejectWithValue }) => {
+    try {
+      const response = await litigationService.updateLitigationStep(
+        matterId,
+        stepId,
+        stepData,
+      );
+      message.success("Step updated successfully");
+      return { matterId, step: response.data };
+    } catch (error) {
+      message.error(error.response?.data?.message || "Failed to update step");
+      return rejectWithValue(error.response?.data || "Failed to update step");
+    }
+  },
+);
+
+export const deleteLitigationStep = createAsyncThunk(
+  "litigation/deleteStep",
+  async ({ matterId, stepId }, { rejectWithValue }) => {
+    try {
+      await litigationService.deleteLitigationStep(matterId, stepId);
+      message.success("Step deleted successfully");
+      return { matterId, stepId };
+    } catch (error) {
+      message.error(error.response?.data?.message || "Failed to delete step");
+      return rejectWithValue(error.response?.data || "Failed to delete step");
+    }
+  },
+);
+
+export const updateLitigationStepStatus = createAsyncThunk(
+  "litigation/updateStepStatus",
+  async ({ matterId, stepId, status }, { rejectWithValue }) => {
+    try {
+      const response = await litigationService.updateLitigationStepStatus(
+        matterId,
+        stepId,
+        status,
+      );
+      message.success(`Step marked as ${status}`);
+      return { matterId, step: response.data };
+    } catch (error) {
+      message.error(error.response?.data?.message || "Failed to update status");
+      return rejectWithValue(error.response?.data || "Failed to update status");
+    }
+  },
+);
+
+export const reorderLitigationSteps = createAsyncThunk(
+  "litigation/reorderSteps",
+  async ({ matterId, stepIds }, { rejectWithValue }) => {
+    try {
+      const response = await litigationService.reorderLitigationSteps(
+        matterId,
+        stepIds,
+      );
+      message.success("Steps reordered successfully");
+      return { matterId, steps: response.data?.data || [] };
+    } catch (error) {
+      message.error(error.response?.data?.message || "Failed to reorder steps");
+      return rejectWithValue(error.response?.data || "Failed to reorder steps");
     }
   },
 );
@@ -1015,6 +1119,89 @@ const litigationSlice = createSlice({
           pending: 0,
         };
       });
+
+    // ── Litigation Steps ────────────────────────────────────────────────────
+    builder
+      .addCase(fetchLitigationSteps.pending, (state) => {
+        state.stepsLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchLitigationSteps.fulfilled, (state, action) => {
+        state.stepsLoading = false;
+        state.litigationSteps = action.payload.steps;
+      })
+      .addCase(fetchLitigationSteps.rejected, (state, action) => {
+        state.stepsLoading = false;
+        state.error = action.payload;
+        state.litigationSteps = [];
+      })
+      .addCase(addLitigationStep.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(addLitigationStep.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        state.litigationSteps.push(action.payload.step);
+      })
+      .addCase(addLitigationStep.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(updateLitigationStep.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(updateLitigationStep.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        const index = state.litigationSteps.findIndex(
+          (s) => s._id === action.payload.step._id,
+        );
+        if (index !== -1) {
+          state.litigationSteps[index] = action.payload.step;
+        }
+      })
+      .addCase(updateLitigationStep.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(deleteLitigationStep.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(deleteLitigationStep.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        state.litigationSteps = state.litigationSteps.filter(
+          (s) => s._id !== action.payload.stepId,
+        );
+      })
+      .addCase(deleteLitigationStep.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(updateLitigationStepStatus.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(updateLitigationStepStatus.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        const index = state.litigationSteps.findIndex(
+          (s) => s._id === action.payload.step._id,
+        );
+        if (index !== -1) {
+          state.litigationSteps[index] = action.payload.step;
+        }
+      })
+      .addCase(updateLitigationStepStatus.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(reorderLitigationSteps.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(reorderLitigationSteps.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        state.litigationSteps = action.payload.steps;
+      })
+      .addCase(reorderLitigationSteps.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      });
   },
 });
 
@@ -1065,6 +1252,8 @@ export const selectStatsLoading = (state) => state.litigation.statsLoading;
 export const selectActionLoading = (state) => state.litigation.actionLoading;
 export const selectLitigationError = (state) => state.litigation.error;
 export const selectSearchMode = (state) => state.litigation.searchMode;
+export const selectLitigationSteps = (state) => state.litigation.litigationSteps || [];
+export const selectStepsLoading = (state) => state.litigation.stepsLoading;
 
 // ── Derived selectors ──────────────────────────────────────────────────────
 

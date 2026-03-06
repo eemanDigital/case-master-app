@@ -124,4 +124,33 @@ litigationRouter.patch(
 );
 litigationRouter.patch("/:matterId/appeal", litigationController.fileAppeal);
 
+// ============================================
+// LITIGATION STEPS MANAGEMENT
+// ============================================
+
+litigationRouter.post(
+  "/:matterId/steps",
+  litigationController.addLitigationStep,
+);
+litigationRouter.get(
+  "/:matterId/steps",
+  litigationController.getLitigationSteps,
+);
+litigationRouter.patch(
+  "/:matterId/steps/:stepId",
+  litigationController.updateLitigationStep,
+);
+litigationRouter.delete(
+  "/:matterId/steps/:stepId",
+  litigationController.deleteLitigationStep,
+);
+litigationRouter.patch(
+  "/:matterId/steps/:stepId/status",
+  litigationController.updateLitigationStepStatus,
+);
+litigationRouter.patch(
+  "/:matterId/steps/reorder",
+  litigationController.reorderLitigationSteps,
+);
+
 module.exports = litigationRouter;

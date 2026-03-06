@@ -1690,4 +1690,323 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
   );
 });
 
+// ============================================
+// ADD LITIGATION STEP
+// ============================================
+
+exports.addLitigationStep = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const stepData = req.body;
+
+  const matter = await Matter.findOne({
+    _id: matterId,
+    firmId: req.firmId,
+    matterType: "litigation",
+    isDeleted: false,
+  });
+
+  if (!matter) {
+    return next(new AppError("Litigation matter not found", 404));
+  }
+
+  const litigationDetail = await LitigationDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
+
+  if (!litigationDetail) {
+    return next(new AppError("Litigation details not found", 404));
+  }
+
+  const maxOrder = litigationDetail.litigationSteps.reduce(
+    (max, step) => Math.max(max, step.order || 0),
+    0,
+  );
+
+  const newStep = {
+    ...stepData,
+    order: stepData.order ?? maxOrder + 1,
+    createdAt: new Date(),
+  };
+
+  litigationDetail.litigationSteps.push(newStep);
+  await litigationDetail.save();
+
+  const addedStep = litigationDetail.litigationSteps[
+    litigationDetail.litigationSteps.length - 1
+  ];
+
+  matter.lastActivityDate = new Date();
+  await matter.save();
+
+  res.status(201).json({
+    status: "success",
+    data: addedStep,
+  });
+});
+
+// ============================================
+// GET ALL LITIGATION STEPS
+// ============================================
+
+exports.getLitigationSteps = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+
+  const matter = await Matter.findOne({
+    _id: matterId,
+    firmId: req.firmId,
+    matterType: "litigation",
+    isDeleted: false,
+  });
+
+  if (!matter) {
+    return next(new AppError("Litigation matter not found", 404));
+  }
+
+  const litigationDetail = await LitigationDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
+
+  if (!litigationDetail) {
+    return next(new AppError("Litigation details not found", 404));
+  }
+
+  const steps = litigationDetail.litigationSteps || [];
+
+  const sortedSteps = [...steps].sort((a, b) => a.order - b.order);
+
+  res.status(200).json({
+    status: "success",
+    data: sortedSteps,
+  });
+});
+
+// ============================================
+// UPDATE LITIGATION STEP
+// ============================================
+
+exports.updateLitigationStep = catchAsync(async (req, res, next) => {
+  const { matterId, stepId } = req.params;
+  const updateData = req.body;
+
+  const matter = await Matter.findOne({
+    _id: matterId,
+    firmId: req.firmId,
+    matterType: "litigation",
+    isDeleted: false,
+  });
+
+  if (!matter) {
+    return next(new AppError("Litigation matter not found", 404));
+  }
+
+  const litigationDetail = await LitigationDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
+
+  if (!litigationDetail) {
+    return next(new AppError("Litigation details not found", 404));
+  }
+
+  const stepIndex = litigationDetail.litigationSteps.findIndex(
+    (step) => step._id.toString() === stepId,
+  );
+
+  if (stepIndex === -1) {
+    return next(new AppError("Step not found", 404));
+  }
+
+  const allowedUpdates = [
+    "title",
+    "description",
+    "status",
+    "dueDate",
+    "priority",
+    "assignedTo",
+    "notes",
+    "order",
+  ];
+
+  allowedUpdates.forEach((field) => {
+    if (updateData[field] !== undefined) {
+      litigationDetail.litigationSteps[stepIndex][field] = updateData[field];
+    }
+  });
+
+  await litigationDetail.save();
+
+  matter.lastActivityDate = new Date();
+  await matter.save();
+
+  res.status(200).json({
+    status: "success",
+    data: litigationDetail.litigationSteps[stepIndex],
+  });
+});
+
+// ============================================
+// DELETE LITIGATION STEP
+// ============================================
+
+exports.deleteLitigationStep = catchAsync(async (req, res, next) => {
+  const { matterId, stepId } = req.params;
+
+  const matter = await Matter.findOne({
+    _id: matterId,
+    firmId: req.firmId,
+    matterType: "litigation",
+    isDeleted: false,
+  });
+
+  if (!matter) {
+    return next(new AppError("Litigation matter not found", 404));
+  }
+
+  const litigationDetail = await LitigationDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
+
+  if (!litigationDetail) {
+    return next(new AppError("Litigation details not found", 404));
+  }
+
+  const stepIndex = litigationDetail.litigationSteps.findIndex(
+    (step) => step._id.toString() === stepId,
+  );
+
+  if (stepIndex === -1) {
+    return next(new AppError("Step not found", 404));
+  }
+
+  litigationDetail.litigationSteps.splice(stepIndex, 1);
+  await litigationDetail.save();
+
+  matter.lastActivityDate = new Date();
+  await matter.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Step deleted successfully",
+  });
+});
+
+// ============================================
+// UPDATE LITIGATION STEP STATUS
+// ============================================
+
+exports.updateLitigationStepStatus = catchAsync(async (req, res, next) => {
+  const { matterId, stepId } = req.params;
+  const { status } = req.body;
+
+  const validStatuses = ["pending", "in-progress", "completed", "cancelled"];
+  if (!validStatuses.includes(status)) {
+    return next(new AppError("Invalid status value", 400));
+  }
+
+  const matter = await Matter.findOne({
+    _id: matterId,
+    firmId: req.firmId,
+    matterType: "litigation",
+    isDeleted: false,
+  });
+
+  if (!matter) {
+    return next(new AppError("Litigation matter not found", 404));
+  }
+
+  const litigationDetail = await LitigationDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
+
+  if (!litigationDetail) {
+    return next(new AppError("Litigation details not found", 404));
+  }
+
+  const stepIndex = litigationDetail.litigationSteps.findIndex(
+    (step) => step._id.toString() === stepId,
+  );
+
+  if (stepIndex === -1) {
+    return next(new AppError("Step not found", 404));
+  }
+
+  litigationDetail.litigationSteps[stepIndex].status = status;
+
+  if (status === "completed") {
+    litigationDetail.litigationSteps[stepIndex].completedDate = new Date();
+  } else {
+    litigationDetail.litigationSteps[stepIndex].completedDate = undefined;
+  }
+
+  await litigationDetail.save();
+
+  matter.lastActivityDate = new Date();
+  await matter.save();
+
+  res.status(200).json({
+    status: "success",
+    data: litigationDetail.litigationSteps[stepIndex],
+  });
+});
+
+// ============================================
+// REORDER LITIGATION STEPS
+// ============================================
+
+exports.reorderLitigationSteps = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const { stepIds } = req.body;
+
+  if (!Array.isArray(stepIds)) {
+    return next(new AppError("stepIds must be an array", 400));
+  }
+
+  const matter = await Matter.findOne({
+    _id: matterId,
+    firmId: req.firmId,
+    matterType: "litigation",
+    isDeleted: false,
+  });
+
+  if (!matter) {
+    return next(new AppError("Litigation matter not found", 404));
+  }
+
+  const litigationDetail = await LitigationDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
+
+  if (!litigationDetail) {
+    return next(new AppError("Litigation details not found", 404));
+  }
+
+  stepIds.forEach((id, index) => {
+    const step = litigationDetail.litigationSteps.find(
+      (s) => s._id.toString() === id,
+    );
+    if (step) {
+      step.order = index;
+    }
+  });
+
+  await litigationDetail.save();
+
+  const sortedSteps = [...litigationDetail.litigationSteps].sort(
+    (a, b) => a.order - b.order,
+  );
+
+  matter.lastActivityDate = new Date();
+  await matter.save();
+
+  res.status(200).json({
+    status: "success",
+    data: sortedSteps,
+  });
+});
+
 module.exports = exports;
