@@ -4,6 +4,10 @@ import axios from "axios";
 const BASE_URL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
 const JWT_KEY = "jwt"; // Unified storage key
 
+console.log(
+  BASE_URL ? `API Base URL: ${BASE_URL}` : "Warning: BASE_URL is not set",
+);
+
 // Create axios instance
 const api = axios.create({
   baseURL: BASE_URL,
@@ -15,8 +19,9 @@ const api = axios.create({
 
 // Helper: Get token from storage
 const getToken = () => {
-  const token = localStorage.getItem(JWT_KEY) || sessionStorage.getItem(JWT_KEY);
-  if (token && token.split('.').length === 3) {
+  const token =
+    localStorage.getItem(JWT_KEY) || sessionStorage.getItem(JWT_KEY);
+  if (token && token.split(".").length === 3) {
     return token;
   }
   return null;

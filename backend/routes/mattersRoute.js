@@ -65,7 +65,7 @@ matterRouter.post(
 
 matterRouter.post(
   "/search",
-  restrictTo("admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
   matterController.searchMatters,
 );
 
@@ -78,13 +78,13 @@ matterRouter.get("/my-matters", matterController.getMyMatters);
 matterRouter.get("/my-matters-summary", matterController.getMyMattersSummary);
 matterRouter.get(
   "/with-officers",
-  restrictTo("admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
   matterController.getAllMattersWithOfficers,
 );
 
 matterRouter.get(
   "/",
-  restrictTo("admin", "lawyer", "hr", "staff", "client"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", "staff", "client"),
   matterController.getAllMatters,
 );
 
@@ -101,37 +101,37 @@ matterRouter.post(
 
 matterRouter.get(
   "/recent-activity",
-  restrictTo("admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
   matterController.getRecentActivity,
 );
 
 matterRouter.get(
   "/pending",
-  restrictTo("admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
   matterController.getPendingMatters,
 );
 
 matterRouter.get(
   "/urgent",
-  restrictTo("admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
   matterController.getUrgentMatters,
 );
 
 matterRouter.get(
   "/type/:matterType",
-  restrictTo("admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
   matterController.getMattersByType,
 );
 
 matterRouter.get(
   "/status/:status",
-  restrictTo("admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
   matterController.getMattersByStatus,
 );
 
 matterRouter.get(
   "/validate-matter-number/:matterNumber",
-  restrictTo("admin", "lawyer", "hr"),
+  restrictTo("super-admin", "admin", "lawyer", "hr"),
   matterController.validateMatterNumber,
 );
 
@@ -144,7 +144,9 @@ matterRouter.get(
   checkPermission((user) => {
     // Check if the user has a relevant role AND the confidential toggle in their specific details
     const roles = [user.role, ...(user.additionalRoles || [])];
-    const hasRole = roles.some((r) => ["admin", "lawyer", "hr"].includes(r));
+    const hasRole = roles.some((r) =>
+      ["super-admin", "admin", "lawyer", "hr"].includes(r),
+    );
 
     const canView =
       user.adminDetails?.canViewConfidential ||
@@ -167,7 +169,7 @@ matterRouter.get(
     if (user.isLawyer) roles.push("lawyer");
 
     return roles.some((r) =>
-      ["admin", "lawyer", "finance", "accounting"].includes(r),
+      ["admin", "lawyer", "super-admin", "finance", "accounting"].includes(r),
     );
   }),
   (req, res, next) => {
@@ -216,7 +218,7 @@ matterRouter.get(
 
 matterRouter.post(
   "/:id/activity",
-  restrictTo("admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
   matterController.checkMatterAccess,
   matterController.addActivityLog,
 );
@@ -225,7 +227,8 @@ matterRouter.patch(
   "/:id/billing",
   checkPermission((user) => {
     const roles = [user.role, ...(user.additionalRoles || [])];
-    if (roles.includes("admin") || roles.includes("finance")) return true;
+    if (roles.includes("super-admin", "admin") || roles.includes("finance"))
+      return true;
     if (user.isLawyer && user.lawyerDetails?.canManageBilling) return true;
     return false;
   }),

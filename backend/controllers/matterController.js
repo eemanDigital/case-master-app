@@ -4,7 +4,7 @@ const Matter = require("../models/matterModel");
 const User = require("../models/userModel");
 const LitigationDetail = require("../models/litigationDetailModel");
 const CorporateDetail = require("../models/corporateDetailModel");
-const AdvisoryDetail = require("../models/advisoryDetailModel");
+const AdvisoryDetail = require("../models/advisorydetailModel");
 const PropertyDetail = require("../models/propertyDetailModel");
 const {
   RetainerDetail,
@@ -12,6 +12,7 @@ const {
 } = require("../models/retainerAndGeneralDetailModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+
 const sessionHelper = require("../utils/sessionHelper");
 
 // Initialize pagination service for Matter model
@@ -728,7 +729,8 @@ exports.getAllMattersWithOfficers = catchAsync(async (req, res, next) => {
       limit,
       sort,
       populate: "accountOfficer,client",
-      select: "matterNumber title description status priority matterType natureOfMatter dateOpened expectedClosureDate client accountOfficer",
+      select:
+        "matterNumber title description status priority matterType natureOfMatter dateOpened expectedClosureDate client accountOfficer",
       status,
       priority,
       matterType,
@@ -772,7 +774,9 @@ exports.getAllMattersWithOfficers = catchAsync(async (req, res, next) => {
       $project: {
         _id: 0,
         officerId: "$_id",
-        officerName: { $concat: ["$officer.firstName", " ", "$officer.lastName"] },
+        officerName: {
+          $concat: ["$officer.firstName", " ", "$officer.lastName"],
+        },
         officerEmail: "$officer.email",
         officerPhoto: "$officer.photo",
         officerRole: "$officer.role",
@@ -906,9 +910,8 @@ exports.getMyMattersSummary = catchAsync(async (req, res, next) => {
   ]);
 
   // Calculate completion rate
-  const completionRate = totalMatters > 0 
-    ? Math.round((completedMatters / totalMatters) * 100) 
-    : 0;
+  const completionRate =
+    totalMatters > 0 ? Math.round((completedMatters / totalMatters) * 100) : 0;
 
   res.status(200).json({
     status: "success",
@@ -1127,71 +1130,6 @@ exports.bulkAssignOfficer = catchAsync(async (req, res, next) => {
  * @route   DELETE /api/matters/bulk-delete
  * @access  Private (Admin/Lawyer only)
  */
-// exports.bulkDeleteMatters = catchAsync(async (req, res, next) => {
-//   const { matterIds } = req.body;
-
-//   if (!matterIds || !Array.isArray(matterIds) || matterIds.length === 0) {
-//     return next(new AppError("Please provide matter IDs to delete", 400));
-//   }
-
-//   const session = await Matter.startSession();
-//   session.startTransaction();
-
-//   try {
-//     // Find all matters to be deleted
-//     const matters = await Matter.find({
-//       _id: { $in: matterIds },
-//       firmId: req.firmId,
-//       isDeleted: false,
-//     }).session(session);
-
-//     if (matters.length === 0) {
-//       await session.abortTransaction();
-//       session.endSession();
-//       return next(new AppError("No accessible matters found to delete", 404));
-//     }
-
-//     // Soft delete all matters
-//     const deletionPromises = matters.map((matter) =>
-//       matter.softDelete(req.user._id, session),
-//     );
-
-//     await Promise.all(deletionPromises);
-
-//     // Also soft delete associated detail documents
-//     const detailDeletionPromises = matters.map(async (matter) => {
-//       const DetailModel = getDetailModel(matter.matterType);
-//       if (DetailModel) {
-//         return DetailModel.findOneAndUpdate(
-//           { matterId: matter._id, firmId: req.firmId },
-//           {
-//             isDeleted: true,
-//             deletedAt: Date.now(),
-//             deletedBy: req.user._id,
-//           },
-//           { session },
-//         );
-//       }
-//     });
-
-//     await Promise.all(detailDeletionPromises);
-
-//     await session.commitTransaction();
-//     session.endSession();
-
-//     res.status(200).json({
-//       status: "success",
-//       data: {
-//         deletedCount: matters.length,
-//         deletedMatterIds: matters.map((m) => m._id),
-//       },
-//     });
-//   } catch (error) {
-//     await session.abortTransaction();
-//     session.endSession();
-//     return next(error);
-//   }
-// });
 
 exports.bulkDeleteMatters = catchAsync(async (req, res, next) => {
   const { matterIds } = req.body;

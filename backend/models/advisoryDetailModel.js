@@ -85,7 +85,7 @@ const advisoryDetailSchema = new mongoose.Schema(
           "transaction_advisory",
           "other",
         ],
-        message: "Invalid advisory type",
+        message: "This is invalid advisory type",
       },
     },
 
