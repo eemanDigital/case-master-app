@@ -98,12 +98,26 @@ platformInviteSchema.statics.generateToken = function () {
 };
 
 platformInviteSchema.statics.validateToken = async function (token) {
-  const invite = await this.findOne({
+  // First, try to find the invite with all conditions
+  let invite = await this.findOne({
     token,
     status: "pending",
     expiresAt: { $gt: new Date() },
     isDeleted: { $ne: true },
   }).populate("firmId", "name contact.email");
+
+  // If not found, check if it exists but is expired or already used
+  if (!invite) {
+    const anyInvite = await this.findOne({ token }).populate("firmId", "name contact.email");
+    if (anyInvite) {
+      console.log("Token found but:", {
+        status: anyInvite.status,
+        expiresAt: anyInvite.expiresAt,
+        isExpired: anyInvite.expiresAt < new Date(),
+        isDeleted: anyInvite.isDeleted
+      });
+    }
+  }
 
   return invite;
 };

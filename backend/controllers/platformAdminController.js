@@ -390,7 +390,7 @@ exports.sendUpgradeInvitation = catchAsync(async (req, res, next) => {
     sentBy: "Platform Admin",
   });
 
-  const upgradeUrl = `${process.env.FRONTEND_URL}/upgrade?token=${token}`;
+  const upgradeUrl = `${process.env.FRONTEND_URL || 'https://case-master-app.vercel.app'}/upgrade?token=${token}`;
 
   try {
     await sendCustomEmail(
@@ -429,34 +429,54 @@ exports.sendUpgradeInvitation = catchAsync(async (req, res, next) => {
 exports.acceptUpgradeInvitation = catchAsync(async (req, res, next) => {
   const { token } = req.params;
 
-  const invite = await PlatformInvite.validateToken(token);
-
-  if (!invite) {
-    return next(new AppError("Invalid or expired invitation token", 400));
+  // Debug: Check what invites exist with this token
+  const anyInvite = await PlatformInvite.findOne({ token });
+  if (!anyInvite) {
+    console.log("No invite found with token:", token);
+    return next(new AppError("Invalid invitation token - not found", 400));
   }
 
-  const firm = await Firm.findById(invite.firmId);
+  console.log("Found invite:", {
+    status: anyInvite.status,
+    expiresAt: anyInvite.expiresAt,
+    isExpired: anyInvite.expiresAt < new Date(),
+    isDeleted: anyInvite.isDeleted
+  });
+
+  if (anyInvite.status !== "pending") {
+    return next(new AppError("This invitation has already been used or cancelled", 400));
+  }
+
+  if (anyInvite.expiresAt < new Date()) {
+    return next(new AppError("This invitation has expired", 400));
+  }
+
+  if (anyInvite.isDeleted) {
+    return next(new AppError("This invitation has been deleted", 400));
+  }
+
+  const firm = await Firm.findById(anyInvite.firmId);
   if (!firm) {
     return next(new AppError("Firm not found", 404));
   }
 
-  const limits = PLAN_LIMITS[invite.targetPlan];
+  const limits = PLAN_LIMITS[anyInvite.targetPlan];
   const trialEndsAt = new Date();
   trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
-  firm.subscription.plan = invite.targetPlan;
+  firm.subscription.plan = anyInvite.targetPlan;
   firm.subscription.status = "TRIAL";
   firm.subscription.trialEndsAt = trialEndsAt;
   firm.limits = limits;
   await firm.save();
 
-  invite.status = "accepted";
-  invite.acceptedAt = new Date();
-  await invite.save();
+  anyInvite.status = "accepted";
+  anyInvite.acceptedAt = new Date();
+  await anyInvite.save();
 
   res.status(200).json({
     status: "success",
-    message: `Successfully started trial for ${invite.targetPlan} plan. Your trial ends on ${trialEndsAt.toLocaleDateString()}.`,
+    message: `Successfully started trial for ${anyInvite.targetPlan} plan. Your trial ends on ${trialEndsAt.toLocaleDateString()}.`,
   });
 });
 

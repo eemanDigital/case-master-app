@@ -4,7 +4,7 @@ import { Card, Result, Button, Spin, Alert, Typography } from "antd";
 import axios from "axios";
 import CheckCircleOutlined from "@ant-design/icons";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:5000/api/v1";
 
@@ -27,7 +27,7 @@ const UpgradeAcceptPage = () => {
     const acceptUpgrade = async () => {
       try {
         const response = await axios.post(
-          `${baseURL}/platform/upgrade/accept/${token}`
+          `${baseURL}/platform/upgrade/accept/${token}`,
         );
         setStatus("success");
         setMessage(response.data.message || "Upgrade successful!");
@@ -35,7 +35,7 @@ const UpgradeAcceptPage = () => {
         setStatus("error");
         setMessage(
           error.response?.data?.message ||
-            "Failed to accept upgrade invitation. The invitation may be invalid or expired."
+            "Failed to accept upgrade invitation. The invitation may be invalid or expired.",
         );
       }
     };
@@ -51,8 +51,7 @@ const UpgradeAcceptPage = () => {
           justifyContent: "center",
           alignItems: "center",
           minHeight: "100vh",
-        }}
-      >
+        }}>
         <Card>
           <Spin size="large" />
           <div style={{ marginTop: 16, textAlign: "center" }}>
@@ -72,15 +71,14 @@ const UpgradeAcceptPage = () => {
           alignItems: "center",
           minHeight: "100vh",
           padding: 24,
-        }}
-      >
+        }}>
         <Card style={{ maxWidth: 500, width: "100%" }}>
           <Result
             status="error"
             title="Upgrade Failed"
             subTitle={message}
             extra={
-              <Button type="primary" onClick={() => navigate("/login")}>
+              <Button type="primary" onClick={() => navigate("/users/login")}>
                 Go to Login
               </Button>
             }
@@ -98,8 +96,7 @@ const UpgradeAcceptPage = () => {
         alignItems: "center",
         minHeight: "100vh",
         padding: 24,
-      }}
-    >
+      }}>
       <Card style={{ maxWidth: 500, width: "100%" }}>
         <Result
           icon={
