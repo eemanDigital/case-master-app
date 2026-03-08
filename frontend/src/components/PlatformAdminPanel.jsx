@@ -15,11 +15,10 @@ import {
   message,
   Alert,
   Popconfirm,
-  InputNumber,
   Typography,
   Space,
   Empty,
- Statistic,
+  Statistic,
   Row,
   Col,
 } from "antd";
@@ -49,6 +48,7 @@ const PlatformAdminPanel = () => {
   const [platformEmail, setPlatformEmail] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [pendingLoading, setPendingLoading] = useState(false);
 
   const [pendingFirms, setPendingFirms] = useState([]);
   const [allFirms, setAllFirms] = useState([]);
@@ -121,11 +121,14 @@ const PlatformAdminPanel = () => {
   };
 
   const fetchPendingFirms = async () => {
+    setPendingLoading(true);
     try {
       const response = await api.get("/platform/firms/pending");
       setPendingFirms(response.data.data || []);
     } catch (error) {
       message.error(error.response?.data?.message || "Failed to fetch pending firms");
+    } finally {
+      setPendingLoading(false);
     }
   };
 
@@ -494,7 +497,7 @@ const PlatformAdminPanel = () => {
                     Refresh
                   </Button>
                 </div>
-                <Spin spinning={!pendingFirms.length}>
+                <Spin spinning={pendingLoading}>
                   {pendingFirms.length === 0 ? (
                     <Empty description="No firms awaiting approval" />
                   ) : (

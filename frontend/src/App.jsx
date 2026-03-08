@@ -195,6 +195,9 @@ const AuditLogList = lazy(() => import("./pages/AuditLogList.jsx"));
 const WebhookList = lazy(() => import("./pages/WebhookList.jsx"));
 const InvitationList = lazy(() => import("./pages/InvitationList.jsx"));
 
+// Platform Admin
+const PlatformAdminPanel = lazy(() => import("./components/PlatformAdminPanel.jsx"));
+
 // Support
 const ContactForm = lazy(() => import("./components/ContactForm.jsx"));
 
@@ -443,6 +446,16 @@ const router = createBrowserRouter(
           element={
             <Suspense fallback={<PageLoader />}>
               <VerifyAccount />
+            </Suspense>
+          }
+        />
+
+        {/* Platform Admin - Public route, no auth required */}
+        <Route
+          path="platform-admin"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <PlatformAdminPanel />
             </Suspense>
           }
         />
