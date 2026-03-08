@@ -83,9 +83,17 @@ const InvitationList = () => {
   const handleGenerateInvitation = async (values) => {
     setSubmitting(true);
     try {
+      const payload = {
+        email: values.email,
+        firstName: values.firstName,
+        lastName: values.lastName,
+        role: values.role,
+        expiresInDays: values.expiresInDays,
+        message: values.message,
+      };
       const response = await axios.post(
         `${baseURL}/invitations/generate`,
-        values,
+        payload,
       );
       message.success("Invitation generated successfully!");
 
@@ -212,17 +220,6 @@ const InvitationList = () => {
     );
   };
 
-  const getPlanTag = (plan) => {
-    const config = {
-      FREE: { color: "default", text: "Free Trial" },
-      STARTER: { color: "blue", text: "Starter" },
-      PROFESSIONAL: { color: "purple", text: "Professional" },
-      ENTERPRISE: { color: "gold", text: "Enterprise" },
-    };
-    const { color, text } = config[plan] || config.FREE;
-    return <Tag color={color}>{text}</Tag>;
-  };
-
   const columns = [
     {
       title: "Email",
@@ -246,12 +243,6 @@ const InvitationList = () => {
       dataIndex: "role",
       key: "role",
       render: (role) => <Tag color="blue">{role?.toUpperCase()}</Tag>,
-    },
-    {
-      title: "Plan",
-      dataIndex: "plan",
-      key: "plan",
-      render: (plan) => getPlanTag(plan),
     },
     {
       title: "Status",
@@ -402,7 +393,7 @@ const InvitationList = () => {
         width={500}>
         <Alert
           message="Invitation Link"
-          description="The generated link will include the subscription plan. When the user registers using this link, their account will be automatically assigned to the selected plan."
+          description="An invitation link will be sent to this person. When they register using the link, they will be assigned the selected role within your firm."
           type="info"
           showIcon
           className="mb-4"
@@ -412,7 +403,7 @@ const InvitationList = () => {
           form={form}
           layout="vertical"
           onFinish={handleGenerateInvitation}
-          initialValues={{ role: "staff", plan: "STARTER", expiresInDays: 7 }}>
+          initialValues={{ role: "staff", expiresInDays: 7 }}>
           <Form.Item
             name="email"
             label="Email Address"
@@ -444,14 +435,14 @@ const InvitationList = () => {
             </Form.Item>
 
             <Form.Item
-              name="plan"
-              label="Subscription Plan"
+              name="expiresInDays"
+              label="Expires In (days)"
               rules={[{ required: true }]}>
               <Select>
-                <Option value="FREE">Free Trial</Option>
-                <Option value="STARTER">Starter (₦49/mo)</Option>
-                <Option value="PROFESSIONAL">Professional (₦149/mo)</Option>
-                <Option value="ENTERPRISE">Enterprise (Custom)</Option>
+                <Option value={3}>3 days</Option>
+                <Option value={7}>7 days</Option>
+                <Option value={14}>14 days</Option>
+                <Option value={30}>30 days</Option>
               </Select>
             </Form.Item>
           </div>

@@ -83,7 +83,7 @@ const Dashboard = () => {
 
       <ShowOnlyVerifiedUser>
         <div className="min-h-screen bg-background">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-4 md:py-6">
             <ShowStaff>
               <ScrollingEvents />
             </ShowStaff>
@@ -93,7 +93,7 @@ const Dashboard = () => {
             {isStaff && (
               <>
                 <header className="mb-8 animate-fade-in">
-                  <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="flex items-start gap-4">
                       <div className="hidden sm:block w-1 h-14 bg-gradient-to-b from-primary-500 via-indigo-500 to-purple-600 rounded-full" />
                       <div>
@@ -142,16 +142,15 @@ const Dashboard = () => {
                   <MyMattersDashboard />
                 </section>
 
-                <Row gutter={[24, 24]} className="mb-8">
-                  <Col xs={24} xl={16}>
+                <Row gutter={[16, 16]} className="mb-8">
+                  <Col xs={24} md={16}>
                     <Card
-                      className="h-full shadow-lg border-border"
-                      bordered={false}
-                      styles={{ body: { height: "100%" } }}>
+                      className="shadow-lg border-border"
+                      bordered={false}>
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-bold text-content-primary flex items-center gap-2">
                           <svg
-                            className="w-5 h-5 text-primary-500"
+                            className="w-5 h-5 text-primary-500 flex-shrink-0"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor">
@@ -169,9 +168,9 @@ const Dashboard = () => {
                     </Card>
                   </Col>
 
-                  <Col xs={24} xl={8}>
+                  <Col xs={24} md={8}>
                     <Card
-                      className="h-full shadow-lg border-border"
+                      className="shadow-lg border-border"
                       bordered={false}>
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-bold text-content-primary flex items-center gap-2">

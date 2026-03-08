@@ -41,8 +41,13 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
     email,
     password,
     passwordConfirm,
-    plan = "FREE",
   } = req.body;
+
+  const FREE_LIMITS = {
+    users: 3,
+    storageGB: 5,
+    casesPerMonth: 10,
+  };
 
   // 1) Validate required fields
   if (!firmName || !firstName || !lastName || !email || !password) {
@@ -78,46 +83,14 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
     }
   }
 
-  // 5) Plan configuration
-  const planConfig = {
-    FREE: {
-      users: 1,
-      storageGB: 5,
-      casesPerMonth: 10,
-      trialDays: 14,
-    },
-    BASIC: {
-      users: 3,
-      storageGB: 20,
-      casesPerMonth: 50,
-      trialDays: 14,
-    },
-    PRO: {
-      users: 10,
-      storageGB: 100,
-      casesPerMonth: 999999, // Unlimited
-      trialDays: 14,
-    },
-    ENTERPRISE: {
-      users: 999999, // Unlimited
-      storageGB: 999999, // Unlimited
-      casesPerMonth: 999999, // Unlimited
-      trialDays: 30,
-    },
-  };
-
-  const selectedPlan = plan.toUpperCase();
-  if (!planConfig[selectedPlan]) {
-    return next(new AppError("Invalid plan selected", 400));
+  // 5) Check if email already exists
+  const existingEmail = await User.findOne({ email: email.toLowerCase() });
+  if (existingEmail) {
+    return next(new AppError("Email already exists", 400));
   }
 
-  const limits = planConfig[selectedPlan];
-
   try {
-    // 6) Create Firm with CORRECT limits
-    const trialEndDate = new Date();
-    trialEndDate.setDate(trialEndDate.getDate() + limits.trialDays);
-
+    // 6) Create Firm - always FREE plan with PENDING_APPROVAL status
     const firmData = {
       name: firmName,
       subdomain: subdomain || null,
@@ -132,17 +105,17 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
         },
       },
       subscription: {
-        plan: selectedPlan,
-        status: "TRIAL",
-        trialEndsAt: trialEndDate,
+        plan: "FREE",
+        status: "PENDING_APPROVAL",
+        trialEndsAt: null,
       },
       limits: {
-        users: limits.users,
-        storageGB: limits.storageGB,
-        casesPerMonth: limits.casesPerMonth,
+        users: FREE_LIMITS.users,
+        storageGB: FREE_LIMITS.storageGB,
+        casesPerMonth: FREE_LIMITS.casesPerMonth,
       },
       usage: {
-        currentUserCount: 1, // Admin user will be created
+        currentUserCount: 0,
         storageUsedGB: 0,
         casesThisMonth: 0,
         lastResetAt: new Date(),
@@ -156,7 +129,7 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
     const ua = parser(req.headers["user-agent"]);
     const userAgent = [ua.ua];
 
-    // 8) Create Admin User with new schema
+    // 8) Create super-admin user with pending status (cannot login until approved)
     const userData = {
       firmId,
       firstName,
@@ -171,9 +144,9 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
       phone: phone || "+234",
       gender: req.body.gender || "male",
       isVerified: false,
-      isActive: true,
+      isActive: false,
+      status: "pending",
       userAgent,
-      // Admin details
       adminDetails: {
         adminLevel: "firm",
         canManageUsers: true,
@@ -186,31 +159,119 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
 
     const newUser = await User.create(userData);
 
-    // 9) Send welcome email (primary email after registration)
+    // 9) Send notification to platform admin
     try {
-      await sendWelcomeEmail({
-        firstName,
-        email,
-        password,
-        firmName,
-        plan: selectedPlan,
-        trialDays: limits.trialDays,
-        maxUsers: limits.users,
-      });
-    } catch (welcomeEmailError) {
-      console.error("Failed to send welcome email:", welcomeEmailError);
+      const platformAdminEmail = process.env.PLATFORM_ADMIN_EMAIL;
+      if (platformAdminEmail) {
+        await sendCustomEmail(
+          "New Firm Registration - Pending Approval",
+          platformAdminEmail,
+          process.env.SENDINBLUE_EMAIL || "noreply@lawmaster.ng",
+          "noreply@lawmaster.ng",
+          `
+          <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">New Firm Registration</h2>
+            <p>A new firm has registered and is awaiting your approval.</p>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Firm Name:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${firmName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Contact Name:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${firstName} ${lastName}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Email:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${email}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Phone:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${phone || "Not provided"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>City:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${city || "Not provided"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>State:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${state || "Not provided"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>RC Number:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${rcNumber || "Not provided"}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>Registered At:</strong></td>
+                <td style="padding: 8px; border-bottom: 1px solid #ddd;">${new Date().toLocaleString()}</td>
+              </tr>
+            </table>
+            <p style="margin-top: 20px;">
+              Please review this application in your platform admin panel.
+            </p>
+          </div>
+          `,
+        );
+      }
+    } catch (notifyError) {
+      console.error("Failed to notify platform admin:", notifyError);
     }
 
-    // 10) Skip verification for trial users - they can verify later from dashboard
-    // Optional: Send verification email separately if needed
-    // const vToken = crypto.randomBytes(32).toString("hex") + newUser._id;
-    // ... verification logic can be added later
+    // 10) Send confirmation email to the registering firm
+    try {
+      await sendCustomEmail(
+        "Application Received - LawMaster",
+        email,
+        process.env.SENDINBLUE_EMAIL || "noreply@lawmaster.ng",
+        "noreply@lawmaster.ng",
+        `
+        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #059669;">Thank You for Registering!</h2>
+          <p>Dear ${firstName},</p>
+          <p>We have received your application for <strong>${firmName}</strong>.</p>
+          <p>
+            Your application is currently under review. You will receive an 
+            email notification once your account has been activated.
+          </p>
+          <p>This process typically takes 1-2 business days.</p>
+          <div style="
+            background: #f0fdf4; 
+            border: 1px solid #bbf7d0; 
+            border-radius: 8px; 
+            padding: 16px; 
+            margin: 20px 0;
+          ">
+            <p style="margin: 0; color: #065f46;">
+              <strong>What happens next?</strong>
+            </p>
+            <ul style="color: #065f46; margin-top: 8px;">
+              <li>Our team will review your application</li>
+              <li>You will receive an approval email with your login details</li>
+              <li>You can then log in and start managing your firm</li>
+            </ul>
+          </div>
+          <p>
+            If you have any questions, please contact our support team at 
+            <a href="mailto:${process.env.PLATFORM_ADMIN_EMAIL || "support@lawmaster.ng"}">
+              ${process.env.PLATFORM_ADMIN_EMAIL || "support@lawmaster.ng"}
+            </a>
+          </p>
+          <p style="margin-top: 30px;">
+            Best regards,<br/>
+            <strong>The LawMaster Team</strong>
+          </p>
+        </div>
+        `,
+      );
+    } catch (confirmError) {
+      console.error("Failed to send confirmation email:", confirmError);
+    }
 
     // 11) Send success response
     res.status(201).json({
       status: "success",
       message:
-        "Firm registered successfully. Please check your email to verify your account.",
+        "Your application has been submitted and is under review. You will be notified once approved.",
       data: {
         firm: {
           id: newFirm._id,
@@ -219,7 +280,6 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
           subscription: {
             plan: newFirm.subscription.plan,
             status: newFirm.subscription.status,
-            trialEndsAt: newFirm.subscription.trialEndsAt,
           },
           limits: newFirm.limits,
         },
@@ -230,15 +290,17 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
           email: newUser.email,
           role: newUser.role,
           userType: newUser.userType,
+          status: newUser.status,
+          isActive: newUser.isActive,
         },
       },
     });
   } catch (error) {
     if (error.code === 11000) {
-      if (error.keyPattern.email) {
+      if (error.keyPattern?.email) {
         return next(new AppError("Email already exists", 400));
       }
-      if (error.keyPattern.subdomain) {
+      if (error.keyPattern?.subdomain) {
         return next(new AppError("Subdomain already exists", 400));
       }
       return next(new AppError("Duplicate field value entered", 400));
@@ -687,6 +749,16 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError("Incorrect email or password", 401));
   }
 
+  // 5.5) Check if firm account is pending approval
+  if (user.isActive === false && user.status === "pending") {
+    return next(
+      new AppError(
+        "Your firm account is pending approval. You will receive an email once your account is activated.",
+        403,
+      ),
+    );
+  }
+
   // 6) ✅ DEVICE / 2FA CHECK — must come BEFORE the verification check.
   //    This ensures users on a new device always get the code flow,
   //    whether or not their email has been verified yet.
@@ -978,6 +1050,10 @@ exports.protect = catchAsync(async (req, res, next) => {
       return next(new AppError("Your firm account is not accessible.", 403));
     }
 
+    // Check and handle expired trial
+    await firm.checkTrialExpiry();
+
+    // Check subscription status
     if (!firm.isSubscriptionActive()) {
       return next(new AppError("Your firm's subscription has expired.", 402));
     }
@@ -1562,6 +1638,9 @@ exports.checkCaseLimit = catchAsync(async (req, res, next) => {
   if (!firm) {
     return next(new AppError("Firm not found", 404));
   }
+
+  // Reset cases counter if new month
+  await firm.resetCasesIfNewMonth();
 
   if (!firm.canCreateCase()) {
     return next(

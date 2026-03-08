@@ -117,28 +117,28 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
         <Card className="bg-gradient-to-br from-blue-500 to-blue-600 border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-white/20">
-              <FaBriefcase className="text-xl text-white" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 rounded-xl bg-white/20">
+              <FaBriefcase className="text-base sm:text-xl text-white" />
             </div>
-            <div className="text-white">
-              <div className="text-2xl font-bold">
+            <div className="text-white min-w-0">
+              <div className="text-lg sm:text-2xl font-bold truncate">
                 {summary.totalMatters || 0}
               </div>
-              <div className="text-xs opacity-90">Total Matters</div>
+              <div className="text-xs opacity-90">Total</div>
             </div>
           </div>
         </Card>
 
         <Card className="bg-gradient-to-br from-green-500 to-green-600 border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-white/20">
-              <FaCheckCircle className="text-xl text-white" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 rounded-xl bg-white/20">
+              <FaCheckCircle className="text-base sm:text-xl text-white" />
             </div>
-            <div className="text-white">
-              <div className="text-2xl font-bold">
+            <div className="text-white min-w-0">
+              <div className="text-lg sm:text-2xl font-bold truncate">
                 {summary.activeMatters || 0}
               </div>
               <div className="text-xs opacity-90">Active</div>
@@ -147,12 +147,12 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
         </Card>
 
         <Card className="bg-gradient-to-br from-orange-500 to-orange-600 border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-white/20">
-              <FaClock className="text-xl text-white" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 rounded-xl bg-white/20">
+              <FaClock className="text-base sm:text-xl text-white" />
             </div>
-            <div className="text-white">
-              <div className="text-2xl font-bold">
+            <div className="text-white min-w-0">
+              <div className="text-lg sm:text-2xl font-bold truncate">
                 {summary.pendingMatters || 0}
               </div>
               <div className="text-xs opacity-90">Pending</div>
@@ -161,26 +161,26 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
         </Card>
 
         <Card className="bg-gradient-to-br from-purple-500 to-purple-600 border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-white/20">
-              <FaCheckCircle className="text-xl text-white" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 rounded-xl bg-white/20">
+              <FaCheckCircle className="text-base sm:text-xl text-white" />
             </div>
-            <div className="text-white">
-              <div className="text-2xl font-bold">
+            <div className="text-white min-w-0">
+              <div className="text-lg sm:text-2xl font-bold truncate">
                 {summary.completedMatters || 0}
               </div>
-              <div className="text-xs opacity-90">Completed</div>
+              <div className="text-xs opacity-90">Done</div>
             </div>
           </div>
         </Card>
 
         <Card className="bg-gradient-to-br from-red-500 to-red-600 border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-white/20">
-              <FaFire className="text-xl text-white" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 rounded-xl bg-white/20">
+              <FaFire className="text-base sm:text-xl text-white" />
             </div>
-            <div className="text-white">
-              <div className="text-2xl font-bold">
+            <div className="text-white min-w-0">
+              <div className="text-lg sm:text-2xl font-bold truncate">
                 {summary.urgentMatters || 0}
               </div>
               <div className="text-xs opacity-90">Urgent</div>
@@ -189,15 +189,15 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
         </Card>
 
         <Card className="bg-gradient-to-br from-amber-500 to-amber-600 border-0 rounded-2xl shadow-lg hover:shadow-xl transition-all">
-          <div className="flex items-center gap-3">
-            <div className="p-3 rounded-xl bg-white/20">
-              <FaExclamationTriangle className="text-xl text-white" />
+          <div className="flex items-center gap-2 sm:gap-3">
+            <div className="p-2 sm:p-3 rounded-xl bg-white/20">
+              <FaExclamationTriangle className="text-base sm:text-xl text-white" />
             </div>
-            <div className="text-white">
-              <div className="text-2xl font-bold">
+            <div className="text-white min-w-0">
+              <div className="text-lg sm:text-2xl font-bold truncate">
                 {summary.highPriorityMatters || 0}
               </div>
-              <div className="text-xs opacity-90">High Priority</div>
+              <div className="text-xs opacity-90">High</div>
             </div>
           </div>
         </Card>
@@ -226,7 +226,7 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
         <Card
           className="rounded-2xl shadow-lg"
           title={
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <span className="text-lg font-semibold">My Recent Matters</span>
               <button
                 onClick={() => navigate("/dashboard/matters?tab=my-matters")}
@@ -255,7 +255,7 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
       )}
 
       {/* By Status & Type Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
         <Card className="rounded-2xl shadow-lg" title="Matters by Status">
           {byStatus.length > 0 ? (
             <div className="space-y-3">

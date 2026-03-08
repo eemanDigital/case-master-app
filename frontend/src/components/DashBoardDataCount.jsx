@@ -48,13 +48,13 @@ const DashboardCard = ({
       className={`bg-gradient-to-br ${gradient} border-0 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-[1.02] overflow-hidden relative`}>
       <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl"></div>
       <div className="flex items-center justify-between h-full relative z-10">
-        <div className="flex items-center gap-4">
-          <div className="p-4 rounded-2xl bg-white/20 backdrop-blur-sm shadow-inner">
-            <Icon className="text-3xl text-white" />
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="p-2 sm:p-4 rounded-2xl bg-white/20 backdrop-blur-sm shadow-inner">
+            <Icon className="text-xl sm:text-3xl text-white" />
           </div>
           <div className="text-white">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl font-bold tracking-tight">
+            <div className="flex items-center gap-1 sm:gap-3">
+              <div className="text-xl sm:text-3xl font-bold tracking-tight">
                 {count ?? 0}
               </div>
               {trend !== undefined && trend !== null && (
@@ -88,15 +88,15 @@ DashboardCard.displayName = "DashboardCard";
 const MiniStatCard = ({ icon: Icon, value, label, color, bgColor }) => (
   <Card
     className={`border-0 rounded-xl shadow-md ${bgColor} hover:shadow-lg transition-shadow`}>
-    <div className="flex items-center gap-3">
-      <div className={`p-2.5 rounded-xl bg-white shadow-sm`}>
-        <Icon className="text-lg" style={{ color }} />
+    <div className="flex items-center gap-2 sm:gap-3">
+      <div className={`p-2 rounded-xl bg-white shadow-sm`}>
+        <Icon className="text-base sm:text-lg" style={{ color }} />
       </div>
-      <div>
-        <div className="text-2xl font-bold" style={{ color }}>
+      <div className="min-w-0">
+        <div className="text-lg sm:text-2xl font-bold truncate" style={{ color }}>
           {value ?? 0}
         </div>
-        <div className="text-xs text-gray-500 font-medium">{label}</div>
+        <div className="text-xs text-gray-500 font-medium truncate">{label}</div>
       </div>
     </div>
   </Card>
@@ -303,7 +303,7 @@ const DashBoardDataCount = ({ matterStats, userStats, loading = false }) => {
 
   return (
     <div className="w-full py-4 space-y-6">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {cardData.map((card, index) => (
           <DashboardCard key={index} {...card} loading={loading} />
         ))}
@@ -311,7 +311,7 @@ const DashBoardDataCount = ({ matterStats, userStats, loading = false }) => {
 
       {!loading && (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
             <Card className="border-0 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-blue-100">
@@ -395,13 +395,13 @@ const DashBoardDataCount = ({ matterStats, userStats, loading = false }) => {
             </Card>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {matterMetrics.map((metric, index) => (
               <MiniStatCard key={`matter-${index}`} {...metric} />
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
             <Card className="border-0 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 rounded-lg bg-indigo-100">

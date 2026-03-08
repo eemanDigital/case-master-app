@@ -34,9 +34,9 @@ const QuickActionsPanel = () => {
           extra={<CaretRightOutlined rotate={isOpen ? 90 : 0} />}
           className="quick-actions-panel">
           {/* Mobile-optimized grid layout */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 lg:flex lg:flex-wrap gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-3">
             {/* Column 1: Events */}
-            <div className="space-y-2 xs:space-y-0 xs:flex xs:flex-col xs:gap-2">
+            <div className="space-y-2 sm:space-y-0 sm:flex sm:flex-col sm:gap-2">
               <div className="flex gap-2 flex-wrap">
                 <EventList />
                 <EventForm />
@@ -44,33 +44,33 @@ const QuickActionsPanel = () => {
             </div>
 
             {/* Column 2: Email */}
-            <div className="space-y-2 xs:space-y-0 xs:flex xs:flex-col xs:gap-2">
+            <div className="space-y-2 sm:space-y-0 sm:flex sm:flex-col sm:gap-2">
               <SendEmailButton
                 type="primary"
                 size="middle"
                 className="bg-indigo-600 hover:bg-indigo-700 border-indigo-600"
                 icon="mail">
-                <span className="hidden xs:inline">Send Email</span>
-                <span className="xs:hidden">Email</span>
+                <span className="hidden sm:inline">Send Email</span>
+                <span className="sm:hidden">Email</span>
               </SendEmailButton>
             </div>
 
             {/* Column 3: Navigation - Full width on mobile */}
-            <div className="col-span-1 xs:col-span-2 flex flex-col xs:flex-row gap-2">
+            <div className="col-span-1 sm:col-span-2 flex flex-col sm:flex-row gap-2">
               <Link to="notes" className="flex-1">
                 <Button
                   className="w-full bg-green-500 hover:bg-green-600 text-white border-0 h-9"
                   icon={<PlusOutlined />}>
-                  <span className="hidden xs:inline">Show Notes</span>
-                  <span className="xs:hidden">Notes</span>
+                  <span className="hidden sm:inline">Show Notes</span>
+                  <span className="sm:hidden">Notes</span>
                 </Button>
               </Link>
               <Link to="record-document-list" className="flex-1">
                 <Button
                   className="w-full bg-blue-500 hover:bg-blue-600 text-white border-0 h-9"
                   icon={<PlusOutlined />}>
-                  <span className="hidden xs:inline">Show Records</span>
-                  <span className="xs:hidden">Records</span>
+                  <span className="hidden sm:inline">Show Records</span>
+                  <span className="sm:hidden">Records</span>
                 </Button>
               </Link>
             </div>

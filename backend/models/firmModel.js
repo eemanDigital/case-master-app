@@ -178,8 +178,8 @@ const firmSchema = new mongoose.Schema(
 
       status: {
         type: String,
-        enum: ["ACTIVE", "EXPIRED", "TRIAL", "SUSPENDED"],
-        default: "TRIAL",
+        enum: ["PENDING_APPROVAL", "ACTIVE", "TRIAL", "SUSPENDED", "REJECTED", "EXPIRED"],
+        default: "PENDING_APPROVAL",
       },
 
       trialEndsAt: {
@@ -351,21 +351,44 @@ firmSchema.virtual("daysRemaining").get(function () {
  * Check if subscription is currently active
  */
 firmSchema.methods.isSubscriptionActive = function () {
-  // Check if firm is active
-  if (!this.isActive) return false;
+  return ["ACTIVE", "TRIAL"].includes(this.subscription.status);
+};
 
-  // Check subscription status
-  if (this.subscription.status === "TRIAL") {
-    return this.subscription.trialEndsAt > new Date();
+/**
+ * Reset cases counter if new month
+ */
+firmSchema.methods.resetCasesIfNewMonth = async function () {
+  const now = new Date();
+  const lastReset = new Date(this.usage.lastResetAt);
+
+  const isNewMonth =
+    now.getMonth() !== lastReset.getMonth() ||
+    now.getFullYear() !== lastReset.getFullYear();
+
+  if (isNewMonth) {
+    this.usage.casesThisMonth = 0;
+    this.usage.lastResetAt = now;
+    await this.save({ validateBeforeSave: false });
   }
+};
 
-  if (this.subscription.status === "ACTIVE") {
-    // If no expiry date set, assume active (for lifetime plans)
-    if (!this.subscription.expiresAt) return true;
-    return this.subscription.expiresAt > new Date();
+/**
+ * Check and handle trial expiry
+ */
+firmSchema.methods.checkTrialExpiry = async function () {
+  if (
+    this.subscription.status === "TRIAL" &&
+    this.subscription.trialEndsAt &&
+    this.subscription.trialEndsAt < new Date()
+  ) {
+    this.subscription.plan = "FREE";
+    this.subscription.status = "ACTIVE";
+    this.subscription.trialEndsAt = null;
+    this.limits.users = 3;
+    this.limits.storageGB = 5;
+    this.limits.casesPerMonth = 10;
+    await this.save({ validateBeforeSave: false });
   }
-
-  return false;
 };
 
 /**
