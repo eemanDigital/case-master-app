@@ -198,6 +198,9 @@ const InvitationList = lazy(() => import("./pages/InvitationList.jsx"));
 // Platform Admin
 const PlatformAdminPanel = lazy(() => import("./components/PlatformAdminPanel.jsx"));
 
+// Upgrade Accept Page
+const UpgradeAccept = lazy(() => import("./pages/UpgradeAccept.jsx"));
+
 // Support
 const ContactForm = lazy(() => import("./components/ContactForm.jsx"));
 
@@ -456,6 +459,16 @@ const router = createBrowserRouter(
           element={
             <Suspense fallback={<PageLoader />}>
               <PlatformAdminPanel />
+            </Suspense>
+          }
+        />
+
+        {/* Upgrade Accept - Public route for upgrade invitation */}
+        <Route
+          path="upgrade"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <UpgradeAccept />
             </Suspense>
           }
         />
