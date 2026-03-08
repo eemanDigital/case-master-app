@@ -55,9 +55,7 @@ const {
   sendCustomEmail,
   getUserSelectOptions,
   getAllSelectOptions,
-  getStaffByStatus,
-  getClientsByStatus,
-  getAllUsersByStatus,
+
   getStatusStatistics,
   getUserStatistics,
   getStaffStatistics,

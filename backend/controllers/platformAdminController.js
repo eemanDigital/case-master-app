@@ -209,16 +209,18 @@ exports.approveFirm = catchAsync(async (req, res, next) => {
   firm.isActive = true;
   await firm.save();
 
+  // Activate ALL users in the firm, not just super-admin
+  await User.updateMany(
+    { firmId: firm._id },
+    { isActive: true, status: "active" }
+  );
+
   const superAdmin = await User.findOne({
     firmId: firm._id,
     userType: "super-admin",
   });
 
   if (superAdmin) {
-    superAdmin.isActive = true;
-    superAdmin.status = "active";
-    await superAdmin.save();
-
     try {
       await sendCustomEmail(
         "Your LawMaster Account Has Been Approved",
@@ -330,16 +332,13 @@ exports.reactivateFirm = catchAsync(async (req, res, next) => {
   firm.isActive = true;
   await firm.save();
 
-  const superAdmin = await User.findOne({
-    firmId: firm._id,
-    userType: "super-admin",
-  });
+  // Reactivate ALL users in the firm
+  const result = await User.updateMany(
+    { firmId: firm._id },
+    { isActive: true, status: "active" }
+  );
 
-  if (superAdmin) {
-    superAdmin.isActive = true;
-    superAdmin.status = "active";
-    await superAdmin.save();
-  }
+  console.log(`Reactivated ${result.modifiedCount} users for firm ${firm.name}`);
 
   res.status(200).json({
     status: "success",

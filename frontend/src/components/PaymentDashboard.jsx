@@ -120,7 +120,7 @@ const PaymentDashboard = () => {
 
   if (error) {
     return (
-      <div className="p-4 md:p-6">
+      <div className="p-2 md:p-6 -ml-2 md:ml-0">
         <Alert
           message="Error Loading Payment Statistics"
           description={error}
@@ -139,7 +139,7 @@ const PaymentDashboard = () => {
 
   if (loading && !stats) {
     return (
-      <div className="p-4 md:p-6">
+      <div className="p-2 md:p-6 -ml-2 md:ml-0">
         <Skeleton active paragraph={{ rows: 10 }} />
       </div>
     );
@@ -981,10 +981,10 @@ const PaymentDashboard = () => {
   );
 
   return (
-    <div className="payment-dashboard p-4 md:p-6 bg-gray-50 min-h-screen">
+    <div className="payment-dashboard p-2 md:p-6 bg-gray-50 min-h-screen w-full md:w-auto -ml-2 md:ml-0">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
+      <div className="mb-4 md:mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-4 mb-2 md:mb-4">
           <div>
             <Title level={2} className="mb-2 flex items-center gap-2">
               <DollarOutlined className="text-blue-600" />

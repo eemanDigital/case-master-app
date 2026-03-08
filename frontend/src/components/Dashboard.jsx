@@ -248,7 +248,7 @@ const Dashboard = () => {
 
                 <ShowAdminComponent>
                   <section className="mb-8">
-                    <Card className="shadow-lg border-border" bordered={false}>
+                    <Card className="shadow-lg border-border w-full md:w-auto" bordered={false}>
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-bold text-content-primary flex items-center gap-2">
                           <svg

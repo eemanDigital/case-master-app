@@ -82,12 +82,15 @@ const PlatformAdminPanel = () => {
 
   const [allFirmsForSelect, setAllFirmsForSelect] = useState([]);
 
-  const api = axios.create({
-    baseURL,
-    headers: {
-      "x-platform-secret": platformSecret,
-      "x-platform-admin-email": platformEmail,
-    },
+  // Create API instance without default headers - they'll be set per-request
+  const api = axios.create({ baseURL });
+
+  // Add platform headers to each request and remove JWT token
+  api.interceptors.request.use((config) => {
+    config.headers["x-platform-secret"] = platformSecret;
+    config.headers["x-platform-admin-email"] = platformEmail;
+    delete config.headers.Authorization;
+    return config;
   });
 
   api.interceptors.response.use(
