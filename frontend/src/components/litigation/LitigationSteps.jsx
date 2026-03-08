@@ -135,14 +135,15 @@ const LitigationSteps = ({ matterId }) => {
 
   return (
     <Card
+      className="mx-2 sm:mx-0 mt-4 sm:mt-6"
       title={
         <Space>
-          <span>Litigation Steps</span>
+          <span className="text-sm sm:text-base">Litigation Steps</span>
           <Tag color="blue">{sortedSteps.length}</Tag>
         </Space>
       }
       extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddStep}>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddStep} size="small">
           Add Step
         </Button>
       }>

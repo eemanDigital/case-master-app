@@ -44,24 +44,14 @@ import {
 } from "../../utils/litigationConstants";
 import LitigationSteps from "../../components/litigation/LitigationSteps";
 
-const { TabPane } = Tabs;
-
 // ─── Shared empty state ───────────────────────────────────────────────────────
 const EmptySection = ({ message: msg = "No data recorded yet" }) => (
-  <div className="flex flex-col items-center justify-center py-16 text-gray-400">
-    <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
-      <FileTextOutlined className="text-2xl text-gray-300" />
+  <div className="flex flex-col items-center justify-center py-8 sm:py-16 text-gray-400">
+    <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-3 sm:mb-4">
+      <FileTextOutlined className="text-xl sm:text-2xl text-gray-300" />
     </div>
-    <p className="text-sm font-medium">{msg}</p>
+    <p className="text-xs sm:text-sm font-medium">{msg}</p>
   </div>
-);
-
-// ─── Tab label with icon ──────────────────────────────────────────────────────
-const TabLabel = ({ icon, label }) => (
-  <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
-    {icon}
-    {label}
-  </span>
 );
 
 // ─── Action pill button ───────────────────────────────────────────────────────
@@ -77,7 +67,7 @@ const PillButton = ({ onClick, icon, children, variant = "default" }) => {
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-lg border transition-all duration-150 shadow-sm ${styles[variant]}`}>
+      className={`inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2 text-xs font-semibold rounded-lg border transition-all duration-150 shadow-sm ${styles[variant]}`}>
       {icon}
       {children}
     </button>
@@ -88,9 +78,11 @@ const PillButton = ({ onClick, icon, children, variant = "default" }) => {
 const ProcessItem = ({ process, index }) => (
   <div
     key={index}
-    className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 hover:border-gray-200 transition-colors">
+    className="flex items-center justify-between p-2 sm:p-3 rounded-xl bg-gray-50 border border-gray-100 hover:border-gray-200 transition-colors">
     <div>
-      <p className="text-sm font-medium text-gray-900">{process.name}</p>
+      <p className="text-xs sm:text-sm font-medium text-gray-900">
+        {process.name}
+      </p>
       {process.filingDate && (
         <p className="text-xs text-gray-400 mt-0.5">
           Filed: {formatDate(process.filingDate)}
@@ -156,7 +148,6 @@ const DetailsSkeleton = () => (
 const LitigationDetails = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  // matterId from useParams is always a stable string primitive — safe to use directly.
   const { matterId } = useParams();
 
   const [showJudgmentModal, setShowJudgmentModal] = useState(false);
@@ -168,43 +159,13 @@ const LitigationDetails = () => {
   const litigationDetails = useSelector(selectSelectedDetails);
   const loading = useSelector(selectDetailsLoading);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FIX 1 — Removed clearSelectedMatter() from the cleanup function.
-  //
-  // The original code dispatched clearSelectedMatter() on unmount, which set
-  // selectedDetails → null. That triggered the loading guard to flash, which
-  // caused the parent to remount HearingTimeline with fresh props, which ran
-  // HearingTimeline's useEffect, which dispatched fetchMatterHearings, which
-  // updated matterHearings in Redux, which re-rendered the parent (because it
-  // also selects from the same store), which passed new prop references down,
-  // which re-ran the effect again — infinite loop.
-  //
-  // selectedDetails is naturally overwritten the next time fetchLitigationDetails
-  // runs for a different matter, so there is no stale-data risk in removing
-  // the cleanup dispatch.
-  // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (matterId) {
       dispatch(fetchLitigationDetails(matterId));
     }
   }, [matterId, dispatch]);
 
-  // ─────────────────────────────────────────────────────────────────────────
-  // FIX 2 — Stabilise the hearings array reference passed to HearingTimeline.
-  //
-  // litigationDetails?.hearings is a new array reference on every Redux selector
-  // evaluation, even when the contents haven't changed. The previous pattern
-  //   hearings={litigationDetails.hearings || []}
-  // made this worse: the `|| []` produces a brand-new [] on every render when
-  // hearings is null/undefined. HearingTimeline's useEffect had [stableMatterId]
-  // as its dependency, but React.memo and internal useMemo hooks still fired on
-  // every new array reference, causing cascading re-renders that circled back
-  // to trigger another fetch.
-  //
-  // Solution: cache the reference in a ref and only replace it when the data
-  // genuinely changes, using a lightweight fingerprint (length + first _id +
-  // last _id) instead of a deep comparison.
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── Stabilise hearings array reference ───────────────────────────────────
   const stableHearingsRef = useRef([]);
   const prevFingerprintRef = useRef(null);
 
@@ -279,47 +240,271 @@ const LitigationDetails = () => {
 
   const matter = litigationDetails.matter;
 
+  // Build tab items array cleanly — no JSX comments inside array literals
+  const tabItems = [
+    // ── Hearings ──────────────────────────────────────────────────────────
+    {
+      key: "hearings",
+      label: (
+        <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+          <CalendarOutlined />
+          <span className="hidden sm:inline">Hearings</span>
+        </span>
+      ),
+      children: (
+        <div className="p-2 sm:p-4 md:p-6">
+          <HearingTimeline matterId={matterId} hearings={stableHearings} />
+        </div>
+      ),
+    },
+
+    // ── Processes ─────────────────────────────────────────────────────────
+    {
+      key: "processes",
+      label: (
+        <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+          <FileTextOutlined />
+          <span className="hidden sm:inline">Processes</span>
+        </span>
+      ),
+      children: (
+        <div className="p-2 sm:p-4 md:p-6">
+          {litigationDetails.processes?.length > 0 ? (
+            <div className="space-y-3">
+              {litigationDetails.processes.map((process, index) => (
+                <ProcessItem key={index} process={process} index={index} />
+              ))}
+            </div>
+          ) : (
+            <EmptySection message="No processes filed yet" />
+          )}
+        </div>
+      ),
+    },
+
+    // ── Court Orders ──────────────────────────────────────────────────────
+    {
+      key: "orders",
+      label: (
+        <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+          <TeamOutlined />
+          <span className="hidden sm:inline">Court Orders</span>
+        </span>
+      ),
+      children: (
+        <div className="p-2 sm:p-4 md:p-6">
+          <CourtOrdersList matterId={matterId} />
+        </div>
+      ),
+    },
+
+    // ── Judgment ──────────────────────────────────────────────────────────
+    {
+      key: "judgment",
+      label: (
+        <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+          <AuditOutlined />
+          <span className="hidden sm:inline">Judgment</span>
+        </span>
+      ),
+      children: (
+        <div className="p-2 sm:p-4 md:p-6">
+          {litigationDetails.judgment?.outcome ? (
+            <Descriptions
+              column={{ xs: 1, sm: 2, md: 2 }}
+              bordered
+              size="small">
+              <Descriptions.Item label="Outcome">
+                <StatusTag
+                  status={litigationDetails.judgment.outcome}
+                  configArray={JUDGMENT_OUTCOMES}
+                />
+              </Descriptions.Item>
+              {litigationDetails.judgment.damages > 0 && (
+                <Descriptions.Item label="Damages Awarded">
+                  {formatCurrency(litigationDetails.judgment.damages)}
+                </Descriptions.Item>
+              )}
+              {litigationDetails.judgment.costs > 0 && (
+                <Descriptions.Item label="Costs">
+                  {formatCurrency(litigationDetails.judgment.costs)}
+                </Descriptions.Item>
+              )}
+              {litigationDetails.judgment.judgmentSummary && (
+                <Descriptions.Item label="Summary" span={2}>
+                  {litigationDetails.judgment.judgmentSummary}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          ) : (
+            <EmptySection message="No judgment recorded yet" />
+          )}
+        </div>
+      ),
+    },
+
+    // ── Appeal ────────────────────────────────────────────────────────────
+    {
+      key: "appeal",
+      label: (
+        <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+          <TrophyOutlined />
+          <span className="hidden sm:inline">Appeal</span>
+        </span>
+      ),
+      children: (
+        <div className="p-2 sm:p-4 md:p-6">
+          {litigationDetails.appeal?.isAppealed ? (
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="Appeal Filed">
+                <Tag color="blue">Yes</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Appeal Date">
+                {formatDate(litigationDetails.appeal.appealDate)}
+              </Descriptions.Item>
+              <Descriptions.Item label="Appeal Court">
+                {litigationDetails.appeal.appealCourt}
+              </Descriptions.Item>
+              <Descriptions.Item label="Appeal Suit No">
+                {litigationDetails.appeal.appealSuitNo}
+              </Descriptions.Item>
+              <Descriptions.Item label="Status" span={2}>
+                <StatusTag
+                  status={litigationDetails.appeal.appealStatus}
+                  configArray={APPEAL_STATUS}
+                />
+              </Descriptions.Item>
+            </Descriptions>
+          ) : (
+            <EmptySection message="No appeal filed" />
+          )}
+        </div>
+      ),
+    },
+
+    // ── Settlement ────────────────────────────────────────────────────────
+    {
+      key: "settlement",
+      label: (
+        <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+          <CheckCircleOutlined />
+          <span className="hidden sm:inline">Settlement</span>
+        </span>
+      ),
+      children: (
+        <div className="p-2 sm:p-4 md:p-6">
+          {litigationDetails.settlement?.isSettled ? (
+            <Descriptions column={{ xs: 1, sm: 2 }} bordered size="small">
+              <Descriptions.Item label="Settled">
+                <Tag color="green">Yes</Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Settlement Date">
+                {formatDate(litigationDetails.settlement.settlementDate)}
+              </Descriptions.Item>
+              {litigationDetails.settlement.settlementAmount > 0 && (
+                <Descriptions.Item label="Amount" span={2}>
+                  {formatCurrency(
+                    litigationDetails.settlement.settlementAmount,
+                  )}
+                </Descriptions.Item>
+              )}
+              {litigationDetails.settlement.settlementTerms && (
+                <Descriptions.Item label="Terms" span={2}>
+                  {litigationDetails.settlement.settlementTerms}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          ) : (
+            <EmptySection message="No settlement recorded" />
+          )}
+        </div>
+      ),
+    },
+
+    // ── Precedents (only shown when data exists) ──────────────────────────
+    ...(litigationDetails.precedents?.length > 0
+      ? [
+          {
+            key: "precedents",
+            label: (
+              <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+                <SnippetsOutlined />
+                <span className="hidden sm:inline">Precedents</span>
+              </span>
+            ),
+            children: (
+              <div className="p-2 sm:p-4 md:p-6 space-y-3">
+                {litigationDetails.precedents.map((precedent, index) => (
+                  <div
+                    key={index}
+                    className="p-3 sm:p-4 rounded-xl bg-gray-50 border border-gray-100">
+                    <h4 className="text-sm font-bold text-gray-900">
+                      {precedent.caseName}
+                    </h4>
+                    {precedent.citation && (
+                      <p className="text-xs text-gray-500 mt-1 font-mono">
+                        {precedent.citation}
+                      </p>
+                    )}
+                    {precedent.relevance && (
+                      <p className="text-sm text-gray-700 mt-2">
+                        {precedent.relevance}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
+
   // ── Page ──────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-[#f5f6fa]">
       {/* ── Sticky top bar ─────────────────────────────────────────────── */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-20 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-3 md:py-4">
           {/* Title row */}
-          <div className="flex items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center justify-between gap-2 md:gap-4 mb-3 md:mb-4">
+            <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
               <button
                 onClick={() => navigate("/dashboard/matters/litigation")}
                 className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors">
                 <ArrowLeftOutlined />
               </button>
               <div className="min-w-0">
-                <h1 className="text-base font-bold text-gray-900 truncate leading-tight">
+                <h1 className="text-sm md:text-base font-bold text-gray-900 truncate leading-tight">
                   {matter?.title || "Litigation Matter"}
                 </h1>
-                <p className="text-xs text-gray-400 font-mono mt-0.5">
+                <p className="text-xs text-gray-400 font-mono mt-0.5 hidden sm:block">
                   Suit No: {litigationDetails.suitNo}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
               <button
                 onClick={handlePrint}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
-                <PrinterOutlined /> Print
+                className="hidden sm:inline-flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors">
+                <PrinterOutlined />
+                <span className="hidden md:inline">Print</span>
               </button>
               <button
                 onClick={() => handleExport("pdf")}
                 disabled={exportLoading}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50">
+                className="inline-flex items-center gap-1.5 px-2 md:px-3 py-1.5 text-xs font-semibold rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition-colors disabled:opacity-50">
                 <DownloadOutlined />
-                {exportLoading ? "Exporting…" : "Export PDF"}
+                <span className="hidden md:inline">
+                  {exportLoading ? "Exporting…" : "Export PDF"}
+                </span>
               </button>
               <button
                 onClick={handleEdit}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold rounded-lg bg-slate-800 text-white hover:bg-slate-900 transition-colors">
-                <EditOutlined /> Edit
+                className="inline-flex items-center gap-1.5 px-3 md:px-4 py-1.5 text-xs font-bold rounded-lg bg-slate-800 text-white hover:bg-slate-900 transition-colors">
+                <EditOutlined />
+                <span className="hidden sm:inline">Edit</span>
               </button>
             </div>
           </div>
@@ -377,7 +562,7 @@ const LitigationDetails = () => {
       />
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 md:px-6 py-4 md:py-6 space-y-4 md:space-y-6">
         <MatterDetailsCard
           litigation={litigationDetails}
           matter={matter}
@@ -391,186 +576,14 @@ const LitigationDetails = () => {
             onChange={setActiveTab}
             tabBarStyle={{
               margin: 0,
-              padding: "0 24px",
+              padding: "0 12px",
               borderBottom: "1px solid #f0f0f0",
               background: "#fafafa",
+              overflowX: "auto",
             }}
-            tabBarGutter={4}>
-            {/* Hearings */}
-            <TabPane
-              tab={<TabLabel icon={<CalendarOutlined />} label="Hearings" />}
-              key="hearings">
-              <div className="p-6">
-                {/*
-                  Pass stableHearings — referentially stable across renders
-                  unless the underlying data changes (see FIX 2 above).
-                  Do NOT inline `litigationDetails.hearings || []` here.
-                */}
-                <HearingTimeline
-                  matterId={matterId}
-                  hearings={stableHearings}
-                />
-              </div>
-            </TabPane>
-
-            {/* Court Orders */}
-            <TabPane
-              tab={
-                <TabLabel icon={<SnippetsOutlined />} label="Court Orders" />
-              }
-              key="orders">
-              <div className="p-6">
-                <CourtOrdersList
-                  matterId={matterId}
-                  courtOrders={litigationDetails.courtOrders || []}
-                />
-              </div>
-            </TabPane>
-
-            {/* Processes */}
-            <TabPane
-              tab={<TabLabel icon={<AuditOutlined />} label="Processes" />}
-              key="processes">
-              <div className="p-6">
-                <ProcessesTab litigationDetails={litigationDetails} />
-              </div>
-            </TabPane>
-
-            {/* Judgment */}
-            <TabPane
-              tab={<TabLabel icon={<FileTextOutlined />} label="Judgment" />}
-              key="judgment">
-              <div className="p-6">
-                {litigationDetails.judgment?.judgmentDate ? (
-                  <Descriptions column={2} bordered size="small">
-                    <Descriptions.Item label="Judgment Date" span={2}>
-                      {formatDate(litigationDetails.judgment.judgmentDate)}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Outcome" span={2}>
-                      <StatusTag
-                        status={litigationDetails.judgment.outcome}
-                        configArray={JUDGMENT_OUTCOMES}
-                      />
-                    </Descriptions.Item>
-                    {litigationDetails.judgment.damages > 0 && (
-                      <Descriptions.Item label="Damages Awarded">
-                        {formatCurrency(litigationDetails.judgment.damages)}
-                      </Descriptions.Item>
-                    )}
-                    {litigationDetails.judgment.costs > 0 && (
-                      <Descriptions.Item label="Costs">
-                        {formatCurrency(litigationDetails.judgment.costs)}
-                      </Descriptions.Item>
-                    )}
-                    {litigationDetails.judgment.judgmentSummary && (
-                      <Descriptions.Item label="Summary" span={2}>
-                        {litigationDetails.judgment.judgmentSummary}
-                      </Descriptions.Item>
-                    )}
-                  </Descriptions>
-                ) : (
-                  <EmptySection message="No judgment recorded yet" />
-                )}
-              </div>
-            </TabPane>
-
-            {/* Appeal */}
-            <TabPane
-              tab={<TabLabel icon={<TrophyOutlined />} label="Appeal" />}
-              key="appeal">
-              <div className="p-6">
-                {litigationDetails.appeal?.isAppealed ? (
-                  <Descriptions column={2} bordered size="small">
-                    <Descriptions.Item label="Appeal Filed">
-                      <Tag color="blue">Yes</Tag>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Appeal Date">
-                      {formatDate(litigationDetails.appeal.appealDate)}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Appeal Court">
-                      {litigationDetails.appeal.appealCourt}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Appeal Suit No">
-                      {litigationDetails.appeal.appealSuitNo}
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Status" span={2}>
-                      <StatusTag
-                        status={litigationDetails.appeal.appealStatus}
-                        configArray={APPEAL_STATUS}
-                      />
-                    </Descriptions.Item>
-                  </Descriptions>
-                ) : (
-                  <EmptySection message="No appeal filed" />
-                )}
-              </div>
-            </TabPane>
-
-            {/* Settlement */}
-            <TabPane
-              tab={
-                <TabLabel icon={<CheckCircleOutlined />} label="Settlement" />
-              }
-              key="settlement">
-              <div className="p-6">
-                {litigationDetails.settlement?.isSettled ? (
-                  <Descriptions column={2} bordered size="small">
-                    <Descriptions.Item label="Settled">
-                      <Tag color="green">Yes</Tag>
-                    </Descriptions.Item>
-                    <Descriptions.Item label="Settlement Date">
-                      {formatDate(litigationDetails.settlement.settlementDate)}
-                    </Descriptions.Item>
-                    {litigationDetails.settlement.settlementAmount > 0 && (
-                      <Descriptions.Item label="Amount" span={2}>
-                        {formatCurrency(
-                          litigationDetails.settlement.settlementAmount,
-                        )}
-                      </Descriptions.Item>
-                    )}
-                    {litigationDetails.settlement.settlementTerms && (
-                      <Descriptions.Item label="Terms" span={2}>
-                        {litigationDetails.settlement.settlementTerms}
-                      </Descriptions.Item>
-                    )}
-                  </Descriptions>
-                ) : (
-                  <EmptySection message="No settlement recorded" />
-                )}
-              </div>
-            </TabPane>
-
-            {/* Precedents — only shown when data exists */}
-            {litigationDetails.precedents?.length > 0 && (
-              <TabPane
-                tab={
-                  <TabLabel icon={<SnippetsOutlined />} label="Precedents" />
-                }
-                key="precedents">
-                <div className="p-6 space-y-3">
-                  {litigationDetails.precedents.map((precedent, index) => (
-                    <div
-                      key={index}
-                      className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-                      <h4 className="text-sm font-bold text-gray-900">
-                        {precedent.caseName}
-                      </h4>
-                      {precedent.citation && (
-                        <p className="text-xs text-gray-500 mt-1 font-mono">
-                          {precedent.citation}
-                        </p>
-                      )}
-                      {precedent.relevance && (
-                        <p className="text-sm text-gray-700 mt-2">
-                          {precedent.relevance}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </TabPane>
-            )}
-          </Tabs>
+            tabBarGutter={4}
+            items={tabItems}
+          />
         </div>
       </div>
     </div>
