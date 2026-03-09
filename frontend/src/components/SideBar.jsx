@@ -24,6 +24,7 @@ import {
   SettingOutlined,
   ApiOutlined,
   UserAddOutlined,
+  FileProtectOutlined,
 } from "@ant-design/icons";
 import { logout, RESET } from "../redux/features/auth/authSlice";
 import { useTheme } from "../providers/ThemeProvider";
@@ -95,11 +96,12 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
     } else if (path.includes("/dashboard/calendar")) {
       setSelectedKeys(["calendar-main"]);
       setOpenKeys(["calendar"]);
-    }
-    // Other paths
-    else if (path.includes("/dashboard/case-reports")) {
-      setSelectedKeys(["reports"]);
+    } else if (path.includes("/dashboard/case-reports")) {
+      setSelectedKeys(["case-reports"]);
       setOpenKeys([]);
+    } else if (path.includes("/dashboard/templates")) {
+      setSelectedKeys(["templates"]);
+      setOpenKeys(["templates"]);
     } else if (path.includes("/dashboard/tasks")) {
       setSelectedKeys(["tasks"]);
       setOpenKeys([]);
@@ -290,6 +292,23 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
       icon: <FileOutlined />,
       label: "Documents",
       path: "/dashboard/documents",
+    },
+    {
+      key: "templates",
+      icon: <FileProtectOutlined />,
+      label: "Templates",
+      children: [
+        {
+          key: "templates-library",
+          label: "Template Library",
+          path: "/dashboard/templates",
+        },
+        {
+          key: "generated-documents",
+          label: "Generated Documents",
+          path: "/dashboard/templates/generated",
+        },
+      ],
     },
     {
       key: "billings",

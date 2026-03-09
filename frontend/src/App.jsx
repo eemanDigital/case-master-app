@@ -208,6 +208,12 @@ const ContactForm = lazy(() => import("./components/ContactForm.jsx"));
 const TermsOfService = lazy(() => import("./pages/TermsOfService.jsx"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
 
+// Templates
+const TemplateLibrary = lazy(() => import("./pages/templates/TemplateLibrary.jsx"));
+const GeneratedDocumentsList = lazy(() =>
+  import("./pages/templates/GeneratedDocumentsList.jsx")
+);
+
 // Cookie Consent
 import CookieConsent from "./components/CookieConsent";
 
@@ -1119,6 +1125,28 @@ const router = createBrowserRouter(
             element={
               <Suspense fallback={<PageLoader />}>
                 <ContactForm />
+              </Suspense>
+            }
+          />
+
+          {/* Templates Library */}
+          <Route
+            path="templates"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ShowOnlyVerifiedUser>
+                  <TemplateLibrary />
+                </ShowOnlyVerifiedUser>
+              </Suspense>
+            }
+          />
+          <Route
+            path="templates/generated"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ShowOnlyVerifiedUser>
+                  <GeneratedDocumentsList />
+                </ShowOnlyVerifiedUser>
               </Suspense>
             }
           />

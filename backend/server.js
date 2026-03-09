@@ -331,6 +331,7 @@ app.use("/api/v1/documentRecord", documentRecordRouter);
 app.use("/api/v1/webhooks", webhookRouter);
 app.use("/api/v1/audit-logs", auditLogRouter);
 app.use("/api/v1/invitations", invitationRouter);
+app.use("/api/v1/templates", require("./routes/templateRoutes"));
 
 // Public invitation validation
 app.get("/api/v1/invitations/validate/:token", require("./controllers/invitationController").validateInvitation);
