@@ -1919,7 +1919,9 @@ exports.checkMatterAccess = catchAsync(async (req, res, next) => {
   const isAdmin =
     req.user.userType === "admin" ||
     req.user.additionalRoles?.includes("admin") ||
-    req.user.additionalRoles?.includes("super-admin");
+    req.user.additionalRoles?.includes("super-admin") ||
+    req.user.role === "admin" ||
+    req.user.role === "super-admin";
 
   if (!isAssignedOfficer && !isAdmin) {
     return next(

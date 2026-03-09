@@ -185,7 +185,7 @@ matterRouter.get(
 
 matterRouter.get(
   "/:id",
-  matterController.checkMatterAccess,
+
   matterController.getMatter,
 );
 
