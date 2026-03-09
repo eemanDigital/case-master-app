@@ -37,9 +37,9 @@ const InvoiceList = () => {
 
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const isSuperOrAdmin = user?.data?.additionalRoles?.includes(
-    "super-admin",
-  ) || user?.data?.role === "admin";
+  const isSuperOrAdmin =
+    user?.data?.additionalRoles?.includes("super-admin") ||
+    user?.data?.role === "super-admin";
 
   useRedirectLogoutUser("/users/login");
 
@@ -70,8 +70,12 @@ const InvoiceList = () => {
           ?.toLowerCase()
           .includes(searchTerm);
         const titleMatch = d.title?.toLowerCase().includes(searchTerm);
-        const otherActivityMatch = d.otherActivity?.toLowerCase().includes(searchTerm);
-        const matterMatch = d.matter?.matterNumber?.toLowerCase().includes(searchTerm);
+        const otherActivityMatch = d.otherActivity
+          ?.toLowerCase()
+          .includes(searchTerm);
+        const matterMatch = d.matter?.matterNumber
+          ?.toLowerCase()
+          .includes(searchTerm);
         const statusMatch = d.status
           ?.toLowerCase()
           .includes(searchTerm.toLowerCase());
@@ -136,10 +140,7 @@ const InvoiceList = () => {
   };
 
   const handleDownloadBillOfCharges = (invoiceNumber, id) => {
-    window.open(
-      `${downloadURL}/invoices/bill-of-charges/${id}`,
-      "_blank"
-    );
+    window.open(`${downloadURL}/invoices/bill-of-charges/${id}`, "_blank");
   };
 
   const columns = [
@@ -257,8 +258,8 @@ const InvoiceList = () => {
                 progress >= 100
                   ? "#52c41a"
                   : progress > 0
-                  ? "#1890ff"
-                  : "#d9d9d9"
+                    ? "#1890ff"
+                    : "#d9d9d9"
               }
             />
             <div className="text-xs text-gray-500 text-center">
@@ -296,7 +297,10 @@ const InvoiceList = () => {
       key: "action",
       render: (text, record) => (
         <Space size="small">
-          <Button type="link" icon={<EyeOutlined />} className="text-blue-600 p-0">
+          <Button
+            type="link"
+            icon={<EyeOutlined />}
+            className="text-blue-600 p-0">
             <Link to={`invoices/${record?._id}/details`}>View</Link>
           </Button>
 
@@ -307,7 +311,12 @@ const InvoiceList = () => {
                   type="link"
                   icon={<FilePdfOutlined />}
                   className="text-purple-600 p-0"
-                  onClick={() => handleDownloadBillOfCharges(record.invoiceNumber, record._id)}
+                  onClick={() =>
+                    handleDownloadBillOfCharges(
+                      record.invoiceNumber,
+                      record._id,
+                    )
+                  }
                 />
               </Tooltip>
             </>
@@ -404,9 +413,7 @@ const InvoiceList = () => {
             <div className="bg-white p-4 rounded-lg shadow-sm border">
               <div className="text-sm text-gray-600">Paid</div>
               <div className="text-2xl font-bold text-green-600">
-                {
-                  searchResults.filter((inv) => inv.status === "paid").length
-                }
+                {searchResults.filter((inv) => inv.status === "paid").length}
               </div>
             </div>
             <div className="bg-white p-4 rounded-lg shadow-sm border">
