@@ -15,6 +15,7 @@ import {
   Modal,
   Spin,
   Empty,
+  Alert,
 } from "antd";
 import {
   DownloadOutlined,
@@ -264,6 +265,24 @@ const GeneratedDocumentsList = () => {
 
   return (
     <div style={{ padding: 24 }}>
+      <Alert
+        message="Your Generated Documents"
+        description={
+          <div>
+            <Text>
+              Documents you generate from templates appear here. You can view, edit, change status, and export them.
+            </Text>
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                <strong>Status Guide:</strong> Draft → Final → Signed → Archived
+              </Text>
+            </div>
+          </div>
+        }
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+      />
       <Card
         title={
           <Space>

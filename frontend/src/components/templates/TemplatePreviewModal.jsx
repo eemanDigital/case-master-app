@@ -164,6 +164,11 @@ const TemplatePreviewModal = ({ visible, template, onClose, onUse }) => {
       onCancel={onClose}
       width={900}
       footer={[
+        <div key="instructions" style={{ float: "left", textAlign: "left" }}>
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Yellow highlighted text like <Text code>{`{{PLACEHOLDER}}`}</Text> needs to be filled when generating the document
+          </Text>
+        </div>,
         <Button key="close" icon={<CloseOutlined />} onClick={onClose}>
           Close
         </Button>,

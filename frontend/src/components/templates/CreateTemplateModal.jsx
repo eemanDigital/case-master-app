@@ -306,6 +306,26 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
         </Button>,
       ]}
     >
+      <Alert
+        message="How to Create a Template"
+        description={
+          <div>
+            <ol style={{ paddingLeft: 20, marginBottom: 0 }}>
+              <li><strong>Fill in the details</strong> - Enter title, category, practice area, and description</li>
+              <li><strong>Write your template content</strong> - Use the Content tab to write your document</li>
+              <li><strong>Add placeholders</strong> - Use {{PLACEHOLDER_NAME}} format for dynamic fields (e.g., {{CLIENT_NAME}}, {{DATE}}, {{AMOUNT}})</li>
+              <li><strong>Customize placeholders</strong> - Use the Metadata tab to set labels, types (text, date, currency), and hints</li>
+              <li><strong>Preview</strong> - Check how it will look in the Preview tab</li>
+            </ol>
+            <Text type="secondary" style={{ display: "block", marginTop: 8 }}>
+              <strong>Tip:</strong> Click any button in "Quick Insert" to add common placeholders instantly.
+            </Text>
+          </div>
+        }
+        type="info"
+        showIcon
+        style={{ marginBottom: 16 }}
+      />
       <Form form={form} layout="vertical">
         <Row gutter={16}>
           <Col span={12}>
