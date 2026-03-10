@@ -1,17 +1,26 @@
 const mongoose = require("mongoose");
 const dotenv = require("dotenv");
 const path = require("path");
-const fs = require("fs");
 
 dotenv.config({ path: path.join(__dirname, "../config.env") });
 
 const Template = require("../models/templateModel");
 const templateSeeds = require("./templateSeeds");
 
-const DB = process.env.DATABASE.replace(
-  "<password>",
-  process.env.DATABASE_PASSWORD
-);
+// Use local database for development, Atlas for production
+let DB;
+if (process.env.NODE_ENV === "production") {
+  // Production: Use Atlas with password replacement
+  DB = process.env.DATABASE.replace(
+    "<PASSWORD>",
+    process.env.DATABASE_PASSWORD
+  );
+} else {
+  // Development: Use local database
+  DB = process.env.DATABASE_LOCAL || "mongodb://127.0.0.1:27017/case-master-app";
+}
+
+console.log(`📦 Connecting to: ${DB.includes("127.0.0.1") ? "Local MongoDB" : "MongoDB Atlas"}`);
 
 const seedTemplates = async () => {
   try {

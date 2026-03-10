@@ -350,7 +350,7 @@ Occupation: {{WITNESS2_OCCUPATION}}
       { key: "ASSIGNEE_NAME", label: "Assignee Full Name", type: "text", required: true, hint: "Full legal name of the new property owner" },
       { key: "ASSIGNEE_ADDRESS", label: "Assignee Address", type: "textarea", required: true, hint: "Address of the assignee" },
       { key: "PROPERTY_ADDRESS", label: "Property Address", type: "textarea", required: true, hint: "Full address of the property" },
-      { key: "SURVEY_NUMBER", label: "Survey Plan Number", type: "text", required: trueRegistered, hint: " survey plan number" },
+      { key: "SURVEY_NUMBER", label: "Survey Plan Number", type: "text", required: true, hint: "Survey plan number" },
       { key: "REGISTRY_NAME", label: "Registry Name", type: "text", required: true, hint: "Name of the land registry" },
       { key: "EXECUTION_DATE", label: "Execution Date", type: "date", required: true, hint: "Date of signing" },
       { key: "YEAR", label: "Year", type: "text", required: true, hint: "Current year" },

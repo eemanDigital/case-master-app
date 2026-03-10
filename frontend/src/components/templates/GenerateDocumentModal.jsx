@@ -259,8 +259,9 @@ const GenerateDocumentModal = ({ visible, template, onClose }) => {
   };
 
   const renderStep3 = () => {
-    const formValues = form.getFieldsValue();
-    const data = { ...formValues.filledData };
+    const formValues = form.getFieldsValue(true);
+    const filledData = formValues.filledData || {};
+    const data = { ...filledData };
 
     let content = template.content;
     placeholderFields.forEach((field) => {
@@ -345,7 +346,12 @@ const GenerateDocumentModal = ({ visible, template, onClose }) => {
 
   const handleGenerate = async (status = "draft") => {
     try {
-      const values = form.getFieldsValue();
+      // Validate form first
+      await form.validateFields();
+      
+      const values = form.getFieldsValue(true);
+      const filledData = values.filledData || {};
+      
       await dispatch(
         generateDocument({
           templateId: template._id,
@@ -353,14 +359,15 @@ const GenerateDocumentModal = ({ visible, template, onClose }) => {
             title: values.title,
             matterId: values.matterId,
             clientId: values.clientId,
-            filledData: values.filledData,
+            filledData: filledData,
             status,
           },
         })
       ).unwrap();
       message.success("Document generated successfully!");
     } catch (error) {
-      message.error(error || "Failed to generate document");
+      console.error("Generate error:", error);
+      message.error(error?.message || error || "Failed to generate document - please fill all required fields");
     }
   };
 
