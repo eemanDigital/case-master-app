@@ -275,6 +275,10 @@ const GenerateDocumentModal = ({ visible, template, onClose }) => {
     const wordCount = content.split(/\s+/).filter(Boolean).length;
     const pageCount = Math.ceil(wordCount / 250);
 
+    const unfilledCount = placeholderFields.filter(
+      (p) => p.required && !data[p.key]
+    ).length;
+
     return (
       <div>
         <Alert
