@@ -1411,6 +1411,96 @@ ATTORNEY
     status: "active",
     isFeatured: false,
   },
+  {
+    title: "Simple Contract Agreement",
+    description:
+      "A basic contract agreement template for simple business transactions in Nigeria. Suitable for small-scale agreements between parties.",
+    category: "contract",
+    subcategory: "general",
+    practiceArea: "general",
+    isSystemTemplate: true,
+    content: `SIMPLE CONTRACT AGREEMENT
+
+This Contract Agreement ("Agreement") is made this {{CONTRACT_DATE}} day of {{CONTRACT_YEAR}}
+
+BETWEEN:
+
+{{PARTY_A_NAME}} of {{PARTY_A_ADDRESS}} (hereinafter referred to as "Party A")
+
+AND
+
+{{PARTY_B_NAME}} of {{PARTY_B_ADDRESS}} (hereinafter referred to as "Party B")
+
+WHEREAS:
+
+Party A and Party B have agreed to enter into this Agreement to set out the terms and conditions of their business relationship.
+
+NOW IT IS HEREBY AGREED as follows:
+
+1. TERMS OF AGREEMENT
+{{TERMS_DESCRIPTION}}
+
+2. PAYMENT TERMS
+The total amount payable under this Agreement is ₦{{TOTAL_AMOUNT}} (Naira {{AMOUNT_IN_WORDS}}).
+
+Payment shall be made as follows:
+{{PAYMENT_TERMS}}
+
+3. DURATION
+This Agreement shall commence on {{START_DATE}} and shall continue until {{END_DATE}} unless terminated earlier in accordance with the provisions herein.
+
+4. OBLIGATIONS OF PARTY A
+{{PARTY_A_OBLIGATIONS}}
+
+5. OBLIGATIONS OF PARTY B
+{{PARTY_B_OBLIGATIONS}}
+
+6. CONFIDENTIALITY
+Both parties agree to keep confidential all information exchanged during the course of this Agreement.
+
+7. TERMINATION
+Either party may terminate this Agreement by giving {{NOTICE_PERIOD}} days written notice to the other party.
+
+8. GOVERNING LAW
+This Agreement shall be governed by the laws of Nigeria.
+
+IN WITNESS WHEREOF the parties have executed this Agreement.
+
+_________________________                    _________________________
+PARTY A                                        PARTY B
+{{PARTY_A_NAME}}                               {{PARTY_B_NAME}}
+
+Date: {{PARTY_A_SIGN_DATE}}                   Date: {{PARTY_B_SIGN_DATE}}
+
+Witness: _____________________              Witness: _____________________
+Name: {{WITNESS_NAME}}                        Name: {{WITNESS2_NAME}}
+`,
+    placeholders: [
+      { key: "CONTRACT_DATE", label: "Contract Date", type: "date", required: true, hint: "Date this agreement is signed" },
+      { key: "CONTRACT_YEAR", label: "Contract Year", type: "text", required: true, hint: "Year of the contract" },
+      { key: "PARTY_A_NAME", label: "Party A Name", type: "text", required: true, hint: "Full name of first party" },
+      { key: "PARTY_A_ADDRESS", label: "Party A Address", type: "textarea", required: true, hint: "Address of first party" },
+      { key: "PARTY_B_NAME", label: "Party B Name", type: "text", required: true, hint: "Full name of second party" },
+      { key: "PARTY_B_ADDRESS", label: "Party B Address", type: "textarea", required: true, hint: "Address of second party" },
+      { key: "TERMS_DESCRIPTION", label: "Terms Description", type: "textarea", required: true, hint: "Describe the terms of this agreement" },
+      { key: "TOTAL_AMOUNT", label: "Total Amount", type: "currency", required: true, hint: "Total amount in Naira" },
+      { key: "AMOUNT_IN_WORDS", label: "Amount in Words", type: "text", required: true, hint: "Amount written in words" },
+      { key: "PAYMENT_TERMS", label: "Payment Terms", type: "textarea", required: true, hint: "When and how payment will be made" },
+      { key: "START_DATE", label: "Start Date", type: "date", required: true, hint: "When the agreement starts" },
+      { key: "END_DATE", label: "End Date", type: "date", required: true, hint: "When the agreement ends" },
+      { key: "PARTY_A_OBLIGATIONS", label: "Party A Obligations", type: "textarea", required: true, hint: "What Party A must do" },
+      { key: "PARTY_B_OBLIGATIONS", label: "Party B Obligations", type: "textarea", required: true, hint: "What Party B must do" },
+      { key: "NOTICE_PERIOD", label: "Notice Period (Days)", type: "number", required: true, defaultValue: "14", hint: "Days of notice for termination" },
+      { key: "PARTY_A_SIGN_DATE", label: "Party A Sign Date", type: "date", required: true },
+      { key: "PARTY_B_SIGN_DATE", label: "Party B Sign Date", type: "date", required: true },
+      { key: "WITNESS_NAME", label: "Witness 1 Name", type: "text", required: true },
+      { key: "WITNESS2_NAME", label: "Witness 2 Name", type: "text", required: true }
+    ],
+    tags: ["contract", "agreement", "simple", "Nigeria"],
+    governingLaw: "Laws of Nigeria",
+    status: "active",
+    isFeatured: true,
+  },
 ];
 
 module.exports = templateSeeds;

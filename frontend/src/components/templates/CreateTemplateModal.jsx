@@ -17,11 +17,7 @@ import {
   Row,
   Col,
 } from "antd";
-import {
-  PlusOutlined,
-  DeleteOutlined,
-  EyeOutlined,
-} from "@ant-design/icons";
+import { PlusOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import {
   createTemplate,
   getAllTemplates,
@@ -104,7 +100,10 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
         if (!updated.find((p) => p.key === key)) {
           updated.push({
             key,
-            label: key.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()),
+            label: key
+              .replace(/_/g, " ")
+              .toLowerCase()
+              .replace(/\b\w/g, (l) => l.toUpperCase()),
             type: "text",
             required: true,
             hint: "",
@@ -121,7 +120,7 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
 
   const handleUpdatePlaceholderMeta = (key, field, value) => {
     setPlaceholderMetadata((prev) =>
-      prev.map((p) => (p.key === key ? { ...p, [field]: value } : p))
+      prev.map((p) => (p.key === key ? { ...p, [field]: value } : p)),
     );
   };
 
@@ -131,7 +130,7 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
         message.error("Please enter template content");
         return;
       }
-      
+
       const values = await form.validateFields();
       setIsSubmitting(true);
 
@@ -140,7 +139,7 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
           ...values,
           content,
           placeholders: placeholderMetadata,
-        })
+        }),
       ).unwrap();
 
       message.success("Template created successfully!");
@@ -169,7 +168,9 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
         <Input
           size="small"
           value={text}
-          onChange={(e) => handleUpdatePlaceholderMeta(record.key, "label", e.target.value)}
+          onChange={(e) =>
+            handleUpdatePlaceholderMeta(record.key, "label", e.target.value)
+          }
         />
       ),
     },
@@ -181,9 +182,10 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
         <Select
           size="small"
           value={type}
-          onChange={(value) => handleUpdatePlaceholderMeta(record.key, "type", value)}
-          style={{ width: 100 }}
-        >
+          onChange={(value) =>
+            handleUpdatePlaceholderMeta(record.key, "type", value)
+          }
+          style={{ width: 100 }}>
           <Select.Option value="text">Text</Select.Option>
           <Select.Option value="textarea">TextArea</Select.Option>
           <Select.Option value="date">Date</Select.Option>
@@ -200,9 +202,14 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
         <Select
           size="small"
           value={required ? "true" : "false"}
-          onChange={(value) => handleUpdatePlaceholderMeta(record.key, "required", value === "true")}
-          style={{ width: 80 }}
-        >
+          onChange={(value) =>
+            handleUpdatePlaceholderMeta(
+              record.key,
+              "required",
+              value === "true",
+            )
+          }
+          style={{ width: 80 }}>
           <Select.Option value="true">Yes</Select.Option>
           <Select.Option value="false">No</Select.Option>
         </Select>
@@ -216,7 +223,9 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
         <Input
           size="small"
           value={hint}
-          onChange={(e) => handleUpdatePlaceholderMeta(record.key, "hint", e.target.value)}
+          onChange={(e) =>
+            handleUpdatePlaceholderMeta(record.key, "hint", e.target.value)
+          }
           placeholder="Helper text"
         />
       ),
@@ -246,8 +255,7 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
           <Button
             key={ph.key}
             size="small"
-            onClick={() => handleInsertPlaceholder(ph.key)}
-          >
+            onClick={() => handleInsertPlaceholder(ph.key)}>
             {`{{${ph.key}}}`}
           </Button>
         ))}
@@ -271,7 +279,7 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
       const regex = new RegExp(`\\{\\{${ph.key}\\}\\}`, "g");
       preview = preview.replace(
         regex,
-        `<span style="background-color: #fef08a; padding: 2px 4px; border-radius: 2px;">[${ph.label}]</span>`
+        `<span style="background-color: #fef08a; padding: 2px 4px; border-radius: 2px;">[${ph.label}]</span>`,
       );
     });
 
@@ -301,24 +309,44 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
         <Button key="cancel" onClick={onClose}>
           Cancel
         </Button>,
-        <Button key="submit" type="primary" onClick={handleSubmit} loading={isSubmitting}>
+        <Button
+          key="submit"
+          type="primary"
+          onClick={handleSubmit}
+          loading={isSubmitting}>
           Create Template
         </Button>,
-      ]}
-    >
+      ]}>
       <Alert
         message="How to Create a Template"
         description={
           <div>
             <ol style={{ paddingLeft: 20, marginBottom: 0 }}>
-              <li><strong>Fill in the details</strong> - Enter title, category, practice area, and description</li>
-              <li><strong>Write your template content</strong> - Use the Content tab to write your document</li>
-              <li><strong>Add placeholders</strong> - Use {{PLACEHOLDER_NAME}} format for dynamic fields (e.g., {{CLIENT_NAME}}, {{DATE}}, {{AMOUNT}})</li>
-              <li><strong>Customize placeholders</strong> - Use the Metadata tab to set labels, types (text, date, currency), and hints</li>
-              <li><strong>Preview</strong> - Check how it will look in the Preview tab</li>
+              <li>
+                <strong>Fill in the details</strong> - Enter title, category,
+                practice area, and description
+              </li>
+              <li>
+                <strong>Write your template content</strong> - Use the Content
+                tab to write your document
+              </li>
+              <li>
+                <strong>Add placeholders</strong> - Use {"{{PLACEHOLDER_NAME}}"}{" "}
+                format for dynamic fields (e.g., {"{{CLIENT_NAME}}"},{" "}
+                {"{{DATE}}"}, {"{{AMOUNT}}"})
+              </li>
+              <li>
+                <strong>Customize placeholders</strong> - Use the Metadata tab
+                to set labels, types (text, date, currency), and hints
+              </li>
+              <li>
+                <strong>Preview</strong> - Check how it will look in the Preview
+                tab
+              </li>
             </ol>
             <Text type="secondary" style={{ display: "block", marginTop: 8 }}>
-              <strong>Tip:</strong> Click any button in "Quick Insert" to add common placeholders instantly.
+              <strong>Tip:</strong> Click any button in "Quick Insert" to add
+              common placeholders instantly.
             </Text>
           </div>
         }
@@ -332,8 +360,9 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
             <Form.Item
               name="title"
               label="Title"
-              rules={[{ required: true, message: "Please enter template title" }]}
-            >
+              rules={[
+                { required: true, message: "Please enter template title" },
+              ]}>
               <Input placeholder="Enter template title" />
             </Form.Item>
           </Col>
@@ -341,8 +370,7 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
             <Form.Item
               name="category"
               label="Category"
-              rules={[{ required: true, message: "Please select category" }]}
-            >
+              rules={[{ required: true, message: "Please select category" }]}>
               <Select placeholder="Select category" options={categoryOptions} />
             </Form.Item>
           </Col>
@@ -356,7 +384,11 @@ const CreateTemplateModal = ({ visible, onClose, onSuccess }) => {
           </Col>
           <Col span={12}>
             <Form.Item name="practiceArea" label="Practice Area">
-              <Select placeholder="Select practice area" options={practiceAreaOptions} allowClear />
+              <Select
+                placeholder="Select practice area"
+                options={practiceAreaOptions}
+                allowClear
+              />
             </Form.Item>
           </Col>
         </Row>
