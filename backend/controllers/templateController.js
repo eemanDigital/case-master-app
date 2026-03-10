@@ -3,21 +3,32 @@ const GeneratedDocument = require("../models/generatedDocumentModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 
-let Document, DocxXmlTransformer;
+// ─── Optional dependency loading ─────────────────────────────────────────────
+let DocxDocument, DocxPacker, DocxParagraph, DocxTextRun;
 try {
   const docx = require("docx");
-  Document = docx.Document;
-  DocxXmlTransformer = docx.DocxXmlTransformer;
+  DocxDocument = docx.Document;
+  DocxPacker = docx.Packer;
+  DocxParagraph = docx.Paragraph;
+  DocxTextRun = docx.TextRun;
+  console.log("✅ docx package loaded successfully");
 } catch (e) {
-  console.warn("docx package not installed - Word export will not be available");
+  console.warn(
+    "docx package not installed - Word export will not be available",
+  );
 }
 
 let puppeteer;
 try {
   puppeteer = require("puppeteer");
+  console.log("✅ puppeteer package loaded successfully");
 } catch (e) {
-  console.warn("puppeteer package not installed - PDF export will not be available");
+  console.warn(
+    "puppeteer package not installed - PDF export will not be available",
+  );
 }
+
+// ─── Template Library ─────────────────────────────────────────────────────────
 
 const getAllTemplates = catchAsync(async (req, res, next) => {
   const {
@@ -46,6 +57,7 @@ const getAllTemplates = catchAsync(async (req, res, next) => {
     if (practiceArea) query.practiceArea = practiceArea;
     if (subcategory) query.subcategory = subcategory;
     if (status) query.status = status;
+
     if (search) {
       query.$or = [
         { title: { $regex: search, $options: "i" } },
@@ -53,6 +65,7 @@ const getAllTemplates = catchAsync(async (req, res, next) => {
         { tags: { $in: [new RegExp(search, "i")] } },
       ];
     }
+
     if (isSystemTemplate !== undefined) {
       query.isSystemTemplate = isSystemTemplate === "true";
     }
@@ -68,7 +81,7 @@ const getAllTemplates = catchAsync(async (req, res, next) => {
   const [systemTemplates, firmTemplates, totalSystem, totalFirm] =
     await Promise.all([
       Template.find(systemQuery)
-        .sort({ title: 1 })
+        .sort({ isFeatured: -1, title: 1 })
         .skip(skip)
         .limit(parseInt(limit)),
       Template.find(firmQuery)
@@ -132,12 +145,14 @@ const createTemplate = catchAsync(async (req, res, next) => {
     placeholders: providedPlaceholders,
   } = req.body;
 
+  if (!title || !category || !content) {
+    return next(new AppError("Title, category, and content are required", 400));
+  }
+
   const extractedPlaceholders = Template.extractPlaceholders(content);
 
   const mergedPlaceholders = extractedPlaceholders.map((extracted) => {
-    const provided = providedPlaceholders?.find(
-      (p) => p.key === extracted.key
-    );
+    const provided = providedPlaceholders?.find((p) => p.key === extracted.key);
     return provided ? { ...extracted, ...provided } : extracted;
   });
 
@@ -201,29 +216,29 @@ const updateTemplate = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         "System templates cannot be edited. Please duplicate it first.",
-        403
-      )
+        403,
+      ),
     );
   }
 
   const updateData = {
-    description,
-    category,
-    subcategory,
-    practiceArea,
-    tags,
-    courtDetails,
-    governingLaw,
-    status,
+    ...(description !== undefined && { description }),
+    ...(category && { category }),
+    ...(subcategory !== undefined && { subcategory }),
+    ...(practiceArea !== undefined && { practiceArea }),
+    ...(tags !== undefined && { tags }),
+    ...(courtDetails !== undefined && { courtDetails }),
+    ...(governingLaw !== undefined && { governingLaw }),
+    ...(status && { status }),
     updatedBy: req.user._id,
   };
 
   if (title) {
     updateData.title = title;
-    updateData.slug = title
+    updateData.slug = `${title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
+      .replace(/(^-|-$)/g, "")}-${Date.now()}`;
   }
 
   if (content) {
@@ -242,19 +257,22 @@ const updateTemplate = catchAsync(async (req, res, next) => {
   const newVersion = (currentVersion + 0.1).toFixed(1);
 
   updateData.version = newVersion;
-  updateData.$push = {
-    changelog: {
-      version: newVersion,
-      changes: `Template updated on ${new Date().toISOString()}`,
-      updatedAt: new Date(),
-      updatedBy: req.user._id,
-    },
-  };
 
-  const updatedTemplate = await Template.findByIdAndUpdate(templateId, updateData, {
-    new: true,
-    runValidators: true,
-  });
+  const updatedTemplate = await Template.findByIdAndUpdate(
+    templateId,
+    {
+      ...updateData,
+      $push: {
+        changelog: {
+          version: newVersion,
+          changes: `Template updated on ${new Date().toISOString()}`,
+          updatedAt: new Date(),
+          updatedBy: req.user._id,
+        },
+      },
+    },
+    { new: true, runValidators: true },
+  );
 
   res.status(200).json({
     status: "success",
@@ -278,7 +296,10 @@ const deleteTemplate = catchAsync(async (req, res, next) => {
 
   if (template.isSystemTemplate) {
     return next(
-      new AppError("System templates cannot be deleted. They are platform-wide.", 403)
+      new AppError(
+        "System templates cannot be deleted. They are platform-wide.",
+        403,
+      ),
     );
   }
 
@@ -290,10 +311,18 @@ const deleteTemplate = catchAsync(async (req, res, next) => {
   });
 });
 
+// ─── Document Generation ──────────────────────────────────────────────────────
+
 const generateDocument = catchAsync(async (req, res, next) => {
   const { templateId } = req.params;
   const { title, filledData, matterId, clientId } = req.body;
   const firmId = req.firmId;
+
+  if (!filledData || typeof filledData !== "object") {
+    return next(
+      new AppError("filledData is required and must be an object", 400),
+    );
+  }
 
   const template = await Template.findOne({
     _id: templateId,
@@ -307,14 +336,14 @@ const generateDocument = catchAsync(async (req, res, next) => {
 
   const missingPlaceholders = template.placeholders
     .filter((p) => p.required && !filledData[p.key])
-    .map((p) => p.key);
+    .map((p) => ({ key: p.key, label: p.label || p.key }));
 
   if (missingPlaceholders.length > 0) {
     return next(
       new AppError(
-        `Missing required fields: ${missingPlaceholders.join(", ")}`,
-        400
-      )
+        `Missing required fields: ${missingPlaceholders.map((p) => p.label).join(", ")}`,
+        400,
+      ),
     );
   }
 
@@ -323,8 +352,8 @@ const generateDocument = catchAsync(async (req, res, next) => {
   const generatedDocument = await GeneratedDocument.create({
     firmId,
     templateId: template._id,
-    matterId,
-    clientId,
+    matterId: matterId || undefined,
+    clientId: clientId || undefined,
     title: title || `${template.title} - ${new Date().toLocaleDateString()}`,
     content: filledContent,
     filledData,
@@ -346,8 +375,18 @@ const generateDocument = catchAsync(async (req, res, next) => {
 });
 
 const getGeneratedDocuments = catchAsync(async (req, res, next) => {
-  const { templateId, matterId, status, generatedBy, page = 1, limit = 20 } =
-    req.query;
+  const {
+    templateId,
+    matterId,
+    status,
+    generatedBy,
+    search,
+    startDate,
+    endDate,
+    page = 1,
+    limit = 20,
+  } = req.query;
+
   const firmId = req.firmId;
 
   const query = { firmId, isDeleted: false };
@@ -357,12 +396,23 @@ const getGeneratedDocuments = catchAsync(async (req, res, next) => {
   if (status) query.status = status;
   if (generatedBy) query.generatedBy = generatedBy;
 
+  if (search) {
+    query.title = { $regex: search, $options: "i" };
+  }
+
+  if (startDate || endDate) {
+    query.createdAt = {};
+    if (startDate) query.createdAt.$gte = new Date(startDate);
+    if (endDate) query.createdAt.$lte = new Date(endDate);
+  }
+
   const skip = (parseInt(page) - 1) * parseInt(limit);
 
   const [documents, total] = await Promise.all([
     GeneratedDocument.find(query)
       .populate("templateId", "title category")
       .populate("generatedBy", "firstName lastName")
+      .populate("matterId", "matterNumber matterType")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(parseInt(limit)),
@@ -432,7 +482,7 @@ const updateGeneratedDocument = catchAsync(async (req, res, next) => {
   const updatedDocument = await GeneratedDocument.findByIdAndUpdate(
     documentId,
     updateData,
-    { new: true, runValidators: true }
+    { new: true, runValidators: true },
   ).populate([
     { path: "templateId", select: "title category" },
     { path: "generatedBy", select: "firstName lastName" },
@@ -444,10 +494,42 @@ const updateGeneratedDocument = catchAsync(async (req, res, next) => {
   });
 });
 
+// ─── Delete Generated Document ────────────────────────────────────────────────
+
+const deleteGeneratedDocument = catchAsync(async (req, res, next) => {
+  const { documentId } = req.params;
+  const firmId = req.firmId;
+
+  const document = await GeneratedDocument.findOne({
+    _id: documentId,
+    firmId,
+    isDeleted: false,
+  });
+
+  if (!document) {
+    return next(new AppError("Generated document not found", 404));
+  }
+
+  await GeneratedDocument.findByIdAndUpdate(documentId, { isDeleted: true });
+
+  res.status(200).json({
+    status: "success",
+    message: "Document deleted successfully",
+  });
+});
+
+// ─── Export ───────────────────────────────────────────────────────────────────
+
 const exportDocument = catchAsync(async (req, res, next) => {
   const { documentId } = req.params;
   const { format = "txt" } = req.body;
   const firmId = req.firmId;
+
+  if (!["pdf", "docx", "txt"].includes(format)) {
+    return next(
+      new AppError("Invalid export format. Use pdf, docx, or txt.", 400),
+    );
+  }
 
   const document = await GeneratedDocument.findOne({
     _id: documentId,
@@ -461,6 +543,7 @@ const exportDocument = catchAsync(async (req, res, next) => {
 
   const filename = `${document.title.replace(/[^a-z0-9]/gi, "_")}.${format}`;
 
+  // ── TXT ────────────────────────────────────────────────────────────────────
   if (format === "txt") {
     await GeneratedDocument.findByIdAndUpdate(documentId, {
       $push: {
@@ -472,53 +555,86 @@ const exportDocument = catchAsync(async (req, res, next) => {
       },
     });
 
-    res.setHeader("Content-Type", "text/plain");
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     return res.send(document.content);
   }
 
+  // ── DOCX ───────────────────────────────────────────────────────────────────
   if (format === "docx") {
-    if (!Document || !DocxXmlTransformer) {
-      return next(new AppError("Word export not available. Please install docx package.", 503));
+    if (!DocxDocument || !DocxPacker) {
+      return next(
+        new AppError(
+          "Word export not available. Please install the docx package.",
+          503,
+        ),
+      );
     }
 
-    const { TextRun } = require("docx");
-    const doc = new Document({
-      sections: [
-        {
-          properties: {},
-          children: document.content.split("\n").map((line) => ({
-            children: [new TextRun({ text: line })],
-          })),
+    try {
+      const doc = new DocxDocument({
+        sections: [
+          {
+            properties: {},
+            children: document.content.split("\n").map(
+              (line) =>
+                new DocxParagraph({
+                  children: [
+                    new DocxTextRun({
+                      text: line || " ",
+                      font: "Times New Roman",
+                      size: 24, // 12pt — docx uses half-points
+                    }),
+                  ],
+                  spacing: { line: 360 }, // 1.5 line spacing
+                }),
+            ),
+          },
+        ],
+      });
+
+      // Packer.toBuffer is the correct method
+      const buffer = await DocxPacker.toBuffer(doc);
+
+      await GeneratedDocument.findByIdAndUpdate(documentId, {
+        $push: {
+          exports: {
+            format: "docx",
+            exportedAt: new Date(),
+            exportedBy: req.user._id,
+          },
         },
-      ],
-    });
+      });
 
-    const buffer = await DocxXmlTransformer.toBuffer(doc);
-
-    await GeneratedDocument.findByIdAndUpdate(documentId, {
-      $push: {
-        exports: {
-          format: "docx",
-          exportedAt: new Date(),
-          exportedBy: req.user._id,
-        },
-      },
-    });
-
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-    );
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    return res.send(buffer);
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      );
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`,
+      );
+      return res.send(buffer);
+    } catch (error) {
+      console.error("DOCX generation error:", error);
+      return next(
+        new AppError(`Failed to generate Word document: ${error.message}`, 500),
+      );
+    }
   }
 
+  // ── PDF ────────────────────────────────────────────────────────────────────
   if (format === "pdf") {
     if (!puppeteer) {
-      return next(new AppError("PDF export not available. Please install puppeteer package.", 503));
+      return next(
+        new AppError(
+          "PDF export not available. Please install the puppeteer package.",
+          503,
+        ),
+      );
     }
 
+    let browser;
     try {
       const htmlContent = `
         <!DOCTYPE html>
@@ -532,42 +648,45 @@ const exportDocument = catchAsync(async (req, res, next) => {
               line-height: 1.5;
               padding: 2cm;
               white-space: pre-wrap;
+              color: #000;
+            }
+            @page {
+              size: A4;
+              margin: 2cm;
             }
           </style>
         </head>
-        <body>${document.content}</body>
+        <body>${document.content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</body>
         </html>
       `;
 
-      let browser;
-      try {
-        browser = await puppeteer.launch({
-          headless: true,
-          args: [
-            "--no-sandbox",
-            "--disable-setuid-sandbox",
-            "--disable-dev-shm-usage",
-            "--disable-gpu",
-            "--disable-web-security"
-          ],
-        });
-      } catch (launchError) {
-        console.error("Puppeteer launch error:", launchError.message);
-        return res.status(503).json({
-          status: "error",
-          message: `PDF export failed: Could not launch browser. The server may be restarting. Please try again.`,
-        });
-      }
+      browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          "--no-sandbox",
+          "--disable-setuid-sandbox",
+          "--disable-dev-shm-usage",
+          "--disable-gpu",
+          "--disable-web-security",
+        ],
+      });
 
       const page = await browser.newPage();
-      await page.setContent(htmlContent, { waitUntil: "networkidle0", timeout: 30000 });
+      await page.setContent(htmlContent, {
+        waitUntil: "networkidle0",
+        timeout: 30000,
+      });
 
       const pdfBuffer = await page.pdf({
         format: "A4",
         printBackground: true,
+        margin: {
+          top: "2cm",
+          bottom: "2cm",
+          left: "2cm",
+          right: "2cm",
+        },
       });
-
-      await browser.close();
 
       await GeneratedDocument.findByIdAndUpdate(documentId, {
         $push: {
@@ -580,19 +699,28 @@ const exportDocument = catchAsync(async (req, res, next) => {
       });
 
       res.setHeader("Content-Type", "application/pdf");
-      res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="${filename}"`,
+      );
       return res.send(pdfBuffer);
     } catch (error) {
       console.error("PDF generation error:", error);
-      return res.status(500).json({
-        status: "error",
-        message: `Failed to generate PDF: ${error.message}`,
-      });
+      return next(
+        new AppError(`Failed to generate PDF: ${error.message}`, 500),
+      );
+    } finally {
+      // Always close browser even if an error occurs
+      if (browser) {
+        await browser
+          .close()
+          .catch((err) => console.error("Failed to close browser:", err));
+      }
     }
   }
-
-  return next(new AppError("Invalid export format", 400));
 });
+
+// ─── Duplicate Template ───────────────────────────────────────────────────────
 
 const duplicateTemplate = catchAsync(async (req, res, next) => {
   const { templateId } = req.params;
@@ -608,10 +736,15 @@ const duplicateTemplate = catchAsync(async (req, res, next) => {
     return next(new AppError("Template not found", 404));
   }
 
+  const slug = originalTemplate.title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
   const duplicate = await Template.create({
     firmId,
     title: `${originalTemplate.title} (Copy)`,
-    slug: `${originalTemplate.slug}-copy-${Date.now()}`,
+    slug: `${slug}-copy-${Date.now()}`,
     description: originalTemplate.description,
     category: originalTemplate.category,
     subcategory: originalTemplate.subcategory,
@@ -624,6 +757,7 @@ const duplicateTemplate = catchAsync(async (req, res, next) => {
     governingLaw: originalTemplate.governingLaw,
     status: "draft",
     usageCount: 0,
+    version: "1.0",
     createdBy: req.user._id,
   });
 
@@ -632,6 +766,8 @@ const duplicateTemplate = catchAsync(async (req, res, next) => {
     data: duplicate,
   });
 });
+
+// ─── Featured Templates ───────────────────────────────────────────────────────
 
 const getFeaturedTemplates = catchAsync(async (req, res, next) => {
   const templates = await Template.find({
@@ -648,12 +784,13 @@ const getFeaturedTemplates = catchAsync(async (req, res, next) => {
   });
 });
 
+// ─── Templates By Practice Area ───────────────────────────────────────────────
+
 const getTemplatesByPracticeArea = catchAsync(async (req, res, next) => {
   const { category } = req.query;
   const firmId = req.firmId;
 
   const query = { isDeleted: false, status: "active" };
-
   if (category) query.category = category;
 
   const [systemTemplates, firmTemplates] = await Promise.all([
@@ -665,9 +802,7 @@ const getTemplatesByPracticeArea = catchAsync(async (req, res, next) => {
 
   const grouped = allTemplates.reduce((acc, template) => {
     const area = template.practiceArea || "general";
-    if (!acc[area]) {
-      acc[area] = [];
-    }
+    if (!acc[area]) acc[area] = [];
     acc[area].push(template);
     return acc;
   }, {});
@@ -677,6 +812,8 @@ const getTemplatesByPracticeArea = catchAsync(async (req, res, next) => {
     data: grouped,
   });
 });
+
+// ─── Exports ──────────────────────────────────────────────────────────────────
 
 module.exports = {
   getAllTemplates,
@@ -688,6 +825,7 @@ module.exports = {
   getGeneratedDocuments,
   getGeneratedDocument,
   updateGeneratedDocument,
+  deleteGeneratedDocument,
   exportDocument,
   duplicateTemplate,
   getFeaturedTemplates,

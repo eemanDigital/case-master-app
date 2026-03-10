@@ -254,8 +254,13 @@ const TemplateLibrary = () => {
           </Tag>
         )}
         <Text type="secondary" style={{ fontSize: 12 }}>
-          {template.placeholders?.length || 0} placeholders • Used{" "}
-          {template.usageCount || 0} times
+          <Tooltip title="Number of fields to fill when generating a document">
+            {template.placeholders?.length || 0} placeholders
+          </Tooltip>
+          {" • "}
+          <Tooltip title="How many times this template has been used">
+            Used {template.usageCount || 0} times
+          </Tooltip>
         </Text>
       </Space>
     </Card>
@@ -313,6 +318,29 @@ const TemplateLibrary = () => {
 
   return (
     <div className="template-library-page" style={{ padding: 24 }}>
+      <Alert
+        message="Welcome to the Legal Templates Library"
+        description={
+          <div>
+            <Text>
+              Browse and use professionally drafted Nigerian legal templates for
+              your practice. Templates include contracts, court processes, and
+              more. Click "Use" on any template to fill in the details and
+              generate your document.
+            </Text>
+            <div style={{ marginTop: 8 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                <strong>Tip:</strong> System templates are pre-loaded with
+                Nigerian legal content. Your firm's custom templates appear
+                alongside them.
+              </Text>
+            </div>
+          </div>
+        }
+        type="info"
+        showIcon
+        style={{ marginBottom: 24 }}
+      />
       <Row gutter={24}>
         <Col xs={24} lg={6}>
           <Card
@@ -393,6 +421,58 @@ const TemplateLibrary = () => {
             }
             extra={
               <Space>
+                <Tooltip title="How to use templates">
+                  <Button
+                    type="text"
+                    onClick={() => {
+                      import("antd").then(({ Modal, Steps, Step }) => {
+                        const stepsItems = [
+                          {
+                            title: "Browse Templates",
+                            description:
+                              "Search and filter templates by category, practice area, or source",
+                          },
+                          {
+                            title: "Preview",
+                            description:
+                              "Click Preview to see the template content and required fields",
+                          },
+                          {
+                            title: "Use Template",
+                            description:
+                              "Click 'Use' to fill in the placeholders and generate your document",
+                          },
+                          {
+                            title: "Export",
+                            description: "Download as PDF, Word, or Text file",
+                          },
+                        ];
+                        Modal.info({
+                          title: "How to Use Templates",
+                          width: 600,
+                          content: (
+                            <div>
+                              <Steps
+                                direction="vertical"
+                                current={4}
+                                items={stepsItems}
+                              />
+                              <Alert
+                                type="info"
+                                showIcon
+                                style={{ marginTop: 16 }}
+                                message="What are placeholders?"
+                                description="Placeholders are highlighted fields like {{PLAINTIFF_NAME}} that you fill in when generating a document. They customize the template with your specific information."
+                              />
+                            </div>
+                          ),
+                          onOk() {},
+                        });
+                      });
+                    }}>
+                    Help
+                  </Button>
+                </Tooltip>
                 <Radio.Group
                   value={viewMode}
                   onChange={(e) => setViewMode(e.target.value)}

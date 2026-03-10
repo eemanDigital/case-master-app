@@ -128,6 +128,15 @@ const apiService = {
       .then((res) => res.data);
   },
 
+  downloadPost: (url, data = {}, config = {}) => {
+    return api
+      .post(url, data, {
+        ...config,
+        responseType: "blob",
+      })
+      .then((res) => res.data);
+  },
+
   // Auth Management
   setToken: (token, persist = true) => {
     const storage = persist ? localStorage : sessionStorage;

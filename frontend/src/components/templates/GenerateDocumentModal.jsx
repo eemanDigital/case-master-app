@@ -282,11 +282,23 @@ const GenerateDocumentModal = ({ visible, template, onClose }) => {
     return (
       <div>
         <Alert
-          message={`Document Preview - ${wordCount} words (approx. ${pageCount} page(s))`}
-          type="info"
+          message={
+            <span>
+              Document Preview - {wordCount} words (approx. {pageCount} page(s))
+              {unfilledCount > 0 && (
+                <Text type="warning" style={{ marginLeft: 8 }}>
+                  • {unfilledCount} required field(s) not filled
+                </Text>
+              )}
+            </span>
+          }
+          type={unfilledCount > 0 ? "warning" : "info"}
           showIcon
           style={{ marginBottom: 16 }}
         />
+        <Text type="secondary" style={{ display: "block", marginBottom: 8 }}>
+          Review your document below. Orange highlighted text indicates unfilled optional fields.
+        </Text>
         <div
           style={{
             background: "#fff",
@@ -353,9 +365,18 @@ const GenerateDocumentModal = ({ visible, template, onClose }) => {
   };
 
   const steps = [
-    { title: "Document Setup", icon: <FileTextOutlined /> },
-    { title: "Fill Placeholders", icon: <FileTextOutlined /> },
-    { title: "Preview & Generate", icon: <EyeOutlined /> },
+    { 
+      title: "Document Setup", 
+      description: "Give your document a title and optionally link to a matter or client"
+    },
+    { 
+      title: "Fill Placeholders", 
+      description: "Enter the required information for each field"
+    },
+    { 
+      title: "Preview & Generate", 
+      description: "Review your completed document and generate it"
+    },
   ];
 
   return (
