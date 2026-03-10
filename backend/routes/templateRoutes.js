@@ -14,18 +14,16 @@ router
   .get(templateController.getGeneratedDocuments)
   .post(
     restrictTo("admin", "super-admin", "lawyer"),
-    templateController.generateDocument
+    templateController.generateDocument,
   );
 
 router
   .route("/documents/:documentId")
   .get(templateController.getGeneratedDocument)
-  .patch(templateController.updateGeneratedDocument);
+  .patch(templateController.updateGeneratedDocument)
+  .delete(templateController.deleteGeneratedDocument);
 
-router.post(
-  "/documents/:documentId/export",
-  templateController.exportDocument
-);
+router.post("/documents/:documentId/export", templateController.exportDocument);
 
 router.post("/:templateId/duplicate", templateController.duplicateTemplate);
 
@@ -34,24 +32,21 @@ router
   .get(templateController.getTemplate)
   .patch(
     restrictTo("admin", "super-admin", "lawyer"),
-    templateController.updateTemplate
+    templateController.updateTemplate,
   )
   .delete(
     restrictTo("admin", "super-admin", "lawyer"),
-    templateController.deleteTemplate
+    templateController.deleteTemplate,
   );
 
-router.post(
-  "/:templateId/generate",
-  templateController.generateDocument
-);
+router.post("/:templateId/generate", templateController.generateDocument);
 
 router
   .route("/")
   .get(templateController.getAllTemplates)
   .post(
     restrictTo("admin", "super-admin", "lawyer"),
-    templateController.createTemplate
+    templateController.createTemplate,
   );
 
 module.exports = router;

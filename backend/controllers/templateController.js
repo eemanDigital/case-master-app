@@ -813,28 +813,6 @@ const getTemplatesByPracticeArea = catchAsync(async (req, res, next) => {
   });
 });
 
-const deleteGeneratedDocument = catchAsync(async (req, res, next) => {
-  const { documentId } = req.params;
-  const firmId = req.firmId;
-
-  const document = await GeneratedDocument.findOne({
-    _id: documentId,
-    firmId,
-    isDeleted: false,
-  });
-
-  if (!document) {
-    return next(new AppError("Generated document not found", 404));
-  }
-
-  await GeneratedDocument.findByIdAndUpdate(documentId, { isDeleted: true });
-
-  res.status(200).json({
-    status: "success",
-    message: "Document deleted successfully",
-  });
-});
-
 // ─── Exports ──────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -852,5 +830,4 @@ module.exports = {
   duplicateTemplate,
   getFeaturedTemplates,
   getTemplatesByPracticeArea,
-  deleteGeneratedDocument,
 };
