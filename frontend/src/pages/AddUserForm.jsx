@@ -211,7 +211,7 @@ const AddUserForm = () => {
               </Button>
 
               {currentStep < STEP_CONFIG.length - 1 ? (
-                <Button type="primary" onClick={handleNext} size="large">
+                <Button type="primary" htmlType="button" onClick={handleNext} size="large">
                   Next Step
                 </Button>
               ) : (
