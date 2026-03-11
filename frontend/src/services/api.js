@@ -50,8 +50,24 @@ api.interceptors.response.use(
 
       switch (status) {
         case 401: {
-          // Logic wrapped in {} to avoid "Lexical declaration" error
-          apiService.removeToken();
+          // Check for specific error messages
+          const errorMessage = data?.message || "";
+          const isUserDeleted = 
+            errorMessage.includes("no longer exists") || 
+            errorMessage.includes("deleted") ||
+            errorMessage.includes("cannot access");
+          
+          // Clear all auth data
+          localStorage.removeItem("jwt");
+          sessionStorage.removeItem("jwt");
+          localStorage.removeItem("user");
+          sessionStorage.removeItem("user");
+          
+          // Show appropriate message
+          if (isUserDeleted) {
+            console.warn("Your account has been deleted or deactivated. Please log in with a different account.");
+            alert("Your account has been deleted or deactivated. Please log in with a different account.");
+          }
 
           const currentPath = window.location.pathname;
           const isAuthPage =

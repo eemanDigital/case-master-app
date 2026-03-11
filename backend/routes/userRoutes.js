@@ -55,7 +55,7 @@ const {
   sendCustomEmail,
   getUserSelectOptions,
   getAllSelectOptions,
-
+  getDeletedUsers,
   getStatusStatistics,
   getUserStatistics,
   getStaffStatistics,
@@ -179,6 +179,10 @@ router.get("/select-options", getUserSelectOptions);
 // ============================================
 router.get("/", restrictTo("super-admin", "admin", "hr"), getUsers);
 router.get("/getUser", getUser); // Self
+
+// Get archived/deleted users - must be BEFORE /:id route
+router.get("/deleted", restrictTo("super-admin", "admin", "hr"), getDeletedUsers);
+
 router.get("/:id", getSingleUser);
 
 router.patch(

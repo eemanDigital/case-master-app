@@ -17,6 +17,7 @@ import {
   PlusOutlined,
   UserOutlined,
   CheckCircleOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import { useUserList } from "../hooks/useUserList";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -90,17 +91,27 @@ const ClientList = memo(() => {
 
               {/* Add Button - Desktop */}
               {(isAdminOrHr || isSuperOrAdmin) && (
-                <Link
-                  to="/dashboard/clients/add-client"
-                  className="hidden sm:block flex-shrink-0">
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    size="large"
-                    className="bg-blue-600 hover:bg-blue-700">
-                    <span className="hidden lg:inline ml-1">Add Client</span>
-                  </Button>
-                </Link>
+                <Space className="hidden sm:flex">
+                  <Link to="../archived-users">
+                    <Button
+                      icon={<DeleteOutlined />}
+                      size="large"
+                      className="hover:bg-red-50">
+                      <span className="hidden lg:inline ml-1">Archived</span>
+                    </Button>
+                  </Link>
+                  <Link
+                    to="/dashboard/clients/add-client"
+                    className="flex-shrink-0">
+                    <Button
+                      type="primary"
+                      icon={<PlusOutlined />}
+                      size="large"
+                      className="bg-blue-600 hover:bg-blue-700">
+                      <span className="hidden lg:inline ml-1">Add Client</span>
+                    </Button>
+                  </Link>
+                </Space>
               )}
             </div>
 

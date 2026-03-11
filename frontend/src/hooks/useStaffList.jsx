@@ -1,7 +1,7 @@
 // hooks/useStaffList.js
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { deleteUser } from "../redux/features/auth/authSlice";
+import { deleteUser, softDeleteUser } from "../redux/features/auth/authSlice";
 import { useDataFetch } from "./useDataFetch";
 
 /**
@@ -107,10 +107,10 @@ export const useStaffList = () => {
   };
 
   /**
-   * Remove staff member
+   * Soft remove staff member (archive)
    */
   const removeStaff = async (id) => {
-    await dispatch(deleteUser(id));
+    await dispatch(softDeleteUser(id));
     await fetchStaff(filters, currentPage);
   };
 
@@ -149,7 +149,7 @@ export const useStaffList = () => {
 // hooks/useClientList.js
 import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux";
-import { deleteUser } from "../redux/features/auth/authSlice";
+import { softDeleteUser } from "../redux/features/auth/authSlice";
 import { useDataFetch } from "./useDataFetch";
 
 /**
@@ -255,10 +255,10 @@ export const useClientList = () => {
   };
 
   /**
-   * Remove client
+   * Soft remove client (archive)
    */
   const removeClient = async (id) => {
-    await dispatch(deleteUser(id));
+    await dispatch(softDeleteUser(id));
     await fetchClients(filters, currentPage);
   };
 

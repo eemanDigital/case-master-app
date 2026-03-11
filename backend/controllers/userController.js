@@ -1156,7 +1156,7 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
  * DELETE USER (Hard delete)
  */
 exports.deleteUser = catchAsync(async (req, res, next) => {
-  const user = await User.findOneAndDelete({
+  const user = await User.findOne({
     _id: req.params.id,
     firmId: req.firmId,
   });
@@ -1164,6 +1164,13 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
   if (!user) {
     return next(new AppError("No user found with that ID", 404));
   }
+
+  // Prevent users from permanently deleting themselves
+  if (user._id.equals(req.user._id)) {
+    return next(new AppError("You cannot permanently delete your own account", 400));
+  }
+
+  await User.findByIdAndDelete(req.params.id);
 
   res.status(204).json({
     success: true,
@@ -1184,6 +1191,11 @@ exports.softDeleteUser = catchAsync(async (req, res, next) => {
 
   if (user.isDeleted) {
     return next(new AppError("User is already deleted", 400));
+  }
+
+  // Prevent users from deleting themselves
+  if (user._id.equals(req.user._id)) {
+    return next(new AppError("You cannot delete your own account", 400));
   }
 
   user.isDeleted = true;
@@ -1219,12 +1231,46 @@ exports.restoreUser = catchAsync(async (req, res, next) => {
   user.isDeleted = false;
   user.deletedAt = null;
   user.deletedBy = null;
+  user.isActive = true;
   await user.save({ validateBeforeSave: false });
 
   res.status(200).json({
     success: true,
     message: "User restored successfully",
     data: user,
+  });
+});
+
+/**
+ * GET DELETED USERS (Archive)
+ */
+exports.getDeletedUsers = catchAsync(async (req, res, next) => {
+  const customFilter = {
+    firmId: req.firmId,
+    isDeleted: true,
+  };
+
+  const result = await userPagination.paginate(
+    { ...req.query, includeStats: "true" },
+    customFilter,
+  );
+
+  res.status(200).json({
+    success: true,
+    message:
+      result.data.length === 0
+        ? "No deleted users found"
+        : "Deleted users fetched successfully",
+    data: result.data,
+    pagination: {
+      currentPage: result.pagination.currentPage,
+      totalPages: result.pagination.totalPages,
+      totalRecords: result.pagination.totalRecords,
+      limit: result.pagination.limit,
+      hasNextPage: result.pagination.hasNextPage,
+      hasPrevPage: result.pagination.hasPrevPage,
+    },
+    statistics: result.statistics,
   });
 });
 

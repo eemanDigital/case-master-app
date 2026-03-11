@@ -52,6 +52,7 @@ const StaffList = lazy(() => import("./pages/StaffList.jsx"));
 const StaffDetails = lazy(() => import("./pages/StaffDetails.jsx"));
 const AddUserForm = lazy(() => import("./pages/AddUserForm.jsx"));
 const StatusUserList = lazy(() => import("./pages/StatusUserList.jsx"));
+const ArchivedUsers = lazy(() => import("./pages/ArchivedUsers.jsx"));
 
 // Calendar Management
 const CalendarPage = lazy(() => import("./pages/calender/CalendarPage.jsx"));
@@ -526,6 +527,16 @@ const router = createBrowserRouter(
               <Suspense fallback={<PageLoader />}>
                 <ProtectedStaffRoute>
                   <StatusUserList />
+                </ProtectedStaffRoute>
+              </Suspense>
+            }
+          />
+          <Route
+            path="archived-users"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProtectedStaffRoute>
+                  <ArchivedUsers />
                 </ProtectedStaffRoute>
               </Suspense>
             }

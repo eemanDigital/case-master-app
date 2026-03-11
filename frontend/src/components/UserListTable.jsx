@@ -46,7 +46,7 @@ const UserListTable = ({
       content: `Are you sure you want to delete ${record.firstName}? This action can be reversed by an admin.`,
       okText: "Yes, Delete",
       okType: "danger",
-      onOk: () => onDelete(`soft-delete/${record._id}`),
+      onOk: () => onDelete(record._id),
     });
   };
 

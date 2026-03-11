@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { deleteUser, getUsers } from "../redux/features/auth/authSlice";
+import { softDeleteUser, getUsers } from "../redux/features/auth/authSlice";
 import { useDataFetch } from "./useDataFetch";
 
 /**
@@ -141,11 +141,11 @@ export const useUserList = (filterRole = null) => {
   }, [fetchUsers]);
 
   /**
-   * ✅ Remove user with confirmation
+   * ✅ Soft remove user with confirmation (archive)
    */
   const removeUser = useCallback(
     async (id) => {
-      await dispatch(deleteUser(id));
+      await dispatch(softDeleteUser(id));
       // Refresh current page after deletion
       await fetchUsers(filters, currentPage);
     },

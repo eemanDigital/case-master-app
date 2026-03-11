@@ -127,6 +127,12 @@ const restoreUser = async (id) => {
   return response.data;
 };
 
+/** Get deleted/archived users → GET /users/deleted */
+const getDeletedUsers = async () => {
+  const response = await api.get(API_URL + "deleted");
+  return response.data;
+};
+
 /** Upgrade / change user role  →  PATCH /users/upgradeUser/:id */
 const upgradeUser = async (id, userData) => {
   const response = await api.patch(API_URL + `upgradeUser/${id}`, userData);
@@ -183,6 +189,7 @@ const authService = {
   deleteUser,
   softDeleteUser,
   restoreUser,
+  getDeletedUsers,
   upgradeUser,
   sendLoginCode,
   loginWithCode,

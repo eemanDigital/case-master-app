@@ -19,6 +19,9 @@ const initialState = {
   usersLoading: false,
   usersLastFetched: null,
 
+  // ── Deleted Users (Archive) ───────────────────
+  deletedUsers: null,
+
   // ── Statistics ────────────────────────────────
   userStatistics: null, // GET /statistics/general
   staffStatistics: null, // GET /statistics/staff
@@ -271,6 +274,19 @@ export const restoreUser = createAsyncThunk(
   async (id, thunkAPI) => {
     try {
       return await authService.restoreUser(id);
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || error.toString(),
+      );
+    }
+  },
+);
+
+export const getDeletedUsers = createAsyncThunk(
+  "auth/getDeletedUsers",
+  async (_, thunkAPI) => {
+    try {
+      return await authService.getDeletedUsers();
     } catch (error) {
       return thunkAPI.rejectWithValue(
         error.response?.data?.message || error.message || error.toString(),
@@ -724,6 +740,21 @@ const authSlice = createSlice({
         state.isError = true;
         state.message = action.payload;
         toast.error(action.payload);
+      })
+
+      // ── getDeletedUsers ─────────────────────────────
+      .addCase(getDeletedUsers.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(getDeletedUsers.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        state.deletedUsers = action.payload;
+      })
+      .addCase(getDeletedUsers.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
       })
 
       // ── upgradeUser ───────────────────────────────
