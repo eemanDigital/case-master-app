@@ -25,7 +25,7 @@ const UserListTable = ({
   showPosition = false,
   showLawyer = false,
   userType = "user",
-  basePath = "/dashboard/users",
+  basePath = "/dashboard/staff",
 }) => {
   const getRoleColor = (role) => {
     const colors = {
@@ -50,7 +50,7 @@ const UserListTable = ({
     });
   };
 
-  // console.log(dataSource, "UserListTable dataSource");
+  console.log(dataSource, "UserListTable dataSource");
 
   return (
     <div className="overflow-x-auto font-medium font-poppins">

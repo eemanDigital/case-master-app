@@ -44,11 +44,21 @@ export const genderOptions = [
   { value: "male", label: "Male" },
   { value: "female", label: "Female" },
 ];
+
 export const positionOptions = [
-  { value: "junior associate", label: "Junior Associate" },
-  { value: "senior associate", label: "Senior Associate" },
-  { value: "partner", label: "Partner" },
-  { value: "intern", label: "Intern" },
+  { value: "Managing Partner", label: "Managing Partner" },
+  { value: "Senior Partner", label: "Senior Partner" },
+  { value: "Partner", label: "Partner" },
+  { value: "Principal", label: "Principal" },
+  { value: "Head of Chambers", label: "Head of Chambers" },
+  { value: "Senior Associate", label: "Senior Associate" },
+  { value: "Associate", label: "Associate" },
+  { value: "Junior Associate", label: "Junior Associate" },
+  { value: "Counsel", label: "Counsel" },
+  { value: "Administrator", label: "Administrator" },
+  { value: "Secretary", label: "Secretary" },
+  { value: "HR Manager", label: "HR Manager" },
+  { value: "Other", label: "Other" },
 ];
 
 export const languageProficiencyOptions = [

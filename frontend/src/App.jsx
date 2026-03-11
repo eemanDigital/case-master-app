@@ -48,11 +48,10 @@ const VerifyAccount = lazy(() => import("./components/VerifyAccount.jsx"));
 const Profile = lazy(() => import("./pages/Profile.jsx"));
 
 // Staff Management
-const StaffList = lazy(() => import("./pages/StaffList.jsx"));
 const StaffDetails = lazy(() => import("./pages/StaffDetails.jsx"));
 const AddUserForm = lazy(() => import("./pages/AddUserForm.jsx"));
-const StatusUserList = lazy(() => import("./pages/StatusUserList.jsx"));
 const ArchivedUsers = lazy(() => import("./pages/ArchivedUsers.jsx"));
+const UserManagement = lazy(() => import("./pages/UserManagement.jsx"));
 
 // Calendar Management
 const CalendarPage = lazy(() => import("./pages/calender/CalendarPage.jsx"));
@@ -159,7 +158,7 @@ const TaskDetails = lazy(() => import("./pages/TaskDetails.jsx"));
 const EditTaskForm = lazy(() => import("./pages/EditTaskForm.jsx"));
 
 // Clients Management
-const ClientLists = lazy(() => import("./pages/ClientLists.jsx"));
+
 const AddClientForm = lazy(() => import("./components/AddClientForm.jsx"));
 const ClientDetails = lazy(() => import("./pages/ClientDetails.jsx"));
 
@@ -197,7 +196,9 @@ const WebhookList = lazy(() => import("./pages/WebhookList.jsx"));
 const InvitationList = lazy(() => import("./pages/InvitationList.jsx"));
 
 // Platform Admin
-const PlatformAdminPanel = lazy(() => import("./components/PlatformAdminPanel.jsx"));
+const PlatformAdminPanel = lazy(
+  () => import("./components/PlatformAdminPanel.jsx"),
+);
 
 // Upgrade Accept Page
 const UpgradeAccept = lazy(() => import("./pages/UpgradeAccept.jsx"));
@@ -210,9 +211,11 @@ const TermsOfService = lazy(() => import("./pages/TermsOfService.jsx"));
 const PrivacyPolicy = lazy(() => import("./pages/PrivacyPolicy.jsx"));
 
 // Templates
-const TemplateLibrary = lazy(() => import("./pages/templates/TemplateLibrary.jsx"));
-const GeneratedDocumentsList = lazy(() =>
-  import("./pages/templates/GeneratedDocumentsList.jsx")
+const TemplateLibrary = lazy(
+  () => import("./pages/templates/TemplateLibrary.jsx"),
+);
+const GeneratedDocumentsList = lazy(
+  () => import("./pages/templates/GeneratedDocumentsList.jsx"),
 );
 
 // Cookie Consent
@@ -500,13 +503,13 @@ const router = createBrowserRouter(
             element={
               <Suspense fallback={<PageLoader />}>
                 <ProtectedStaffRoute>
-                  <StaffList />
+                  <UserManagement />
                 </ProtectedStaffRoute>
               </Suspense>
             }
           />
           <Route
-            path="staff/add-user"
+            path="staff/add"
             element={
               <Suspense fallback={<PageLoader />}>
                 <AddUserForm />
@@ -526,7 +529,17 @@ const router = createBrowserRouter(
             element={
               <Suspense fallback={<PageLoader />}>
                 <ProtectedStaffRoute>
-                  <StatusUserList />
+                  <UserManagement />
+                </ProtectedStaffRoute>
+              </Suspense>
+            }
+          />
+          <Route
+            path="users"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProtectedStaffRoute>
+                  <UserManagement />
                 </ProtectedStaffRoute>
               </Suspense>
             }
@@ -950,7 +963,7 @@ const router = createBrowserRouter(
             element={
               <Suspense fallback={<PageLoader />}>
                 <ShowOnlyVerifiedUser>
-                  <ClientLists />
+                  <UserManagement defaultUserType="clients" />
                 </ShowOnlyVerifiedUser>
               </Suspense>
             }

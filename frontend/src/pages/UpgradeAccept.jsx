@@ -105,7 +105,7 @@ const UpgradeAcceptPage = () => {
           title="Upgrade Successful!"
           subTitle={message}
           extra={
-            <Button type="primary" onClick={() => navigate("/login")}>
+            <Button type="primary" onClick={() => navigate("/users/login")}>
               Go to Login
             </Button>
           }

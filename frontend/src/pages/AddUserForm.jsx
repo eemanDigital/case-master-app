@@ -90,7 +90,11 @@ const AddUserForm = () => {
   );
 
   // Navigation handlers
-  const handleNext = useCallback(() => {
+  const handleNext = useCallback((e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const stepFields = STEP_FIELDS[currentStep];
 
     if (stepFields && stepFields.length > 0) {
@@ -203,7 +207,7 @@ const AddUserForm = () => {
           <div className="mt-8 pt-6 border-t">
             <Space className="w-full justify-between">
               <Button
-                onClick={handlePrevious}
+                onClick={(e) => { e.preventDefault(); handlePrevious(); }}
                 disabled={currentStep === 0}
                 size="large"
               >
@@ -211,7 +215,13 @@ const AddUserForm = () => {
               </Button>
 
               {currentStep < STEP_CONFIG.length - 1 ? (
-                <Button type="primary" htmlType="button" onClick={handleNext} size="large">
+                <Button 
+                  type="primary" 
+                  htmlType="button" 
+                  onClick={(e) => handleNext(e)} 
+                  onMouseDown={(e) => e.preventDefault()}
+                  size="large"
+                >
                   Next Step
                 </Button>
               ) : (
