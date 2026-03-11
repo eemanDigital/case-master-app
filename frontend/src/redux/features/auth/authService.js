@@ -166,27 +166,34 @@ const loginWithGoogle = async (userToken) => {
   return response.data;
 };
 
+/** Request plan upgrade → POST /users/request-upgrade */
+const requestPlanUpgrade = async (planKey) => {
+  const response = await api.post(API_URL + "request-upgrade", { targetPlan: planKey });
+  return response.data;
+};
+
+export { requestPlanUpgrade };
+
 // ============================================
-// EXPORT
+// EXPORTS
 // ============================================
 
-const authService = {
+export const authService = {
   register,
   login,
   logout,
-  getLoginStatus,
   getUser,
+  getLoginStatus,
   getUsers,
   getUserStatistics,
   getStaffStatistics,
   getClientStatistics,
   getStatusStatistics,
-  sendVerificationMail,
+  deleteUser,
   verifyUser,
   forgotUserPassword,
   resetPassword,
   changePassword,
-  deleteUser,
   softDeleteUser,
   restoreUser,
   getDeletedUsers,
@@ -194,6 +201,7 @@ const authService = {
   sendLoginCode,
   loginWithCode,
   loginWithGoogle,
+  requestPlanUpgrade,
 };
 
 export default authService;

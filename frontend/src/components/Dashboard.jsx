@@ -10,6 +10,7 @@ import { useSelector, useDispatch } from "react-redux";
 import DashBoardDataCount from "./DashBoardDataCount";
 import ScrollingEvents from "./ScrollingEvents";
 import TaskDashboardCard from "./TaskDashboardCard";
+import SubscriptionInfoCard from "./SubscriptionInfoCard";
 
 import {
   ShowAdminComponent,
@@ -121,6 +122,13 @@ const Dashboard = () => {
                     </div>
                   </div>
                 </header>
+
+                {isAdminOrHr && (
+                  <SubscriptionInfoCard
+                    firmData={user?.data?.firmId}
+                    showUpgradeButton={true}
+                  />
+                )}
 
                 <QuickActionsPanel />
 

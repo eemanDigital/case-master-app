@@ -63,6 +63,7 @@ const {
   deleteUser,
   softDeleteUser,
   restoreUser,
+  requestPlanUpgrade,
 } = userController;
 
 // ============================================
@@ -196,6 +197,9 @@ router.patch(
 router.patch("/upgradeUser/:id", canManageUsers, upgradeUser);
 router.patch("/soft-delete/:id", canManageUsers, softDeleteUser);
 router.patch("/restore/:id", canManageUsers, restoreUser);
+
+// Request plan upgrade
+router.post("/request-upgrade", requestPlanUpgrade);
 
 // Hard Delete: Only Super Admin (Must use the array logic)
 router.delete("/delete/:id", restrictTo("super-admin"), deleteUser);

@@ -875,7 +875,7 @@ exports.getUser = catchAsync(async (req, res, next) => {
     })
     .populate({
       path: "firmId",
-      select: "name address contact.email logo",
+      select: "name address contact.email logo subscription limits usage",
     })
     .lean();
 
@@ -1167,7 +1167,9 @@ exports.deleteUser = catchAsync(async (req, res, next) => {
 
   // Prevent users from permanently deleting themselves
   if (user._id.equals(req.user._id)) {
-    return next(new AppError("You cannot permanently delete your own account", 400));
+    return next(
+      new AppError("You cannot permanently delete your own account", 400),
+    );
   }
 
   await User.findByIdAndDelete(req.params.id);
@@ -1430,7 +1432,8 @@ exports.sendAutomatedCustomEmail = catchAsync(async (req, res, next) => {
  */
 exports.sendCustomEmail = catchAsync(async (req, res, next) => {
   // Handle both JSON and FormData (Multer puts fields in req.body)
-  let { send_to, reply_to, subject, htmlContent, textContent, attachment } = req.body;
+  let { send_to, reply_to, subject, htmlContent, textContent, attachment } =
+    req.body;
 
   // With upload.any(), fields might be in req.body but need parsing
   if (!subject && req.body.subject) {
@@ -1567,23 +1570,23 @@ exports.sendCustomEmail = catchAsync(async (req, res, next) => {
 
   // Convert markdown-like formatting to HTML
   const convertToHtml = (text) => {
-    if (!text) return '';
-    
+    if (!text) return "";
+
     let html = text
       // Escape HTML characters first
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
       // Convert markdown to HTML
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/__(.*?)__/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/_(.*?)_/g, '<em>$1</em>')
-      .replace(/<u>(.*?)<\/u>/g, '<u>$1</u>')
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/__(.*?)__/g, "<strong>$1</strong>")
+      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      .replace(/_(.*?)_/g, "<em>$1</em>")
+      .replace(/<u>(.*?)<\/u>/g, "<u>$1</u>")
       // Convert line breaks to paragraphs
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/\n/g, '<br>');
-    
+      .replace(/\n\n/g, "</p><p>")
+      .replace(/\n/g, "<br>");
+
     return `<p>${html}</p>`;
   };
 
@@ -1840,6 +1843,79 @@ exports.getAllSelectOptions = catchAsync(async (req, res, next) => {
       admins: options.admins.length,
       hr: options.hr.length,
       total: options.all.length,
+    },
+  });
+});
+
+/**
+ * REQUEST PLAN UPGRADE
+ */
+exports.requestPlanUpgrade = catchAsync(async (req, res, next) => {
+  const { targetPlan } = req.body;
+
+  if (!targetPlan || !["BASIC", "PRO", "ENTERPRISE"].includes(targetPlan)) {
+    return next(new AppError("Invalid plan selected", 400));
+  }
+
+  const firm = await Firm.findById(req.firmId);
+
+  if (!firm) {
+    return next(new AppError("Firm not found", 404));
+  }
+
+  const currentPlan = firm.subscription?.plan || "FREE";
+
+  if (currentPlan === targetPlan) {
+    return next(new AppError(`You are already on the ${targetPlan} plan`, 400));
+  }
+
+  const planPrices = {
+    BASIC: "₦5,000/month",
+    PRO: "₦15,000/month",
+    ENTERPRISE: "Custom pricing",
+  };
+
+  const platformEmail =
+    process.env.PLATFORM_ADMIN_EMAIL || "admin@lawmaster.ng";
+  const baseUrl = process.env.FRONTEND_URL || "http://localhost:5173";
+
+  const emailSubject = `Plan Upgrade Request - ${firm.name}`;
+  const emailContext = {
+    subject: emailSubject,
+    baseUrl,
+    adminUrl: `${baseUrl}/admin/firms`,
+    year: new Date().getFullYear(),
+    firmName: firm.name,
+    currentPlan: currentPlan,
+    targetPlan: targetPlan,
+    price: planPrices[targetPlan],
+    requestedBy: `${req.user.firstName} ${req.user.lastName}`,
+    requestedAt: new Date().toLocaleString(),
+    firmEmail: firm.contact?.email || "N/A",
+    firmPhone: firm.phone || "N/A",
+  };
+
+  try {
+    await sendMail(
+      emailSubject,
+      platformEmail,
+      req.user.email,
+      req.user.email,
+      "planUpgradeRequest",
+      emailContext,
+    );
+  } catch (emailError) {
+    console.error("Failed to send upgrade email:", emailError.message);
+  }
+
+  res.status(200).json({
+    success: true,
+    message:
+      "Upgrade request submitted successfully. Our team will contact you shortly.",
+    data: {
+      currentPlan,
+      targetPlan,
+      requestedAt: new Date(),
     },
   });
 });

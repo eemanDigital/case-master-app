@@ -30,8 +30,6 @@ import axios from "axios";
 const { Title, Text } = Typography;
 const { Option } = Select;
 
-const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
-
 const nigerianStates = [
   "Abia",
   "Adamawa",
@@ -71,6 +69,8 @@ const nigerianStates = [
   "Yobe",
   "Zamfara",
 ];
+
+const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:5000/api";
 
 const Register = () => {
   const [searchParams] = useSearchParams();
@@ -116,7 +116,7 @@ const Register = () => {
 
       const endpoint = token
         ? `${baseURL}/invitations/accept/${token}`
-        : "${baseURL}/users/register-firm";
+        : `${baseURL}/users/register-firm`;
 
       await axios.post(endpoint, data);
 

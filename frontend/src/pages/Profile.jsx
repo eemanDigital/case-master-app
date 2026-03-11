@@ -6,10 +6,7 @@ import {
   Typography,
   Tag,
   Space,
-  Row,
-  Col,
   Divider,
-  Button,
   Descriptions,
   Alert,
 } from "antd";
@@ -37,6 +34,7 @@ import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
 import LeaveSummaryCard from "../components/LeaveSummaryCard";
+import SubscriptionInfoCard from "../components/SubscriptionInfoCard";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -44,10 +42,10 @@ const Profile = () => {
   useRedirectLogoutUser("/users/login");
 
   const { user, isError, isLoading, message } = useSelector(
-    (state) => state.auth
+    (state) => state.auth,
   );
 
-  console.log(user)
+  console.log(user);
 
   if (isLoading) {
     return (
@@ -66,7 +64,8 @@ const Profile = () => {
   }
 
   const userData = user?.data || user;
-  const isClient = userData?.role === "client" || userData?.userType === "client";
+  const isClient =
+    userData?.role === "client" || userData?.userType === "client";
   const isLawyer = userData?.isLawyer || userData?.userType === "lawyer";
 
   // Get effective roles
@@ -113,8 +112,7 @@ const Profile = () => {
           <div className="text-center lg:text-left">
             <Title
               level={window.innerWidth < 640 ? 3 : 2}
-              className="!mb-2 truncate"
-            >
+              className="!mb-2 truncate">
               {userData?.firstName} {userData?.lastName}
             </Title>
 
@@ -122,15 +120,13 @@ const Profile = () => {
             <div className="flex flex-wrap justify-center lg:justify-start gap-2 mb-4">
               <Tag
                 color="blue"
-                className="px-3 py-1 text-xs sm:text-sm font-semibold rounded-full"
-              >
+                className="px-3 py-1 text-xs sm:text-sm font-semibold rounded-full">
                 {userData?.userType}
               </Tag>
               {userData?.position && (
                 <Tag
                   color="green"
-                  className="px-3 py-1 text-xs sm:text-sm font-semibold rounded-full"
-                >
+                  className="px-3 py-1 text-xs sm:text-sm font-semibold rounded-full">
                   {userData.position}
                 </Tag>
               )}
@@ -138,8 +134,7 @@ const Profile = () => {
                 <Tag
                   icon={<SafetyCertificateOutlined />}
                   color="purple"
-                  className="px-3 py-1 text-xs sm:text-sm font-semibold rounded-full"
-                >
+                  className="px-3 py-1 text-xs sm:text-sm font-semibold rounded-full">
                   Lawyer
                 </Tag>
               )}
@@ -196,8 +191,7 @@ const Profile = () => {
                     symbol: (expanded) =>
                       expanded ? "Show less" : "Read more",
                   }}
-                  className="text-xs sm:text-sm text-gray-700"
-                >
+                  className="text-xs sm:text-sm text-gray-700">
                   {userData.bio}
                 </Paragraph>
               </div>
@@ -217,21 +211,18 @@ const Profile = () => {
           <span>Contact Information</span>
         </Space>
       }
-      className="mb-4 sm:mb-6 shadow-md"
-    >
+      className="mb-4 sm:mb-6 shadow-md">
       <Descriptions
         column={{ xs: 1, sm: 1, md: 2 }}
         size={window.innerWidth < 640 ? "small" : "middle"}
-        labelStyle={{ fontWeight: 600 }}
-      >
+        labelStyle={{ fontWeight: 600 }}>
         <Descriptions.Item
           label={
             <Space size="small">
               <MailOutlined />
               <span className="text-xs sm:text-sm">Email</span>
             </Space>
-          }
-        >
+          }>
           <Text className="text-xs sm:text-sm break-all">
             {userData?.email}
           </Text>
@@ -243,8 +234,7 @@ const Profile = () => {
               <PhoneOutlined />
               <span className="text-xs sm:text-sm">Phone</span>
             </Space>
-          }
-        >
+          }>
           <Text className="text-xs sm:text-sm">
             {userData?.phone || "Not provided"}
           </Text>
@@ -257,8 +247,7 @@ const Profile = () => {
               <span className="text-xs sm:text-sm">Address</span>
             </Space>
           }
-          span={2}
-        >
+          span={2}>
           <Text className="text-xs sm:text-sm">
             {userData?.address || "Not provided"}
           </Text>
@@ -271,8 +260,7 @@ const Profile = () => {
                 <UserOutlined />
                 <span className="text-xs sm:text-sm">Gender</span>
               </Space>
-            }
-          >
+            }>
             <Text className="text-xs sm:text-sm capitalize">
               {userData.gender}
             </Text>
@@ -286,8 +274,7 @@ const Profile = () => {
                 <CalendarOutlined />
                 <span className="text-xs sm:text-sm">Date of Birth</span>
               </Space>
-            }
-          >
+            }>
             <Text className="text-xs sm:text-sm">
               {formatDate(userData.dateOfBirth)}
             </Text>
@@ -315,8 +302,7 @@ const Profile = () => {
             <span>Professional Information</span>
           </Space>
         }
-        className="mb-4 sm:mb-6 shadow-md"
-      >
+        className="mb-4 sm:mb-6 shadow-md">
         {/* Lawyer Details */}
         {hasLawyerDetails && (
           <div className="bg-purple-50 p-3 sm:p-4 rounded-lg mb-4">
@@ -329,12 +315,12 @@ const Profile = () => {
 
             <Descriptions
               column={{ xs: 1, sm: 2 }}
-              size={window.innerWidth < 640 ? "small" : "middle"}
-            >
+              size={window.innerWidth < 640 ? "small" : "middle"}>
               {userData.lawyerDetails.barNumber && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Bar Number</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Bar Number</span>
+                  }>
                   <Text className="text-xs sm:text-sm">
                     {userData.lawyerDetails.barNumber}
                   </Text>
@@ -343,8 +329,9 @@ const Profile = () => {
 
               {userData.lawyerDetails.yearOfCall && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Year of Call</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Year of Call</span>
+                  }>
                   <Text className="text-xs sm:text-sm">
                     {formatYear(userData.lawyerDetails.yearOfCall)}
                   </Text>
@@ -353,9 +340,10 @@ const Profile = () => {
 
               {userData.lawyerDetails.practiceAreas?.length > 0 && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Practice Areas</span>}
-                  span={2}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Practice Areas</span>
+                  }
+                  span={2}>
                   <div className="flex flex-wrap gap-1 sm:gap-2">
                     {userData.lawyerDetails.practiceAreas.map((area) => (
                       <Tag key={area} color="purple" className="text-xs">
@@ -368,9 +356,10 @@ const Profile = () => {
 
               {userData.lawyerDetails.specialization && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Specialization</span>}
-                  span={2}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Specialization</span>
+                  }
+                  span={2}>
                   <Text className="text-xs sm:text-sm">
                     {userData.lawyerDetails.specialization}
                   </Text>
@@ -431,12 +420,12 @@ const Profile = () => {
 
             <Descriptions
               column={{ xs: 1, sm: 2 }}
-              size={window.innerWidth < 640 ? "small" : "middle"}
-            >
+              size={window.innerWidth < 640 ? "small" : "middle"}>
               {userData.staffDetails.employeeId && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Employee ID</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Employee ID</span>
+                  }>
                   <Text code className="text-xs sm:text-sm">
                     {userData.staffDetails.employeeId}
                   </Text>
@@ -445,8 +434,9 @@ const Profile = () => {
 
               {userData.staffDetails.department && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Department</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Department</span>
+                  }>
                   <Tag color="blue" className="text-xs">
                     {userData.staffDetails.department}
                   </Tag>
@@ -455,8 +445,9 @@ const Profile = () => {
 
               {userData.staffDetails.designation && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Designation</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Designation</span>
+                  }>
                   <Text className="text-xs sm:text-sm">
                     {userData.staffDetails.designation}
                   </Text>
@@ -465,8 +456,9 @@ const Profile = () => {
 
               {userData.staffDetails.employmentType && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Employment Type</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">Employment Type</span>
+                  }>
                   <Tag color="green" className="text-xs capitalize">
                     {userData.staffDetails.employmentType}
                   </Tag>
@@ -506,12 +498,10 @@ const Profile = () => {
 
             <Descriptions
               column={{ xs: 1, sm: 2 }}
-              size={window.innerWidth < 640 ? "small" : "middle"}
-            >
+              size={window.innerWidth < 640 ? "small" : "middle"}>
               {userData.clientDetails.company && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Company</span>}
-                >
+                  label={<span className="text-xs sm:text-sm">Company</span>}>
                   <Text className="text-xs sm:text-sm">
                     {userData.clientDetails.company}
                   </Text>
@@ -520,8 +510,7 @@ const Profile = () => {
 
               {userData.clientDetails.industry && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Industry</span>}
-                >
+                  label={<span className="text-xs sm:text-sm">Industry</span>}>
                   <Text className="text-xs sm:text-sm">
                     {userData.clientDetails.industry}
                   </Text>
@@ -530,8 +519,7 @@ const Profile = () => {
 
               {userData.clientDetails.clientCategory && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Category</span>}
-                >
+                  label={<span className="text-xs sm:text-sm">Category</span>}>
                   <Tag color="blue" className="text-xs capitalize">
                     {userData.clientDetails.clientCategory}
                   </Tag>
@@ -540,8 +528,11 @@ const Profile = () => {
 
               {userData.clientDetails.preferredContactMethod && (
                 <Descriptions.Item
-                  label={<span className="text-xs sm:text-sm">Preferred Contact</span>}
-                >
+                  label={
+                    <span className="text-xs sm:text-sm">
+                      Preferred Contact
+                    </span>
+                  }>
                   <Tag color="green" className="text-xs capitalize">
                     {userData.clientDetails.preferredContactMethod}
                   </Tag>
@@ -594,6 +585,17 @@ const Profile = () => {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
         <ProfileHeader />
         <ContactInformation />
+
+        {/* Info - Show Subscription for admin/HR */}
+        {(userData?.role === "admin" ||
+          userData?.role === "super-admin" ||
+          userData?.role === "hr") && (
+          <SubscriptionInfoCard
+            firmData={userData?.firmId}
+            showUpgradeButton={true}
+          />
+        )}
+
         <ProfessionalInformation />
 
         {/* Leave Summary - Only for non-clients */}

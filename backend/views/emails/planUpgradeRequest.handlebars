@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{subject}}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background-color: #0f172a; line-height: 1.6; color: #334155; }
+    .wrapper { width: 100%; table-layout: fixed; background-color: #0f172a; padding: 40px 0; }
+    .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); padding: 40px 40px 60px; text-align: center; position: relative; }
+    .header::after { content: ''; position: absolute; bottom: -20px; left: 0; right: 0; height: 40px; background: #ffffff; border-radius: 20px 20px 0 0; }
+    .logo-text { font-size: 28px; font-weight: 700; color: #ffffff; }
+    .logo-text span { color: #ddd6fe; }
+    .header h1 { font-size: 28px; font-weight: 600; color: #ffffff; margin: 0 0 12px 0; }
+    .header p { font-size: 16px; color: #ddd6fe; margin: 0; }
+    .content { padding: 40px; }
+    .alert-box { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #fcd34d; border-radius: 12px; padding: 24px; margin: 24px 0; }
+    .alert-box h3 { font-size: 14px; font-weight: 600; color: #92400e; margin: 0 0 12px 0; text-transform: uppercase; letter-spacing: 0.5px; }
+    .detail-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+    .detail-icon { width: 40px; height: 40px; background: #d97706; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 18px; }
+    .detail-info { flex: 1; }
+    .detail-label { font-size: 12px; color: #64748b; margin-bottom: 2px; }
+    .detail-value { font-size: 14px; font-weight: 600; color: #1e293b; }
+    .plan-change { display: flex; align-items: center; justify-content: center; gap: 16px; margin: 24px 0; padding: 20px; background: #f8fafc; border-radius: 12px; }
+    .plan-badge { display: inline-block; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; }
+    .plan-current { background: #e2e8f0; color: #475569; }
+    .plan-target { background: #7c3aed; color: #ffffff; }
+    .arrow { font-size: 24px; color: #7c3aed; }
+    .price-tag { background: #7c3aed; color: #ffffff; padding: 12px 24px; border-radius: 8px; font-size: 18px; font-weight: 700; display: inline-block; margin: 16px 0; }
+    .cta-button { display: inline-block; background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); color: #ffffff; font-size: 16px; font-weight: 600; text-decoration: none; padding: 16px 32px; border-radius: 12px; margin: 24px 0; }
+    .cta-button:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(124, 58, 237, 0.3); }
+    .footer { background-color: #f8fafc; padding: 32px 40px; text-align: center; border-top: 1px solid #e2e8f0; }
+    .footer-logo { font-size: 18px; font-weight: 700; color: #1e293b; margin-bottom: 16px; }
+    .footer-logo span { color: #7c3aed; }
+    .footer-links a { color: #7c3aed; text-decoration: none; font-size: 14px; margin: 0 12px; }
+    .footer-text { font-size: 12px; color: #94a3b8; margin: 0; }
+    .divider { height: 1px; background: linear-gradient(90deg, transparent, #e2e8f0, transparent); margin: 24px 0; }
+    @media only screen and (max-width: 600px) {
+      .wrapper { padding: 20px; }
+      .header { padding: 30px 24px 50px; }
+      .content { padding: 24px; }
+      .plan-change { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+      <tr>
+        <td align="center">
+          <div class="container">
+            <div class="header">
+              <div class="logo-text">Law<span>Master</span></div>
+              <h1>Plan Upgrade Request</h1>
+              <p>Action Required</p>
+            </div>
+            <div class="content">
+              <div class="alert-box">
+                <h3>New Upgrade Request</h3>
+                <div class="detail-row">
+                  <div class="detail-icon">🏢</div>
+                  <div class="detail-info">
+                    <div class="detail-label">Firm Name</div>
+                    <div class="detail-value">{{firmName}}</div>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <div class="detail-icon">📧</div>
+                  <div class="detail-info">
+                    <div class="detail-label">Contact Email</div>
+                    <div class="detail-value">{{firmEmail}}</div>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <div class="detail-icon">📞</div>
+                  <div class="detail-info">
+                    <div class="detail-label">Phone</div>
+                    <div class="detail-value">{{firmPhone}}</div>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <div class="detail-icon">👤</div>
+                  <div class="detail-info">
+                    <div class="detail-label">Requested By</div>
+                    <div class="detail-value">{{requestedBy}}</div>
+                  </div>
+                </div>
+                <div class="detail-row">
+                  <div class="detail-icon">🕐</div>
+                  <div class="detail-info">
+                    <div class="detail-label">Requested At</div>
+                    <div class="detail-value">{{requestedAt}}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="plan-change">
+                <span class="plan-badge plan-current">{{currentPlan}}</span>
+                <span class="arrow">→</span>
+                <span class="plan-badge plan-target">{{targetPlan}}</span>
+              </div>
+
+              <div style="text-align: center;">
+                <div class="price-tag">{{price}}</div>
+              </div>
+
+              <p style="text-align: center; color: #64748b; font-size: 14px;">
+                Please contact the client to finalize their upgrade.
+              </p>
+
+              <div style="text-align: center;">
+                <a href="{{adminUrl}}" class="cta-button">View in Admin Panel →</a>
+              </div>
+
+              <div class="divider"></div>
+
+              <p class="message" style="font-size: 14px; color: #64748b; text-align: center;">
+                This is an automated notification from LawMaster.<br>
+                Please do not reply to this email.
+              </p>
+            </div>
+            <div class="footer">
+              <div class="footer-logo">Law<span>Master</span></div>
+              <div class="footer-links">
+                <a href="{{baseUrl}}">Dashboard</a>
+                <a href="{{baseUrl}}/support">Support</a>
+                <a href="{{baseUrl}}/terms-of-service">Terms</a>
+                <a href="{{baseUrl}}/privacy-policy">Privacy</a>
+              </div>
+              <p class="footer-text">© {{year}} LawMaster Technologies. All rights reserved.</p>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

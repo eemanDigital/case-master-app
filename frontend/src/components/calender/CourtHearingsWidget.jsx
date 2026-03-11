@@ -1009,13 +1009,14 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
   const [activeView, setActiveView] = useState(VIEW.ALL);
   const [selectedHearing, setSelectedHearing] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const hasFetchedRef = useRef(false);
 
   useEffect(() => {
-    // Only fetch if not already loaded
-    if (!hearings || hearings.length === 0) {
+    if (!hasFetchedRef.current) {
+      hasFetchedRef.current = true;
       dispatch(fetchUpcomingHearings({ range: "all", limit: 50 }));
     }
-  }, [dispatch, hearings]);
+  }, [dispatch]);
 
   const { todayReports, urgentSimple, upcomingSimple, hearingNoticeRequired } =
     useMemo(() => {
