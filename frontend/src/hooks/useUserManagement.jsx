@@ -81,6 +81,9 @@ export const useUserManagement = (initialConfig = {}) => {
       setLoading(true);
       setError(null);
 
+      // Clear users when fetching new data
+      setUsers([]);
+
       // Read from ref to always get latest values without stale closure issues
       const {
         userType: type,
@@ -97,7 +100,11 @@ export const useUserManagement = (initialConfig = {}) => {
           role,
         );
 
+        console.log("🔍 fetchUsers - userType:", type, "role:", role, "query:", queryString);
+
         const result = await dataFetcher(`users?${queryString}`, "GET");
+
+        console.log("📦 fetchUsers result:", result?.data?.length, "users", result?.data?.map(u => ({ id: u._id, name: u.firstName, isDeleted: u.isDeleted })));
 
         if (!isMounted.current) return;
 
@@ -127,34 +134,40 @@ export const useUserManagement = (initialConfig = {}) => {
   );
 
   const fetchDeletedUsers = useCallback(async () => {
-    if (!isMounted.current) return;
+    console.log("🔍 Fetching deleted users...");
     setLoading(true);
     try {
       const result = await dispatch(getDeletedUsers()).unwrap();
-      if (isMounted.current) {
-        setDeletedUsers(result.data || []);
-      }
+      console.log("📦 Deleted users response:", result);
+      setDeletedUsers(result.data || []);
     } catch (err) {
-      if (isMounted.current) setError(err.message);
+      console.error("❌ Error fetching deleted users:", err);
+      setError(err.message);
     } finally {
-      if (isMounted.current) setLoading(false);
+      setLoading(false);
     }
   }, [dispatch]);
 
   // Fetch on userType or statusFilter change (and on initial mount)
   useEffect(() => {
+    // Don't fetch regular users when on archived tab
+    if (userType === "archived") return;
+    
     setCurrentPage(1);
     fetchUsers(1);
   }, [userType, statusFilter, fetchUsers]);
 
   // Debounced search fetch
   useEffect(() => {
+    // Don't fetch when on archived tab or search is empty
+    if (userType === "archived") return;
+    
     const timer = setTimeout(() => {
       setCurrentPage(1);
       fetchUsers(1);
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, fetchUsers]);
+  }, [searchQuery, fetchUsers, userType]);
 
   const handleUserTypeChange = useCallback((type) => {
     setUserTypeState(type);

@@ -219,8 +219,10 @@ const UserManagement = ({
   // Fetch archived users when that tab is activated
   const handleTabChange = useCallback(
     (key) => {
+      console.log("🔄 Tab changed to:", key);
       setActiveTab(key);
       if (key === "archived") {
+        console.log("📥 Calling fetchDeletedUsers...");
         fetchDeletedUsers();
       }
     },
@@ -697,6 +699,7 @@ const UserManagement = ({
         {/* Active / Inactive users table */}
         {activeTab !== "archived" ? (
           <>
+            {console.log("🔍 Main tab, users:", users)}
             <Card
               title={
                 <div className="flex items-center">
@@ -758,6 +761,7 @@ const UserManagement = ({
         ) : (
           /* Archived users table */
           <Card title="Archived Users" className="shadow-sm">
+            {console.log("🔍 Rendering archived tab, deletedUsers:", deletedUsers)}
             <Table
               dataSource={deletedUsers}
               columns={deletedColumns}
