@@ -27,6 +27,7 @@ import StatusTag from "../common/StatusTag";
 import {
   addProcessFiled,
   updateProcessFiled,
+  deleteProcessFiled,
   selectActionLoading,
 } from "../../redux/features/litigation/litigationSlice";
 import { PROCESS_STATUS, DATE_FORMAT } from "../../utils/litigationConstants";
@@ -91,6 +92,22 @@ const ProcessesFiledManager = ({
       status: process.status || "pending",
     });
     setIsModalVisible(true);
+  };
+
+  const handleDeleteProcess = async (process) => {
+    try {
+      await dispatch(
+        deleteProcessFiled({
+          matterId,
+          party: process.party,
+          processIndex: process.processIndex,
+        }),
+      ).unwrap();
+      message.success("Process deleted successfully");
+    } catch (error) {
+      console.error("Process delete error:", error);
+      message.error(error?.message || "Failed to delete process");
+    }
   };
 
   const handleSubmit = async (values) => {
@@ -179,6 +196,13 @@ const ProcessesFiledManager = ({
             type="text"
             icon={<EditOutlined />}
             onClick={() => handleEditProcess(record)}
+            size="small"
+          />
+          <Button
+            type="text"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDeleteProcess(record)}
             size="small"
           />
         </Space>

@@ -359,6 +359,28 @@ export const updateProcessFiled = createAsyncThunk(
   },
 );
 
+export const deleteProcessFiled = createAsyncThunk(
+  "litigation/deleteProcessFiled",
+  async ({ matterId, party, processIndex }, { rejectWithValue }) => {
+    try {
+      const response = await litigationService.deleteProcessFiled(
+        matterId,
+        party,
+        processIndex,
+      );
+      message.success("Process deleted successfully");
+      return response;
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Failed to delete process",
+      );
+      return rejectWithValue(
+        error.response?.data || "Failed to delete process",
+      );
+    }
+  },
+);
+
 // ============================================
 // CASE OUTCOMES
 // ============================================

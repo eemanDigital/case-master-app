@@ -1102,6 +1102,50 @@ exports.updateProcessFiled = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
+// DELETE PROCESS FILED
+// ============================================
+
+exports.deleteProcessFiled = catchAsync(async (req, res, next) => {
+  const { matterId, party, processIndex } = req.params;
+
+  if (!["firstParty", "secondParty", "otherParty"].includes(party)) {
+    return next(new AppError("Invalid party specified", 400));
+  }
+
+  const litigationDetail = await LitigationDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
+
+  if (!litigationDetail) {
+    return next(new AppError("Litigation details not found", 404));
+  }
+
+  let partyData;
+  if (party === "firstParty") partyData = litigationDetail.firstParty;
+  else if (party === "secondParty") partyData = litigationDetail.secondParty;
+  else partyData = litigationDetail.otherParty[0];
+
+  if (!partyData || processIndex >= partyData.processesFiled.length) {
+    return next(new AppError("Process not found", 404));
+  }
+
+  partyData.processesFiled.splice(processIndex, 1);
+
+  await litigationDetail.save();
+
+  // Update matter last activity
+  await Matter.findByIdAndUpdate(matterId, {
+    lastActivityDate: new Date(),
+  });
+
+  res.status(200).json({
+    status: "success",
+    data: { litigationDetail },
+  });
+});
+
+// ============================================
 // RECORD JUDGMENT
 // ============================================
 

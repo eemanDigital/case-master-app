@@ -155,6 +155,12 @@ export const updateProcessFiled = (
   );
 };
 
+export const deleteProcessFiled = (matterId, party, processIndex) => {
+  return apiService.delete(
+    `/litigation/${matterId}/processes/${party}/${processIndex}`,
+  );
+};
+
 // ============================================
 // CASE OUTCOMES
 // ============================================

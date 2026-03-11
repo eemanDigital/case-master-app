@@ -109,6 +109,10 @@ litigationRouter.patch(
   "/:matterId/processes/:party/:processIndex",
   litigationController.updateProcessFiled,
 ); // ✅
+litigationRouter.delete(
+  "/:matterId/processes/:party/:processIndex",
+  litigationController.deleteProcessFiled,
+); // ✅
 
 // ============================================
 // CASE OUTCOME MANAGEMENT
