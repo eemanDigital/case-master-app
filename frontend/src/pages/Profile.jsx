@@ -30,6 +30,7 @@ import { formatDate, formatYear } from "../utils/formatDate";
 import ProfilePictureUpload from "../components/ProfilePictureUpload";
 import EditUserProfile from "../components/EditUserProfile";
 import ChangePassword from "../components/ChangePassword";
+import FirmBrandingUpload from "../components/FirmBrandingUpload";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import LoadingSpinner from "../components/LoadingSpinner";
 import PageErrorAlert from "../components/PageErrorAlert";
@@ -585,6 +586,19 @@ const Profile = () => {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8">
         <ProfileHeader />
         <ContactInformation />
+
+        {/* Firm Branding - Show for admin only */}
+        {(userData?.role === "admin" || userData?.role === "super-admin") && (
+          <Card className="mb-4 sm:mb-6 shadow-md">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div>
+                <Title level={5} className="!mb-1">Firm Branding</Title>
+                <Text type="secondary">Upload your firm's logo, stamp, and signature for documents</Text>
+              </div>
+              <FirmBrandingUpload />
+            </div>
+          </Card>
+        )}
 
         {/* Info - Show Subscription for admin/HR */}
         {(userData?.role === "admin" ||

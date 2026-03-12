@@ -875,7 +875,7 @@ exports.getUser = catchAsync(async (req, res, next) => {
     })
     .populate({
       path: "firmId",
-      select: "name address contact.email logo subscription limits usage",
+      select: "name address contact.email settings subscription limits usage",
     })
     .lean();
 
@@ -907,7 +907,7 @@ exports.getSingleUser = catchAsync(async (req, res, next) => {
     })
     .populate({
       path: "firmId",
-      select: "name address contact.email logo",
+      select: "name address contact.email settings",
     })
     .lean();
 
@@ -1916,6 +1916,96 @@ exports.requestPlanUpgrade = catchAsync(async (req, res, next) => {
       currentPlan,
       targetPlan,
       requestedAt: new Date(),
+    },
+  });
+});
+
+exports.uploadFirmLogo = catchAsync(async (req, res, next) => {
+  if (!req.firmId) {
+    return next(new AppError("Firm ID not found. Please log in again.", 400));
+  }
+
+  if (!req.file) {
+    return next(new AppError("Please upload an image file.", 400));
+  }
+
+  const logoUrl = req.file.cloudinaryUrl;
+
+  const firm = await Firm.findByIdAndUpdate(
+    req.firmId,
+    { "settings.firmLogo": logoUrl },
+    { new: true, runValidators: true },
+  );
+
+  if (!firm) {
+    return next(new AppError("Firm not found.", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Firm logo uploaded successfully",
+    data: {
+      firmLogo: logoUrl,
+    },
+  });
+});
+
+exports.uploadFirmStamp = catchAsync(async (req, res, next) => {
+  if (!req.firmId) {
+    return next(new AppError("Firm ID not found. Please log in again.", 400));
+  }
+
+  if (!req.file) {
+    return next(new AppError("Please upload an image file.", 400));
+  }
+
+  const stampUrl = req.file.cloudinaryUrl;
+
+  const firm = await Firm.findByIdAndUpdate(
+    req.firmId,
+    { "settings.firmStamp": stampUrl },
+    { new: true, runValidators: true },
+  );
+
+  if (!firm) {
+    return next(new AppError("Firm not found.", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Firm stamp uploaded successfully",
+    data: {
+      firmStamp: stampUrl,
+    },
+  });
+});
+
+exports.uploadFirmSignature = catchAsync(async (req, res, next) => {
+  if (!req.firmId) {
+    return next(new AppError("Firm ID not found. Please log in again.", 400));
+  }
+
+  if (!req.file) {
+    return next(new AppError("Please upload an image file.", 400));
+  }
+
+  const signatureUrl = req.file.cloudinaryUrl;
+
+  const firm = await Firm.findByIdAndUpdate(
+    req.firmId,
+    { "settings.firmSignature": signatureUrl },
+    { new: true, runValidators: true },
+  );
+
+  if (!firm) {
+    return next(new AppError("Firm not found.", 404));
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "Firm signature uploaded successfully",
+    data: {
+      firmSignature: signatureUrl,
     },
   });
 });

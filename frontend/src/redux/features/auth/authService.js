@@ -175,6 +175,31 @@ const requestPlanUpgrade = async (planKey) => {
 export { requestPlanUpgrade };
 
 // ============================================
+// FIRM BRANDING
+// ============================================
+
+const uploadFirmLogo = async (formData) => {
+  const response = await api.patch(API_URL + "upload-firm-logo", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+const uploadFirmStamp = async (formData) => {
+  const response = await api.patch(API_URL + "upload-firm-stamp", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+const uploadFirmSignature = async (formData) => {
+  const response = await api.patch(API_URL + "upload-firm-signature", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+// ============================================
 // EXPORTS
 // ============================================
 
@@ -203,6 +228,9 @@ export const authService = {
   loginWithCode,
   loginWithGoogle,
   requestPlanUpgrade,
+  uploadFirmLogo,
+  uploadFirmStamp,
+  uploadFirmSignature,
 };
 
 export default authService;

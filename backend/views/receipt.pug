@@ -58,7 +58,14 @@ html(lang="en")
         align-items: center;
         justify-content: center;
         color: white;
-        font-weight: 700;
+        object-fit: contain;
+        padding: 4px;
+      }
+      
+      .firm-logo.img {
+        background: transparent;
+        border-radius: 12px;
+      }        font-weight: 700;
         font-size: 28px;
         margin: 0 auto 20px;
         box-shadow: 0 8px 24px rgba(5, 150, 105, 0.3);
@@ -372,7 +379,10 @@ html(lang="en")
     .receipt-wrapper
       //- Header
       .receipt-header
-        .firm-logo ✓
+        if firm && firm.settings && firm.settings.firmLogo
+          img.firm-logo(src=firm.settings.firmLogo, alt=firm.name)
+        else
+          .firm-logo ✓
         .firm-name #{firm && firm.name ? firm.name : 'Law Firm'}
         .firm-address
           if firm && firm.contact

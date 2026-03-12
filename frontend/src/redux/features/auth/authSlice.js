@@ -359,6 +359,56 @@ export const loginWithGoogle = createAsyncThunk(
 );
 
 // ============================================
+// FIRM BRANDING THUNKS
+// ============================================
+
+export const uploadFirmLogo = createAsyncThunk(
+  "auth/uploadFirmLogo",
+  async (formData, thunkAPI) => {
+    try {
+      const response = await authService.uploadFirmLogo(formData);
+      // Update current user with new firm data
+      await thunkAPI.dispatch(getUser());
+      return response;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || error.toString(),
+      );
+    }
+  },
+);
+
+export const uploadFirmStamp = createAsyncThunk(
+  "auth/uploadFirmStamp",
+  async (formData, thunkAPI) => {
+    try {
+      const response = await authService.uploadFirmStamp(formData);
+      await thunkAPI.dispatch(getUser());
+      return response;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || error.toString(),
+      );
+    }
+  },
+);
+
+export const uploadFirmSignature = createAsyncThunk(
+  "auth/uploadFirmSignature",
+  async (formData, thunkAPI) => {
+    try {
+      const response = await authService.uploadFirmSignature(formData);
+      await thunkAPI.dispatch(getUser());
+      return response;
+    } catch (error) {
+      return thunkAPI.rejectWithValue(
+        error.response?.data?.message || error.message || error.toString(),
+      );
+    }
+  },
+);
+
+// ============================================
 // SLICE
 // ============================================
 
@@ -829,6 +879,54 @@ const authSlice = createSlice({
         state.isError = true;
         state.message = action.payload;
         state.user = null;
+        toast.error(action.payload);
+      })
+
+      // ── uploadFirmLogo ─────────────────────────────
+      .addCase(uploadFirmLogo.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(uploadFirmLogo.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        toast.success(action.payload?.message || "Logo uploaded successfully");
+      })
+      .addCase(uploadFirmLogo.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+        toast.error(action.payload);
+      })
+
+      // ── uploadFirmStamp ─────────────────────────────
+      .addCase(uploadFirmStamp.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(uploadFirmStamp.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        toast.success(action.payload?.message || "Stamp uploaded successfully");
+      })
+      .addCase(uploadFirmStamp.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
+        toast.error(action.payload);
+      })
+
+      // ── uploadFirmSignature ─────────────────────────
+      .addCase(uploadFirmSignature.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(uploadFirmSignature.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.isSuccess = true;
+        toast.success(action.payload?.message || "Signature uploaded successfully");
+      })
+      .addCase(uploadFirmSignature.rejected, (state, action) => {
+        state.isLoading = false;
+        state.isError = true;
+        state.message = action.payload;
         toast.error(action.payload);
       });
   },

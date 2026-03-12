@@ -48,6 +48,9 @@ const Dashboard = () => {
 
   const userId = user?.data?._id;
   const lawFirmName = user?.data?.firmId?.name;
+  const firmLogo = user?.data?.firmId?.settings?.firmLogo;
+
+  console.log(firmLogo);
 
   const { error: userError } = useDataFetch();
 
@@ -108,7 +111,15 @@ const Dashboard = () => {
                         </h1>
                         <div className="flex items-center gap-2 mt-2">
                           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary-50 dark:bg-primary-900/30 border border-primary-100 dark:border-primary-800">
-                            <span className="w-2 h-2 bg-primary-500 rounded-full animate-pulse" />
+                            {firmLogo ? (
+                              <img
+                                src={firmLogo}
+                                alt={lawFirmName}
+                                className="w-5 h-5 rounded-full object-cover"
+                              />
+                            ) : (
+                              <span className="w-2 h-2 bg-primary-500 rounded-full animate-pulse" />
+                            )}
                             <span className="text-sm font-semibold text-primary-700 dark:text-primary-300">
                               {lawFirmName}
                             </span>
@@ -152,9 +163,7 @@ const Dashboard = () => {
 
                 <Row gutter={[16, 16]} className="mb-8">
                   <Col xs={24} md={16}>
-                    <Card
-                      className="shadow-lg border-border"
-                      bordered={false}>
+                    <Card className="shadow-lg border-border" bordered={false}>
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-bold text-content-primary flex items-center gap-2">
                           <svg
@@ -177,9 +186,7 @@ const Dashboard = () => {
                   </Col>
 
                   <Col xs={24} md={8}>
-                    <Card
-                      className="shadow-lg border-border"
-                      bordered={false}>
+                    <Card className="shadow-lg border-border" bordered={false}>
                       <div className="flex items-center justify-between mb-4">
                         <h2 className="text-lg font-bold text-content-primary flex items-center gap-2">
                           <svg
@@ -256,7 +263,9 @@ const Dashboard = () => {
 
                 <ShowAdminComponent>
                   <section className="mb-8">
-                    <Card className="shadow-lg border-border w-full md:w-auto" bordered={false}>
+                    <Card
+                      className="shadow-lg border-border w-full md:w-auto"
+                      bordered={false}>
                       <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-bold text-content-primary flex items-center gap-2">
                           <svg

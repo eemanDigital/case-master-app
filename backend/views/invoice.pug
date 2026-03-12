@@ -67,6 +67,12 @@ html(lang="en")
         color: white;
         font-weight: 700;
         font-size: 24px;
+        object-fit: contain;
+        padding: 4px;
+      }
+      
+      .firm-logo.img {
+        background: transparent;
       }
       
       .firm-details h1 {
@@ -508,7 +514,10 @@ html(lang="en")
       //- Header
       .invoice-header
         .firm-brand
-          .firm-logo #{firm && firm.name ? firm.name.charAt(0) : 'L'}
+          if firm && firm.settings && firm.settings.firmLogo
+            img.firm-logo(src=firm.settings.firmLogo, alt=firm.name)
+          else
+            .firm-logo #{firm && firm.name ? firm.name.charAt(0) : 'L'}
           .firm-details
             h1 #{firm && firm.name ? firm.name : 'Law Firm'}
             p Barristers, Solicitors & Advocates

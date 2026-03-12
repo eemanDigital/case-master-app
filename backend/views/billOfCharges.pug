@@ -68,6 +68,12 @@ html(lang="en")
         font-weight: 700;
         font-size: 24px;
         box-shadow: 0 4px 12px rgba(26, 54, 93, 0.3);
+        object-fit: contain;
+        padding: 4px;
+      }
+      
+      .firm-logo.img {
+        background: transparent;
       }
       
       .firm-details h1 {
@@ -433,7 +439,10 @@ html(lang="en")
       //- Header
       .doc-header
         .firm-brand
-          .firm-logo B
+          if firm && firm.settings && firm.settings.firmLogo
+            img.firm-logo(src=firm.settings.firmLogo, alt=firm.name)
+          else
+            .firm-logo B
           .firm-details
             h1 #{firm && firm.name ? firm.name : 'Law Firm'}
             p Barristers, Solicitors & Advocates

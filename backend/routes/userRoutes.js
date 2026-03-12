@@ -64,6 +64,9 @@ const {
   softDeleteUser,
   restoreUser,
   requestPlanUpgrade,
+  uploadFirmLogo,
+  uploadFirmStamp,
+  uploadFirmSignature,
 } = userController;
 
 // ============================================
@@ -191,6 +194,31 @@ router.patch(
   photoController.uploadUserPhoto,
   photoController.resizeUserPhoto,
   updateUser,
+);
+
+// Firm Branding Upload Routes (Admin only)
+router.patch(
+  "/upload-firm-logo",
+  restrictTo("admin", "super-admin"),
+  photoController.uploadUserPhoto,
+  photoController.resizeUserPhoto,
+  uploadFirmLogo,
+);
+
+router.patch(
+  "/upload-firm-stamp",
+  restrictTo("admin", "super-admin"),
+  photoController.uploadUserPhoto,
+  photoController.resizeUserPhoto,
+  uploadFirmStamp,
+);
+
+router.patch(
+  "/upload-firm-signature",
+  restrictTo("admin", "super-admin"),
+  photoController.uploadUserPhoto,
+  photoController.resizeUserPhoto,
+  uploadFirmSignature,
 );
 
 // Upgrade/Manage (Uses granular adminDetails checks)
