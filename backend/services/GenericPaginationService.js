@@ -46,7 +46,7 @@ class GenericPaginationService {
       // Build base filter
       const baseFilter = QueryBuilder.buildMongooseFilter(
         { search, caseId, caseSearch, ...filters },
-        this.config
+        this.config,
       );
 
       // ✅ Add firmId to filter if required
@@ -61,12 +61,15 @@ class GenericPaginationService {
       }
 
       // Handle soft deletion
-      if (filters.includeDeleted === "true") {
-        delete finalFilter.isDeleted;
-      } else if (filters.onlyDeleted === "true") {
-        finalFilter.isDeleted = true;
-      } else {
-        finalFilter.isDeleted = { $ne: true };
+      // Handle soft deletion ONLY if controller did not specify it
+      if (finalFilter.isDeleted === undefined) {
+        if (filters.includeDeleted === "true") {
+          delete finalFilter.isDeleted;
+        } else if (filters.onlyDeleted === "true") {
+          finalFilter.isDeleted = true;
+        } else {
+          finalFilter.isDeleted = { $ne: true };
+        }
       }
 
       const sortOptions = QueryBuilder.buildSort(sort, this.config.defaultSort);
@@ -113,14 +116,14 @@ class GenericPaginationService {
       // Validate page bounds
       if (sanitizedPage > totalPages && totalPages > 0) {
         console.warn(
-          `⚠️ Page ${sanitizedPage} exceeds total pages ${totalPages}`
+          `⚠️ Page ${sanitizedPage} exceeds total pages ${totalPages}`,
         );
         return this.formatResponse(
           [],
           totalRecords,
           sanitizedPage,
           sanitizedLimit,
-          statistics
+          statistics,
         );
       }
 
@@ -161,7 +164,7 @@ class GenericPaginationService {
       // Verify data consistency
       if (data.length > sanitizedLimit) {
         console.error(
-          `❌ ERROR: Returned ${data.length} records but limit is ${sanitizedLimit}`
+          `❌ ERROR: Returned ${data.length} records but limit is ${sanitizedLimit}`,
         );
         data.splice(sanitizedLimit);
       }
@@ -171,7 +174,7 @@ class GenericPaginationService {
         totalRecords,
         sanitizedPage,
         sanitizedLimit,
-        statistics
+        statistics,
       );
     } catch (error) {
       console.error("❌ Pagination error:", error);
@@ -307,7 +310,7 @@ class GenericPaginationService {
                 { $sort: { count: -1 } },
               ]);
               return { field, values: result };
-            })
+            }),
           );
 
           stats.fields = {};
@@ -372,7 +375,7 @@ class GenericPaginationService {
     return this.paginate(
       { ...queryParams, caseSearch: searchTerm },
       {},
-      firmId
+      firmId,
     );
   }
 
@@ -448,7 +451,7 @@ class GenericPaginationService {
         totalRecords,
         sanitizedPage,
         sanitizedLimit,
-        statistics
+        statistics,
       );
     } catch (error) {
       console.error("Advanced search error:", error);
