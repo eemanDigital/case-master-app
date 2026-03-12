@@ -36,6 +36,7 @@ const webhookRouter = require("./routes/webhookRoutes");
 const auditLogRouter = require("./routes/auditLogRoutes");
 const invitationRouter = require("./routes/invitationRoutes");
 const { auditMiddleware } = require("./middleware/auditMiddleware");
+const extractSubdomain = require("./middleware/subdomain");
 
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
@@ -306,6 +307,9 @@ app.get("/health", (req, res) => {
     environment: process.env.NODE_ENV,
   });
 });
+
+// Subdomain extraction middleware (for multi-tenant)
+app.use(extractSubdomain);
 
 // API routes
 app.use("/api/v1/users", userRouter);

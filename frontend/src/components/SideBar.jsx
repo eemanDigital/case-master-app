@@ -50,9 +50,6 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
     } else if (path.includes("/dashboard/staff/leave-balance")) {
       setSelectedKeys(["leave-balance"]);
       setOpenKeys(["staff", "leave"]);
-    } else if (path.includes("/dashboard/staff-status")) {
-      setSelectedKeys(["staff-status"]);
-      setOpenKeys(["staff"]);
     } else if (path.includes("/dashboard/staff")) {
       setSelectedKeys(["staff-directory"]);
       setOpenKeys(["staff"]);
@@ -219,11 +216,11 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           label: "Directory",
           path: "/dashboard/staff",
         },
-        {
-          key: "staff-status",
-          label: "Status",
-          path: "/dashboard/staff-status",
-        },
+        // {
+        //   key: "staff-status",
+        //   label: "Status",
+        //   path: "/dashboard/staff-status",
+        // },
         {
           key: "leave",
           label: "Leave",
@@ -281,12 +278,12 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
         },
       ],
     },
-    {
-      key: "clients",
-      icon: <UserOutlined />,
-      label: "Clients",
-      path: "/dashboard/clients",
-    },
+    // {
+    //   key: "clients",
+    //   icon: <UserOutlined />,
+    //   label: "Clients",
+    //   path: "/dashboard/clients",
+    // },
     {
       key: "documents",
       icon: <FileOutlined />,

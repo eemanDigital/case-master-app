@@ -968,14 +968,14 @@ const router = createBrowserRouter(
               </Suspense>
             }
           />
-          <Route
+          {/* <Route
             path="clients/add-client"
             element={
               <Suspense fallback={<PageLoader />}>
                 <AddClientForm />
               </Suspense>
             }
-          />
+          /> */}
           <Route
             path="clients/:id/details"
             element={

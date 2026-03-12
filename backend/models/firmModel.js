@@ -557,6 +557,13 @@ firmSchema.methods.restore = async function () {
  */
 
 /**
+ * Find firm by subdomain
+ */
+firmSchema.statics.findBySubdomain = function (subdomain) {
+  return this.findOne({ subdomain: subdomain?.toLowerCase(), isActive: true });
+};
+
+/**
  * Find active firms only (exclude soft-deleted)
  */
 firmSchema.statics.findActive = function (query = {}) {

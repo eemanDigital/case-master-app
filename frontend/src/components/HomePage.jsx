@@ -703,6 +703,11 @@ const features = [
     desc: "Complete lifecycle for every case — intake, assignment, automated workflows, and closing in one unified view.",
   },
   {
+    ico: "📄",
+    title: "Legal Templates",
+    desc: "Browse Nigerian legal templates, generate contracts & court documents with dynamic placeholders. Export to PDF, Word, or plain text.",
+  },
+  {
     ico: "👥",
     title: "Client Portal",
     desc: "A branded self-service portal where clients track their matters, pay invoices, and communicate securely with your team.",
@@ -802,6 +807,7 @@ const plans = [
       "Up to 5 users",
       "100 active matters",
       "Client portal",
+      "Legal templates library",
       "Basic reporting",
       "Email support",
     ],
@@ -816,6 +822,7 @@ const plans = [
       "Up to 20 users",
       "Unlimited matters",
       "Client portal",
+      "Legal templates library",
       "Advanced analytics",
       "API access",
       "Priority support",
@@ -831,6 +838,7 @@ const plans = [
     features: [
       "Unlimited users",
       "Unlimited matters",
+      "Legal templates library",
       "Dedicated instance",
       "Custom integrations",
       "SLA guarantee",
@@ -1188,6 +1196,95 @@ export default function HomePage() {
                     ico: "📂",
                     t: "Unified document hub",
                     d: "All pleadings, contracts, and correspondence in one searchable, version-controlled space.",
+                  },
+                ].map((b, i) => (
+                  <li key={i} className="lm-benefit">
+                    <div className="lm-benefit-ico">{b.ico}</div>
+                    <div>
+                      <div className="lm-benefit-title">{b.t}</div>
+                      <div className="lm-benefit-desc">{b.d}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* ── TEMPLATES SHOWCASE ── */}
+        <section id="templates" className="lm-showcase">
+          <div className="lm-showcase-inner">
+            <div ref={rSL} className="lm-reveal">
+              <div className="lm-showcase-screen">
+                <div className="lm-screen-hdr">
+                  <span className="lm-screen-title">
+                    Legal Templates Library
+                  </span>
+                  <span className="lm-pill lm-pill-blue">● 15+ templates</span>
+                </div>
+                <div className="lm-screen-body">
+                  {[
+                    { t: "Employment Contract", c: "Contracts" },
+                    { t: "Service Agreement", c: "Contracts" },
+                    { t: "Writ of Summons", c: "Court Processes" },
+                    { t: "Affidavit of Loss", c: "Court Processes" },
+                    { t: "Deed of Assignment", c: "Property" },
+                    { t: "Memorandum of Understanding", c: "Corporate" },
+                  ].map((m, i) => (
+                    <div key={i} className="lm-matter-row">
+                      <div className="lm-m-av">📄</div>
+                      <div className="lm-m-info">
+                        <div className="lm-m-name">{m.t}</div>
+                        <div className="lm-m-type">{m.c}</div>
+                      </div>
+                      <span
+                        className="lm-pill lm-pill-blue"
+                        style={{ marginRight: 8 }}>
+                        Available
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div ref={rSR} className="lm-reveal lm-rd2">
+              <div className="lm-eyebrow">
+                <div className="lm-eyebrow-line" />
+                Legal Templates
+              </div>
+              <h2 className="lm-h2">
+                Generate documents
+                <br />
+                in seconds.
+              </h2>
+              <p
+                style={{
+                  fontSize: 15,
+                  color: "var(--text-2)",
+                  fontWeight: 300,
+                  lineHeight: 1.72,
+                }}>
+                Access a library of Nigerian legal document templates. Fill in
+                dynamic placeholders and generate ready-to-use documents in
+                minutes.
+              </p>
+              <ul className="lm-benefits">
+                {[
+                  {
+                    ico: "📋",
+                    t: "15+ Nigerian templates",
+                    d: "Contracts, court processes, property documents, and corporate agreements.",
+                  },
+                  {
+                    ico: "✍️",
+                    t: "Dynamic placeholders",
+                    d: "Fill in fields once, and the document auto-populates with your data.",
+                  },
+                  {
+                    ico: "📤",
+                    t: "Multi-format export",
+                    d: "Download as PDF, Word (.docx), or plain text for any use case.",
                   },
                 ].map((b, i) => (
                   <li key={i} className="lm-benefit">
