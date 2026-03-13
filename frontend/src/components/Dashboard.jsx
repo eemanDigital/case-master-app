@@ -50,7 +50,6 @@ const Dashboard = () => {
   const lawFirmName = user?.data?.firmId?.name;
   const firmLogo = user?.data?.firmId?.settings?.firmLogo;
 
-  console.log(firmLogo);
 
   const { error: userError } = useDataFetch();
 
