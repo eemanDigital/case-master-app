@@ -19,6 +19,7 @@ import {
   Grid,
   Input,
   Statistic,
+  Progress,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -42,6 +43,7 @@ import {
   PhoneOutlined,
   MailOutlined,
   MoreOutlined,
+  CloudOutlined,
 } from "@ant-design/icons";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
@@ -56,6 +58,9 @@ import {
   formatCurrency,
   getStatusColor,
 } from "../../config/matterConfig";
+import MatterFileUploader from "../../components/MatterFileUploader";
+import DocumentsList from "../../components/DocumentsList";
+import useFirmStorage from "../../hooks/useFirmStorage";
 
 const { TextArea } = Input;
 
@@ -81,6 +86,19 @@ const MatterDetails = () => {
 
   const [activeTab, setActiveTab] = useState("overview");
   const [showMoreActions, setShowMoreActions] = useState(false);
+  const [refreshDocuments, setRefreshDocuments] = useState(false);
+
+  const {
+    storageInfo,
+    loading: storageLoading,
+    refresh: refreshStorage,
+    isNearLimit,
+    isAtLimit,
+    usagePercentage,
+    storageUsedGB,
+    storageLimitGB,
+    plan,
+  } = useFirmStorage();
 
   useEffect(() => {
     if (id) {
@@ -865,143 +883,69 @@ const MatterDetails = () => {
                 </span>
               }
               key="documents">
+              {/* Storage Warning */}
+              {isNearLimit && !isAtLimit && (
+                <Alert
+                  message="Storage Warning"
+                  description={`You've used ${usagePercentage}% of your ${storageLimitGB}GB storage. Consider upgrading your plan.`}
+                  type="warning"
+                  showIcon
+                  className="mb-4"
+                  action={
+                    <Button size="small" type="ghost">
+                      Upgrade
+                    </Button>
+                  }
+                />
+              )}
+              {isAtLimit && (
+                <Alert
+                  message="Storage Limit Reached"
+                  description={`You've reached your ${storageLimitGB}GB storage limit. Upgrade your plan to continue uploading files.`}
+                  type="error"
+                  showIcon
+                  className="mb-4"
+                  action={
+                    <Button size="small" type="primary" danger>
+                      Upgrade Now
+                    </Button>
+                  }
+                />
+              )}
+
+              {/* Upload Button */}
+              <div className="mb-4">
+                <MatterFileUploader
+                  matterId={id}
+                  category="legal"
+                  buttonText="Upload Documents"
+                  buttonProps={{
+                    icon: isAtLimit ? <CloudOutlined /> : <FileTextOutlined />,
+                    disabled: isAtLimit,
+                  }}
+                  onUploadSuccess={() => {
+                    setRefreshDocuments(prev => !prev);
+                    refreshStorage();
+                  }}
+                />
+              </div>
+
+              {/* Documents List */}
               <Card
                 className={`${
                   isDarkMode ? "dark:bg-gray-800 dark:border-gray-700" : ""
                 }`}
                 bodyStyle={{ padding: screens.xs ? "16px" : "24px" }}>
-                {/* Upload/View Documents Section */}
-                <div className="text-center py-6 sm:py-8 md:py-12">
-                  <FileTextOutlined
-                    className={`${
-                      screens.xs
-                        ? "text-3xl"
-                        : screens.sm
-                          ? "text-4xl"
-                          : "text-5xl"
-                    } text-gray-400 dark:text-gray-500 mb-3 sm:mb-4`}
-                  />
-                  <Title
-                    level={screens.xs ? 5 : 4}
-                    type="secondary"
-                    className={`mb-2 sm:mb-3 ${
-                      isDarkMode ? "dark:text-gray-300" : ""
-                    }`}>
-                    Documents Management
-                  </Title>
-                  <Text
-                    type="secondary"
-                    className={`mb-4 sm:mb-6 block ${
-                      screens.xs ? "text-sm" : ""
-                    } ${isDarkMode ? "dark:text-gray-400" : ""}`}>
-                    Upload, manage, and organize case documents
-                  </Text>
-                  <Space
-                    direction={screens.xs ? "vertical" : "horizontal"}
-                    size={screens.xs ? "small" : "middle"}
-                    className="w-full sm:w-auto">
-                    <Button
-                      type="primary"
-                      icon={screens.xs ? <FileTextOutlined /> : null}
-                      block={screens.xs}
-                      size={screens.xs ? "middle" : "default"}>
-                      {screens.xs ? "Upload" : "Upload Document"}
-                    </Button>
-                    <Button
-                      icon={screens.xs ? <EyeOutlined /> : null}
-                      block={screens.xs}
-                      size={screens.xs ? "middle" : "default"}>
-                      {screens.xs ? "View All" : "View All Documents"}
-                    </Button>
-                  </Space>
-                </div>
+                <DocumentsList
+                  entityType="Matter"
+                  entityId={id}
+                  showUploader={false}
+                  title={`${matter.title} - Documents`}
+                  key={refreshDocuments}
+                />
+              </Card>
 
-                {/* Documents List Section - Empty State Example */}
-                <div className="mb-6 sm:mb-8">
-                  <div className="flex items-center justify-between mb-4">
-                    <Title
-                      level={5}
-                      className={`m-0 ${isDarkMode ? "dark:text-gray-100" : ""}`}>
-                      Recent Documents
-                    </Title>
-                    <Text
-                      type="secondary"
-                      className="text-xs sm:text-sm cursor-pointer hover:text-primary">
-                      View all
-                    </Text>
-                  </div>
-
-                  {matter.documents?.length > 0 ? (
-                    // Document list when documents exist
-                    <Row gutter={[12, 12]}>
-                      {matter.documents.slice(0, 3).map((doc, index) => (
-                        <Col xs={24} sm={12} md={8} key={index}>
-                          <Card
-                            size="small"
-                            className={`hover:shadow-md transition-shadow cursor-pointer ${
-                              isDarkMode
-                                ? "dark:bg-gray-700 dark:border-gray-600"
-                                : ""
-                            }`}
-                            bodyStyle={{
-                              padding: screens.xs ? "12px" : "16px",
-                            }}>
-                            <div className="flex items-start gap-3">
-                              <div
-                                className={`p-2 rounded ${
-                                  isDarkMode
-                                    ? "dark:bg-gray-600"
-                                    : "bg-gray-100"
-                                }`}>
-                                <FileTextOutlined className="text-lg" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <Text
-                                  strong
-                                  className={`block truncate text-sm sm:text-base ${
-                                    isDarkMode ? "dark:text-gray-100" : ""
-                                  }`}>
-                                  {doc.name}
-                                </Text>
-                                <Text
-                                  type="secondary"
-                                  className="text-xs sm:text-sm">
-                                  {doc.size} • {doc.modified}
-                                </Text>
-                              </div>
-                            </div>
-                          </Card>
-                        </Col>
-                      ))}
-                    </Row>
-                  ) : (
-                    // Empty document state
-                    <Card
-                      className={`text-center ${
-                        isDarkMode
-                          ? "dark:bg-gray-700 dark:border-gray-600"
-                          : "bg-gray-50"
-                      }`}
-                      bodyStyle={{ padding: screens.xs ? "20px" : "40px" }}>
-                      <FileTextOutlined className="text-2xl text-gray-300 dark:text-gray-600 mb-3" />
-                      <Text type="secondary" className="block mb-4">
-                        No documents uploaded yet
-                      </Text>
-                      <Button
-                        type="dashed"
-                        size={screens.xs ? "small" : "default"}
-                        icon={<FileTextOutlined />}
-                        onClick={() => {
-                          /* Handle upload */
-                        }}>
-                        Upload First Document
-                      </Button>
-                    </Card>
-                  )}
-                </div>
-
-                {/* General Comment */}
-                {matter.generalComment && (
+              {matter.generalComment && (
                   <div className="mt-6 sm:mt-8">
                     <div className="flex items-center justify-between mb-3 sm:mb-4">
                       <Title
@@ -1099,135 +1043,55 @@ const MatterDetails = () => {
                   </div>
                 )}
 
-                {/* Add New Note Section */}
-                <div className="mt-6 sm:mt-8 pt-6 border-t dark:border-gray-700">
-                  <div className="flex items-center justify-between mb-3 sm:mb-4">
-                    <Title
-                      level={5}
-                      className={`m-0 ${isDarkMode ? "dark:text-gray-100" : ""}`}>
-                      Add New Note
-                    </Title>
-                    <Space size="small">
-                      <Button
-                        size={screens.xs ? "small" : "default"}
-                        type={matter.internalNotes ? "default" : "primary"}
-                        onClick={() => {
-                          /* Handle add internal note */
-                        }}>
-                        Internal Note
-                      </Button>
-                      <Button
-                        size={screens.xs ? "small" : "default"}
-                        type={matter.generalComment ? "default" : "primary"}
-                        onClick={() => {
-                          /* Handle add general comment */
-                        }}>
-                        General Comment
-                      </Button>
-                    </Space>
-                  </div>
-                  <Card
-                    className={`${
-                      isDarkMode
-                        ? "dark:bg-gray-700 dark:border-gray-600"
-                        : "bg-gray-50"
-                    }`}
-                    bodyStyle={{ padding: screens.xs ? "12px" : "16px" }}>
-                    <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                      <div className="flex-1">
-                        <TextArea
-                          placeholder={
-                            screens.xs
-                              ? "Type your note here..."
-                              : "Type your note here. Markdown is supported..."
-                          }
-                          rows={screens.xs ? 2 : 3}
-                          className={
-                            isDarkMode
-                              ? "dark:bg-gray-800 dark:text-gray-100"
-                              : ""
-                          }
-                        />
-                      </div>
-                      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                        <Button
-                          type="primary"
-                          size={screens.xs ? "middle" : "default"}
-                          icon={<FileTextOutlined />}
-                          disabled>
-                          {screens.xs ? "Save" : "Save Note"}
-                        </Button>
-                        <Button
-                          size={screens.xs ? "middle" : "default"}
-                          icon={<PaperClipOutlined />}>
-                          {screens.xs ? "Attach" : "Attach File"}
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 mt-3">
-                      <Tag color="blue" className="text-xs">
-                        Internal
-                      </Tag>
-                      <Tag color="green" className="text-xs">
-                        Important
-                      </Tag>
-                      <Tag color="orange" className="text-xs">
-                        Follow-up
-                      </Tag>
-                      <Tag color="purple" className="text-xs">
-                        TODO
-                      </Tag>
-                    </div>
-                  </Card>
+                {/* Storage Overview */}
+                <div className="mt-8">
+                  <Title
+                    level={5}
+                    className={`mb-4 ${isDarkMode ? "dark:text-gray-100" : ""}`}>
+                    Storage Overview
+                  </Title>
+                  <Row gutter={[16, 16]}>
+                    <Col xs={24} sm={12} md={6}>
+                      <Statistic
+                        title="Plan Limit"
+                        value={storageLimitGB}
+                        suffix="GB"
+                        prefix={<CloudOutlined />}
+                        className={isDarkMode ? "dark:text-gray-100" : ""}
+                      />
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                      <Statistic
+                        title="Storage Used"
+                        value={storageUsedGB < 1 
+                          ? (storageUsedGB * 1024).toFixed(1) 
+                          : storageUsedGB.toFixed(2)}
+                        suffix="MB"
+                        prefix={<FolderOutlined />}
+                        className={isDarkMode ? "dark:text-gray-100" : ""}
+                      />
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                      <Statistic
+                        title="Usage"
+                        value={usagePercentage}
+                        suffix="%"
+                        prefix={<ClockCircleOutlined />}
+                        className={isDarkMode ? "dark:text-gray-100" : ""}
+                      />
+                    </Col>
+                    <Col xs={24} sm={12} md={6}>
+                      <Statistic
+                        title="Plan"
+                        value={plan}
+                        prefix={<FileTextOutlined />}
+                        className={isDarkMode ? "dark:text-gray-100" : ""}
+                      />
+                    </Col>
+                  </Row>
                 </div>
-
-                {/* Document Statistics (Hidden on mobile) */}
-                {!screens.xs && (
-                  <div className="mt-8">
-                    <Title
-                      level={5}
-                      className={`mb-4 ${isDarkMode ? "dark:text-gray-100" : ""}`}>
-                      Document Statistics
-                    </Title>
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} sm={12} md={6}>
-                        <Statistic
-                          title="Total Files"
-                          value={matter.documents?.length || 0}
-                          prefix={<FileTextOutlined />}
-                          className={isDarkMode ? "dark:text-gray-100" : ""}
-                        />
-                      </Col>
-                      <Col xs={24} sm={12} md={6}>
-                        <Statistic
-                          title="Total Size"
-                          value="15.2 MB"
-                          prefix={<FolderOutlined />}
-                          className={isDarkMode ? "dark:text-gray-100" : ""}
-                        />
-                      </Col>
-                      <Col xs={24} sm={12} md={6}>
-                        <Statistic
-                          title="Last Updated"
-                          value="2 days ago"
-                          prefix={<ClockCircleOutlined />}
-                          className={isDarkMode ? "dark:text-gray-100" : ""}
-                        />
-                      </Col>
-                      <Col xs={24} sm={12} md={6}>
-                        <Statistic
-                          title="Notes"
-                          value={2}
-                          prefix={<EditOutlined />}
-                          className={isDarkMode ? "dark:text-gray-100" : ""}
-                        />
-                      </Col>
-                    </Row>
-                  </div>
-                )}
-              </Card>
-            </TabPane>
-          </Tabs>
+              </TabPane>
+            </Tabs>
         </Col>
 
         {/* Right Column - Sidebar - Mobile Optimized */}
@@ -1304,6 +1168,53 @@ const MatterDetails = () => {
               </div>
             </Space>
           </Card>
+
+          {/* Storage Usage Card */}
+          {!storageLoading && storageInfo && (
+            <Card
+              className={`mb-4 sm:mb-6 ${
+                isDarkMode ? "dark:bg-gray-800 dark:border-gray-700" : ""
+              }`}
+              title={<span className="text-sm sm:text-base">Storage Usage</span>}
+              extra={
+                <Tag color={isAtLimit ? "red" : isNearLimit ? "orange" : "blue"}>
+                  {plan}
+                </Tag>
+              }
+              bodyStyle={{ padding: screens.xs ? "12px" : "16px" }}>
+              <Space direction="vertical" className="w-full">
+                <div className="flex justify-between items-center">
+                  <Text type="secondary" className="text-xs sm:text-sm">
+                    Used
+                  </Text>
+                  <Text strong className="text-xs sm:text-sm">
+                    {storageUsedGB < 1 
+                      ? `${(storageUsedGB * 1024).toFixed(1)} MB` 
+                      : `${storageUsedGB.toFixed(2)} GB`}
+                  </Text>
+                </div>
+                <div className="flex justify-between items-center">
+                  <Text type="secondary" className="text-xs sm:text-sm">
+                    Limit
+                  </Text>
+                  <Text strong className="text-xs sm:text-sm">
+                    {storageLimitGB} GB
+                  </Text>
+                </div>
+                <Progress 
+                  percent={usagePercentage} 
+                  size="small"
+                  status={isAtLimit ? "exception" : isNearLimit ? "normal" : "success"}
+                  strokeColor={isAtLimit ? "#ff4d4f" : isNearLimit ? "#faad14" : "#52c41a"}
+                />
+                {isAtLimit && (
+                  <Button type="primary" danger size="small" block>
+                    Upgrade Plan
+                  </Button>
+                )}
+              </Space>
+            </Card>
+          )}
 
           {/* Tags - Mobile Optimized */}
           {matter.tags?.length > 0 && (

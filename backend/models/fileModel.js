@@ -79,7 +79,7 @@ const fileSchema = new mongoose.Schema(
     // Reference to the entity this file belongs to
     entityType: {
       type: String,
-      enum: ["Case", "Task", "User", "General"],
+      enum: ["Case", "Task", "User", "General", "Matter"],
       required: true,
     },
     entityId: {

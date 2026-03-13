@@ -34,7 +34,7 @@ const CreateProperty = () => {
       ).unwrap();
 
       // Navigate to details page
-      navigate(`/dashboard/matters/property/${matterId}`);
+      navigate(`/dashboard/matters/property/${matterId}/details`);
     } catch (error) {
       console.error("Failed to create property details:", error);
     }

@@ -238,4 +238,34 @@ matterRouter.patch(
   },
 );
 
+// ============================================
+// DOCUMENT MANAGEMENT
+// ============================================
+
+// Import file controller functions
+const fileController = require("../controllers/fileController");
+const authController = require("../controllers/authController");
+
+// Upload documents to matter
+matterRouter.post(
+  "/:id/documents",
+  authController.protect,
+  fileController.uploadMultiple,
+  matterController.uploadMatterDocuments
+);
+
+// Get matter documents
+matterRouter.get(
+  "/:id/documents",
+  authController.protect,
+  matterController.getMatterDocuments
+);
+
+// Delete matter document
+matterRouter.delete(
+  "/:id/documents/:documentId",
+  authController.protect,
+  matterController.deleteMatterDocument
+);
+
 module.exports = matterRouter;

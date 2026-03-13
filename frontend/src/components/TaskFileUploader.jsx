@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useSelector } from "react-redux";
-import { Button, Modal, Upload, Form, Input, Select, message } from "antd";
+import { Button, Modal, Upload, Form, Input } from "antd";
 import {
   UploadOutlined,
   DeleteOutlined,
@@ -12,7 +12,6 @@ import useModal from "../hooks/useModal";
 import { toast } from "react-toastify";
 
 const { Dragger } = Upload;
-const { Option } = Select;
 
 const TaskFileUploader = ({
   taskId,

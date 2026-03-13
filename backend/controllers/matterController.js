@@ -1984,10 +1984,191 @@ exports.logBulkOperation = catchAsync(async (req, res, next) => {
   console.log(
     `[${new Date().toISOString()}] Bulk ${action} by user ${
       req.user._id
-    }: ${matterIds.length} matters`,
+    }: ${matterIds.length} matters`
   );
 
   next();
+});
+
+// ============================================
+// MATTER DOCUMENTS MANAGEMENT
+// ============================================
+
+const File = require("../models/fileModel");
+const Firm = require("../models/firmModel");
+const s3Service = require("../services/s3Service");
+const path = require("path");
+
+/**
+ * Upload documents to a matter
+ */
+exports.uploadMatterDocuments = catchAsync(async (req, res, next) => {
+  const matterId = req.params.id;
+  
+  // Check if matter exists
+  const Matter = require("../models/matterModel");
+  const matter = await Matter.findOne({ _id: matterId, firmId: req.firmId });
+  
+  if (!matter) {
+    return next(new AppError("Matter not found", 404));
+  }
+
+  if (!req.files || req.files.length === 0) {
+    return next(new AppError("Please upload at least one file", 400));
+  }
+
+  const { category, description } = req.body;
+  
+  // Check storage limit
+  const totalSize = req.files.reduce((sum, file) => sum + file.size, 0);
+  const fileSizeGB = totalSize / (1024 * 1024 * 1024);
+  
+  const firm = await Firm.findById(req.firmId);
+  if (!firm.hasStorageAvailable(fileSizeGB)) {
+    return next(
+      new AppError(
+        `Storage limit exceeded. You have ${(firm.limits.storageGB - firm.usage.storageUsedGB).toFixed(2)}GB available.`,
+        403
+      )
+    );
+  }
+
+  const uploadedFiles = [];
+
+  for (const file of req.files) {
+    const uploadResult = await s3Service.uploadFile(
+      file.buffer,
+      file.originalname,
+      file.mimetype,
+      {
+        category: category || "legal",
+        entityType: "Matter",
+        entityId: matterId,
+        uploadedBy: req.user.id,
+        firmId: req.firmId,
+        metadata: {
+          uploadType: "matter-document",
+          matterId: matterId,
+          matterNumber: matter.matterNumber,
+          uploadedBy: req.user.id.toString(),
+        },
+      }
+    );
+
+    const fileRecord = await File.create({
+      firmId: req.firmId,
+      fileName: file.originalname,
+      originalName: file.originalname,
+      s3Key: uploadResult.s3Key,
+      s3Bucket: uploadResult.bucket,
+      s3Region: uploadResult.region,
+      fileUrl: uploadResult.fileUrl,
+      presignedUrl: uploadResult.presignedUrl,
+      uploadedBy: req.user.id,
+      fileSize: file.size,
+      fileType: path.extname(file.originalname).substring(1).toLowerCase(),
+      mimeType: file.mimetype,
+      description: description || "",
+      category: category || "legal",
+      entityType: "Matter",
+      entityId: matterId,
+      metadata: {
+        uploadType: "matter-document",
+        matterId: matterId,
+        matterNumber: matter.matterNumber,
+        uploadedBy: req.user.id.toString(),
+      },
+    });
+
+    uploadedFiles.push(fileRecord);
+  }
+
+  // Update firm storage
+  await Firm.findByIdAndUpdate(req.firmId, {
+    $inc: { "usage.storageUsedGB": fileSizeGB },
+  });
+
+  res.status(201).json({
+    status: "success",
+    message: `Successfully uploaded ${uploadedFiles.length} document(s)`,
+    data: {
+      files: uploadedFiles,
+      matterId,
+    },
+  });
+});
+
+/**
+ * Get all documents for a matter
+ */
+exports.getMatterDocuments = catchAsync(async (req, res, next) => {
+  const matterId = req.params.id;
+  
+  const files = await File.find({
+    firmId: req.firmId,
+    entityType: "Matter",
+    entityId: matterId,
+    isDeleted: { $ne: true },
+  })
+    .populate("uploadedBy", "firstName lastName email")
+    .sort({ createdAt: -1 });
+
+  const totalSize = files.reduce((sum, f) => sum + (f.fileSize || 0), 0);
+
+  res.status(200).json({
+    status: "success",
+    results: files.length,
+    data: {
+      files,
+      statistics: {
+        totalFiles: files.length,
+        totalSizeMB: (totalSize / (1024 * 1024)).toFixed(2),
+      },
+    },
+  });
+});
+
+/**
+ * Delete a document from a matter
+ */
+exports.deleteMatterDocument = catchAsync(async (req, res, next) => {
+  const { id, documentId } = req.params;
+  
+  const file = await File.findOne({
+    _id: documentId,
+    firmId: req.firmId,
+    entityType: "Matter",
+    entityId: id,
+  });
+
+  if (!file) {
+    return next(new AppError("Document not found", 404));
+  }
+
+  // Check permission
+  const isOwner = file.uploadedBy?.toString() === req.user.id.toString();
+  const isAdmin = ["admin", "super-admin"].includes(req.user.role);
+  
+  if (!isOwner && !isAdmin) {
+    return next(new AppError("Not authorized to delete this document", 403));
+  }
+
+  // Soft delete
+  file.isDeleted = true;
+  file.deletedAt = new Date();
+  file.deletedBy = req.user.id;
+  await file.save();
+
+  // Update storage
+  const fileSizeGB = file.fileSize / (1024 * 1024 * 1024);
+  await Firm.findByIdAndUpdate(req.firmId, {
+    $inc: { "usage.storageUsedGB": -fileSizeGB },
+  });
+
+  res.status(200).json({
+    status: "success",
+    message: "Document deleted successfully",
+  });
 });
 
 module.exports = exports;
