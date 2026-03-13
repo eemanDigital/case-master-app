@@ -121,7 +121,7 @@ const EventDetailsModal = ({
           // Navigate to litigation matter page
           const matterId = event.matter?._id || event.matter;
           if (matterId) {
-            window.location.href = `/litigation/matter/${matterId}`;
+            window.location.href = `/dashboard/matters/litigation/${matterId}`;
           }
         },
       });
@@ -166,7 +166,7 @@ const EventDetailsModal = ({
         onOk: () => {
           const matterId = event.matter?._id || event.matter;
           if (matterId) {
-            window.location.href = `/litigation/matter/${matterId}`;
+            window.location.href = `/dashboard/matters/litigation/${matterId}`;
           }
         },
       });
@@ -389,7 +389,7 @@ const EventDetailsModal = ({
                   onClick={() => {
                     const matterId = event.matter?._id || event.matter;
                     if (matterId) {
-                      window.location.href = `/litigation/matter/${matterId}`;
+                      window.location.href = `/dashboard/matters/litigation/${matterId}`;
                     }
                   }}>
                   Go to Litigation to Edit →
