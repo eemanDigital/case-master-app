@@ -1,16 +1,16 @@
 import React from "react";
 import { Card, Typography, Divider, Row, Col } from "antd";
 import { Link } from "react-router-dom";
-import { 
-  SafetyCertificateOutlined, 
-  TeamOutlined, 
-  DollarOutlined, 
+import {
+  SafetyCertificateOutlined,
+  TeamOutlined,
+  DollarOutlined,
   LockOutlined,
   MailOutlined,
   PhoneOutlined,
-  EnvironmentOutlined
+  EnvironmentOutlined,
 } from "@ant-design/icons";
-import caseMasterLogo from "../assets/case-master-logo.svg";
+import LawMasterLogo from "../assets/case-master-logo.svg";
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -38,7 +38,9 @@ const TermsOfService = () => {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
               <SafetyCertificateOutlined className="text-3xl text-blue-600" />
             </div>
-            <Title level={1} className="!mb-2">Terms of Service</Title>
+            <Title level={1} className="!mb-2">
+              Terms of Service
+            </Title>
             <Text type="secondary" className="text-lg">
               Last Updated: March 2026
             </Text>
@@ -49,22 +51,22 @@ const TermsOfService = () => {
           <div className="prose max-w-none">
             <Title level={4}>1. Acceptance of Terms</Title>
             <Paragraph>
-              By accessing and using LawMaster ("the Service"), you accept and agree to be bound by 
-              the terms and provision of this agreement. If you do not agree to abide by these terms, 
-              please do not use this service.
+              By accessing and using LawMaster ("the Service"), you accept and
+              agree to be bound by the terms and provision of this agreement. If
+              you do not agree to abide by these terms, please do not use this
+              service.
             </Paragraph>
 
             <Title level={4}>2. Description of Service</Title>
             <Paragraph>
-              LawMaster is a cloud-based legal practice management software designed for law firms 
-              in Nigeria. The Service provides matter management, client portal, invoicing, task 
-              management, and calendar functionality.
+              LawMaster is a cloud-based legal practice management software
+              designed for law firms in Nigeria. The Service provides matter
+              management, client portal, invoicing, task management, and
+              calendar functionality.
             </Paragraph>
 
             <Title level={4}>3. User Eligibility</Title>
-            <Paragraph>
-              The Service is available to:
-            </Paragraph>
+            <Paragraph>The Service is available to:</Paragraph>
             <ul className="list-disc pl-6 space-y-2">
               <li>Registered law firms in Nigeria</li>
               <li>Legal practitioners with valid practising licenses</li>
@@ -74,44 +76,56 @@ const TermsOfService = () => {
 
             <Title level={4}>4. Account Registration</Title>
             <Paragraph>
-              <Text strong>4.1</Text> You must provide accurate and complete registration information.
+              <Text strong>4.1</Text> You must provide accurate and complete
+              registration information.
               <br />
-              <Text strong>4.2</Text> You are responsible for maintaining the confidentiality of your account credentials.
+              <Text strong>4.2</Text> You are responsible for maintaining the
+              confidentiality of your account credentials.
               <br />
-              <Text strong>4.3</Text> You must be at least 18 years of age to use this service.
+              <Text strong>4.3</Text> You must be at least 18 years of age to
+              use this service.
               <br />
-              <Text strong>4.4</Text> Each account is for a single law firm or organization.
+              <Text strong>4.4</Text> Each account is for a single law firm or
+              organization.
             </Paragraph>
 
             <Title level={4}>5. Subscription and Payment</Title>
             <Paragraph>
-              <Text strong>5.1</Text> Subscription fees are billed monthly in Nigerian Naira (NGN).
+              <Text strong>5.1</Text> Subscription fees are billed monthly in
+              Nigerian Naira (NGN).
               <br />
-              <Text strong>5.2</Text> All fees are non-refundable unless otherwise specified.
+              <Text strong>5.2</Text> All fees are non-refundable unless
+              otherwise specified.
               <br />
-              <Text strong>5.3</Text> Prices are subject to change with 30 days notice.
+              <Text strong>5.3</Text> Prices are subject to change with 30 days
+              notice.
               <br />
-              <Text strong>5.4</Text> Failed payments may result in service suspension.
+              <Text strong>5.4</Text> Failed payments may result in service
+              suspension.
             </Paragraph>
 
             <Title level={4}>6. Data Ownership and Security</Title>
             <Paragraph>
-              <Text strong>6.1</Text> All client data remains the property of the law firm.
+              <Text strong>6.1</Text> All client data remains the property of
+              the law firm.
               <br />
-              <Text strong>6.2</Text> We implement industry-standard encryption (AES-256) to protect your data.
+              <Text strong>6.2</Text> We implement industry-standard encryption
+              (AES-256) to protect your data.
               <br />
-              <Text strong>6.3</Text> We comply with the Nigeria Data Protection Regulation (NDPR).
+              <Text strong>6.3</Text> We comply with the Nigeria Data Protection
+              Regulation (NDPR).
               <br />
-              <Text strong>6.4</Text> Data is stored on secure servers within Nigeria.
+              <Text strong>6.4</Text> Data is stored on secure servers within
+              Nigeria.
             </Paragraph>
 
             <Title level={4}>7. Acceptable Use</Title>
-            <Paragraph>
-              You agree not to:
-            </Paragraph>
+            <Paragraph>You agree not to:</Paragraph>
             <ul className="list-disc pl-6 space-y-2">
               <li>Use the Service for any unlawful purpose</li>
-              <li>Attempt to gain unauthorized access to any part of the Service</li>
+              <li>
+                Attempt to gain unauthorized access to any part of the Service
+              </li>
               <li>Introduce viruses, malware, or other harmful code</li>
               <li>Share your account credentials with unauthorized persons</li>
               <li>Resell or redistribute the Service without authorization</li>
@@ -119,31 +133,37 @@ const TermsOfService = () => {
 
             <Title level={4}>8. Limitation of Liability</Title>
             <Paragraph>
-              LawMaster shall not be liable for any indirect, incidental, special, consequential, 
-              or punitive damages resulting from your use of or inability to use the Service. 
-              We do not guarantee the Service will be error-free or uninterrupted.
+              LawMaster shall not be liable for any indirect, incidental,
+              special, consequential, or punitive damages resulting from your
+              use of or inability to use the Service. We do not guarantee the
+              Service will be error-free or uninterrupted.
             </Paragraph>
 
             <Title level={4}>9. Intellectual Property</Title>
             <Paragraph>
-              The Service, including all content, features, and functionality, is owned by LawMaster 
-              and is protected by Nigerian and international copyright, trademark, and other 
-              intellectual property laws.
+              The Service, including all content, features, and functionality,
+              is owned by LawMaster and is protected by Nigerian and
+              international copyright, trademark, and other intellectual
+              property laws.
             </Paragraph>
 
             <Title level={4}>10. Termination</Title>
             <Paragraph>
-              <Text strong>10.1</Text> Either party may terminate this agreement with 30 days written notice.
+              <Text strong>10.1</Text> Either party may terminate this agreement
+              with 30 days written notice.
               <br />
-              <Text strong>10.2</Text> Upon termination, your access to the Service will be immediately revoked.
+              <Text strong>10.2</Text> Upon termination, your access to the
+              Service will be immediately revoked.
               <br />
-              <Text strong>10.3</Text> Data export will be available for 30 days after termination.
+              <Text strong>10.3</Text> Data export will be available for 30 days
+              after termination.
             </Paragraph>
 
             <Title level={4}>11. Governing Law</Title>
             <Paragraph>
-              These Terms shall be governed by and construed in accordance with the laws of the 
-              Federal Republic of Nigeria. Any disputes shall be resolved in Nigerian courts.
+              These Terms shall be governed by and construed in accordance with
+              the laws of the Federal Republic of Nigeria. Any disputes shall be
+              resolved in Nigerian courts.
             </Paragraph>
 
             <Title level={4}>12. Contact Information</Title>
@@ -192,7 +212,9 @@ const TermsOfService = () => {
                 Create an Account
               </Text>
             </Link>
-            <Text type="secondary" className="mx-2">|</Text>
+            <Text type="secondary" className="mx-2">
+              |
+            </Text>
             <Link to="/privacy-policy">
               <Text className="text-blue-600 hover:underline">
                 Privacy Policy

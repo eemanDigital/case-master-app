@@ -311,7 +311,7 @@ const AppBootLoader = () => (
     <p
       className="text-gray-500 text-sm font-medium"
       style={{ fontFamily: "'Poppins', sans-serif" }}>
-      Loading CaseMaster...
+      Loading LawMaster...
     </p>
   </div>
 );

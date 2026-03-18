@@ -1,6 +1,6 @@
-# CaseMaster - Case Management Solution for Law Firms
+# LawMaster - Case Management Solution for Law Firms
 
-CaseMaster is a comprehensive case management application designed specifically for law firms. It helps streamline case tracking, client coordination, document handling, billing, reporting, and more, all within a single platform. With features like Role-Based Access Control (RBAC), dynamic reporting, calendar management, and a client-facing dashboard, CaseMaster improves productivity and enhances client transparency.
+LawMaster is a comprehensive case management application designed specifically for law firms. It helps streamline case tracking, client coordination, document handling, billing, reporting, and more, all within a single platform. With features like Role-Based Access Control (RBAC), dynamic reporting, calendar management, and a client-facing dashboard, LawMaster improves productivity and enhances client transparency.
 
 ---
 
@@ -37,7 +37,7 @@ CaseMaster is a comprehensive case management application designed specifically 
 The project follows the standard MERN (MongoDB, Express, React, Node.js) stack structure:
 
 ```plaintext
-CaseMaster/
+LawMaster/
 ├── backend/
 │   ├── controllers/
 │   ├── models/
@@ -67,7 +67,7 @@ Clone the Repository
 
 ```bash
 git clone https://github.com/eemanDigital/case-master-app
-cd casemaster-app
+cd LawMaster-app
 ```
 
 ## Install Dependencies
@@ -192,7 +192,7 @@ Here are some screenshots of the application:
 
 ## Contributions
 
-Contributions to CaseMaster are welcome. Please fork the repository and submit a pull request with any new features or bug fixes.
+Contributions to LawMaster are welcome. Please fork the repository and submit a pull request with any new features or bug fixes.
 
 ## License
 

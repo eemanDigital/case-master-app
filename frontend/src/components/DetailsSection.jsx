@@ -1,4 +1,4 @@
-import screenshot1 from "../assets/casemastershot.png";
+import screenshot1 from "../assets/LawMastershot.png";
 
 const DetailsSection = () => {
   let card = {

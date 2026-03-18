@@ -52,7 +52,7 @@ class ReminderService {
     this.isRunning = false;
   }
 
-/**
+  /**
    * Process all due reminders
    */
   async processDueReminders() {
@@ -108,16 +108,19 @@ class ReminderService {
     const reminderConfig = this.getReminderConfig(event.eventType);
 
     for (const config of reminderConfig) {
-      const reminderTime = new Date(eventStart.getTime() - config.minutesBefore * 60 * 1000);
-      const shouldSend = now >= reminderTime && now < reminderTime.getTime() + 60000;
+      const reminderTime = new Date(
+        eventStart.getTime() - config.minutesBefore * 60 * 1000,
+      );
+      const shouldSend =
+        now >= reminderTime && now < reminderTime.getTime() + 60000;
 
       if (shouldSend) {
         const reminderKey = `reminder_${config.minutesBefore}_${config.type}`;
         const lastSent = event.lastReminderSent?.[reminderKey];
 
-        if (!lastSent || (now.getTime() - new Date(lastSent).getTime()) > 60000) {
+        if (!lastSent || now.getTime() - new Date(lastSent).getTime() > 60000) {
           await this.sendEventReminder(event, config);
-          
+
           if (!event.lastReminderSent) {
             event.lastReminderSent = {};
           }
@@ -134,7 +137,7 @@ class ReminderService {
   getReminderConfig(eventType) {
     const defaultConfig = [
       { minutesBefore: 1440, type: "email", label: "24 hours" }, // 24 hours
-      { minutesBefore: 60, type: "in_app", label: "1 hour" },    // 1 hour
+      { minutesBefore: 60, type: "in_app", label: "1 hour" }, // 1 hour
     ];
 
     const configs = {
@@ -169,21 +172,33 @@ class ReminderService {
    */
   async sendEventReminder(event, config) {
     const firm = await Firm.findById(event.firmId);
-    const senderEmail = firm?.email || process.env.EMAIL_FROM || "noreply@casemaster.com";
+    const senderEmail =
+      firm?.email || process.env.EMAIL_FROM || "noreply@LawMaster.com";
 
     const recipients = this.getEventRecipients(event);
-    
+
     const eventDetails = this.formatEventDetails(event);
 
     for (const recipient of recipients) {
       if (!recipient.email) continue;
 
       if (config.type === "email") {
-        await this.sendEventEmailReminder(recipient, event, config, eventDetails, senderEmail);
+        await this.sendEventEmailReminder(
+          recipient,
+          event,
+          config,
+          eventDetails,
+          senderEmail,
+        );
       }
 
       if (config.type === "in_app") {
-        await this.sendInAppNotification(recipient, event, config, eventDetails);
+        await this.sendInAppNotification(
+          recipient,
+          event,
+          config,
+          eventDetails,
+        );
       }
     }
   }
@@ -213,16 +228,22 @@ class ReminderService {
    * Format event details for email
    */
   formatEventDetails(event) {
-    const eventDate = new Date(event.startDateTime).toLocaleDateString("en-NG", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const eventTime = new Date(event.startDateTime).toLocaleTimeString("en-NG", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const eventDate = new Date(event.startDateTime).toLocaleDateString(
+      "en-NG",
+      {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      },
+    );
+    const eventTime = new Date(event.startDateTime).toLocaleTimeString(
+      "en-NG",
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      },
+    );
     const endTime = new Date(event.endDateTime).toLocaleTimeString("en-NG", {
       hour: "2-digit",
       minute: "2-digit",
@@ -246,7 +267,9 @@ class ReminderService {
       eventTime,
       endTime,
       location,
-      matter: event.matter ? `${event.matter.matterName} (${event.matter.caseNumber})` : "Not linked to a matter",
+      matter: event.matter
+        ? `${event.matter.matterName} (${event.matter.caseNumber})`
+        : "Not linked to a matter",
       description: event.description || "No description provided",
       suitNumber: event.hearingMetadata?.suitNumber,
       judge: event.hearingMetadata?.judge,
@@ -256,14 +279,28 @@ class ReminderService {
   /**
    * Send email reminder for calendar event
    */
-  async sendEventEmailReminder(recipient, event, config, eventDetails, senderEmail) {
-    const subjectPrefix = event.eventType === EVENT_TYPES.HEARING ? "🔨 Court Hearing Reminder" : 
-                          event.eventType === EVENT_TYPES.FILING_DEADLINE ? "⚠️ Deadline Reminder" : 
-                          "📅 Event Reminder";
+  async sendEventEmailReminder(
+    recipient,
+    event,
+    config,
+    eventDetails,
+    senderEmail,
+  ) {
+    const subjectPrefix =
+      event.eventType === EVENT_TYPES.HEARING
+        ? "🔨 Court Hearing Reminder"
+        : event.eventType === EVENT_TYPES.FILING_DEADLINE
+          ? "⚠️ Deadline Reminder"
+          : "📅 Event Reminder";
 
     const subject = `${subjectPrefix}: ${event.title} - ${config.label}`;
 
-    const htmlContent = this.generateEventEmailHtml(recipient, event, config, eventDetails);
+    const htmlContent = this.generateEventEmailHtml(
+      recipient,
+      event,
+      config,
+      eventDetails,
+    );
 
     try {
       await sendCustomEmail(
@@ -271,11 +308,16 @@ class ReminderService {
         recipient.email,
         senderEmail,
         senderEmail,
-        htmlContent
+        htmlContent,
       );
-      console.log(`📧 Email reminder sent to ${recipient.email} for event: ${event.title}`);
+      console.log(
+        `📧 Email reminder sent to ${recipient.email} for event: ${event.title}`,
+      );
     } catch (error) {
-      console.error(`❌ Failed to send email to ${recipient.email}:`, error.message);
+      console.error(
+        `❌ Failed to send email to ${recipient.email}:`,
+        error.message,
+      );
     }
   }
 
@@ -284,8 +326,9 @@ class ReminderService {
    */
   generateEventEmailHtml(recipient, event, config, eventDetails) {
     const isHearing = event.eventType === EVENT_TYPES.HEARING;
-    const isDeadline = event.eventType === EVENT_TYPES.FILING_DEADLINE || 
-                       event.eventType === EVENT_TYPES.STATUTORY_DEADLINE;
+    const isDeadline =
+      event.eventType === EVENT_TYPES.FILING_DEADLINE ||
+      event.eventType === EVENT_TYPES.STATUTORY_DEADLINE;
 
     return `
       <!DOCTYPE html>
@@ -295,7 +338,7 @@ class ReminderService {
         <style>
           body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-          .header { background: ${isHearing ? '#d32f2f' : isDeadline ? '#f57c00' : '#1976d2'}; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+          .header { background: ${isHearing ? "#d32f2f" : isDeadline ? "#f57c00" : "#1976d2"}; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
           .content { background: #f9f9f9; padding: 20px; border: 1px solid #ddd; }
           .detail-row { margin: 10px 0; }
           .label { font-weight: bold; color: #555; }
@@ -308,13 +351,13 @@ class ReminderService {
       <body>
         <div class="container">
           <div class="header">
-            <h2 style="margin: 0;">${isHearing ? '🔨 Court Hearing' : isDeadline ? '⚠️ Important Deadline' : '📅 Event Reminder'}</h2>
+            <h2 style="margin: 0;">${isHearing ? "🔨 Court Hearing" : isDeadline ? "⚠️ Important Deadline" : "📅 Event Reminder"}</h2>
             <p style="margin: 5px 0 0 0;">${config.label} remaining</p>
           </div>
           <div class="content">
             <h3 style="margin-top: 0;">${eventDetails.title}</h3>
             
-            ${isDeadline ? '<div class="urgent"><strong>⚠️ IMPORTANT:</strong> This is a deadline that should not be missed!</div>' : ''}
+            ${isDeadline ? '<div class="urgent"><strong>⚠️ IMPORTANT:</strong> This is a deadline that should not be missed!</div>' : ""}
             
             <div class="detail-row">
               <span class="label">📅 Date:</span>
@@ -328,34 +371,50 @@ class ReminderService {
               <span class="label">📍 Location:</span>
               <span class="value">${eventDetails.location}</span>
             </div>
-            ${eventDetails.matter !== 'Not linked to a matter' ? `
+            ${
+              eventDetails.matter !== "Not linked to a matter"
+                ? `
             <div class="detail-row">
               <span class="label">📁 Matter:</span>
               <span class="value">${eventDetails.matter}</span>
             </div>
-            ` : ''}
-            ${eventDetails.suitNumber ? `
+            `
+                : ""
+            }
+            ${
+              eventDetails.suitNumber
+                ? `
             <div class="detail-row">
               <span class="label">🏛️ Suit Number:</span>
               <span class="value">${eventDetails.suitNumber}</span>
             </div>
-            ` : ''}
-            ${eventDetails.judge ? `
+            `
+                : ""
+            }
+            ${
+              eventDetails.judge
+                ? `
             <div class="detail-row">
               <span class="label">⚖️ Judge:</span>
               <span class="value">${eventDetails.judge}</span>
             </div>
-            ` : ''}
-            ${eventDetails.description ? `
+            `
+                : ""
+            }
+            ${
+              eventDetails.description
+                ? `
             <div class="detail-row">
               <span class="label">📝 Description:</span>
               <p class="value">${eventDetails.description}</p>
             </div>
-            ` : ''}
+            `
+                : ""
+            }
           </div>
           <div class="footer">
-            <p>Hello ${recipient.firstName}, this is a reminder for your upcoming ${isHearing ? 'court hearing' : 'event'}.</p>
-            <p>© ${new Date().getFullYear()} CaseMaster - Law Firm Management System</p>
+            <p>Hello ${recipient.firstName}, this is a reminder for your upcoming ${isHearing ? "court hearing" : "event"}.</p>
+            <p>© ${new Date().getFullYear()} LawMaster - Law Firm Management System</p>
           </div>
         </div>
       </body>
@@ -370,11 +429,11 @@ class ReminderService {
     const isHearing = event.eventType === EVENT_TYPES.HEARING;
     const isDeadline = event.eventType === EVENT_TYPES.FILING_DEADLINE;
 
-    const message = isHearing 
-      ? `🔨 Court Hearing in ${config.label}: ${event.title}${event.hearingMetadata?.suitNumber ? ` (${event.hearingMetadata.suitNumber})` : ''}`
+    const message = isHearing
+      ? `🔨 Court Hearing in ${config.label}: ${event.title}${event.hearingMetadata?.suitNumber ? ` (${event.hearingMetadata.suitNumber})` : ""}`
       : isDeadline
-      ? `⚠️ Deadline in ${config.label}: ${event.title}`
-      : `📅 ${event.title} in ${config.label}`;
+        ? `⚠️ Deadline in ${config.label}: ${event.title}`
+        : `📅 ${event.title} in ${config.label}`;
 
     try {
       const notification = await Notice.create({
@@ -386,13 +445,15 @@ class ReminderService {
         relatedEvent: event._id,
       });
 
-      console.log(`🔔 In-app notification sent to ${recipient.email} for event: ${event.title}`);
+      console.log(
+        `🔔 In-app notification sent to ${recipient.email} for event: ${event.title}`,
+      );
     } catch (error) {
       console.error(`❌ Failed to create in-app notification:`, error.message);
     }
   }
 
-/**
+  /**
    * Send a single task reminder notification
    */
   async sendTaskReminder(task, reminder) {
@@ -413,7 +474,8 @@ class ReminderService {
         scheduledFor: reminder.scheduledFor,
         sender: reminder.sender,
         recipients: [...assignees, creator].filter(
-          (u, i, arr) => arr.findIndex((x) => x._id.toString() === u._id.toString()) === i
+          (u, i, arr) =>
+            arr.findIndex((x) => x._id.toString() === u._id.toString()) === i,
         ),
       };
 
@@ -435,7 +497,8 @@ class ReminderService {
    * Send notifications to recipients
    */
   async sendNotifications(data) {
-    const { taskId, taskTitle, dueDate, reminderMessage, sender, recipients } = data;
+    const { taskId, taskTitle, dueDate, reminderMessage, sender, recipients } =
+      data;
 
     for (const recipient of recipients) {
       if (!recipient.email) continue;
@@ -480,7 +543,10 @@ class ReminderService {
         //   },
         // });
       } catch (error) {
-        console.error(`Failed to send notification to ${recipient.email}:`, error);
+        console.error(
+          `Failed to send notification to ${recipient.email}:`,
+          error,
+        );
       }
     }
   }
@@ -491,7 +557,7 @@ class ReminderService {
   async getUpcomingReminders(taskId) {
     const task = await Task.findById(taskId).populate(
       "reminders.sender",
-      "firstName lastName email"
+      "firstName lastName email",
     );
 
     if (!task) {
@@ -509,7 +575,7 @@ class ReminderService {
   async getSentReminders(taskId) {
     const task = await Task.findById(taskId).populate(
       "reminders.sender",
-      "firstName lastName email"
+      "firstName lastName email",
     );
 
     if (!task) {

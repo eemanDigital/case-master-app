@@ -19,7 +19,7 @@ const firmSchema = new mongoose.Schema(
       trim: true,
     },
 
-    // Optional: use later if you want firm.casemaster.ng
+    // Optional: use later if you want firm.LawMaster.ng
     subdomain: {
       type: String,
       unique: true,
@@ -178,7 +178,14 @@ const firmSchema = new mongoose.Schema(
 
       status: {
         type: String,
-        enum: ["PENDING_APPROVAL", "ACTIVE", "TRIAL", "SUSPENDED", "REJECTED", "EXPIRED"],
+        enum: [
+          "PENDING_APPROVAL",
+          "ACTIVE",
+          "TRIAL",
+          "SUSPENDED",
+          "REJECTED",
+          "EXPIRED",
+        ],
         default: "PENDING_APPROVAL",
       },
 
@@ -255,7 +262,7 @@ const firmSchema = new mongoose.Schema(
     // ✅ Enable virtuals in JSON/Object responses
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // Pre-save hook to auto-apply plan limits
@@ -266,7 +273,10 @@ firmSchema.pre("save", async function (next) {
   }
 
   // Check trial expiration
-  if (this.subscription.status === "TRIAL" && this.subscription.trialEndsAt < new Date()) {
+  if (
+    this.subscription.status === "TRIAL" &&
+    this.subscription.trialEndsAt < new Date()
+  ) {
     this.subscription.status = "EXPIRED";
   }
 
@@ -282,16 +292,24 @@ firmSchema.pre("save", async function (next) {
   // Encrypt sensitive bank details
   if (this.isModified("settings.bankDetails")) {
     if (this.settings?.bankDetails?.accountNumber) {
-      this.settings.bankDetails.encryptedAccountNumber = encryptField(this.settings.bankDetails.accountNumber);
+      this.settings.bankDetails.encryptedAccountNumber = encryptField(
+        this.settings.bankDetails.accountNumber,
+      );
     }
     if (this.settings?.bankDetails?.sortCode) {
-      this.settings.bankDetails.encryptedSortCode = encryptField(this.settings.bankDetails.sortCode);
+      this.settings.bankDetails.encryptedSortCode = encryptField(
+        this.settings.bankDetails.sortCode,
+      );
     }
     if (this.settings?.bankDetails?.iban) {
-      this.settings.bankDetails.encryptedIban = encryptField(this.settings.bankDetails.iban);
+      this.settings.bankDetails.encryptedIban = encryptField(
+        this.settings.bankDetails.iban,
+      );
     }
     if (this.settings?.bankDetails?.swiftCode) {
-      this.settings.bankDetails.encryptedSwiftCode = encryptField(this.settings.bankDetails.swiftCode);
+      this.settings.bankDetails.encryptedSwiftCode = encryptField(
+        this.settings.bankDetails.swiftCode,
+      );
     }
   }
 
@@ -472,11 +490,11 @@ firmSchema.methods.applyPlanLimits = function () {
   };
 
   const limits = planLimits[this.subscription.plan] || planLimits.FREE;
-  
+
   this.limits.users = limits.users;
   this.limits.storageGB = limits.storageGB;
   this.limits.casesPerMonth = limits.casesPerMonth;
-  
+
   return this;
 };
 

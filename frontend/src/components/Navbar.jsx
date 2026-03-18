@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
-import caseMasterLogo from "../assets/case-master-logo.svg";
+import LawMasterLogo from "../assets/case-master-logo.svg";
 import { RiMenu3Fill } from "react-icons/ri";
 import { AiOutlineClose } from "react-icons/ai";
 import { ShowOnLogin, ShowOnLogout } from "./protect/Protect";
@@ -58,7 +58,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           <Link to="/" className="flex items-center gap-2">
             <img
-              src={caseMasterLogo}
+              src={LawMasterLogo}
               alt="case master logo"
               className="w-10 h-10"
             />

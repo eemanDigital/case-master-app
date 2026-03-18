@@ -663,10 +663,10 @@ exports.register = catchAsync(async (req, res, next) => {
 
     const verificationURL = `${process.env.FRONTEND_URL}/dashboard/verify-account/${vToken}`;
 
-    const subject = `Welcome to ${req.firm?.name || "CaseMaster"}`;
+    const subject = `Welcome to ${req.firm?.name || "LawMaster"}`;
     const send_to = newUser.email;
     const send_from = process.env.SENDINBLUE_EMAIL;
-    const reply_to = "noreply@casemaster.ng";
+    const reply_to = "noreply@LawMaster.ng";
     const template = "verifyEmail";
 
     const roles = newUser.getEffectiveRoles();
@@ -785,10 +785,10 @@ exports.login = catchAsync(async (req, res, next) => {
     try {
       const { sendMail, sendCustomEmail } = require("../utils/email");
       await sendMail(
-        "Your Login Verification Code - CaseMaster",
+        "Your Login Verification Code - LawMaster",
         user.email,
         process.env.SENDINBLUE_EMAIL,
-        "noreply@casemaster.ng",
+        "noreply@LawMaster.ng",
         "loginCode",
         {
           name: user.firstName,
@@ -866,11 +866,11 @@ exports.sendLoginCode = catchAsync(async (req, res, next) => {
   }).save();
 
   try {
-    const subject = "Your New Login Verification Code - CaseMaster";
+    const subject = "Your New Login Verification Code - LawMaster";
     const send_to = user.email;
     const send_from =
       process.env.SENDINBLUE_EMAIL || process.env.EMAIL_USERNAME;
-    const reply_to = "noreply@casemaster.com";
+    const reply_to = "noreply@LawMaster.com";
     const template = "loginCode";
     const context = {
       name: user.firstName,
@@ -1322,7 +1322,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
   const resetURL = `${process.env.FRONTEND_URL}/resetPassword/${rToken}`;
 
   // Prepare email details
-  const subject = "Password Reset - CaseMaster";
+  const subject = "Password Reset - LawMaster";
   const send_to = user.email;
   const send_from = process.env.SENDINBLUE_EMAIL;
   const reply_to = "noreply@gmail.com";
@@ -1332,7 +1332,7 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     link: resetURL,
     firmName: user.firmId
       ? (await Firm.findById(user.firmId))?.name
-      : "CaseMaster",
+      : "LawMaster",
   };
 
   try {
@@ -1464,7 +1464,7 @@ exports.sendVerificationEmail = catchAsync(async (req, res, next) => {
 
   const verificationURL = `${process.env.FRONTEND_URL}/dashboard/verify-account/${vToken}`;
 
-  const subject = "Verify Your Account - CaseMaster";
+  const subject = "Verify Your Account - LawMaster";
   const send_to = user.email;
   const send_from = process.env.SENDINBLUE_EMAIL;
   const reply_to = "noreply@gmail.com";

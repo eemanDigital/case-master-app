@@ -27,7 +27,7 @@ const ChangePassword = () => {
   //
   const handleSubmit = async (values) => {
     const emailData = {
-      subject: "Password Changed - CaseMaster",
+      subject: "Password Changed - LawMaster",
       send_to: user?.data?.email,
       reply_to: "noreply@gmail.com",
       template: "changePassword",
