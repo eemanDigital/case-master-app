@@ -38,6 +38,12 @@ litigationRouter.post("/search", litigationController.searchLitigationMatters); 
 litigationRouter.get("/", litigationController.getAllLitigationMatters);
 
 // ============================================
+// LITIGATION REPORT PDF
+// ============================================
+
+litigationRouter.get("/:matterId/report", litigationController.generateLitigationReportPdf);
+
+// ============================================
 // LITIGATION DETAILS CRUD
 // ============================================
 

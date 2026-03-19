@@ -14,6 +14,18 @@ advisoryRouter.post("/search", advisoryController.searchAdvisoryMatters);
 // Statistics
 advisoryRouter.get("/stats", advisoryController.getAdvisoryStats);
 
+// ============================================
+// ADVISORY REPORT PDF
+// ============================================
+
+/**
+ * @route   GET /api/advisory-matters/:matterId/report
+ * @desc    Generate advisory matter report PDF
+ * @access  Private
+ * @example GET /api/advisory-matters/123abc/report
+ */
+advisoryRouter.get("/:matterId/report", advisoryController.generateAdvisoryReportPdf);
+
 // Advisory details CRUD
 advisoryRouter
   .route("/:matterId/details")

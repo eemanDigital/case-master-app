@@ -39,6 +39,7 @@ import {
   StopOutlined,
   EyeOutlined,
   ExclamationCircleOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
@@ -49,6 +50,7 @@ import ServicesManager from "./ServicesManager";
 import DisbursementsManager from "./DisbursementsManager";
 import CourtAppearancesManager from "./CourtAppearancesManager";
 import RenewalModal from "./RenewalModal";
+import { downloadRetainerReport } from "../../utils/pdfDownload";
 import {
   fetchRetainerDetails,
   renewRetainer,
@@ -575,7 +577,7 @@ const FeeAndBillingCard = React.memo(({ details }) => {
 FeeAndBillingCard.displayName = "FeeAndBillingCard";
 
 const QuickActionsCard = React.memo(
-  ({ metrics, onRenew, onEdit, onTerminate }) => (
+  ({ metrics, onRenew, onEdit, onTerminate, onDownloadPdf }) => (
     <Card
       title={<span className="font-semibold">⚡ Quick Actions</span>}
       className="shadow-sm hover:shadow-md transition-shadow">
@@ -588,6 +590,13 @@ const QuickActionsCard = React.memo(
           disabled={!metrics.isActive}
           className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400">
           Renew Retainer
+        </Button>
+        <Button
+          icon={<FilePdfOutlined />}
+          onClick={onDownloadPdf}
+          block
+          className="bg-indigo-600 hover:bg-indigo-700 text-white border-0">
+          Download Report
         </Button>
         <Button
           icon={<EditOutlined />}
@@ -772,6 +781,17 @@ const RetainerDetails = ({ matterId, onClose }) => {
     [dispatch, matterId],
   );
 
+  // Download PDF Report
+  const handleDownloadPdf = useCallback(async () => {
+    try {
+      message.loading({ content: "Generating PDF report...", key: "pdf" });
+      await downloadRetainerReport(matterId, "retainer");
+      message.success({ content: "PDF report downloaded successfully!", key: "pdf" });
+    } catch (error) {
+      message.error({ content: "Failed to download PDF report", key: "pdf" });
+    }
+  }, [matterId]);
+
   // ✅ NOW we can do conditional returns (all hooks have been called)
   if (detailsLoading) {
     return (
@@ -935,6 +955,7 @@ const RetainerDetails = ({ matterId, onClose }) => {
             onRenew={() => setShowRenewalModal(true)}
             onEdit={handleEdit}
             onTerminate={() => setShowTerminationModal(true)}
+            onDownloadPdf={handleDownloadPdf}
           />
         </Col>
       </Row>

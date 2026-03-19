@@ -1,0 +1,440 @@
+doctype html
+html(lang="en")
+  head
+    meta(charset="UTF-8")
+    meta(name="viewport" content="width=device-width, initial-scale=1.0")
+    title Litigation Matter Report - #{matter.matterNumber}
+    style.
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      :root {
+        --primary: #1a365d;
+        --primary-light: #f0f4ff;
+        --secondary: #64748b;
+        --success: #059669;
+        --warning: #f59e0b;
+        --danger: #dc2626;
+        --gray-50: #f8fafc;
+        --gray-100: #f1f5f9;
+        --gray-200: #e2e8f0;
+        --gray-700: #334155;
+        --gray-900: #0f172a;
+      }
+      body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.5; color: var(--gray-900); background: #ffffff; font-size: 11px; }
+      .document-wrapper { max-width: 100%; margin: 0; padding: 25px; background: #ffffff; }
+      .doc-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 15px; border-bottom: 2px solid var(--gray-200); margin-bottom: 25px; }
+      .firm-brand { display: flex; align-items: center; gap: 16px; }
+      .firm-logo { width: 55px; height: 55px; background: var(--primary); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 22px; }
+      .firm-logo.img { background: transparent; border-radius: 10px; }
+      .firm-details h1 { font-size: 20px; font-weight: 700; color: var(--gray-900); }
+      .firm-details p { font-size: 11px; color: var(--secondary); }
+      .doc-title-section { text-align: right; }
+      .doc-title { font-size: 26px; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+      .doc-subtitle { font-size: 12px; color: var(--secondary); margin-top: 4px; }
+      .matter-card { background: linear-gradient(135deg, var(--primary-light) 0%, #f0f9ff 100%); border: 1px solid var(--primary); border-radius: 12px; padding: 18px; margin-bottom: 25px; }
+      .matter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+      .matter-number { font-size: 16px; font-weight: 700; color: var(--primary); }
+      .matter-type { display: inline-block; padding: 3px 10px; background: var(--primary); color: white; border-radius: 12px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+      .matter-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+      .matter-item { font-size: 11px; }
+      .matter-label { color: var(--secondary); font-weight: 500; display: block; }
+      .matter-value { color: var(--gray-900); font-weight: 600; }
+      .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
+      .status-active { background: #d1fae5; color: #065f46; }
+      .status-pending { background: #fef3c7; color: #92400e; }
+      .status-completed { background: #d1fae5; color: #065f46; }
+      .status-closed { background: #f1f5f9; color: #475569; }
+      .status-won { background: #d1fae5; color: #065f46; }
+      .status-lost { background: #fee2e2; color: #991b1b; }
+      .section { margin-bottom: 20px; }
+      .section-title { font-size: 14px; font-weight: 600; color: var(--gray-900); margin: 20px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid var(--primary); }
+      .info-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+      .info-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 20px; }
+      .info-card { background: var(--gray-50); border-radius: 10px; padding: 16px; border: 1px solid var(--gray-200); }
+      .info-card-title { font-size: 11px; font-weight: 600; color: var(--secondary); text-transform: uppercase; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--gray-200); }
+      .info-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 11px; }
+      .info-label { color: var(--secondary); font-weight: 500; }
+      .info-value { color: var(--gray-900); font-weight: 600; text-align: right; }
+      table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 11px; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+      thead { background: var(--primary); color: white; }
+      th { padding: 12px 10px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; }
+      td { padding: 10px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
+      tbody tr:hover { background: var(--gray-50); }
+      .amount { text-align: right; font-weight: 600; }
+      .terms-box { background: var(--gray-50); border-left: 4px solid var(--primary); border-radius: 0 8px 8px 0; padding: 16px; margin: 15px 0; }
+      .terms-title { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
+      .terms-text { font-size: 11px; color: var(--gray-700); line-height: 1.6; }
+      .summary-box { background: linear-gradient(135deg, var(--primary) 0%, #2c5282 100%); border-radius: 12px; padding: 20px; margin: 20px 0; color: white; }
+      .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+      .summary-item { text-align: center; }
+      .summary-label { font-size: 10px; font-weight: 500; opacity: 0.8; text-transform: uppercase; margin-bottom: 6px; }
+      .summary-value { font-size: 20px; font-weight: 700; }
+      .highlight-box { background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin: 10px 0; }
+      .highlight-title { font-size: 11px; font-weight: 600; color: #92400e; margin-bottom: 6px; }
+      .tag { display: inline-block; padding: 2px 8px; background: var(--primary-light); color: var(--primary); border-radius: 4px; font-size: 9px; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
+      .doc-footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--gray-200); text-align: center; }
+      .footer-text { font-size: 11px; color: var(--secondary); }
+      .footer-firm { font-size: 14px; font-weight: 600; color: var(--primary); }
+      .signature-block { display: flex; justify-content: flex-end; align-items: flex-end; gap: 60px; margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--gray-200); }
+      .signature-section { text-align: center; min-width: 160px; }
+      .signature-image { height: 65px; width: auto; max-width: 160px; object-fit: contain; }
+      .signature-line { width: 160px; height: 35px; border-bottom: 1.5px solid #333; }
+      .signature-label { font-size: 9px; font-weight: 600; color: var(--primary); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+      .signature-meta { font-size: 9px; color: var(--secondary); margin-top: 4px; }
+      .signature-date { margin-left: 8px; }
+      .stamp-section { width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; }
+      .stamp-image { width: 85px; height: 85px; object-fit: contain; opacity: 0.9; }
+      .stamp-placeholder { width: 85px; height: 85px; border: 2px dashed var(--gray-300); }
+      .text-right { text-align: right; }
+      @media print { body { -webkit-print-color-adjust: exact; } }
+
+  body
+    - var primaryColor = (firm && firm.settings && firm.settings.primaryColor) ? firm.settings.primaryColor : '#1a365d';
+    - var primaryLight = primaryColor + '20';
+    - var getClientName = function(c) { if (!c) return 'N/A'; return c.companyName || (c.firstName + ' ' + c.lastName); };
+    - var getOfficerNames = function(o) { if (!o) return 'N/A'; if (Array.isArray(o)) { var names = []; for (var i = 0; i < o.length; i++) { names.push(o[i].firstName + ' ' + o[i].lastName); } return names.join(', '); } return o.firstName + ' ' + o.lastName; };
+    - var getJudgeName = function(j) { if (!j) return 'N/A'; if (typeof j === 'string') return j; if (j.name) return j.name; if (j[0]) { if (typeof j[0] === 'string') return j[0]; if (j[0].name) return j[0].name; } return 'N/A'; };
+    - var getPartyName = function(p) { if (!p) return 'N/A'; if (typeof p === 'string') return p; if (p.name) { if (Array.isArray(p.name)) { var names = []; for (var i = 0; i < p.name.length; i++) { names.push(p.name[i].name || p.name[i]); } return names.join(', '); } return p.name; } return 'N/A'; };
+    - var getPartyDescription = function(p) { if (!p) return 'N/A'; return p.description || 'N/A'; };
+    - var getLawyerNames = function(h) { if (h.lawyerPresent && h.lawyerPresent.length) { var names = []; for (var i = 0; i < h.lawyerPresent.length; i++) { names.push(h.lawyerPresent[i].firstName + ' ' + h.lawyerPresent[i].lastName); } return names.join(', '); } if (h.preparedBy) return h.preparedBy.firstName + ' ' + h.preparedBy.lastName; return 'N/A'; };
+    - var getAmountDisplay = function(amount) { if (!amount) return 'N/A'; if (typeof amount === 'number') return 'N' + amount.toLocaleString('en-NG'); return amount; };
+    - var getStatusClass = function(status) { if (status === 'active') return 'status-active'; if (status === 'pending') return 'status-pending'; if (status === 'completed') return 'status-completed'; if (status === 'closed') return 'status-closed'; if (status === 'won') return 'status-won'; if (status === 'lost') return 'status-lost'; return 'status-pending'; };
+    - var getStepStatusClass = function(status) { if (status === 'completed') return 'status-completed'; if (status === 'in-progress') return 'status-pending'; if (status === 'cancelled') return 'status-lost'; return 'status-pending'; };
+    - var clientName = getClientName(matter.client);
+    - var officers = getOfficerNames(matter.accountOfficer);
+    - var statusClass = getStatusClass(matter.status);
+
+    style !{':root { --primary: ' + primaryColor + '; --primary-light: ' + primaryLight + '; }'}
+
+    .document-wrapper
+      .doc-header
+        .firm-brand
+          if firm && firm.settings && firm.settings.firmLogo
+            img.firm-logo.img(src=firm.settings.firmLogo, alt=firm.name)
+          else
+            .firm-logo L
+          .firm-details
+            h1 #{firm && firm.name ? firm.name : 'Law Firm'}
+            p Barristers, Solicitors & Advocates
+        .doc-title-section
+          .doc-title LITIGATION REPORT
+          .doc-subtitle Court Case Documentation
+      
+      .matter-card
+        .matter-header
+          div
+            .matter-number #{matter.matterNumber}
+            .matter-type LITIGATION
+            if litigationDetails && litigationDetails.isLandmark
+              span.tag LANDMARK
+          div
+            span.status-badge(class=statusClass) #{matter.status || 'Active'}
+        
+        .matter-grid
+          .matter-item
+            span.matter-label Client
+            span.matter-value #{clientName}
+          .matter-item
+            span.matter-label Matter Title
+            span.matter-value #{matter.title || 'N/A'}
+          .matter-item
+            span.matter-label Date Opened
+            span.matter-value #{matter.dateOpened ? new Date(matter.dateOpened).toLocaleDateString('en-GB') : 'N/A'}
+          .matter-item
+            span.matter-label Account Officer
+            span.matter-value #{officers}
+      
+      if litigationDetails
+        .section
+          .section-title CASE INFORMATION
+          
+          .info-grid-2
+            .info-card
+              .info-card-title Court Details
+              .info-row
+                .info-label Suit Number
+                .info-value #{litigationDetails.suitNo || 'N/A'}
+              .info-row
+                .info-label Court Name
+                .info-value #{litigationDetails.courtName ? litigationDetails.courtName.replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : 'N/A'}
+              .info-row
+                .info-label Court Number
+                .info-value #{litigationDetails.courtNo || 'N/A'}
+              .info-row
+                .info-label Division
+                .info-value #{litigationDetails.division || 'N/A'}
+            
+            .info-card
+              .info-card-title Location & Jurisdiction
+              .info-row
+                .info-label State
+                .info-value #{litigationDetails.state || 'N/A'}
+              .info-row
+                .info-label Court Location
+                .info-value #{litigationDetails.courtLocation || 'N/A'}
+              .info-row
+                .info-label Judge
+                .info-value #{getJudgeName(litigationDetails.judge)}
+              .info-row
+                .info-label Current Stage
+                .info-value #{litigationDetails.currentStage ? litigationDetails.currentStage.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : 'N/A'}
+        
+        .section
+          .section-title PARTIES TO THE SUIT
+          
+          .info-grid-2
+            .info-card
+              .info-card-title First Party (Claimant/Plaintiff)
+              .info-row
+                .info-label Name(s)
+                .info-value #{getPartyName(litigationDetails.firstParty)}
+              .info-row
+                .info-label Description
+                .info-value #{getPartyDescription(litigationDetails.firstParty)}
+              if litigationDetails.firstParty && litigationDetails.firstParty.processesFiled && litigationDetails.firstParty.processesFiled.length > 0
+                .info-row
+                  .info-label Processes Filed
+                  .info-value #{litigationDetails.firstParty.processesFiled.length}
+            
+            .info-card
+              .info-card-title Second Party (Defendant/Respondent)
+              .info-row
+                .info-label Name(s)
+                .info-value #{getPartyName(litigationDetails.secondParty)}
+              .info-row
+                .info-label Description
+                .info-value #{getPartyDescription(litigationDetails.secondParty)}
+              if litigationDetails.secondParty && litigationDetails.secondParty.processesFiled && litigationDetails.secondParty.processesFiled.length > 0
+                .info-row
+                  .info-label Processes Filed
+                  .info-value #{litigationDetails.secondParty.processesFiled.length}
+          
+          if litigationDetails.otherParty && litigationDetails.otherParty.length > 0
+            .info-card
+              .info-card-title Other Parties
+              each party, idx in litigationDetails.otherParty
+                .info-row
+                  .info-label Party #{idx + 1}
+                  .info-value #{getPartyName(party)}
+        
+        .section
+          .section-title FILING & SERVICE
+          
+          .info-grid-2
+            .info-card
+              .info-card-title Filing Information
+              .info-row
+                .info-label Date of Filing
+                .info-value #{litigationDetails.filingDate ? new Date(litigationDetails.filingDate).toLocaleDateString('en-GB') : 'N/A'}
+              .info-row
+                .info-label Mode of Commencement
+                .info-value #{litigationDetails.modeOfCommencement ? litigationDetails.modeOfCommencement.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : 'N/A'}
+              if litigationDetails.otherModeOfCommencement
+                .info-row
+                  .info-label Other Mode
+                  .info-value #{litigationDetails.otherModeOfCommencement}
+            
+            .info-card
+              .info-card-title Service Information
+              .info-row
+                .info-label Service Date
+                .info-value #{litigationDetails.serviceDate ? new Date(litigationDetails.serviceDate).toLocaleDateString('en-GB') : 'N/A'}
+        
+        .section
+          .section-title HEARING SCHEDULE
+          
+          .info-grid-2
+            .info-card
+              .info-card-title Next Hearing
+              .info-row
+                .info-label Next Hearing Date
+                .info-value #{litigationDetails.nextHearingDate ? new Date(litigationDetails.nextHearingDate).toLocaleDateString('en-GB') : 'N/A'}
+              .info-row
+                .info-label Last Hearing Date
+                .info-value #{litigationDetails.lastHearingDate ? new Date(litigationDetails.lastHearingDate).toLocaleDateString('en-GB') : 'N/A'}
+              .info-row
+                .info-label Total Hearings
+                .info-value #{litigationDetails.totalHearings || 0}
+            
+            .info-card
+              .info-card-title Hearing Summary
+              - var completedHearings = litigationDetails.hearings ? litigationDetails.hearings.filter(function(h) { return h.outcome; }).length : 0
+              .info-row
+                .info-label Completed
+                .info-value #{completedHearings}
+              .info-row
+                .info-label Pending
+                .info-value #{(litigationDetails.totalHearings || 0) - completedHearings}
+        
+        if litigationDetails.hearings && litigationDetails.hearings.length > 0
+          .section
+            .section-title HEARINGS HISTORY
+            
+            table
+              thead
+                tr
+                  th Date
+                  th Purpose
+                  th Lawyer(s)
+                  th Outcome
+                  th Next Date
+                  th Notice
+                  th Status
+              tbody
+                each hearing in litigationDetails.hearings.slice(0, 15)
+                  tr
+                    td #{hearing.date ? new Date(hearing.date).toLocaleDateString('en-GB') : 'N/A'}
+                    td #{hearing.purpose || 'N/A'}
+                    td #{getLawyerNames(hearing)}
+                    td #{hearing.outcome || 'Pending'}
+                    td #{hearing.nextHearingDate ? new Date(hearing.nextHearingDate).toLocaleDateString('en-GB') : 'N/A'}
+                    td #{hearing.hearingNoticeServed ? 'Served' : 'Required'}
+                    td #{hearing.outcome ? 'Completed' : 'Pending'}
+            
+            if litigationDetails.hearings.length > 15
+              .terms-text ... and #{litigationDetails.hearings.length - 15} more hearings
+        
+        if litigationDetails.courtOrders && litigationDetails.courtOrders.length > 0
+          .section
+            .section-title COURT ORDERS
+            
+            table
+              thead
+                tr
+                  th Order Date
+                  th Order Type
+                  th Description
+                  th Compliance Status
+              tbody
+                each order in litigationDetails.courtOrders.slice(0, 15)
+                  tr
+                    td #{order.orderDate ? new Date(order.orderDate).toLocaleDateString('en-GB') : 'N/A'}
+                    td #{order.orderType || 'N/A'}
+                    td #{order.description || 'N/A'}
+                    td #{order.complianceStatus ? order.complianceStatus.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : 'N/A'}
+        
+        if litigationDetails.litigationSteps && litigationDetails.litigationSteps.length > 0
+          .section
+            .section-title LITIGATION STEPS / PROCEDURES
+            
+            table
+              thead
+                tr
+                  th #
+                  th Step
+                  th Description
+                  th Due Date
+                  th Priority
+                  th Status
+              tbody
+                each step, idx in litigationDetails.litigationSteps
+                  tr
+                    td #{idx + 1}
+                    td #{step.title || 'N/A'}
+                    td #{step.description || 'N/A'}
+                    td #{step.dueDate ? new Date(step.dueDate).toLocaleDateString('en-GB') : 'N/A'}
+                    td #{step.priority ? step.priority.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : 'N/A'}
+                    td
+                      - var stepClass = getStepStatusClass(step.status)
+                      span.status-badge(class=stepClass) #{step.status ? step.status.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : 'N/A'}
+        
+        if litigationDetails.judgment
+          .section
+            .section-title JUDGMENT
+            .terms-box
+              .terms-title Judgment Outcome
+              .terms-text #{litigationDetails.judgment.outcome ? litigationDetails.judgment.outcome.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : 'N/A'}
+              if litigationDetails.judgment.judgmentDate
+                .terms-text Date: #{new Date(litigationDetails.judgment.judgmentDate).toLocaleDateString('en-GB')}
+              if litigationDetails.judgment.judgmentSummary
+                .terms-text Summary: #{litigationDetails.judgment.judgmentSummary}
+              if litigationDetails.judgment.damages
+                .terms-text Damages: #{getAmountDisplay(litigationDetails.judgment.damages)}
+              if litigationDetails.judgment.costs
+                .terms-text Costs: #{getAmountDisplay(litigationDetails.judgment.costs)}
+        
+        if litigationDetails.settlement && litigationDetails.settlement.isSettled
+          .section
+            .section-title SETTLEMENT
+            .terms-box
+              .terms-title Settlement Details
+              .terms-text Status: SETTLED
+              if litigationDetails.settlement.settlementDate
+                .terms-text Date: #{new Date(litigationDetails.settlement.settlementDate).toLocaleDateString('en-GB')}
+              if litigationDetails.settlement.settlementTerms
+                .terms-text Terms: #{litigationDetails.settlement.settlementTerms}
+              if litigationDetails.settlement.settlementAmount
+                .terms-text Amount: #{getAmountDisplay(litigationDetails.settlement.settlementAmount)}
+        
+        if litigationDetails.appeal && litigationDetails.appeal.isAppealed
+          .section
+            .section-title APPEAL
+            .terms-box
+              .terms-title Appeal Information
+              .terms-text Status: APPEALED
+              .terms-text Court: #{litigationDetails.appeal.appealCourt || 'N/A'}
+              .terms-text Suit No: #{litigationDetails.appeal.appealSuitNo || 'N/A'}
+              .terms-text Appeal Status: #{litigationDetails.appeal.appealStatus ? litigationDetails.appeal.appealStatus.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : 'N/A'}
+              if litigationDetails.appeal.appealDate
+                .terms-text Date Filed: #{new Date(litigationDetails.appeal.appealDate).toLocaleDateString('en-GB')}
+        
+        if (litigationDetails.applicableLaws && litigationDetails.applicableLaws.length > 0) || (litigationDetails.legalIssues && litigationDetails.legalIssues.length > 0)
+          .section
+            .section-title LEGAL FRAMEWORK
+            
+            if litigationDetails.applicableLaws && litigationDetails.applicableLaws.length > 0
+              .info-card
+                .info-card-title Applicable Laws
+                each law in litigationDetails.applicableLaws
+                  .tag #{law}
+            
+            if litigationDetails.legalIssues && litigationDetails.legalIssues.length > 0
+              .info-card
+                .info-card-title Legal Issues
+                .terms-box
+                  each issue in litigationDetails.legalIssues
+                    .terms-text - #{issue}
+        
+        if litigationDetails.precedents && litigationDetails.precedents.length > 0
+          .section
+            .section-title RELEVANT PRECEDENTS
+            
+            table
+              thead
+                tr
+                  th Case Name
+                  th Citation
+                  th Relevance
+              tbody
+                each precedent in litigationDetails.precedents
+                  tr
+                    td #{precedent.caseName || 'N/A'}
+                    td #{precedent.citation || 'N/A'}
+                    td #{precedent.relevance || 'N/A'}
+        
+        if litigationDetails.citationReference
+          .section
+            .section-title CITATION REFERENCE
+            .highlight-box
+              .highlight-title Landmark Citation
+              .terms-text #{litigationDetails.citationReference}
+      
+      .signature-block
+        .signature-section
+          if firm && firm.settings && firm.settings.firmSignature
+            img.signature-image(src=firm.settings.firmSignature, alt="Authorized Signature")
+          else
+            .signature-line
+          .signature-label AUTHORIZED SIGNATORY
+          .signature-meta
+            .signature-name Principal Partner
+            .signature-date Date: _______________
+        
+        .stamp-section
+          if firm && firm.settings && firm.settings.firmStamp
+            img.stamp-image(src=firm.settings.firmStamp, alt="Official Stamp")
+          else
+            .stamp-placeholder
+      
+      .doc-footer
+        .footer-text This is a computer-generated report.
+        .footer-firm #{firm && firm.name ? firm.name : 'Law Firm'}

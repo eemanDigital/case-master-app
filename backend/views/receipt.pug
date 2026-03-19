@@ -370,6 +370,18 @@ html(lang="en")
         pointer-events: none;
       }
       
+      /* Signature & Stamp Block */
+      .signature-block { display: flex; justify-content: flex-end; align-items: flex-end; gap: 60px; margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--gray-200); }
+      .signature-section { text-align: center; min-width: 160px; }
+      .signature-image { height: 65px; width: auto; max-width: 160px; object-fit: contain; }
+      .signature-line { width: 160px; height: 35px; border-bottom: 1.5px solid #333; }
+      .signature-label { font-size: 9px; font-weight: 600; color: var(--primary); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+      .signature-meta { font-size: 9px; color: var(--secondary); margin-top: 4px; }
+      .signature-date { margin-left: 8px; }
+      .stamp-section { width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; }
+      .stamp-image { width: 85px; height: 85px; object-fit: contain; opacity: 0.9; }
+      .stamp-placeholder { width: 85px; height: 85px; border: 2px dashed var(--gray-300); }
+      
       @media print {
         body { -webkit-print-color-adjust: exact; }
         .receipt-wrapper { padding: 20px; }
@@ -475,6 +487,10 @@ html(lang="en")
         .balance-row
           span.balance-label Remaining Balance
           span.balance-value ₦#{(receipt.invoice.balance || 0).toLocaleString('en-NG')}
+      
+      //- Signature & Stamp Block
+      if firm
+        include ./includes/signatureBlock
       
       //- Footer
       .receipt-footer

@@ -44,6 +44,7 @@ import {
   APPEAL_STATUS,
 } from "../../utils/litigationConstants";
 import LitigationSteps from "../../components/litigation/LitigationSteps";
+import { downloadLitigationReport } from "../../utils/pdfDownload";
 
 // ─── Module-level constants (never re-created) ────────────────────────────────
 const PILL_STYLES = {
@@ -162,18 +163,11 @@ const LitigationDetails = () => {
     async (format = "pdf") => {
       try {
         setExportingFormats((prev) => ({ ...prev, [format]: true }));
-        const blob = await litigationService.exportSingleMatter(
-          matterId,
-          format,
-        );
-        const filename = getExportFilename(
-          `litigation_${litigationDetails?.suitNo}`,
-          format,
-        );
-        downloadFile(blob, filename);
-        message.success("Matter exported successfully");
-      } catch {
-        message.error("Failed to export matter");
+        await downloadLitigationReport(matterId, litigationDetails?.suitNo || 'litigation');
+        message.success("Report downloaded successfully");
+      } catch (error) {
+        console.error("Export error:", error);
+        message.error("Failed to download report");
       } finally {
         setExportingFormats((prev) => ({ ...prev, [format]: false }));
       }

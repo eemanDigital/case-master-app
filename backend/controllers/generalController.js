@@ -2,8 +2,11 @@ const PaginationServiceFactory = require("../services/PaginationServiceFactory")
 const modelConfigs = require("../config/modelConfigs");
 const Matter = require("../models/matterModel");
 const { GeneralDetail } = require("../models/retainerAndGeneralDetailModel");
+const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const { generatePdf } = require("../utils/generatePdf");
+const path = require("path");
 
 // Initialize pagination services
 const matterPaginationService = PaginationServiceFactory.createService(
@@ -1350,6 +1353,52 @@ exports.bulkUpdateGeneralMatters = catchAsync(async (req, res, next) => {
       modifiedCount: result.modifiedCount,
     },
   });
+});
+
+// ============================================
+// GENERAL MATTER REPORT PDF GENERATION
+// ============================================
+
+/**
+ * @desc    Generate general matter report PDF
+ * @route   GET /api/general-matters/:matterId/report
+ * @access  Private
+ */
+exports.generateGeneralReportPdf = catchAsync(async (req, res, next) => {
+  const firmId = req.firmId;
+  const { matterId } = req.params;
+
+  const matter = await Matter.findOne({
+    _id: matterId,
+    firmId,
+    matterType: "general",
+    isDeleted: { $ne: true },
+  })
+    .populate("client", "firstName lastName email phone companyName")
+    .populate("accountOfficer", "firstName lastName email");
+
+  if (!matter) {
+    return next(new AppError("No general matter found with that ID", 404));
+  }
+
+  const generalDetails = await GeneralDetail.findOne({ matterId, firmId });
+
+  const firm = await Firm.findById(firmId);
+
+  const reportData = {
+    matter: matter.toObject(),
+    generalDetails: generalDetails ? generalDetails.toObject() : null,
+    firm: firm ? firm.toObject() : null,
+  };
+
+  const filename = `${matter.matterNumber}_general_report_${Date.now()}.pdf`;
+
+  generatePdf(
+    reportData,
+    res,
+    path.resolve(__dirname, "../views/generalReport.pug"),
+    path.resolve(__dirname, `../output/${filename}`),
+  );
 });
 
 module.exports = exports;

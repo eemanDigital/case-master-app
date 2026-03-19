@@ -23,6 +23,7 @@ import {
   Typography,
   Breadcrumb,
   Empty,
+  message,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -47,6 +48,7 @@ import {
   PrinterOutlined,
   DownloadOutlined,
   FileAddOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -63,6 +65,7 @@ import ShareholdersManager from "../../components/corporate/ShareholdersManager"
 import DirectorsManager from "../../components/corporate/DirectorsManager";
 import MilestonesManager from "../../components/corporate/MilestonesManager";
 import TransactionClosingModal from "../../components/corporate/TransactionClosingModal";
+import { downloadCorporateReport } from "../../utils/pdfDownload";
 
 import {
   TRANSACTION_TYPES,
@@ -135,6 +138,17 @@ const CorporateDetails = () => {
       title: "Export Corporate Details",
       content: "Export feature will be implemented soon.",
     });
+  };
+
+  // Download PDF Report
+  const handleDownloadPdf = async () => {
+    try {
+      message.loading({ content: "Generating PDF report...", key: "pdf" });
+      await downloadCorporateReport(matterId, "corporate");
+      message.success({ content: "PDF report downloaded successfully!", key: "pdf" });
+    } catch (error) {
+      message.error({ content: "Failed to download PDF report", key: "pdf" });
+    }
   };
 
   // Handle transaction closing
@@ -307,6 +321,12 @@ const CorporateDetails = () => {
             </Button>
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
               Export
+            </Button>
+            <Button
+              icon={<FilePdfOutlined />}
+              onClick={handleDownloadPdf}
+              className="bg-indigo-500 hover:bg-indigo-600 text-white border-0">
+              Download Report
             </Button>
             {!editMode && corporateDetails && (
               <Button

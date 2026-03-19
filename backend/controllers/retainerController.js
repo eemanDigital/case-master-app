@@ -5,8 +5,11 @@ const {
   RetainerDetail,
   GeneralDetail,
 } = require("../models/retainerAndGeneralDetailModel");
+const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const { generatePdf } = require("../utils/generatePdf");
+const path = require("path");
 
 // Initialize pagination services
 const matterPaginationService = PaginationServiceFactory.createService(
@@ -1548,6 +1551,52 @@ exports.bulkUpdateRetainerMatters = catchAsync(async (req, res, next) => {
       modifiedCount: result.modifiedCount,
     },
   });
+});
+
+// ============================================
+// RETAINER REPORT PDF GENERATION
+// ============================================
+
+/**
+ * @desc    Generate retainer report PDF
+ * @route   GET /api/retainers/:matterId/report
+ * @access  Private
+ */
+exports.generateRetainerReportPdf = catchAsync(async (req, res, next) => {
+  const firmId = req.firmId;
+  const { matterId } = req.params;
+
+  const matter = await Matter.findOne({
+    _id: matterId,
+    firmId,
+    matterType: "retainer",
+    isDeleted: { $ne: true },
+  })
+    .populate("client", "firstName lastName email phone companyName")
+    .populate("accountOfficer", "firstName lastName email");
+
+  if (!matter) {
+    return next(new AppError("No retainer matter found with that ID", 404));
+  }
+
+  const retainerDetails = await RetainerDetail.findOne({ matterId, firmId });
+
+  const firm = await Firm.findById(firmId);
+
+  const reportData = {
+    matter: matter.toObject(),
+    retainerDetails: retainerDetails ? retainerDetails.toObject() : null,
+    firm: firm ? firm.toObject() : null,
+  };
+
+  const filename = `${matter.matterNumber}_retainer_report_${Date.now()}.pdf`;
+
+  generatePdf(
+    reportData,
+    res,
+    path.resolve(__dirname, "../views/retainerReport.pug"),
+    path.resolve(__dirname, `../output/${filename}`),
+  );
 });
 
 module.exports = exports;

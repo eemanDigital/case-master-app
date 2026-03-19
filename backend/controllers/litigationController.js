@@ -2053,4 +2053,56 @@ exports.reorderLitigationSteps = catchAsync(async (req, res, next) => {
   });
 });
 
+// ============================================
+// LITIGATION REPORT PDF GENERATION
+// ============================================
+
+/**
+ * @desc    Generate litigation matter report PDF
+ * @route   GET /api/v1/litigation/:matterId/report
+ * @access  Private
+ */
+exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
+  const firmId = req.firmId;
+  const { matterId } = req.params;
+
+  const matter = await Matter.findOne({
+    _id: matterId,
+    firmId,
+    matterType: "litigation",
+    isDeleted: { $ne: true },
+  })
+    .populate("client", "firstName lastName email phone companyName")
+    .populate("accountOfficer", "firstName lastName email");
+
+  if (!matter) {
+    return next(new AppError("No litigation matter found with that ID", 404));
+  }
+
+  const litigationDetail = await LitigationDetail.findOne({ matterId, firmId })
+    .populate("hearings.lawyerPresent", "firstName lastName")
+    .populate("hearings.preparedBy", "firstName lastName");
+
+  const Firm = require("../models/firmModel");
+  const firm = await Firm.findById(firmId);
+
+  const reportData = {
+    matter: matter.toObject(),
+    litigationDetails: litigationDetail ? litigationDetail.toObject() : null,
+    firm: firm ? firm.toObject() : null,
+  };
+
+  const filename = `${matter.matterNumber}_litigation_report_${Date.now()}.pdf`;
+
+  const { generatePdf } = require("../utils/generatePdf");
+  const pdfPath = require("path");
+
+  generatePdf(
+    reportData,
+    res,
+    pdfPath.resolve(__dirname, "../views/litigationReport.pug"),
+    pdfPath.resolve(__dirname, `../output/${filename}`),
+  );
+});
+
 module.exports = exports;

@@ -504,8 +504,19 @@ html(lang="en")
       
       @media print {
         body { -webkit-print-color-adjust: exact; }
-        .invoice-wrapper { padding: 20px; }
       }
+      
+      /* Signature & Stamp Block */
+      .signature-block { display: flex; justify-content: flex-end; align-items: flex-end; gap: 60px; margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--gray-200); }
+      .signature-section { text-align: center; min-width: 160px; }
+      .signature-image { height: 65px; width: auto; max-width: 160px; object-fit: contain; }
+      .signature-line { width: 160px; height: 35px; border-bottom: 1.5px solid #333; }
+      .signature-label { font-size: 9px; font-weight: 600; color: var(--primary); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+      .signature-meta { font-size: 9px; color: var(--secondary); margin-top: 4px; }
+      .signature-date { margin-left: 8px; }
+      .stamp-section { width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; }
+      .stamp-image { width: 85px; height: 85px; object-fit: contain; opacity: 0.9; }
+      .stamp-placeholder { width: 85px; height: 85px; border: 2px dashed var(--gray-300); }
 
   body
     .invoice-wrapper
@@ -643,16 +654,18 @@ html(lang="en")
                 td.amount-cell= (expense.amount || 0).toLocaleString('en-NG')
     
       //- Financial Summary
+      - var invServicesTotal = invoice.services ? invoice.services.reduce(function(sum, s) { return sum + (s.amount || 0); }, 0) : 0
+      - var invExpensesTotal = invoice.expenses ? invoice.expenses.reduce(function(sum, e) { return sum + (e.amount || 0); }, 0) : 0
       .summary-section
         .summary-header FINANCIAL SUMMARY
         .summary-grid
           .summary-row
             .summary-label Professional Services
-            .summary-value ₦#{(invoice.services ? invoice.services.reduce((sum, s) => sum + (s.amount || 0), 0) : 0).toLocaleString('en-NG')}
+            .summary-value ₦#{invServicesTotal.toLocaleString('en-NG')}
           
           .summary-row
             .summary-label Expenses
-            .summary-value ₦#{(invoice.expenses ? invoice.expenses.reduce((sum, e) => sum + (e.amount || 0), 0) : 0).toLocaleString('en-NG')}
+            .summary-value ₦#{invExpensesTotal.toLocaleString('en-NG')}
           
           if invoice.previousBalance && invoice.previousBalance > 0
             .summary-row
@@ -714,7 +727,11 @@ html(lang="en")
         .terms-section
           .terms-title Terms & Conditions
           .terms-text #{firm && firm.settings && firm.settings.defaultPaymentTerms ? firm.settings.defaultPaymentTerms : 'Payment is due upon receipt. Please include invoice number as payment reference. Late payments may attract interest charges.'}
-    
+      
+      //- Signature & Stamp Block
+      if firm
+        include ./includes/signatureBlock
+      
       //- Footer
       .invoice-footer
         .footer-message Thank you for your patronage

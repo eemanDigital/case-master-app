@@ -19,6 +19,18 @@ generalRouter.post("/search", generalController.searchGeneralMatters);
 generalRouter.get("/stats", generalController.getGeneralStats);
 
 // ============================================
+// GENERAL REPORT PDF
+// ============================================
+
+/**
+ * @route   GET /api/general-matters/:matterId/report
+ * @desc    Generate general matter report PDF
+ * @access  Private
+ * @example GET /api/general-matters/123abc/report
+ */
+generalRouter.get("/:matterId/report", generalController.generateGeneralReportPdf);
+
+// ============================================
 // GENERAL DETAILS CRUD
 // ============================================
 generalRouter

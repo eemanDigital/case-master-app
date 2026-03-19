@@ -427,6 +427,18 @@ html(lang="en")
         pointer-events: none;
       }
       
+      /* Signature & Stamp Block */
+      .signature-block { display: flex; justify-content: flex-end; align-items: flex-end; gap: 60px; margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--gray-200); }
+      .signature-section { text-align: center; min-width: 160px; }
+      .signature-image { height: 65px; width: auto; max-width: 160px; object-fit: contain; }
+      .signature-line { width: 160px; height: 35px; border-bottom: 1.5px solid #333; }
+      .signature-label { font-size: 9px; font-weight: 600; color: var(--primary); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+      .signature-meta { font-size: 9px; color: var(--secondary); margin-top: 4px; }
+      .signature-date { margin-left: 8px; }
+      .stamp-section { width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; }
+      .stamp-image { width: 85px; height: 85px; object-fit: contain; opacity: 0.9; }
+      .stamp-placeholder { width: 85px; height: 85px; border: 2px dashed var(--gray-300); }
+      
       @media print {
         body { -webkit-print-color-adjust: exact; }
         .document-wrapper { padding: 20px; }
@@ -547,9 +559,10 @@ html(lang="en")
                 td.amount-cell ₦#{((service.billingMethod === 'hourly' ? service.rate : service.unitPrice) || 0).toLocaleString('en-NG')}
                 td.amount-cell ₦#{(service.amount || 0).toLocaleString('en-NG')}
           tfoot
+            - var servicesTotal = invoice.services ? invoice.services.reduce(function(sum, s) { return sum + (s.amount || 0); }, 0) : 0
             tr
               td(colspan="6", class="text-right") Total Professional Fees:
-              td.amount-cell ₦#{(invoice.services.reduce((sum, s) => sum + (s.amount || 0), 0)).toLocaleString('en-NG')}
+              td.amount-cell ₦#{servicesTotal.toLocaleString('en-NG')}
     
       //- Expenses
       if invoice.expenses && invoice.expenses.length > 0
@@ -573,24 +586,28 @@ html(lang="en")
                 td #{expense.date ? new Date(expense.date).toLocaleDateString('en-GB') : 'N/A'}
                 td.amount-cell ₦#{(expense.amount || 0).toLocaleString('en-NG')}
           tfoot
+            - var expensesTotal = invoice.expenses ? invoice.expenses.reduce(function(sum, e) { return sum + (e.amount || 0); }, 0) : 0
             tr
               td(colspan="4", class="text-right") Total Expenses:
-              td.amount-cell ₦#{(invoice.expenses.reduce((sum, e) => sum + (e.amount || 0), 0)).toLocaleString('en-NG')}
+              td.amount-cell ₦#{expensesTotal.toLocaleString('en-NG')}
     
       //- Summary
+      - var servicesTotal2 = invoice.services ? invoice.services.reduce(function(sum, s) { return sum + (s.amount || 0); }, 0) : 0
+      - var expensesTotal2 = invoice.expenses ? invoice.expenses.reduce(function(sum, e) { return sum + (e.amount || 0); }, 0) : 0
+      - var subtotal = servicesTotal2 + expensesTotal2
       .summary-section
         .summary-header FINANCIAL SUMMARY
         .summary-row
           .summary-label Professional Services
-          .summary-value ₦#{(invoice.services ? invoice.services.reduce((sum, s) => sum + (s.amount || 0), 0) : 0).toLocaleString('en-NG')}
+          .summary-value ₦#{servicesTotal2.toLocaleString('en-NG')}
         
         .summary-row
           .summary-label Expenses & Disbursements
-          .summary-value ₦#{(invoice.expenses ? invoice.expenses.reduce((sum, e) => sum + (e.amount || 0), 0) : 0).toLocaleString('en-NG')}
+          .summary-value ₦#{expensesTotal2.toLocaleString('en-NG')}
         
         .summary-row
           .summary-label Subtotal
-          .summary-value ₦#{((invoice.services ? invoice.services.reduce((sum, s) => sum + (s.amount || 0), 0) : 0) + (invoice.expenses ? invoice.expenses.reduce((sum, e) => sum + (e.amount || 0), 0) : 0)).toLocaleString('en-NG')}
+          .summary-value ₦#{subtotal.toLocaleString('en-NG')}
         
         if invoice.previousBalance && invoice.previousBalance > 0
           .summary-row
@@ -619,7 +636,11 @@ html(lang="en")
         .summary-row.balance
           .summary-label BALANCE DUE
           .summary-value ₦#{invoice.balance ? invoice.balance.toLocaleString('en-NG') : '0'}
-    
+      
+      //- Signature & Stamp Block
+      if firm
+        include ./includes/signatureBlock
+      
       //- Footer
       .doc-footer
         .footer-text This Bill of Charges is subject to the terms and conditions of engagement.

@@ -31,6 +31,7 @@ import {
   HistoryOutlined,
   EyeOutlined,
   CloseCircleOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
@@ -43,6 +44,7 @@ import PartiesManager from "../../components/general/PartiesManager";
 import DocumentsManager from "../../components/general/DocumentsManager";
 import ProjectStagesManager from "../../components/general/ProjectStagesManager";
 import DisbursementsManager from "../../components/general/DisbursementsManager";
+import { downloadGeneralReport } from "../../utils/pdfDownload";
 
 import {
   fetchGeneralDetails,
@@ -254,11 +256,18 @@ const FinancialSummaryCard = React.memo(({ details }) => {
 FinancialSummaryCard.displayName = "FinancialSummaryCard";
 
 const QuickActionsCard = React.memo(
-  ({ isCompleted, onEdit, onComplete, onDelete }) => (
+  ({ isCompleted, onEdit, onComplete, onDelete, onDownloadPdf }) => (
     <Card
       title={<span className="font-semibold">⚡ Quick Actions</span>}
       className="shadow-sm">
       <Space direction="vertical" className="w-full" size="middle">
+        <Button
+          icon={<FilePdfOutlined />}
+          onClick={onDownloadPdf}
+          block
+          className="bg-indigo-600 hover:bg-indigo-700 text-white border-0">
+          Download Report
+        </Button>
         <Button
           icon={<EditOutlined />}
           onClick={onEdit}
@@ -362,6 +371,16 @@ const GeneralDetails = () => {
     });
   }, []);
 
+  const handleDownloadPdf = useCallback(async () => {
+    try {
+      message.loading({ content: "Generating PDF report...", key: "pdf" });
+      await downloadGeneralReport(matterId, "general");
+      message.success({ content: "PDF report downloaded successfully!", key: "pdf" });
+    } catch (error) {
+      message.error({ content: "Failed to download PDF report", key: "pdf" });
+    }
+  }, [matterId]);
+
   // Action menu
   const actionMenu = useMemo(
     () => (
@@ -456,6 +475,7 @@ const GeneralDetails = () => {
               onEdit={handleEdit}
               onComplete={() => setShowCompletionModal(true)}
               onDelete={handleDelete}
+              onDownloadPdf={handleDownloadPdf}
             />
           </Col>
         </Row>

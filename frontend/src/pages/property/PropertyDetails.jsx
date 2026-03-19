@@ -25,7 +25,6 @@ import {
   EditOutlined,
   SaveOutlined,
   HomeOutlined,
-  // CalendarOutlined,
   DollarOutlined,
   FileTextOutlined,
   AuditOutlined,
@@ -37,10 +36,11 @@ import {
   PrinterOutlined,
   DownloadOutlined,
   FileAddOutlined,
-  // MapOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { message } from "antd";
 
 // Redux imports
 import {
@@ -58,6 +58,7 @@ import PropertiesManager from "../../components/property/PropertiesManager";
 import PaymentScheduleManager from "../../components/property/PaymentScheduleManager";
 import ConditionsManager from "../../components/property/ConditionsManager";
 import TransactionCompletionModal from "../../components/property/TransactionCompletionModal";
+import { downloadPropertyReport } from "../../utils/pdfDownload";
 
 // Utils
 import {
@@ -67,7 +68,6 @@ import {
   getPropertyTypeLabel,
   getTitleDocumentLabel,
   isOverdue,
-  // getDaysUntil,
 } from "../../utils/propertyConstants";
 
 const { Title, Text, Paragraph } = Typography;
@@ -130,10 +130,14 @@ const PropertyDetails = () => {
   };
 
   // Export details - Download Property Report PDF
-  const handleExport = () => {
-    const baseUrl = import.meta.env.VITE_BASE_URL;
-    const url = `${baseUrl}/property/${matterId}/report`;
-    window.open(url, "_blank");
+  const handleExport = async () => {
+    try {
+      message.loading({ content: "Generating PDF report...", key: "pdf" });
+      await downloadPropertyReport(matterId, "property");
+      message.success({ content: "PDF report downloaded successfully!", key: "pdf" });
+    } catch (error) {
+      message.error({ content: "Failed to download PDF report", key: "pdf" });
+    }
   };
 
   // Handle transaction completion

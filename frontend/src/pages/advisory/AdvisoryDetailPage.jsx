@@ -37,8 +37,10 @@ import {
   SearchOutlined,
   CheckSquareOutlined,
   BulbOutlined,
+  FilePdfOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { downloadAdvisoryReport } from "../../utils/pdfDownload";
 
 import {
   fetchAdvisoryDetails,
@@ -165,7 +167,7 @@ const PanelLoadingFallback = () => (
 // ─────────────────────────────────────────────────────────────
 
 const AdvisoryHeader = React.memo(
-  ({ advisory, onEdit, onDelete, onDuplicate, onExport, isDeleted }) => (
+  ({ advisory, onEdit, onDelete, onDuplicate, onExport, onDownloadPdf, isDeleted }) => (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex-1 min-w-0">
@@ -224,6 +226,12 @@ const AdvisoryHeader = React.memo(
           </Button>
           <Button icon={<DownloadOutlined />} onClick={onExport}>
             Export
+          </Button>
+          <Button
+            icon={<FilePdfOutlined />}
+            onClick={onDownloadPdf}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white border-0">
+            Download Report
           </Button>
         </Space>
       </div>
@@ -703,6 +711,16 @@ const AdvisoryDetailPage = () => {
     message.info("Export feature coming soon");
   }, []);
 
+  const handleDownloadPdf = useCallback(async () => {
+    try {
+      message.loading({ content: "Generating PDF report...", key: "pdf" });
+      await downloadAdvisoryReport(matterId, "advisory");
+      message.success({ content: "PDF report downloaded successfully!", key: "pdf" });
+    } catch (error) {
+      message.error({ content: "Failed to download PDF report", key: "pdf" });
+    }
+  }, [matterId]);
+
   // Memoize tabItems with matterId dependency - USING advisoryId prop name
   const tabItems = useMemo(() => {
     if (!matterId) return [];
@@ -786,6 +804,7 @@ const AdvisoryDetailPage = () => {
         onDelete={() => setDeleteModalVisible(true)}
         onDuplicate={handleDuplicate}
         onExport={handleExport}
+        onDownloadPdf={handleDownloadPdf}
         isDeleted={advisory.isDeleted}
       />
 

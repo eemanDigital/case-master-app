@@ -21,6 +21,11 @@ retainerRouter.get("/expiring", retainerController.getExpiringRetainers);
 retainerRouter.get("/pending-requests", retainerController.getPendingRequests);
 
 // ============================================
+// RETAINER REPORT PDF
+// ============================================
+retainerRouter.get("/:matterId/report", retainerController.generateRetainerReportPdf);
+
+// ============================================
 // RETAINER DETAILS CRUD
 // ============================================
 retainerRouter

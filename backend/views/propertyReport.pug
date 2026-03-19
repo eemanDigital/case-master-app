@@ -7,8 +7,8 @@ html(lang="en")
     style.
       * { margin: 0; padding: 0; box-sizing: border-box; }
       :root {
-        --primary: #{firm && firm.settings && firm.settings.primaryColor ? firm.settings.primaryColor : '#1a365d'};
-        --primary-light: #{firm && firm.settings && firm.settings.primaryColor ? firm.settings.primaryColor + '15' : '#1a365d15'};
+        --primary: #1a365d;
+        --primary-light: #f0f4ff;
         --secondary: #64748b;
         --success: #059669;
         --warning: #d97706;
@@ -20,18 +20,17 @@ html(lang="en")
         --gray-700: #334155;
         --gray-900: #0f172a;
       }
-      body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; line-height: 1.4; color: var(--gray-900); background: #ffffff; font-size: 11px; }
+      body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.4; color: var(--gray-900); background: #ffffff; font-size: 11px; }
       .report-wrapper { max-width: 100%; margin: 0; padding: 20px; }
-      
       .report-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 12px; border-bottom: 2px solid var(--primary); margin-bottom: 15px; }
-      .firm-brand { display: flex; align-items: center; gap: 10px; }
-      .firm-logo { width: 40px; height: 40px; background: var(--primary); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 18px; }
-      .firm-details h1 { font-size: 16px; font-weight: 700; color: var(--gray-900); }
+      .firm-brand { display: flex; align-items: center; gap: 16px; }
+      .firm-logo { width: 50px; height: 50px; background: var(--primary); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 20px; }
+      .firm-logo.img { background: transparent; border-radius: 8px; }
+      .firm-details h1 { font-size: 18px; font-weight: 700; color: var(--gray-900); }
       .firm-details p { font-size: 10px; color: var(--secondary); }
       .report-title-section { text-align: right; }
-      .report-title { font-size: 20px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
+      .report-title { font-size: 22px; font-weight: 700; color: var(--primary); text-transform: uppercase; }
       .report-date { font-size: 9px; color: var(--secondary); margin-top: 4px; }
-      
       .matter-info { background: var(--gray-50); border-radius: 8px; padding: 12px; margin-bottom: 15px; border: 1px solid var(--gray-200); }
       .matter-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
       .matter-number { font-size: 14px; font-weight: 700; color: var(--primary); }
@@ -40,10 +39,8 @@ html(lang="en")
       .detail-item { font-size: 10px; }
       .detail-label { color: var(--secondary); font-weight: 500; }
       .detail-value { color: var(--gray-900); font-weight: 600; }
-      
       .section { margin-bottom: 15px; }
       .section-title { font-size: 12px; font-weight: 600; color: var(--gray-900); margin: 12px 0 10px 0; padding-bottom: 5px; border-bottom: 1px solid var(--primary); }
-      
       .info-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
       .info-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
       .info-card { background: var(--gray-50); border-radius: 6px; padding: 10px; border: 1px solid var(--gray-200); }
@@ -51,14 +48,12 @@ html(lang="en")
       .info-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 10px; }
       .info-label { color: var(--secondary); font-weight: 500; }
       .info-value { color: var(--gray-900); font-weight: 600; text-align: right; }
-      
       table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 10px; border-radius: 6px; overflow: hidden; }
       thead { background: var(--primary); color: white; }
       th { padding: 8px 6px; text-align: left; font-weight: 600; font-size: 9px; text-transform: uppercase; }
       td { padding: 8px 6px; border-bottom: 1px solid var(--gray-100); color: var(--gray-700); }
       tbody tr:hover { background: var(--gray-50); }
       .amount { text-align: right; font-weight: 600; }
-      
       .status-badge { display: inline-block; padding: 2px 6px; border-radius: 8px; font-size: 8px; font-weight: 600; text-transform: uppercase; }
       .status-completed, .status-paid, .status-registered { background: #d1fae5; color: #065f46; }
       .status-pending { background: #fef3c7; color: #92400e; }
@@ -66,14 +61,12 @@ html(lang="en")
       .status-active, .status-executed { background: #dbeafe; color: #1e40af; }
       .status-draft { background: #f1f5f9; color: #475569; }
       .status-met { background: #d1fae5; color: #065f46; }
-      
       .financial-box { background: var(--primary-light); border: 1px solid var(--primary); border-radius: 8px; padding: 12px; margin: 12px 0; }
       .financial-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
       .financial-item { text-align: center; }
       .financial-label { font-size: 9px; font-weight: 600; color: var(--secondary); text-transform: uppercase; margin-bottom: 4px; }
-      .financial-value { font-size: 16px; font-weight: 700; color: var(--primary); font-family: 'Courier New', monospace; }
+      .financial-value { font-size: 16px; font-weight: 700; color: var(--primary); }
       .financial-value.success { color: var(--success); }
-      
       .checklist { background: white; border: 1px solid var(--gray-200); border-radius: 6px; overflow: hidden; }
       .checklist-item { display: flex; align-items: flex-start; padding: 8px 10px; border-bottom: 1px solid var(--gray-100); font-size: 10px; }
       .checklist-item:last-child { border-bottom: none; }
@@ -82,24 +75,52 @@ html(lang="en")
       .checklist-icon.pending { background: #fef3c7; color: #92400e; }
       .checklist-icon.missing { background: #fee2e2; color: #991b1b; }
       .checklist-label { flex: 1; color: var(--gray-700); }
-      
       .findings-box { background: #fffbeb; border: 1px solid #f59e0b; border-radius: 6px; padding: 12px; margin: 10px 0; }
       .findings-title { font-size: 10px; font-weight: 600; color: #92400e; margin-bottom: 8px; text-transform: uppercase; }
-      .findings-text { font-size: 10px; color: #78350f; line-height: 1.5; white-space: pre-wrap; }
-      
+      .findings-text { font-size: 10px; color: #78350f; line-height: 1.5; }
       .report-footer { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--gray-200); text-align: center; }
       .footer-text { font-size: 9px; color: var(--secondary); }
       .footer-firm { font-size: 12px; font-weight: 600; color: var(--primary); }
-      
+      .signature-block { display: flex; justify-content: flex-end; align-items: flex-end; gap: 60px; margin-top: 50px; padding-top: 20px; border-top: 1px solid var(--gray-200); }
+      .signature-section { text-align: center; min-width: 160px; }
+      .signature-image { height: 65px; width: auto; max-width: 160px; object-fit: contain; }
+      .signature-line { width: 160px; height: 35px; border-bottom: 1.5px solid #333; }
+      .signature-label { font-size: 9px; font-weight: 600; color: var(--primary); margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+      .signature-meta { font-size: 9px; color: var(--secondary); margin-top: 4px; }
+      .signature-date { margin-left: 8px; }
+      .stamp-section { width: 90px; height: 90px; display: flex; align-items: center; justify-content: center; }
+      .stamp-image { width: 85px; height: 85px; object-fit: contain; opacity: 0.9; }
+      .stamp-placeholder { width: 85px; height: 85px; border: 2px dashed var(--gray-300); }
       .text-right { text-align: right; }
       @media print { body { -webkit-print-color-adjust: exact; } }
 
   body
+    - var primaryColor = (firm && firm.settings && firm.settings.primaryColor) ? firm.settings.primaryColor : '#1a365d';
+    - var primaryLight = primaryColor + '20';
+    - var getClientName = function(c) { if (!c) return 'N/A'; return c.companyName || (c.firstName + ' ' + c.lastName); };
+    - var getAssignedToName = function(a) { if (!a) return 'N/A'; return a.firstName + ' ' + a.lastName; };
+    - var getPartyName = function(p) { if (!p) return 'N/A'; if (typeof p === 'object') return p.name || (p.firstName + ' ' + p.lastName); return p; };
+    - var getLandSizeText = function(ls) { if (!ls) return 'N/A'; return (ls.value || '') + ' ' + (ls.unit || ''); };
+    - var getPaymentProgress = function(ps) { if (!ps || !ps.length) return 0; var paid = 0; for (var i = 0; i < ps.length; i++) { if (ps[i].status === 'paid') paid++; } return Math.round((paid / ps.length) * 100); };
+    - var getTotalAmount = function(pd) { return pd.purchasePrice || pd.rentAmount || 0; };
+    - var getBalance = function(pd) { return (pd.purchasePrice || pd.rentAmount || 0) - (pd.amountPaid || 0); };
+    - var clientName = getClientName(matter.client);
+    - var assignedToName = getAssignedToName(matter.assignedTo);
+    - var statusClass = matter.status === 'completed' ? 'status-completed' : 'status-active';
+    - if (matter.status === 'pending') statusClass = 'status-pending';
+    - var paymentProgress = getPaymentProgress(propertyDetails ? propertyDetails.paymentSchedule : null);
+    - var totalAmount = getTotalAmount(propertyDetails || {});
+    - var balanceAmount = getBalance(propertyDetails || {});
+
+    style !{':root { --primary: ' + primaryColor + '; --primary-light: ' + primaryLight + '; }'}
+
     .report-wrapper
-      //- Header
       .report-header
         .firm-brand
-          .firm-logo P
+          if firm && firm.settings && firm.settings.firmLogo
+            img.firm-logo.img(src=firm.settings.firmLogo, alt=firm.name)
+          else
+            .firm-logo #{firm && firm.name ? firm.name.charAt(0) : 'L'}
           .firm-details
             h1 #{firm && firm.name ? firm.name : 'Law Firm'}
             p Barristers, Solicitors & Advocates
@@ -107,20 +128,18 @@ html(lang="en")
           .report-title PROPERTY REPORT
           .report-date Generated: #{new Date().toLocaleDateString('en-GB')}
       
-      //- Matter Info
       .matter-info
         .matter-header
           div
             .matter-number #{matter.matterNumber}
             .matter-type #{matter.natureOfMatter ? matter.natureOfMatter.replace(/_/g, ' ') : 'Property'}
           div
-            - var statusClass = 'status-' + (matter.status === 'active' ? 'active' : matter.status === 'completed' ? 'completed' : 'pending')
             span.status-badge(class=statusClass) #{matter.status || 'Active'}
         
         .matter-details-grid
           .detail-item
             .detail-label Client
-            .detail-value #{matter.client ? matter.client.firstName + ' ' + matter.client.lastName : 'N/A'}
+            .detail-value #{clientName}
           .detail-item
             .detail-label Matter Type
             .detail-value #{matter.matterType ? matter.matterType.replace(/_/g, ' ').toUpperCase() : 'Property'}
@@ -129,9 +148,8 @@ html(lang="en")
             .detail-value #{matter.dateOpened ? new Date(matter.dateOpened).toLocaleDateString('en-GB') : 'N/A'}
           .detail-item
             .detail-label Assigned To
-            .detail-value #{matter.assignedTo ? matter.assignedTo.firstName + ' ' + matter.assignedTo.lastName : 'N/A'}
+            .detail-value #{assignedToName}
       
-      //- Transaction Details
       .section
         .section-title TRANSACTION DETAILS
         
@@ -143,10 +161,10 @@ html(lang="en")
               .info-value #{propertyDetails.transactionType ? propertyDetails.transactionType.replace(/_/g, ' ').toUpperCase() : 'N/A'}
             .info-row
               .info-label Purchase Price
-              .info-value ₦#{propertyDetails.purchasePrice ? propertyDetails.purchasePrice.toLocaleString('en-NG') : 'N/A'}
+              .info-value N#{propertyDetails.purchasePrice ? propertyDetails.purchasePrice.toLocaleString('en-NG') : 'N/A'}
             .info-row
               .info-label Rent Amount
-              .info-value ₦#{propertyDetails.rentAmount ? propertyDetails.rentAmount.toLocaleString('en-NG') : 'N/A'}
+              .info-value N#{propertyDetails.rentAmount ? propertyDetails.rentAmount.toLocaleString('en-NG') : 'N/A'}
             .info-row
               .info-label Payment Terms
               .info-value #{propertyDetails.paymentTerms ? propertyDetails.paymentTerms.replace(/_/g, ' ').toUpperCase() : 'N/A'}
@@ -155,18 +173,17 @@ html(lang="en")
             .info-card-title Financial Summary
             .info-row
               .info-label Total Amount
-              .info-value ₦#{(propertyDetails.purchasePrice || propertyDetails.rentAmount || 0).toLocaleString('en-NG')}
+              .info-value N#{totalAmount.toLocaleString('en-NG')}
             .info-row
               .info-label Amount Paid
-              .info-value ₦#{(propertyDetails.amountPaid || 0).toLocaleString('en-NG')}
+              .info-value N#{(propertyDetails.amountPaid || 0).toLocaleString('en-NG')}
             .info-row
               .info-label Balance
-              .info-value ₦#{((propertyDetails.purchasePrice || propertyDetails.rentAmount || 0) - (propertyDetails.amountPaid || 0)).toLocaleString('en-NG')}
+              .info-value N#{balanceAmount.toLocaleString('en-NG')}
             .info-row
               .info-label Payment Progress
-              .info-value #{propertyDetails.paymentSchedule ? Math.round((propertyDetails.paymentSchedule.filter(p => p.status === 'paid').length / propertyDetails.paymentSchedule.length) * 100) : 0}%
+              .info-value #{paymentProgress}%
       
-      //- Properties
       if propertyDetails.properties && propertyDetails.properties.length > 0
         .section
           .section-title PROPERTY DETAILS
@@ -185,10 +202,9 @@ html(lang="en")
                   td #{prop.propertyType ? prop.propertyType.replace(/_/g, ' ').toUpperCase() : 'N/A'}
                   td #{prop.address || 'N/A'}
                   td #{prop.titleDocumentType || 'N/A'}
-                  td #{prop.landSize ? prop.landSize.value + ' ' + prop.landSize.unit : 'N/A'}
-                  td.amount ₦#{(prop.amount || 0).toLocaleString('en-NG')}
+                  td #{getLandSizeText(prop.landSize)}
+                  td.amount N#{(prop.amount || 0).toLocaleString('en-NG')}
       
-      //- Title Search & Due Diligence
       if propertyDetails.titleSearch
         .section
           .section-title DUE DILIGENCE - TITLE SEARCH
@@ -225,23 +241,21 @@ html(lang="en")
                 .info-value #{propertyDetails.governorsConsent && propertyDetails.governorsConsent.isRequired ? 'YES' : 'N/A'}
               .info-row
                 .info-label Status
-                - var govStatus = propertyDetails.governorsConsent ? propertyDetails.governorsConsent.status || 'pending' : 'N/A'
-                .info-value #{govStatus.replace(/-/g, ' ').toUpperCase()}
+                .info-value #{propertyDetails.governorsConsent ? (propertyDetails.governorsConsent.status || 'pending').replace(/-/g, ' ').toUpperCase() : 'N/A'}
               .info-row
                 .info-label Reference No
                 .info-value #{propertyDetails.governorsConsent ? propertyDetails.governorsConsent.referenceNumber || 'N/A' : 'N/A'}
-        
-        if propertyDetails.titleSearch.findings
-          .findings-box
-            .findings-title TITLE SEARCH FINDINGS
-            .findings-text #{propertyDetails.titleSearch.findings}
-        
-        if propertyDetails.titleSearch.encumbrances && propertyDetails.titleSearch.encumbrances.length > 0
-          .findings-box
-            .findings-title ENCUMBRANCES
-            .findings-text #{propertyDetails.titleSearch.encumbrances.join(', ')}
+          
+          if propertyDetails.titleSearch.findings
+            .findings-box
+              .findings-title TITLE SEARCH FINDINGS
+              .findings-text #{propertyDetails.titleSearch.findings}
+          
+          if propertyDetails.titleSearch.encumbrances && propertyDetails.titleSearch.encumbrances.length > 0
+            .findings-box
+              .findings-title ENCUMBRANCES
+              .findings-text #{propertyDetails.titleSearch.encumbrances.join(', ')}
       
-      //- Physical Inspection
       if propertyDetails.physicalInspection
         .section
           .section-title PHYSICAL INSPECTION
@@ -261,7 +275,6 @@ html(lang="en")
               .findings-title INSPECTION FINDINGS
               .findings-text #{propertyDetails.physicalInspection.findings}
       
-      //- Legal Documents Status
       .section
         .section-title LEGAL DOCUMENTS STATUS
         
@@ -272,8 +285,7 @@ html(lang="en")
               .info-row
                 .info-label Status
                 - var cosStatus = propertyDetails.contractOfSale.status || 'draft'
-                - var cosClass = 'status-' + (cosStatus === 'completed' || cosStatus === 'executed' ? 'completed' : 'draft')
-                span.status-badge(class=cosClass) #{cosStatus.toUpperCase()}
+                span.status-badge(class='status-' + (cosStatus === 'completed' || cosStatus === 'executed' ? 'completed' : 'draft')) #{cosStatus.toUpperCase()}
               .info-row
                 .info-label Execution Date
                 .info-value #{propertyDetails.contractOfSale.executionDate ? new Date(propertyDetails.contractOfSale.executionDate).toLocaleDateString('en-GB') : 'N/A'}
@@ -287,8 +299,7 @@ html(lang="en")
               .info-row
                 .info-label Status
                 - var doaStatus = propertyDetails.deedOfAssignment.status || 'pending'
-                - var doaClass = 'status-' + (doaStatus === 'registered' ? 'completed' : doaStatus === 'executed' ? 'executed' : 'pending')
-                span.status-badge(class=doaClass) #{doaStatus.toUpperCase()}
+                span.status-badge(class='status-' + (doaStatus === 'registered' ? 'completed' : doaStatus === 'executed' ? 'executed' : 'pending')) #{doaStatus.toUpperCase()}
               .info-row
                 .info-label Execution Date
                 .info-value #{propertyDetails.deedOfAssignment.executionDate ? new Date(propertyDetails.deedOfAssignment.executionDate).toLocaleDateString('en-GB') : 'N/A'}
@@ -296,7 +307,6 @@ html(lang="en")
                 .info-label Registration Date
                 .info-value #{propertyDetails.deedOfAssignment.registrationDate ? new Date(propertyDetails.deedOfAssignment.registrationDate).toLocaleDateString('en-GB') : 'N/A'}
       
-      //- Payment Schedule
       if propertyDetails.paymentSchedule && propertyDetails.paymentSchedule.length > 0
         .section
           .section-title PAYMENT SCHEDULE
@@ -313,13 +323,11 @@ html(lang="en")
                 tr
                   td #{payment.description || 'Payment #' + payment.installmentNumber}
                   td #{payment.dueDate ? new Date(payment.dueDate).toLocaleDateString('en-GB') : 'N/A'}
-                  td.amount ₦#{(payment.amount || 0).toLocaleString('en-NG')}
+                  td.amount N#{(payment.amount || 0).toLocaleString('en-NG')}
                   td
                     - var payStatus = payment.status === 'paid' ? 'paid' : (payment.status === 'pending' && new Date(payment.dueDate) < new Date() ? 'overdue' : 'pending')
-                    - var payClass = 'status-' + payStatus
-                    span.status-badge(class=payClass) #{payment.status || 'Pending'}
+                    span.status-badge(class='status-' + payStatus) #{payment.status || 'Pending'}
       
-      //- Conditions
       if propertyDetails.conditions && propertyDetails.conditions.length > 0
         .section
           .section-title CONDITIONS & OBLIGATIONS
@@ -328,10 +336,9 @@ html(lang="en")
             each condition in propertyDetails.conditions
               .checklist-item
                 - var condStatus = condition.status === 'met' ? 'completed' : (condition.status === 'pending' ? 'pending' : 'missing')
-                .checklist-icon(class=condStatus) #{condition.status === 'met' ? '✓' : condition.status === 'pending' ? '!' : '✗'}
+                .checklist-icon(class=condStatus) #{condition.status === 'met' ? 'Y' : condition.status === 'pending' ? '!' : 'X'}
                 .checklist-label #{condition.condition || condition.description || 'Condition'}
       
-      //- Parties
       .section
         .section-title PARTIES INVOLVED
         
@@ -342,14 +349,14 @@ html(lang="en")
               if propertyDetails.vendor
                 .info-row
                   .info-label Name
-                  .info-value #{propertyDetails.vendor.name || 'N/A'}
+                  .info-value #{getPartyName(propertyDetails.vendor)}
                 .info-row
                   .info-label Contact
                   .info-value #{propertyDetails.vendor.contact || 'N/A'}
               if propertyDetails.purchaser
                 .info-row
                   .info-label Name
-                  .info-value #{propertyDetails.purchaser.name || 'N/A'}
+                  .info-value #{getPartyName(propertyDetails.purchaser)}
                 .info-row
                   .info-label Contact
                   .info-value #{propertyDetails.purchaser.contact || 'N/A'}
@@ -360,19 +367,35 @@ html(lang="en")
               if propertyDetails.landlord
                 .info-row
                   .info-label Name
-                  .info-value #{propertyDetails.landlord.name || 'N/A'}
+                  .info-value #{getPartyName(propertyDetails.landlord)}
                 .info-row
                   .info-label Contact
                   .info-value #{propertyDetails.landlord.contact || 'N/A'}
               if propertyDetails.tenant
                 .info-row
                   .info-label Name
-                  .info-value #{propertyDetails.tenant.name || 'N/A'}
+                  .info-value #{getPartyName(propertyDetails.tenant)}
                 .info-row
                   .info-label Contact
                   .info-value #{propertyDetails.tenant.contact || 'N/A'}
       
-      //- Footer
+      .signature-block
+        .signature-section
+          if firm && firm.settings && firm.settings.firmSignature
+            img.signature-image(src=firm.settings.firmSignature, alt="Authorized Signature")
+          else
+            .signature-line
+          .signature-label AUTHORIZED SIGNATORY
+          .signature-meta
+            .signature-name Principal Partner
+            .signature-date Date: _______________
+        
+        .stamp-section
+          if firm && firm.settings && firm.settings.firmStamp
+            img.stamp-image(src=firm.settings.firmStamp, alt="Official Stamp")
+          else
+            .stamp-placeholder
+      
       .report-footer
-        .footer-text This is a computer-generated report and does not require a signature.
+        .footer-text This is a computer-generated report.
         .footer-firm #{firm && firm.name ? firm.name : 'Law Firm'}

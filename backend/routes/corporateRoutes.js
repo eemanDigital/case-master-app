@@ -33,6 +33,18 @@ corporateRouter.get(
 );
 
 // ============================================
+// CORPORATE REPORT PDF
+// ============================================
+
+/**
+ * @route   GET /api/corporate-matters/:matterId/report
+ * @desc    Generate corporate matter report PDF
+ * @access  Private
+ * @example GET /api/corporate-matters/123abc/report
+ */
+corporateRouter.get("/:matterId/report", corporateController.generateCorporateReportPdf);
+
+// ============================================
 // CORPORATE MATTERS LISTING & SEARCH
 // ============================================
 

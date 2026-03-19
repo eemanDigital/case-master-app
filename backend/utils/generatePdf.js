@@ -1,4 +1,4 @@
-const pdf = require("pdf-creator-node");
+const puppeteer = require("puppeteer");
 const path = require("path");
 const pug = require("pug");
 const fs = require("fs");
@@ -33,7 +33,7 @@ const cleanupOldPdfs = () => {
 
 cleanupOldPdfs();
 
-exports.generatePdf = (dataValue, res, templateFile, fileOutPath) => {
+exports.generatePdf = async (dataValue, res, templateFile, fileOutPath) => {
   const templatePath = path.isAbsolute(templateFile) 
     ? templateFile 
     : path.resolve(__dirname, templateFile);
@@ -52,45 +52,70 @@ exports.generatePdf = (dataValue, res, templateFile, fileOutPath) => {
     html = pug.renderFile(templatePath, dataValue);
   } catch (err) {
     console.error("Pug render error:", err);
-    return res.status(500).json({ error: err.message });
+    if (!res.headersSent) {
+      return res.status(500).json({ error: err.message });
+    }
+    return;
   }
   
-  const firm = dataValue?.firm || {};
-  const options = {
-    format: "A4",
-    orientation: "portrait",
-    border: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" },
-    header: {
-      height: "15mm",
-      contents: `<div style="text-align: center; font-size: 10pt; color: #1a365d; border-bottom: 2px solid #1a365d; padding-bottom: 8px; font-weight: 600;">${firm.name || 'Law Firm'}</div>`
-    },
-    footer: {
-      height: "12mm",
-      contents: `<div style="text-align: center; font-size: 9pt; color: #777; border-top: 1px solid #ddd; padding-top: 6px;">Page <span style="font-weight: bold;">{{page}}</span> of <span style="font-weight: bold;">{{pages}}</span></div>`
-    },
-    timeout: 180000,
-  };
-
-  const document = {
-    html: html,
-    data: dataValue,
-    path: outputPath,
-  };
-
-  const pdfTimeout = setTimeout(() => {
-    console.error("PDF creation timeout");
-    res.status(500).json({ error: "PDF generation timeout. Please try again." });
-  }, 180000);
-
-  pdf.create(document, options)
-    .then((result) => {
-      clearTimeout(pdfTimeout);
-      console.log("PDF created:", result);
-      res.sendFile(outputPath);
-    })
-    .catch((error) => {
-      clearTimeout(pdfTimeout);
-      console.error("PDF creation error:", error);
-      res.status(500).json({ error: "PDF generation failed: " + error.message });
+  const firm = dataValue && dataValue.firm ? dataValue.firm : {};
+  const firmName = firm.name || 'Law Firm';
+  
+  let browser;
+  try {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
     });
+    
+    const page = await browser.newPage();
+    
+    await page.setContent(html, {
+      waitUntil: ["networkidle0", "domcontentloaded"]
+    });
+    
+    await page.emulateMediaType("screen");
+    
+    const pdfBuffer = await page.pdf({
+      format: "A4",
+      printBackground: true,
+      margin: {
+        top: "15mm",
+        right: "10mm",
+        bottom: "15mm",
+        left: "10mm"
+      },
+      displayHeaderFooter: true,
+      headerTemplate: `
+        <div style="width: 100%; text-align: center; font-size: 10px; font-family: Arial, sans-serif; color: #1a365d; border-bottom: 2px solid #1a365d; padding: 8px 0;">
+          <strong>${firmName}</strong>
+        </div>
+      `,
+      footerTemplate: `
+        <div style="width: 100%; text-align: center; font-size: 9px; font-family: Arial, sans-serif; color: #666; border-top: 1px solid #ddd; padding: 6px 0;">
+          Page <span class="pageNumber"></span> of <span class="totalPages"></span> | ${firmName}
+        </div>
+      `
+    });
+    
+    fs.writeFileSync(outputPath, pdfBuffer);
+    
+    console.log("PDF created successfully at:", outputPath);
+    
+    if (!res.headersSent) {
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader("Content-Disposition", `attachment; filename="${path.basename(outputPath)}"`);
+      res.send(pdfBuffer);
+    }
+    
+  } catch (error) {
+    console.error("PDF creation error:", error);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "PDF generation failed: " + error.message });
+    }
+  } finally {
+    if (browser) {
+      await browser.close();
+    }
+  }
 };
