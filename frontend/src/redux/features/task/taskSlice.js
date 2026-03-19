@@ -761,10 +761,10 @@ const taskSlice = createSlice({
 
       // ── history & access ────────────────────────────────────
       .addCase(fetchTaskHistory.fulfilled, (state, action) => {
-        state.taskHistory = action.payload.data || [];
+        state.taskHistory = action.payload || [];
       })
       .addCase(checkTaskAccess.fulfilled, (state, action) => {
-        state.taskAccess = action.payload.data;
+        state.taskAccess = action.payload;
       })
 
       // ── reminders ───────────────────────────────────────────

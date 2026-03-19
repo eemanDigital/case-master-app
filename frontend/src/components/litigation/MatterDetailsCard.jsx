@@ -30,6 +30,20 @@ const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
     return judges.map((j) => j.name).join(", ");
   };
 
+  const formatAccountOfficers = () => {
+    if (!matter?.accountOfficer) return "-";
+    const officers = Array.isArray(matter.accountOfficer) 
+      ? matter.accountOfficer 
+      : [matter.accountOfficer];
+    if (officers.length === 0) return "-";
+    return officers.map((officer) => {
+      if (officer.firstName || officer.lastName) {
+        return `${officer.firstName || ""} ${officer.lastName || ""}`.trim();
+      }
+      return officer.label || officer.name || "Unknown";
+    }).join(", ");
+  };
+
   return (
     <Card
       title={

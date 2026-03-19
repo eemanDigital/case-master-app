@@ -9,6 +9,7 @@ import {
   createLitigationDetails,
   selectActionLoading,
 } from "../../redux/features/litigation/litigationSlice";
+import { getMatter } from "../../redux/features/matter/matterSlice";
 
 const CreateLitigation = () => {
   const navigate = useNavigate();
@@ -16,11 +17,10 @@ const CreateLitigation = () => {
   const dispatch = useDispatch();
   const { matterId } = useParams();
   const loading = useSelector(selectActionLoading);
+  const { currentMatter, isLoading: matterLoading } = useSelector((state) => state.matter);
 
-  // Check if matterId exists, if not redirect to matter creation
   useEffect(() => {
     if (!matterId) {
-      // Redirect to matter creation with return path
       const returnPath = `/dashboard/matters/litigation/:matterId/create`;
       navigate(
         `/dashboard/matters/create?type=litigation&returnTo=${encodeURIComponent(returnPath)}`,
@@ -28,8 +28,10 @@ const CreateLitigation = () => {
           state: { from: location.pathname },
         },
       );
+      return;
     }
-  }, [matterId, navigate, location.pathname]);
+    dispatch(getMatter(matterId));
+  }, [matterId, navigate, location.pathname, dispatch]);
 
   const handleSubmit = async (values) => {
     try {
@@ -53,16 +55,19 @@ const CreateLitigation = () => {
     }
   };
 
-  // If no matterId, show loading while redirecting
-  if (!matterId) {
-    return <LoadingScreen tip="Redirecting to matter creation..." fullScreen />;
+  if (!matterId || matterLoading) {
+    return <LoadingScreen tip="Loading matter details..." fullScreen />;
+  }
+
+  if (!currentMatter) {
+    return <LoadingScreen tip="Fetching matter data..." fullScreen />;
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader
         title="Create Litigation Details"
-        subtitle="Add litigation-specific information to the matter"
+        subtitle={`Adding litigation details for ${currentMatter.matterNumber || "Matter"}`}
         showBack
         backPath="/dashboard/matters/litigation"
       />
@@ -73,6 +78,7 @@ const CreateLitigation = () => {
             mode="create"
             onSubmit={handleSubmit}
             loading={loading}
+            matterData={currentMatter}
           />
         </div>
       </div>

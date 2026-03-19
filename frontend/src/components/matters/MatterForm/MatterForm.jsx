@@ -238,22 +238,7 @@ const MatterForm = memo(
           officeFileNo: allFormValues.officeFileNo?.trim(),
 
           // Matter type specific details - collect all fields based on matter type
-          ...(selectedMatterType === "litigation" && {
-            suitNo: allFormValues.suitNo,
-            courtName: allFormValues.courtName,
-            courtNo: allFormValues.courtNo,
-            courtLocation: allFormValues.courtLocation,
-            state: allFormValues.state,
-            judgeName: allFormValues.judgeName,
-            caseStage: allFormValues.caseStage,
-            filingDate: allFormValues.filingDate ? allFormValues.filingDate.toISOString() : undefined,
-            nextHearingDate: allFormValues.nextHearingDate ? allFormValues.nextHearingDate.toISOString() : undefined,
-            lastHearingDate: allFormValues.lastHearingDate ? allFormValues.lastHearingDate.toISOString() : undefined,
-            litigationNotes: allFormValues.litigationNotes,
-            firstParty: allFormValues.firstParty,
-            secondParty: allFormValues.secondParty,
-          }),
-
+          // NOTE: For litigation, all detailed info goes to LitigationDetail (not Matter)
           ...(selectedMatterType === "corporate" && {
             companyName: allFormValues.companyName,
             registrationNumber: allFormValues.registrationNumber,

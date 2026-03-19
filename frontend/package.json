@@ -8,6 +8,8 @@
     "build": "vite build",
     "test": "vitest",
     "test:ui": "vitest --ui",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
@@ -42,6 +44,7 @@
   },
   "devDependencies": {
     "@hookform/devtools": "^4.3.1",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/aspect-ratio": "^0.4.2",
     "@tailwindcss/forms": "^0.5.11",
     "@tailwindcss/typography": "^0.5.19",
@@ -58,10 +61,16 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
     "jsdom": "^24.1.1",
+    "msw": "^2.12.13",
     "postcss": "^8.4.41",
     "redux-mock-store": "^1.5.4",
     "tailwindcss": "^3.4.10",
     "vite": "^5.1.4",
     "vitest": "^2.0.5"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

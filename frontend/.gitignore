@@ -24,3 +24,13 @@ dist-ssr
 *.sw?
 .env
 
+# Test artifacts
+playwright-report/
+test-results/
+playwright/.cache/
+test-results/
+coverage/
+
+# OS files
+Thumbs.db
+
