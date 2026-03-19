@@ -35,13 +35,21 @@ html(lang="en")
       .matter-number { font-size: 16px; font-weight: 700; color: var(--primary); }
       .matter-type { display: inline-block; padding: 3px 10px; background: var(--primary); color: white; border-radius: 12px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
       .matter-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+      .matter-grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
       .matter-item { font-size: 11px; }
       .matter-label { color: var(--secondary); font-weight: 500; display: block; }
       .matter-value { color: var(--gray-900); font-weight: 600; }
       .status-badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 600; text-transform: uppercase; }
-      .status-active, .status-completed { background: #d1fae5; color: #065f46; }
+      .status-active { background: #d1fae5; color: #065f46; }
       .status-pending { background: #fef3c7; color: #92400e; }
-      .status-on_hold, .status-on-hold { background: #fee2e2; color: #991b1b; }
+      .status-completed { background: #d1fae5; color: #065f46; }
+      .status-closed { background: #f1f5f9; color: #475569; }
+      .status-won { background: #d1fae5; color: #065f46; }
+      .status-lost { background: #fee2e2; color: #991b1b; }
+      .status-in-progress { background: #dbeafe; color: #1e40af; }
+      .status-cancelled { background: #f1f5f9; color: #64748b; }
+      .status-on-hold { background: #fee2e2; color: #991b1b; }
+      .status-overdue { background: #fee2e2; color: #991b1b; }
       .section { margin-bottom: 20px; }
       .section-title { font-size: 14px; font-weight: 600; color: var(--gray-900); margin: 20px 0 15px 0; padding-bottom: 8px; border-bottom: 2px solid var(--primary); }
       .info-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
@@ -65,6 +73,9 @@ html(lang="en")
       .terms-box { background: var(--gray-50); border-left: 4px solid var(--primary); border-radius: 0 8px 8px 0; padding: 16px; margin: 15px 0; }
       .terms-title { font-size: 12px; font-weight: 600; color: var(--primary); margin-bottom: 8px; }
       .terms-text { font-size: 11px; color: var(--gray-700); line-height: 1.6; }
+      .highlight-box { background: #fffbeb; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px; margin: 10px 0; }
+      .highlight-title { font-size: 11px; font-weight: 600; color: #92400e; margin-bottom: 6px; }
+      .tag { display: inline-block; padding: 2px 8px; background: var(--primary-light); color: var(--primary); border-radius: 4px; font-size: 9px; font-weight: 600; margin-right: 4px; margin-bottom: 4px; }
       .doc-footer { margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--gray-200); text-align: center; }
       .footer-text { font-size: 11px; color: var(--secondary); }
       .footer-firm { font-size: 14px; font-weight: 600; color: var(--primary); }
@@ -80,19 +91,59 @@ html(lang="en")
       .stamp-placeholder { width: 85px; height: 85px; border: 2px dashed var(--gray-300); }
       .text-right { text-align: right; }
       @media print { body { -webkit-print-color-adjust: exact; } }
+  - var primaryColor = (firm && firm.settings && firm.settings.primaryColor) ? firm.settings.primaryColor : '#1a365d';
+  - var primaryLight = primaryColor + '20';
+  style !{':root { --primary: ' + primaryColor + '; --primary-light: ' + primaryLight + '; }'}
 
   body
-    - var primaryColor = (firm && firm.settings && firm.settings.primaryColor) ? firm.settings.primaryColor : '#1a365d';
-    - var primaryLight = primaryColor + '20';
-    - var getClientName = function(c) { if (!c) return 'N/A'; return c.companyName || (c.firstName + ' ' + c.lastName); };
-    - var getOfficerNames = function(o) { if (!o) return 'N/A'; if (Array.isArray(o)) { var names = []; for (var i = 0; i < o.length; i++) { names.push(o[i].firstName + ' ' + o[i].lastName); } return names.join(', '); } return o.firstName + ' ' + o.lastName; };
+
+    - function getClientName(c) {
+    -   if (!c) return 'N/A';
+    -   return c.companyName || (c.firstName + ' ' + c.lastName);
+    - }
+
+    - function getOfficerNames(o) {
+    -   if (!o) return 'N/A';
+    -   if (Array.isArray(o)) {
+    -     var names = [];
+    -     for (var i = 0; i < o.length; i++) {
+    -       names.push(o[i].firstName + ' ' + o[i].lastName);
+    -     }
+    -     return names.join(', ');
+    -   }
+    -   return o.firstName + ' ' + o.lastName;
+    - }
+
+    - function naira(amount) {
+    -   if (!amount && amount !== 0) return 'N/A';
+    -   return '\u20A6' + amount.toLocaleString('en-NG');
+    - }
+
+    - function titleCase(str) {
+    -   if (!str) return 'N/A';
+    -   return str.replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+    - }
+
+    - function statusCls(status) {
+    -   if (status === 'active') return 'status-active';
+    -   if (status === 'pending') return 'status-pending';
+    -   if (status === 'completed') return 'status-completed';
+    -   if (status === 'closed') return 'status-closed';
+    -   if (status === 'won') return 'status-won';
+    -   if (status === 'lost') return 'status-lost';
+    -   if (status === 'in-progress') return 'status-in-progress';
+    -   if (status === 'in_progress') return 'status-in-progress';
+    -   if (status === 'cancelled') return 'status-cancelled';
+    -   if (status === 'on-hold') return 'status-on-hold';
+    -   if (status === 'on_hold') return 'status-on-hold';
+    -   if (status === 'overdue') return 'status-overdue';
+    -   return 'status-pending';
+    - }
+
     - var clientName = getClientName(matter.client);
     - var officers = getOfficerNames(matter.accountOfficer);
-    - var statusClass = matter.status === 'completed' ? 'status-completed' : 'status-active';
-    - if (matter.status === 'pending') statusClass = 'status-pending';
-    - else if (matter.status === 'on_hold' || matter.status === 'on-hold') statusClass = 'status-on_hold';
-
-    style !{':root { --primary: ' + primaryColor + '; --primary-light: ' + primaryLight + '; }'}
+    - var matterStatusClass = statusCls(matter.status);
+    - var dealValueAmount = corporateDetails && corporateDetails.dealValue && corporateDetails.dealValue.amount ? corporateDetails.dealValue.amount : 0;
 
     .document-wrapper
       .doc-header
@@ -114,23 +165,42 @@ html(lang="en")
             .matter-number #{matter.matterNumber}
             .matter-type CORPORATE
           div
-            span.status-badge(class=statusClass) #{matter.status || 'Active'}
+            span.status-badge(class=matterStatusClass) #{matter.status ? titleCase(matter.status) : 'Active'}
         
         .matter-grid
           .matter-item
             span.matter-label Client
             span.matter-value #{clientName}
           .matter-item
-            span.matter-label Transaction Type
-            span.matter-value #{corporateDetails.transactionType ? corporateDetails.transactionType.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : 'N/A'}
+            span.matter-label Matter Title
+            span.matter-value #{matter.title || 'N/A'}
           .matter-item
             span.matter-label Date Opened
             span.matter-value #{matter.dateOpened ? new Date(matter.dateOpened).toLocaleDateString('en-GB') : 'N/A'}
           .matter-item
             span.matter-label Account Officer
             span.matter-value #{officers}
+        
+        .matter-grid-3
+          .matter-item
+            span.matter-label Status
+            span.matter-value #{matter.status ? titleCase(matter.status) : 'N/A'}
+          .matter-item
+            span.matter-label Priority
+            span.matter-value #{matter.priority ? titleCase(matter.priority) : 'N/A'}
+          .matter-item
+            span.matter-label Nature of Matter
+            span.matter-value #{matter.natureOfMatter ? titleCase(matter.natureOfMatter) : 'N/A'}
+        
+        .matter-grid-3
+          .matter-item
+            span.matter-label Expected Closure Date
+            span.matter-value #{matter.expectedClosureDate ? new Date(matter.expectedClosureDate).toLocaleDateString('en-GB') : 'N/A'}
+          .matter-item
+            span.matter-label Actual Closure Date
+            span.matter-value #{matter.actualClosureDate ? new Date(matter.actualClosureDate).toLocaleDateString('en-GB') : 'N/A'}
       
-      if corporateDetails.companyInformation
+      if corporateDetails
         .section
           .section-title COMPANY INFORMATION
           
@@ -139,128 +209,256 @@ html(lang="en")
               .info-card-title Company Details
               .info-row
                 .info-label Company Name
-                .info-value #{corporateDetails.companyInformation.companyName || 'N/A'}
+                .info-value #{corporateDetails.companyName || 'N/A'}
               .info-row
                 .info-label Registration Number
-                .info-value #{corporateDetails.companyInformation.registrationNumber || 'N/A'}
+                .info-value #{corporateDetails.registrationNumber || 'N/A'}
               .info-row
                 .info-label Company Type
-                .info-value #{corporateDetails.companyInformation.companyType || 'N/A'}
+                .info-value #{corporateDetails.companyType ? titleCase(corporateDetails.companyType) : 'N/A'}
+              .info-row
+                .info-label Registration Date
+                .info-value #{corporateDetails.registrationDate ? new Date(corporateDetails.registrationDate).toLocaleDateString('en-GB') : 'N/A'}
+              .info-row
+                .info-label Incorporation Jurisdiction
+                .info-value #{corporateDetails.incorporationJurisdiction || 'N/A'}
             
-            .info-card
-              .info-card-title Location & Contact
-              .info-row
-                .info-label Address
-                .info-value #{corporateDetails.companyInformation.registeredAddress || 'N/A'}
-              .info-row
-                .info-label State
-                .info-value #{corporateDetails.companyInformation.state || 'N/A'}
-              .info-row
-                .info-label Industry
-                .info-value #{corporateDetails.companyInformation.industry || 'N/A'}
-      
-      if corporateDetails.transactionType || corporateDetails.dealValue
-        .section
-          .section-title TRANSACTION DETAILS
-          
-          .info-grid-2
             .info-card
               .info-card-title Transaction Information
               .info-row
                 .info-label Transaction Type
-                .info-value #{corporateDetails.transactionType ? corporateDetails.transactionType.replace(/-/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); }) : 'N/A'}
+                .info-value #{corporateDetails.transactionType ? titleCase(corporateDetails.transactionType) : 'N/A'}
+              if corporateDetails.transactionType === 'other' && corporateDetails.otherTransactionType
+                .info-row
+                  .info-label Other Type
+                  .info-value #{corporateDetails.otherTransactionType}
               .info-row
-                .info-label Jurisdiction
-                .info-value #{corporateDetails.jurisdiction || 'Nigeria'}
-              .info-row
-                .info-label Expected Closing
+                .info-label Expected Closing Date
                 .info-value #{corporateDetails.expectedClosingDate ? new Date(corporateDetails.expectedClosingDate).toLocaleDateString('en-GB') : 'N/A'}
+              .info-row
+                .info-label Actual Closing Date
+                .info-value #{corporateDetails.actualClosingDate ? new Date(corporateDetails.actualClosingDate).toLocaleDateString('en-GB') : 'N/A'}
+        
+        if corporateDetails.parties && corporateDetails.parties.length > 0
+          .section
+            .section-title PARTIES INVOLVED
             
-            .info-card
-              .info-card-title Financial
-              .info-row
-                .info-label Deal Value
-                .info-value N#{(corporateDetails.dealValue || 0).toLocaleString('en-NG')}
-              .info-row
-                .info-label Consideration
-                .info-value #{corporateDetails.consideration || 'N/A'}
-              .info-row
-                .info-label Filing Fee
-                .info-value N#{(corporateDetails.filingFee || 0).toLocaleString('en-NG')}
-      
-      if corporateDetails.shareholders && corporateDetails.shareholders.length > 0
-        .section
-          .section-title SHAREHOLDERS
-          
-          table
-            thead
-              tr
-                th Shareholder Name
-                th Share Type
-                th Number of Shares
-                th Percentage
-            tbody
-              each shareholder in corporateDetails.shareholders
+            table
+              thead
                 tr
-                  td #{shareholder.name || 'N/A'}
-                  td #{shareholder.shareType || 'Ordinary'}
-                  td.amount #{shareholder.numberOfShares ? shareholder.numberOfShares.toLocaleString() : 'N/A'}
-                  td.amount #{shareholder.percentage ? shareholder.percentage + '%' : 'N/A'}
-      
-      if corporateDetails.directors && corporateDetails.directors.length > 0
-        .section
-          .section-title DIRECTORS
-          
-          table
-            thead
-              tr
-                th Name
-                th Designation
-                th Appointment Date
-                th Status
-            tbody
-              each director in corporateDetails.directors
+                  th Name
+                  th Entity Type
+                  th Registration Number
+                  th Jurisdiction
+                  th Role
+              tbody
+                each party in corporateDetails.parties
+                  tr
+                    td #{party.name || 'N/A'}
+                    td #{party.entityType ? titleCase(party.entityType) : 'N/A'}
+                    td #{party.registrationNumber || 'N/A'}
+                    td #{party.jurisdiction || 'N/A'}
+                    td #{party.role || 'N/A'}
+        
+        if corporateDetails.shareholders && corporateDetails.shareholders.length > 0
+          .section
+            .section-title SHAREHOLDERS
+            
+            table
+              thead
                 tr
-                  td #{director.name || 'N/A'}
-                  td #{director.designation || 'Director'}
-                  td #{director.appointmentDate ? new Date(director.appointmentDate).toLocaleDateString('en-GB') : 'N/A'}
-                  td #{director.status || 'Active'}
-      
-      if corporateDetails.compliance
+                  th Shareholder Name
+                  th Share Class
+                  th Number of Shares
+                  th Percentage Ownership
+              tbody
+                each shareholder in corporateDetails.shareholders
+                  tr
+                    td #{shareholder.name || 'N/A'}
+                    td #{shareholder.shareClass || 'Ordinary'}
+                    td.amount #{shareholder.numberOfShares ? shareholder.numberOfShares.toLocaleString() : 'N/A'}
+                    td.amount #{shareholder.percentageOwnership ? shareholder.percentageOwnership + '%' : 'N/A'}
+        
+        if corporateDetails.directors && corporateDetails.directors.length > 0
+          .section
+            .section-title DIRECTORS
+            
+            table
+              thead
+                tr
+                  th Name
+                  th Position
+                  th Appointment Date
+              tbody
+                each director in corporateDetails.directors
+                  tr
+                    td #{director.name || 'N/A'}
+                    td #{director.position || 'N/A'}
+                    td #{director.appointmentDate ? new Date(director.appointmentDate).toLocaleDateString('en-GB') : 'N/A'}
+        
         .section
-          .section-title COMPLIANCE STATUS
+          .section-title FINANCIAL DETAILS
           
           .info-grid-2
             .info-card
-              .info-card-title SEC Compliance
+              .info-card-title Deal Value
               .info-row
-                .info-label SEC Filing Status
-                .info-value #{corporateDetails.compliance.secFilingStatus || 'Pending'}
+                .info-label Deal Amount
+                .info-value #{corporateDetails.dealValue && corporateDetails.dealValue.amount ? naira(corporateDetails.dealValue.amount) : 'N/A'}
               .info-row
-                .info-label Filing Date
-                .info-value #{corporateDetails.compliance.secFilingDate ? new Date(corporateDetails.compliance.secFilingDate).toLocaleDateString('en-GB') : 'N/A'}
+                .info-label Currency
+                .info-value #{corporateDetails.dealValue && corporateDetails.dealValue.currency ? corporateDetails.dealValue.currency : 'NGN'}
             
             .info-card
-              .info-card-title CAC Compliance
+              .info-card-title Share Capital
               .info-row
-                .info-label Annual Return Status
-                .info-value #{corporateDetails.compliance.annualReturnStatus || 'Pending'}
+                .info-label Authorized Capital
+                .info-value #{corporateDetails.authorizedShareCapital && corporateDetails.authorizedShareCapital.amount ? naira(corporateDetails.authorizedShareCapital.amount) : 'N/A'}
               .info-row
-                .info-label Filing Date
-                .info-value #{corporateDetails.compliance.annualReturnDate ? new Date(corporateDetails.compliance.annualReturnDate).toLocaleDateString('en-GB') : 'N/A'}
-      
-      if corporateDetails.dealValue
-        .summary-box
-          .summary-grid
-            .summary-item
-              .summary-label Deal Value
-              .summary-value N#{corporateDetails.dealValue ? corporateDetails.dealValue.toLocaleString('en-NG') : '0'}
-            .summary-item
-              .summary-label Filing Fees
-              .summary-value N#{corporateDetails.filingFee ? corporateDetails.filingFee.toLocaleString('en-NG') : '0'}
-            .summary-item
-              .summary-label Professional Fees
-              .summary-value N#{(corporateDetails.professionalFee || 0).toLocaleString('en-NG')}
+                .info-label Paid Up Capital
+                .info-value #{corporateDetails.paidUpCapital && corporateDetails.paidUpCapital.amount ? naira(corporateDetails.paidUpCapital.amount) : 'N/A'}
+          
+          .info-grid-2
+            .info-card
+              .info-card-title Payment Terms
+              .info-row
+                .info-label Payment Structure
+                .info-value #{corporateDetails.paymentStructure ? titleCase(corporateDetails.paymentStructure) : 'N/A'}
+              .info-row
+                .info-label Payment Terms
+                .info-value #{corporateDetails.paymentTerms || 'N/A'}
+        
+        if corporateDetails.milestones && corporateDetails.milestones.length > 0
+          .section
+            .section-title MILESTONES
+            
+            table
+              thead
+                tr
+                  th Title
+                  th Due Date
+                  th Completed Date
+                  th Status
+                  th Notes
+              tbody
+                each milestone in corporateDetails.milestones
+                  tr
+                    td #{milestone.title || 'N/A'}
+                    td #{milestone.dueDate ? new Date(milestone.dueDate).toLocaleDateString('en-GB') : 'N/A'}
+                    td #{milestone.completedDate ? new Date(milestone.completedDate).toLocaleDateString('en-GB') : 'N/A'}
+                    td
+                      span.status-badge(class=statusCls(milestone.status)) #{milestone.status ? titleCase(milestone.status) : 'N/A'}
+                    td #{milestone.notes || 'N/A'}
+        
+        if corporateDetails.dueDiligence
+          .section
+            .section-title DUE DILIGENCE
+            
+            .info-grid-2
+              .info-card
+                .info-card-title Due Diligence Status
+                .info-row
+                  .info-label Required
+                  .info-value #{corporateDetails.dueDiligence.isRequired ? 'YES' : 'NO'}
+                .info-row
+                  .info-label Status
+                  .info-value #{corporateDetails.dueDiligence.status ? titleCase(corporateDetails.dueDiligence.status) : 'N/A'}
+                .info-row
+                  .info-label Start Date
+                  .info-value #{corporateDetails.dueDiligence.startDate ? new Date(corporateDetails.dueDiligence.startDate).toLocaleDateString('en-GB') : 'N/A'}
+                .info-row
+                  .info-label Completion Date
+                  .info-value #{corporateDetails.dueDiligence.completionDate ? new Date(corporateDetails.dueDiligence.completionDate).toLocaleDateString('en-GB') : 'N/A'}
+              
+              .info-card
+                .info-card-title Due Diligence Details
+                if corporateDetails.dueDiligence.scope
+                  .terms-box
+                    .terms-title Scope
+                    .terms-text #{corporateDetails.dueDiligence.scope}
+                if corporateDetails.dueDiligence.findings
+                  .terms-box
+                    .terms-title Findings
+                    .terms-text #{corporateDetails.dueDiligence.findings}
+        
+        if corporateDetails.regulatoryApprovals && corporateDetails.regulatoryApprovals.length > 0
+          .section
+            .section-title REGULATORY APPROVALS
+            
+            table
+              thead
+                tr
+                  th Authority
+                  th Approval Type
+                  th Application Date
+                  th Approval Date
+                  th Status
+                  th Reference Number
+              tbody
+                each approval in corporateDetails.regulatoryApprovals
+                  tr
+                    td #{approval.authority || 'N/A'}
+                    td #{approval.approvalType || 'N/A'}
+                    td #{approval.applicationDate ? new Date(approval.applicationDate).toLocaleDateString('en-GB') : 'N/A'}
+                    td #{approval.approvalDate ? new Date(approval.approvalDate).toLocaleDateString('en-GB') : 'N/A'}
+                    td
+                      span.status-badge(class=statusCls(approval.status)) #{approval.status ? titleCase(approval.status) : 'N/A'}
+                    td #{approval.referenceNumber || 'N/A'}
+        
+        if corporateDetails.keyAgreements && corporateDetails.keyAgreements.length > 0
+          .section
+            .section-title KEY AGREEMENTS
+            
+            table
+              thead
+                tr
+                  th Agreement Type
+                  th Execution Date
+                  th Effective Date
+                  th Expiry Date
+                  th Status
+              tbody
+                each agreement in corporateDetails.keyAgreements
+                  tr
+                    td #{agreement.agreementType || 'N/A'}
+                    td #{agreement.executionDate ? new Date(agreement.executionDate).toLocaleDateString('en-GB') : 'N/A'}
+                    td #{agreement.effectiveDate ? new Date(agreement.effectiveDate).toLocaleDateString('en-GB') : 'N/A'}
+                    td #{agreement.expiryDate ? new Date(agreement.expiryDate).toLocaleDateString('en-GB') : 'N/A'}
+                    td
+                      span.status-badge(class=statusCls(agreement.status)) #{agreement.status ? titleCase(agreement.status) : 'N/A'}
+        
+        if corporateDetails.identifiedRisks && corporateDetails.identifiedRisks.length > 0
+          .section
+            .section-title IDENTIFIED RISKS
+            
+            table
+              thead
+                tr
+                  th Risk
+                  th Severity
+                  th Mitigation
+                  th Status
+              tbody
+                each risk in corporateDetails.identifiedRisks
+                  tr
+                    td #{risk.risk || 'N/A'}
+                    td #{risk.severity ? titleCase(risk.severity) : 'N/A'}
+                    td #{risk.mitigation || 'N/A'}
+                    td
+                      span.status-badge(class=statusCls(risk.status)) #{risk.status ? titleCase(risk.status) : 'N/A'}
+        
+        if dealValueAmount > 0
+          .summary-box
+            .summary-grid
+              .summary-item
+                .summary-label Deal Value
+                .summary-value #{naira(dealValueAmount)}
+              .summary-item
+                .summary-label Authorized Capital
+                .summary-value #{corporateDetails.authorizedShareCapital && corporateDetails.authorizedShareCapital.amount ? naira(corporateDetails.authorizedShareCapital.amount) : 'N/A'}
+              .summary-item
+                .summary-label Paid Up Capital
+                .summary-value #{corporateDetails.paidUpCapital && corporateDetails.paidUpCapital.amount ? naira(corporateDetails.paidUpCapital.amount) : 'N/A'}
       
       .signature-block
         .signature-section
@@ -280,5 +478,5 @@ html(lang="en")
             .stamp-placeholder
       
       .doc-footer
-        .footer-text This is a computer-generated report.
+        .footer-text Generated on #{new Date().toLocaleDateString('en-GB')} at #{new Date().toLocaleTimeString('en-GB')}
         .footer-firm #{firm && firm.name ? firm.name : 'Law Firm'}
