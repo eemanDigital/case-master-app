@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo, useCallback, memo } from "react";
 import {
   Form,
   Input,
@@ -10,8 +10,12 @@ import {
   Row,
   Col,
   Divider,
+  Descriptions,
+  Tag,
+  Space,
+  Alert,
 } from "antd";
-import { SaveOutlined } from "@ant-design/icons";
+import { SaveOutlined, UserOutlined, FileTextOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
   TRANSACTION_TYPES,
@@ -21,107 +25,136 @@ import {
   NIGERIAN_STATES,
   DATE_FORMAT,
 } from "../../utils/corporateConstants";
+import { MATTER_STATUS } from "../../utils/litigationConstants";
 
 const { Option } = Select;
 const { TextArea } = Input;
+
+const MatterContextCard = memo(({ matter }) => {
+  const clientName = useMemo(() => {
+    if (!matter?.client) return "-";
+    if (matter.client.companyName) return matter.client.companyName;
+    return `${matter.client.firstName || ""} ${matter.client.lastName || ""}`.trim() || "-";
+  }, [matter?.client]);
+
+  const accountOfficers = useMemo(() => {
+    if (!matter?.accountOfficer || !Array.isArray(matter.accountOfficer)) return [];
+    return matter.accountOfficer.map((officer) => {
+      if (officer.firstName || officer.lastName) {
+        return `${officer.firstName || ""} ${officer.lastName || ""}`.trim();
+      }
+      return officer.label || officer.name || "Unknown";
+    }).filter(Boolean);
+  }, [matter?.accountOfficer]);
+
+  return (
+    <Alert
+      type="info"
+      icon={<FileTextOutlined />}
+      message="Matter Information"
+      description={
+        <Descriptions size="small" column={4} className="mt-2">
+          <Descriptions.Item label="Matter Number">
+            <Tag color="blue">{matter?.matterNumber || "-"}</Tag>
+          </Descriptions.Item>
+          <Descriptions.Item label="Title">{matter?.title || "-"}</Descriptions.Item>
+          <Descriptions.Item label="Client">
+            <Space>
+              <UserOutlined />
+              {clientName}
+            </Space>
+          </Descriptions.Item>
+          <Descriptions.Item label="Account Officer(s)">
+            <Space direction="vertical" size={0}>
+              {accountOfficers.length > 0 ? (
+                accountOfficers.map((name, idx) => (
+                  <Tag key={idx}><UserOutlined /> {name}</Tag>
+                ))
+              ) : (
+                "-"
+              )}
+            </Space>
+          </Descriptions.Item>
+          <Descriptions.Item label="Status">
+            <Tag color={matter?.status === "active" ? "green" : matter?.status === "pending" ? "orange" : "default"}>
+              {MATTER_STATUS.find(s => s.value === matter?.status)?.label || matter?.status || "-"}
+            </Tag>
+          </Descriptions.Item>
+          <Descriptions.Item label="Priority">
+            <Tag color={
+              matter?.priority === "urgent" ? "red" :
+              matter?.priority === "high" ? "orange" :
+              matter?.priority === "medium" ? "blue" : "gray"
+            }>
+              {matter?.priority || "-"}
+            </Tag>
+          </Descriptions.Item>
+        </Descriptions>
+      }
+      className="mb-6"
+    />
+  );
+});
+
+MatterContextCard.displayName = "MatterContextCard";
 
 const CorporateForm = ({
   initialValues,
   onSubmit,
   loading = false,
   mode = "create",
+  matterData = null,
 }) => {
   const [form] = Form.useForm();
-  const [showOtherTransactionType, setShowOtherTransactionType] = useState(
-    initialValues?.transactionType === "other",
-  );
+  const [showOtherTransactionType, setShowOtherTransactionType] = useState(false);
 
-  // Format initial values for form
-  const formattedInitialValues = initialValues
-    ? {
-        ...initialValues,
-        registrationDate: initialValues.registrationDate
-          ? dayjs(initialValues.registrationDate)
-          : null,
-        expectedClosingDate: initialValues.expectedClosingDate
-          ? dayjs(initialValues.expectedClosingDate)
-          : null,
-        actualClosingDate: initialValues.actualClosingDate
-          ? dayjs(initialValues.actualClosingDate)
-          : null,
-        // Due diligence dates
-        dueDiligenceStartDate: initialValues.dueDiligence?.startDate
-          ? dayjs(initialValues.dueDiligence.startDate)
-          : null,
-        dueDiligenceCompletionDate: initialValues.dueDiligence?.completionDate
-          ? dayjs(initialValues.dueDiligence.completionDate)
-          : null,
-        // Separate amount and currency
-        dealValueAmount: initialValues.dealValue?.amount,
-        dealValueCurrency: initialValues.dealValue?.currency || "NGN",
-        authorizedShareCapitalAmount:
-          initialValues.authorizedShareCapital?.amount,
-        authorizedShareCapitalCurrency:
-          initialValues.authorizedShareCapital?.currency || "NGN",
-        paidUpCapitalAmount: initialValues.paidUpCapital?.amount,
-        paidUpCapitalCurrency: initialValues.paidUpCapital?.currency || "NGN",
-      }
-    : {
-        dealValueCurrency: "NGN",
-        authorizedShareCapitalCurrency: "NGN",
-        paidUpCapitalCurrency: "NGN",
-      };
+  useEffect(() => {
+    return () => {
+      form.resetFields();
+    };
+  }, [form]);
 
-  const handleSubmit = (values) => {
-    // Restructure data to match backend schema
+  const formattedInitialValues = useMemo(() => {
+    if (!initialValues) return { dealValueCurrency: "NGN", authorizedShareCapitalCurrency: "NGN", paidUpCapitalCurrency: "NGN" };
+    return {
+      ...initialValues,
+      registrationDate: initialValues.registrationDate ? dayjs(initialValues.registrationDate) : null,
+      expectedClosingDate: initialValues.expectedClosingDate ? dayjs(initialValues.expectedClosingDate) : null,
+      actualClosingDate: initialValues.actualClosingDate ? dayjs(initialValues.actualClosingDate) : null,
+      dueDiligenceStartDate: initialValues.dueDiligence?.startDate ? dayjs(initialValues.dueDiligence.startDate) : null,
+      dueDiligenceCompletionDate: initialValues.dueDiligence?.completionDate ? dayjs(initialValues.dueDiligence.completionDate) : null,
+      dealValueAmount: initialValues.dealValue?.amount,
+      dealValueCurrency: initialValues.dealValue?.currency || "NGN",
+      authorizedShareCapitalAmount: initialValues.authorizedShareCapital?.amount,
+      authorizedShareCapitalCurrency: initialValues.authorizedShareCapital?.currency || "NGN",
+      paidUpCapitalAmount: initialValues.paidUpCapital?.amount,
+      paidUpCapitalCurrency: initialValues.paidUpCapital?.currency || "NGN",
+    };
+  }, [initialValues]);
+
+  const handleSubmit = useCallback((values) => {
     const formattedValues = {
       transactionType: values.transactionType,
       otherTransactionType: values.otherTransactionType,
       companyName: values.companyName,
       registrationNumber: values.registrationNumber,
       companyType: values.companyType,
-      registrationDate: values.registrationDate
-        ? values.registrationDate.toISOString()
-        : null,
+      registrationDate: values.registrationDate ? values.registrationDate.toISOString() : null,
       incorporationJurisdiction: values.incorporationJurisdiction,
-
-      // Financial data with currency
-      dealValue: {
-        amount: values.dealValueAmount || 0,
-        currency: values.dealValueCurrency || "NGN",
-      },
-      authorizedShareCapital: {
-        amount: values.authorizedShareCapitalAmount || 0,
-        currency: values.authorizedShareCapitalCurrency || "NGN",
-      },
-      paidUpCapital: {
-        amount: values.paidUpCapitalAmount || 0,
-        currency: values.paidUpCapitalCurrency || "NGN",
-      },
-
+      dealValue: { amount: values.dealValueAmount || 0, currency: values.dealValueCurrency || "NGN" },
+      authorizedShareCapital: { amount: values.authorizedShareCapitalAmount || 0, currency: values.authorizedShareCapitalCurrency || "NGN" },
+      paidUpCapital: { amount: values.paidUpCapitalAmount || 0, currency: values.paidUpCapitalCurrency || "NGN" },
       paymentStructure: values.paymentStructure,
       paymentTerms: values.paymentTerms,
-      expectedClosingDate: values.expectedClosingDate
-        ? values.expectedClosingDate.toISOString()
-        : null,
-      actualClosingDate: values.actualClosingDate
-        ? values.actualClosingDate.toISOString()
-        : null,
-
-      // Due diligence
+      expectedClosingDate: values.expectedClosingDate ? values.expectedClosingDate.toISOString() : null,
+      actualClosingDate: values.actualClosingDate ? values.actualClosingDate.toISOString() : null,
       dueDiligence: {
         isRequired: values.dueDiligenceRequired !== false,
-        startDate: values.dueDiligenceStartDate
-          ? values.dueDiligenceStartDate.toISOString()
-          : null,
-        completionDate: values.dueDiligenceCompletionDate
-          ? values.dueDiligenceCompletionDate.toISOString()
-          : null,
+        startDate: values.dueDiligenceStartDate ? values.dueDiligenceStartDate.toISOString() : null,
+        completionDate: values.dueDiligenceCompletionDate ? values.dueDiligenceCompletionDate.toISOString() : null,
         status: values.dueDiligenceStatus || "not-started",
         scope: values.dueDiligenceScope,
       },
-
-      // Governance
       governanceStructure: {
         boardSize: values.boardSize,
         boardMeetingFrequency: values.boardMeetingFrequency,
@@ -129,41 +162,31 @@ const CorporateForm = ({
         specialRights: values.specialRights,
       },
     };
-
     onSubmit(formattedValues);
-  };
+  }, [onSubmit]);
 
-  const handleTransactionTypeChange = (value) => {
+  const handleTransactionTypeChange = useCallback((value) => {
     setShowOtherTransactionType(value === "other");
     if (value !== "other") {
       form.setFieldValue("otherTransactionType", null);
     }
-  };
+  }, [form]);
+
+  const handleReset = useCallback(() => {
+    form.resetFields();
+    setShowOtherTransactionType(false);
+  }, [form]);
 
   return (
-    <Form
-      form={form}
-      layout="vertical"
-      onFinish={handleSubmit}
-      initialValues={formattedInitialValues}
-      scrollToFirstError
-      className="corporate-form">
+    <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={formattedInitialValues} scrollToFirstError className="corporate-form">
+      {matterData && <MatterContextCard matter={matterData} />}
+
       {/* TRANSACTION INFORMATION */}
       <Card title="Transaction Information" className="mb-6">
         <Row gutter={16}>
           <Col xs={24} md={12}>
-            <Form.Item
-              name="transactionType"
-              label="Transaction Type"
-              rules={[
-                { required: true, message: "Transaction type is required" },
-              ]}>
-              <Select
-                placeholder="Select transaction type"
-                showSearch
-                optionFilterProp="children"
-                onChange={handleTransactionTypeChange}
-                size="large">
+            <Form.Item name="transactionType" label="Transaction Type" rules={[{ required: true, message: "Transaction type is required" }]}>
+              <Select placeholder="Select transaction type" showSearch optionFilterProp="children" onChange={handleTransactionTypeChange} size="large">
                 {TRANSACTION_TYPES.map((type) => (
                   <Option key={type.value} value={type.value}>
                     <span className="mr-2">{type.icon}</span>
@@ -176,15 +199,7 @@ const CorporateForm = ({
 
           {showOtherTransactionType && (
             <Col xs={24} md={12}>
-              <Form.Item
-                name="otherTransactionType"
-                label="Specify Other Transaction Type"
-                rules={[
-                  {
-                    required: true,
-                    message: "Please specify the transaction type",
-                  },
-                ]}>
+              <Form.Item name="otherTransactionType" label="Specify Other Transaction Type" rules={[{ required: true, message: "Please specify the transaction type" }]}>
                 <Input placeholder="Enter transaction type" size="large" />
               </Form.Item>
             </Col>
@@ -514,22 +529,13 @@ const CorporateForm = ({
 
       {/* FORM ACTIONS */}
       <div className="flex justify-end gap-4 mt-6">
-        <Button size="large" onClick={() => form.resetFields()}>
-          Reset
-        </Button>
-        <Button
-          type="primary"
-          size="large"
-          htmlType="submit"
-          loading={loading}
-          icon={<SaveOutlined />}>
-          {mode === "create"
-            ? "Create Corporate Details"
-            : "Update Corporate Details"}
+        <Button size="large" onClick={handleReset}>Reset</Button>
+        <Button type="primary" size="large" htmlType="submit" loading={loading} icon={<SaveOutlined />}>
+          {mode === "create" ? "Create Corporate Details" : "Update Corporate Details"}
         </Button>
       </div>
     </Form>
   );
 };
 
-export default CorporateForm;
+export default memo(CorporateForm);

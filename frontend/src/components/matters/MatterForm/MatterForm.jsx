@@ -237,64 +237,8 @@ const MatterForm = memo(
           // Optional
           officeFileNo: allFormValues.officeFileNo?.trim(),
 
-          // Matter type specific details - collect all fields based on matter type
-          // NOTE: For litigation, all detailed info goes to LitigationDetail (not Matter)
-          ...(selectedMatterType === "corporate" && {
-            companyName: allFormValues.companyName,
-            registrationNumber: allFormValues.registrationNumber,
-            companyType: allFormValues.companyType,
-            registrationDate: allFormValues.registrationDate ? allFormValues.registrationDate.toISOString() : undefined,
-            transactionType: allFormValues.transactionType,
-            incorporationJurisdiction: allFormValues.incorporationJurisdiction,
-            regulatoryBody: allFormValues.regulatoryBody,
-            filingDeadline: allFormValues.filingDeadline ? allFormValues.filingDeadline.toISOString() : undefined,
-            corporateNotes: allFormValues.corporateNotes,
-            dealValueAmount: allFormValues.dealValueAmount,
-            dealValueCurrency: allFormValues.dealValueCurrency,
-            paymentStructure: allFormValues.paymentStructure,
-            expectedClosingDate: allFormValues.expectedClosingDate ? allFormValues.expectedClosingDate.toISOString() : undefined,
-            paymentTerms: allFormValues.paymentTerms,
-          }),
-
-          ...(selectedMatterType === "property" && {
-            propertyAddress: allFormValues.propertyAddress,
-            propertyType: allFormValues.propertyType,
-            transactionType: allFormValues.transactionType,
-            propertyValue: allFormValues.propertyValue,
-            titleNo: allFormValues.titleNo,
-            surveyPlanNo: allFormValues.surveyPlanNo,
-            propertyOwner: allFormValues.propertyOwner,
-            landSize: allFormValues.landSize,
-            propertyNotes: allFormValues.propertyNotes,
-          }),
-
-          ...(selectedMatterType === "advisory" && {
-            advisoryType: allFormValues.advisoryType,
-            clientType: allFormValues.clientType,
-            jurisdiction: allFormValues.jurisdiction,
-            opinionDeadline: allFormValues.opinionDeadline ? allFormValues.opinionDeadline.toISOString() : undefined,
-            legalIssues: allFormValues.legalIssues,
-            advisoryNotes: allFormValues.advisoryNotes,
-          }),
-
-          ...(selectedMatterType === "retainer" && {
-            retainerType: allFormValues.retainerType,
-            retainerPeriod: allFormValues.retainerPeriod,
-            retainerAmount: allFormValues.retainerAmount,
-            currency: allFormValues.currency,
-            retainerStartDate: allFormValues.retainerStartDate ? allFormValues.retainerStartDate.toISOString() : undefined,
-            retainerEndDate: allFormValues.retainerEndDate ? allFormValues.retainerEndDate.toISOString() : undefined,
-            scopeOfWork: allFormValues.scopeOfWork,
-          }),
-
-          ...(selectedMatterType === "general" && {
-            matterCategory: allFormValues.matterCategory,
-            jurisdiction: allFormValues.jurisdiction,
-            serviceType: allFormValues.serviceType,
-            deliveryDate: allFormValues.deliveryDate ? allFormValues.deliveryDate.toISOString() : undefined,
-            specialInstructions: allFormValues.specialInstructions,
-            expectedOutcome: allFormValues.expectedOutcome,
-          }),
+          // NOTE: All type-specific details are captured in their respective detail forms
+          // (LitigationForm, CorporateForm, PropertyForm, AdvisoryForm, RetainerForm, GeneralForm)
         };
 
         // Clean up
@@ -773,9 +717,23 @@ const MatterForm = memo(
             </Card>
 
             <Card title="Contact Persons" size="small">
-              <ContactPersonsSection
-                onChange={() => setHasUnsavedChanges(true)}
-              />
+              <Form.Item
+                name="contactPersons"
+                rules={[
+                  {
+                    required: true,
+                    message: "At least one contact person is required",
+                  },
+                  {
+                    type: "array",
+                    min: 1,
+                    message: "Please add at least one contact person",
+                  },
+                ]}>
+                <ContactPersonsSection
+                  onChange={() => setHasUnsavedChanges(true)}
+                />
+              </Form.Item>
             </Card>
 
             {selectedMatterType && (

@@ -871,6 +871,78 @@ const MatterDetails = () => {
                   </Card>
                 </div>
 
+                {/* Contact Persons */}
+                {matter.contactPersons && matter.contactPersons.length > 0 && (
+                  <div className="mb-6">
+                    <Title
+                      level={screens.xs ? 5 : 4}
+                      className={`mb-3 ${isDarkMode ? "dark:text-gray-100" : ""}`}>
+                      Contact Persons
+                    </Title>
+                    <Row gutter={[12, 12]}>
+                      {matter.contactPersons.map((contact, index) => (
+                        <Col xs={24} sm={12} key={index}>
+                          <Card
+                            size="small"
+                            className={`${
+                              isDarkMode ? "dark:bg-gray-700" : "bg-gray-50"
+                            } ${index === 0 ? "border-green-200" : ""}`}
+                            bodyStyle={{ padding: screens.xs ? "12px" : "16px" }}>
+                            <div className="flex items-start gap-3">
+                              <Avatar
+                                size={screens.xs ? 36 : 48}
+                                icon={<UserOutlined />}
+                                className={isDarkMode ? "bg-blue-900" : "bg-blue-100"}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <Text strong className={`${screens.xs ? "text-sm" : ""}`}>
+                                    {contact.name}
+                                  </Text>
+                                  {index === 0 && (
+                                    <Tag color="green" className="text-xs">Primary</Tag>
+                                  )}
+                                </div>
+                                {contact.role && (
+                                  <Text
+                                    type="secondary"
+                                    className={`block text-xs ${
+                                      isDarkMode ? "dark:text-gray-400" : ""
+                                    }`}>
+                                    {contact.role.charAt(0).toUpperCase() + contact.role.slice(1).replace(/-/g, ' ')}
+                                  </Text>
+                                )}
+                                <Space direction="vertical" size={2} className="mt-2">
+                                  {contact.email && (
+                                    <Text
+                                      type="secondary"
+                                      className={`flex items-center gap-1 text-xs ${
+                                        isDarkMode ? "dark:text-gray-400" : ""
+                                      }`}>
+                                      <MailOutlined />
+                                      {contact.email}
+                                    </Text>
+                                  )}
+                                  {contact.phone && (
+                                    <Text
+                                      type="secondary"
+                                      className={`flex items-center gap-1 text-xs ${
+                                        isDarkMode ? "dark:text-gray-400" : ""
+                                      }`}>
+                                      <PhoneOutlined />
+                                      {contact.phone}
+                                    </Text>
+                                  )}
+                                </Space>
+                              </div>
+                            </div>
+                          </Card>
+                        </Col>
+                      ))}
+                    </Row>
+                  </div>
+                )}
+
                 {/* Rest of the parties content with similar responsive adjustments */}
               </Card>
             </TabPane>

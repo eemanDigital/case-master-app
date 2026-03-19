@@ -1,4 +1,4 @@
-import React, { memo } from "react";
+import { memo } from "react";
 import { Form, Input, Button, Space, Card, Row, Col, Select } from "antd";
 import { PlusOutlined, DeleteOutlined, UserOutlined } from "@ant-design/icons";
 
@@ -17,17 +17,26 @@ const ContactPersonsSection = memo(({ initialValue = [] }) => {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <div>
-              <h4 className="text-lg font-semibold text-gray-900">
+              <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 Contact Persons
+                <span className="text-red-500 text-sm font-normal">*</span>
               </h4>
               <p className="text-sm text-gray-500">
-                Add key contacts related to this matter
+                Add key contacts related to this matter (at least one required)
               </p>
             </div>
             <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />}>
               Add Contact
             </Button>
           </div>
+
+          {fields.length === 0 && (
+            <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+              <UserOutlined className="text-gray-400 text-2xl mb-2" />
+              <p className="text-gray-500">No contact persons added</p>
+              <p className="text-sm text-gray-400">Click &quot;Add Contact&quot; to add at least one contact person</p>
+            </div>
+          )}
 
           <div className="space-y-4">
             {fields.map((field, index) => (
@@ -39,6 +48,7 @@ const ContactPersonsSection = memo(({ initialValue = [] }) => {
                   <Space>
                     <UserOutlined />
                     <span>Contact Person {index + 1}</span>
+                    {index === 0 && <span className="text-xs text-red-500">(Primary)</span>}
                   </Space>
                 }
                 extra={

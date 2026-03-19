@@ -1,57 +1,70 @@
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Card, message } from "antd";
+import { message } from "antd";
 import CorporateForm from "../../components/corporate/CorporateForm";
 import LoadingScreen from "../../components/common/LoadingScreen";
+import PageHeader from "../../components/common/PageHeader";
 import {
   createCorporateDetails,
   selectActionLoading,
 } from "../../redux/features/corporate/corporateSlice";
+import { getMatter } from "../../redux/features/matter/matterSlice";
 
 const CreateCorporate = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { matterId } = useParams();
   const loading = useSelector(selectActionLoading);
+  const { currentMatter, isLoading: matterLoading } = useSelector((state) => state.matter);
 
-  // Check if matterId exists (should come from Matter creation)
   useEffect(() => {
     if (!matterId) {
-      message.error("Matter ID is required");
       const returnPath = `/dashboard/matters/corporate/:matterId/create`;
       navigate(
         `/dashboard/matters/create?type=corporate&returnTo=${encodeURIComponent(returnPath)}`,
       );
+      return;
     }
-  }, [matterId, navigate]);
+    dispatch(getMatter(matterId));
+  }, [matterId, dispatch, navigate]);
 
   const handleSubmit = async (values) => {
     try {
-      await dispatch(
-        createCorporateDetails({ matterId, data: values }),
-      ).unwrap();
-
-      // Navigate to details page
+      await dispatch(createCorporateDetails({ matterId, data: values })).unwrap();
+      message.success("Corporate details created successfully");
       navigate(`/dashboard/matters/corporate/${matterId}`);
     } catch (error) {
       console.error("Failed to create corporate details:", error);
+      message.error(error?.message || "Failed to create corporate details");
     }
   };
 
-  if (!matterId) {
-    return <LoadingScreen />;
+  if (!matterId || matterLoading) {
+    return <LoadingScreen tip="Loading matter details..." fullScreen />;
+  }
+
+  if (!currentMatter) {
+    return <LoadingScreen tip="Fetching matter data..." fullScreen />;
   }
 
   return (
-    <div className="create-corporate">
-      <Card title="Create Corporate Matter Details" className="mb-6">
+    <div className="min-h-screen bg-gray-50">
+      <PageHeader
+        title="Create Corporate Details"
+        subtitle={`Adding corporate details for ${currentMatter.matterNumber || "Matter"}`}
+        showBack
+        backPath="/dashboard/matters/corporate"
+      />
+
+      <div className="max-w-6xl mx-auto p-6">
         <CorporateForm
           onSubmit={handleSubmit}
           loading={loading}
           mode="create"
+          matterData={currentMatter}
         />
-      </Card>
+      </div>
     </div>
   );
 };
