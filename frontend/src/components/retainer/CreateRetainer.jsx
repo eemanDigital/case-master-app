@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Modal,
   Form,
@@ -19,6 +19,7 @@ import {
   Tag,
   Switch,
   Descriptions,
+  Spin,
 } from "antd";
 import {
   ArrowLeftOutlined,
@@ -32,9 +33,11 @@ import {
   PlusOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
 import { createRetainerDetails } from "../../redux/features/retainer/retainerSlice";
+import { getMatter } from "../../redux/features/matter/matterSlice";
+import MatterContextCard from "../common/MatterContextCard";
 
 const { Title, Text } = Typography;
 const { Step } = Steps;
@@ -331,6 +334,13 @@ const CreateRetainer = ({ visible, onCancel, onSuccess, matterId }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { currentMatter, isLoading: matterLoading } = useSelector((state) => state.matter);
+
+  useEffect(() => {
+    if (visible && matterId) {
+      dispatch(getMatter(matterId));
+    }
+  }, [visible, matterId, dispatch]);
 
   const retainerTypes = [
     { value: "general-legal", label: "General Legal Advisory" },
@@ -1171,12 +1181,15 @@ const CreateRetainer = ({ visible, onCancel, onSuccess, matterId }) => {
       footer={null}
       width={900}
       className="retainer-create-modal">
-      <div className="p-6">
-        <Steps current={currentStep} className="mb-8" responsive={false}>
-          {steps.map((step, index) => (
-            <Step key={index} title={step.title} icon={step.icon} />
-          ))}
-        </Steps>
+      <Spin spinning={matterLoading}>
+        <div className="p-6">
+          {currentMatter && <MatterContextCard matter={currentMatter} />}
+          
+          <Steps current={currentStep} className="mb-8" responsive={false}>
+            {steps.map((step, index) => (
+              <Step key={index} title={step.title} icon={step.icon} />
+            ))}
+          </Steps>
 
         {/* FIXED: Remove onFinish from Form - handle submission manually */}
         <Form
@@ -1248,7 +1261,8 @@ const CreateRetainer = ({ visible, onCancel, onSuccess, matterId }) => {
             </Space>
           </div>
         </Form>
-      </div>
+        </div>
+      </Spin>
     </Modal>
   );
 };

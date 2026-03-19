@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo, useMemo } from "react";
 import {
   Form,
   Input,
@@ -16,6 +16,7 @@ import {
 } from "antd";
 import { SaveOutlined, WarningOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import MatterContextCard from "../common/MatterContextCard";
 import {
   TRANSACTION_TYPES,
   PAYMENT_TERMS,
@@ -27,11 +28,12 @@ import {
 const { Option } = Select;
 const { TextArea } = Input;
 
-const PropertyForm = ({
+const PropertyForm = memo(({
   initialValues,
   onSubmit,
   loading = false,
   mode = "create",
+  matterData,
 }) => {
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState("basic");
@@ -378,22 +380,24 @@ const PropertyForm = ({
   };
 
   return (
-    <Form
-      form={form}
-      layout="vertical"
-      onFinish={handleSubmit}
-      scrollToFirstError
-      className="property-form">
-      {mode === "edit" && (
-        <Alert
-          message="Editing Property Details"
-          description="You are editing existing property details. Changes will be saved immediately."
-          type="info"
-          showIcon
-          icon={<WarningOutlined />}
-          className="mb-6"
-        />
-      )}
+    <>
+      {matterData && <MatterContextCard matter={matterData} />}
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+        scrollToFirstError
+        className="property-form">
+        {mode === "edit" && (
+          <Alert
+            message="Editing Property Details"
+            description="You are editing existing property details. Changes will be saved immediately."
+            type="info"
+            showIcon
+            icon={<WarningOutlined />}
+            className="mb-6"
+          />
+        )}
 
       <Tabs activeKey={activeTab} onChange={setActiveTab} className="mb-6">
         {/* BASIC INFORMATION TAB */}
@@ -1024,7 +1028,8 @@ const PropertyForm = ({
             : "Update Property Details"}
         </Button>
       </div>
-    </Form>
+      </Form>
+    </>
   );
 };
 

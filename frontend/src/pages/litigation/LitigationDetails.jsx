@@ -139,7 +139,7 @@ const LitigationDetails = () => {
   const firstHearingId = hearingsArr?.[0]?._id ?? "";
   const lastHearingId = hearingsArr?.[hearingsLength - 1]?._id ?? "";
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   const stableHearings = useMemo(
     () => hearingsArr ?? [],
     [hearingsLength, firstHearingId, lastHearingId],

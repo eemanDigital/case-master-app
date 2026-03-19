@@ -44,6 +44,7 @@ import { debounce } from "lodash";
 import TagInput from "./TagInput";
 import ResearchQuestionsList from "./ResearchQuestionsList";
 import DynamicList from "./DynamicList";
+import MatterContextCard from "../common/MatterContextCard";
 
 // Constants — single source of truth
 import {
@@ -353,6 +354,7 @@ const AdvisoryDetailForm = ({
   mode = "create",
   matterId,
   firmId,
+  matterData,
 }) => {
   const [form] = Form.useForm();
   const [activeTab, setActiveTab] = useState("basic");
@@ -547,6 +549,7 @@ const AdvisoryDetailForm = ({
   return (
     <div className="advisory-detail-form" style={{ padding: "24px" }}>
       <Spin spinning={loading}>
+        {matterData && <MatterContextCard matter={matterData} />}
         <Form
           form={form}
           layout="vertical"
