@@ -25,6 +25,11 @@ import {
   ApiOutlined,
   UserAddOutlined,
   FileProtectOutlined,
+  CrownOutlined,
+  ClockCircleOutlined,
+  SafetyCertificateOutlined,
+  RobotOutlined,
+  ThunderboltOutlined,
 } from "@ant-design/icons";
 import { logout, RESET } from "../redux/features/auth/authSlice";
 import { useTheme } from "../providers/ThemeProvider";
@@ -99,6 +104,26 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
     } else if (path.includes("/dashboard/templates")) {
       setSelectedKeys(["templates"]);
       setOpenKeys(["templates"]);
+    }
+    // Premium feature paths
+    else if (path.includes("/dashboard/premium/deadlines")) {
+      setSelectedKeys(["deadline-manager"]);
+      setOpenKeys(["premium"]);
+    } else if (path.includes("/dashboard/premium/compliance")) {
+      setSelectedKeys(["compliance-tracker"]);
+      setOpenKeys(["premium"]);
+    } else if (path.includes("/dashboard/premium/watchdog")) {
+      setSelectedKeys(["watchdog"]);
+      setOpenKeys(["premium"]);
+    } else if (path.includes("/dashboard/premium/automations")) {
+      setSelectedKeys(["automation-builder"]);
+      setOpenKeys(["premium"]);
+    } else if (path.includes("/dashboard/premium/fee-protector")) {
+      setSelectedKeys(["fee-protector"]);
+      setOpenKeys(["premium"]);
+    } else if (path.includes("/dashboard/premium")) {
+      setSelectedKeys(["premium"]);
+      setOpenKeys(["premium"]);
     } else if (path.includes("/dashboard/tasks")) {
       setSelectedKeys(["tasks"]);
       setOpenKeys([]);
@@ -312,6 +337,49 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
       icon: <DollarOutlined />,
       label: "Billing",
       path: "/dashboard/billings",
+    },
+    {
+      key: "premium",
+      icon: <CrownOutlined />,
+      label: "Premium Suite",
+      children: [
+        {
+          key: "deadline-manager",
+          icon: <ClockCircleOutlined />,
+          label: "Deadline Manager",
+          path: "/dashboard/premium/deadlines",
+        },
+        {
+          key: "deadline-report",
+          icon: <AuditOutlined />,
+          label: "Performance Report",
+          path: "/dashboard/premium/deadlines/performance",
+        },
+        {
+          key: "compliance-tracker",
+          icon: <SafetyCertificateOutlined />,
+          label: "CAC Compliance",
+          path: "/dashboard/premium/compliance",
+        },
+        {
+          key: "watchdog",
+          icon: <RobotOutlined />,
+          label: "CAC Status Watchdog",
+          path: "/dashboard/premium/watchdog",
+        },
+        {
+          key: "automation-builder",
+          icon: <ThunderboltOutlined />,
+          label: "Automation Builder",
+          path: "/dashboard/premium/automations",
+        },
+        {
+          key: "fee-protector",
+          icon: <FileProtectOutlined />,
+          label: "Fee Protector",
+          path: "/dashboard/premium/fee-protector",
+        },
+      ],
     },
     {
       key: "settings",

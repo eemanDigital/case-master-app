@@ -14,6 +14,11 @@ import calenderReducer from "../features/calender/calenderSlice";
 import taskReducer from "../features/task/taskSlice";
 import notesReducer from "../features/notes/notesSlice";
 import templateReducer from "../features/templates/templateSlice";
+import deadlineReducer from "../features/deadlines/deadlineSlice";
+import complianceReducer from "../features/compliance/complianceSlice";
+import watchdogReducer from "../features/watchdog/watchdogSlice";
+import automationReducer from "../features/automation/automationSlice";
+import feeProtectorReducer from "../features/feeProtector/feeProtectorSlice";
 
 export const store = configureStore({
   reducer: {
@@ -32,6 +37,11 @@ export const store = configureStore({
     task: taskReducer,
     notes: notesReducer,
     template: templateReducer,
+    deadline: deadlineReducer,
+    compliance: complianceReducer,
+    watchdog: watchdogReducer,
+    automation: automationReducer,
+    feeProtector: feeProtectorReducer,
   },
   // Thunk is included by default, no need to concat it!
   middleware: (getDefaultMiddleware) =>

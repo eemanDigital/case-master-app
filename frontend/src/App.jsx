@@ -218,6 +218,34 @@ const GeneratedDocumentsList = lazy(
   () => import("./pages/templates/GeneratedDocumentsList.jsx"),
 );
 
+// Premium Features - Deadlines
+const DeadlineManager = lazy(
+  () => import("./pages/deadlines/DeadlineManager.jsx"),
+);
+const PerformanceReportPage = lazy(
+  () => import("./pages/deadlines/PerformanceReportPage.jsx"),
+);
+
+// Premium Features - Compliance
+const ComplianceTrackerPage = lazy(
+  () => import("./pages/compliance/ComplianceTrackerPage.jsx"),
+);
+
+// Premium Features - Watchdog
+const WatchdogDashboard = lazy(
+  () => import("./pages/watchdog/WatchdogDashboard.jsx"),
+);
+
+// Premium Features - Automation
+const AutomationBuilderPage = lazy(
+  () => import("./pages/automations/AutomationBuilderPage.jsx"),
+);
+
+// Premium Features - Fee Protector
+const FeeProtectorPage = lazy(
+  () => import("./pages/feeProtector/FeeProtectorPage.jsx"),
+);
+
 // Cookie Consent
 import CookieConsent from "./components/CookieConsent";
 
@@ -1171,6 +1199,78 @@ const router = createBrowserRouter(
                 <ShowOnlyVerifiedUser>
                   <GeneratedDocumentsList />
                 </ShowOnlyVerifiedUser>
+              </Suspense>
+            }
+          />
+
+          {/* ── PREMIUM FEATURES ─────────────────────────────────── */}
+
+          {/* Deadline Manager */}
+          <Route
+            path="premium/deadlines"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProtectedStaffRoute>
+                  <DeadlineManager />
+                </ProtectedStaffRoute>
+              </Suspense>
+            }
+          />
+          <Route
+            path="premium/deadlines/performance"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProtectedStaffRoute>
+                  <PerformanceReportPage />
+                </ProtectedStaffRoute>
+              </Suspense>
+            }
+          />
+
+          {/* CAC Compliance Tracker */}
+          <Route
+            path="premium/compliance"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProtectedStaffRoute>
+                  <ComplianceTrackerPage />
+                </ProtectedStaffRoute>
+              </Suspense>
+            }
+          />
+
+          {/* CAC Status Watchdog */}
+          <Route
+            path="premium/watchdog"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProtectedStaffRoute>
+                  <WatchdogDashboard />
+                </ProtectedStaffRoute>
+              </Suspense>
+            }
+          />
+
+          {/* Automation Builder */}
+          <Route
+            path="premium/automations"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProtectedStaffRoute>
+                  <AutomationBuilderPage />
+                </ProtectedStaffRoute>
+              </Suspense>
+            }
+          />
+
+          {/* Fee Protector */}
+          <Route
+            path="premium/fee-protector"
+            element={
+              <Suspense fallback={<PageLoader />}>
+                <ProtectedStaffRoute>
+                  <FeeProtectorPage />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />

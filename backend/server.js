@@ -38,6 +38,12 @@ const invitationRouter = require("./routes/invitationRoutes");
 const { auditMiddleware } = require("./middleware/auditMiddleware");
 const extractSubdomain = require("./middleware/subdomain");
 
+const feeProtectorRouter = require("./routes/feeProtectorRoutes");
+const deadlineRouter = require("./routes/deadlineRoutes");
+const complianceRouter = require("./routes/complianceRoutes");
+const watchdogRouter = require("./routes/watchdogRoutes");
+const automationRouter = require("./routes/automationRoutes");
+
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
 
@@ -336,6 +342,11 @@ app.use("/api/v1/webhooks", webhookRouter);
 app.use("/api/v1/audit-logs", auditLogRouter);
 app.use("/api/v1/invitations", invitationRouter);
 app.use("/api/v1/templates", require("./routes/templateRoutes"));
+app.use("/api/v1/fee-protector", feeProtectorRouter);
+app.use("/api/v1/deadlines", deadlineRouter);
+app.use("/api/v1/compliance", complianceRouter);
+app.use("/api/v1/watchdog", watchdogRouter);
+app.use("/api/v1/automations", automationRouter);
 
 // Public invitation validation
 app.get("/api/v1/invitations/validate/:token", require("./controllers/invitationController").validateInvitation);
@@ -520,6 +531,21 @@ mongoose.connection.once("open", () => {
     console.log("✅ Reminder service started");
   } catch (error) {
     console.error("❌ Failed to start reminder service:", error.message);
+  }
+
+  // Initialize Premium Features Cron Jobs
+  try {
+    const { initDeadlineCronJobs } = require("./utils/deadlineCronJobs");
+    const { initComplianceCronJobs } = require("./utils/complianceCronJobs");
+    const { initWatchdogCronJobs } = require("./utils/watchdogCronJobs");
+    
+    initDeadlineCronJobs();
+    initComplianceCronJobs();
+    initWatchdogCronJobs();
+    
+    console.log("✅ Premium Features Cron Jobs initialized");
+  } catch (error) {
+    console.error("❌ Failed to initialize Premium Features Cron Jobs:", error.message);
   }
 });
 
