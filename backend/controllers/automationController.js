@@ -332,22 +332,24 @@ exports.duplicateAutomation = catchAsync(async (req, res, next) => {
 });
 
 exports.getAutomationTemplates = catchAsync(async (req, res, next) => {
-  const templatesWithAvailability = AUTOMATION_RECIPES.map((recipe) => {
-    const existing = Automation.findOne({
-      firmId: req.firmId,
-      name: recipe.name,
-      isDeleted: { $ne: true },
-    });
+  const templatesWithAvailability = await Promise.all(
+    AUTOMATION_RECIPES.map(async (recipe) => {
+      const existing = await Automation.findOne({
+        firmId: req.firmId,
+        name: recipe.name,
+        isDeleted: { $ne: true },
+      });
 
-    return {
-      ...recipe,
-      isInstalled: !!existing,
-    };
-  });
+      return {
+        ...recipe,
+        isInstalled: !!existing,
+      };
+    })
+  );
 
   res.status(200).json({
     status: "success",
-    data: AUTOMATION_RECIPES,
+    data: templatesWithAvailability,
   });
 });
 

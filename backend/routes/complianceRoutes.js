@@ -9,7 +9,7 @@ router.use(protect);
 router.use(premiumFeatureGuard("complianceTracker"));
 
 router.get("/stats", restrictTo("super-admin", "admin", "lawyer"), complianceController.getComplianceStats);
-router.get("/revenue-opportunities", complianceController.getRevenueOpportunities);
+router.get("/revenue-opportunities", restrictTo("super-admin", "admin", "lawyer"), complianceController.getRevenueOpportunities);
 
 router.route("/")
   .get(complianceController.getAllTrackedEntities)

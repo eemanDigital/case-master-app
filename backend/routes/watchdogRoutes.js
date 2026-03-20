@@ -11,10 +11,9 @@ router.use(premiumFeatureGuard("watchdog"));
 router.get("/report", restrictTo("super-admin", "admin", "lawyer"), watchdogController.getWatchdogReport);
 router.get("/stats", restrictTo("super-admin", "admin", "lawyer"), watchdogController.getWatchdogStats);
 router.get("/entities", watchdogController.getAllMonitoredEntities);
-
-router.post("/check/:id", restrictTo("super-admin", "admin", "lawyer"), watchdogController.manualStatusCheck);
 router.post("/check-all", restrictTo("super-admin", "admin", "lawyer"), watchdogController.triggerManualCheckAll);
 
+router.post("/check/:id", restrictTo("super-admin", "admin", "lawyer"), watchdogController.manualStatusCheck);
 router.patch("/:id/acknowledge", restrictTo("super-admin", "admin", "lawyer"), watchdogController.acknowledgeStatusChange);
 
 module.exports = router;
