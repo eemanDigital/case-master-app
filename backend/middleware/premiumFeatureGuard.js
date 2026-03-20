@@ -9,7 +9,7 @@ const PREMIUM_FEATURES = {
   automationBuilder: "Custom Automation Builder",
 };
 
-const PREMIUM_PLANS = ["professional", "enterprise"];
+const PREMIUM_PLANS = ["PRO", "ENTERPRISE"];
 
 const checkPremiumAccess = catchAsync(async (req, res, next) => {
   if (!req.firm) {
@@ -27,7 +27,7 @@ const checkPremiumAccess = catchAsync(async (req, res, next) => {
     );
   }
 
-  const plan = firm.subscription.plan?.toLowerCase() || "free";
+  const plan = firm.subscription.plan?.toUpperCase() || "FREE";
 
   if (PREMIUM_PLANS.includes(plan)) {
     return next();
@@ -37,7 +37,7 @@ const checkPremiumAccess = catchAsync(async (req, res, next) => {
 
   return next(
     new AppError(
-      `${feature} is a premium feature. Please upgrade your plan to ${plan === "starter" ? "Professional or Enterprise" : "a higher tier"} to access this feature.`,
+      `${feature} is a premium feature. Please upgrade your plan to PRO or ENTERPRISE to access this feature.`,
       403
     )
   );

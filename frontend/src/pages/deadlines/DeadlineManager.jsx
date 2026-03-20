@@ -116,11 +116,7 @@ const CreateDeadlineModal = ({ visible, onClose, onSuccess, loading }) => {
     limit: 100,
   });
 
-  const {
-    data: staffOptions,
-    loading: staffLoading,
-    count,
-  } = useUserSelectOptions({
+  const { data: staffOptions, loading: staffLoading } = useUserSelectOptions({
     type: "staff",
     includeInactive: false,
   });
