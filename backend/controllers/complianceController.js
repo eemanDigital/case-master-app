@@ -94,6 +94,7 @@ exports.getAllTrackedEntities = catchAsync(async (req, res, next) => {
   const query = {
     firmId: req.firmId,
     isDeleted: { $ne: true },
+    trackingType: { $in: ["compliance", "both"] },
   };
 
   if (entityType) {
@@ -153,6 +154,7 @@ exports.createTrackedEntity = catchAsync(async (req, res, next) => {
     ...transformedData,
     firmId: req.firmId,
     createdBy: req.user._id,
+    trackingType: "compliance",
   };
 
   if (!entityData.clientId && entityData.linkedMatterId) {

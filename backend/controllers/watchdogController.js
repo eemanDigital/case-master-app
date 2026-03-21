@@ -676,6 +676,7 @@ exports.createMonitoredEntity = catchAsync(async (req, res, next) => {
     assignedTo: assignedTo || req.user._id,
     linkedMatterId: linkedMatterId || undefined,
     createdBy: req.user._id,
+    trackingType: "watchdog",
     currentComplianceStatus: "unknown",
     cacPortalStatus: {
       portalStatus: initialPortalStatus,

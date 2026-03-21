@@ -48,6 +48,11 @@ const complianceTrackerSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
     },
+    trackingType: {
+      type: String,
+      enum: ["compliance", "watchdog", "both"],
+      default: "both",
+    },
     cacMatterId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "CacMatter",
