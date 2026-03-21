@@ -289,24 +289,25 @@ const watchdogSlice = createSlice({
 
       // ── acknowledgeAlert ──────────────────────────────────────────────
       .addCase(acknowledgeAlert.fulfilled, (state, action) => {
-        const id = action.meta.arg;
-        // Remove from alerts list
-        state.alerts = state.alerts.filter((a) => a._id !== id);
-        // Also update the entity's requiresAttention flag
-        const result = action.payload?.data || action.payload;
-        if (result?.entityId) {
-          const idx = state.monitoredEntities.findIndex(
-            (e) => e._id === result.entityId,
-          );
-          if (idx !== -1) {
-            state.monitoredEntities[idx] = {
-              ...state.monitoredEntities[idx],
-              cacPortalStatus: {
-                ...state.monitoredEntities[idx].cacPortalStatus,
-                requiresAttention: false,
-              },
-            };
-          }
+        const acknowledgedEntityId = action.meta.arg;
+        
+        // Remove from alerts by entity _id (alerts ARE entities with requiresAttention)
+        state.alerts = state.alerts.filter(
+          (a) => a._id !== acknowledgedEntityId,
+        );
+
+        // Update the entity's requiresAttention flag in monitoredEntities
+        const idx = state.monitoredEntities.findIndex(
+          (e) => e._id === acknowledgedEntityId,
+        );
+        if (idx !== -1) {
+          state.monitoredEntities[idx] = {
+            ...state.monitoredEntities[idx],
+            cacPortalStatus: {
+              ...state.monitoredEntities[idx].cacPortalStatus,
+              requiresAttention: false,
+            },
+          };
         }
       });
   },

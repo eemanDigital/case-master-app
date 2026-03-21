@@ -204,38 +204,39 @@ const initWatchdogCronJobs = () => {
                   `Status change: ${entity.entityName} — ${previousStatus} → ${newStatus}`,
                 );
 
-                // ✅ FIXED: only set previousPortalStatus when status actually changed
-                updateData["cacPortalStatus.previousPortalStatus"] =
-                  previousStatus;
-                updateData["cacPortalStatus.statusChangedAt"] = new Date();
-                updateData["cacPortalStatus.requiresAttention"] = true;
+                const badStatuses = ["INACTIVE", "STRUCK-OFF", "WOUND-UP", "DISSOLVED", "SUSPENDED"];
+                const goodStatuses = ["ACTIVE", "REGISTERED", "COMPLIANT"];
 
-                if (
-                  ["INACTIVE", "STRUCK-OFF", "WOUND-UP"].includes(newStatus)
-                ) {
+                const isBadStatus = badStatuses.includes(newStatus);
+                const isGoodStatus = goodStatuses.includes(newStatus);
+
+                updateData["cacPortalStatus.previousPortalStatus"] = previousStatus;
+                updateData["cacPortalStatus.statusChangedAt"] = new Date();
+                updateData["cacPortalStatus.requiresAttention"] = isBadStatus;
+
+                if (isBadStatus) {
                   updateData.isRevenueOpportunity = true;
                   updateData.revenueOpportunityNote = `CAC status changed to ${newStatus} — urgent client contact needed`;
                   updateData.revenueOpportunityAmount = 50000;
 
-                  // Fetch firm for email branding
                   const firm = await Firm.findById(entity.firmId);
-
-                  // Temporarily set new status on entity object for email content
                   entity.cacPortalStatus = {
                     ...entity.cacPortalStatus,
                     portalStatus: newStatus,
                   };
 
-                  await sendUrgentAlert(
-                    entity,
-                    previousStatus,
-                    newStatus,
-                    firm,
-                  );
+                  await sendUrgentAlert(entity, previousStatus, newStatus, firm);
                   await notifyFirmAdmins(entity, firm);
+                } else if (isGoodStatus) {
+                  updateData.isRevenueOpportunity = false;
+                  updateData.revenueOpportunityNote = undefined;
                 }
 
                 statusChanges++;
+              }
+
+              if (!statusChanged && ["ACTIVE", "REGISTERED", "COMPLIANT"].includes(newStatus)) {
+                updateData["cacPortalStatus.requiresAttention"] = false;
               }
 
               // ✅ Use findByIdAndUpdate instead of entity.save()

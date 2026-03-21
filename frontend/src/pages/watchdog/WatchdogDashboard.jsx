@@ -56,6 +56,7 @@ import {
   selectWatchdogChecking,
 } from "../../redux/features/watchdog/watchdogSlice";
 import useMattersSelectOptions from "../../hooks/useMattersSelectOptions";
+import useUserSelectOptions from "../../hooks/useUserSelectOptions";
 
 dayjs.extend(relativeTime);
 
@@ -127,6 +128,12 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
     fetchMatters,
   } = useMattersSelectOptions({ status: "active", limit: 100 });
 
+  const {
+    data: clientOptions,
+    loading: clientsLoading,
+    refresh: refreshClients,
+  } = useUserSelectOptions({ type: "client" });
+
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
@@ -138,6 +145,7 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
         entityType: values.entityType,
         linkedMatterId:
           values.linkedMatterId?.value || values.linkedMatterId || undefined,
+        clientId: values.clientId?.value || values.clientId || undefined,
       };
 
       await dispatch(addMonitoredEntity(entityData)).unwrap();
@@ -243,6 +251,32 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
             allowClear
             labelInValue
             onChange={(value) => setSelectedMatter(value?.value || null)}
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="clientId"
+          label={
+            <Space>
+              <FileDoneOutlined style={{ color: "#059669" }} />
+              <span>Client (Optional)</span>
+            </Space>
+          }
+          extra="Link this entity to a client for notifications">
+          <Select
+            showSearch
+            placeholder="Search and select a client..."
+            options={clientOptions?.map((opt) => ({
+              value: opt.value,
+              label: opt.label,
+            }))}
+            loading={clientsLoading}
+            onSearch={() => refreshClients()}
+            onFocus={() => refreshClients()}
+            filterOption={false}
+            notFoundContent={clientsLoading ? "Loading..." : "No clients found"}
+            allowClear
+            labelInValue
           />
         </Form.Item>
 

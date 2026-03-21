@@ -49,9 +49,22 @@ exports.manualStatusCheck = catchAsync(async (req, res, next) => {
   if (statusChanged) {
     updateData["cacPortalStatus.previousPortalStatus"] = previousStatus;
     updateData["cacPortalStatus.statusChangedAt"] = new Date();
-    updateData["cacPortalStatus.requiresAttention"] = true;
 
-    if (["INACTIVE", "STRUCK-OFF", "WOUND-UP"].includes(newStatus)) {
+    const badStatuses = [
+      "INACTIVE",
+      "STRUCK-OFF",
+      "WOUND-UP",
+      "DISSOLVED",
+      "SUSPENDED",
+    ];
+    const goodStatuses = ["ACTIVE", "REGISTERED", "COMPLIANT"];
+
+    const isBadStatus = badStatuses.includes(newStatus);
+    const isGoodStatus = goodStatuses.includes(newStatus);
+
+    updateData["cacPortalStatus.requiresAttention"] = isBadStatus;
+
+    if (isBadStatus) {
       updateData.isRevenueOpportunity = true;
       updateData.revenueOpportunityNote = `CAC status changed to ${newStatus} — urgent client contact needed`;
 
@@ -103,10 +116,19 @@ exports.manualStatusCheck = catchAsync(async (req, res, next) => {
           );
         } catch (emailError) {
           console.error("Error sending watchdog alert:", emailError.message);
-          // ✅ Email failure does not fail the request
         }
       }
+    } else if (isGoodStatus) {
+      updateData.isRevenueOpportunity = false;
+      updateData.revenueOpportunityNote = undefined;
     }
+  }
+
+  if (
+    !statusChanged &&
+    ["ACTIVE", "REGISTERED", "COMPLIANT"].includes(newStatus)
+  ) {
+    updateData["cacPortalStatus.requiresAttention"] = false;
   }
 
   // ✅ FIXED: use findByIdAndUpdate to apply changes atomically
@@ -422,12 +444,35 @@ exports.triggerManualCheckAll = catchAsync(async (req, res, next) => {
       if (statusChanged) {
         updateData["cacPortalStatus.previousPortalStatus"] = previousStatus;
         updateData["cacPortalStatus.statusChangedAt"] = new Date();
-        updateData["cacPortalStatus.requiresAttention"] = true;
 
-        if (["INACTIVE", "STRUCK-OFF", "WOUND-UP"].includes(newStatus)) {
+        const badStatuses = [
+          "INACTIVE",
+          "STRUCK-OFF",
+          "WOUND-UP",
+          "DISSOLVED",
+          "SUSPENDED",
+        ];
+        const goodStatuses = ["ACTIVE", "REGISTERED", "COMPLIANT"];
+
+        const isBadStatus = badStatuses.includes(newStatus);
+        const isGoodStatus = goodStatuses.includes(newStatus);
+
+        updateData["cacPortalStatus.requiresAttention"] = isBadStatus;
+
+        if (isBadStatus) {
           updateData.isRevenueOpportunity = true;
           updateData.revenueOpportunityNote = `CAC status changed to ${newStatus} — urgent contact needed`;
+        } else if (isGoodStatus) {
+          updateData.isRevenueOpportunity = false;
+          updateData.revenueOpportunityNote = undefined;
         }
+      }
+
+      if (
+        !statusChanged &&
+        ["ACTIVE", "REGISTERED", "COMPLIANT"].includes(newStatus)
+      ) {
+        updateData["cacPortalStatus.requiresAttention"] = false;
       }
 
       await ComplianceTracker.findByIdAndUpdate(
@@ -492,9 +537,9 @@ exports.createMonitoredEntity = catchAsync(async (req, res, next) => {
   }
 
   // ✅ FIXED: clientId is required — validate it
-  if (!clientId) {
-    return next(new AppError("Client ID is required", 400));
-  }
+  // if (!clientId) {
+  //   return next(new AppError("Client ID is required", 400));
+  // }
 
   const entityTypeMap = {
     ltd: "private-limited",
