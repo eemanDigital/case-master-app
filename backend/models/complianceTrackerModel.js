@@ -1,12 +1,30 @@
 const mongoose = require("mongoose");
 
-const PENALTY_RATES = {
+const PENALTY_RATES_DAILY = {
   "business-name": 5000,
   "private-limited": 10000,
   "public-limited": 25000,
   llp: 10000,
   "incorporated-trustee": 5000,
   other: 5000,
+};
+
+const PENALTY_RATES_MONTHLY = {
+  "business-name": 150000,
+  "private-limited": 300000,
+  "public-limited": 750000,
+  llp: 300000,
+  "incorporated-trustee": 150000,
+  other: 150000,
+};
+
+const PENALTY_RATES_YEARLY = {
+  "business-name": 1800000,
+  "private-limited": 3600000,
+  "public-limited": 9000000,
+  llp: 3600000,
+  "incorporated-trustee": 1800000,
+  other: 1800000,
 };
 
 const ANNUAL_RETURN_DEADLINES = {
@@ -29,7 +47,6 @@ const complianceTrackerSchema = new mongoose.Schema(
     clientId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: [true, "Client ID is required"],
     },
     cacMatterId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -62,7 +79,6 @@ const complianceTrackerSchema = new mongoose.Schema(
     bnNumber: String,
     incorporationDate: {
       type: Date,
-      required: [true, "Incorporation date is required"],
     },
     stateOfRegistration: String,
 
@@ -111,19 +127,78 @@ const complianceTrackerSchema = new mongoose.Schema(
       watchdogNotes: String,
     },
 
+    linkedMatterId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Matter",
+    },
+
     penaltyTracking: {
+      penaltyType: {
+        type: String,
+        enum: ["daily", "monthly", "yearly"],
+        default: "monthly",
+      },
+      penaltyRate: {
+        type: Number,
+        default: 5000,
+      },
       isPenaltyAccruing: {
         type: Boolean,
         default: false,
       },
       penaltyStartDate: Date,
-      monthlyPenaltyRate: Number,
       currentPenaltyAmount: {
         type: Number,
         default: 0,
       },
       lastCalculatedAt: Date,
       totalPenaltyToPay: Number,
+      gracePeriodDays: {
+        type: Number,
+        default: 0,
+      },
+      hasGracePeriod: {
+        type: Boolean,
+        default: false,
+      },
+    },
+
+    otherFees: {
+      filingFee: {
+        type: Number,
+        default: 0,
+      },
+      processingFee: {
+        type: Number,
+        default: 0,
+      },
+      administrativeCharge: {
+        type: Number,
+        default: 0,
+      },
+      otherFeeDescription: {
+        type: String,
+        trim: true,
+      },
+      otherFeesTotal: {
+        type: Number,
+        default: 0,
+      },
+    },
+
+    professionalFee: {
+      amount: {
+        type: Number,
+        default: 0,
+      },
+      description: {
+        type: String,
+        trim: true,
+      },
+      isIncluded: {
+        type: Boolean,
+        default: false,
+      },
     },
 
     notificationsSent: [{
@@ -197,13 +272,23 @@ complianceTrackerSchema.index({ nextFilingDueDate: 1 });
 complianceTrackerSchema.set("toJSON", { virtuals: true });
 complianceTrackerSchema.set("toObject", { virtuals: true });
 
-complianceTrackerSchema.statics.calculatePenalty = function (entityType, monthsLate) {
-  const monthlyRate = PENALTY_RATES[entityType] || PENALTY_RATES.other;
-  return monthlyRate * Math.max(0, monthsLate);
+complianceTrackerSchema.statics.getPenaltyRates = function (entityType) {
+  return {
+    daily: PENALTY_RATES_DAILY[entityType] || PENALTY_RATES_DAILY.other,
+    monthly: PENALTY_RATES_MONTHLY[entityType] || PENALTY_RATES_MONTHLY.other,
+    yearly: PENALTY_RATES_YEARLY[entityType] || PENALTY_RATES_YEARLY.other,
+  };
 };
 
-complianceTrackerSchema.statics.getPenaltyRate = function (entityType) {
-  return PENALTY_RATES[entityType] || PENALTY_RATES.other;
+complianceTrackerSchema.statics.getPenaltyRate = function (entityType, penaltyType = "monthly") {
+  switch (penaltyType) {
+    case "daily":
+      return PENALTY_RATES_DAILY[entityType] || PENALTY_RATES_DAILY.other;
+    case "yearly":
+      return PENALTY_RATES_YEARLY[entityType] || PENALTY_RATES_YEARLY.other;
+    default:
+      return PENALTY_RATES_MONTHLY[entityType] || PENALTY_RATES_MONTHLY.other;
+  }
 };
 
 complianceTrackerSchema.statics.getNextFilingDueDate = function (entityType, incorporationDate, lastFiledYear) {
@@ -265,23 +350,118 @@ complianceTrackerSchema.statics.getNonCompliantEntities = async function (firmId
 };
 
 complianceTrackerSchema.methods.calculateCurrentPenalty = function () {
-  if (!this.penaltyTracking.isPenaltyAccruing || !this.penaltyTracking.penaltyStartDate) {
-    return 0;
+  const penaltyType = this.penaltyTracking?.penaltyType || "monthly";
+  const rate = this.penaltyTracking?.penaltyRate || 0;
+  
+  if (!this.penaltyTracking?.isPenaltyAccruing || !this.penaltyTracking?.penaltyStartDate) {
+    return {
+      penaltyType,
+      rate,
+      periodsOverdue: 0,
+      daysLate: 0,
+      penaltyAmount: 0,
+      breakdown: null,
+    };
   }
 
   const startDate = new Date(this.penaltyTracking.penaltyStartDate);
   const now = new Date();
+  const graceDays = this.penaltyTracking.gracePeriodDays || 0;
+  
+  const effectiveStartDate = new Date(startDate);
+  effectiveStartDate.setDate(effectiveStartDate.getDate() + graceDays);
+  
+  if (now <= effectiveStartDate) {
+    return {
+      penaltyType,
+      rate,
+      periodsOverdue: 0,
+      daysLate: 0,
+      penaltyAmount: 0,
+      breakdown: null,
+      withinGracePeriod: true,
+      graceEndsDate: effectiveStartDate,
+    };
+  }
 
-  const monthsLate = Math.max(0,
-    (now.getFullYear() - startDate.getFullYear()) * 12 +
-    (now.getMonth() - startDate.getMonth())
-  );
+  const msPerDay = 24 * 60 * 60 * 1000;
+  const daysLate = Math.floor((now - effectiveStartDate) / msPerDay);
 
-  const monthlyRate = this.penaltyTracking.monthlyPenaltyRate ||
-    PENALTY_RATES[this.entityType] ||
-    PENALTY_RATES.other;
+  let periodsOverdue = 0;
+  let penaltyAmount = 0;
+  let breakdown = [];
 
-  return monthlyRate * monthsLate;
+  switch (penaltyType) {
+    case "daily":
+      periodsOverdue = daysLate;
+      penaltyAmount = rate * daysLate;
+      breakdown.push({
+        period: "day",
+        rate,
+        periods: daysLate,
+        amount: penaltyAmount,
+      });
+      break;
+    case "yearly":
+      periodsOverdue = Math.floor(daysLate / 365);
+      penaltyAmount = rate * periodsOverdue;
+      breakdown.push({
+        period: "year",
+        rate,
+        periods: periodsOverdue,
+        amount: penaltyAmount,
+      });
+      break;
+    case "monthly":
+    default:
+      const monthsLate = daysLate / 30;
+      periodsOverdue = Math.floor(monthsLate);
+      penaltyAmount = rate * periodsOverdue;
+      breakdown.push({
+        period: "month",
+        rate,
+        periods: periodsOverdue,
+        amount: penaltyAmount,
+      });
+      break;
+  }
+
+  return {
+    penaltyType,
+    rate,
+    periodsOverdue,
+    daysLate,
+    penaltyAmount: Math.round(penaltyAmount * 100) / 100,
+    breakdown,
+    withinGracePeriod: false,
+  };
+};
+
+complianceTrackerSchema.methods.calculateTotalFees = function () {
+  const penaltyCalc = this.calculateCurrentPenalty();
+  const filingFee = this.otherFees?.filingFee || 0;
+  const processingFee = this.otherFees?.processingFee || 0;
+  const adminCharge = this.otherFees?.administrativeCharge || 0;
+  const otherFeesTotal = this.otherFees?.otherFeesTotal || 0;
+  const professionalFee = this.professionalFee?.amount || 0;
+  
+  const totalPenaltyAndFees = penaltyCalc.penaltyAmount + filingFee + processingFee + adminCharge + otherFeesTotal;
+  const grandTotal = totalPenaltyAndFees + (this.professionalFee?.isIncluded ? 0 : professionalFee);
+
+  return {
+    penaltyAmount: penaltyCalc.penaltyAmount,
+    penaltyBreakdown: penaltyCalc.breakdown,
+    filingFee,
+    processingFee,
+    administrativeCharge: adminCharge,
+    otherFeesTotal,
+    otherFeesDescription: this.otherFees?.otherFeeDescription,
+    professionalFee,
+    professionalFeeIncluded: this.professionalFee?.isIncluded || false,
+    professionalFeeDescription: this.professionalFee?.description,
+    subtotal: totalPenaltyAndFees,
+    totalToClient: grandTotal,
+  };
 };
 
 const ComplianceTracker = mongoose.model("ComplianceTracker", complianceTrackerSchema);

@@ -20,11 +20,11 @@ import {
   Badge,
   Divider,
   Empty,
-  Timeline,
+  Tooltip,
+  Popconfirm,
 } from "antd";
 import {
   PlusOutlined,
-  EyeOutlined,
   WarningOutlined,
   CheckCircleOutlined,
   ReloadOutlined,
@@ -36,6 +36,7 @@ import {
   LinkOutlined,
   InfoCircleOutlined,
   FileDoneOutlined,
+  EyeOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -46,8 +47,7 @@ import {
   addMonitoredEntity,
   removeMonitoredEntity,
   checkEntityStatus,
-  dismissAlert,
-  dismissAllAlerts,
+  acknowledgeAlert,
   selectMonitoredEntities,
   selectWatchdogAlerts,
   selectWatchdogDashboard,
@@ -69,28 +69,63 @@ const ENTITY_TYPES = [
 ];
 
 const CHECK_FREQUENCIES = [
-  { value: "hourly", label: "Every Hour" },
   { value: "daily", label: "Daily" },
   { value: "weekly", label: "Weekly" },
+  { value: "monthly", label: "Monthly" },
 ];
 
+// ✅ FIXED: status config uses actual CAC portal status values
+// backend stores cacPortalStatus.portalStatus as "ACTIVE", "INACTIVE" etc
 const STATUS_CONFIG = {
-  active: { color: "green", icon: <CheckCircleOutlined />, label: "Active" },
-  inactive: { color: "red", icon: <ExclamationCircleOutlined />, label: "Inactive" },
-  pending: { color: "orange", icon: <WarningOutlined />, label: "Pending" },
-  unknown: { color: "default", icon: <RobotOutlined />, label: "Unknown" },
+  ACTIVE: {
+    color: "green",
+    icon: <CheckCircleOutlined />,
+    label: "Active",
+  },
+  INACTIVE: {
+    color: "red",
+    icon: <ExclamationCircleOutlined />,
+    label: "Inactive",
+  },
+  "STRUCK-OFF": {
+    color: "red",
+    icon: <ExclamationCircleOutlined />,
+    label: "Struck Off",
+  },
+  "WOUND-UP": {
+    color: "volcano",
+    icon: <ExclamationCircleOutlined />,
+    label: "Wound Up",
+  },
+  DISSOLVED: {
+    color: "default",
+    icon: <ExclamationCircleOutlined />,
+    label: "Dissolved",
+  },
+  REGISTERED: {
+    color: "green",
+    icon: <CheckCircleOutlined />,
+    label: "Registered",
+  },
+  UNKNOWN: {
+    color: "default",
+    icon: <RobotOutlined />,
+    label: "Unknown",
+  },
 };
 
+// ─── Create Entity Modal ──────────────────────────────────────────────────────
 const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
   const dispatch = useDispatch();
   const [form] = Form.useForm();
   const [submitting, setSubmitting] = useState(false);
   const [selectedMatter, setSelectedMatter] = useState(null);
 
-  const { mattersOptions, loading: mattersLoading, fetchMatters } = useMattersSelectOptions({
-    status: "active",
-    limit: 100,
-  });
+  const {
+    mattersOptions,
+    loading: mattersLoading,
+    fetchMatters,
+  } = useMattersSelectOptions({ status: "active", limit: 100 });
 
   const handleSubmit = async () => {
     try {
@@ -98,8 +133,11 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
       setSubmitting(true);
 
       const entityData = {
-        ...values,
-        linkedMatterId: values.linkedMatterId || undefined,
+        entityName: values.entityName,
+        registrationNumber: values.registrationNumber,
+        entityType: values.entityType,
+        linkedMatterId:
+          values.linkedMatterId?.value || values.linkedMatterId || undefined,
       };
 
       await dispatch(addMonitoredEntity(entityData)).unwrap();
@@ -120,12 +158,6 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
     setSelectedMatter(null);
     onClose();
   };
-
-  const matterOptions = mattersOptions.map((opt) => ({
-    value: opt.value,
-    label: opt.label,
-    subtitle: opt.subtitle,
-  }));
 
   return (
     <Modal
@@ -177,7 +209,10 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
-            <Form.Item name="checkFrequency" label="Check Frequency" initialValue="daily">
+            <Form.Item
+              name="checkFrequency"
+              label="Check Frequency"
+              initialValue="monthly">
               <Select options={CHECK_FREQUENCIES} />
             </Form.Item>
           </Col>
@@ -196,7 +231,10 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
           <Select
             showSearch
             placeholder="Search and select a matter..."
-            options={matterOptions}
+            options={mattersOptions?.map((opt) => ({
+              value: opt.value,
+              label: opt.label,
+            }))}
             loading={mattersLoading}
             onSearch={fetchMatters}
             onFocus={() => fetchMatters("")}
@@ -220,7 +258,7 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
             <Space>
               <FileDoneOutlined style={{ color: "#3b82f6" }} />
               <Text type="secondary" style={{ fontSize: 13 }}>
-                Linked to matter: {selectedMatter.label || selectedMatter}
+                Matter linked successfully
               </Text>
             </Space>
           </div>
@@ -230,14 +268,16 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
           type="info"
           icon={<InfoCircleOutlined />}
           message="How it works"
-          description="We'll automatically check the CAC portal for status changes on this entity and alert you when changes are detected."
+          description="We check the CAC portal for status changes and alert you immediately when changes are detected."
           style={{ marginTop: 16 }}
+          showIcon
         />
       </Form>
     </Modal>
   );
 };
 
+// ─── Main Dashboard ───────────────────────────────────────────────────────────
 const WatchdogDashboard = () => {
   const dispatch = useDispatch();
   const entities = useSelector(selectMonitoredEntities);
@@ -245,11 +285,10 @@ const WatchdogDashboard = () => {
   const dashboard = useSelector(selectWatchdogDashboard);
   const loading = useSelector(selectWatchdogLoading);
   const actionLoading = useSelector(selectWatchdogActionLoading);
-  const checking = useSelector(selectWatchdogChecking);
+  const checkingId = useSelector(selectWatchdogChecking);
 
   const [createVisible, setCreateVisible] = useState(false);
   const [tableLoading, setTableLoading] = useState(false);
-  const [form] = Form.useForm();
 
   useEffect(() => {
     loadData();
@@ -272,10 +311,18 @@ const WatchdogDashboard = () => {
 
   const handleCheckStatus = async (entity) => {
     try {
-      await dispatch(checkEntityStatus(entity._id)).unwrap();
-      message.success(`Status check completed for ${entity.entityName}`);
-      loadData();
-    } catch (err) {
+      const result = await dispatch(checkEntityStatus(entity._id)).unwrap();
+      const data = result?.data || result;
+      if (data?.statusChanged) {
+        message.warning(
+          `Status changed: ${data.previousStatus} → ${data.currentStatus}`,
+        );
+      } else {
+        message.success(
+          `Status check complete — ${data?.currentStatus || "no change"}`,
+        );
+      }
+    } catch {
       message.error("Status check failed. Please try again.");
     }
   };
@@ -285,7 +332,8 @@ const WatchdogDashboard = () => {
       title: "Remove from Monitoring",
       content: (
         <span>
-          Stop monitoring <strong>{entity.entityName}</strong>? You can re-add it anytime.
+          Stop monitoring <strong>{entity.entityName}</strong>? You can re-add
+          it anytime.
         </span>
       ),
       okText: "Remove",
@@ -294,7 +342,6 @@ const WatchdogDashboard = () => {
         try {
           await dispatch(removeMonitoredEntity(entity._id)).unwrap();
           message.success("Entity removed from monitoring");
-          loadData();
         } catch {
           message.error("Failed to remove entity");
         }
@@ -302,65 +349,114 @@ const WatchdogDashboard = () => {
     });
   };
 
+  const handleAcknowledgeAlert = async (alertId) => {
+    try {
+      await dispatch(acknowledgeAlert(alertId)).unwrap();
+      message.success("Alert acknowledged");
+    } catch {
+      message.error("Failed to acknowledge alert");
+    }
+  };
+
+  // ── Entity Table Columns ────────────────────────────────────────────────────
   const entityColumns = [
     {
       title: "Entity",
-      dataIndex: "entityName",
       key: "entityName",
-      render: (v, r) => (
+      render: (_, r) => (
         <div>
-          <Text strong style={{ fontSize: 14 }}>{v}</Text>
+          <Text strong style={{ fontSize: 14 }}>
+            {r.entityName}
+          </Text>
           <div>
             <Text type="secondary" style={{ fontSize: 12 }}>
-              {ENTITY_TYPES.find((t) => t.value === r.entityType)?.label || r.entityType} •{" "}
-              {r.registrationNumber}
+              {ENTITY_TYPES.find((t) => t.value === r.entityType)?.label ||
+                r.entityType}{" "}
+              {/* ✅ FIXED: rcNumber not registrationNumber */}•{" "}
+              <span style={{ fontFamily: "monospace" }}>
+                {r.rcNumber || r.bnNumber || "—"}
+              </span>
             </Text>
           </div>
           {r.linkedMatterId && (
-            <Tag icon={<LinkOutlined />} style={{ marginTop: 4, borderRadius: 4, background: "#f0f9ff", border: "1px solid #bae6fd", color: "#0369a1" }}>
+            <Tag
+              icon={<LinkOutlined />}
+              style={{
+                marginTop: 4,
+                borderRadius: 4,
+                background: "#f0f9ff",
+                border: "1px solid #bae6fd",
+                color: "#0369a1",
+                fontSize: 11,
+              }}>
               Matter Linked
+            </Tag>
+          )}
+          {/* ✅ Show requiresAttention flag */}
+          {r.cacPortalStatus?.requiresAttention && (
+            <Tag
+              color="red"
+              icon={<WarningOutlined />}
+              style={{ marginTop: 4, fontSize: 11 }}>
+              Requires Attention
             </Tag>
           )}
         </div>
       ),
     },
     {
-      title: "Last Check",
-      dataIndex: "lastChecked",
-      key: "lastChecked",
-      sorter: (a, b) => dayjs(a.lastChecked).unix() - dayjs(b.lastChecked).unix(),
-      render: (d) =>
-        d ? (
-          <Space direction="vertical" size={0}>
-            <Text>{dayjs(d).format("DD MMM HH:mm")}</Text>
-            <Text type="secondary" style={{ fontSize: 11 }}>
-              {dayjs(d).fromNow()}
-            </Text>
-          </Space>
-        ) : (
-          <Text type="secondary">Never</Text>
-        ),
-    },
-    {
-      title: "Status",
-      dataIndex: "currentStatus",
-      key: "currentStatus",
-      render: (v) => {
-        const config = STATUS_CONFIG[v] || STATUS_CONFIG.unknown;
+      title: "CAC Status",
+      key: "portalStatus",
+      // ✅ FIXED: read from cacPortalStatus.portalStatus
+      render: (_, r) => {
+        const status = r.cacPortalStatus?.portalStatus || "UNKNOWN";
+        const config = STATUS_CONFIG[status] || STATUS_CONFIG.UNKNOWN;
         return (
-          <Tag icon={config.icon} color={config.color}>
-            {config.label}
-          </Tag>
+          <Space direction="vertical" size={0}>
+            <Tag icon={config.icon} color={config.color}>
+              {config.label}
+            </Tag>
+            {r.cacPortalStatus?.previousPortalStatus &&
+              r.cacPortalStatus.previousPortalStatus !==
+                r.cacPortalStatus.portalStatus && (
+                <Text type="secondary" style={{ fontSize: 10 }}>
+                  was: {r.cacPortalStatus.previousPortalStatus}
+                </Text>
+              )}
+          </Space>
         );
       },
     },
     {
-      title: "Alerts",
-      dataIndex: "alertCount",
-      key: "alertCount",
-      render: (v) =>
-        v > 0 ? (
-          <Badge count={v} style={{ backgroundColor: "#ef4444" }} />
+      title: "Last Checked",
+      key: "lastChecked",
+      // ✅ FIXED: read from cacPortalStatus.lastChecked
+      render: (_, r) => {
+        const lastChecked = r.cacPortalStatus?.lastChecked;
+        return lastChecked ? (
+          <Space direction="vertical" size={0}>
+            <Text style={{ fontSize: 13 }}>
+              {dayjs(lastChecked).format("DD MMM HH:mm")}
+            </Text>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {dayjs(lastChecked).fromNow()}
+            </Text>
+          </Space>
+        ) : (
+          <Text type="secondary" style={{ fontSize: 12 }}>
+            Never checked
+          </Text>
+        );
+      },
+    },
+    {
+      title: "Client",
+      key: "client",
+      render: (_, r) =>
+        r.clientId ? (
+          <Text style={{ fontSize: 13 }}>
+            {r.clientId.firstName} {r.clientId.lastName}
+          </Text>
         ) : (
           <Text type="secondary">—</Text>
         ),
@@ -368,78 +464,120 @@ const WatchdogDashboard = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 160,
+      width: 140,
       render: (_, r) => (
         <Space size="small">
-          <Button
-            size="small"
-            icon={<SyncOutlined spin={checking && r._id === entities[0]?._id} />}
-            onClick={() => handleCheckStatus(r)}>
-            Check
-          </Button>
-          <Button
-            size="small"
-            type="text"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={() => handleRemoveEntity(r)}
-          />
+          <Tooltip title="Run status check now">
+            <Button
+              size="small"
+              icon={<SyncOutlined spin={checkingId === r._id} />}
+              onClick={() => handleCheckStatus(r)}
+              loading={checkingId === r._id}
+              disabled={checkingId !== null && checkingId !== r._id}>
+              Check
+            </Button>
+          </Tooltip>
+          <Tooltip title="Remove from monitoring">
+            <Button
+              size="small"
+              type="text"
+              danger
+              icon={<DeleteOutlined />}
+              onClick={() => handleRemoveEntity(r)}
+              disabled={checkingId !== null}
+            />
+          </Tooltip>
         </Space>
       ),
     },
   ];
 
+  // ── Alert Table Columns ─────────────────────────────────────────────────────
   const alertColumns = [
     {
-      title: "Type",
-      dataIndex: "type",
-      key: "type",
-      render: (v) => {
-        const colors = {
-          status_change: "red",
-          check_failed: "orange",
-          reminder: "blue",
-        };
-        return <Tag color={colors[v] || "default"}>{v?.replace(/_/g, " ").toUpperCase()}</Tag>;
+      title: "Entity",
+      key: "entity",
+      render: (_, r) => (
+        <div>
+          <Text strong style={{ fontSize: 13 }}>
+            {r.entityName}
+          </Text>
+          <div>
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              {r.rcNumber || ""}
+            </Text>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Previous",
+      key: "previous",
+      render: (_, r) => {
+        const status = r.cacPortalStatus?.previousPortalStatus || "Unknown";
+        return <Tag>{status}</Tag>;
       },
     },
     {
-      title: "Entity",
-      dataIndex: "entityName",
-      key: "entityName",
-      render: (v) => <Text strong>{v}</Text>,
+      title: "Current",
+      key: "current",
+      render: (_, r) => {
+        const status = r.cacPortalStatus?.portalStatus || "Unknown";
+        const config = STATUS_CONFIG[status] || STATUS_CONFIG.UNKNOWN;
+        return (
+          <Tag color={config.color} icon={config.icon}>
+            {status}
+          </Tag>
+        );
+      },
     },
     {
-      title: "Message",
-      dataIndex: "message",
-      key: "message",
-      ellipsis: true,
-    },
-    {
-      title: "Time",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      render: (d) => dayjs(d).format("DD MMM HH:mm"),
+      title: "Changed",
+      dataIndex: ["cacPortalStatus", "statusChangedAt"],
+      key: "changedAt",
+      render: (d) =>
+        d ? (
+          <Text style={{ fontSize: 12 }}>
+            {dayjs(d).format("DD MMM YYYY HH:mm")}
+          </Text>
+        ) : (
+          "—"
+        ),
     },
     {
       title: "Actions",
       key: "actions",
-      width: 100,
+      width: 120,
       render: (_, r) => (
-        <Button size="small" type="link" onClick={() => dispatch(dismissAlert(r._id))}>
-          Dismiss
+        <Button
+          size="small"
+          type="primary"
+          ghost
+          onClick={() => handleAcknowledgeAlert(r._id)}>
+          Acknowledge
         </Button>
       ),
     },
   ];
 
-  const stats = dashboard?.stats || {};
+  // ── Stats from dashboard (getWatchdogStats response) ──────────────────────
+  const totalMonitored = dashboard?.totalMonitored || entities.length || 0;
+  const activeCount =
+    dashboard?.statusDistribution?.ACTIVE ||
+    dashboard?.statusDistribution?.active ||
+    0;
+  const inactiveCount =
+    (dashboard?.statusDistribution?.INACTIVE || 0) +
+    (dashboard?.statusDistribution?.["STRUCK-OFF"] || 0) +
+    (dashboard?.statusDistribution?.["WOUND-UP"] || 0);
+  const alertCount = dashboard?.alertsRequiringAttention || alerts.length || 0;
 
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
       `}</style>
+
       <div
         style={{
           padding: 24,
@@ -447,6 +585,7 @@ const WatchdogDashboard = () => {
           minHeight: "100vh",
           fontFamily: "'DM Sans', sans-serif",
         }}>
+        {/* ── Header ─────────────────────────────────────────────────────── */}
         <div
           style={{
             display: "flex",
@@ -457,97 +596,175 @@ const WatchdogDashboard = () => {
             gap: 16,
           }}>
           <div>
-            <Title level={3} style={{ margin: 0, fontWeight: 800 }}>
+            <Title
+              level={3}
+              style={{ margin: 0, fontWeight: 800, color: "#0f172a" }}>
               CAC Status Watchdog
             </Title>
-            <Text type="secondary">Automated CAC portal monitoring for your entities</Text>
+            <Text type="secondary">
+              Automated CAC portal monitoring — status changes detected
+              instantly
+            </Text>
           </div>
           <Space wrap>
-            <Button icon={<ReloadOutlined spin={loading} />} onClick={loadData} loading={loading}>
+            <Button
+              icon={<ReloadOutlined spin={loading} />}
+              onClick={loadData}
+              loading={tableLoading}>
               Refresh
             </Button>
-            <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreateVisible(true)}>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setCreateVisible(true)}>
               Add to Monitor
             </Button>
           </Space>
         </div>
 
+        {/* ── Alerts Banner ───────────────────────────────────────────────── */}
         {alerts.length > 0 && (
           <Alert
             message={
               <Space>
-                <BellOutlined />
-                <span>Active Alerts</span>
+                <WarningOutlined />
+                <strong>
+                  {alerts.length} entity status change
+                  {alerts.length > 1 ? "s" : ""} require your attention
+                </strong>
               </Space>
             }
-            description={`${alerts.length} alert(s) require your attention. Click to view details.`}
-            type="warning"
-            icon={<BellOutlined />}
+            description="Review the alerts below and acknowledge once actioned."
+            type="error"
             showIcon
             style={{ marginBottom: 24, borderRadius: 12 }}
-            action={
-              <Button size="small" onClick={() => dispatch(dismissAllAlerts())}>
-                Dismiss All
-              </Button>
-            }
           />
         )}
 
+        {/* ── Stats Row ───────────────────────────────────────────────────── */}
         <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
           <Col xs={12} sm={8} md={6}>
-            <Card bordered={false} style={{ borderRadius: 12 }}>
+            <Card
+              bordered={false}
+              style={{
+                borderRadius: 12,
+                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              }}>
               <Statistic
-                title={<Text type="secondary">Monitored Entities</Text>}
-                value={stats.monitored || 0}
-                prefix={<RobotOutlined style={{ color: "#3b82f6" }} />}
+                title={
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Monitored Entities
+                  </Text>
+                }
+                value={totalMonitored}
+                prefix={
+                  <RobotOutlined style={{ color: "#3b82f6", fontSize: 18 }} />
+                }
               />
             </Card>
           </Col>
           <Col xs={12} sm={8} md={6}>
-            <Card bordered={false} style={{ borderRadius: 12 }}>
+            <Card
+              bordered={false}
+              style={{
+                borderRadius: 12,
+                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              }}>
               <Statistic
-                title={<Text type="secondary">Active</Text>}
-                value={stats.active || 0}
+                title={
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Active
+                  </Text>
+                }
+                value={activeCount}
                 valueStyle={{ color: "#10b981" }}
                 prefix={<CheckCircleOutlined />}
               />
             </Card>
           </Col>
           <Col xs={12} sm={8} md={6}>
-            <Card bordered={false} style={{ borderRadius: 12 }}>
+            <Card
+              bordered={false}
+              style={{
+                borderRadius: 12,
+                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              }}>
               <Statistic
-                title={<Text type="secondary">Inactive</Text>}
-                value={stats.inactive || 0}
-                valueStyle={{ color: "#ef4444" }}
+                title={
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Inactive / Struck Off
+                  </Text>
+                }
+                value={inactiveCount}
+                valueStyle={{
+                  color: inactiveCount > 0 ? "#ef4444" : "#10b981",
+                }}
                 prefix={<ExclamationCircleOutlined />}
               />
             </Card>
           </Col>
           <Col xs={12} sm={8} md={6}>
-            <Card bordered={false} style={{ borderRadius: 12 }}>
+            <Card
+              bordered={false}
+              style={{
+                borderRadius: 12,
+                boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+              }}>
               <Statistic
-                title={<Text type="secondary">Active Alerts</Text>}
-                value={alerts.length}
-                valueStyle={{ color: "#f59e0b" }}
-                prefix={<BellOutlined />}
+                title={
+                  <Text type="secondary" style={{ fontSize: 12 }}>
+                    Requiring Attention
+                  </Text>
+                }
+                value={alertCount}
+                valueStyle={{ color: alertCount > 0 ? "#f59e0b" : "#10b981" }}
+                prefix={
+                  <Badge dot={alertCount > 0}>
+                    <BellOutlined />
+                  </Badge>
+                }
               />
             </Card>
           </Col>
         </Row>
 
+        {/* ── Alerts Table ─────────────────────────────────────────────────── */}
         {alerts.length > 0 && (
-          <Card bordered={false} style={{ borderRadius: 12, marginBottom: 16 }} title="Recent Alerts">
+          <Card
+            bordered={false}
+            style={{ borderRadius: 12, marginBottom: 16 }}
+            title={
+              <Space>
+                <WarningOutlined style={{ color: "#ef4444" }} />
+                <span style={{ fontWeight: 700 }}>Status Change Alerts</span>
+                <Badge
+                  count={alerts.length}
+                  style={{ backgroundColor: "#ef4444" }}
+                />
+              </Space>
+            }>
             <Table
-              dataSource={alerts.slice(0, 5)}
+              dataSource={alerts}
               columns={alertColumns}
               rowKey="_id"
               pagination={false}
               size="small"
+              scroll={{ x: "max-content" }}
             />
           </Card>
         )}
 
-        <Card bordered={false} style={{ borderRadius: 12 }} title="Monitored Entities">
+        {/* ── Monitored Entities Table ─────────────────────────────────────── */}
+        <Card
+          bordered={false}
+          style={{ borderRadius: 12 }}
+          title={
+            <Space>
+              <RobotOutlined style={{ color: "#3b82f6" }} />
+              <span style={{ fontWeight: 700 }}>Monitored Entities</span>
+              <Tag color="blue">{entities.length}</Tag>
+            </Space>
+          }>
           {tableLoading ? (
             <div style={{ textAlign: "center", padding: 60 }}>
               <Spin size="large" />
@@ -555,10 +772,10 @@ const WatchdogDashboard = () => {
           ) : entities.length === 0 ? (
             <Empty
               description={
-                <Space direction="vertical">
+                <Space direction="vertical" align="center">
                   <Text type="secondary">No entities being monitored yet</Text>
                   <Text type="secondary" style={{ fontSize: 12 }}>
-                    Add entities to start monitoring their CAC status
+                    Add an entity to start tracking its CAC status
                   </Text>
                   <Button
                     type="primary"
@@ -576,20 +793,40 @@ const WatchdogDashboard = () => {
               dataSource={entities}
               columns={entityColumns}
               rowKey="_id"
-              pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `${total} entities` }}
+              pagination={{
+                pageSize: 10,
+                showSizeChanger: true,
+                showTotal: (total) => `${total} entities monitored`,
+              }}
               scroll={{ x: "max-content" }}
               size="middle"
+              rowClassName={(r) =>
+                r.cacPortalStatus?.requiresAttention
+                  ? "ant-table-row-danger"
+                  : ""
+              }
             />
           )}
         </Card>
       </div>
 
+      {/* ── Create Modal ──────────────────────────────────────────────────── */}
       <CreateEntityModal
         visible={createVisible}
         onClose={() => setCreateVisible(false)}
         onSuccess={loadData}
         loading={actionLoading}
       />
+
+      {/* ── Row highlight style ───────────────────────────────────────────── */}
+      <style>{`
+        .ant-table-row-danger td {
+          background: #fff5f5 !important;
+        }
+        .ant-table-row-danger:hover td {
+          background: #fee2e2 !important;
+        }
+      `}</style>
     </>
   );
 };

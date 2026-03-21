@@ -7,6 +7,9 @@ const router = express.Router();
 
 router.use(protect);
 
+router.get("/", restrictTo("super-admin", "admin", "lawyer"), feeProtectorController.getAllFeeProtectors);
+router.get("/stats", restrictTo("super-admin", "admin", "lawyer"), feeProtectorController.getFeeProtectorStats);
+
 router.post(
   "/:entityType/:entityId/upload",
   premiumFeatureGuard("feeProtector"),

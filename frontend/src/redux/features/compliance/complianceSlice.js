@@ -1,4 +1,8 @@
-import { createSlice, createAsyncThunk, createEntityAdapter } from "@reduxjs/toolkit";
+import {
+  createSlice,
+  createAsyncThunk,
+  createEntityAdapter,
+} from "@reduxjs/toolkit";
 import * as complianceApi from "./complianceService";
 
 const complianceAdapter = createEntityAdapter({
@@ -32,9 +36,13 @@ export const fetchEntities = createAsyncThunk(
     try {
       return await complianceApi.getAllEntities(params);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch entities");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch entities",
+      );
     }
-  }
+  },
 );
 
 export const fetchEntity = createAsyncThunk(
@@ -43,9 +51,13 @@ export const fetchEntity = createAsyncThunk(
     try {
       return await complianceApi.getEntity(id);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch entity");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch entity",
+      );
     }
-  }
+  },
 );
 
 export const createEntity = createAsyncThunk(
@@ -54,9 +66,13 @@ export const createEntity = createAsyncThunk(
     try {
       return await complianceApi.createEntity(data);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to create entity");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create entity",
+      );
     }
-  }
+  },
 );
 
 export const updateEntity = createAsyncThunk(
@@ -65,9 +81,13 @@ export const updateEntity = createAsyncThunk(
     try {
       return await complianceApi.updateEntity(id, data);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to update entity");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to update entity",
+      );
     }
-  }
+  },
 );
 
 export const deleteEntity = createAsyncThunk(
@@ -76,9 +96,13 @@ export const deleteEntity = createAsyncThunk(
     try {
       return await complianceApi.deleteEntity(id);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to delete entity");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to delete entity",
+      );
     }
-  }
+  },
 );
 
 export const fetchDashboard = createAsyncThunk(
@@ -87,9 +111,13 @@ export const fetchDashboard = createAsyncThunk(
     try {
       return await complianceApi.getDashboard();
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch dashboard");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch dashboard",
+      );
     }
-  }
+  },
 );
 
 export const fetchStats = createAsyncThunk(
@@ -98,9 +126,13 @@ export const fetchStats = createAsyncThunk(
     try {
       return await complianceApi.getComplianceStats();
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch stats");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch stats",
+      );
     }
-  }
+  },
 );
 
 export const fetchEntityPenalty = createAsyncThunk(
@@ -109,9 +141,13 @@ export const fetchEntityPenalty = createAsyncThunk(
     try {
       return await complianceApi.getEntityPenalty(id);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch penalty");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch penalty",
+      );
     }
-  }
+  },
 );
 
 export const markPaid = createAsyncThunk(
@@ -120,9 +156,13 @@ export const markPaid = createAsyncThunk(
     try {
       return await complianceApi.markCompliancePaid(id, data);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to mark as paid");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to mark as paid",
+      );
     }
-  }
+  },
 );
 
 const complianceSlice = createSlice({
@@ -151,8 +191,13 @@ const complianceSlice = createSlice({
       .addCase(fetchEntities.fulfilled, (state, action) => {
         state.loading = false;
         const payload = unwrap(action.payload);
-        complianceAdapter.setAll(state, payload.data || []);
-        state.pagination = payload.pagination || { page: 1, limit: 20, total: 0, pages: 0 };
+        complianceAdapter.setAll(state, payload || []);
+        state.pagination = payload.pagination || {
+          page: 1,
+          limit: 20,
+          total: 0,
+          pages: 0,
+        };
       })
       .addCase(fetchEntities.rejected, (state, action) => {
         state.loading = false;
@@ -216,12 +261,8 @@ const complianceSlice = createSlice({
   },
 });
 
-export const {
-  setFilters,
-  clearFilters,
-  clearError,
-  clearDashboard,
-} = complianceSlice.actions;
+export const { setFilters, clearFilters, clearError, clearDashboard } =
+  complianceSlice.actions;
 
 export const {
   selectAll: selectAllEntities,
@@ -234,10 +275,12 @@ export const {
 export const selectComplianceEntities = (state) => selectAllEntities(state);
 export const selectComplianceDashboard = (state) => state.compliance.dashboard;
 export const selectComplianceStats = (state) => state.compliance.stats;
-export const selectCompliancePagination = (state) => state.compliance.pagination;
+export const selectCompliancePagination = (state) =>
+  state.compliance.pagination;
 export const selectComplianceFilters = (state) => state.compliance.filters;
 export const selectComplianceLoading = (state) => state.compliance.loading;
-export const selectComplianceActionLoading = (state) => state.compliance.actionLoading;
+export const selectComplianceActionLoading = (state) =>
+  state.compliance.actionLoading;
 export const selectComplianceError = (state) => state.compliance.error;
 
 export default complianceSlice.reducer;

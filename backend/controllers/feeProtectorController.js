@@ -411,3 +411,113 @@ exports.getProtectedDocumentStatus = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+exports.getAllFeeProtectors = catchAsync(async (req, res, next) => {
+  const { page = 1, limit = 20, entityType } = req.query;
+
+  const query = { firmId: req.firmId };
+
+  if (entityType) {
+    query.entityType = entityType;
+  }
+
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+
+  const CacMatter = require("../models/cacMatterModel");
+  const GeneratedDocument = require("../models/generatedDocumentModel");
+
+  const [cacMatters, generatedDocs] = await Promise.all([
+    CacMatter.find({ ...query, "protectedDocument.originalFileUrl": { $exists: true } })
+      .select("companyName entityType clientId protectedDocument createdAt")
+      .populate("clientId", "firstName lastName email")
+      .skip(skip)
+      .limit(parseInt(limit))
+      .sort({ createdAt: -1 }),
+    GeneratedDocument.find({ ...query, "protectedDocument.originalFileUrl": { $exists: true } })
+      .select("documentName entityType clientId protectedDocument createdAt")
+      .populate("clientId", "firstName lastName email")
+      .skip(skip)
+      .limit(parseInt(limit))
+      .sort({ createdAt: -1 }),
+  ]);
+
+  const combined = [
+    ...cacMatters.map(m => ({
+      id: m._id,
+      type: "cac",
+      entityType: m.entityType,
+      name: m.companyName,
+      clientId: m.clientId,
+      protectedDocument: m.protectedDocument,
+      createdAt: m.createdAt,
+    })),
+    ...generatedDocs.map(d => ({
+      id: d._id,
+      type: "document",
+      entityType: d.entityType,
+      name: d.documentName,
+      clientId: d.clientId,
+      protectedDocument: d.protectedDocument,
+      createdAt: d.createdAt,
+    })),
+  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  res.status(200).json({
+    status: "success",
+    data: combined,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: combined.length,
+    },
+  });
+});
+
+exports.getFeeProtectorStats = catchAsync(async (req, res, next) => {
+  const CacMatter = require("../models/cacMatterModel");
+  const GeneratedDocument = require("../models/generatedDocumentModel");
+
+  const [cacStats, docStats] = await Promise.all([
+    CacMatter.aggregate([
+      { $match: { firmId: req.firmId, "protectedDocument.originalFileUrl": { $exists: true } } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          paid: { $sum: { $cond: ["$protectedDocument.isBalancePaid", 1, 0] } },
+          unpaid: { $sum: { $cond: ["$protectedDocument.isBalancePaid", 0, 1] } },
+          totalAmount: { $sum: "$protectedDocument.balanceAmount" },
+        },
+      },
+    ]),
+    GeneratedDocument.aggregate([
+      { $match: { firmId: req.firmId, "protectedDocument.originalFileUrl": { $exists: true } } },
+      {
+        $group: {
+          _id: null,
+          total: { $sum: 1 },
+          paid: { $sum: { $cond: ["$protectedDocument.isBalancePaid", 1, 0] } },
+          unpaid: { $sum: { $cond: ["$protectedDocument.isBalancePaid", 0, 1] } },
+          totalAmount: { $sum: "$protectedDocument.balanceAmount" },
+        },
+      },
+    ]),
+  ]);
+
+  const totalProtected = (cacStats[0]?.total || 0) + (docStats[0]?.total || 0);
+  const totalPaid = (cacStats[0]?.paid || 0) + (docStats[0]?.paid || 0);
+  const totalUnpaid = (cacStats[0]?.unpaid || 0) + (docStats[0]?.unpaid || 0);
+  const totalAmount = (cacStats[0]?.totalAmount || 0) + (docStats[0]?.totalAmount || 0);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      totalProtected,
+      totalPaid,
+      totalUnpaid,
+      totalAmount,
+      cacMatters: cacStats[0] || { total: 0, paid: 0, unpaid: 0, totalAmount: 0 },
+      generatedDocuments: docStats[0] || { total: 0, paid: 0, unpaid: 0, totalAmount: 0 },
+    },
+  });
+});

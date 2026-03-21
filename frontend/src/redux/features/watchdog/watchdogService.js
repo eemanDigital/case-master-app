@@ -30,7 +30,7 @@ export const removeMonitoredEntity = (id) => {
 };
 
 export const checkEntityStatus = (id) => {
-  return apiService.post(`/watchdog/monitored/${id}/check`);
+  return apiService.post(`/watchdog/check/${id}`);
 };
 
 export const dismissAlert = (id) => {

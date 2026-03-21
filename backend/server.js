@@ -349,8 +349,14 @@ app.use("/api/v1/watchdog", watchdogRouter);
 app.use("/api/v1/automations", automationRouter);
 
 // Public invitation validation
-app.get("/api/v1/invitations/validate/:token", require("./controllers/invitationController").validateInvitation);
-app.post("/api/v1/invitations/accept/:token", require("./controllers/invitationController").acceptInvitation);
+app.get(
+  "/api/v1/invitations/validate/:token",
+  require("./controllers/invitationController").validateInvitation,
+);
+app.post(
+  "/api/v1/invitations/accept/:token",
+  require("./controllers/invitationController").acceptInvitation,
+);
 
 // Platform admin routes
 app.use("/api/v1/platform", require("./routes/platformAdminRoutes"));
@@ -376,7 +382,7 @@ app.get("/health", async (req, res) => {
     // Check database connection
     const dbState = mongoose.connection.readyState;
     healthcheck.checks.database = dbState === 1 ? "connected" : "disconnected";
-    
+
     // Check memory usage
     const memUsage = process.memoryUsage();
     healthcheck.checks.memory = {
@@ -538,14 +544,17 @@ mongoose.connection.once("open", () => {
     const { initDeadlineCronJobs } = require("./utils/deadlineCronJobs");
     const { initComplianceCronJobs } = require("./utils/complianceCronJobs");
     const { initWatchdogCronJobs } = require("./utils/watchdogCronJobs");
-    
+
     initDeadlineCronJobs();
     initComplianceCronJobs();
     initWatchdogCronJobs();
-    
+
     console.log("✅ Premium Features Cron Jobs initialized");
   } catch (error) {
-    console.error("❌ Failed to initialize Premium Features Cron Jobs:", error.message);
+    console.error(
+      "❌ Failed to initialize Premium Features Cron Jobs:",
+      error.message,
+    );
   }
 });
 

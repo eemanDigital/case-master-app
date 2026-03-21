@@ -64,29 +64,64 @@ const ENTITY_TYPES = [
 ];
 
 const LivePenaltyCounter = ({ entity }) => {
-  const [penalty, setPenalty] = useState(0);
-  const [timeLeft, setTimeLeft] = useState("");
+  const [calculation, setCalculation] = useState({ penaltyAmount: 0, periodsOverdue: 0, daysLate: 0 });
 
   useEffect(() => {
     if (!entity?.nextDueDate || entity.complianceStatus === "compliant") {
-      setPenalty(0);
+      setCalculation({ penaltyAmount: 0, periodsOverdue: 0, daysLate: 0 });
       return;
     }
 
     const calculatePenalty = () => {
+      const graceDays = entity.penaltyTracking?.gracePeriodDays || 0;
       const daysSinceDue = dayjs().diff(dayjs(entity.nextDueDate), "day");
-      if (daysSinceDue <= 0) {
-        setPenalty(0);
-        setTimeLeft(`${Math.abs(daysSinceDue)} days remaining`);
+      
+      if (daysSinceDue <= graceDays) {
+        setCalculation({ 
+          penaltyAmount: 0, 
+          periodsOverdue: 0, 
+          daysLate: 0,
+          withinGracePeriod: true,
+          graceEndsIn: graceDays - daysSinceDue 
+        });
         return;
       }
-      const penaltyPerDay = entity.penaltyPerDay || 5000;
-      const maxPenalty = entity.maxPenalty || 500000;
-      const calculated = Math.min(daysSinceDue * penaltyPerDay, maxPenalty);
-      setPenalty(calculated);
-      const months = Math.floor(daysSinceDue / 30);
-      const days = daysSinceDue % 30;
-      setTimeLeft(`${months > 0 ? `${months}mo ` : ""}${days}d overdue`);
+
+      const effectiveDaysLate = daysSinceDue - graceDays;
+      const penaltyType = entity.penaltyTracking?.penaltyType || "monthly";
+      const rate = entity.penaltyTracking?.penaltyRate || 5000;
+      
+      let penaltyAmount = 0;
+      let periodsOverdue = 0;
+      let periodLabel = "";
+
+      switch (penaltyType) {
+        case "daily":
+          periodsOverdue = effectiveDaysLate;
+          penaltyAmount = rate * periodsOverdue;
+          periodLabel = `${periodsOverdue} day${periodsOverdue !== 1 ? "s" : ""}`;
+          break;
+        case "yearly":
+          periodsOverdue = Math.floor(effectiveDaysLate / 365);
+          penaltyAmount = rate * periodsOverdue;
+          periodLabel = `${periodsOverdue} year${periodsOverdue !== 1 ? "s" : ""}`;
+          break;
+        case "monthly":
+        default:
+          periodsOverdue = Math.floor(effectiveDaysLate / 30);
+          penaltyAmount = rate * periodsOverdue;
+          periodLabel = `${periodsOverdue} month${periodsOverdue !== 1 ? "s" : ""}`;
+          break;
+      }
+
+      setCalculation({ 
+        penaltyAmount, 
+        periodsOverdue, 
+        daysLate: effectiveDaysLate,
+        periodLabel,
+        penaltyType,
+        rate 
+      });
     };
 
     calculatePenalty();
@@ -94,28 +129,60 @@ const LivePenaltyCounter = ({ entity }) => {
     return () => clearInterval(interval);
   }, [entity]);
 
-  if (!penalty || entity.complianceStatus === "compliant") return null;
+  if (calculation.penaltyAmount <= 0) {
+    if (calculation.withinGracePeriod) {
+      return (
+        <div
+          style={{
+            background: "#fffbeb",
+            border: "1px solid #fcd34d",
+            borderRadius: 8,
+            padding: "8px 12px",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+          }}>
+          <ClockCircleOutlined style={{ color: "#f59e0b" }} />
+          <span style={{ fontSize: 12, color: "#d97706", fontWeight: 600 }}>
+            Grace Period: {calculation.graceEndsIn} day{calculation.graceEndsIn !== 1 ? "s" : ""} left
+          </span>
+        </div>
+      );
+    }
+    return null;
+  }
 
   return (
-    <div
-      style={{
-        background: "#fef2f2",
-        border: "1px solid #fecaca",
-        borderRadius: 8,
-        padding: "8px 12px",
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 8,
-      }}>
-      <WarningOutlined style={{ color: "#ef4444" }} />
-      <span style={{ fontSize: 12, color: "#ef4444", fontWeight: 600 }}>
-        Live Penalty:{" "}
-        <span style={{ fontFamily: "monospace" }}>
-          ₦{penalty.toLocaleString()}
+    <Tooltip 
+      title={
+        <div>
+          <div><strong>Penalty Type:</strong> {calculation.penaltyType?.toUpperCase()}</div>
+          <div><strong>Rate:</strong> ₦{calculation.rate?.toLocaleString()}/{calculation.penaltyType}</div>
+          <div><strong>Days Late:</strong> {calculation.daysLate} days</div>
+          <div><strong>Periods Overdue:</strong> {calculation.periodLabel}</div>
+        </div>
+      }
+    >
+      <div
+        style={{
+          background: "#fef2f2",
+          border: "1px solid #fecaca",
+          borderRadius: 8,
+          padding: "8px 12px",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+        }}>
+        <WarningOutlined style={{ color: "#ef4444" }} />
+        <span style={{ fontSize: 12, color: "#ef4444", fontWeight: 600 }}>
+          Live Penalty:{" "}
+          <span style={{ fontFamily: "monospace" }}>
+            ₦{calculation.penaltyAmount.toLocaleString()}
+          </span>
         </span>
-      </span>
-      <span style={{ fontSize: 11, color: "#f87171" }}>({timeLeft})</span>
-    </div>
+        <span style={{ fontSize: 11, color: "#f87171" }}>({calculation.periodLabel})</span>
+      </div>
+    </Tooltip>
   );
 };
 
@@ -123,8 +190,11 @@ LivePenaltyCounter.propTypes = {
   entity: PropTypes.shape({
     nextDueDate: PropTypes.string,
     complianceStatus: PropTypes.string,
-    penaltyPerDay: PropTypes.number,
-    maxPenalty: PropTypes.number,
+    penaltyTracking: PropTypes.shape({
+      penaltyType: PropTypes.string,
+      penaltyRate: PropTypes.number,
+      gracePeriodDays: PropTypes.number,
+    }),
   }),
 };
 
@@ -144,11 +214,36 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
       const values = await form.validateFields();
       setSubmitting(true);
 
+      const penaltyType = values.penaltyType || "monthly";
+      const penaltyRate = values.penaltyRate || (penaltyType === "daily" ? 5000 : penaltyType === "yearly" ? 1800000 : 150000);
+
       const entityData = {
-        ...values,
-        nextDueDate: values.nextDueDate?.toISOString(),
+        entityName: values.entityName,
+        entityType: values.entityType,
+        cacRegistrationNumber: values.cacRegistrationNumber,
         incorporationDate: values.incorporationDate?.toISOString(),
-        linkedMatterId: values.linkedMatterId || undefined,
+        nextDueDate: values.nextDueDate?.toISOString(),
+        linkedMatterId: values.linkedMatterId?.value || undefined,
+        penaltyTracking: {
+          penaltyType,
+          penaltyRate,
+          isPenaltyAccruing: false,
+          currentPenaltyAmount: 0,
+          hasGracePeriod: values.hasGracePeriod || false,
+          gracePeriodDays: values.hasGracePeriod ? (values.gracePeriodDays || 30) : 0,
+        },
+        otherFees: {
+          filingFee: values.otherFees?.filingFee || 0,
+          processingFee: values.otherFees?.processingFee || 0,
+          administrativeCharge: values.otherFees?.administrativeCharge || 0,
+          otherFeeDescription: values.otherFees?.otherFeeDescription || "",
+          otherFeesTotal: values.otherFees?.otherFeesTotal || 0,
+        },
+        professionalFee: {
+          amount: values.professionalFee?.amount || 0,
+          description: values.professionalFee?.description || "",
+          isIncluded: values.professionalFee?.isIncluded || false,
+        },
       };
 
       await dispatch(createEntity(entityData)).unwrap();
@@ -271,21 +366,177 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
           </Col>
           <Col xs={24} md={12}>
             <Form.Item
-              name="penaltyPerDay"
-              label="Penalty/Day (₦)"
-              initialValue={5000}
-              extra={
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                  Default: ₦5,000/day (CAC regulation)
-                </Text>
-              }>
-              <Input type="number" placeholder="5000" />
+              name="penaltyType"
+              label="Penalty Type"
+              initialValue="monthly">
+              <Select
+                options={[
+                  { value: "daily", label: "Daily (₦5,000/day)" },
+                  { value: "monthly", label: "Monthly (₦150,000/mo)" },
+                  { value: "yearly", label: "Yearly (₦1,800,000/yr)" },
+                ]}
+              />
             </Form.Item>
           </Col>
         </Row>
 
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <Form.Item
+              noStyle
+              shouldUpdate={(prev, curr) => prev.penaltyType !== curr.penaltyType}>
+              {({ getFieldValue }) =>
+                getFieldValue("penaltyType") === "daily" ? (
+                  <Form.Item
+                    name="penaltyRate"
+                    label="Penalty/Day (₦)"
+                    initialValue={5000}>
+                    <Input type="number" placeholder="5000" />
+                  </Form.Item>
+                ) : getFieldValue("penaltyType") === "yearly" ? (
+                  <Form.Item
+                    name="penaltyRate"
+                    label="Penalty/Year (₦)"
+                    initialValue={1800000}>
+                    <Input type="number" placeholder="1800000" />
+                  </Form.Item>
+                ) : (
+                  <Form.Item
+                    name="penaltyRate"
+                    label="Penalty/Month (₦)"
+                    initialValue={150000}>
+                    <Input type="number" placeholder="150000" />
+                  </Form.Item>
+                )
+              }
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={12}>
+            <Form.Item
+              name="hasGracePeriod"
+              label="Grace Period"
+              valuePropName="checked"
+              initialValue={false}>
+              <Select
+                options={[
+                  { value: false, label: "No Grace Period" },
+                  { value: true, label: "With Grace Period" },
+                ]}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Form.Item
+          noStyle
+          shouldUpdate={(prev, curr) => prev.hasGracePeriod !== curr.hasGracePeriod}>
+          {({ getFieldValue }) =>
+            getFieldValue("hasGracePeriod") ? (
+              <Form.Item
+                name="gracePeriodDays"
+                label="Grace Period (Days)"
+                initialValue={30}
+                extra={
+                  <Text type="secondary" style={{ fontSize: 11 }}>
+                    Penalty starts accruing after this many days past the due date
+                  </Text>
+                }>
+                <Input type="number" placeholder="30" min={0} />
+              </Form.Item>
+            ) : null
+          }
+        </Form.Item>
+
         <Form.Item name="address" label="Registered Address">
           <Input.TextArea rows={2} placeholder="Entity's registered office address" />
+        </Form.Item>
+
+        <Divider style={{ margin: "16px 0" }}>
+          <Text strong style={{ color: "#6366f1" }}>Other Fees (Government Charges)</Text>
+        </Divider>
+
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <Form.Item
+              name={["otherFees", "filingFee"]}
+              label="Filing Fee (₦)"
+              initialValue={0}>
+              <Input type="number" placeholder="0" min={0} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={12}>
+            <Form.Item
+              name={["otherFees", "processingFee"]}
+              label="Processing Fee (₦)"
+              initialValue={0}>
+              <Input type="number" placeholder="0" min={0} />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <Form.Item
+              name={["otherFees", "administrativeCharge"]}
+              label="Administrative Charge (₦)"
+              initialValue={0}>
+              <Input type="number" placeholder="0" min={0} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={12}>
+            <Form.Item
+              name={["otherFees", "otherFeeDescription"]}
+              label="Other Fee Description">
+              <Input placeholder="e.g., Rush processing, Notarization" />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Form.Item
+          name={["otherFees", "otherFeesTotal"]}
+          label="Additional Fees Total (₦)"
+          initialValue={0}>
+          <Input type="number" placeholder="0" min={0} />
+        </Form.Item>
+
+        <Divider style={{ margin: "16px 0" }}>
+          <Text strong style={{ color: "#059669" }}>Professional Fee (Your Service Charge)</Text>
+        </Divider>
+
+        <Row gutter={16}>
+          <Col xs={24} md={16}>
+            <Form.Item
+              name={["professionalFee", "description"]}
+              label="Professional Fee Description">
+              <Input placeholder="e.g., Legal drafting, Filing service, Consultation" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item
+              name={["professionalFee", "amount"]}
+              label="Amount (₦)"
+              initialValue={0}>
+              <Input type="number" placeholder="0" min={0} />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Form.Item
+          name={["professionalFee", "isIncluded"]}
+          label="Include in Total to Client"
+          valuePropName="checked"
+          initialValue={false}
+          extra={
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              If checked, professional fee will be added to the total sent to client
+            </Text>
+          }>
+          <Select
+            options={[
+              { value: false, label: "Separate Invoice - Send separately to client" },
+              { value: true, label: "Include in Total - Add to penalty/fees" },
+            ]}
+          />
         </Form.Item>
 
         {selectedMatter && (

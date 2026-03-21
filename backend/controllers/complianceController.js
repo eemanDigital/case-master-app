@@ -9,7 +9,75 @@ const POPULATE_FIELDS = [
   { path: "clientId", select: "firstName lastName email phone" },
   { path: "assignedTo", select: "firstName lastName email" },
   { path: "cacMatterId", select: "companyName rcNumber" },
+  { path: "linkedMatterId", select: "title matterNumber clientId" },
 ];
+
+const ENTITY_TYPE_MAP = {
+  ltd: "private-limited",
+  plc: "public-limited",
+  gty: "incorporated-trustee",
+  partnership: "other",
+  business_name: "business-name",
+};
+
+const reverseEntityTypeMap = {
+  "private-limited": "ltd",
+  "public-limited": "plc",
+  "incorporated-trustee": "gty",
+  other: "partnership",
+  "business-name": "business_name",
+};
+
+const transformEntityForFrontend = (entity) => {
+  if (!entity) return null;
+  const obj = entity.toObject ? entity.toObject() : { ...entity };
+  
+  obj.cacRegistrationNumber = obj.rcNumber;
+  obj.complianceStatus = obj.currentComplianceStatus;
+  obj.nextDueDate = obj.nextFilingDueDate;
+  obj.entityType = reverseEntityTypeMap[obj.entityType] || obj.entityType;
+  
+  if (obj.penaltyTracking) {
+    const rates = ComplianceTracker.getPenaltyRates(obj.entityType);
+    obj.penaltyType = obj.penaltyTracking.penaltyType;
+    obj.penaltyRate = obj.penaltyTracking.penaltyRate;
+    obj.gracePeriodDays = obj.penaltyTracking.gracePeriodDays || 0;
+    obj.hasGracePeriod = obj.penaltyTracking.hasGracePeriod || false;
+    obj.penaltyPerDay = rates.daily;
+    obj.penaltyPerMonth = rates.monthly;
+    obj.penaltyPerYear = rates.yearly;
+  }
+  
+  const lastFiled = obj.annualReturns?.find(ar => ar.status === "filed");
+  obj.lastAnnualReturnDate = lastFiled?.filedDate;
+  
+  return obj;
+};
+
+const transformEntityFromFrontend = (data) => {
+  const result = { ...data };
+  
+  if (result.entityType) {
+    result.entityType = ENTITY_TYPE_MAP[result.entityType] || result.entityType;
+  }
+  
+  if (result.cacRegistrationNumber) {
+    result.rcNumber = result.cacRegistrationNumber;
+    delete result.cacRegistrationNumber;
+  }
+  
+  if (result.complianceStatus) {
+    result.currentComplianceStatus = result.complianceStatus;
+    delete result.complianceStatus;
+  }
+  
+  if (result.nextDueDate) {
+    result.nextFilingDueDate = result.nextDueDate;
+    delete result.nextDueDate;
+  }
+  
+  return result;
+};
 
 exports.getAllTrackedEntities = catchAsync(async (req, res, next) => {
   const {
@@ -29,7 +97,7 @@ exports.getAllTrackedEntities = catchAsync(async (req, res, next) => {
   };
 
   if (entityType) {
-    query.entityType = entityType;
+    query.entityType = ENTITY_TYPE_MAP[entityType] || entityType;
   }
 
   if (currentComplianceStatus) {
@@ -68,7 +136,7 @@ exports.getAllTrackedEntities = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: entities,
+    data: entities.map(transformEntityForFrontend),
     pagination: {
       page: parseInt(page),
       limit: parseInt(limit),
@@ -79,11 +147,21 @@ exports.getAllTrackedEntities = catchAsync(async (req, res, next) => {
 });
 
 exports.createTrackedEntity = catchAsync(async (req, res, next) => {
+  const transformedData = transformEntityFromFrontend(req.body);
+  
   const entityData = {
-    ...req.body,
+    ...transformedData,
     firmId: req.firmId,
     createdBy: req.user._id,
   };
+
+  if (!entityData.clientId && entityData.linkedMatterId) {
+    const Matter = require("../models/matterModel");
+    const matter = await Matter.findOne({ _id: entityData.linkedMatterId, firmId: req.firmId });
+    if (matter?.clientId) {
+      entityData.clientId = matter.clientId;
+    }
+  }
 
   if (entityData.incorporationDate && entityData.entityType) {
     const nextDueDate = ComplianceTracker.getNextFilingDueDate(
@@ -102,11 +180,15 @@ exports.createTrackedEntity = catchAsync(async (req, res, next) => {
   }
 
   if (!entityData.penaltyTracking) {
-    const penaltyRate = ComplianceTracker.getPenaltyRate(entityData.entityType);
+    const penaltyType = entityData.penaltyTracking?.penaltyType || "monthly";
+    const rates = ComplianceTracker.getPenaltyRates(entityData.entityType);
     entityData.penaltyTracking = {
-      monthlyPenaltyRate: penaltyRate,
+      penaltyType,
+      penaltyRate: rates[penaltyType] || rates.monthly,
       isPenaltyAccruing: false,
       currentPenaltyAmount: 0,
+      gracePeriodDays: entityData.penaltyTracking?.gracePeriodDays || 0,
+      hasGracePeriod: entityData.penaltyTracking?.hasGracePeriod || false,
     };
   }
 
@@ -117,7 +199,7 @@ exports.createTrackedEntity = catchAsync(async (req, res, next) => {
 
   res.status(201).json({
     status: "success",
-    data: entity,
+    data: transformEntityForFrontend(entity),
   });
 });
 
@@ -134,7 +216,7 @@ exports.getTrackedEntity = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: entity,
+    data: transformEntityForFrontend(entity),
   });
 });
 
@@ -149,6 +231,7 @@ exports.updateTrackedEntity = catchAsync(async (req, res, next) => {
     return next(new AppError("Tracked entity not found", 404));
   }
 
+  const transformedData = transformEntityFromFrontend(req.body);
   const allowedUpdates = [
     "entityName",
     "bnNumber",
@@ -159,11 +242,15 @@ exports.updateTrackedEntity = catchAsync(async (req, res, next) => {
     "isRevenueOpportunity",
     "revenueOpportunityNote",
     "revenueOpportunityAmount",
+    "linkedMatterId",
+    "penaltyTracking",
+    "otherFees",
+    "professionalFee",
   ];
 
   allowedUpdates.forEach((field) => {
-    if (req.body[field] !== undefined) {
-      entity[field] = req.body[field];
+    if (transformedData[field] !== undefined) {
+      entity[field] = transformedData[field];
     }
   });
 
@@ -174,7 +261,7 @@ exports.updateTrackedEntity = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    data: entity,
+    data: transformEntityForFrontend(entity),
   });
 });
 
@@ -264,44 +351,48 @@ exports.getLivePenaltyCalculation = catchAsync(async (req, res, next) => {
     return next(new AppError("Tracked entity not found", 404));
   }
 
-  if (!entity.penaltyTracking.isPenaltyAccruing || !entity.penaltyTracking.penaltyStartDate) {
-    return res.status(200).json({
-      status: "success",
-      data: {
-        isAccruing: false,
-        monthsOverdue: 0,
-        monthlyRate: entity.penaltyTracking.monthlyPenaltyRate,
-        totalAccrued: 0,
-        projectedNextMonth: entity.penaltyTracking.monthlyPenaltyRate,
-      },
-    });
-  }
-
-  const startDate = new Date(entity.penaltyTracking.penaltyStartDate);
+  const penaltyCalculation = entity.calculateCurrentPenalty();
+  const totalFees = entity.calculateTotalFees();
+  
   const now = new Date();
-
-  const monthsOverdue = Math.max(0,
-    (now.getFullYear() - startDate.getFullYear()) * 12 +
-    (now.getMonth() - startDate.getMonth())
-  );
-
-  const currentPenalty = entity.penaltyTracking.monthlyPenaltyRate * monthsOverdue;
-  const nextMonthPenalty = entity.penaltyTracking.monthlyPenaltyRate * (monthsOverdue + 1);
-
-  const nextIncrementDate = new Date(startDate);
-  nextIncrementDate.setMonth(nextIncrementDate.getMonth() + monthsOverdue + 1);
+  let nextIncrementDate = null;
+  
+  if (penaltyCalculation.isAccruing && penaltyCalculation.periodsOverdue > 0) {
+    const penaltyType = penaltyCalculation.penaltyType;
+    const periodsOverdue = penaltyCalculation.periodsOverdue;
+    
+    nextIncrementDate = new Date(entity.penaltyTracking.penaltyStartDate);
+    nextIncrementDate.setDate(nextIncrementDate.getDate() + (entity.penaltyTracking.gracePeriodDays || 0));
+    
+    switch (penaltyType) {
+      case "daily":
+        nextIncrementDate.setDate(nextIncrementDate.getDate() + periodsOverdue + 1);
+        break;
+      case "yearly":
+        nextIncrementDate.setFullYear(nextIncrementDate.getFullYear() + periodsOverdue + 1);
+        break;
+      case "monthly":
+      default:
+        nextIncrementDate.setMonth(nextIncrementDate.getMonth() + periodsOverdue + 1);
+        break;
+    }
+  }
 
   res.status(200).json({
     status: "success",
     data: {
-      isAccruing: true,
+      isAccruing: penaltyCalculation.isAccruing,
+      withinGracePeriod: penaltyCalculation.withinGracePeriod,
+      graceEndsDate: penaltyCalculation.graceEndsDate,
       penaltyStartDate: entity.penaltyTracking.penaltyStartDate,
-      monthsOverdue,
-      monthlyRate: entity.penaltyTracking.monthlyPenaltyRate,
-      totalAccrued: currentPenalty,
-      projectedNextMonth: nextMonthPenalty,
+      penaltyType: penaltyCalculation.penaltyType,
+      rate: penaltyCalculation.rate,
+      periodsOverdue: penaltyCalculation.periodsOverdue,
+      daysLate: penaltyCalculation.daysLate,
+      penaltyAmount: penaltyCalculation.penaltyAmount,
+      breakdown: penaltyCalculation.breakdown,
       nextIncrementDate,
-      dailyRate: entity.penaltyTracking.monthlyPenaltyRate / 30,
+      ...totalFees,
     },
   });
 });
@@ -508,6 +599,87 @@ exports.deleteTrackedEntity = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     message: "Entity removed from tracking",
+  });
+});
+
+exports.getDashboardData = catchAsync(async (req, res, next) => {
+  const firmId = req.firmId;
+  
+  const [
+    totalTracked,
+    statusCounts,
+    overdueEntities,
+    pendingEntities,
+  ] = await Promise.all([
+    ComplianceTracker.countDocuments({ firmId, isDeleted: { $ne: true } }),
+    ComplianceTracker.aggregate([
+      { $match: { firmId, isDeleted: { $ne: true } } },
+      { $group: { _id: "$currentComplianceStatus", count: { $sum: 1 } } },
+    ]),
+    ComplianceTracker.find({
+      firmId,
+      isDeleted: { $ne: true },
+      currentComplianceStatus: "non-compliant",
+    })
+      .populate(POPULATE_FIELDS)
+      .sort({ "penaltyTracking.currentPenaltyAmount": -1 })
+      .limit(5),
+    ComplianceTracker.find({
+      firmId,
+      isDeleted: { $ne: true },
+      currentComplianceStatus: { $in: ["at-risk", "unknown"] },
+    })
+      .populate(POPULATE_FIELDS)
+      .sort({ nextFilingDueDate: 1 })
+      .limit(5),
+  ]);
+
+  const stats = {
+    total: totalTracked,
+    compliant: statusCounts.find(s => s._id === "compliant")?.count || 0,
+    pending: statusCounts.find(s => s._id === "at-risk")?.count || 0,
+    overdue: statusCounts.find(s => s._id === "non-compliant")?.count || 0,
+    atRisk: statusCounts.find(s => s._id === "at-risk")?.count || 0,
+    unknown: statusCounts.find(s => s._id === "unknown")?.count || 0,
+  };
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      stats,
+      overdueEntities: overdueEntities.map(transformEntityForFrontend),
+      pendingEntities: pendingEntities.map(transformEntityForFrontend),
+    },
+  });
+});
+
+exports.markPaid = catchAsync(async (req, res, next) => {
+  const { amount, notes } = req.body;
+  
+  const entity = await ComplianceTracker.findOne({
+    _id: req.params.id,
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
+  });
+
+  if (!entity) {
+    return next(new AppError("Tracked entity not found", 404));
+  }
+
+  entity.penaltyTracking.isPenaltyAccruing = false;
+  entity.penaltyTracking.penaltyStartDate = null;
+  entity.penaltyTracking.currentPenaltyAmount = 0;
+  entity.currentComplianceStatus = "compliant";
+  entity.internalNotes = entity.internalNotes 
+    ? `${entity.internalNotes}\n\n[${new Date().toISOString()}] Payment recorded: ₦${amount}. ${notes || ""}`
+    : `[${new Date().toISOString()}] Payment recorded: ₦${amount}. ${notes || ""}`;
+
+  await entity.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Payment recorded successfully",
+    data: transformEntityForFrontend(entity),
   });
 });
 

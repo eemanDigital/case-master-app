@@ -1,4 +1,8 @@
-import { createSlice, createAsyncThunk, createEntityAdapter } from "@reduxjs/toolkit";
+import {
+  createSlice,
+  createAsyncThunk,
+  createEntityAdapter,
+} from "@reduxjs/toolkit";
 import * as deadlineApi from "./deadlineService";
 
 const deadlineAdapter = createEntityAdapter({
@@ -32,9 +36,13 @@ export const fetchDeadlines = createAsyncThunk(
     try {
       return await deadlineApi.getAllDeadlines(params);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch deadlines");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch deadlines",
+      );
     }
-  }
+  },
 );
 
 export const fetchDeadline = createAsyncThunk(
@@ -43,9 +51,13 @@ export const fetchDeadline = createAsyncThunk(
     try {
       return await deadlineApi.getDeadline(id);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch deadline");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch deadline",
+      );
     }
-  }
+  },
 );
 
 export const createDeadline = createAsyncThunk(
@@ -54,9 +66,13 @@ export const createDeadline = createAsyncThunk(
     try {
       return await deadlineApi.createDeadline(data);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to create deadline");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create deadline",
+      );
     }
-  }
+  },
 );
 
 export const updateDeadline = createAsyncThunk(
@@ -65,9 +81,13 @@ export const updateDeadline = createAsyncThunk(
     try {
       return await deadlineApi.updateDeadline(id, data);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to update deadline");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to update deadline",
+      );
     }
-  }
+  },
 );
 
 export const deleteDeadline = createAsyncThunk(
@@ -76,9 +96,13 @@ export const deleteDeadline = createAsyncThunk(
     try {
       return await deadlineApi.deleteDeadline(id);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to delete deadline");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to delete deadline",
+      );
     }
-  }
+  },
 );
 
 export const completeDeadline = createAsyncThunk(
@@ -87,9 +111,13 @@ export const completeDeadline = createAsyncThunk(
     try {
       return await deadlineApi.completeDeadline(id, data);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to complete deadline");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to complete deadline",
+      );
     }
-  }
+  },
 );
 
 export const extendDeadline = createAsyncThunk(
@@ -98,9 +126,13 @@ export const extendDeadline = createAsyncThunk(
     try {
       return await deadlineApi.extendDeadline(id, data);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to extend deadline");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to extend deadline",
+      );
     }
-  }
+  },
 );
 
 export const fetchDeadlineStats = createAsyncThunk(
@@ -109,9 +141,13 @@ export const fetchDeadlineStats = createAsyncThunk(
     try {
       return await deadlineApi.getDeadlineStats();
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch stats");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch stats",
+      );
     }
-  }
+  },
 );
 
 export const fetchPerformanceReport = createAsyncThunk(
@@ -120,9 +156,13 @@ export const fetchPerformanceReport = createAsyncThunk(
     try {
       return await deadlineApi.getPerformanceReport(params);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch report");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch report",
+      );
     }
-  }
+  },
 );
 
 export const exportPerformanceReport = createAsyncThunk(
@@ -131,9 +171,13 @@ export const exportPerformanceReport = createAsyncThunk(
     try {
       return await deadlineApi.exportPerformanceReport(data);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to export report");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to export report",
+      );
     }
-  }
+  },
 );
 
 const deadlineSlice = createSlice({
@@ -165,8 +209,13 @@ const deadlineSlice = createSlice({
       .addCase(fetchDeadlines.fulfilled, (state, action) => {
         state.loading = false;
         const payload = unwrap(action.payload);
-        deadlineAdapter.setAll(state, payload.data || []);
-        state.pagination = payload.pagination || { page: 1, limit: 20, total: 0, pages: 0 };
+        deadlineAdapter.setAll(state, payload || []);
+        state.pagination = payload.pagination || {
+          page: 1,
+          limit: 20,
+          total: 0,
+          pages: 0,
+        };
       })
       .addCase(fetchDeadlines.rejected, (state, action) => {
         state.loading = false;
@@ -260,11 +309,13 @@ export const {
 
 export const selectDeadlines = (state) => selectAllDeadlines(state);
 export const selectDeadlineStats = (state) => state.deadline.stats;
-export const selectPerformanceReport = (state) => state.deadline.performanceReport;
+export const selectPerformanceReport = (state) =>
+  state.deadline.performanceReport;
 export const selectDeadlinePagination = (state) => state.deadline.pagination;
 export const selectDeadlineFilters = (state) => state.deadline.filters;
 export const selectDeadlineLoading = (state) => state.deadline.loading;
-export const selectDeadlineActionLoading = (state) => state.deadline.actionLoading;
+export const selectDeadlineActionLoading = (state) =>
+  state.deadline.actionLoading;
 export const selectDeadlineError = (state) => state.deadline.error;
 
 export default deadlineSlice.reducer;
