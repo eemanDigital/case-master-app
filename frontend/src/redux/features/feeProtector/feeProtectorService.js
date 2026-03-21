@@ -14,7 +14,7 @@ export const getProtectedDocument = (id) => {
 };
 
 export const uploadProtectedDocument = (data) => {
-  return apiService.post("/fee-protector", data);
+  return apiService.upload("/fee-protector", data);
 };
 
 export const updateProtectedDocument = (id, data) => {

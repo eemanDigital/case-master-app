@@ -132,7 +132,7 @@ const fileSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // Indexes for better query performance
@@ -196,7 +196,7 @@ fileSchema.methods.incrementDownloadCount = async function () {
 fileSchema.statics.getUserStorageUsage = async function (firmId, userId) {
   const firmObjectId = new mongoose.Types.ObjectId(firmId);
   const userObjectId = new mongoose.Types.ObjectId(userId);
-  
+
   const result = await this.aggregate([
     {
       $match: {
@@ -232,7 +232,7 @@ fileSchema.statics.getFirmStorageUsage = async function (firmId) {
   } catch (e) {
     throw new Error(`Invalid firmId: ${firmId}`);
   }
-  
+
   const result = await this.aggregate([
     {
       $match: {
@@ -256,18 +256,18 @@ fileSchema.statics.getFirmStorageUsage = async function (firmId) {
 fileSchema.statics.syncFirmStorageUsage = async function (firmId) {
   const usage = await this.getFirmStorageUsage(firmId);
   const usageGB = usage.totalSize / (1024 * 1024 * 1024);
-  
+
   await Firm.findByIdAndUpdate(firmId, {
     "usage.storageUsedGB": usageGB,
   });
-  
+
   return usageGB;
 };
 
 fileSchema.statics.getEntityFiles = async function (
   firmId,
   entityType,
-  entityId
+  entityId,
 ) {
   return await this.find({
     firmId,
@@ -280,7 +280,7 @@ fileSchema.statics.getEntityFiles = async function (
 fileSchema.statics.cleanupOrphanedFiles = async function () {
   const User = mongoose.model("User");
   const allFiles = await this.find({ isDeleted: false }).select(
-    "uploadedBy s3Key"
+    "uploadedBy s3Key",
   );
   const orphanedFiles = [];
 

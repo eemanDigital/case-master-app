@@ -1,4 +1,8 @@
-import { createSlice, createAsyncThunk, createEntityAdapter } from "@reduxjs/toolkit";
+import {
+  createSlice,
+  createAsyncThunk,
+  createEntityAdapter,
+} from "@reduxjs/toolkit";
 import * as feeProtectorApi from "./feeProtectorService";
 
 const feeProtectorAdapter = createEntityAdapter({
@@ -29,9 +33,13 @@ export const fetchProtectedDocuments = createAsyncThunk(
     try {
       return await feeProtectorApi.getProtectedDocuments(params);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch documents");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch documents",
+      );
     }
-  }
+  },
 );
 
 export const fetchProtectedDocument = createAsyncThunk(
@@ -40,9 +48,13 @@ export const fetchProtectedDocument = createAsyncThunk(
     try {
       return await feeProtectorApi.getProtectedDocument(id);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch document");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch document",
+      );
     }
-  }
+  },
 );
 
 export const uploadProtectedDocument = createAsyncThunk(
@@ -51,9 +63,13 @@ export const uploadProtectedDocument = createAsyncThunk(
     try {
       return await feeProtectorApi.uploadProtectedDocument(data);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to upload document");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to upload document",
+      );
     }
-  }
+  },
 );
 
 export const updateProtectedDocument = createAsyncThunk(
@@ -62,9 +78,13 @@ export const updateProtectedDocument = createAsyncThunk(
     try {
       return await feeProtectorApi.updateProtectedDocument(id, data);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to update document");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to update document",
+      );
     }
-  }
+  },
 );
 
 export const deleteProtectedDocument = createAsyncThunk(
@@ -73,9 +93,13 @@ export const deleteProtectedDocument = createAsyncThunk(
     try {
       return await feeProtectorApi.deleteProtectedDocument(id);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to delete document");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to delete document",
+      );
     }
-  }
+  },
 );
 
 export const confirmPayment = createAsyncThunk(
@@ -84,9 +108,13 @@ export const confirmPayment = createAsyncThunk(
     try {
       return await feeProtectorApi.confirmPayment(id, data);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to confirm payment");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to confirm payment",
+      );
     }
-  }
+  },
 );
 
 export const verifyPayment = createAsyncThunk(
@@ -95,9 +123,13 @@ export const verifyPayment = createAsyncThunk(
     try {
       return await feeProtectorApi.verifyPayment(id, data);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to verify payment");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to verify payment",
+      );
     }
-  }
+  },
 );
 
 export const downloadWatermarked = createAsyncThunk(
@@ -106,9 +138,13 @@ export const downloadWatermarked = createAsyncThunk(
     try {
       return await feeProtectorApi.downloadWatermarkedDocument(id);
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to download document");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to download document",
+      );
     }
-  }
+  },
 );
 
 export const fetchStats = createAsyncThunk(
@@ -117,9 +153,13 @@ export const fetchStats = createAsyncThunk(
     try {
       return await feeProtectorApi.getFeeProtectorStats();
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message || "Failed to fetch stats");
+      return rejectWithValue(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to fetch stats",
+      );
     }
-  }
+  },
 );
 
 const feeProtectorSlice = createSlice({
@@ -145,8 +185,13 @@ const feeProtectorSlice = createSlice({
       .addCase(fetchProtectedDocuments.fulfilled, (state, action) => {
         state.loading = false;
         const payload = unwrap(action.payload);
-        feeProtectorAdapter.setAll(state, payload.data || []);
-        state.pagination = payload.pagination || { page: 1, limit: 20, total: 0, pages: 0 };
+        feeProtectorAdapter.setAll(state, payload || []);
+        state.pagination = payload.pagination || {
+          page: 1,
+          limit: 20,
+          total: 0,
+          pages: 0,
+        };
       })
       .addCase(fetchProtectedDocuments.rejected, (state, action) => {
         state.loading = false;
@@ -205,11 +250,8 @@ const feeProtectorSlice = createSlice({
   },
 });
 
-export const {
-  setFilters,
-  clearFilters,
-  clearError,
-} = feeProtectorSlice.actions;
+export const { setFilters, clearFilters, clearError } =
+  feeProtectorSlice.actions;
 
 export const {
   selectAll: selectAllProtectedDocs,
@@ -219,13 +261,17 @@ export const {
   selectTotal: selectTotalProtectedDocs,
 } = feeProtectorAdapter.getSelectors((state) => state.feeProtector);
 
-export const selectProtectedDocuments = (state) => selectAllProtectedDocs(state);
+export const selectProtectedDocuments = (state) =>
+  selectAllProtectedDocs(state);
 export const selectFeeProtectorStats = (state) => state.feeProtector.stats;
-export const selectFeeProtectorPagination = (state) => state.feeProtector.pagination;
+export const selectFeeProtectorPagination = (state) =>
+  state.feeProtector.pagination;
 export const selectFeeProtectorFilters = (state) => state.feeProtector.filters;
 export const selectFeeProtectorLoading = (state) => state.feeProtector.loading;
-export const selectFeeProtectorActionLoading = (state) => state.feeProtector.actionLoading;
-export const selectFeeProtectorDownloading = (state) => state.feeProtector.downloading;
+export const selectFeeProtectorActionLoading = (state) =>
+  state.feeProtector.actionLoading;
+export const selectFeeProtectorDownloading = (state) =>
+  state.feeProtector.downloading;
 export const selectFeeProtectorError = (state) => state.feeProtector.error;
 
 export default feeProtectorSlice.reducer;

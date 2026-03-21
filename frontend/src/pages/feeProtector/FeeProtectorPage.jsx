@@ -17,6 +17,12 @@ import {
   Divider,
   Statistic,
   Alert,
+  Input,
+  InputNumber,
+  Select,
+  Form,
+  Popconfirm,
+  Tooltip,
 } from "antd";
 import {
   UploadOutlined,
@@ -28,6 +34,11 @@ import {
   DollarOutlined,
   ReloadOutlined,
   SafetyCertificateOutlined,
+  LinkOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  SendOutlined,
+  CopyOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import {
@@ -36,6 +47,8 @@ import {
   confirmPayment,
   downloadWatermarked,
   fetchStats,
+  updateProtectedDocument,
+  deleteProtectedDocument,
   selectProtectedDocuments,
   selectFeeProtectorStats,
   selectFeeProtectorLoading,
@@ -43,29 +56,37 @@ import {
 } from "../../redux/features/feeProtector/feeProtectorSlice";
 
 const { Title, Text } = Typography;
+const { TextArea } = Input;
 
-const FeeProtectorUpload = ({ visible, onClose, onSuccess, loading }) => {
+const FeeProtectorUploadModal = ({ visible, onClose, onSuccess, loading, clients }) => {
   const dispatch = useDispatch();
+  const [form] = Form.useForm();
   const [file, setFile] = useState(null);
   const [uploading, setUploading] = useState(false);
 
   const handleUpload = async () => {
-    if (!file) {
-      message.error("Please select a file");
-      return;
-    }
-    setUploading(true);
     try {
+      const values = await form.validateFields();
+      if (!file) {
+        message.error("Please select a file");
+        return;
+      }
+      setUploading(true);
       const formData = new FormData();
       formData.append("file", file);
-      formData.append("title", file.name);
+      formData.append("title", values.title || file.name);
+      formData.append("amount", values.amount || 0);
+      formData.append("notes", values.notes || "");
+      formData.append("clientId", values.clientId || "");
+      formData.append("entityType", "other");
       await dispatch(uploadProtectedDocument(formData)).unwrap();
-      message.success("Document uploaded and protected");
+      message.success("Document uploaded and protected successfully!");
+      form.resetFields();
       setFile(null);
       onSuccess();
       onClose();
     } catch (err) {
-      message.error(err || "Upload failed");
+      message.error(err?.message || "Upload failed");
     } finally {
       setUploading(false);
     }
@@ -77,9 +98,59 @@ const FeeProtectorUpload = ({ visible, onClose, onSuccess, loading }) => {
       open={visible}
       onCancel={onClose}
       onOk={handleUpload}
+      okText="Upload & Protect"
       confirmLoading={uploading || loading}
-      width={500}>
-      <div style={{ textAlign: "center", padding: "20px 0" }}>
+      width={600}>
+      <Form form={form} layout="vertical">
+        <Alert
+          message="How Fee Protector Works"
+          description={
+            <ul style={{ margin: "8px 0", paddingLeft: 20 }}>
+              <li>Upload your document and set the amount client must pay</li>
+              <li>Document gets watermarked - client can preview but not download clean version</li>
+              <li>Once payment is confirmed, client gets access to clean document</li>
+            </ul>
+          }
+          type="info"
+          showIcon
+          style={{ marginBottom: 16 }}
+        />
+
+        <Form.Item label="Document Title" name="title" rules={[{ required: true, message: "Enter document title" }]}>
+          <Input placeholder="e.g., CAC Certificate for ABC Ltd" />
+        </Form.Item>
+
+        <Form.Item label="Client" name="clientId">
+          <Select
+            placeholder="Select client (optional)"
+            allowClear
+            showSearch
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
+            options={clients?.map(c => ({
+              value: c._id,
+              label: `${c.firstName} ${c.lastName}`,
+            }))}
+          />
+        </Form.Item>
+
+        <Form.Item label="Amount (₦)" name="amount" rules={[{ required: true, message: "Enter amount" }]}>
+          <InputNumber
+            style={{ width: "100%" }}
+            min={0}
+            placeholder="50000"
+            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+            parser={value => value.replace(/₦\s?|(,*)/g, "")}
+          />
+        </Form.Item>
+
+        <Form.Item label="Notes / Description" name="notes">
+          <TextArea rows={2} placeholder="Brief description for internal use..." />
+        </Form.Item>
+
+        <Divider>Upload Document</Divider>
+
         <Upload.Dragger
           accept=".pdf,.doc,.docx"
           maxCount={1}
@@ -88,27 +159,189 @@ const FeeProtectorUpload = ({ visible, onClose, onSuccess, loading }) => {
             return false;
           }}
           showUploadList={false}>
-          <p>
-            <UploadOutlined style={{ fontSize: 40, color: "#3b82f6" }} />
-          </p>
+          <p><UploadOutlined style={{ fontSize: 40, color: "#3b82f6" }} /></p>
           <p>Click or drag file to upload</p>
-          <Text type="secondary">PDF, DOC, DOCX supported</Text>
+          <Text type="secondary">PDF, DOC, DOCX supported (max 20MB)</Text>
         </Upload.Dragger>
         {file && (
-          <div style={{ marginTop: 12 }}>
-            <Tag icon={<FileProtectOutlined />} color="blue">
-              {file.name}
-            </Tag>
+          <div style={{ marginTop: 12, textAlign: "center" }}>
+            <Tag icon={<FileProtectOutlined />} color="blue">{file.name}</Tag>
+            <Text type="secondary" style={{ display: "block", marginTop: 4 }}>
+              {(file.size / 1024 / 1024).toFixed(2)} MB
+            </Text>
           </div>
         )}
-      </div>
-      <Divider />
+      </Form>
+    </Modal>
+  );
+};
+
+const EditDocumentModal = ({ visible, onClose, onSuccess, loading, doc, clients }) => {
+  const dispatch = useDispatch();
+  const [form] = Form.useForm();
+
+  useEffect(() => {
+    if (doc && visible) {
+      form.setFieldsValue({
+        title: doc.name,
+        amount: doc.protectedDocument?.balanceAmount,
+        notes: doc.protectedDocument?.notes,
+        clientId: doc.clientId?._id,
+      });
+    }
+  }, [doc, visible, form]);
+
+  const handleUpdate = async () => {
+    try {
+      const values = await form.validateFields();
+      await dispatch(updateProtectedDocument({
+        id: doc._id,
+        data: {
+          amount: values.amount,
+          notes: values.notes,
+          clientId: values.clientId,
+        },
+      })).unwrap();
+      message.success("Document updated");
+      onSuccess();
+      onClose();
+    } catch (err) {
+      message.error(err?.message || "Update failed");
+    }
+  };
+
+  return (
+    <Modal
+      title="Edit Document"
+      open={visible}
+      onCancel={onClose}
+      onOk={handleUpdate}
+      confirmLoading={loading}
+      width={500}>
+      <Form form={form} layout="vertical">
+        <Form.Item label="Title" name="title">
+          <Input disabled />
+        </Form.Item>
+        <Form.Item label="Client" name="clientId">
+          <Select
+            placeholder="Select client"
+            allowClear
+            showSearch
+            filterOption={(input, option) =>
+              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+            }
+            options={clients?.map(c => ({
+              value: c._id,
+              label: `${c.firstName} ${c.lastName}`,
+            }))}
+          />
+        </Form.Item>
+        <Form.Item label="Amount (₦)" name="amount">
+          <InputNumber
+            style={{ width: "100%" }}
+            min={0}
+            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+            parser={value => value.replace(/₦\s?|(,*)/g, "")}
+          />
+        </Form.Item>
+        <Form.Item label="Notes" name="notes">
+          <TextArea rows={2} />
+        </Form.Item>
+      </Form>
+    </Modal>
+  );
+};
+
+const ShareModal = ({ visible, onClose, doc }) => {
+  if (!doc) return null;
+
+  const previewUrl = `${window.location.origin}/preview/${doc._id}`;
+  const downloadUrl = `${window.location.origin}/download/${doc._id}`;
+
+  const handleCopy = (text, label) => {
+    navigator.clipboard.writeText(text);
+    message.success(`${label} copied to clipboard!`);
+  };
+
+  return (
+    <Modal
+      title="Share Document"
+      open={visible}
+      onCancel={onClose}
+      footer={null}
+      width={600}>
       <Alert
-        message="How it works"
-        description="The document will be watermarked with the recipient's details until payment is confirmed. They'll see a preview but cannot download the clean version without payment."
+        message="Share these links with your client"
+        description={
+          <ul style={{ margin: "8px 0", paddingLeft: 20 }}>
+            <li><strong>Preview Link:</strong> Client can view watermarked document</li>
+            <li><strong>Download Link:</strong> Only works after payment is confirmed</li>
+          </ul>
+        }
         type="info"
-        showIcon
+        style={{ marginBottom: 16 }}
       />
+
+      <Descriptions column={1} bordered size="small">
+        <Descriptions.Item label="Document">{doc.name}</Descriptions.Item>
+        <Descriptions.Item label="Amount Due">
+          <Text strong style={{ color: "#f59e0b" }}>
+            ₦{(doc.protectedDocument?.balanceAmount || 0).toLocaleString()}
+          </Text>
+        </Descriptions.Item>
+        <Descriptions.Item label="Status">
+          <Tag color={doc.protectedDocument?.isBalancePaid ? "green" : "orange"}>
+            {doc.protectedDocument?.isBalancePaid ? "PAID - Clean Download Available" : "PENDING PAYMENT"}
+          </Tag>
+        </Descriptions.Item>
+      </Descriptions>
+
+      <Divider>Links for Client</Divider>
+
+      <div style={{ marginBottom: 16 }}>
+        <Text strong style={{ display: "block", marginBottom: 8 }}>Preview Link (Watermarked)</Text>
+        <Input.Group compact>
+          <Input value={previewUrl} style={{ width: "calc(100% - 100px)" }} readOnly />
+          <Button
+            icon={<CopyOutlined />}
+            onClick={() => handleCopy(previewUrl, "Preview link")}>
+            Copy
+          </Button>
+        </Input.Group>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          Client can view watermarked preview but cannot download
+        </Text>
+      </div>
+
+      <div style={{ marginBottom: 16 }}>
+        <Text strong style={{ display: "block", marginBottom: 8 }}>Download Link (Clean Document)</Text>
+        <Input.Group compact>
+          <Input value={downloadUrl} style={{ width: "calc(100% - 100px)" }} readOnly />
+          <Button
+            icon={<CopyOutlined />}
+            onClick={() => handleCopy(downloadUrl, "Download link")}>
+            Copy
+          </Button>
+        </Input.Group>
+        <Text type="secondary" style={{ fontSize: 12 }}>
+          Only works after you confirm payment
+        </Text>
+      </div>
+
+      <Divider>Send via Email</Divider>
+
+      <Button
+        type="primary"
+        icon={<SendOutlined />}
+        onClick={() => {
+          const subject = encodeURIComponent(`Document: ${doc.name}`);
+          const body = encodeURIComponent(
+            `Dear Client,\n\nPlease find the document "${doc.name}" attached.\n\nAmount Due: ₦${(doc.protectedDocument?.balanceAmount || 0).toLocaleString()}\n\nPreview: ${previewUrl}\n\nDownload (after payment): ${downloadUrl}\n\nRegards`
+          );
+          window.open(`mailto:?subject=${subject}&body=${body}`);
+        }}>
+        Compose Email to Client
+      </Button>
     </Modal>
   );
 };
@@ -121,7 +354,9 @@ const FeeProtectorPage = () => {
   const actionLoading = useSelector(selectFeeProtectorActionLoading);
 
   const [uploadVisible, setUploadVisible] = useState(false);
-  const [previewDoc, setPreviewDoc] = useState(null);
+  const [editVisible, setEditVisible] = useState(false);
+  const [shareVisible, setShareVisible] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState(null);
 
   useEffect(() => {
     dispatch(fetchProtectedDocuments());
@@ -130,267 +365,237 @@ const FeeProtectorPage = () => {
 
   const handleConfirmPayment = async (doc) => {
     try {
-      await dispatch(
-        confirmPayment({
-          id: doc._id,
-          data: { transactionRef: `TXN-${Date.now()}` },
-        }),
-      ).unwrap();
-      message.success("Payment confirmed - watermark removed");
+      await dispatch(confirmPayment({
+        id: doc._id,
+        data: { transactionRef: `TXN-${Date.now()}` },
+      })).unwrap();
+      message.success("Payment confirmed! Client can now download clean document.");
       dispatch(fetchProtectedDocuments());
-    } catch {
-      message.error("Failed to confirm payment");
+      dispatch(fetchStats());
+    } catch (err) {
+      message.error(err?.message || "Failed to confirm payment");
     }
   };
 
   const handleDownload = async (doc) => {
     try {
-      await dispatch(downloadWatermarked(doc._id)).unwrap();
-      message.success("Document downloaded");
-    } catch {
-      message.error("Download failed");
+      const response = await dispatch(downloadWatermarked(doc._id)).unwrap();
+      message.success("Download started");
+    } catch (err) {
+      message.error(err?.message || "Download failed");
     }
+  };
+
+  const handleDelete = async (doc) => {
+    try {
+      await dispatch(deleteProtectedDocument(doc._id)).unwrap();
+      message.success("Document deleted");
+      dispatch(fetchProtectedDocuments());
+      dispatch(fetchStats());
+    } catch (err) {
+      message.error(err?.message || "Delete failed");
+    }
+  };
+
+  const handleShare = (doc) => {
+    setSelectedDoc(doc);
+    setShareVisible(true);
+  };
+
+  const handleEdit = (doc) => {
+    setSelectedDoc(doc);
+    setEditVisible(true);
   };
 
   const columns = [
     {
       title: "Document",
-      dataIndex: "title",
-      key: "title",
-      render: (v) => (
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <FileProtectOutlined style={{ color: "#3b82f6" }} />
-          <Text strong>{v}</Text>
+      key: "name",
+      render: (_, r) => (
+        <div>
+          <Text strong>{r.name}</Text>
+          {r.clientId && (
+            <div>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Client: {r.clientId.firstName} {r.clientId.lastName}
+              </Text>
+            </div>
+          )}
         </div>
       ),
     },
     {
+      title: "Amount",
+      key: "amount",
+      width: 120,
+      render: (_, r) => (
+        <Text strong style={{ color: "#f59e0b" }}>
+          ₦{(r.protectedDocument?.balanceAmount || 0).toLocaleString()}
+        </Text>
+      ),
+    },
+    {
       title: "Status",
-      dataIndex: "paymentStatus",
-      key: "paymentStatus",
-      render: (v) => (
-        <Tag
-          color={
-            v === "paid" ? "green" : v === "pending" ? "orange" : "default"
-          }>
-          {v?.toUpperCase()}
+      key: "status",
+      width: 150,
+      render: (_, r) => (
+        <Tag color={r.protectedDocument?.isBalancePaid ? "green" : "orange"} icon={r.protectedDocument?.isBalancePaid ? <CheckCircleOutlined /> : <LockOutlined />}>
+          {r.protectedDocument?.isBalancePaid ? "PAID" : "PENDING"}
         </Tag>
       ),
     },
     {
-      title: "Fee",
-      dataIndex: "agreedFee",
-      key: "agreedFee",
-      render: (v) => (v ? `₦${Number(v).toLocaleString()}` : "—"),
-    },
-    {
-      title: "Client",
-      dataIndex: "clientName",
-      key: "clientName",
-      render: (v) => v || "—",
-    },
-    {
       title: "Uploaded",
-      dataIndex: "createdAt",
-      key: "createdAt",
-      render: (d) => dayjs(d).format("DD MMM YYYY"),
+      key: "date",
+      width: 100,
+      render: (_, r) => dayjs(r.createdAt).format("DD MMM YY"),
     },
     {
       title: "Actions",
       key: "actions",
+      width: 280,
       render: (_, r) => (
-        <Space>
-          {r.paymentStatus === "protected" && (
-            <Button
-              size="small"
-              type="primary"
-              icon={<DollarOutlined />}
-              onClick={() => handleConfirmPayment(r)}>
-              Confirm Payment
-            </Button>
+        <Space size="small">
+          <Tooltip title="Share with client">
+            <Button size="small" icon={<LinkOutlined />} onClick={() => handleShare(r)} />
+          </Tooltip>
+          <Tooltip title="Edit details">
+            <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)} />
+          </Tooltip>
+          <Tooltip title="Preview">
+            <Button size="small" icon={<EyeOutlined />} onClick={() => handleDownload(r)} />
+          </Tooltip>
+          <Tooltip title="Download">
+            <Button size="small" icon={<DownloadOutlined />} onClick={() => handleDownload(r)} />
+          </Tooltip>
+          {!r.protectedDocument?.isBalancePaid && (
+            <Tooltip title="Confirm payment received">
+              <Button
+                size="small"
+                type="primary"
+                icon={<DollarOutlined />}
+                onClick={() => handleConfirmPayment(r)}>
+                Paid
+              </Button>
+            </Tooltip>
           )}
-          <Button
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => setPreviewDoc(r)}>
-            Preview
-          </Button>
-          <Button
-            size="small"
-            icon={<DownloadOutlined />}
-            onClick={() => handleDownload(r)}>
-            Download
-          </Button>
+          <Popconfirm
+            title="Delete this document?"
+            onConfirm={() => handleDelete(r)}
+            okText="Delete"
+            okType="danger">
+            <Tooltip title="Delete">
+              <Button size="small" danger icon={<DeleteOutlined />} />
+            </Tooltip>
+          </Popconfirm>
         </Space>
       ),
     },
   ];
 
   return (
-    <>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');`}</style>
-      <div
-        style={{
-          padding: 24,
-          background: "#f1f5f9",
-          minHeight: "100vh",
-          fontFamily: "'DM Sans', sans-serif",
-        }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 24,
-            flexWrap: "wrap",
-            gap: 12,
-          }}>
-          <div>
-            <Title level={3} style={{ margin: 0, fontWeight: 800 }}>
-              Fee Protector
-            </Title>
-            <Text type="secondary">
-              Milestone-based document protection with watermarking
-            </Text>
-          </div>
-          <Space>
-            <Button
-              icon={<ReloadOutlined />}
-              onClick={() => {
-                dispatch(fetchProtectedDocuments());
-                dispatch(fetchStats());
-              }}>
-              Refresh
-            </Button>
-            <Button
-              type="primary"
-              icon={<UploadOutlined />}
-              onClick={() => setUploadVisible(true)}>
-              Upload Document
-            </Button>
-          </Space>
+    <div style={{ padding: 24, background: "#f1f5f9", minHeight: "100vh" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+        <div>
+          <Title level={3} style={{ margin: 0 }}>Fee Protector</Title>
+          <Text type="secondary">Protect documents with watermarks until payment is confirmed</Text>
         </div>
-
-        <Alert
-          message="Watermarked Document Access"
-          description="Protected documents show a preview with watermark until payment is confirmed. Only after payment will the clean document be available for download."
-          type="info"
-          showIcon
-          icon={<SafetyCertificateOutlined />}
-          style={{ marginBottom: 24, borderRadius: 12 }}
-        />
-
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={24} sm={8}>
-            <Card bordered={false} style={{ borderRadius: 12 }}>
-              <Statistic
-                title="Protected Documents"
-                value={stats?.protected || 0}
-                prefix={<LockOutlined style={{ color: "#3b82f6" }} />}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Card bordered={false} style={{ borderRadius: 12 }}>
-              <Statistic
-                title="Pending Payment"
-                value={stats?.pending || 0}
-                valueStyle={{ color: "#f59e0b" }}
-                prefix={<DollarOutlined />}
-              />
-            </Card>
-          </Col>
-          <Col xs={24} sm={8}>
-            <Card bordered={false} style={{ borderRadius: 12 }}>
-              <Statistic
-                title="Paid & Released"
-                value={stats?.paid || 0}
-                valueStyle={{ color: "#10b981" }}
-                prefix={<CheckCircleOutlined />}
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        <Card
-          bordered={false}
-          style={{ borderRadius: 12 }}
-          title="Protected Documents">
-          {loading ? (
-            <div style={{ textAlign: "center", padding: 40 }}>
-              <Spin size="large" />
-            </div>
-          ) : (
-            <Table
-              dataSource={documents}
-              columns={columns}
-              rowKey="_id"
-              pagination={{ pageSize: 10 }}
-            />
-          )}
-        </Card>
+        <Space>
+          <Button icon={<ReloadOutlined />} onClick={() => { dispatch(fetchProtectedDocuments()); dispatch(fetchStats()); }}>
+            Refresh
+          </Button>
+          <Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadVisible(true)}>
+            Upload & Protect
+          </Button>
+        </Space>
       </div>
 
-      <FeeProtectorUpload
-        visible={uploadVisible}
-        onClose={() => setUploadVisible(false)}
-        onSuccess={() => {
-          dispatch(fetchProtectedDocuments());
-          dispatch(fetchStats());
-        }}
-        loading={actionLoading}
+      <Alert
+        message="How it works"
+        description={
+          <span>
+            Upload documents, set an amount, and share with clients. They see a watermarked preview but must pay before downloading the clean version. Confirm payment to release the document.
+          </span>
+        }
+        type="info"
+        showIcon
+        icon={<SafetyCertificateOutlined />}
+        style={{ marginBottom: 24 }}
       />
 
-      <Modal
-        title="Document Preview"
-        open={!!previewDoc}
-        onCancel={() => setPreviewDoc(null)}
-        footer={[
-          <Button key="close" onClick={() => setPreviewDoc(null)}>
-            Close
-          </Button>,
-          previewDoc?.paymentStatus === "protected" && (
-            <Button
-              key="pay"
-              type="primary"
-              icon={<DollarOutlined />}
-              onClick={() => {
-                handleConfirmPayment(previewDoc);
-                setPreviewDoc(null);
-              }}>
-              Confirm Payment
+      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col xs={12} md={6}>
+          <Card>
+            <Statistic title="Total Documents" value={stats?.totalProtected || 0} prefix={<FileProtectOutlined />} />
+          </Card>
+        </Col>
+        <Col xs={12} md={6}>
+          <Card>
+            <Statistic title="Pending Payment" value={stats?.totalUnpaid || 0} valueStyle={{ color: "#f59e0b" }} prefix={<DollarOutlined />} />
+          </Card>
+        </Col>
+        <Col xs={12} md={6}>
+          <Card>
+            <Statistic title="Paid & Released" value={stats?.totalPaid || 0} valueStyle={{ color: "#10b981" }} prefix={<CheckCircleOutlined />} />
+          </Card>
+        </Col>
+        <Col xs={12} md={6}>
+          <Card>
+            <Statistic
+              title="Total Amount"
+              value={`₦${((stats?.totalAmount) || 0).toLocaleString()}`}
+              prefix={<LockOutlined />}
+            />
+          </Card>
+        </Col>
+      </Row>
+
+      <Card title="Protected Documents" extra={
+        <Text type="secondary">{documents.length} document(s)</Text>
+      }>
+        {loading ? (
+          <div style={{ textAlign: "center", padding: 40 }}><Spin size="large" /></div>
+        ) : documents.length === 0 ? (
+          <div style={{ textAlign: "center", padding: 40 }}>
+            <FileProtectOutlined style={{ fontSize: 48, color: "#ccc", marginBottom: 16 }} />
+            <div><Text type="secondary">No protected documents yet</Text></div>
+            <Button type="primary" icon={<UploadOutlined />} style={{ marginTop: 16 }} onClick={() => setUploadVisible(true)}>
+              Upload Your First Document
             </Button>
-          ),
-        ]}
-        width={700}>
-        {previewDoc && (
-          <Descriptions column={2} bordered size="small">
-            <Descriptions.Item label="Title" span={2}>
-              {previewDoc.title}
-            </Descriptions.Item>
-            <Descriptions.Item label="Status">
-              <Tag
-                color={
-                  previewDoc.paymentStatus === "paid" ? "green" : "orange"
-                }>
-                {previewDoc.paymentStatus?.toUpperCase()}
-              </Tag>
-            </Descriptions.Item>
-            <Descriptions.Item label="Agreed Fee">
-              {previewDoc.agreedFee
-                ? `₦${Number(previewDoc.agreedFee).toLocaleString()}`
-                : "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Client">
-              {previewDoc.clientName || "—"}
-            </Descriptions.Item>
-            <Descriptions.Item label="Uploaded">
-              {dayjs(previewDoc.createdAt).format("DD MMM YYYY HH:mm")}
-            </Descriptions.Item>
-          </Descriptions>
+          </div>
+        ) : (
+          <Table
+            dataSource={documents}
+            columns={columns}
+            rowKey="_id"
+            pagination={{ pageSize: 10 }}
+          />
         )}
-      </Modal>
-    </>
+      </Card>
+
+      <FeeProtectorUploadModal
+        visible={uploadVisible}
+        onClose={() => setUploadVisible(false)}
+        onSuccess={() => { dispatch(fetchProtectedDocuments()); dispatch(fetchStats()); }}
+        loading={actionLoading}
+        clients={[]}
+      />
+
+      <EditDocumentModal
+        visible={editVisible}
+        onClose={() => setEditVisible(false)}
+        onSuccess={() => { dispatch(fetchProtectedDocuments()); dispatch(fetchStats()); }}
+        loading={actionLoading}
+        doc={selectedDoc}
+        clients={[]}
+      />
+
+      <ShareModal
+        visible={shareVisible}
+        onClose={() => setShareVisible(false)}
+        doc={selectedDoc}
+      />
+    </div>
   );
 };
 
