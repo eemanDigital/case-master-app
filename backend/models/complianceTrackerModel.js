@@ -127,6 +127,88 @@ const complianceTrackerSchema = new mongoose.Schema(
       watchdogNotes: String,
     },
 
+    statusChangeDetails: {
+      changeDate: Date,
+      previousStatus: String,
+      newStatus: String,
+      reason: String,
+    },
+
+    actionItems: [{
+      id: {
+        type: mongoose.Schema.Types.ObjectId,
+        default: () => new mongoose.Types.ObjectId(),
+      },
+      title: {
+        type: String,
+        required: true,
+      },
+      description: String,
+      type: {
+        type: String,
+        enum: ["contact_client", "restore_status", "file_documents", "send_notice", "follow_up", "other"],
+        default: "follow_up",
+      },
+      priority: {
+        type: String,
+        enum: ["low", "medium", "high", "urgent"],
+        default: "medium",
+      },
+      status: {
+        type: String,
+        enum: ["pending", "in_progress", "completed", "cancelled"],
+        default: "pending",
+      },
+      assignedTo: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      dueDate: Date,
+      completedAt: Date,
+      completedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      notes: String,
+      createdAt: {
+        type: Date,
+        default: Date.now,
+      },
+      updatedAt: Date,
+    }],
+
+    clientOutreach: {
+      outreachDate: Date,
+      outreachMethod: {
+        type: String,
+        enum: ["email", "phone", "sms", "letter", "meeting", "visit", "none"],
+        default: "none",
+      },
+      outreachNotes: String,
+      clientAcknowledged: {
+        type: Boolean,
+        default: false,
+      },
+      clientResponse: String,
+      responseDate: Date,
+      followUpDate: Date,
+      communicationTemplates: {
+        emailDraft: String,
+        letterDraft: String,
+        smsDraft: String,
+      },
+      templatesSent: {
+        email: { type: Boolean, default: false },
+        letter: { type: Boolean, default: false },
+        sms: { type: Boolean, default: false },
+      },
+      templatesSentAt: {
+        email: Date,
+        letter: Date,
+        sms: Date,
+      },
+    },
+
     linkedMatterId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Matter",
@@ -234,6 +316,43 @@ const complianceTrackerSchema = new mongoose.Schema(
     },
     revenueOpportunityNote: String,
     revenueOpportunityAmount: Number,
+
+    revenueOpportunityDetails: {
+      serviceType: {
+        type: String,
+        enum: ["status_restoration", "annual_return_filing", "compliance_filing", "name_change", "amendment", "other"],
+        default: "status_restoration",
+      },
+      estimatedFee: {
+        type: Number,
+        default: 0,
+      },
+      governmentFee: {
+        type: Number,
+        default: 0,
+      },
+      totalQuote: {
+        type: Number,
+        default: 0,
+      },
+      quoteSentDate: Date,
+      quoteExpiryDate: Date,
+      quoteStatus: {
+        type: String,
+        enum: ["draft", "sent", "approved", "rejected", "expired", "none"],
+        default: "none",
+      },
+      proposalDocument: String,
+      leadScore: {
+        type: String,
+        enum: ["hot", "warm", "cold"],
+        default: "warm",
+      },
+      expectedCloseDate: Date,
+      wonDate: Date,
+      lostDate: Date,
+      lostReason: String,
+    },
 
     assignedTo: {
       type: mongoose.Schema.Types.ObjectId,

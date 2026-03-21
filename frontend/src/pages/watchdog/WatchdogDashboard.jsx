@@ -21,7 +21,11 @@ import {
   Divider,
   Empty,
   Tooltip,
-  Popconfirm,
+  Switch,
+  Timeline,
+  Tabs,
+  DatePicker,
+  Descriptions,
 } from "antd";
 import {
   PlusOutlined,
@@ -29,7 +33,6 @@ import {
   CheckCircleOutlined,
   ReloadOutlined,
   SyncOutlined,
-  DeleteOutlined,
   BellOutlined,
   RobotOutlined,
   ExclamationCircleOutlined,
@@ -37,6 +40,8 @@ import {
   InfoCircleOutlined,
   FileDoneOutlined,
   EyeOutlined,
+  SendOutlined,
+  DollarOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -48,6 +53,11 @@ import {
   removeMonitoredEntity,
   checkEntityStatus,
   acknowledgeAlert,
+  updateActionItem,
+  updateClientOutreach,
+  sendClientCommunication,
+  updateRevenueOpportunity,
+  updateMonitoredEntity,
   selectMonitoredEntities,
   selectWatchdogAlerts,
   selectWatchdogDashboard,
@@ -311,6 +321,632 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
   );
 };
 
+// ─── Entity Details Modal ─────────────────────────────────────────────────────
+const EntityDetailsModal = ({ visible, entity, onClose }) => {
+  const dispatch = useDispatch();
+  const actionLoading = useSelector(selectWatchdogActionLoading);
+  const [activeTab, setActiveTab] = useState("details");
+  const [revenueForm] = Form.useForm();
+  const [emailDraft, setEmailDraft] = useState("");
+  const [outreachNotes, setOutreachNotes] = useState("");
+  const [outreachSaving, setOutreachSaving] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+
+  const {
+    data: clientOptions,
+    loading: clientsLoading,
+    refresh: refreshClients,
+  } = useUserSelectOptions({ type: "client" });
+
+  useEffect(() => {
+    if (entity && visible) {
+      revenueForm.setFieldsValue({
+        serviceType: entity.revenueOpportunityDetails?.serviceType,
+        leadScore: entity.revenueOpportunityDetails?.leadScore,
+        estimatedFee: entity.revenueOpportunityDetails?.estimatedFee,
+        governmentFee: entity.revenueOpportunityDetails?.governmentFee,
+        totalQuote: entity.revenueOpportunityDetails?.totalQuote,
+        quoteStatus: entity.revenueOpportunityDetails?.quoteStatus,
+        expectedCloseDate: entity.revenueOpportunityDetails?.expectedCloseDate
+          ? dayjs(entity.revenueOpportunityDetails.expectedCloseDate)
+          : undefined,
+      });
+      setEmailDraft(
+        entity.clientOutreach?.communicationTemplates?.emailDraft || "",
+      );
+      setOutreachNotes(entity.clientOutreach?.outreachNotes || "");
+    }
+  }, [entity, visible]);
+
+  if (!entity) return null;
+
+  console.log(entity.actionItems);
+
+  const actionItems = entity.actionItems || [];
+  const clientOutreach = entity.clientOutreach || {};
+  const currentClientId = entity.clientId?._id || entity.clientId;
+
+  const priorityColors = {
+    urgent: "red",
+    high: "orange",
+    medium: "blue",
+    low: "green",
+  };
+
+  const statusColors = {
+    pending: "default",
+    in_progress: "processing",
+    completed: "success",
+    cancelled: "default",
+  };
+
+  const handleLinkClient = async (clientId) => {
+    try {
+      await dispatch(
+        updateMonitoredEntity({
+          entityId: entity._id,
+          data: { clientId },
+        }),
+      ).unwrap();
+      message.success("Client linked successfully");
+    } catch {
+      message.error("Failed to link client");
+    }
+  };
+
+  const handleCompleteAction = async (actionItem) => {
+    try {
+      await dispatch(
+        updateActionItem({
+          entityId: entity._id,
+          actionItemId: actionItem._id,
+          data: { status: "completed" },
+        }),
+      ).unwrap();
+      message.success("Action marked as complete");
+    } catch {
+      message.error("Failed to update action");
+    }
+  };
+
+  // ✅ FIXED: save outreach on button click, not on every keystroke
+  const handleSaveOutreach = async () => {
+    setOutreachSaving(true);
+    try {
+      await dispatch(
+        updateClientOutreach({
+          entityId: entity._id,
+          data: {
+            outreachNotes,
+            emailDraft,
+          },
+        }),
+      ).unwrap();
+      message.success("Outreach details saved");
+    } catch {
+      message.error("Failed to save outreach details");
+    } finally {
+      setOutreachSaving(false);
+    }
+  };
+
+  const handleOutreachMethodChange = async (value) => {
+    try {
+      await dispatch(
+        updateClientOutreach({
+          entityId: entity._id,
+          data: { outreachMethod: value },
+        }),
+      ).unwrap();
+    } catch {
+      message.error("Failed to update outreach method");
+    }
+  };
+
+  const handleAcknowledgedChange = async (value) => {
+    try {
+      await dispatch(
+        updateClientOutreach({
+          entityId: entity._id,
+          data: { clientAcknowledged: value },
+        }),
+      ).unwrap();
+    } catch {
+      message.error("Failed to update acknowledgement");
+    }
+  };
+
+  const handleSendEmail = async () => {
+    setEmailLoading(true);
+    try {
+      await dispatch(
+        sendClientCommunication({
+          entityId: entity._id,
+          data: { channel: "email", templateType: "email" },
+        }),
+      ).unwrap();
+      message.success("Email sent to client successfully");
+    } catch (err) {
+      message.error(
+        typeof err === "string" ? err : err?.message || "Failed to send email",
+      );
+    } finally {
+      setEmailLoading(false);
+    }
+  };
+
+  const handleUpdateRevenue = async (values) => {
+    try {
+      const formattedValues = {
+        ...values,
+        expectedCloseDate: values.expectedCloseDate?.toISOString(),
+      };
+      await dispatch(
+        updateRevenueOpportunity({
+          entityId: entity._id,
+          data: formattedValues,
+        }),
+      ).unwrap();
+      message.success("Revenue opportunity saved!");
+      revenueForm.resetFields();
+      onClose();
+    } catch {
+      message.error("Failed to update revenue details");
+    }
+  };
+
+  const tabItems = [
+    {
+      key: "details",
+      label: (
+        <span>
+          <FileDoneOutlined /> Details
+        </span>
+      ),
+      children: (
+        <div>
+          <Card title="Entity Information" size="small">
+            <Descriptions column={2} size="small">
+              <Descriptions.Item label="Entity Name">
+                {entity.entityName}
+              </Descriptions.Item>
+              <Descriptions.Item label="RC/BN Number">
+                {entity.rcNumber}
+              </Descriptions.Item>
+              <Descriptions.Item label="Entity Type">
+                {ENTITY_TYPES.find((t) => t.value === entity.entityType)
+                  ?.label || entity.entityType}
+              </Descriptions.Item>
+              <Descriptions.Item label="CAC Status">
+                <Tag
+                  color={
+                    STATUS_CONFIG[entity.cacPortalStatus?.portalStatus]?.color
+                  }>
+                  {entity.cacPortalStatus?.portalStatus || "Unknown"}
+                </Tag>
+              </Descriptions.Item>
+            </Descriptions>
+          </Card>
+
+          <Card
+            title="Client Information"
+            size="small"
+            style={{ marginTop: 16 }}>
+            <Form.Item label="Link Client">
+              <Select
+                showSearch
+                placeholder="Search and select a client..."
+                options={clientOptions?.map((opt) => ({
+                  value: opt.value,
+                  label: opt.label,
+                }))}
+                loading={clientsLoading}
+                onSearch={() => refreshClients()}
+                onFocus={() => refreshClients()}
+                filterOption={false}
+                notFoundContent={
+                  clientsLoading ? "Loading..." : "No clients found"
+                }
+                allowClear
+                value={currentClientId}
+                onChange={handleLinkClient}
+              />
+            </Form.Item>
+            {currentClientId && (
+              <div style={{ marginTop: 8 }}>
+                <Tag icon={<CheckCircleOutlined />} color="green">
+                  Linked: {entity.clientId?.firstName}{" "}
+                  {entity.clientId?.lastName}
+                </Tag>
+              </div>
+            )}
+            {!currentClientId && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Linking a client enables email notifications and outreach
+                tracking
+              </Text>
+            )}
+          </Card>
+        </div>
+      ),
+    },
+    {
+      key: "actionItems",
+      label: (
+        <span>
+          <CheckCircleOutlined /> Action Items ({actionItems.length})
+        </span>
+      ),
+      children: (
+        <div>
+          {actionItems.length === 0 ? (
+            <Empty
+              description="No action items yet"
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+            />
+          ) : (
+            <Timeline
+              items={actionItems.map((item) => ({
+                color:
+                  item.status === "completed"
+                    ? "green"
+                    : item.priority === "urgent"
+                      ? "red"
+                      : "blue",
+                children: (
+                  <Card size="small" style={{ marginBottom: 8 }} key={item._id}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "flex-start",
+                        gap: 12,
+                      }}>
+                      <div style={{ flex: 1 }}>
+                        <Text strong>{item.title}</Text>
+                        <div style={{ marginTop: 4 }}>
+                          <Tag
+                            color={priorityColors[item.priority] || "default"}>
+                            {item.priority}
+                          </Tag>
+                          <Tag color={statusColors[item.status] || "default"}>
+                            {item.status?.replace(/_/g, " ")}
+                          </Tag>
+                        </div>
+                        {item.description && (
+                          <div style={{ marginTop: 6 }}>
+                            <Text type="secondary" style={{ fontSize: 12 }}>
+                              {item.description}
+                            </Text>
+                          </div>
+                        )}
+                        {item.dueDate && (
+                          <div style={{ marginTop: 4 }}>
+                            <Text
+                              type={
+                                dayjs(item.dueDate).isBefore(dayjs())
+                                  ? "danger"
+                                  : "secondary"
+                              }
+                              style={{ fontSize: 11 }}>
+                              Due: {dayjs(item.dueDate).format("DD MMM YYYY")}
+                              {dayjs(item.dueDate).isBefore(dayjs()) &&
+                                item.status !== "completed" &&
+                                " (Overdue)"}
+                            </Text>
+                          </div>
+                        )}
+                      </div>
+                      {item.status !== "completed" && (
+                        <Button
+                          size="small"
+                          type="primary"
+                          loading={actionLoading}
+                          onClick={() => handleCompleteAction(item)}>
+                          Complete
+                        </Button>
+                      )}
+                    </div>
+                  </Card>
+                ),
+              }))}
+            />
+          )}
+        </div>
+      ),
+    },
+
+    {
+      key: "outreach",
+      label: (
+        <span>
+          <FileDoneOutlined /> Client Outreach
+        </span>
+      ),
+      children: (
+        <div>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item label="Outreach Method">
+                <Select
+                  // ✅ Read from entity not local state
+                  defaultValue={clientOutreach.outreachMethod || "none"}
+                  onChange={handleOutreachMethodChange}
+                  options={[
+                    { value: "email", label: "Email" },
+                    { value: "phone", label: "Phone Call" },
+                    { value: "meeting", label: "Meeting" },
+                    { value: "letter", label: "Letter" },
+                    { value: "sms", label: "SMS" },
+                    { value: "none", label: "Not Contacted" },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Client Acknowledged">
+                <Switch
+                  defaultChecked={clientOutreach.clientAcknowledged || false}
+                  onChange={handleAcknowledgedChange}
+                  checkedChildren="Yes"
+                  unCheckedChildren="No"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item label="Notes">
+            {/* ✅ FIXED: use local state, save on button click not onChange */}
+            <Input.TextArea
+              rows={3}
+              value={outreachNotes}
+              onChange={(e) => setOutreachNotes(e.target.value)}
+              placeholder="Notes about client communication..."
+            />
+          </Form.Item>
+
+          <Divider />
+
+          <Title level={5}>Email Draft</Title>
+          <Form.Item>
+            <Input.TextArea
+              rows={5}
+              value={emailDraft}
+              onChange={(e) => setEmailDraft(e.target.value)}
+              placeholder="Draft email to send to client..."
+            />
+          </Form.Item>
+
+          {/* ✅ FIXED: save button for all text fields */}
+          <Space style={{ marginBottom: 16 }}>
+            <Button onClick={handleSaveOutreach} loading={outreachSaving}>
+              Save Draft
+            </Button>
+          </Space>
+
+          <Divider />
+
+          <Space>
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              onClick={handleSendEmail}
+              loading={emailLoading}
+              disabled={!currentClientId}>
+              Send Email to Client
+            </Button>
+            {!currentClientId && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Link a client to this entity to enable email sending
+              </Text>
+            )}
+          </Space>
+
+          {clientOutreach.outreachDate && (
+            <div style={{ marginTop: 16 }}>
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Last outreach:{" "}
+                {dayjs(clientOutreach.outreachDate).format("DD MMM YYYY HH:mm")}
+              </Text>
+            </div>
+          )}
+        </div>
+      ),
+    },
+
+    {
+      key: "revenue",
+      label: (
+        <span>
+          <DollarOutlined /> Revenue Opportunity
+        </span>
+      ),
+      children: (
+        <div>
+          {/* ✅ FIXED: no initialValues — use setFieldsValue in useEffect instead */}
+          <Form
+            form={revenueForm}
+            layout="vertical"
+            onFinish={handleUpdateRevenue}>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Service Type" name="serviceType">
+                  <Select
+                    placeholder="Select service type"
+                    options={[
+                      {
+                        value: "status_restoration",
+                        label: "Status Restoration",
+                      },
+                      {
+                        value: "annual_return_filing",
+                        label: "Annual Return Filing",
+                      },
+                      {
+                        value: "compliance_filing",
+                        label: "Compliance Filing",
+                      },
+                      { value: "name_change", label: "Name Change" },
+                      { value: "amendment", label: "Amendment" },
+                      { value: "other", label: "Other" },
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="Lead Score" name="leadScore">
+                  <Select
+                    placeholder="Select lead score"
+                    options={[
+                      { value: "hot", label: "🔥 Hot" },
+                      { value: "warm", label: "🌡️ Warm" },
+                      { value: "cold", label: "❄️ Cold" },
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={8}>
+                <Form.Item label="Professional Fee (₦)" name="estimatedFee">
+                  <Input type="number" prefix="₦" min={0} />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item label="Government Fee (₦)" name="governmentFee">
+                  <Input type="number" prefix="₦" min={0} />
+                </Form.Item>
+              </Col>
+              <Col span={8}>
+                <Form.Item label="Total Quote (₦)" name="totalQuote">
+                  <Input type="number" prefix="₦" min={0} />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item label="Quote Status" name="quoteStatus">
+                  <Select
+                    placeholder="Select status"
+                    options={[
+                      { value: "draft", label: "Draft" },
+                      { value: "sent", label: "Sent to Client" },
+                      { value: "approved", label: "Approved ✅" },
+                      { value: "rejected", label: "Rejected ❌" },
+                      { value: "expired", label: "Expired" },
+                    ]}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item label="Expected Close Date" name="expectedCloseDate">
+                  <DatePicker
+                    style={{ width: "100%" }}
+                    format="DD/MM/YYYY"
+                    disabledDate={(d) => d && d.isBefore(dayjs(), "day")}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Row gutter={12}>
+              <Col>
+                <Button
+                  type="primary"
+                  htmlType="submit"
+                  loading={actionLoading}
+                  icon={<CheckCircleOutlined />}>
+                  Save Quote
+                </Button>
+              </Col>
+              <Col>
+                <Button
+                  icon={<SendOutlined />}
+                  onClick={handleSendEmail}
+                  loading={emailLoading}
+                  disabled={!currentClientId}
+                  style={{
+                    backgroundColor: "#059669",
+                    borderColor: "#059669",
+                    color: "white",
+                  }}>
+                  Send Email with Quote
+                </Button>
+              </Col>
+            </Row>
+            {!currentClientId && (
+              <Text type="secondary" style={{ fontSize: 12, marginLeft: 8 }}>
+                Link a client first to send email
+              </Text>
+            )}
+          </Form>
+        </div>
+      ),
+    },
+  ];
+
+  return (
+    <Modal
+      open={visible}
+      onCancel={onClose}
+      footer={null}
+      width={900}
+      destroyOnClose
+      title={
+        <Space wrap>
+          <RobotOutlined style={{ color: "#3b82f6" }} />
+          <Text strong style={{ fontSize: 15 }}>
+            {entity.entityName}
+          </Text>
+          <Tag style={{ fontFamily: "monospace" }}>{entity.rcNumber}</Tag>
+          <Tag
+            color={
+              STATUS_CONFIG[entity.cacPortalStatus?.portalStatus]?.color ||
+              "default"
+            }>
+            {entity.cacPortalStatus?.portalStatus || "UNKNOWN"}
+          </Tag>
+        </Space>
+      }>
+      <Alert
+        type="info"
+        showIcon
+        icon={<InfoCircleOutlined />}
+        message="How to Handle Inactive Entities"
+        description={
+          <div>
+            <p style={{ margin: "4px 0" }}>
+              <strong>When an entity becomes INACTIVE:</strong>
+            </p>
+            <ol style={{ margin: "4px 0", paddingLeft: 20 }}>
+              <li>
+                View and complete the <strong>Action Items</strong> (tasks
+                created for you)
+              </li>
+              <li>
+                Contact the client via <strong>Client Outreach</strong> tab
+                (email, phone, etc.)
+              </li>
+              <li>
+                Create a <strong>Revenue Opportunity</strong> quote for status
+                restoration services
+              </li>
+            </ol>
+            <p style={{ margin: "4px 0", color: "#666" }}>
+              Tip: Link a client to enable email notifications and outreach
+              tracking.
+            </p>
+          </div>
+        }
+        style={{ marginBottom: 16 }}
+      />
+      <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} />
+    </Modal>
+  );
+};
+
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 const WatchdogDashboard = () => {
   const dispatch = useDispatch();
@@ -322,6 +958,8 @@ const WatchdogDashboard = () => {
   const checkingId = useSelector(selectWatchdogChecking);
 
   const [createVisible, setCreateVisible] = useState(false);
+  const [detailsVisible, setDetailsVisible] = useState(false);
+  const [selectedEntity, setSelectedEntity] = useState(null);
   const [tableLoading, setTableLoading] = useState(false);
 
   useEffect(() => {
@@ -390,6 +1028,11 @@ const WatchdogDashboard = () => {
     } catch {
       message.error("Failed to acknowledge alert");
     }
+  };
+
+  const handleViewDetails = (entity) => {
+    setSelectedEntity(entity);
+    setDetailsVisible(true);
   };
 
   // ── Entity Table Columns ────────────────────────────────────────────────────
@@ -498,9 +1141,18 @@ const WatchdogDashboard = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 140,
+      width: 200,
       render: (_, r) => (
         <Space size="small">
+          <Tooltip title="View details & manage">
+            <Button
+              size="small"
+              type="primary"
+              icon={<EyeOutlined />}
+              onClick={() => handleViewDetails(r)}>
+              Details
+            </Button>
+          </Tooltip>
           <Tooltip title="Run status check now">
             <Button
               size="small"
@@ -510,16 +1162,6 @@ const WatchdogDashboard = () => {
               disabled={checkingId !== null && checkingId !== r._id}>
               Check
             </Button>
-          </Tooltip>
-          <Tooltip title="Remove from monitoring">
-            <Button
-              size="small"
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleRemoveEntity(r)}
-              disabled={checkingId !== null}
-            />
           </Tooltip>
         </Space>
       ),
@@ -850,6 +1492,16 @@ const WatchdogDashboard = () => {
         onClose={() => setCreateVisible(false)}
         onSuccess={loadData}
         loading={actionLoading}
+      />
+
+      {/* ── Entity Details Modal ─────────────────────────────────────────── */}
+      <EntityDetailsModal
+        visible={detailsVisible}
+        entity={selectedEntity}
+        onClose={() => {
+          setDetailsVisible(false);
+          loadData();
+        }}
       />
 
       {/* ── Row highlight style ───────────────────────────────────────────── */}

@@ -111,13 +111,90 @@ export const acknowledgeAlert = createAsyncThunk(
   "watchdog/acknowledgeAlert",
   async (id, { rejectWithValue }) => {
     try {
-      // ✅ FIXED: backend has acknowledgeStatusChange not dismissAlert
       return await watchdogApi.acknowledgeStatusChange(id);
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message ||
           error.message ||
           "Failed to acknowledge alert",
+      );
+    }
+  },
+);
+
+export const addActionItem = createAsyncThunk(
+  "watchdog/addActionItem",
+  async ({ entityId, data }, { rejectWithValue }) => {
+    try {
+      return await watchdogApi.addActionItem(entityId, data);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to add action item",
+      );
+    }
+  },
+);
+
+export const updateActionItem = createAsyncThunk(
+  "watchdog/updateActionItem",
+  async ({ entityId, actionItemId, data }, { rejectWithValue }) => {
+    try {
+      return await watchdogApi.updateActionItem(entityId, actionItemId, data);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to update action item",
+      );
+    }
+  },
+);
+
+export const updateClientOutreach = createAsyncThunk(
+  "watchdog/updateClientOutreach",
+  async ({ entityId, data }, { rejectWithValue }) => {
+    try {
+      return await watchdogApi.updateClientOutreach(entityId, data);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to update outreach",
+      );
+    }
+  },
+);
+
+export const sendClientCommunication = createAsyncThunk(
+  "watchdog/sendClientCommunication",
+  async ({ entityId, data }, { rejectWithValue }) => {
+    try {
+      return await watchdogApi.sendClientCommunication(entityId, data);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to send communication",
+      );
+    }
+  },
+);
+
+export const updateRevenueOpportunity = createAsyncThunk(
+  "watchdog/updateRevenueOpportunity",
+  async ({ entityId, data }, { rejectWithValue }) => {
+    try {
+      return await watchdogApi.updateRevenueOpportunity(entityId, data);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to update revenue opportunity",
+      );
+    }
+  },
+);
+
+export const updateMonitoredEntity = createAsyncThunk(
+  "watchdog/updateEntity",
+  async ({ entityId, data }, { rejectWithValue }) => {
+    try {
+      return await watchdogApi.updateMonitoredEntity(entityId, data);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || error.message || "Failed to update entity",
       );
     }
   },

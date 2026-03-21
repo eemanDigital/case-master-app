@@ -28,11 +28,23 @@ exports.manualStatusCheck = catchAsync(async (req, res, next) => {
 
   const result = await checkCacStatus(entity.rcNumber, entity.entityType);
 
-  // ✅ FIXED: capture previousStatus BEFORE any mutation
   const previousStatus = entity.cacPortalStatus?.portalStatus || null;
   const newStatus = result.success ? result.status : previousStatus;
   const statusChanged =
     result.success && newStatus && newStatus !== previousStatus;
+
+  const BAD_STATUSES = [
+    "INACTIVE",
+    "STRUCK-OFF",
+    "WOUND-UP",
+    "DISSOLVED",
+    "SUSPENDED",
+  ];
+  const GOOD_STATUSES = ["ACTIVE", "REGISTERED", "COMPLIANT"];
+
+  // ✅ FIXED: declare these at function scope so they are accessible everywhere
+  const isBadStatus = BAD_STATUSES.includes(newStatus);
+  const isGoodStatus = GOOD_STATUSES.includes(newStatus);
 
   const updateData = {
     "cacPortalStatus.lastChecked": new Date(),
@@ -46,27 +58,56 @@ exports.manualStatusCheck = catchAsync(async (req, res, next) => {
     updateData["cacPortalStatus.watchdogNotes"] = result.error;
   }
 
+  // ✅ FIXED: always set requiresAttention based on current status
+  // even if no status change — this clears stale flags
+  if (result.success) {
+    if (isBadStatus) {
+      updateData["cacPortalStatus.requiresAttention"] = true;
+    } else if (isGoodStatus) {
+      updateData["cacPortalStatus.requiresAttention"] = false;
+    }
+  }
+
+  // ✅ FIXED: declare actionItems at function scope
+  let newActionItems = [];
+
   if (statusChanged) {
     updateData["cacPortalStatus.previousPortalStatus"] = previousStatus;
     updateData["cacPortalStatus.statusChangedAt"] = new Date();
 
-    const badStatuses = [
-      "INACTIVE",
-      "STRUCK-OFF",
-      "WOUND-UP",
-      "DISSOLVED",
-      "SUSPENDED",
-    ];
-    const goodStatuses = ["ACTIVE", "REGISTERED", "COMPLIANT"];
-
-    const isBadStatus = badStatuses.includes(newStatus);
-    const isGoodStatus = goodStatuses.includes(newStatus);
-
-    updateData["cacPortalStatus.requiresAttention"] = isBadStatus;
-
     if (isBadStatus) {
       updateData.isRevenueOpportunity = true;
       updateData.revenueOpportunityNote = `CAC status changed to ${newStatus} — urgent client contact needed`;
+      updateData.statusChangeDetails = {
+        changeDate: new Date(),
+        previousStatus,
+        newStatus,
+        reason: `Status changed from ${previousStatus || "Unknown"} to ${newStatus}`,
+      };
+      updateData["revenueOpportunityDetails.serviceType"] =
+        "status_restoration";
+      updateData["revenueOpportunityDetails.leadScore"] = "hot";
+      updateData["revenueOpportunityDetails.quoteStatus"] = "draft";
+
+      // ✅ FIXED: assigned to function-scoped variable
+      newActionItems = [
+        {
+          title: `Contact Client About ${newStatus} Status`,
+          description: `${entity.entityName} (${entity.rcNumber}) is now ${newStatus}. Contact the client immediately.`,
+          type: "contact_client",
+          priority: "urgent",
+          status: "pending",
+          dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        },
+        {
+          title: "Prepare Status Restoration Proposal",
+          description: `Prepare a proposal for ${entity.entityName} status restoration including fees and timeline.`,
+          type: "restore_status",
+          priority: "high",
+          status: "pending",
+          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        },
+      ];
 
       const [assignedLawyer, client, firm] = await Promise.all([
         User.findById(entity.assignedTo),
@@ -82,34 +123,25 @@ exports.manualStatusCheck = catchAsync(async (req, res, next) => {
             process.env.DEFAULT_FROM_EMAIL || "noreply@lawmaster.com",
             null,
             `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <div style="font-family: Arial, sans-serif; max-width: 600px;
+                   margin: 0 auto; padding: 20px;">
                 <div style="background: linear-gradient(135deg, #dc2626, #b91c1c);
                      padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-                  <h1 style="color: white; margin: 0;">URGENT: Status Change Detected</h1>
+                  <h1 style="color: white; margin: 0;">URGENT: Status Change</h1>
                 </div>
-                <div style="background: #fef2f2; padding: 30px; border-radius: 0 0 10px 10px;
-                     border: 1px solid #fecaca;">
-                  <p style="color: #374151;">Dear ${assignedLawyer.firstName},</p>
-                  <p style="color: #374151;">
-                    The CAC portal status for one of your clients has changed and
-                    requires immediate attention.
-                  </p>
+                <div style="background: #fef2f2; padding: 30px;
+                     border-radius: 0 0 10px 10px; border: 1px solid #fecaca;">
+                  <p>Dear ${assignedLawyer.firstName},</p>
+                  <p>CAC status changed for one of your monitored entities.</p>
                   <div style="background: white; border: 2px solid #dc2626;
                        border-radius: 8px; padding: 20px; margin: 20px 0;">
-                    <p style="margin: 0;"><strong>Entity:</strong> ${entity.entityName}</p>
-                    <p style="margin: 5px 0;"><strong>RC/BN Number:</strong> ${entity.rcNumber}</p>
-                    <p style="margin: 5px 0;"><strong>Previous Status:</strong> ${previousStatus || "Unknown"}</p>
-                    <p style="margin: 5px 0; color: #dc2626; font-weight: bold;">
-                      <strong>Current Status:</strong> ${newStatus}
-                    </p>
-                    <p style="margin: 5px 0;">
-                      <strong>Client:</strong>
-                      ${client?.firstName || ""} ${client?.lastName || ""}
-                    </p>
+                    <p><strong>Entity:</strong> ${entity.entityName}</p>
+                    <p><strong>RC/BN:</strong> ${entity.rcNumber}</p>
+                    <p><strong>Previous:</strong> ${previousStatus || "Unknown"}</p>
+                    <p style="color: #dc2626;"><strong>Current:</strong> ${newStatus}</p>
+                    <p><strong>Client:</strong> ${client?.firstName || ""} ${client?.lastName || ""}</p>
                   </div>
-                  <p style="color: #6b7280; font-size: 14px;">
-                    ${firm?.name || "LawMaster"}
-                  </p>
+                  <p>${firm?.name || "LawMaster"}</p>
                 </div>
               </div>
             `,
@@ -124,19 +156,29 @@ exports.manualStatusCheck = catchAsync(async (req, res, next) => {
     }
   }
 
-  if (
-    !statusChanged &&
-    ["ACTIVE", "REGISTERED", "COMPLIANT"].includes(newStatus)
-  ) {
-    updateData["cacPortalStatus.requiresAttention"] = false;
+  // ✅ FIXED: updateOps now correctly uses function-scoped variables
+  const updateOps = { $set: updateData };
+  if (newActionItems.length > 0) {
+    updateOps.$push = { actionItems: { $each: newActionItems } };
   }
 
-  // ✅ FIXED: use findByIdAndUpdate to apply changes atomically
-  await ComplianceTracker.findByIdAndUpdate(
-    entity._id,
-    { $set: updateData },
-    { runValidators: false },
-  );
+  // Ensure actionItems and clientOutreach arrays exist
+  if (!entity.actionItems) {
+    updateOps.$set.actionItems = [];
+  }
+  if (!entity.clientOutreach) {
+    updateOps.$set.clientOutreach = {
+      outreachMethod: "none",
+      outreachNotes: "",
+      clientAcknowledged: false,
+      communicationTemplates: {},
+      templatesSent: {},
+    };
+  }
+
+  await ComplianceTracker.findByIdAndUpdate(entity._id, updateOps, {
+    runValidators: false,
+  });
 
   res.status(200).json({
     status: "success",
@@ -147,10 +189,10 @@ exports.manualStatusCheck = catchAsync(async (req, res, next) => {
       previousStatus,
       currentStatus: newStatus,
       lastChecked: updateData["cacPortalStatus.lastChecked"],
-      // ✅ FIXED: statusChanged computed from local variables, not from re-reading entity
       statusChanged,
-      requiresAttention: statusChanged
-        ? true
+      // ✅ FIXED: use computed isBadStatus not hardcoded true
+      requiresAttention: result.success
+        ? isBadStatus
         : entity.cacPortalStatus?.requiresAttention,
       checkResult: {
         success: result.success,
@@ -160,7 +202,45 @@ exports.manualStatusCheck = catchAsync(async (req, res, next) => {
   });
 });
 
-// ─── Watchdog Report (all entities requiring attention) ───────────────────────
+// ─── Fix Existing Entities (initialize missing fields) ───────────────────────
+exports.fixExistingEntities = catchAsync(async (req, res, next) => {
+  const result = await ComplianceTracker.updateMany(
+    {
+      firmId: req.firmId,
+      isDeleted: { $ne: true },
+      $or: [
+        { actionItems: { $exists: false } },
+        { clientOutreach: { $exists: false } },
+        { revenueOpportunityDetails: { $exists: false } },
+      ],
+    },
+    {
+      $set: {
+        actionItems: [],
+        clientOutreach: {
+          outreachMethod: "none",
+          outreachNotes: "",
+          clientAcknowledged: false,
+          communicationTemplates: {},
+          templatesSent: {},
+        },
+        revenueOpportunityDetails: {
+          serviceType: "status_restoration",
+          quoteStatus: "none",
+          leadScore: "warm",
+        },
+      },
+    },
+  );
+
+  res.status(200).json({
+    status: "success",
+    message: `Fixed ${result.modifiedCount} entities`,
+    data: result,
+  });
+});
+
+// ─── Watchdog Report (all entities requiring attention) ────────────────────────
 exports.getWatchdogReport = catchAsync(async (req, res, next) => {
   const alerts = await ComplianceTracker.find({
     firmId: req.firmId,
@@ -373,7 +453,7 @@ exports.getAllMonitoredEntities = catchAsync(async (req, res, next) => {
       .select(
         "entityName entityType rcNumber bnNumber cacPortalStatus " +
           "clientId assignedTo isRevenueOpportunity revenueOpportunityAmount " +
-          "currentComplianceStatus",
+          "currentComplianceStatus actionItems clientOutreach revenueOpportunityDetails statusChangeDetails",
       )
       .sort({
         "cacPortalStatus.requiresAttention": -1,
@@ -591,7 +671,6 @@ exports.createMonitoredEntity = catchAsync(async (req, res, next) => {
     entityName,
     rcNumber: registrationNumber,
     entityType: mappedEntityType,
-    // ✅ FIXED: include required fields
     clientId,
     incorporationDate: incorporationDate || undefined,
     assignedTo: assignedTo || req.user._id,
@@ -601,10 +680,23 @@ exports.createMonitoredEntity = catchAsync(async (req, res, next) => {
     cacPortalStatus: {
       portalStatus: initialPortalStatus,
       lastChecked: new Date(),
-      requiresAttention: ["INACTIVE", "STRUCK-OFF", "WOUND-UP"].includes(
+      requiresAttention: ["INACTIVE", "STRUCK-OFF", "WOUND-UP", "DISSOLVED", "SUSPENDED"].includes(
         initialPortalStatus,
       ),
       watchdogNotes: initialWatchdogNotes,
+    },
+    actionItems: [],
+    clientOutreach: {
+      outreachMethod: "none",
+      outreachNotes: "",
+      clientAcknowledged: false,
+      communicationTemplates: {},
+      templatesSent: {},
+    },
+    revenueOpportunityDetails: {
+      serviceType: "status_restoration",
+      quoteStatus: "none",
+      leadScore: "warm",
     },
   });
 
@@ -646,3 +738,464 @@ exports.deleteMonitoredEntity = catchAsync(async (req, res, next) => {
     },
   });
 });
+
+// ─── Update Monitored Entity ─────────────────────────────────────────────────
+exports.updateMonitoredEntity = catchAsync(async (req, res, next) => {
+  const entity = await ComplianceTracker.findOne({
+    _id: req.params.id,
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
+  });
+
+  if (!entity) {
+    return next(new AppError("Monitored entity not found", 404));
+  }
+
+  const { clientId, assignedTo, entityName, notes } = req.body;
+
+  const updateData = {};
+
+  if (clientId !== undefined) updateData.clientId = clientId || null;
+  if (assignedTo !== undefined) updateData.assignedTo = assignedTo || null;
+  if (entityName !== undefined) updateData.entityName = entityName;
+  if (notes !== undefined) updateData.internalNotes = notes;
+
+  await ComplianceTracker.findByIdAndUpdate(req.params.id, {
+    $set: updateData,
+  });
+
+  const updatedEntity = await ComplianceTracker.findById(
+    req.params.id,
+  ).populate(POPULATE_FIELDS);
+
+  res.status(200).json({
+    status: "success",
+    data: updatedEntity,
+  });
+});
+
+// ─── Update Action Item ──────────────────────────────────────────────────────
+exports.updateActionItem = catchAsync(async (req, res, next) => {
+  const { entityId, actionItemId } = req.params;
+  const { status, notes, dueDate } = req.body;
+
+  const entity = await ComplianceTracker.findOne({
+    _id: entityId,
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
+  });
+
+  if (!entity) {
+    return next(new AppError("Entity not found", 404));
+  }
+
+  const actionItem = entity.actionItems.id(actionItemId);
+  if (!actionItem) {
+    return next(new AppError("Action item not found", 404));
+  }
+
+  const updateFields = { "actionItems.$.updatedAt": new Date() };
+
+  if (status) {
+    updateFields["actionItems.$.status"] = status;
+    if (status === "completed") {
+      updateFields["actionItems.$.completedAt"] = new Date();
+      updateFields["actionItems.$.completedBy"] = req.user._id;
+    }
+  }
+  if (notes !== undefined) updateFields["actionItems.$.notes"] = notes;
+  if (dueDate) updateFields["actionItems.$.dueDate"] = new Date(dueDate);
+
+  await ComplianceTracker.updateOne(
+    { _id: entityId, "actionItems._id": actionItemId },
+    { $set: updateFields },
+  );
+
+  const updatedEntity = await ComplianceTracker.findById(entityId);
+  const updatedItem = updatedEntity.actionItems.id(actionItemId);
+
+  res.status(200).json({
+    status: "success",
+    data: updatedItem,
+  });
+});
+
+// ─── Add Action Item ─────────────────────────────────────────────────────────
+exports.addActionItem = catchAsync(async (req, res, next) => {
+  const entity = await ComplianceTracker.findOne({
+    _id: req.params.entityId,
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
+  });
+
+  if (!entity) {
+    return next(new AppError("Entity not found", 404));
+  }
+
+  const { title, description, type, priority, assignedTo, dueDate } = req.body;
+
+  const newActionItem = {
+    title,
+    description,
+    type: type || "follow_up",
+    priority: priority || "medium",
+    status: "pending",
+    assignedTo: assignedTo || undefined,
+    dueDate: dueDate ? new Date(dueDate) : undefined,
+    createdAt: new Date(),
+  };
+
+  entity.actionItems.push(newActionItem);
+  await entity.save();
+
+  res.status(201).json({
+    status: "success",
+    data: entity.actionItems[entity.actionItems.length - 1],
+  });
+});
+
+// ─── Update Client Outreach ──────────────────────────────────────────────────
+exports.updateClientOutreach = catchAsync(async (req, res, next) => {
+  const entity = await ComplianceTracker.findOne({
+    _id: req.params.entityId,
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
+  });
+
+  if (!entity) {
+    return next(new AppError("Entity not found", 404));
+  }
+
+  const {
+    outreachMethod,
+    outreachNotes,
+    clientAcknowledged,
+    clientResponse,
+    followUpDate,
+    emailDraft,
+    letterDraft,
+    smsDraft,
+  } = req.body;
+
+  const updateData = {
+    "clientOutreach.outreachDate": new Date(),
+  };
+
+  if (outreachMethod)
+    updateData["clientOutreach.outreachMethod"] = outreachMethod;
+  if (outreachNotes !== undefined)
+    updateData["clientOutreach.outreachNotes"] = outreachNotes;
+  if (clientAcknowledged !== undefined)
+    updateData["clientOutreach.clientAcknowledged"] = clientAcknowledged;
+  if (clientResponse !== undefined) {
+    updateData["clientOutreach.clientResponse"] = clientResponse;
+    updateData["clientOutreach.responseDate"] = new Date();
+  }
+  if (followUpDate)
+    updateData["clientOutreach.followUpDate"] = new Date(followUpDate);
+  if (emailDraft !== undefined)
+    updateData["clientOutreach.communicationTemplates.emailDraft"] = emailDraft;
+  if (letterDraft !== undefined)
+    updateData["clientOutreach.communicationTemplates.letterDraft"] =
+      letterDraft;
+  if (smsDraft !== undefined)
+    updateData["clientOutreach.communicationTemplates.smsDraft"] = smsDraft;
+
+  await ComplianceTracker.findByIdAndUpdate(req.params.entityId, {
+    $set: updateData,
+  });
+
+  const updatedEntity = await ComplianceTracker.findById(req.params.entityId);
+
+  res.status(200).json({
+    status: "success",
+    data: updatedEntity.clientOutreach,
+  });
+});
+
+// ─── Send Client Communication ───────────────────────────────────────────────
+exports.sendClientCommunication = catchAsync(async (req, res, next) => {
+  // ✅ FIXED: correct populate syntax
+  const entity = await ComplianceTracker.findOne({
+    _id: req.params.entityId,
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
+  }).populate([
+    { path: "clientId", select: "firstName lastName email phone" },
+    { path: "assignedTo", select: "firstName lastName email" },
+  ]);
+
+  if (!entity) {
+    return next(new AppError("Entity not found", 404));
+  }
+
+  const { channel, templateType } = req.body;
+
+  if (!entity.clientId?.email) {
+    return next(
+      new AppError(
+        "No client email found. Please link a client to this entity first.",
+        400,
+      ),
+    );
+  }
+
+  const templates = entity.clientOutreach?.communicationTemplates || {};
+  let content =
+    templates.emailDraft || templates.letterDraft || templates.smsDraft || "";
+
+  const revenue = entity.revenueOpportunityDetails || {};
+  const hasQuote = revenue.totalQuote && revenue.totalQuote > 0;
+
+  if (!content || content === templates.emailDraft) {
+    content = generateDefaultTemplate(
+      entity,
+      templateType || "email",
+      hasQuote ? revenue : null,
+    );
+  }
+
+  const subject = `Regarding ${entity.entityName} (${entity.rcNumber}) — CAC Status Update & Service Proposal`;
+
+  try {
+    await sendCustomEmail(
+      subject,
+      entity.clientId.email,
+      process.env.DEFAULT_FROM_EMAIL || "noreply@lawmaster.com",
+      null,
+      content,
+    );
+
+    await ComplianceTracker.findByIdAndUpdate(req.params.entityId, {
+      $set: {
+        [`clientOutreach.communicationTemplates.${channel}Sent`]: true,
+        [`clientOutreach.communicationTemplates.${channel}SentAt`]: new Date(),
+        "clientOutreach.outreachMethod": channel,
+        "clientOutreach.outreachDate": new Date(),
+      },
+    });
+
+    res.status(200).json({
+      status: "success",
+      message: `Email sent to ${entity.clientId.email}`,
+    });
+  } catch (error) {
+    return next(new AppError(`Failed to send email: ${error.message}`, 500));
+  }
+});
+
+// ─── Update Revenue Opportunity ──────────────────────────────────────────────
+exports.updateRevenueOpportunity = catchAsync(async (req, res, next) => {
+  const entity = await ComplianceTracker.findOne({
+    _id: req.params.entityId,
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
+  });
+
+  if (!entity) {
+    return next(new AppError("Entity not found", 404));
+  }
+
+  const {
+    serviceType,
+    estimatedFee,
+    governmentFee,
+    totalQuote,
+    quoteSentDate,
+    quoteExpiryDate,
+    quoteStatus,
+    leadScore,
+    expectedCloseDate,
+    wonDate,
+    lostDate,
+    lostReason,
+  } = req.body;
+
+  const updateData = {};
+
+  if (serviceType)
+    updateData["revenueOpportunityDetails.serviceType"] = serviceType;
+  if (estimatedFee !== undefined)
+    updateData["revenueOpportunityDetails.estimatedFee"] = estimatedFee;
+  if (governmentFee !== undefined)
+    updateData["revenueOpportunityDetails.governmentFee"] = governmentFee;
+  if (totalQuote !== undefined)
+    updateData["revenueOpportunityDetails.totalQuote"] = totalQuote;
+  if (quoteSentDate)
+    updateData["revenueOpportunityDetails.quoteSentDate"] = new Date(
+      quoteSentDate,
+    );
+  if (quoteExpiryDate)
+    updateData["revenueOpportunityDetails.quoteExpiryDate"] = new Date(
+      quoteExpiryDate,
+    );
+  if (quoteStatus)
+    updateData["revenueOpportunityDetails.quoteStatus"] = quoteStatus;
+  if (leadScore) updateData["revenueOpportunityDetails.leadScore"] = leadScore;
+  if (expectedCloseDate)
+    updateData["revenueOpportunityDetails.expectedCloseDate"] = new Date(
+      expectedCloseDate,
+    );
+  if (wonDate)
+    updateData["revenueOpportunityDetails.wonDate"] = new Date(wonDate);
+  if (lostDate)
+    updateData["revenueOpportunityDetails.lostDate"] = new Date(lostDate);
+  if (lostReason !== undefined)
+    updateData["revenueOpportunityDetails.lostReason"] = lostReason;
+
+  if (
+    quoteStatus === "approved" &&
+    !entity.revenueOpportunityDetails?.wonDate
+  ) {
+    updateData["revenueOpportunityDetails.wonDate"] = new Date();
+  }
+  if (
+    quoteStatus === "rejected" &&
+    !entity.revenueOpportunityDetails?.lostDate
+  ) {
+    updateData["revenueOpportunityDetails.lostDate"] = new Date();
+  }
+
+  await ComplianceTracker.findByIdAndUpdate(req.params.entityId, {
+    $set: updateData,
+  });
+
+  const updatedEntity = await ComplianceTracker.findById(req.params.entityId);
+
+  res.status(200).json({
+    status: "success",
+    data: updatedEntity.revenueOpportunityDetails,
+  });
+});
+
+// ─── Helper: Generate Default Template ───────────────────────────────────────
+function generateDefaultTemplate(entity, type, revenue) {
+  const firmName = "LawMaster";
+  const currentYear = new Date().getFullYear();
+  const hasQuote = revenue && revenue.totalQuote && revenue.totalQuote > 0;
+
+  const serviceTypeLabels = {
+    status_restoration: "Status Restoration Service",
+    annual_return_filing: "Annual Return Filing",
+    compliance_filing: "Compliance Filing Service",
+    name_change: "Name Change Service",
+    amendment: "Amendment Service",
+    other: "Professional Service",
+  };
+
+  const emailTemplate = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <div style="background: #dc2626; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+        <h1 style="color: white; margin: 0;">⚠️ Urgent: CAC Status Update</h1>
+      </div>
+      <div style="background: #fef2f2; padding: 30px; border: 1px solid #fecaca; border-top: none;">
+        <p>Dear ${entity.clientId?.firstName || "Valued Client"},</p>
+        <p>We are writing to inform you about an <strong style="color: #dc2626;">important update</strong> regarding your company registration with the Corporate Affairs Commission (CAC).</p>
+        
+        <div style="background: white; border: 2px solid #dc2626; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #dc2626;">Company Details</h3>
+          <p style="margin: 5px 0;"><strong>Company Name:</strong> ${entity.entityName}</p>
+          <p style="margin: 5px 0;"><strong>RC/BN Number:</strong> ${entity.rcNumber}</p>
+          <p style="margin: 5px 0;"><strong>Current Status:</strong> <span style="color: #dc2626; font-weight: bold;">${entity.cacPortalStatus?.portalStatus || "Unknown"}</span></p>
+        </div>
+        
+        <p><strong>What does this mean?</strong></p>
+        <p>When a company becomes inactive on the CAC register, it may face:</p>
+        <ul>
+          <li>Inability to open bank accounts or access credit</li>
+          <li>Inability to enter into contracts</li>
+          <li>Legal complications in business operations</li>
+          <li>Potential involuntary dissolution</li>
+        </ul>
+        
+        <p><strong>What can we do for you?</strong></p>
+        <p>We specialize in CAC status restoration services. We can help restore your company to active status.</p>
+        
+        ${
+          hasQuote
+            ? `
+        <div style="background: #ecfdf5; border: 2px solid #059669; border-radius: 8px; padding: 20px; margin: 20px 0;">
+          <h3 style="margin-top: 0; color: #059669;">📋 Service Proposal</h3>
+          <p style="margin: 5px 0;"><strong>Service Type:</strong> ${serviceTypeLabels[revenue.serviceType] || revenue.serviceType || "Status Restoration"}</p>
+          <p style="margin: 5px 0;"><strong>Professional Fee:</strong> ₦${(revenue.estimatedFee || 0).toLocaleString()}</p>
+          <p style="margin: 5px 0;"><strong>Government Fee:</strong> ₦${(revenue.governmentFee || 0).toLocaleString()}</p>
+          <p style="margin: 10px 0; font-size: 18px;"><strong style="color: #059669;">Total Quote: ₦${revenue.totalQuote.toLocaleString()}</strong></p>
+          ${revenue.quoteExpiryDate ? `<p style="margin: 5px 0; font-size: 12px; color: #666;">Quote valid until: ${new Date(revenue.quoteExpiryDate).toLocaleDateString()}</p>` : ""}
+        </div>
+        `
+            : `
+        <p><em>Contact us today for a free consultation and quote.</em></p>
+        `
+        }
+        
+        <p><strong>Next Steps:</strong></p>
+        <ol>
+          <li>Contact our office to discuss this matter</li>
+          <li>Provide required documents</li>
+          <li>We'll handle the rest!</li>
+        </ol>
+        
+        <p>We are committed to providing you with the best legal support for your business needs.</p>
+        <p>Best regards,<br><strong>${firmName} Legal Team</strong></p>
+        <p style="color: #666; font-size: 12px;">Phone: +234 XXX XXX XXXX | Email: info@lawmaster.com</p>
+      </div>
+      <div style="background: #1f2937; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; color: white; font-size: 12px;">
+        &copy; ${currentYear} ${firmName}. All rights reserved.
+      </div>
+    </div>
+  `;
+
+  if (type === "sms") {
+    if (hasQuote) {
+      return `Dear ${entity.clientId?.firstName || "Client"}, your company ${entity.entityName} (${entity.rcNumber}) requires attention. We can help restore it. Quote: ₦${revenue.totalQuote.toLocaleString()}. Contact us for details. - ${firmName}`;
+    }
+    return `Dear Client, your company ${entity.entityName} (${entity.rcNumber}) requires immediate attention. Please contact us to discuss status restoration options. - ${firmName}`;
+  }
+
+  if (type === "letter") {
+    let letterContent = `
+LEGAL NOTICE
+
+Date: ${new Date().toLocaleDateString()}
+
+Dear ${entity.clientId?.firstName || "Client"},
+
+RE: IMPORTANT UPDATE - ${entity.entityName} (${entity.rcNumber})
+
+We write to inform you that our records indicate a change in the status of your company's registration with the Corporate Affairs Commission (CAC).
+
+COMPANY DETAILS:
+Company Name: ${entity.entityName}
+Registration Number: ${entity.rcNumber}
+Current Status: ${entity.cacPortalStatus?.portalStatus || "Unknown"}
+
+IMPLICATIONS:
+When a company becomes inactive, it may face difficulties including:
+- Inability to open bank accounts or access credit
+- Inability to enter into contracts
+- Potential involuntary dissolution
+
+SERVICE PROPOSAL:
+${
+  hasQuote
+    ? `
+Service Type: ${serviceTypeLabels[revenue.serviceType] || revenue.serviceType || "Status Restoration"}
+Professional Fee: ₦${(revenue.estimatedFee || 0).toLocaleString()}
+Government Fee: ₦${(revenue.governmentFee || 0).toLocaleString()}
+Total Quote: ₦${revenue.totalQuote.toLocaleString()}
+`
+    : `
+Contact our office for a consultation and quote.
+`
+}
+
+We recommend immediate action to address this matter. Please contact our office within 7 days to discuss available options.
+
+${firmName}
+Date: ${new Date().toLocaleDateString()}
+    `.trim();
+    return letterContent;
+  }
+
+  return emailTemplate;
+}

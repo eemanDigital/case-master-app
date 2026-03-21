@@ -44,3 +44,31 @@ export const dismissAllAlerts = () => {
 export const getWatchdogStats = () => {
   return apiService.get("/watchdog/stats");
 };
+
+export const addActionItem = (entityId, data) => {
+  return apiService.post(`/watchdog/${entityId}/action-items`, data);
+};
+
+export const updateActionItem = (entityId, actionItemId, data) => {
+  return apiService.patch(`/watchdog/${entityId}/action-items/${actionItemId}`, data);
+};
+
+export const updateClientOutreach = (entityId, data) => {
+  return apiService.patch(`/watchdog/${entityId}/outreach`, data);
+};
+
+export const sendClientCommunication = (entityId, data) => {
+  return apiService.post(`/watchdog/${entityId}/send-communication`, data);
+};
+
+export const updateRevenueOpportunity = (entityId, data) => {
+  return apiService.patch(`/watchdog/${entityId}/revenue-opportunity`, data);
+};
+
+export const updateMonitoredEntity = (id, data) => {
+  return apiService.patch(`/watchdog/${id}`, data);
+};
+
+export const acknowledgeStatusChange = (id) => {
+  return apiService.patch(`/watchdog/${id}/acknowledge`);
+};
