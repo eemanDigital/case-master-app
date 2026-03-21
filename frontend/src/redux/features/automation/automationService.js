@@ -14,7 +14,7 @@ export const getAutomations = (params = {}) => {
 };
 
 export const getRecipes = (params = {}) => {
-  return apiService.get(buildUrl("/automations/recipes", params));
+  return apiService.get(buildUrl("/automations/templates", params));
 };
 
 export const getAutomation = (id) => {
@@ -38,7 +38,7 @@ export const toggleAutomation = (id) => {
 };
 
 export const executeAutomation = (id, data = {}) => {
-  return apiService.post(`/automations/${id}/execute`, data);
+  return apiService.post(`/automations/${id}/run`, data);
 };
 
 export const getAutomationLogs = (id, params = {}) => {

@@ -184,6 +184,9 @@ const deadlineSchema = new mongoose.Schema(
     },
 
     tags: [String],
+    automationFlags: {
+      missedAlertSent: Boolean,
+    },
     isDeleted: {
       type: Boolean,
       default: false,

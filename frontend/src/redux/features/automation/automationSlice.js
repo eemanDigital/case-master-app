@@ -167,7 +167,7 @@ const automationSlice = createSlice({
       .addCase(fetchAutomations.fulfilled, (state, action) => {
         state.loading = false;
         const payload = unwrap(action.payload);
-        automationAdapter.setAll(state, payload.data || []);
+        automationAdapter.setAll(state, payload || []);
         state.pagination = payload.pagination || { page: 1, limit: 20, total: 0, pages: 0 };
       })
       .addCase(fetchAutomations.rejected, (state, action) => {

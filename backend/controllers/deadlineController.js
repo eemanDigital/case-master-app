@@ -6,6 +6,7 @@ const { sendCustomEmail } = require("../utils/email");
 const Firm = require("../models/firmModel");
 const path = require("path");
 const fs = require("fs").promises;
+const { dispatch } = require("../utils/automationEngine");
 
 const POPULATE_FIELDS = [
   { path: "assignedTo", select: "firstName lastName email photo role" },
@@ -140,6 +141,10 @@ exports.createDeadline = catchAsync(async (req, res, next) => {
 
   await deadline.populate(POPULATE_FIELDS);
 
+  dispatch("deadline.created", deadline.toObject(), req.firmId).catch(err => {
+    console.error("Automation dispatch error (deadline.created):", err.message);
+  });
+
   res.status(201).json({
     status: "success",
     data: deadline,
@@ -198,6 +203,12 @@ exports.updateDeadline = catchAsync(async (req, res, next) => {
 
   if (status && status !== deadline.status) {
     deadline.status = status;
+
+    if (status === "missed") {
+      dispatch("deadline.missed", deadline.toObject(), req.firmId).catch(err => {
+        console.error("Automation dispatch error (deadline.missed):", err.message);
+      });
+    }
   }
 
   await deadline.save();
@@ -341,6 +352,10 @@ exports.markComplete = catchAsync(async (req, res, next) => {
       console.error("Error sending completion notification:", emailError);
     }
   }
+
+  dispatch("deadline.completed", deadline.toObject(), req.firmId).catch(err => {
+    console.error("Automation dispatch error (deadline.completed):", err.message);
+  });
 
   res.status(200).json({
     status: "success",

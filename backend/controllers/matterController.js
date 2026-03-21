@@ -12,6 +12,7 @@ const {
 } = require("../models/retainerAndGeneralDetailModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const { dispatch } = require("../utils/automationEngine");
 
 const sessionHelper = require("../utils/sessionHelper");
 
@@ -141,6 +142,10 @@ exports.createMatter = catchAsync(async (req, res, next) => {
       .populate("client", "firstName lastName email phone");
 
     await populateDetailByType(populatedMatter);
+
+    dispatch("matter.created", populatedMatter.toObject(), req.firmId).catch(err => {
+      console.error("Automation dispatch error (matter.created):", err.message);
+    });
 
     res.status(201).json({
       status: "success",

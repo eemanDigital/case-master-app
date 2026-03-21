@@ -16,32 +16,28 @@ import {
   Spin,
   message,
   Switch,
-  Collapse,
   Divider,
   Empty,
   Tooltip,
-  Steps,
   Statistic,
-  Descriptions,
+  Alert,
 } from "antd";
 import {
   PlusOutlined,
   PlayCircleOutlined,
   PauseCircleOutlined,
-  ReloadOutlined,
   DeleteOutlined,
   EditOutlined,
-  EyeOutlined,
   ThunderboltOutlined,
-  SettingOutlined,
-  AppstoreOutlined,
   CheckCircleOutlined,
   MailOutlined,
   BellOutlined,
-  ApiOutlined,
-  RobotOutlined,
+  CalendarOutlined,
+  WarningOutlined,
+  InfoCircleOutlined,
   RocketOutlined,
 } from "@ant-design/icons";
+import dayjs from "dayjs";
 import {
   fetchAutomations,
   fetchRecipes,
@@ -58,347 +54,23 @@ import {
   selectAutomationExecuting,
 } from "../../redux/features/automation/automationSlice";
 
-const { Title, Text, Paragraph } = Typography;
-const { Panel } = Collapse;
-const { Step } = Steps;
+const { Title, Text } = Typography;
 
-const TRIGGER_OPTIONS = [
-  { value: "deadline_created", label: "Deadline Created", icon: "📅" },
-  { value: "deadline_approaching", label: "Deadline Approaching", icon: "⏰" },
-  { value: "compliance_due", label: "Compliance Due", icon: "📋" },
-  { value: "compliance_overdue", label: "Compliance Overdue", icon: "⚠️" },
-  { value: "matter_created", label: "Matter Created", icon: "📁" },
-  { value: "task_completed", label: "Task Completed", icon: "✅" },
-  { value: "document_generated", label: "Document Generated", icon: "📄" },
-  { value: "manual", label: "Manual Trigger", icon: "🎯" },
+const TRIGGERS = [
+  { value: "deadline.approaching_7days", label: "Deadline in 7 Days", icon: <CalendarOutlined />, desc: "When a deadline is due in 7 days" },
+  { value: "deadline.approaching_24hours", label: "Deadline in 24 Hours", icon: <CalendarOutlined />, desc: "When a deadline is due in 24 hours" },
+  { value: "deadline.missed", label: "Deadline Missed", icon: <WarningOutlined />, desc: "When a deadline has passed" },
+  { value: "compliance.filing_due", label: "Compliance Filing Due", icon: <CalendarOutlined />, desc: "When annual return filing is due" },
+  { value: "compliance.overdue", label: "Compliance Overdue", icon: <WarningOutlined />, desc: "When compliance is overdue" },
+  { value: "matter.created", label: "New Matter Created", icon: <PlusOutlined />, desc: "When a new matter is created" },
+  { value: "manual", label: "Manual Trigger", icon: <PlayCircleOutlined />, desc: "Run manually when you choose" },
 ];
 
-const ACTION_OPTIONS = [
-  { value: "send_email", label: "Send Email", icon: "📧", color: "#3b82f6" },
-  { value: "send_sms", label: "Send SMS", icon: "📱", color: "#10b981" },
-  { value: "create_task", label: "Create Task", icon: "📝", color: "#f59e0b" },
-  { value: "create_deadline", label: "Create Deadline", icon: "⏱️", color: "#8b5cf6" },
-  { value: "update_status", label: "Update Status", icon: "🔄", color: "#06b6d4" },
-  { value: "send_notification", label: "Send Notification", icon: "🔔", color: "#ec4899" },
-  { value: "webhook", label: "Call Webhook", icon: "🔗", color: "#6366f1" },
+const ACTIONS = [
+  { value: "send_email", label: "Send Email", icon: <MailOutlined />, desc: "Send an email notification" },
+  { value: "send_in_app_notification", label: "Send Notification", icon: <BellOutlined />, desc: "Send an in-app notification" },
+  { value: "create_task", label: "Create Task", icon: <CheckCircleOutlined />, desc: "Create a task for someone" },
 ];
-
-const RecipeCard = ({ recipe, onApply }) => (
-  <Card
-    size="small"
-    hoverable
-    style={{ borderRadius: 12, height: "100%" }}
-    actions={[
-      <Button key="apply" type="primary" icon={<RocketOutlined />} onClick={() => onApply(recipe)}>
-        Use Recipe
-      </Button>,
-    ]}>
-    <Space direction="vertical" size={8} style={{ width: "100%" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <RobotOutlined style={{ fontSize: 18, color: "#3b82f6" }} />
-        <Text strong style={{ fontSize: 14 }}>{recipe.name}</Text>
-      </div>
-      <Text type="secondary" style={{ fontSize: 12 }}>{recipe.description}</Text>
-      <Divider style={{ margin: "8px 0" }} />
-      <div>
-        <Text type="secondary" style={{ fontSize: 11 }}>TRIGGER</Text>
-        <div>
-          <Tag>{TRIGGER_OPTIONS.find(t => t.value === recipe.trigger)?.label || recipe.trigger}</Tag>
-        </div>
-      </div>
-      <div>
-        <Text type="secondary" style={{ fontSize: 11 }}>ACTIONS</Text>
-        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-          {recipe.actions?.map((a, i) => (
-            <Tag key={i}>{ACTION_OPTIONS.find(ac => ac.value === a.type)?.label || a.type}</Tag>
-          ))}
-        </div>
-      </div>
-    </Space>
-  </Card>
-);
-
-const CreateAutomationModal = ({ visible, onClose, onSuccess, loading, initialData }) => {
-  const dispatch = useDispatch();
-  const [form] = Form.useForm();
-  const [step, setStep] = useState(0);
-  const [trigger, setTrigger] = useState(initialData?.trigger || "deadline_approaching");
-  const [conditions, setConditions] = useState(initialData?.conditions || []);
-  const [actions, setActions] = useState(initialData?.actions || [{ type: "send_email", config: {} }]);
-  const [submitting, setSubmitting] = useState(false);
-
-  useEffect(() => {
-    if (visible && initialData) {
-      form.setFieldsValue({
-        name: initialData.name,
-        description: initialData.description,
-      });
-      setTrigger(initialData.trigger || "deadline_approaching");
-      setConditions(initialData.conditions || []);
-      setActions(initialData.actions || [{ type: "send_email", config: {} }]);
-      setStep(0);
-    }
-  }, [visible, initialData, form]);
-
-  const handleSubmit = async () => {
-    try {
-      const values = await form.validateFields();
-      setSubmitting(true);
-
-      const automationData = {
-        ...values,
-        trigger,
-        conditions,
-        actions,
-      };
-
-      if (initialData?._id) {
-        await dispatch(updateAutomation({ id: initialData._id, data: automationData })).unwrap();
-        message.success("Automation updated");
-      } else {
-        await dispatch(createAutomation(automationData)).unwrap();
-        message.success("Automation created");
-      }
-
-      form.resetFields();
-      setStep(0);
-      setTrigger("deadline_approaching");
-      setConditions([]);
-      setActions([{ type: "send_email", config: {} }]);
-      onSuccess();
-      onClose();
-    } catch (err) {
-      message.error(err?.message || err || "Failed to save automation");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleClose = () => {
-    form.resetFields();
-    setStep(0);
-    setTrigger("deadline_approaching");
-    setConditions([]);
-    setActions([{ type: "send_email", config: {} }]);
-    onClose();
-  };
-
-  return (
-    <Modal
-      title={
-        <Space>
-          <ThunderboltOutlined style={{ color: "#f59e0b" }} />
-          <span>{initialData?._id ? "Edit Automation" : "Create Automation"}</span>
-        </Space>
-      }
-      open={visible}
-      onCancel={handleClose}
-      onOk={handleSubmit}
-      okText={step < 2 ? "Next" : initialData?._id ? "Save Changes" : "Create"}
-      confirmLoading={submitting || loading}
-      width={700}
-      destroyOnClose>
-      <Steps current={step} size="small" style={{ marginBottom: 24 }}>
-        <Step title="Basic Info" />
-        <Step title="Trigger" />
-        <Step title="Actions" />
-      </Steps>
-
-      <Form form={form} layout="vertical">
-        {step === 0 && (
-          <>
-            <Form.Item
-              name="name"
-              label="Automation Name"
-              rules={[{ required: true, message: "Please enter a name" }]}
-              initialValue={initialData?.name}>
-              <Input placeholder="e.g., Deadline Reminder Email" size="large" />
-            </Form.Item>
-            <Form.Item name="description" label="Description" initialValue={initialData?.description}>
-              <Input.TextArea rows={2} placeholder="What does this automation do?" />
-            </Form.Item>
-          </>
-        )}
-
-        {step === 1 && (
-          <>
-            <Form.Item label="Trigger Event">
-              <Select
-                value={trigger}
-                onChange={setTrigger}
-                options={TRIGGER_OPTIONS.map((t) => ({
-                  value: t.value,
-                  label: (
-                    <Space>
-                      <span>{t.icon}</span>
-                      <span>{t.label}</span>
-                    </Space>
-                  ),
-                }))}
-                style={{ width: "100%" }}
-              />
-            </Form.Item>
-
-            <Collapse style={{ marginTop: 16 }}>
-              <Panel header="Conditions (optional)" key="conditions">
-                <Paragraph type="secondary" style={{ fontSize: 12 }}>
-                  Add conditions to control when this automation runs
-                </Paragraph>
-                {conditions.map((c, i) => (
-                  <Row key={i} gutter={8} style={{ marginBottom: 8 }}>
-                    <Col flex="1">
-                      <Input
-                        placeholder="Field (e.g., priority)"
-                        value={c.field}
-                        onChange={(e) => {
-                          const nc = [...conditions];
-                          nc[i].field = e.target.value;
-                          setConditions(nc);
-                        }}
-                      />
-                    </Col>
-                    <Col>
-                      <Select
-                        value={c.operator}
-                        onChange={(v) => {
-                          const nc = [...conditions];
-                          nc[i].operator = v;
-                          setConditions(nc);
-                        }}
-                        style={{ width: 100 }}
-                        options={[
-                          { value: "equals", label: "equals" },
-                          { value: "contains", label: "contains" },
-                          { value: "greater", label: ">" },
-                          { value: "less", label: "<" },
-                        ]}
-                      />
-                    </Col>
-                    <Col flex="1">
-                      <Input
-                        placeholder="Value"
-                        value={c.value}
-                        onChange={(e) => {
-                          const nc = [...conditions];
-                          nc[i].value = e.target.value;
-                          setConditions(nc);
-                        }}
-                      />
-                    </Col>
-                    <Col>
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => setConditions(conditions.filter((_, j) => j !== i))}
-                      />
-                    </Col>
-                  </Row>
-                ))}
-                <Button
-                  type="dashed"
-                  onClick={() => setConditions([...conditions, { field: "", operator: "", value: "" }])}
-                  block>
-                  + Add Condition
-                </Button>
-              </Panel>
-            </Collapse>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <Form.Item label="Actions">
-              <Paragraph type="secondary" style={{ fontSize: 12 }}>
-                Define what happens when the trigger fires
-              </Paragraph>
-              {actions.map((a, i) => {
-                const actionConfig = ACTION_OPTIONS.find((ac) => ac.value === a.type);
-                return (
-                  <Card
-                    key={i}
-                    size="small"
-                    style={{ marginBottom: 12, borderRadius: 8, border: `1px solid ${actionConfig?.color || "#e5e7eb"}30` }}>
-                    <Row gutter={12} align="middle">
-                      <Col>
-                        <Tag style={{ fontSize: 16, padding: "4px 8px" }}>{actionConfig?.icon}</Tag>
-                      </Col>
-                      <Col flex="1">
-                        <Select
-                          value={a.type}
-                          onChange={(v) => {
-                            const na = [...actions];
-                            na[i].type = v;
-                            setActions(na);
-                          }}
-                          options={ACTION_OPTIONS.map((opt) => ({
-                            value: opt.value,
-                            label: (
-                              <Space>
-                                <span>{opt.icon}</span>
-                                <span>{opt.label}</span>
-                              </Space>
-                            ),
-                          }))}
-                          style={{ width: "100%" }}
-                        />
-                      </Col>
-                      <Col>
-                        <Input
-                          placeholder='Config (e.g., {"template": "reminder"})'
-                          value={typeof a.config === "string" ? a.config : JSON.stringify(a.config || {})}
-                          onChange={(e) => {
-                            try {
-                              const na = [...actions];
-                              na[i].config = JSON.parse(e.target.value || "{}");
-                              setActions(na);
-                            } catch {
-                              const na = [...actions];
-                              na[i].config = e.target.value;
-                              setActions(na);
-                            }
-                          }}
-                          style={{ width: 200 }}
-                        />
-                      </Col>
-                      <Col>
-                        <Button
-                          type="text"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={() => setActions(actions.filter((_, j) => j !== i))}
-                          disabled={actions.length === 1}
-                        />
-                      </Col>
-                    </Row>
-                  </Card>
-                );
-              })}
-              <Button
-                type="dashed"
-                onClick={() => setActions([...actions, { type: "send_email", config: {} }])}
-                block
-                icon={<PlusOutlined />}>
-                + Add Action
-              </Button>
-            </Form.Item>
-          </>
-        )}
-      </Form>
-
-      <div style={{ marginTop: 16, display: "flex", justifyContent: "space-between" }}>
-        <Button disabled={step === 0} onClick={() => setStep(step - 1)}>
-          Back
-        </Button>
-        {step < 2 && (
-          <Button type="primary" onClick={() => setStep(step + 1)}>
-            Next
-          </Button>
-        )}
-      </div>
-    </Modal>
-  );
-};
 
 const AutomationBuilderPage = () => {
   const dispatch = useDispatch();
@@ -409,30 +81,139 @@ const AutomationBuilderPage = () => {
   const actionLoading = useSelector(selectAutomationActionLoading);
   const executing = useSelector(selectAutomationExecuting);
 
-  const [createVisible, setCreateVisible] = useState(false);
-  const [editData, setEditData] = useState(null);
-  const [tableLoading, setTableLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingAutomation, setEditingAutomation] = useState(null);
+  const [form] = Form.useForm();
+  const [selectedTrigger, setSelectedTrigger] = useState(null);
+  const [selectedActions, setSelectedActions] = useState([]);
+  const [emailConfig, setEmailConfig] = useState({ recipientType: "custom", customEmail: "", subject: "", body: "" });
+  const [notificationConfig, setNotificationConfig] = useState({ title: "", message: "" });
+  const [submitting, setSubmitting] = useState(false);
+
+
+  console.log(automations)
 
   useEffect(() => {
-    loadData();
+    dispatch(fetchAutomations());
+    dispatch(fetchRecipes());
   }, [dispatch]);
 
-  const loadData = async () => {
-    setTableLoading(true);
+  const openCreateModal = () => {
+    setEditingAutomation(null);
+    form.resetFields();
+    setSelectedTrigger(null);
+    setSelectedActions([]);
+    setEmailConfig({ recipientType: "client", customEmail: "", subject: "", body: "" });
+    setNotificationConfig({ title: "", message: "" });
+    setModalVisible(true);
+  };
+
+  const openEditModal = (automation) => {
+    setEditingAutomation(automation);
+    form.setFieldsValue({
+      name: automation.name,
+      description: automation.description,
+    });
+    setSelectedTrigger(automation.trigger?.event || "manual");
+    
+    const actions = automation.actions || [];
+    const mappedActions = actions.map(a => {
+      if (a.type === "send_notification") return "send_in_app_notification";
+      return a.type;
+    });
+    setSelectedActions(mappedActions);
+    
+    const emailAction = actions.find(a => a.type === "send_email");
+    if (emailAction?.config) {
+      setEmailConfig({
+        recipientType: emailAction.config.emailTo || "client",
+        customEmail: emailAction.config.customEmail || "",
+        subject: emailAction.config.emailSubject || "",
+        body: emailAction.config.emailBody || "",
+      });
+    }
+    
+    const notifAction = actions.find(a => a.type === "send_in_app_notification");
+    if (notifAction?.config) {
+      setNotificationConfig({
+        title: notifAction.config.notificationTitle || "",
+        message: notifAction.config.notificationMessage || "",
+      });
+    }
+    
+    setModalVisible(true);
+  };
+
+  const handleSubmit = async () => {
     try {
-      await Promise.all([dispatch(fetchAutomations()), dispatch(fetchRecipes())]);
-    } catch (error) {
-      message.error("Failed to load automations");
+      const values = await form.validateFields();
+      setSubmitting(true);
+
+      const actions = [];
+      let actionIndex = 0;
+      
+      if (selectedActions.includes("send_email")) {
+        actions.push({
+          order: actionIndex++,
+          type: "send_email",
+          config: {
+            emailTo: emailConfig.recipientType,
+            customEmail: emailConfig.recipientType === "custom" ? emailConfig.customEmail : "",
+            emailSubject: emailConfig.subject,
+            emailBody: emailConfig.body,
+          },
+        });
+      }
+      
+      if (selectedActions.includes("send_in_app_notification")) {
+        actions.push({
+          order: actionIndex++,
+          type: "send_in_app_notification",
+          config: {
+            notifyUsers: [],
+            notificationTitle: notificationConfig.title,
+            notificationMessage: notificationConfig.message,
+          },
+        });
+      }
+
+      if (selectedActions.includes("create_task")) {
+        actions.push({
+          order: actionIndex++,
+          type: "create_task",
+          config: {},
+        });
+      }
+
+      const automationData = {
+        name: values.name,
+        description: values.description,
+        trigger: { event: selectedTrigger },
+        actions,
+      };
+
+      if (editingAutomation) {
+        await dispatch(updateAutomation({ id: editingAutomation._id, data: automationData })).unwrap();
+        message.success("Automation updated");
+      } else {
+        await dispatch(createAutomation(automationData)).unwrap();
+        message.success("Automation created");
+      }
+
+      setModalVisible(false);
+      dispatch(fetchAutomations());
+    } catch (err) {
+      message.error(err?.message || "Failed to save automation");
     } finally {
-      setTableLoading(false);
+      setSubmitting(false);
     }
   };
 
   const handleToggle = async (automation) => {
     try {
       await dispatch(toggleAutomation(automation._id)).unwrap();
-      message.success(`Automation ${automation.isActive ? "paused" : "activated"}`);
-      loadData();
+      message.success(automation.isActive ? "Automation paused" : "Automation activated");
+      dispatch(fetchAutomations());
     } catch {
       message.error("Failed to toggle automation");
     }
@@ -441,27 +222,23 @@ const AutomationBuilderPage = () => {
   const handleExecute = async (automation) => {
     try {
       await dispatch(executeAutomation({ id: automation._id })).unwrap();
-      message.success("Automation executed successfully");
-    } catch {
-      message.error("Execution failed");
+      message.success("Automation executed");
+    } catch (err) {
+      message.error(err?.message || "Execution failed");
     }
   };
 
   const handleDelete = (automation) => {
     Modal.confirm({
       title: "Delete Automation",
-      content: (
-        <span>
-          Are you sure you want to delete <strong>{automation.name}</strong>? This action cannot be undone.
-        </span>
-      ),
+      content: `Delete "${automation.name}"?`,
       okText: "Delete",
       okType: "danger",
       onOk: async () => {
         try {
           await dispatch(deleteAutomation(automation._id)).unwrap();
           message.success("Automation deleted");
-          loadData();
+          dispatch(fetchAutomations());
         } catch {
           message.error("Failed to delete");
         }
@@ -469,111 +246,79 @@ const AutomationBuilderPage = () => {
     });
   };
 
-  const handleEdit = (automation) => {
-    setEditData(automation);
-    setCreateVisible(true);
+  const handleInstallRecipe = async (recipe) => {
+    try {
+      await dispatch(createAutomation({
+        name: recipe.name,
+        description: recipe.description,
+        trigger: recipe.trigger,
+        actions: recipe.actions,
+      })).unwrap();
+      message.success("Recipe installed! Review and activate it.");
+      dispatch(fetchAutomations());
+      dispatch(fetchRecipes());
+    } catch {
+      message.error("Failed to install recipe");
+    }
   };
 
-  const handleApplyRecipe = (recipe) => {
-    setEditData({ ...recipe, _id: null });
-    setCreateVisible(true);
-  };
-
-  const automationColumns = [
+  const columns = [
     {
-      title: "Name",
-      dataIndex: "name",
+      title: "Automation",
       key: "name",
-      render: (v, r) => (
+      render: (_, r) => (
         <div>
-          <Text strong style={{ fontSize: 14 }}>{v}</Text>
-          {r.description && (
-            <div>
-              <Text type="secondary" style={{ fontSize: 12 }}>{r.description}</Text>
-            </div>
-          )}
+          <Text strong>{r.name}</Text>
+          {r.description && <div><Text type="secondary" style={{ fontSize: 12 }}>{r.description}</Text></div>}
         </div>
       ),
     },
     {
       title: "Trigger",
-      dataIndex: "trigger",
       key: "trigger",
-      render: (v) => {
-        const trigger = TRIGGER_OPTIONS.find((t) => t.value === v);
-        return (
-          <Tag icon={<span>{trigger?.icon}</span>} style={{ borderRadius: 6 }}>
-            {trigger?.label || v}
-          </Tag>
-        );
+      width: 180,
+      render: (_, r) => {
+        const t = TRIGGERS.find(x => x.value === r.trigger?.event);
+        return <Tag icon={t?.icon}>{t?.label || r.trigger?.event}</Tag>;
       },
     },
     {
-      title: "Actions",
-      dataIndex: "actions",
-      key: "actions",
-      render: (a) => (
-        <Space size={4} wrap>
-          {a?.slice(0, 2).map((ac, i) => {
-            const action = ACTION_OPTIONS.find((opt) => opt.value === ac.type);
-            return (
-              <Tag key={i} icon={<span>{action?.icon}</span>} style={{ borderRadius: 4 }}>
-                {action?.label || ac.type}
-              </Tag>
-            );
-          })}
-          {a?.length > 2 && <Tag>+{a.length - 2} more</Tag>}
-        </Space>
-      ),
-    },
-    {
       title: "Status",
-      dataIndex: "isActive",
-      key: "isActive",
-      render: (v) => (
-        <Tag color={v ? "green" : "default"} icon={v ? <CheckCircleOutlined /> : <PauseCircleOutlined />}>
-          {v ? "Active" : "Paused"}
+      key: "status",
+      width: 100,
+      render: (_, r) => (
+        <Tag color={r.isActive ? "green" : "default"}>
+          {r.isActive ? "Active" : "Paused"}
         </Tag>
       ),
     },
     {
-      title: "Executions",
-      dataIndex: "executionCount",
-      key: "executionCount",
-      render: (v) => v || 0,
+      title: "Runs",
+      key: "executions",
+      width: 80,
+      render: (_, r) => r.executionCount || 0,
+    },
+    {
+      title: "Last Run",
+      key: "lastRun",
+      width: 120,
+      render: (_, r) => r.lastExecutedAt ? dayjs(r.lastExecutedAt).format("DD MMM") : "Never",
     },
     {
       title: "Actions",
       key: "actions",
-      width: 200,
+      width: 180,
       render: (_, r) => (
         <Space size="small">
           <Switch checked={r.isActive} onChange={() => handleToggle(r)} size="small" />
           <Tooltip title="Run Now">
-            <Button
-              size="small"
-              type="text"
-              icon={<PlayCircleOutlined />}
-              onClick={() => handleExecute(r)}
-              loading={executing}
-            />
+            <Button size="small" type="text" icon={<PlayCircleOutlined />} onClick={() => handleExecute(r)} loading={executing} />
           </Tooltip>
           <Tooltip title="Edit">
-            <Button
-              size="small"
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(r)}
-            />
+            <Button size="small" type="text" icon={<EditOutlined />} onClick={() => openEditModal(r)} />
           </Tooltip>
           <Tooltip title="Delete">
-            <Button
-              size="small"
-              type="text"
-              danger
-              icon={<DeleteOutlined />}
-              onClick={() => handleDelete(r)}
-            />
+            <Button size="small" type="text" danger icon={<DeleteOutlined />} onClick={() => handleDelete(r)} />
           </Tooltip>
         </Space>
       ),
@@ -581,126 +326,213 @@ const AutomationBuilderPage = () => {
   ];
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap');
-      `}</style>
-      <div
-        style={{
-          padding: 24,
-          background: "#f1f5f9",
-          minHeight: "100vh",
-          fontFamily: "'DM Sans', sans-serif",
-        }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            marginBottom: 24,
-            flexWrap: "wrap",
-            gap: 16,
-          }}>
-          <div>
-            <Title level={3} style={{ margin: 0, fontWeight: 800 }}>
-              Automation Builder
-            </Title>
-            <Text type="secondary">No-code workflow automation for your firm</Text>
-          </div>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditData(null); setCreateVisible(true); }}>
-            Create Automation
-          </Button>
+    <div style={{ padding: 24, background: "#f1f5f9", minHeight: "100vh" }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 24 }}>
+        <div>
+          <Title level={3} style={{ margin: 0 }}>Automations</Title>
+          <Text type="secondary">Automate repetitive tasks - send emails, notifications, create tasks</Text>
         </div>
-
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-          <Col xs={12} sm={8} md={6}>
-            <Card bordered={false} style={{ borderRadius: 12 }}>
-              <Statistic
-                title={<Text type="secondary">Total Automations</Text>}
-                value={stats?.total || automations.length}
-                prefix={<ThunderboltOutlined style={{ color: "#3b82f6" }} />}
-              />
-            </Card>
-          </Col>
-          <Col xs={12} sm={8} md={6}>
-            <Card bordered={false} style={{ borderRadius: 12 }}>
-              <Statistic
-                title={<Text type="secondary">Active</Text>}
-                value={stats?.active || 0}
-                valueStyle={{ color: "#10b981" }}
-                prefix={<PlayCircleOutlined />}
-              />
-            </Card>
-          </Col>
-          <Col xs={12} sm={8} md={6}>
-            <Card bordered={false} style={{ borderRadius: 12 }}>
-              <Statistic
-                title={<Text type="secondary">Executions Today</Text>}
-                value={stats?.today || 0}
-                valueStyle={{ color: "#f59e0b" }}
-                prefix={<SettingOutlined />}
-              />
-            </Card>
-          </Col>
-        </Row>
-
-        {recipes.length > 0 && (
-          <Card bordered={false} style={{ borderRadius: 12, marginBottom: 16 }} title="Quick Start Recipes">
-            <Row gutter={[16, 16]}>
-              {recipes.map((recipe) => (
-                <Col key={recipe.id || recipe._id} xs={24} sm={12} md={8}>
-                  <RecipeCard recipe={recipe} onApply={handleApplyRecipe} />
-                </Col>
-              ))}
-            </Row>
-          </Card>
-        )}
-
-        <Card bordered={false} style={{ borderRadius: 12 }} title="Your Automations">
-          {tableLoading ? (
-            <div style={{ textAlign: "center", padding: 60 }}>
-              <Spin size="large" />
-            </div>
-          ) : automations.length === 0 ? (
-            <Empty
-              description={
-                <Space direction="vertical">
-                  <Text type="secondary">No automations created yet</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    Create your first automation or use a quick start recipe above
-                  </Text>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => { setEditData(null); setCreateVisible(true); }}
-                    style={{ marginTop: 8 }}>
-                    Create Your First Automation
-                  </Button>
-                </Space>
-              }
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-            />
-          ) : (
-            <Table
-              dataSource={automations}
-              columns={automationColumns}
-              rowKey="_id"
-              pagination={{ pageSize: 10, showSizeChanger: true, showTotal: (total) => `${total} automations` }}
-              scroll={{ x: "max-content" }}
-              size="middle"
-            />
-          )}
-        </Card>
+        <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+          Create Automation
+        </Button>
       </div>
 
-      <CreateAutomationModal
-        visible={createVisible}
-        onClose={() => { setCreateVisible(false); setEditData(null); }}
-        onSuccess={loadData}
-        loading={actionLoading}
-        initialData={editData}
-      />
-    </>
+      <Row gutter={16} style={{ marginBottom: 24 }}>
+        <Col xs={12} md={8}>
+          <Card>
+            <Statistic title="Total Automations" value={stats?.total || automations.length} prefix={<ThunderboltOutlined />} />
+          </Card>
+        </Col>
+        <Col xs={12} md={8}>
+          <Card>
+            <Statistic title="Active" value={stats?.active || 0} valueStyle={{ color: "#10b981" }} prefix={<PlayCircleOutlined />} />
+          </Card>
+        </Col>
+        <Col xs={12} md={8}>
+          <Card>
+            <Statistic title="Total Runs" value={stats?.totalExecutions || 0} prefix={<CheckCircleOutlined />} />
+          </Card>
+        </Col>
+      </Row>
+
+      {recipes.length > 0 && (
+        <Card title="Quick Start Templates" style={{ marginBottom: 16 }}>
+          <Row gutter={16}>
+            {recipes.map(recipe => (
+              <Col key={recipe.key || recipe._id} xs={24} sm={12} md={8}>
+                <Card size="small" hoverable>
+                  <Space direction="vertical" style={{ width: "100%" }}>
+                    <div>
+                      <Text strong>{recipe.name}</Text>
+                    </div>
+                    <Text type="secondary" style={{ fontSize: 12 }}>{recipe.description}</Text>
+                    <div>
+                      <Tag>{TRIGGERS.find(t => t.value === recipe.trigger?.event)?.label}</Tag>
+                    </div>
+                    <Button 
+                      type={recipe.isInstalled ? "default" : "primary"} 
+                      icon={<RocketOutlined />} 
+                      onClick={() => handleInstallRecipe(recipe)}
+                      disabled={recipe.isInstalled}
+                      block>
+                      {recipe.isInstalled ? "Installed" : "Use Template"}
+                    </Button>
+                  </Space>
+                </Card>
+              </Col>
+            ))}
+          </Row>
+        </Card>
+      )}
+
+      <Card title="Your Automations">
+        {loading ? (
+          <div style={{ textAlign: "center", padding: 40 }}><Spin size="large" /></div>
+        ) : automations.length === 0 ? (
+          <Empty description="No automations yet">
+            <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+              Create Your First Automation
+            </Button>
+          </Empty>
+        ) : (
+          <Table dataSource={automations} columns={columns} rowKey="_id" pagination={{ pageSize: 10 }} />
+        )}
+      </Card>
+
+      <Modal
+        title={editingAutomation ? "Edit Automation" : "Create Automation"}
+        open={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        onOk={handleSubmit}
+        okText={editingAutomation ? "Save Changes" : "Create"}
+        confirmLoading={submitting}
+        width={600}
+        destroyOnClose>
+        <Alert
+          type="info"
+          icon={<InfoCircleOutlined />}
+          message="How Automations Work"
+          description="Choose a trigger (what starts it), then select actions (what happens). The system will automatically run it when conditions are met."
+          style={{ marginBottom: 16 }}
+        />
+
+        <Form form={form} layout="vertical">
+          <Form.Item name="name" label="Automation Name" rules={[{ required: true }]}>
+            <Input placeholder="e.g., Deadline Reminder" />
+          </Form.Item>
+
+          <Form.Item name="description" label="Description">
+            <Input.TextArea rows={2} placeholder="What does this automation do?" />
+          </Form.Item>
+
+          <Divider>Trigger (When it runs)</Divider>
+          
+          <Select
+            placeholder="Select a trigger..."
+            value={selectedTrigger}
+            onChange={setSelectedTrigger}
+            style={{ width: "100%" }}
+            options={TRIGGERS.map(t => ({
+              value: t.value,
+              label: (
+                <Space>
+                  {t.icon}
+                  <span>{t.label}</span>
+                  <Text type="secondary" style={{ fontSize: 12 }}>- {t.desc}</Text>
+                </Space>
+              ),
+            }))}
+          />
+
+          <Divider>Actions (What happens)</Divider>
+
+          <Text type="secondary" style={{ marginBottom: 8, display: "block" }}>Select actions to perform:</Text>
+          
+          <Space wrap style={{ marginBottom: 16 }}>
+            {ACTIONS.map(action => (
+              <Tag
+                key={action.value}
+                icon={action.icon}
+                color={selectedActions.includes(action.value) ? "blue" : "default"}
+                onClick={() => {
+                  if (selectedActions.includes(action.value)) {
+                    setSelectedActions(selectedActions.filter(a => a !== action.value));
+                  } else {
+                    setSelectedActions([...selectedActions, action.value]);
+                  }
+                }}
+                style={{ padding: "8px 12px", cursor: "pointer", fontSize: 13 }}>
+                {action.label}
+              </Tag>
+            ))}
+          </Space>
+
+          {selectedActions.includes("send_email") && (
+            <Card title="Email Settings" size="small" style={{ marginBottom: 16 }}>
+              <Form.Item label="Send Email To">
+                <Select
+                  value={emailConfig.recipientType}
+                  onChange={val => setEmailConfig({ ...emailConfig, recipientType: val })}
+                  options={[
+                    { value: "client", label: "Client" },
+                    { value: "assigned_lawyer", label: "Assigned Lawyer" },
+                    { value: "supervisor", label: "Supervisor" },
+                    { value: "custom", label: "Custom Email" },
+                  ]}
+                />
+              </Form.Item>
+              {emailConfig.recipientType === "custom" && (
+                <Form.Item label="Email Address">
+                  <Input 
+                    placeholder="e.g., admin@lawfirm.com" 
+                    value={emailConfig.customEmail}
+                    onChange={e => setEmailConfig({ ...emailConfig, customEmail: e.target.value })}
+                  />
+                </Form.Item>
+              )}
+              <Form.Item label="Email Subject">
+                <Input 
+                  placeholder="e.g., Deadline Reminder: {{matter.title}}" 
+                  value={emailConfig.subject}
+                  onChange={e => setEmailConfig({ ...emailConfig, subject: e.target.value })}
+                />
+              </Form.Item>
+              <Form.Item label="Email Body">
+                <Input.TextArea 
+                  rows={4}
+                  placeholder="e.g., Dear {{lawyer.name}}, The deadline for {{matter.title}} is approaching on {{deadline.dueDate}}."
+                  value={emailConfig.body}
+                  onChange={e => setEmailConfig({ ...emailConfig, body: e.target.value })}
+                />
+              </Form.Item>
+              <Text type="secondary" style={{ fontSize: 11 }}>
+                Use {"{{variable}}"} syntax for dynamic values like {"{{lawyer.name}}"}, {"{{matter.title}}"}, {"{{deadline.dueDate}}"}
+              </Text>
+            </Card>
+          )}
+
+          {selectedActions.includes("send_in_app_notification") && (
+            <Card title="Notification Settings" size="small" style={{ marginBottom: 16 }}>
+              <Form.Item label="Notification Title">
+                <Input 
+                  placeholder="e.g., Deadline Alert"
+                  value={notificationConfig.title}
+                  onChange={e => setNotificationConfig({ ...notificationConfig, title: e.target.value })}
+                />
+              </Form.Item>
+              <Form.Item label="Notification Message">
+                <Input.TextArea 
+                  rows={2}
+                  placeholder="e.g., {{matter.title}} is due on {{deadline.dueDate}}"
+                  value={notificationConfig.message}
+                  onChange={e => setNotificationConfig({ ...notificationConfig, message: e.target.value })}
+                />
+              </Form.Item>
+            </Card>
+          )}
+        </Form>
+      </Modal>
+    </div>
   );
 };
 

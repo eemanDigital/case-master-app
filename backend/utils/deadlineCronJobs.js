@@ -3,6 +3,7 @@ const Deadline = require("../models/deadlineModel");
 const User = require("../models/userModel");
 const Firm = require("../models/firmModel");
 const { sendCustomEmail } = require("../utils/email");
+const { dispatch } = require("./automationEngine");
 
 const formatDate = (date) => {
   return new Date(date).toLocaleDateString("en-NG", {
@@ -466,6 +467,34 @@ const initDeadlineCronJobs = () => {
       }
     } catch (error) {
       console.error("[CRON] Error in recurring deadline generator:", error);
+    }
+  }, {
+    timezone: "Africa/Lagos",
+  });
+
+  cron.schedule("0 0 * * *", async () => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    try {
+      const missedDeadlines = await Deadline.find({
+        dueDate: { $lt: now },
+        status: { $nin: ["completed", "cancelled"] },
+        "automationFlags.missedAlertSent": { $ne: true },
+      }).populate([
+        { path: "assignedTo", select: "firstName lastName email" },
+        { path: "supervisor", select: "firstName lastName email" },
+      ]);
+
+      for (const deadline of missedDeadlines) {
+        await dispatch("deadline.missed", deadline.toObject(), deadline.firmId);
+        deadline.automationFlags = deadline.automationFlags || {};
+        deadline.automationFlags.missedAlertSent = true;
+        await deadline.save();
+        console.log(`[CRON] Triggered deadline.missed automation for ${deadline.deadlineNumber}`);
+      }
+    } catch (error) {
+      console.error("[CRON] Error checking missed deadlines:", error);
     }
   }, {
     timezone: "Africa/Lagos",

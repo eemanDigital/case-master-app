@@ -22,6 +22,7 @@ router.route("/:id")
   .delete(premiumFeatureGuard("automationBuilder"), automationController.deleteAutomation);
 
 router.patch("/:id/toggle", premiumFeatureGuard("automationBuilder"), automationController.toggleAutomation);
+router.post("/:id/toggle", premiumFeatureGuard("automationBuilder"), automationController.toggleAutomation);
 router.post("/:id/test", premiumFeatureGuard("automationBuilder"), automationController.testAutomation);
 router.post("/:id/run", premiumFeatureGuard("automationBuilder"), automationController.runAutomation);
 router.get("/:id/logs", premiumFeatureGuard("automationBuilder"), automationController.getExecutionLog);
