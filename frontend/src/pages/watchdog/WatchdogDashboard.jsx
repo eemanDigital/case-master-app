@@ -26,6 +26,7 @@ import {
   Tabs,
   DatePicker,
   Descriptions,
+  Popconfirm,
 } from "antd";
 import {
   PlusOutlined,
@@ -42,6 +43,7 @@ import {
   EyeOutlined,
   SendOutlined,
   DollarOutlined,
+  DeleteOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -1034,6 +1036,15 @@ const WatchdogDashboard = () => {
     }
   };
 
+  const handleDeleteEntity = async (entity) => {
+    try {
+      await dispatch(removeMonitoredEntity(entity._id)).unwrap();
+      message.success(`${entity.entityName} removed from monitoring`);
+    } catch (err) {
+      message.error(err?.message || "Failed to remove entity");
+    }
+  };
+
   const handleViewDetails = (entity) => {
     setSelectedEntity(entity);
     setDetailsVisible(true);
@@ -1145,7 +1156,7 @@ const WatchdogDashboard = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 200,
+      width: 280,
       render: (_, r) => (
         <Space size="small">
           <Tooltip title="View details & manage">
@@ -1167,6 +1178,25 @@ const WatchdogDashboard = () => {
               Check
             </Button>
           </Tooltip>
+          <Popconfirm
+            title="Remove from monitoring?"
+            description={
+              <div>
+                <p>Stop monitoring <strong>{r.entityName}</strong>?</p>
+                <p style={{ fontSize: 12, color: "#999" }}>You can re-add it later.</p>
+              </div>
+            }
+            onConfirm={() => handleDeleteEntity(r)}
+            okText="Remove"
+            okButtonProps={{ danger: true }}>
+            <Tooltip title="Remove from monitoring">
+              <Button
+                size="small"
+                danger
+                icon={<DeleteOutlined />}
+              />
+            </Tooltip>
+          </Popconfirm>
         </Space>
       ),
     },
