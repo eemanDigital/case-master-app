@@ -58,6 +58,11 @@ exports.manualStatusCheck = catchAsync(async (req, res, next) => {
     updateData["cacPortalStatus.watchdogNotes"] = result.error;
   }
 
+  // Auto-fill entity name from CAC if not set
+  if (result.success && result.entityName && !entity.entityName) {
+    updateData.entityName = result.entityName;
+  }
+
   // ✅ FIXED: always set requiresAttention based on current status
   // even if no status change — this clears stale flags
   if (result.success) {
@@ -610,16 +615,11 @@ exports.createMonitoredEntity = catchAsync(async (req, res, next) => {
     assignedTo,
   } = req.body;
 
-  if (!entityName || !registrationNumber) {
+  if (!registrationNumber) {
     return next(
-      new AppError("Entity name and registration number are required", 400),
+      new AppError("Registration number (RC/BN) is required", 400),
     );
   }
-
-  // ✅ FIXED: clientId is required — validate it
-  // if (!clientId) {
-  //   return next(new AppError("Client ID is required", 400));
-  // }
 
   const entityTypeMap = {
     ltd: "private-limited",
@@ -630,7 +630,7 @@ exports.createMonitoredEntity = catchAsync(async (req, res, next) => {
     llp: "llp",
   };
 
-  const mappedEntityType = entityTypeMap[entityType] || entityType || "other";
+  const mappedEntityType = entityTypeMap[entityType] || entityType || "private-limited";
 
   // Check for existing entity with same RC number in this firm
   const existing = await ComplianceTracker.findOne({
@@ -651,11 +651,13 @@ exports.createMonitoredEntity = catchAsync(async (req, res, next) => {
   // Attempt CAC status check immediately on creation
   let initialPortalStatus = "UNKNOWN";
   let initialWatchdogNotes = notes || undefined;
+  let cacEntityName = null;
 
   try {
     const result = await checkCacStatus(registrationNumber, mappedEntityType);
     if (result.success) {
       initialPortalStatus = result.status;
+      cacEntityName = result.entityName;
     } else {
       initialWatchdogNotes = result.error
         ? `${notes || ""} | Initial check failed: ${result.error}`.trim()
@@ -663,12 +665,19 @@ exports.createMonitoredEntity = catchAsync(async (req, res, next) => {
     }
   } catch (error) {
     console.error("Initial CAC status check failed:", error.message);
-    // ✅ Do not block creation if CAC check fails
+  }
+
+  // Use CAC entity name if not provided, or validate if both provided
+  const finalEntityName = entityName || cacEntityName;
+  if (!finalEntityName) {
+    return next(
+      new AppError("Could not determine entity name. Please provide it manually.", 400),
+    );
   }
 
   const entity = await ComplianceTracker.create({
     firmId: req.firmId,
-    entityName,
+    entityName: finalEntityName,
     rcNumber: registrationNumber,
     entityType: mappedEntityType,
     clientId,

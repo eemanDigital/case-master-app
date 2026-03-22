@@ -150,7 +150,6 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
       setSubmitting(true);
 
       const entityData = {
-        entityName: values.entityName,
         registrationNumber: values.registrationNumber,
         entityType: values.entityType,
         linkedMatterId:
@@ -158,8 +157,13 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
         clientId: values.clientId?.value || values.clientId || undefined,
       };
 
+      // Only send entityName if provided
+      if (values.entityName && values.entityName.trim()) {
+        entityData.entityName = values.entityName.trim();
+      }
+
       await dispatch(addMonitoredEntity(entityData)).unwrap();
-      message.success("Entity added to monitoring");
+      message.success("Entity added to monitoring - name auto-filled from CAC");
       form.resetFields();
       setSelectedMatter(null);
       onSuccess();
@@ -198,8 +202,8 @@ const CreateEntityModal = ({ visible, onClose, onSuccess, loading }) => {
             <Form.Item
               name="entityName"
               label="Entity Name"
-              rules={[{ required: true, message: "Please enter entity name" }]}>
-              <Input placeholder="e.g., ABC Holdings Ltd" />
+              extra={<Text type="secondary" style={{ fontSize: 11 }}>Optional - will be auto-filled from CAC if not provided</Text>}>
+              <Input placeholder="e.g., ABC Holdings Ltd (optional)" />
             </Form.Item>
           </Col>
           <Col xs={24} md={12}>
