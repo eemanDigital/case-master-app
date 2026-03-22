@@ -19,7 +19,6 @@ import {
   CheckCircleOutlined,
   EyeOutlined,
 } from "@ant-design/icons";
-import axios from "axios";
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -43,13 +42,15 @@ const PublicPreviewPage = () => {
   const fetchDocument = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `${BASE_URL}/api/v1/fee-protector/${id}/preview-info`,
-      );
-      setDocument(response.data.data);
+      const response = await fetch(`${BASE_URL}/api/v1/fee-protector/${id}/preview-info`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Document not found");
+      }
+      setDocument(data.data);
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.message || "Document not found");
+      setError(err.message || "Document not found");
     } finally {
       setLoading(false);
     }
@@ -58,25 +59,10 @@ const PublicPreviewPage = () => {
   const handleDownload = async () => {
     try {
       setDownloading(true);
-      const response = await axios.get(
-        `${BASE_URL}/api/v1/fee-protector/${id}/download`,
-        {
-          responseType: "blob",
-        },
-      );
-
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement("a");
-      link.href = url;
-      link.setAttribute("download", document?.name || "document.pdf");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
+      window.open(downloadUrl, "_blank");
       message.success("Download started!");
     } catch (err) {
-      message.error(err.response?.data?.message || "Download failed");
+      message.error("Download failed");
     } finally {
       setDownloading(false);
     }
@@ -84,23 +70,19 @@ const PublicPreviewPage = () => {
 
   const getPreviewUrl = () => {
     if (!document?.protectedDocument) return null;
-    if (document.protectedDocument.isBalancePaid) {
-      return document.protectedDocument.originalFileUrl
-        ? `${BASE_URL}${document.protectedDocument.originalFileUrl}`
-        : null;
-    }
-    return document.protectedDocument.watermarkedFileUrl
-      ? `${BASE_URL}${document.protectedDocument.watermarkedFileUrl}`
-      : document.protectedDocument.thumbnailUrl
-        ? `${BASE_URL}${document.protectedDocument.thumbnailUrl}`
-        : null;
+    return `${BASE_URL}/api/v1/fee-protector/${document._id}/preview`;
+  };
+
+  const getDownloadUrl = () => {
+    if (!document?.protectedDocument) return null;
+    return `${BASE_URL}/api/v1/fee-protector/${document._id}/download`;
   };
 
   const previewUrl = getPreviewUrl();
-  const isImage =
-    previewUrl?.endsWith(".jpg") ||
-    previewUrl?.endsWith(".jpeg") ||
-    previewUrl?.endsWith(".png");
+  const downloadUrl = getDownloadUrl();
+  const mimeType = document?.protectedDocument?.mimeType || "";
+  const isImage = mimeType.startsWith("image/");
+  const isPdf = mimeType === "application/pdf" || mimeType.includes("pdf");
 
   if (loading) {
     return (
@@ -238,7 +220,7 @@ const PublicPreviewPage = () => {
                   padding: 16,
                   borderRadius: 8,
                   textAlign: "center",
-                  maxHeight: 500,
+                  maxHeight: 600,
                   overflow: "auto",
                 }}>
                 {isImage ? (
@@ -247,7 +229,18 @@ const PublicPreviewPage = () => {
                     alt="Document preview"
                     style={{
                       maxWidth: "100%",
-                      maxHeight: 450,
+                      maxHeight: 550,
+                      border: "1px solid #ddd",
+                      borderRadius: 4,
+                    }}
+                  />
+                ) : isPdf ? (
+                  <iframe
+                    src={previewUrl}
+                    title="Document Preview"
+                    style={{
+                      width: "100%",
+                      height: 550,
                       border: "1px solid #ddd",
                       borderRadius: 4,
                     }}
@@ -257,13 +250,16 @@ const PublicPreviewPage = () => {
                     <FileProtectOutlined
                       style={{ fontSize: 64, color: "#ccc" }}
                     />
+                    <div style={{ marginTop: 16 }}>
+                      <Text type="secondary">{document?.protectedDocument?.originalFilename || "Document"}</Text>
+                    </div>
                     <div style={{ marginTop: 8 }}>
                       <Button
-                        type="link"
+                        type="primary"
                         href={previewUrl}
                         target="_blank"
                         icon={<EyeOutlined />}>
-                        View Document
+                        Open Document
                       </Button>
                     </div>
                   </div>

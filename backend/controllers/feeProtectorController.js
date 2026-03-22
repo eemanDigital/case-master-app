@@ -57,28 +57,17 @@ exports.createFeeProtector = catchAsync(async (req, res, next) => {
 
   const firmId = req.firmId.toString();
   const originalsDir = path.join(__dirname, "..", "uploads", "protected", "originals", firmId);
-  const watermarkedDir = path.join(__dirname, "..", "uploads", "protected", "watermarked", firmId);
-  const thumbnailsDir = path.join(__dirname, "..", "uploads", "protected", "thumbnails", firmId);
 
   await ensureDirExists(originalsDir);
-  await ensureDirExists(watermarkedDir);
-  await ensureDirExists(thumbnailsDir);
 
   const timestamp = Date.now();
   const ext = path.extname(req.file.originalname);
-  const baseFilename = `standalone_${timestamp}`;
-  const originalFilename = `${baseFilename}_original${ext}`;
-  const watermarkedFilename = `${baseFilename}_watermarked.jpg`;
-  const thumbnailFilename = `${baseFilename}_thumbnail.jpg`;
+  const filename = `standalone_${timestamp}${ext}`;
+  const filePath = path.join(originalsDir, filename);
 
-  const originalPath = path.join(originalsDir, originalFilename);
-  const watermarkedPath = path.join(watermarkedDir, watermarkedFilename);
-  const thumbnailPath = path.join(thumbnailsDir, thumbnailFilename);
+  await fs.writeFile(filePath, req.file.buffer);
 
-  await fs.writeFile(originalPath, req.file.buffer);
-
-  await generateWatermarkedVersion(originalPath, watermarkedPath);
-  await generateThumbnail(originalPath, thumbnailPath);
+  const fileUrl = getFileUrl(filePath);
 
   const doc = await ProtectedDocument.create({
     firmId: req.firmId,
@@ -87,9 +76,9 @@ exports.createFeeProtector = catchAsync(async (req, res, next) => {
     clientId: clientId || null,
     createdBy: req.user._id,
     protectedDocument: {
-      originalFileUrl: getFileUrl(originalPath),
-      watermarkedFileUrl: getFileUrl(watermarkedPath),
-      thumbnailUrl: getFileUrl(thumbnailPath),
+      originalFileUrl: fileUrl,
+      watermarkedFileUrl: fileUrl,
+      thumbnailUrl: fileUrl,
       originalFilename: req.file.originalname,
       mimeType: req.file.mimetype,
       balanceAmount: amount ? parseFloat(amount) : 0,
@@ -712,37 +701,38 @@ exports.getPublicDocumentInfo = catchAsync(async (req, res, next) => {
 exports.downloadProtectedDocument = catchAsync(async (req, res, next) => {
   const { id } = req.params;
 
-  const query = { _id: id };
-  if (req.firmId) {
-    query.firmId = req.firmId;
-  }
-
-  const doc = await ProtectedDocument.findOne(query);
+  const doc = await ProtectedDocument.findOne({ _id: id });
 
   if (!doc || !doc.protectedDocument) {
     return next(new AppError("Protected document not found", 404));
   }
 
-  let fileUrl;
-  let filename;
-
-  if (doc.protectedDocument.isBalancePaid && doc.protectedDocument.originalFileUrl) {
-    fileUrl = doc.protectedDocument.originalFileUrl;
-    filename = doc.documentName;
-  } else {
-    fileUrl = doc.protectedDocument.watermarkedFileUrl || doc.protectedDocument.originalFileUrl;
-    filename = `${doc.documentName} (Watermarked)`;
-  }
+  let fileUrl = doc.protectedDocument.originalFileUrl;
+  const filename = doc.protectedDocument.originalFilename || doc.documentName;
 
   if (!fileUrl) {
     return next(new AppError("File not found", 404));
   }
 
-  const filePath = path.join(__dirname, "..", "..", fileUrl.replace(/^\//, ""));
+  const filePath = path.join(__dirname, "..", fileUrl.replace(/^\//, ""));
+
+  const mimeTypes = {
+    ".pdf": "application/pdf",
+    ".doc": "application/msword",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+  };
+
+  const ext = path.extname(filePath).toLowerCase();
+  const contentType = mimeTypes[ext] || doc.protectedDocument.mimeType || "application/octet-stream";
 
   try {
     await fs.access(filePath);
-    res.download(filePath, filename);
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.sendFile(filePath);
   } catch {
     return next(new AppError("File not found on server", 404));
   }
@@ -751,33 +741,31 @@ exports.downloadProtectedDocument = catchAsync(async (req, res, next) => {
 exports.previewProtectedDocument = catchAsync(async (req, res, next) => {
   const { id } = req.params;
 
-  const query = { _id: id };
-  if (req.firmId) {
-    query.firmId = req.firmId;
-  }
-
-  const doc = await ProtectedDocument.findOne(query);
+  const doc = await ProtectedDocument.findOne({ _id: id });
 
   if (!doc || !doc.protectedDocument) {
     return next(new AppError("Protected document not found", 404));
   }
 
-  let fileUrl;
+  let fileUrl = doc.protectedDocument.originalFileUrl;
+  const filePath = path.join(__dirname, "..", fileUrl.replace(/^\//, ""));
 
-  if (doc.protectedDocument.isBalancePaid) {
-    fileUrl = doc.protectedDocument.originalFileUrl;
-  } else {
-    fileUrl = doc.protectedDocument.watermarkedFileUrl || doc.protectedDocument.thumbnailUrl;
-  }
+  const mimeTypes = {
+    ".pdf": "application/pdf",
+    ".doc": "application/msword",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+  };
 
-  if (!fileUrl) {
-    return next(new AppError("Preview not available", 404));
-  }
-
-  const filePath = path.join(__dirname, "..", "..", fileUrl.replace(/^\//, ""));
+  const ext = path.extname(filePath).toLowerCase();
+  const contentType = mimeTypes[ext] || doc.protectedDocument.mimeType || "application/octet-stream";
 
   try {
     await fs.access(filePath);
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${doc.documentName}"`);
     res.sendFile(filePath);
   } catch {
     return next(new AppError("Preview file not found", 404));
