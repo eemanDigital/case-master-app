@@ -5,21 +5,25 @@ const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const CacMatter = require("../models/cacMatterModel");
 const ProtectedDocument = require("../models/protectedDocumentModel");
-const { generateWatermarkedVersion, generateThumbnail, ensureDirExists } = require("../utils/watermark");
+const {
+  generateWatermarkedVersion,
+  ensureDirExists,
+} = require("../utils/watermark");
 const { sendCustomEmail } = require("../utils/email");
 const Firm = require("../models/firmModel");
+
+// ─── Multer ────────────────────────────────────────────────────────────────
 
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|pdf|doc|docx/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    return cb(null, true);
-  }
-  cb(new AppError("Only images (jpeg, jpg, png) and documents (pdf, doc, docx) are allowed", 400));
+  const allowed = /jpeg|jpg|png|pdf|doc|docx/;
+  const ext = allowed.test(path.extname(file.originalname).toLowerCase());
+  const mime = allowed.test(file.mimetype);
+  if (ext && mime) return cb(null, true);
+  cb(
+    new AppError("Only images and documents (pdf, doc, docx) are allowed", 400),
+  );
 };
 
 const upload = multer({
@@ -28,57 +32,103 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 },
 });
 
-const uploadMiddleware = upload.single("document");
+exports.uploadMiddleware = [upload.single("file")];
 
-const getEntityModel = (entityType) => {
-  switch (entityType) {
-    case "cac":
-      return CacMatter;
-    case "standalone":
-      return ProtectedDocument;
-    default:
-      return null;
-  }
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
+const getFileUrl = (filePath) =>
+  filePath.replace(/\\/g, "/").replace(/^.*?uploads/, "/uploads");
+
+const resolveFilePath = (fileUrl) =>
+  path.join(__dirname, "..", fileUrl.replace(/^\//, ""));
+
+const getMimeType = (filePath) => {
+  const ext = path.extname(filePath).toLowerCase();
+  const map = {
+    ".pdf": "application/pdf",
+    ".doc": "application/msword",
+    ".docx":
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+  };
+  return map[ext] || "application/octet-stream";
 };
 
-const getFileUrl = (filePath) => {
-  if (!filePath) return null;
-  return filePath.replace(/\\/g, "/").replace(/^.*?uploads/, "/uploads");
-};
+// Format a ProtectedDocument for API response (consistent shape for frontend adapter)
+const formatDoc = (doc) => ({
+  _id: doc._id,
+  type: "standalone",
+  name: doc.documentName,
+  entityType: doc.entityType,
+  clientId: doc.clientId,
+  protectedDocument: doc.protectedDocument,
+  createdAt: doc.createdAt,
+  updatedAt: doc.updatedAt,
+});
 
-exports.uploadMiddleware = [uploadMiddleware];
+// ─── Create (upload + watermark) ───────────────────────────────────────────
 
 exports.createFeeProtector = catchAsync(async (req, res, next) => {
-  if (!req.file) {
-    return next(new AppError("No file uploaded", 400));
-  }
+  if (!req.file) return next(new AppError("No file uploaded", 400));
 
-  const { title, amount, notes, clientId, entityType } = req.body;
-
+  const { title, amount, notes, clientId } = req.body;
   const firmId = req.firmId.toString();
-  const originalsDir = path.join(__dirname, "..", "uploads", "protected", "originals", firmId);
+
+  const originalsDir = path.join(
+    __dirname,
+    "..",
+    "uploads",
+    "protected",
+    "originals",
+    firmId,
+  );
+  const watermarkedDir = path.join(
+    __dirname,
+    "..",
+    "uploads",
+    "protected",
+    "watermarked",
+    firmId,
+  );
 
   await ensureDirExists(originalsDir);
+  await ensureDirExists(watermarkedDir);
 
   const timestamp = Date.now();
   const ext = path.extname(req.file.originalname);
-  const filename = `standalone_${timestamp}${ext}`;
-  const filePath = path.join(originalsDir, filename);
+  const base = `standalone_${timestamp}`;
 
-  await fs.writeFile(filePath, req.file.buffer);
+  const originalPath = path.join(originalsDir, `${base}_original${ext}`);
+  const watermarkedPath = path.join(
+    watermarkedDir,
+    `${base}_watermarked${ext}`,
+  );
 
-  const fileUrl = getFileUrl(filePath);
+  // Save original
+  await fs.writeFile(originalPath, req.file.buffer);
+
+  // Generate watermarked version — fall back to copy if watermarking fails (e.g. docx)
+  try {
+    await generateWatermarkedVersion(originalPath, watermarkedPath);
+  } catch (err) {
+    console.warn(
+      "Watermark generation failed, using original as fallback:",
+      err.message,
+    );
+    await fs.copyFile(originalPath, watermarkedPath);
+  }
 
   const doc = await ProtectedDocument.create({
     firmId: req.firmId,
     documentName: title || req.file.originalname,
-    entityType: entityType || "other",
+    entityType: "other",
     clientId: clientId || null,
     createdBy: req.user._id,
     protectedDocument: {
-      originalFileUrl: fileUrl,
-      watermarkedFileUrl: fileUrl,
-      thumbnailUrl: fileUrl,
+      originalFileUrl: getFileUrl(originalPath),
+      watermarkedFileUrl: getFileUrl(watermarkedPath),
       originalFilename: req.file.originalname,
       mimeType: req.file.mimetype,
       balanceAmount: amount ? parseFloat(amount) : 0,
@@ -92,682 +142,410 @@ exports.createFeeProtector = catchAsync(async (req, res, next) => {
 
   res.status(201).json({
     status: "success",
-    data: {
-      id: doc._id,
-      type: "standalone",
-      name: doc.documentName,
-      clientId: doc.clientId,
-      protectedDocument: doc.protectedDocument,
-      createdAt: doc.createdAt,
+    data: formatDoc(doc),
+  });
+});
+
+// ─── Get all ───────────────────────────────────────────────────────────────
+
+exports.getAllFeeProtectors = catchAsync(async (req, res, next) => {
+  const { page = 1, limit = 20, status } = req.query;
+  const skip = (parseInt(page) - 1) * parseInt(limit);
+
+  const query = { firmId: req.firmId, isDeleted: { $ne: true } };
+  if (status === "paid") query["protectedDocument.isBalancePaid"] = true;
+  if (status === "pending")
+    query["protectedDocument.isBalancePaid"] = { $ne: true };
+
+  const [docs, total] = await Promise.all([
+    ProtectedDocument.find(query)
+      .select(
+        "documentName entityType clientId protectedDocument createdAt updatedAt",
+      )
+      .populate("clientId", "firstName lastName email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit)),
+    ProtectedDocument.countDocuments(query),
+  ]);
+
+  res.status(200).json({
+    status: "success",
+    data: docs.map(formatDoc),
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      pages: Math.ceil(total / parseInt(limit)),
     },
   });
 });
+
+// ─── Get one ───────────────────────────────────────────────────────────────
 
 exports.getFeeProtector = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
+  const doc = await ProtectedDocument.findOne({
+    _id: req.params.id,
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
+  }).populate("clientId", "firstName lastName email");
 
-  let entity = await ProtectedDocument.findOne({ _id: id, firmId: req.firmId, isDeleted: { $ne: true } });
-  let type = "standalone";
+  if (!doc) return next(new AppError("Document not found", 404));
 
-  if (!entity) {
-    entity = await CacMatter.findOne({ _id: id, firmId: req.firmId });
-    type = "cac";
-  }
-
-  if (!entity) {
-    return next(new AppError("Fee protector not found", 404));
-  }
-
-  await entity.populate("clientId", "firstName lastName email");
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      id: entity._id,
-      type,
-      name: entity.documentName || entity.companyName,
-      entityType: entity.entityType,
-      clientId: entity.clientId,
-      protectedDocument: entity.protectedDocument,
-      createdAt: entity.createdAt,
-    },
-  });
+  res.status(200).json({ status: "success", data: formatDoc(doc) });
 });
+
+// ─── Update ────────────────────────────────────────────────────────────────
 
 exports.updateFeeProtector = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
-  const { amount, notes, isBalancePaid, clientId } = req.body;
+  const { amount, notes, clientId } = req.body;
 
-  let entity = await ProtectedDocument.findOne({ _id: id, firmId: req.firmId, isDeleted: { $ne: true } });
-
-  if (!entity) {
-    entity = await CacMatter.findOne({ _id: id, firmId: req.firmId });
-  }
-
-  if (!entity) {
-    return next(new AppError("Fee protector not found", 404));
-  }
-
-  if (amount !== undefined) {
-    entity.protectedDocument = entity.protectedDocument || {};
-    entity.protectedDocument.balanceAmount = amount;
-  }
-
-  if (notes !== undefined) {
-    entity.protectedDocument = entity.protectedDocument || {};
-    entity.protectedDocument.notes = notes;
-  }
-
-  if (isBalancePaid !== undefined) {
-    entity.protectedDocument = entity.protectedDocument || {};
-    entity.protectedDocument.isBalancePaid = isBalancePaid;
-    if (isBalancePaid) {
-      entity.protectedDocument.paymentConfirmedAt = new Date();
-      entity.protectedDocument.paymentConfirmedBy = req.user._id;
-    }
-  }
-
-  if (clientId !== undefined) {
-    entity.clientId = clientId || null;
-  }
-
-  await entity.save();
-  await entity.populate("clientId", "firstName lastName email");
-
-  res.status(200).json({
-    status: "success",
-    data: entity,
+  const doc = await ProtectedDocument.findOne({
+    _id: req.params.id,
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
   });
+
+  if (!doc) return next(new AppError("Document not found", 404));
+
+  if (amount !== undefined)
+    doc.protectedDocument.balanceAmount = parseFloat(amount);
+  if (notes !== undefined) doc.protectedDocument.notes = notes;
+  if (clientId !== undefined) doc.clientId = clientId || null;
+
+  await doc.save();
+  await doc.populate("clientId", "firstName lastName email");
+
+  res.status(200).json({ status: "success", data: formatDoc(doc) });
 });
+
+// ─── Delete ────────────────────────────────────────────────────────────────
 
 exports.deleteFeeProtector = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
-
-  let entity = await ProtectedDocument.findOne({ _id: id, firmId: req.firmId });
-
-  if (!entity) {
-    entity = await CacMatter.findOne({ _id: id, firmId: req.firmId });
-  }
-
-  if (!entity) {
-    return next(new AppError("Fee protector not found", 404));
-  }
-
-  if (entity.constructor.modelName === "ProtectedDocument") {
-    entity.isDeleted = true;
-    await entity.save();
-  } else {
-    entity.protectedDocument = undefined;
-    await entity.save();
-  }
-
-  res.status(200).json({
-    status: "success",
-    message: "Fee protector deleted successfully",
+  const doc = await ProtectedDocument.findOne({
+    _id: req.params.id,
+    firmId: req.firmId,
   });
-});
 
-exports.uploadProtectedDocument = catchAsync(async (req, res, next) => {
-  if (!req.file) {
-    return next(new AppError("No file uploaded", 400));
-  }
+  if (!doc) return next(new AppError("Document not found", 404));
 
-  const { entityType, entityId, balanceAmount } = req.body;
+  // Soft delete
+  doc.isDeleted = true;
+  await doc.save();
 
-  if (!entityType || !entityId) {
-    return next(new AppError("Entity type and ID are required", 400));
-  }
-
-  const Model = getEntityModel(entityType);
-  if (!Model) {
-    return next(new AppError("Invalid entity type", 400));
-  }
-
-  const entity = await Model.findOne({ _id: entityId, firmId: req.firmId });
-  if (!entity) {
-    return next(new AppError("Entity not found", 404));
-  }
-
-  const firmId = req.firmId.toString();
-  const originalsDir = path.join(__dirname, "..", "uploads", "protected", "originals", firmId);
-  const watermarkedDir = path.join(__dirname, "..", "uploads", "protected", "watermarked", firmId);
-  const thumbnailsDir = path.join(__dirname, "..", "uploads", "protected", "thumbnails", firmId);
-
-  await ensureDirExists(originalsDir);
-  await ensureDirExists(watermarkedDir);
-  await ensureDirExists(thumbnailsDir);
-
-  const timestamp = Date.now();
-  const ext = path.extname(req.file.originalname);
-  const baseFilename = `${entityType}_${entityId}_${timestamp}`;
-  const originalFilename = `${baseFilename}_original${ext}`;
-  const watermarkedFilename = `${baseFilename}_watermarked.jpg`;
-  const thumbnailFilename = `${baseFilename}_thumbnail.jpg`;
-
-  const originalPath = path.join(originalsDir, originalFilename);
-  const watermarkedPath = path.join(watermarkedDir, watermarkedFilename);
-  const thumbnailPath = path.join(thumbnailsDir, thumbnailFilename);
-
-  await fs.writeFile(originalPath, req.file.buffer);
-
-  await generateWatermarkedVersion(originalPath, watermarkedPath);
-  await generateThumbnail(originalPath, thumbnailPath);
-
-  const protectedDocData = {
-    originalFileUrl: getFileUrl(originalPath),
-    watermarkedFileUrl: getFileUrl(watermarkedPath),
-    thumbnailUrl: getFileUrl(thumbnailPath),
-    originalFilename: req.file.originalname,
-    mimeType: req.file.mimetype,
-    uploadedAt: new Date(),
-    uploadedBy: req.user._id,
-    isBalancePaid: false,
-    balanceAmount: balanceAmount ? parseFloat(balanceAmount) : 0,
-    accessLog: [],
-  };
-
-  entity.protectedDocument = protectedDocData;
-  await entity.save({ validateBeforeSave: false });
-
-  if (entityType === "cac" && entity.timeline) {
-    entity.timeline.push({
-      action: "Document Uploaded",
-      description: `Protected document uploaded: ${req.file.originalname}`,
-      date: new Date(),
-      performedBy: req.user._id,
-    });
-    await entity.save({ validateBeforeSave: false });
-  }
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      thumbnailUrl: protectedDocData.thumbnailUrl,
-      originalFilename: protectedDocData.originalFilename,
-      uploadedAt: protectedDocData.uploadedAt,
-      balanceAmount: protectedDocData.balanceAmount,
-    },
-  });
-});
-
-exports.getProtectedDocument = catchAsync(async (req, res, next) => {
-  const { entityType, entityId } = req.params;
-
-  if (!entityType || !entityId) {
-    return next(new AppError("Entity type and ID are required", 400));
-  }
-
-  const Model = getEntityModel(entityType);
-  if (!Model) {
-    return next(new AppError("Invalid entity type", 400));
-  }
-
-  const entity = await Model.findOne({ _id: entityId, firmId: req.firmId });
-  if (!entity) {
-    return next(new AppError("Entity not found", 404));
-  }
-
-  if (!entity.protectedDocument || !entity.protectedDocument.originalFileUrl) {
-    return next(new AppError("No protected document found", 404));
-  }
-
-  const { protectedDocument } = entity;
-  const isClient = req.user.role === "client" || req.user.userType === "client";
-  const isLawyerOrAdmin = ["lawyer", "admin", "super-admin"].includes(req.user.role);
-
-  let fileToServe = null;
-  let wasGranted = false;
-  let attemptType = req.query.download === "true" ? "download" : "view";
-
-  if (isLawyerOrAdmin) {
-    fileToServe = protectedDocument.originalFileUrl;
-    wasGranted = true;
-  } else if (isClient) {
-    if (protectedDocument.isBalancePaid) {
-      fileToServe = protectedDocument.originalFileUrl;
-      wasGranted = true;
-    } else {
-      fileToServe = protectedDocument.watermarkedFileUrl;
-      wasGranted = false;
+  // Clean up files from disk (non-blocking)
+  const cleanup = async () => {
+    try {
+      const { originalFileUrl, watermarkedFileUrl } =
+        doc.protectedDocument || {};
+      if (originalFileUrl)
+        await fs.unlink(resolveFilePath(originalFileUrl)).catch(() => {});
+      if (watermarkedFileUrl)
+        await fs.unlink(resolveFilePath(watermarkedFileUrl)).catch(() => {});
+    } catch (err) {
+      console.warn("File cleanup error:", err.message);
     }
-  } else {
-    fileToServe = protectedDocument.watermarkedFileUrl;
-    wasGranted = false;
-  }
+  };
+  cleanup();
 
-  entity.protectedDocument.accessLog.push({
-    accessedBy: req.user._id,
-    accessedAt: new Date(),
-    ipAddress: req.ip || req.connection.remoteAddress,
-    wasGranted,
-    attemptType,
-  });
-  await entity.save({ validateBeforeSave: false, validate: false });
-
-  const fullPath = path.join(__dirname, "..", "..", fileToServe);
-
-  try {
-    const fileBuffer = await fs.readFile(fullPath);
-    const ext = path.extname(fullPath).toLowerCase();
-
-    let contentType = "application/octet-stream";
-    if (ext === ".pdf") contentType = "application/pdf";
-    else if ([".jpg", ".jpeg"].includes(ext)) contentType = "image/jpeg";
-    else if (ext === ".png") contentType = "image/png";
-
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Content-Disposition", `${attemptType === "download" ? "attachment" : "inline"}; filename="${path.basename(fullPath)}"`);
-    res.setHeader("Cache-Control", "no-cache");
-
-    res.send(fileBuffer);
-  } catch (error) {
-    console.error("Error serving file:", error);
-    return next(new AppError("Error retrieving document", 500));
-  }
+  res.status(200).json({ status: "success", message: "Document deleted" });
 });
+
+// ─── Confirm payment (manual) ──────────────────────────────────────────────
+// Returns full document so the Redux adapter can upsert correctly
 
 exports.confirmPayment = catchAsync(async (req, res, next) => {
-  const { entityType, entityId } = req.params;
+  const { paymentMethod, transactionRef, notes } = req.body;
 
-  if (!entityType || !entityId) {
-    return next(new AppError("Entity type and ID are required", 400));
+  const doc = await ProtectedDocument.findOne({
+    _id: req.params.id,
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
+  });
+
+  if (!doc) return next(new AppError("Document not found", 404));
+  if (!doc.protectedDocument)
+    return next(new AppError("No protected document on record", 404));
+
+  if (doc.protectedDocument.isBalancePaid) {
+    return next(
+      new AppError("Payment has already been confirmed for this document", 400),
+    );
   }
 
-  const Model = getEntityModel(entityType);
-  if (!Model) {
-    return next(new AppError("Invalid entity type", 400));
-  }
+  doc.protectedDocument.isBalancePaid = true;
+  doc.protectedDocument.balancePaidAt = new Date();
+  doc.protectedDocument.balancePaidConfirmedBy = req.user._id;
+  doc.protectedDocument.paymentMethod = paymentMethod || "manual";
+  doc.protectedDocument.paymentReference =
+    transactionRef || `MANUAL-${Date.now()}`;
+  if (notes) doc.protectedDocument.paymentNotes = notes;
 
-  const entity = await Model.findOne({ _id: entityId, firmId: req.firmId });
-  if (!entity) {
-    return next(new AppError("Entity not found", 404));
-  }
+  await doc.save();
+  await doc.populate("clientId", "firstName lastName email");
 
-  if (!entity.protectedDocument) {
-    return next(new AppError("No protected document found", 404));
-  }
+  // Send email notification (non-blocking)
+  const notifyClient = async () => {
+    try {
+      const firm = await Firm.findById(req.firmId);
+      const clientEmail = doc.clientId?.email;
+      if (!clientEmail) return;
 
-  entity.protectedDocument.isBalancePaid = true;
-  entity.protectedDocument.balancePaidAt = new Date();
-  entity.protectedDocument.balancePaidConfirmedBy = req.user._id;
-  await entity.save({ validateBeforeSave: false, validate: false });
+      const origin = process.env.FRONTEND_URL || "http://localhost:5173";
+      const downloadUrl = `${origin}/preview/${doc._id}`;
 
-  if (entityType === "cac" && entity.timeline) {
-    entity.timeline.push({
-      action: "Payment Confirmed",
-      description: `Balance payment confirmed. Original document now available for download.`,
-      date: new Date(),
-      performedBy: req.user._id,
-    });
-    await entity.save({ validateBeforeSave: false, validate: false });
-  }
-
-  try {
-    const firm = await Firm.findById(req.firmId);
-    const clientEmail = entity.clientId?.email || req.body.clientEmail;
-
-    if (clientEmail) {
       await sendCustomEmail(
-        "Your Document is Ready for Download",
+        "Your Document is Ready to Download",
         clientEmail,
         process.env.DEFAULT_FROM_EMAIL || "noreply@lawmaster.com",
         null,
         `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="background: linear-gradient(135deg, #10b981, #059669); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-              <h1 style="color: white; margin: 0; font-size: 24px;">Payment Confirmed!</h1>
-            </div>
-            <div style="background: #f9fafb; padding: 30px; border-radius: 0 0 10px 10px;">
-              <p style="color: #374151; font-size: 16px;">Dear Valued Client,</p>
-              <p style="color: #374151; font-size: 16px;">Great news! Your payment has been confirmed and your original document is now available for download.</p>
-              <p style="color: #374151; font-size: 16px;"><strong>Document:</strong> ${entity.protectedDocument.originalFilename || "Your requested document"}</p>
-              <div style="background: #10b981; color: white; padding: 15px; border-radius: 8px; text-align: center; margin: 20px 0;">
-                <p style="margin: 0;">You can now download your original high-resolution document.</p>
-              </div>
-              <p style="color: #6b7280; font-size: 14px;">Thank you for choosing ${firm?.name || "LawMaster"}!</p>
-              <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
-              <p style="color: #9ca3af; font-size: 12px;">This is an automated message from LawMaster. Please do not reply directly to this email.</p>
-            </div>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="background: #10b981; padding: 24px; text-align: center; border-radius: 10px 10px 0 0;">
+            <h1 style="color: white; margin: 0; font-size: 22px;">Payment Confirmed!</h1>
           </div>
-        `
+          <div style="background: #f9fafb; padding: 28px; border-radius: 0 0 10px 10px; border: 1px solid #e5e7eb; border-top: none;">
+            <p style="color: #374151;">Dear ${doc.clientId?.firstName || "Valued Client"},</p>
+            <p style="color: #374151;">Your payment of <strong>₦${(doc.protectedDocument.balanceAmount || 0).toLocaleString()}</strong> for <strong>${doc.documentName}</strong> has been confirmed.</p>
+            <p style="color: #374151;">You can now download the clean document using the link below:</p>
+            <div style="text-align: center; margin: 24px 0;">
+              <a href="${downloadUrl}" style="background: #10b981; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+                Download Your Document
+              </a>
+            </div>
+            <p style="color: #6b7280; font-size: 14px;">Or copy this link: ${downloadUrl}</p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;">
+            <p style="color: #9ca3af; font-size: 12px;">Thank you for using ${firm?.name || "LawMaster"}.</p>
+          </div>
+        </div>
+        `,
       );
+    } catch (err) {
+      console.warn("Payment confirmation email failed:", err.message);
     }
-  } catch (emailError) {
-    console.error("Error sending confirmation email:", emailError);
-  }
+  };
+  notifyClient();
 
   res.status(200).json({
     status: "success",
-    message: "Payment confirmed successfully",
-    data: {
-      isBalancePaid: entity.protectedDocument.isBalancePaid,
-      balancePaidAt: entity.protectedDocument.balancePaidAt,
-    },
+    message: "Payment confirmed. Client can now download the document.",
+    data: formatDoc(doc),
   });
 });
 
-exports.revokePaymentConfirmation = catchAsync(async (req, res, next) => {
-  const { entityType, entityId } = req.params;
+// ─── Revoke payment confirmation ───────────────────────────────────────────
 
-  if (!entityType || !entityId) {
-    return next(new AppError("Entity type and ID are required", 400));
-  }
-
-  const Model = getEntityModel(entityType);
-  if (!Model) {
-    return next(new AppError("Invalid entity type", 400));
-  }
-
-  const entity = await Model.findOne({ _id: entityId, firmId: req.firmId });
-  if (!entity) {
-    return next(new AppError("Entity not found", 404));
-  }
-
-  if (!entity.protectedDocument) {
-    return next(new AppError("No protected document found", 404));
-  }
-
-  entity.protectedDocument.isBalancePaid = false;
-  entity.protectedDocument.balancePaidAt = null;
-  entity.protectedDocument.balancePaidConfirmedBy = null;
-
-  entity.protectedDocument.accessLog.push({
-    accessedBy: req.user._id,
-    accessedAt: new Date(),
-    ipAddress: req.ip || req.connection.remoteAddress,
-    wasGranted: false,
-    attemptType: "admin-revocation",
+exports.revokePayment = catchAsync(async (req, res, next) => {
+  const doc = await ProtectedDocument.findOne({
+    _id: req.params.id,
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
   });
 
-  await entity.save({ validateBeforeSave: false, validate: false });
+  if (!doc) return next(new AppError("Document not found", 404));
+  if (!doc.protectedDocument)
+    return next(new AppError("No protected document on record", 404));
+
+  if (!doc.protectedDocument.isBalancePaid) {
+    return next(
+      new AppError("Payment has not been confirmed for this document", 400),
+    );
+  }
+
+  doc.protectedDocument.isBalancePaid = false;
+  doc.protectedDocument.balancePaidAt = null;
+  doc.protectedDocument.balancePaidConfirmedBy = null;
+  doc.protectedDocument.paymentMethod = null;
+  doc.protectedDocument.paymentReference = null;
+  doc.protectedDocument.revokedAt = new Date();
+  doc.protectedDocument.revokedBy = req.user._id;
+
+  await doc.save();
+  await doc.populate("clientId", "firstName lastName email");
 
   res.status(200).json({
     status: "success",
-    message: "Payment confirmation revoked",
-    data: {
-      isBalancePaid: false,
-    },
+    message: "Payment confirmation revoked. Document is locked again.",
+    data: formatDoc(doc),
   });
 });
 
-exports.getAccessLog = catchAsync(async (req, res, next) => {
-  const { entityType, entityId } = req.params;
-
-  if (!entityType || !entityId) {
-    return next(new AppError("Entity type and ID are required", 400));
-  }
-
-  const Model = getEntityModel(entityType);
-  if (!Model) {
-    return next(new AppError("Invalid entity type", 400));
-  }
-
-  const entity = await Model.findOne({ _id: entityId, firmId: req.firmId })
-    .select("protectedDocument")
-    .populate("protectedDocument.accessLog.accessedBy", "firstName lastName email");
-
-  if (!entity) {
-    return next(new AppError("Entity not found", 404));
-  }
-
-  if (!entity.protectedDocument || !entity.protectedDocument.accessLog) {
-    return res.status(200).json({
-      status: "success",
-      data: [],
-    });
-  }
-
-  res.status(200).json({
-    status: "success",
-    data: entity.protectedDocument.accessLog,
-  });
-});
-
-exports.getProtectedDocumentStatus = catchAsync(async (req, res, next) => {
-  const { entityType, entityId } = req.params;
-
-  if (!entityType || !entityId) {
-    return next(new AppError("Entity type and ID are required", 400));
-  }
-
-  const Model = getEntityModel(entityType);
-  if (!Model) {
-    return next(new AppError("Invalid entity type", 400));
-  }
-
-  const entity = await Model.findOne({ _id: entityId, firmId: req.firmId })
-    .select("protectedDocument clientId");
-
-  if (!entity) {
-    return next(new AppError("Entity not found", 404));
-  }
-
-  if (!entity.protectedDocument) {
-    return res.status(200).json({
-      status: "success",
-      data: {
-        hasDocument: false,
-      },
-    });
-  }
-
-  const { protectedDocument } = entity;
-  const isOwner = entity.clientId?.toString() === req.user._id.toString();
-  const isLawyerOrAdmin = ["lawyer", "admin", "super-admin"].includes(req.user.role);
-
-  res.status(200).json({
-    status: "success",
-    data: {
-      hasDocument: true,
-      thumbnailUrl: protectedDocument.thumbnailUrl,
-      originalFilename: protectedDocument.originalFilename,
-      uploadedAt: protectedDocument.uploadedAt,
-      balanceAmount: protectedDocument.balanceAmount,
-      isBalancePaid: protectedDocument.isBalancePaid,
-      balancePaidAt: protectedDocument.balancePaidAt,
-      canDownload: isLawyerOrAdmin || protectedDocument.isBalancePaid,
-      showWatermark: !isLawyerOrAdmin && !protectedDocument.isBalancePaid,
-    },
-  });
-});
-
-exports.getAllFeeProtectors = catchAsync(async (req, res, next) => {
-  const { page = 1, limit = 20, entityType } = req.query;
-
-  const query = { firmId: req.firmId, isDeleted: { $ne: true } };
-
-  if (entityType) {
-    query.entityType = entityType;
-  }
-
-  const skip = (parseInt(page) - 1) * parseInt(limit);
-
-  const [standaloneDocs, cacMatters] = await Promise.all([
-    ProtectedDocument.find(query)
-      .select("documentName entityType clientId protectedDocument createdAt")
-      .populate("clientId", "firstName lastName email")
-      .skip(skip)
-      .limit(parseInt(limit))
-      .sort({ createdAt: -1 }),
-    CacMatter.find({ ...query, "protectedDocument.originalFileUrl": { $exists: true } })
-      .select("companyName entityType clientId protectedDocument createdAt")
-      .populate("clientId", "firstName lastName email")
-      .skip(skip)
-      .limit(parseInt(limit))
-      .sort({ createdAt: -1 }),
-  ]);
-
-  const combined = [
-    ...standaloneDocs.map(d => ({
-      _id: d._id,
-      type: "standalone",
-      entityType: d.entityType,
-      name: d.documentName,
-      clientId: d.clientId,
-      protectedDocument: d.protectedDocument,
-      createdAt: d.createdAt,
-    })),
-    ...cacMatters.map(m => ({
-      _id: m._id,
-      type: "cac",
-      entityType: m.entityType,
-      name: m.companyName,
-      clientId: m.clientId,
-      protectedDocument: m.protectedDocument,
-      createdAt: m.createdAt,
-    })),
-  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-  res.status(200).json({
-    status: "success",
-    data: combined,
-    pagination: {
-      page: parseInt(page),
-      limit: parseInt(limit),
-      total: combined.length,
-    },
-  });
-});
+// ─── Stats ─────────────────────────────────────────────────────────────────
 
 exports.getFeeProtectorStats = catchAsync(async (req, res, next) => {
-  const [standaloneStats, cacStats] = await Promise.all([
-    ProtectedDocument.aggregate([
-      { $match: { firmId: req.firmId, isDeleted: { $ne: true } } },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: 1 },
-          paid: { $sum: { $cond: ["$protectedDocument.isBalancePaid", 1, 0] } },
-          unpaid: { $sum: { $cond: ["$protectedDocument.isBalancePaid", 0, 1] } },
-          totalAmount: { $sum: "$protectedDocument.balanceAmount" },
+  const [result] = await ProtectedDocument.aggregate([
+    { $match: { firmId: req.firmId, isDeleted: { $ne: true } } },
+    {
+      $group: {
+        _id: null,
+        totalProtected: { $sum: 1 },
+        totalPaid: {
+          $sum: { $cond: ["$protectedDocument.isBalancePaid", 1, 0] },
+        },
+        totalUnpaid: {
+          $sum: { $cond: ["$protectedDocument.isBalancePaid", 0, 1] },
+        },
+        totalAmount: { $sum: "$protectedDocument.balanceAmount" },
+        paidAmount: {
+          $sum: {
+            $cond: [
+              "$protectedDocument.isBalancePaid",
+              "$protectedDocument.balanceAmount",
+              0,
+            ],
+          },
         },
       },
-    ]),
-    CacMatter.aggregate([
-      { $match: { firmId: req.firmId, "protectedDocument.originalFileUrl": { $exists: true } } },
-      {
-        $group: {
-          _id: null,
-          total: { $sum: 1 },
-          paid: { $sum: { $cond: ["$protectedDocument.isBalancePaid", 1, 0] } },
-          unpaid: { $sum: { $cond: ["$protectedDocument.isBalancePaid", 0, 1] } },
-          totalAmount: { $sum: "$protectedDocument.balanceAmount" },
-        },
-      },
-    ]),
+    },
   ]);
-
-  const totalProtected = (standaloneStats[0]?.total || 0) + (cacStats[0]?.total || 0);
-  const totalPaid = (standaloneStats[0]?.paid || 0) + (cacStats[0]?.paid || 0);
-  const totalUnpaid = (standaloneStats[0]?.unpaid || 0) + (cacStats[0]?.unpaid || 0);
-  const totalAmount = (standaloneStats[0]?.totalAmount || 0) + (cacStats[0]?.totalAmount || 0);
 
   res.status(200).json({
     status: "success",
-    data: {
-      totalProtected,
-      totalPaid,
-      totalUnpaid,
-      totalAmount,
-      standaloneDocuments: standaloneStats[0] || { total: 0, paid: 0, unpaid: 0, totalAmount: 0 },
-      cacMatters: cacStats[0] || { total: 0, paid: 0, unpaid: 0, totalAmount: 0 },
+    data: result || {
+      totalProtected: 0,
+      totalPaid: 0,
+      totalUnpaid: 0,
+      totalAmount: 0,
+      paidAmount: 0,
     },
   });
 });
 
+// ─── Public: document info (no auth) ──────────────────────────────────────
+// Used by the public preview page to show document details
+
 exports.getPublicDocumentInfo = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
+  const doc = await ProtectedDocument.findOne({
+    _id: req.params.id,
+    isDeleted: { $ne: true },
+  })
+    .select("documentName clientId protectedDocument createdAt")
+    .populate("clientId", "firstName lastName");
 
-  const doc = await ProtectedDocument.findOne({ _id: id })
-    .populate("clientId", "firstName lastName email")
-    .select("documentName clientId protectedDocument createdAt");
-
-  if (!doc) {
-    return next(new AppError("Document not found", 404));
-  }
+  if (!doc) return next(new AppError("Document not found", 404));
 
   res.status(200).json({
     status: "success",
     data: {
       _id: doc._id,
       name: doc.documentName,
-      client: doc.clientId,
-      protectedDocument: doc.protectedDocument,
+      protectedDocument: {
+        balanceAmount: doc.protectedDocument?.balanceAmount,
+        isBalancePaid: doc.protectedDocument?.isBalancePaid,
+        balancePaidAt: doc.protectedDocument?.balancePaidAt,
+        mimeType: doc.protectedDocument?.mimeType,
+        originalFilename: doc.protectedDocument?.originalFilename,
+        uploadedAt: doc.protectedDocument?.uploadedAt,
+      },
       createdAt: doc.createdAt,
     },
   });
 });
 
-exports.downloadProtectedDocument = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
+// ─── Public: preview (watermarked, no auth) ────────────────────────────────
+// Always serves the watermarked file regardless of payment status
 
-  const doc = await ProtectedDocument.findOne({ _id: id });
+exports.previewProtectedDocument = catchAsync(async (req, res, next) => {
+  const doc = await ProtectedDocument.findOne({
+    _id: req.params.id,
+    isDeleted: { $ne: true },
+  });
 
-  if (!doc || !doc.protectedDocument) {
-    return next(new AppError("Protected document not found", 404));
-  }
+  if (!doc?.protectedDocument)
+    return next(new AppError("Document not found", 404));
 
-  let fileUrl = doc.protectedDocument.originalFileUrl;
-  const filename = doc.protectedDocument.originalFilename || doc.documentName;
-
-  if (!fileUrl) {
-    return next(new AppError("File not found", 404));
-  }
-
-  const filePath = path.join(__dirname, "..", fileUrl.replace(/^\//, ""));
-
-  const mimeTypes = {
-    ".pdf": "application/pdf",
-    ".doc": "application/msword",
-    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".png": "image/png",
-  };
-
-  const ext = path.extname(filePath).toLowerCase();
-  const contentType = mimeTypes[ext] || doc.protectedDocument.mimeType || "application/octet-stream";
+  // Always serve watermarked version for public preview
+  const fileUrl =
+    doc.protectedDocument.watermarkedFileUrl ||
+    doc.protectedDocument.originalFileUrl;
+  const filePath = resolveFilePath(fileUrl);
 
   try {
     await fs.access(filePath);
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.sendFile(filePath);
+  } catch {
+    return next(new AppError("Preview file not found on server", 404));
+  }
+
+  res.setHeader("Content-Type", getMimeType(filePath));
+  res.setHeader(
+    "Content-Disposition",
+    `inline; filename="${doc.documentName}"`,
+  );
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.sendFile(filePath);
+});
+
+// ─── Public: download (no auth, but payment must be confirmed) ─────────────
+// Client uses this link — it works only after isBalancePaid = true
+
+exports.downloadProtectedDocument = catchAsync(async (req, res, next) => {
+  const doc = await ProtectedDocument.findOne({
+    _id: req.params.id,
+    isDeleted: { $ne: true },
+  });
+
+  if (!doc?.protectedDocument)
+    return next(new AppError("Document not found", 404));
+
+  // Gate: must be paid
+  if (!doc.protectedDocument.isBalancePaid) {
+    return next(
+      new AppError(
+        "Payment confirmation required before this document can be downloaded.",
+        403,
+      ),
+    );
+  }
+
+  const filePath = resolveFilePath(doc.protectedDocument.originalFileUrl);
+  const filename = doc.protectedDocument.originalFilename || doc.documentName;
+
+  try {
+    await fs.access(filePath);
   } catch {
     return next(new AppError("File not found on server", 404));
   }
+
+  // Log the download access
+  doc.protectedDocument.accessLog = doc.protectedDocument.accessLog || [];
+  doc.protectedDocument.accessLog.push({
+    accessedAt: new Date(),
+    ipAddress: req.ip || req.connection?.remoteAddress,
+    wasGranted: true,
+    attemptType: "public-download",
+  });
+  doc.save({ validateBeforeSave: false }).catch(() => {});
+
+  res.setHeader("Content-Type", getMimeType(filePath));
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(filePath);
 });
 
-exports.previewProtectedDocument = catchAsync(async (req, res, next) => {
-  const { id } = req.params;
+// ─── Admin: download (requires auth, always works) ─────────────────────────
 
-  const doc = await ProtectedDocument.findOne({ _id: id });
+exports.adminDownloadDocument = catchAsync(async (req, res, next) => {
+  const doc = await ProtectedDocument.findOne({
+    _id: req.params.id,
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
+  });
 
-  if (!doc || !doc.protectedDocument) {
-    return next(new AppError("Protected document not found", 404));
-  }
+  if (!doc?.protectedDocument)
+    return next(new AppError("Document not found", 404));
 
-  let fileUrl = doc.protectedDocument.originalFileUrl;
-  const filePath = path.join(__dirname, "..", fileUrl.replace(/^\//, ""));
-
-  const mimeTypes = {
-    ".pdf": "application/pdf",
-    ".doc": "application/msword",
-    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ".jpg": "image/jpeg",
-    ".jpeg": "image/jpeg",
-    ".png": "image/png",
-  };
-
-  const ext = path.extname(filePath).toLowerCase();
-  const contentType = mimeTypes[ext] || doc.protectedDocument.mimeType || "application/octet-stream";
+  const filePath = resolveFilePath(doc.protectedDocument.originalFileUrl);
+  const filename = doc.protectedDocument.originalFilename || doc.documentName;
 
   try {
     await fs.access(filePath);
-    res.setHeader("Content-Type", contentType);
-    res.setHeader("Content-Disposition", `inline; filename="${doc.documentName}"`);
-    res.sendFile(filePath);
   } catch {
-    return next(new AppError("Preview file not found", 404));
+    return next(new AppError("File not found on server", 404));
   }
+
+  res.setHeader("Content-Type", getMimeType(filePath));
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.setHeader("Cache-Control", "no-store");
+  res.sendFile(filePath);
 });

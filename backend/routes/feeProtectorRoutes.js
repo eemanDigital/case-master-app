@@ -1,86 +1,64 @@
 const express = require("express");
-const multer = require("multer");
-const feeProtectorController = require("../controllers/feeProtectorController");
-const { protect, restrictTo } = require("../controllers/authController");
-const { premiumFeatureGuard } = require("../middleware/premiumFeatureGuard");
-
-const storage = multer.memoryStorage();
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|pdf|doc|docx/;
-  const extname = allowedTypes.test(require("path").extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
-  if (extname && mimetype) {
-    return cb(null, true);
-  }
-  cb(new Error("Only images and documents are allowed"), false);
-};
-const uploadForCreate = multer({ storage, fileFilter, limits: { fileSize: 20 * 1024 * 1024 } }).single("file");
-
 const router = express.Router();
+const ctrl = require("../controllers/feeProtectorController");
+const { protect, restrictTo } = require("../controllers/authController");
 
-router.get("/:id/preview-info", feeProtectorController.getPublicDocumentInfo);
-router.get("/:id/preview", feeProtectorController.previewProtectedDocument);
-router.get("/:id/download", feeProtectorController.downloadProtectedDocument);
+// ─────────────────────────────────────────────────────────────────────────────
+// PUBLIC ROUTES — no authentication required
+// These are the links you share with clients.
+// Payment enforcement is handled inside the controller, not via auth middleware.
+// ─────────────────────────────────────────────────────────────────────────────
+
+// GET /api/v1/fee-protector/:id/preview-info  → document metadata for the preview page
+router.get("/:id/preview-info", ctrl.getPublicDocumentInfo);
+
+// GET /api/v1/fee-protector/:id/preview  → serves watermarked file (always)
+router.get("/:id/preview", ctrl.previewProtectedDocument);
+
+// GET /api/v1/fee-protector/:id/download  → serves clean file (403 if unpaid)
+router.get("/:id/download", ctrl.downloadProtectedDocument);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PROTECTED ROUTES — firm staff only
+// protect middleware sets req.user, req.firmId, and req.firm automatically
+// ─────────────────────────────────────────────────────────────────────────────
 
 router.use(protect);
 
-router.get("/", restrictTo("super-admin", "admin", "lawyer"), feeProtectorController.getAllFeeProtectors);
-router.get("/stats", restrictTo("super-admin", "admin", "lawyer"), feeProtectorController.getFeeProtectorStats);
+// Stats
+router.get("/stats", ctrl.getFeeProtectorStats);
+
+// List all + Create
+router
+  .route("/")
+  .get(ctrl.getAllFeeProtectors)
+  .post(ctrl.uploadMiddleware, ctrl.createFeeProtector);
+
+// Single document CRUD
+router
+  .route("/:id")
+  .get(ctrl.getFeeProtector)
+  .patch(ctrl.updateFeeProtector)
+  .delete(ctrl.deleteFeeProtector);
+
+// Payment actions — lawyer/admin only
+router.post(
+  "/:id/confirm-payment",
+  restrictTo("lawyer", "admin", "super-admin"),
+  ctrl.confirmPayment,
+);
 
 router.post(
-  "/",
-  premiumFeatureGuard("feeProtector"),
-  restrictTo("super-admin", "admin", "lawyer"),
-  uploadForCreate,
-  feeProtectorController.createFeeProtector
+  "/:id/revoke-payment",
+  restrictTo("lawyer", "admin", "super-admin"),
+  ctrl.revokePayment,
 );
 
-router.route("/:id")
-  .get(feeProtectorController.getFeeProtector)
-  .patch(premiumFeatureGuard("feeProtector"), restrictTo("super-admin", "admin", "lawyer"), feeProtectorController.updateFeeProtector)
-  .delete(premiumFeatureGuard("feeProtector"), restrictTo("super-admin", "admin"), feeProtectorController.deleteFeeProtector);
-
-router.get("/:id/download", feeProtectorController.downloadProtectedDocument);
-router.get("/:id/preview", feeProtectorController.previewProtectedDocument);
-router.get("/:id/preview-info", feeProtectorController.getPublicDocumentInfo);
-
-router.post(
-  "/:entityType/:entityId/upload",
-  premiumFeatureGuard("feeProtector"),
-  restrictTo("super-admin", "admin", "lawyer"),
-  feeProtectorController.uploadMiddleware,
-  feeProtectorController.uploadProtectedDocument
-);
-
+// Admin download — bypasses payment gate
 router.get(
-  "/:entityType/:entityId/document",
-  feeProtectorController.getProtectedDocument
-);
-
-router.get(
-  "/:entityType/:entityId/status",
-  feeProtectorController.getProtectedDocumentStatus
-);
-
-router.patch(
-  "/:entityType/:entityId/confirm-payment",
-  premiumFeatureGuard("feeProtector"),
-  restrictTo("super-admin", "admin", "lawyer"),
-  feeProtectorController.confirmPayment
-);
-
-router.patch(
-  "/:entityType/:entityId/revoke-payment",
-  premiumFeatureGuard("feeProtector"),
-  restrictTo("super-admin", "admin"),
-  feeProtectorController.revokePaymentConfirmation
-);
-
-router.get(
-  "/:entityType/:entityId/access-log",
-  premiumFeatureGuard("feeProtector"),
-  restrictTo("super-admin", "admin", "lawyer"),
-  feeProtectorController.getAccessLog
+  "/:id/admin-download",
+  restrictTo("lawyer", "admin", "super-admin"),
+  ctrl.adminDownloadDocument,
 );
 
 module.exports = router;
