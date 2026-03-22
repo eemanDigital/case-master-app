@@ -56,6 +56,32 @@ const getMimeType = (filePath) => {
   return map[ext] || "application/octet-stream";
 };
 
+// resolveActualPath: resolves the file that actually exists on disk.
+// With the new watermark system, Word docs are converted to PDF, so we need
+// to handle the case where a .doc/.docx input results in a .pdf output.
+const resolveActualPath = async (storedPath) => {
+  try {
+    await fs.access(storedPath);
+    return storedPath;
+  } catch {
+    // Try with .pdf extension (Word docs are now converted to PDF)
+    const pdfPath = storedPath.replace(/\.(docx?|pdf)$/i, ".pdf");
+    try {
+      await fs.access(pdfPath);
+      return pdfPath;
+    } catch {
+      // Legacy fallback: old Puppeteer watermarker renamed .pdf → .png
+      const pngPath = storedPath.replace(/\.pdf$/i, ".png");
+      try {
+        await fs.access(pngPath);
+        return pngPath;
+      } catch {
+        return storedPath; // not found either way — caller gets clean 404
+      }
+    }
+  }
+};
+
 // Format a ProtectedDocument for API response (consistent shape for frontend adapter)
 const formatDoc = (doc) => ({
   _id: doc._id,
@@ -97,28 +123,39 @@ exports.createFeeProtector = catchAsync(async (req, res, next) => {
   await ensureDirExists(watermarkedDir);
 
   const timestamp = Date.now();
-  const ext = path.extname(req.file.originalname);
+  const ext = path.extname(req.file.originalname).toLowerCase();
   const base = `standalone_${timestamp}`;
 
   const originalPath = path.join(originalsDir, `${base}_original${ext}`);
+
+  const isWordFile = [".doc", ".docx"].includes(ext);
+  const watermarkedExt = isWordFile ? ".pdf" : ext;
   const watermarkedPath = path.join(
     watermarkedDir,
-    `${base}_watermarked${ext}`,
+    `${base}_watermarked${watermarkedExt}`,
   );
 
-  // Save original
   await fs.writeFile(originalPath, req.file.buffer);
 
-  // Generate watermarked version — fall back to copy if watermarking fails (e.g. docx)
+  let actualWatermarkedPath = watermarkedPath;
   try {
-    await generateWatermarkedVersion(originalPath, watermarkedPath);
+    const result = await generateWatermarkedVersion(
+      originalPath,
+      watermarkedPath,
+    );
+    if (result) actualWatermarkedPath = result;
   } catch (err) {
     console.warn(
       "Watermark generation failed, using original as fallback:",
       err.message,
     );
     await fs.copyFile(originalPath, watermarkedPath);
+    actualWatermarkedPath = watermarkedPath;
   }
+
+  const actualMimeType = isWordFile
+    ? "application/pdf"
+    : req.file.mimetype;
 
   const doc = await ProtectedDocument.create({
     firmId: req.firmId,
@@ -128,9 +165,10 @@ exports.createFeeProtector = catchAsync(async (req, res, next) => {
     createdBy: req.user._id,
     protectedDocument: {
       originalFileUrl: getFileUrl(originalPath),
-      watermarkedFileUrl: getFileUrl(watermarkedPath),
+      watermarkedFileUrl: getFileUrl(actualWatermarkedPath),
       originalFilename: req.file.originalname,
-      mimeType: req.file.mimetype,
+      mimeType: actualMimeType,
+      originalMimeType: req.file.mimetype,
       balanceAmount: amount ? parseFloat(amount) : 0,
       notes: notes || "",
       isBalancePaid: false,
@@ -434,6 +472,12 @@ exports.getPublicDocumentInfo = catchAsync(async (req, res, next) => {
         isBalancePaid: doc.protectedDocument?.isBalancePaid,
         balancePaidAt: doc.protectedDocument?.balancePaidAt,
         mimeType: doc.protectedDocument?.mimeType,
+        originalMimeType: doc.protectedDocument?.originalMimeType,
+        watermarkedMimeType: doc.protectedDocument?.watermarkedFileUrl
+          ? getMimeType(
+              resolveFilePath(doc.protectedDocument.watermarkedFileUrl),
+            )
+          : doc.protectedDocument?.mimeType,
         originalFilename: doc.protectedDocument?.originalFilename,
         uploadedAt: doc.protectedDocument?.uploadedAt,
       },
@@ -454,26 +498,30 @@ exports.previewProtectedDocument = catchAsync(async (req, res, next) => {
   if (!doc?.protectedDocument)
     return next(new AppError("Document not found", 404));
 
-  // Always serve watermarked version for public preview
-  const fileUrl =
+  // Always serve watermarked version for public preview.
+  // resolveActualPath handles the case where generatePdfWatermark saved a .png
+  // instead of a .pdf (it returns the actual path it wrote to).
+  const storedUrl =
     doc.protectedDocument.watermarkedFileUrl ||
     doc.protectedDocument.originalFileUrl;
-  const filePath = resolveFilePath(fileUrl);
+  const storedPath = resolveFilePath(storedUrl);
+  const actualPath = await resolveActualPath(storedPath);
 
   try {
-    await fs.access(filePath);
+    await fs.access(actualPath);
   } catch {
     return next(new AppError("Preview file not found on server", 404));
   }
 
-  res.setHeader("Content-Type", getMimeType(filePath));
-  res.setHeader(
-    "Content-Disposition",
-    `inline; filename="${doc.documentName}"`,
-  );
+  // Use mime type from the actual file on disk, not what was originally uploaded
+  const mimeType = getMimeType(actualPath);
+  const filename = path.basename(actualPath);
+
+  res.setHeader("Content-Type", mimeType);
+  res.setHeader("Content-Disposition", `inline; filename="${filename}"`);
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("X-Content-Type-Options", "nosniff");
-  res.sendFile(filePath);
+  res.sendFile(actualPath);
 });
 
 // ─── Public: download (no auth, but payment must be confirmed) ─────────────

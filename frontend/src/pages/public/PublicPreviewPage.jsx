@@ -5,7 +5,6 @@ import {
   Typography,
   Tag,
   Button,
-  Divider,
   Spin,
   Result,
   Descriptions,
@@ -26,7 +25,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text } = Typography;
 
 const BASE_URL =
   import.meta.env.VITE_BASE_URL?.replace(/\/api\/v1\/?$/, "") ||
@@ -112,11 +111,54 @@ const PaymentInstructions = ({ doc }) => {
 };
 
 // ─── Document preview renderer ──────────────────────────────────────────────
-const DocumentPreview = ({ doc, previewUrl }) => {
-  const mimeType = doc?.protectedDocument?.mimeType || "";
-  const isPdf = mimeType.includes("pdf");
-  const isImage = mimeType.startsWith("image/");
-  const isWord = mimeType.includes("word") || mimeType.includes("document");
+// We detect the actual content type from the server response header,
+// not from the stored mimeType — because PDF watermarks are saved as .png images.
+const DocumentPreview = ({ previewUrl }) => {
+  const [contentType, setContentType] = useState(null);
+  const [probeError, setProbeError] = useState(false);
+
+  useEffect(() => {
+    if (!previewUrl) return;
+    // HEAD request to find out what the server actually serves
+    fetch(previewUrl, { method: "HEAD" })
+      .then((r) => {
+        const ct = r.headers.get("content-type") || "";
+        setContentType(ct);
+      })
+      .catch(() => setProbeError(true));
+  }, [previewUrl]);
+
+  if (!previewUrl) return null;
+
+  // While probing, show a neutral placeholder
+  if (contentType === null && !probeError) {
+    return (
+      <div style={{ textAlign: "center", padding: 40 }}>
+        <Spin />
+        <div style={{ marginTop: 12 }}>
+          <Text type="secondary">Loading preview...</Text>
+        </div>
+      </div>
+    );
+  }
+
+  const isImage = contentType?.startsWith("image/");
+  const isPdf = contentType?.includes("pdf");
+
+  if (isImage) {
+    return (
+      <img
+        src={previewUrl}
+        alt="Document preview (watermarked)"
+        style={{
+          maxWidth: "100%",
+          border: "1px solid #e5e7eb",
+          borderRadius: 8,
+          display: "block",
+        }}
+      />
+    );
+  }
 
   if (isPdf) {
     return (
@@ -133,21 +175,7 @@ const DocumentPreview = ({ doc, previewUrl }) => {
     );
   }
 
-  if (isImage) {
-    return (
-      <img
-        src={previewUrl}
-        alt="Document preview"
-        style={{
-          maxWidth: "100%",
-          border: "1px solid #e5e7eb",
-          borderRadius: 8,
-        }}
-      />
-    );
-  }
-
-  // Word docs and others cannot render in browser — show a download-preview option
+  // Word docs and other non-renderable types
   return (
     <div
       style={{
@@ -166,12 +194,10 @@ const DocumentPreview = ({ doc, previewUrl }) => {
         }}
       />
       <Text strong style={{ display: "block", marginBottom: 8 }}>
-        {doc?.protectedDocument?.originalFilename || doc?.name}
+        This file type cannot be previewed in the browser
       </Text>
       <Text type="secondary" style={{ display: "block", marginBottom: 20 }}>
-        {isWord
-          ? "Word documents cannot be previewed in the browser."
-          : "This file type cannot be previewed in the browser."}
+        Word documents (.doc, .docx) must be downloaded to view.
       </Text>
       <Button
         icon={<EyeOutlined />}
@@ -426,7 +452,7 @@ const PublicPreviewPage = () => {
               marginBottom: 20,
               boxShadow: "0 1px 8px rgba(0,0,0,0.08)",
             }}>
-            <DocumentPreview doc={doc} previewUrl={previewUrl} />
+            <DocumentPreview previewUrl={previewUrl} />
             {!isPaid && (
               <Alert
                 type="warning"
