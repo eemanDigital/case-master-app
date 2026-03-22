@@ -341,3 +341,4 @@ exports.cleanupFiles = async (filePaths) => {
 
 exports.OUTPUT_DIR = OUTPUT_DIR;
 exports.WATERMARK_TEXT = WATERMARK_TEXT;
+exports.ensureDirExists = ensureDirExists;

@@ -251,6 +251,7 @@ import CookieConsent from "./components/CookieConsent";
 
 // Public Pages
 import PublicPreviewPage from "./pages/public/PublicPreviewPage";
+import PublicDownloadPage from "./pages/public/PublicDownloadPage";
 
 // ============================================
 // AXIOS CONFIGURATION
@@ -450,6 +451,14 @@ const router = createBrowserRouter(
           element={
             <Suspense fallback={<PageLoader />}>
               <PublicPreviewPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="download/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <PublicDownloadPage />
             </Suspense>
           }
         />

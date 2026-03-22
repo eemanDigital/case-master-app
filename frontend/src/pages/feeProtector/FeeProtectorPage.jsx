@@ -58,7 +58,13 @@ import {
 const { Title, Text } = Typography;
 const { TextArea } = Input;
 
-const FeeProtectorUploadModal = ({ visible, onClose, onSuccess, loading, clients }) => {
+const FeeProtectorUploadModal = ({
+  visible,
+  onClose,
+  onSuccess,
+  loading,
+  clients,
+}) => {
   const dispatch = useDispatch();
   const [form] = Form.useForm();
   const [file, setFile] = useState(null);
@@ -107,8 +113,13 @@ const FeeProtectorUploadModal = ({ visible, onClose, onSuccess, loading, clients
           description={
             <ul style={{ margin: "8px 0", paddingLeft: 20 }}>
               <li>Upload your document and set the amount client must pay</li>
-              <li>Document gets watermarked - client can preview but not download clean version</li>
-              <li>Once payment is confirmed, client gets access to clean document</li>
+              <li>
+                Document gets watermarked - client can preview but not download
+                clean version
+              </li>
+              <li>
+                Once payment is confirmed, client gets access to clean document
+              </li>
             </ul>
           }
           type="info"
@@ -116,7 +127,10 @@ const FeeProtectorUploadModal = ({ visible, onClose, onSuccess, loading, clients
           style={{ marginBottom: 16 }}
         />
 
-        <Form.Item label="Document Title" name="title" rules={[{ required: true, message: "Enter document title" }]}>
+        <Form.Item
+          label="Document Title"
+          name="title"
+          rules={[{ required: true, message: "Enter document title" }]}>
           <Input placeholder="e.g., CAC Certificate for ABC Ltd" />
         </Form.Item>
 
@@ -128,25 +142,33 @@ const FeeProtectorUploadModal = ({ visible, onClose, onSuccess, loading, clients
             filterOption={(input, option) =>
               (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
             }
-            options={clients?.map(c => ({
+            options={clients?.map((c) => ({
               value: c._id,
               label: `${c.firstName} ${c.lastName}`,
             }))}
           />
         </Form.Item>
 
-        <Form.Item label="Amount (₦)" name="amount" rules={[{ required: true, message: "Enter amount" }]}>
+        <Form.Item
+          label="Amount (₦)"
+          name="amount"
+          rules={[{ required: true, message: "Enter amount" }]}>
           <InputNumber
             style={{ width: "100%" }}
             min={0}
             placeholder="50000"
-            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-            parser={value => value.replace(/₦\s?|(,*)/g, "")}
+            formatter={(value) =>
+              `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+            }
+            parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
           />
         </Form.Item>
 
         <Form.Item label="Notes / Description" name="notes">
-          <TextArea rows={2} placeholder="Brief description for internal use..." />
+          <TextArea
+            rows={2}
+            placeholder="Brief description for internal use..."
+          />
         </Form.Item>
 
         <Divider>Upload Document</Divider>
@@ -159,13 +181,17 @@ const FeeProtectorUploadModal = ({ visible, onClose, onSuccess, loading, clients
             return false;
           }}
           showUploadList={false}>
-          <p><UploadOutlined style={{ fontSize: 40, color: "#3b82f6" }} /></p>
+          <p>
+            <UploadOutlined style={{ fontSize: 40, color: "#3b82f6" }} />
+          </p>
           <p>Click or drag file to upload</p>
           <Text type="secondary">PDF, DOC, DOCX supported (max 20MB)</Text>
         </Upload.Dragger>
         {file && (
           <div style={{ marginTop: 12, textAlign: "center" }}>
-            <Tag icon={<FileProtectOutlined />} color="blue">{file.name}</Tag>
+            <Tag icon={<FileProtectOutlined />} color="blue">
+              {file.name}
+            </Tag>
             <Text type="secondary" style={{ display: "block", marginTop: 4 }}>
               {(file.size / 1024 / 1024).toFixed(2)} MB
             </Text>
@@ -176,7 +202,14 @@ const FeeProtectorUploadModal = ({ visible, onClose, onSuccess, loading, clients
   );
 };
 
-const EditDocumentModal = ({ visible, onClose, onSuccess, loading, doc, clients }) => {
+const EditDocumentModal = ({
+  visible,
+  onClose,
+  onSuccess,
+  loading,
+  doc,
+  clients,
+}) => {
   const dispatch = useDispatch();
   const [form] = Form.useForm();
 
@@ -194,14 +227,16 @@ const EditDocumentModal = ({ visible, onClose, onSuccess, loading, doc, clients 
   const handleUpdate = async () => {
     try {
       const values = await form.validateFields();
-      await dispatch(updateProtectedDocument({
-        id: doc._id,
-        data: {
-          amount: values.amount,
-          notes: values.notes,
-          clientId: values.clientId,
-        },
-      })).unwrap();
+      await dispatch(
+        updateProtectedDocument({
+          id: doc._id,
+          data: {
+            amount: values.amount,
+            notes: values.notes,
+            clientId: values.clientId,
+          },
+        }),
+      ).unwrap();
       message.success("Document updated");
       onSuccess();
       onClose();
@@ -230,7 +265,7 @@ const EditDocumentModal = ({ visible, onClose, onSuccess, loading, doc, clients 
             filterOption={(input, option) =>
               (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
             }
-            options={clients?.map(c => ({
+            options={clients?.map((c) => ({
               value: c._id,
               label: `${c.firstName} ${c.lastName}`,
             }))}
@@ -240,8 +275,10 @@ const EditDocumentModal = ({ visible, onClose, onSuccess, loading, doc, clients 
           <InputNumber
             style={{ width: "100%" }}
             min={0}
-            formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-            parser={value => value.replace(/₦\s?|(,*)/g, "")}
+            formatter={(value) =>
+              `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
+            }
+            parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
           />
         </Form.Item>
         <Form.Item label="Notes" name="notes">
@@ -274,8 +311,14 @@ const ShareModal = ({ visible, onClose, doc }) => {
         message="Share these links with your client"
         description={
           <ul style={{ margin: "8px 0", paddingLeft: 20 }}>
-            <li><strong>Preview Link:</strong> Client can view watermarked document</li>
-            <li><strong>Download Link:</strong> Only works after payment is confirmed</li>
+            <li>
+              <strong>Preview Link:</strong> Client can view watermarked
+              document
+            </li>
+            <li>
+              <strong>Download Link:</strong> Only works after payment is
+              confirmed
+            </li>
           </ul>
         }
         type="info"
@@ -290,8 +333,11 @@ const ShareModal = ({ visible, onClose, doc }) => {
           </Text>
         </Descriptions.Item>
         <Descriptions.Item label="Status">
-          <Tag color={doc.protectedDocument?.isBalancePaid ? "green" : "orange"}>
-            {doc.protectedDocument?.isBalancePaid ? "PAID - Clean Download Available" : "PENDING PAYMENT"}
+          <Tag
+            color={doc.protectedDocument?.isBalancePaid ? "green" : "orange"}>
+            {doc.protectedDocument?.isBalancePaid
+              ? "PAID - Clean Download Available"
+              : "PENDING PAYMENT"}
           </Tag>
         </Descriptions.Item>
       </Descriptions>
@@ -299,9 +345,15 @@ const ShareModal = ({ visible, onClose, doc }) => {
       <Divider>Links for Client</Divider>
 
       <div style={{ marginBottom: 16 }}>
-        <Text strong style={{ display: "block", marginBottom: 8 }}>Preview Link (Watermarked)</Text>
+        <Text strong style={{ display: "block", marginBottom: 8 }}>
+          Preview Link (Watermarked)
+        </Text>
         <Input.Group compact>
-          <Input value={previewUrl} style={{ width: "calc(100% - 100px)" }} readOnly />
+          <Input
+            value={previewUrl}
+            style={{ width: "calc(100% - 100px)" }}
+            readOnly
+          />
           <Button
             icon={<CopyOutlined />}
             onClick={() => handleCopy(previewUrl, "Preview link")}>
@@ -314,9 +366,15 @@ const ShareModal = ({ visible, onClose, doc }) => {
       </div>
 
       <div style={{ marginBottom: 16 }}>
-        <Text strong style={{ display: "block", marginBottom: 8 }}>Download Link (Clean Document)</Text>
+        <Text strong style={{ display: "block", marginBottom: 8 }}>
+          Download Link (Clean Document)
+        </Text>
         <Input.Group compact>
-          <Input value={downloadUrl} style={{ width: "calc(100% - 100px)" }} readOnly />
+          <Input
+            value={downloadUrl}
+            style={{ width: "calc(100% - 100px)" }}
+            readOnly
+          />
           <Button
             icon={<CopyOutlined />}
             onClick={() => handleCopy(downloadUrl, "Download link")}>
@@ -336,7 +394,7 @@ const ShareModal = ({ visible, onClose, doc }) => {
         onClick={() => {
           const subject = encodeURIComponent(`Document: ${doc.name}`);
           const body = encodeURIComponent(
-            `Dear Client,\n\nPlease find the document "${doc.name}" attached.\n\nAmount Due: ₦${(doc.protectedDocument?.balanceAmount || 0).toLocaleString()}\n\nPreview: ${previewUrl}\n\nDownload (after payment): ${downloadUrl}\n\nRegards`
+            `Dear Client,\n\nPlease find the document "${doc.name}" attached.\n\nAmount Due: ₦${(doc.protectedDocument?.balanceAmount || 0).toLocaleString()}\n\nPreview: ${previewUrl}\n\nDownload (after payment): ${downloadUrl}\n\nRegards`,
           );
           window.open(`mailto:?subject=${subject}&body=${body}`);
         }}>
@@ -357,19 +415,36 @@ const FeeProtectorPage = () => {
   const [editVisible, setEditVisible] = useState(false);
   const [shareVisible, setShareVisible] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState(null);
+  const [clients, setClients] = useState([]);
 
   useEffect(() => {
     dispatch(fetchProtectedDocuments());
     dispatch(fetchStats());
+    fetchClients();
   }, [dispatch]);
+
+  const fetchClients = async () => {
+    try {
+      const apiService = (await import("../../services/api")).default;
+      const response = await apiService.get("/users/clients");
+      setClients(response?.data || response || []);
+    } catch (err) {
+      console.log("No clients found, using empty list");
+      setClients([]);
+    }
+  };
 
   const handleConfirmPayment = async (doc) => {
     try {
-      await dispatch(confirmPayment({
-        id: doc._id,
-        data: { transactionRef: `TXN-${Date.now()}` },
-      })).unwrap();
-      message.success("Payment confirmed! Client can now download clean document.");
+      await dispatch(
+        confirmPayment({
+          id: doc._id,
+          data: { transactionRef: `TXN-${Date.now()}` },
+        }),
+      ).unwrap();
+      message.success(
+        "Payment confirmed! Client can now download clean document.",
+      );
       dispatch(fetchProtectedDocuments());
       dispatch(fetchStats());
     } catch (err) {
@@ -379,10 +454,38 @@ const FeeProtectorPage = () => {
 
   const handleDownload = async (doc) => {
     try {
-      const response = await dispatch(downloadWatermarked(doc._id)).unwrap();
-      message.success("Download started");
+      const baseUrl =
+        import.meta.env.VITE_BASE_URL?.replace(/\/api\/v1\/?$/, "") ||
+        "http://localhost:3000";
+      const token =
+        localStorage.getItem("jwt") || sessionStorage.getItem("jwt");
+
+      const response = await fetch(
+        `${baseUrl}/api/v1/fee-protector/${doc._id}/download`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error("Download failed");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = doc.name || "document.pdf";
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      message.success("Download complete!");
     } catch (err) {
-      message.error(err?.message || "Download failed");
+      message.error(
+        err?.message || "Download failed. Payment may be required.",
+      );
     }
   };
 
@@ -439,7 +542,15 @@ const FeeProtectorPage = () => {
       key: "status",
       width: 150,
       render: (_, r) => (
-        <Tag color={r.protectedDocument?.isBalancePaid ? "green" : "orange"} icon={r.protectedDocument?.isBalancePaid ? <CheckCircleOutlined /> : <LockOutlined />}>
+        <Tag
+          color={r.protectedDocument?.isBalancePaid ? "green" : "orange"}
+          icon={
+            r.protectedDocument?.isBalancePaid ? (
+              <CheckCircleOutlined />
+            ) : (
+              <LockOutlined />
+            )
+          }>
           {r.protectedDocument?.isBalancePaid ? "PAID" : "PENDING"}
         </Tag>
       ),
@@ -457,16 +568,32 @@ const FeeProtectorPage = () => {
       render: (_, r) => (
         <Space size="small">
           <Tooltip title="Share with client">
-            <Button size="small" icon={<LinkOutlined />} onClick={() => handleShare(r)} />
+            <Button
+              size="small"
+              icon={<LinkOutlined />}
+              onClick={() => handleShare(r)}
+            />
           </Tooltip>
           <Tooltip title="Edit details">
-            <Button size="small" icon={<EditOutlined />} onClick={() => handleEdit(r)} />
+            <Button
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(r)}
+            />
           </Tooltip>
           <Tooltip title="Preview">
-            <Button size="small" icon={<EyeOutlined />} onClick={() => handleDownload(r)} />
+            <Button
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => window.open(`/preview/${r._id}`, "_blank")}
+            />
           </Tooltip>
           <Tooltip title="Download">
-            <Button size="small" icon={<DownloadOutlined />} onClick={() => handleDownload(r)} />
+            <Button
+              size="small"
+              icon={<DownloadOutlined />}
+              onClick={() => handleDownload(r)}
+            />
           </Tooltip>
           {!r.protectedDocument?.isBalancePaid && (
             <Tooltip title="Confirm payment received">
@@ -495,16 +622,36 @@ const FeeProtectorPage = () => {
 
   return (
     <div style={{ padding: 24, background: "#f1f5f9", minHeight: "100vh" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24, flexWrap: "wrap", gap: 12 }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 24,
+          flexWrap: "wrap",
+          gap: 12,
+        }}>
         <div>
-          <Title level={3} style={{ margin: 0 }}>Fee Protector</Title>
-          <Text type="secondary">Protect documents with watermarks until payment is confirmed</Text>
+          <Title level={3} style={{ margin: 0 }}>
+            Fee Protector
+          </Title>
+          <Text type="secondary">
+            Protect documents with watermarks until payment is confirmed
+          </Text>
         </div>
         <Space>
-          <Button icon={<ReloadOutlined />} onClick={() => { dispatch(fetchProtectedDocuments()); dispatch(fetchStats()); }}>
+          <Button
+            icon={<ReloadOutlined />}
+            onClick={() => {
+              dispatch(fetchProtectedDocuments());
+              dispatch(fetchStats());
+            }}>
             Refresh
           </Button>
-          <Button type="primary" icon={<UploadOutlined />} onClick={() => setUploadVisible(true)}>
+          <Button
+            type="primary"
+            icon={<UploadOutlined />}
+            onClick={() => setUploadVisible(true)}>
             Upload & Protect
           </Button>
         </Space>
@@ -514,7 +661,9 @@ const FeeProtectorPage = () => {
         message="How it works"
         description={
           <span>
-            Upload documents, set an amount, and share with clients. They see a watermarked preview but must pay before downloading the clean version. Confirm payment to release the document.
+            Upload documents, set an amount, and share with clients. They see a
+            watermarked preview but must pay before downloading the clean
+            version. Confirm payment to release the document.
           </span>
         }
         type="info"
@@ -526,40 +675,64 @@ const FeeProtectorPage = () => {
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
         <Col xs={12} md={6}>
           <Card>
-            <Statistic title="Total Documents" value={stats?.totalProtected || 0} prefix={<FileProtectOutlined />} />
+            <Statistic
+              title="Total Documents"
+              value={stats?.totalProtected || 0}
+              prefix={<FileProtectOutlined />}
+            />
           </Card>
         </Col>
         <Col xs={12} md={6}>
           <Card>
-            <Statistic title="Pending Payment" value={stats?.totalUnpaid || 0} valueStyle={{ color: "#f59e0b" }} prefix={<DollarOutlined />} />
+            <Statistic
+              title="Pending Payment"
+              value={stats?.totalUnpaid || 0}
+              valueStyle={{ color: "#f59e0b" }}
+              prefix={<DollarOutlined />}
+            />
           </Card>
         </Col>
         <Col xs={12} md={6}>
           <Card>
-            <Statistic title="Paid & Released" value={stats?.totalPaid || 0} valueStyle={{ color: "#10b981" }} prefix={<CheckCircleOutlined />} />
+            <Statistic
+              title="Paid & Released"
+              value={stats?.totalPaid || 0}
+              valueStyle={{ color: "#10b981" }}
+              prefix={<CheckCircleOutlined />}
+            />
           </Card>
         </Col>
         <Col xs={12} md={6}>
           <Card>
             <Statistic
               title="Total Amount"
-              value={`₦${((stats?.totalAmount) || 0).toLocaleString()}`}
+              value={`₦${(stats?.totalAmount || 0).toLocaleString()}`}
               prefix={<LockOutlined />}
             />
           </Card>
         </Col>
       </Row>
 
-      <Card title="Protected Documents" extra={
-        <Text type="secondary">{documents.length} document(s)</Text>
-      }>
+      <Card
+        title="Protected Documents"
+        extra={<Text type="secondary">{documents.length} document(s)</Text>}>
         {loading ? (
-          <div style={{ textAlign: "center", padding: 40 }}><Spin size="large" /></div>
+          <div style={{ textAlign: "center", padding: 40 }}>
+            <Spin size="large" />
+          </div>
         ) : documents.length === 0 ? (
           <div style={{ textAlign: "center", padding: 40 }}>
-            <FileProtectOutlined style={{ fontSize: 48, color: "#ccc", marginBottom: 16 }} />
-            <div><Text type="secondary">No protected documents yet</Text></div>
-            <Button type="primary" icon={<UploadOutlined />} style={{ marginTop: 16 }} onClick={() => setUploadVisible(true)}>
+            <FileProtectOutlined
+              style={{ fontSize: 48, color: "#ccc", marginBottom: 16 }}
+            />
+            <div>
+              <Text type="secondary">No protected documents yet</Text>
+            </div>
+            <Button
+              type="primary"
+              icon={<UploadOutlined />}
+              style={{ marginTop: 16 }}
+              onClick={() => setUploadVisible(true)}>
               Upload Your First Document
             </Button>
           </div>
@@ -576,18 +749,24 @@ const FeeProtectorPage = () => {
       <FeeProtectorUploadModal
         visible={uploadVisible}
         onClose={() => setUploadVisible(false)}
-        onSuccess={() => { dispatch(fetchProtectedDocuments()); dispatch(fetchStats()); }}
+        onSuccess={() => {
+          dispatch(fetchProtectedDocuments());
+          dispatch(fetchStats());
+        }}
         loading={actionLoading}
-        clients={[]}
+        clients={clients}
       />
 
       <EditDocumentModal
         visible={editVisible}
         onClose={() => setEditVisible(false)}
-        onSuccess={() => { dispatch(fetchProtectedDocuments()); dispatch(fetchStats()); }}
+        onSuccess={() => {
+          dispatch(fetchProtectedDocuments());
+          dispatch(fetchStats());
+        }}
         loading={actionLoading}
         doc={selectedDoc}
-        clients={[]}
+        clients={clients}
       />
 
       <ShareModal

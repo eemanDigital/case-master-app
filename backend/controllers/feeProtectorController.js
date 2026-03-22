@@ -55,17 +55,43 @@ exports.createFeeProtector = catchAsync(async (req, res, next) => {
 
   const { title, amount, notes, clientId, entityType } = req.body;
 
-  const originalFileUrl = getFileUrl(req.file.path);
-  const fileName = req.file.originalname;
+  const firmId = req.firmId.toString();
+  const originalsDir = path.join(__dirname, "..", "uploads", "protected", "originals", firmId);
+  const watermarkedDir = path.join(__dirname, "..", "uploads", "protected", "watermarked", firmId);
+  const thumbnailsDir = path.join(__dirname, "..", "uploads", "protected", "thumbnails", firmId);
+
+  await ensureDirExists(originalsDir);
+  await ensureDirExists(watermarkedDir);
+  await ensureDirExists(thumbnailsDir);
+
+  const timestamp = Date.now();
+  const ext = path.extname(req.file.originalname);
+  const baseFilename = `standalone_${timestamp}`;
+  const originalFilename = `${baseFilename}_original${ext}`;
+  const watermarkedFilename = `${baseFilename}_watermarked.jpg`;
+  const thumbnailFilename = `${baseFilename}_thumbnail.jpg`;
+
+  const originalPath = path.join(originalsDir, originalFilename);
+  const watermarkedPath = path.join(watermarkedDir, watermarkedFilename);
+  const thumbnailPath = path.join(thumbnailsDir, thumbnailFilename);
+
+  await fs.writeFile(originalPath, req.file.buffer);
+
+  await generateWatermarkedVersion(originalPath, watermarkedPath);
+  await generateThumbnail(originalPath, thumbnailPath);
 
   const doc = await ProtectedDocument.create({
     firmId: req.firmId,
-    documentName: title || fileName,
+    documentName: title || req.file.originalname,
     entityType: entityType || "other",
     clientId: clientId || null,
     createdBy: req.user._id,
     protectedDocument: {
-      originalFileUrl,
+      originalFileUrl: getFileUrl(originalPath),
+      watermarkedFileUrl: getFileUrl(watermarkedPath),
+      thumbnailUrl: getFileUrl(thumbnailPath),
+      originalFilename: req.file.originalname,
+      mimeType: req.file.mimetype,
       balanceAmount: amount ? parseFloat(amount) : 0,
       notes: notes || "",
       isBalancePaid: false,
@@ -79,7 +105,7 @@ exports.createFeeProtector = catchAsync(async (req, res, next) => {
     status: "success",
     data: {
       id: doc._id,
-      type: "document",
+      type: "standalone",
       name: doc.documentName,
       clientId: doc.clientId,
       protectedDocument: doc.protectedDocument,
@@ -686,7 +712,12 @@ exports.getPublicDocumentInfo = catchAsync(async (req, res, next) => {
 exports.downloadProtectedDocument = catchAsync(async (req, res, next) => {
   const { id } = req.params;
 
-  const doc = await ProtectedDocument.findOne({ _id: id, firmId: req.firmId });
+  const query = { _id: id };
+  if (req.firmId) {
+    query.firmId = req.firmId;
+  }
+
+  const doc = await ProtectedDocument.findOne(query);
 
   if (!doc || !doc.protectedDocument) {
     return next(new AppError("Protected document not found", 404));
@@ -720,7 +751,12 @@ exports.downloadProtectedDocument = catchAsync(async (req, res, next) => {
 exports.previewProtectedDocument = catchAsync(async (req, res, next) => {
   const { id } = req.params;
 
-  const doc = await ProtectedDocument.findOne({ _id: id, firmId: req.firmId });
+  const query = { _id: id };
+  if (req.firmId) {
+    query.firmId = req.firmId;
+  }
+
+  const doc = await ProtectedDocument.findOne(query);
 
   if (!doc || !doc.protectedDocument) {
     return next(new AppError("Protected document not found", 404));
