@@ -249,6 +249,9 @@ const FeeProtectorPage = lazy(
 // Cookie Consent
 import CookieConsent from "./components/CookieConsent";
 
+// Public Pages
+import PublicPreviewPage from "./pages/public/PublicPreviewPage";
+
 // ============================================
 // AXIOS CONFIGURATION
 // ============================================
@@ -437,6 +440,16 @@ const router = createBrowserRouter(
           element={
             <Suspense fallback={<PageLoader />}>
               <CookieConsent />
+            </Suspense>
+          }
+        />
+
+        {/* Public Fee Protector Preview */}
+        <Route
+          path="preview/:id"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <PublicPreviewPage />
             </Suspense>
           }
         />

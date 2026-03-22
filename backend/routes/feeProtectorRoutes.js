@@ -18,6 +18,10 @@ const uploadForCreate = multer({ storage, fileFilter, limits: { fileSize: 20 * 1
 
 const router = express.Router();
 
+router.get("/:id/preview-info", feeProtectorController.getPublicDocumentInfo);
+router.get("/:id/preview", feeProtectorController.previewProtectedDocument);
+router.get("/:id/download", feeProtectorController.downloadProtectedDocument);
+
 router.use(protect);
 
 router.get("/", restrictTo("super-admin", "admin", "lawyer"), feeProtectorController.getAllFeeProtectors);
@@ -38,6 +42,7 @@ router.route("/:id")
 
 router.get("/:id/download", feeProtectorController.downloadProtectedDocument);
 router.get("/:id/preview", feeProtectorController.previewProtectedDocument);
+router.get("/:id/preview-info", feeProtectorController.getPublicDocumentInfo);
 
 router.post(
   "/:entityType/:entityId/upload",

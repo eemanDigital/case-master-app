@@ -660,6 +660,29 @@ exports.getFeeProtectorStats = catchAsync(async (req, res, next) => {
   });
 });
 
+exports.getPublicDocumentInfo = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+
+  const doc = await ProtectedDocument.findOne({ _id: id })
+    .populate("clientId", "firstName lastName email")
+    .select("documentName clientId protectedDocument createdAt");
+
+  if (!doc) {
+    return next(new AppError("Document not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      _id: doc._id,
+      name: doc.documentName,
+      client: doc.clientId,
+      protectedDocument: doc.protectedDocument,
+      createdAt: doc.createdAt,
+    },
+  });
+});
+
 exports.downloadProtectedDocument = catchAsync(async (req, res, next) => {
   const { id } = req.params;
 
