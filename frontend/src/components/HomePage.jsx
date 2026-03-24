@@ -728,6 +728,11 @@ const features = [
     desc: "Assign tasks with deadlines, priorities, and dependencies. Kanban or list view — your workflow, your way.",
   },
   {
+    ico: "🏛️",
+    title: "CAC Compliance Module",
+    desc: "Track Nigerian entity compliance with CAC under CAMA 2020. Monitor annual returns, PSC filings, AGMs, and calculate penalty liabilities automatically.",
+  },
+  {
     ico: "🔍",
     title: "Audit & Compliance",
     desc: "Every action logged with full timestamps. GDPR & NDPR compliant with one-click compliance report export.",
@@ -1285,6 +1290,87 @@ export default function HomePage() {
                     ico: "📤",
                     t: "Multi-format export",
                     d: "Download as PDF, Word (.docx), or plain text for any use case.",
+                  },
+                ].map((b, i) => (
+                  <li key={i} className="lm-benefit">
+                    <div className="lm-benefit-ico">{b.ico}</div>
+                    <div>
+                      <div className="lm-benefit-title">{b.t}</div>
+                      <div className="lm-benefit-desc">{b.d}</div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* ── CAC COMPLIANCE SHOWCASE ── */}
+        <section id="cac-compliance" className="lm-showcase">
+          <div className="lm-showcase-inner">
+            <div ref={rSL} className="lm-reveal">
+              <div className="lm-showcase-screen">
+                <div className="lm-screen-hdr">
+                  <span className="lm-screen-title">CAC Compliance Dashboard</span>
+                  <span className="lm-pill lm-pill-blue">● PRO</span>
+                </div>
+                <div className="lm-screen-body">
+                  {[
+                    { n: "Babcock Industries Ltd", t: "Private Company", s: "Compliant", p: "lm-pill-blue" },
+                    { n: "Greenfield Ventures Ltd", t: "Small Private Co.", s: "Due in 14 days", p: "lm-pill-amber" },
+                    { n: "Prime Assets LP", t: "Limited Partnership", s: "Overdue", p: "lm-pill-rose" },
+                    { n: "Metro Trust Trustees", t: "Inc. Trustees", s: "Compliant", p: "lm-pill-blue" },
+                  ].map((m, i) => (
+                    <div key={i} className="lm-matter-row">
+                      <div className="lm-m-av">🏢</div>
+                      <div className="lm-m-info">
+                        <div className="lm-m-name">{m.n}</div>
+                        <div className="lm-m-type">{m.t}</div>
+                      </div>
+                      <span className={`lm-pill ${m.p}`} style={{ marginRight: 8 }}>
+                        {m.s}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div ref={rSR} className="lm-reveal lm-rd2">
+              <div className="lm-eyebrow">
+                <div className="lm-eyebrow-line" />
+                CAC Compliance Module
+              </div>
+              <h2 className="lm-h2">
+                Never miss a
+                <br />
+                regulatory deadline.
+              </h2>
+              <p
+                style={{
+                  fontSize: 15,
+                  color: "var(--text-2)",
+                  fontWeight: 300,
+                  lineHeight: 1.72,
+                }}>
+                Comprehensive CAC compliance tracking for Nigerian entities under CAMA 2020. Monitor all 9 entity types, calculate penalties, and generate advisory letters automatically.
+              </p>
+              <ul className="lm-benefits">
+                {[
+                  {
+                    ico: "📋",
+                    t: "9 Entity Types Covered",
+                    d: "From Small Private Companies to Incorporated Trustees — all CAC entity types in one place.",
+                  },
+                  {
+                    ico: "💰",
+                    t: "Automatic Penalty Calculation",
+                    d: "PSC Regulations 2022 daily penalties, one-off penalties, and annual return penalties — computed instantly.",
+                  },
+                  {
+                    ico: "📨",
+                    t: "Advisory Letter Generation",
+                    d: "Generate client advisory letters with full penalty breakdowns in one click.",
                   },
                 ].map((b, i) => (
                   <li key={i} className="lm-benefit">
