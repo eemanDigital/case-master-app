@@ -13,115 +13,50 @@
       .container {
         background-color: #ffffff;
         margin: 20px auto;
-        padding: 30px;
+        padding: 20px;
         border-radius: 8px;
         box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         max-width: 600px;
       }
       h1 {
-        color: #059669;
-        margin-bottom: 20px;
-      }
-      h2 {
         color: #333333;
-        font-size: 18px;
       }
       p {
         color: #555555;
         line-height: 1.6;
-        margin: 10px 0;
-      }
-      .credentials-box {
-        background-color: #f8f9fa;
-        border: 1px solid #e9ecef;
-        border-radius: 8px;
-        padding: 20px;
-        margin: 20px 0;
-      }
-      .credentials-box p {
-        margin: 8px 0;
-        font-size: 14px;
-      }
-      .credentials-box strong {
-        display: inline-block;
-        min-width: 120px;
-        color: #333;
-      }
-      .password {
-        font-family: monospace;
-        background-color: #fff;
-        padding: 8px 12px;
-        border-radius: 4px;
-        border: 1px solid #ddd;
-        display: inline-block;
-        letter-spacing: 1px;
       }
       a {
         display: inline-block;
         margin-top: 20px;
-        padding: 12px 24px;
+        padding: 10px 20px;
         color: #ffffff;
-        background-color: #059669;
+        background-color: #007bff;
         text-decoration: none;
         border-radius: 5px;
-        font-weight: bold;
       }
       a:hover {
-        background-color: #047857;
+        background-color: #0056b3;
       }
-      .warning {
-        background-color: #fff3cd;
-        border: 1px solid #ffc107;
-        border-radius: 5px;
-        padding: 15px;
-        margin: 20px 0;
-      }
-      .warning p {
-        margin: 5px 0;
-        color: #856404;
-      }
-      .footer {
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 1px solid #eee;
-        color: #888;
-        font-size: 12px;
+      .note {
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: #777777;
       }
     </style>
   </head>
   <body>
     <div class="container">
-      <h1>Welcome to LawMaster!</h1>
-      
-      <p>Dear <strong>{{name}}</strong>,</p>
-      
-      <p>Great news! Your firm, <strong>{{companyName}}</strong>, has been successfully created on LawMaster.</p>
-      
-      <div class="credentials-box">
-        <h2>Your Login Credentials</h2>
-        <p><strong>Email:</strong> {{toEmail}}</p>
-        <p><strong>Temporary Password:</strong> <span class="password">{{password}}</span></p>
-      </div>
-      
-      <p>Please click the button below to verify your email address and activate your account:</p>
-      
-      <a href="{{link}}">Verify Email & Activate Account</a>
-      
-      <div class="warning">
-        <p><strong>Important Security Notice:</strong></p>
-        <p>• Please change your password immediately after logging in</p>
-        <p>• Keep your password confidential and do not share it</p>
-        <p>• The verification link is valid for 1 hour</p>
-      </div>
-      
-      <p>If you have any questions or need assistance, please contact our support team.</p>
-      
-      <p>Best regards,<br/><strong>The LawMaster Team</strong></p>
-      
-      <div class="footer">
-        <p>LawMaster - Legal Practice Management Software</p>
-        <p>This email was sent to {{toEmail}}</p>
-      </div>
+      <h1>Hello, {{name}}!</h1>
+      <p>The law firm of is excited to have you on board. Please click the link
+        below to verify your email address:</p>
+      <a href="{{link}}">Verify Email</a>
+      <p>Also, your temporary password upon successful verification is
+        <strong>{{password}}</strong></p>
+      <p class="note">Please change the password after logging into your
+        account.</p>
+      <p class="note">The link is valid for only 1 hour.</p>
+      <p>Best regards,</p>
+      <p>LawMaster Team</p>
     </div>
   </body>
 </html>
