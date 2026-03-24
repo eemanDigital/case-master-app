@@ -574,25 +574,27 @@ const PlatformAdminPanel = () => {
             key: "create",
             label: "Create Firm",
             children: (
-              <Card>
+              <Card className="mx-2 md:mx-0">
                 <Form
                   form={createFirmForm}
                   layout="vertical"
                   onFinish={handleCreateFirm}
-                  style={{ maxWidth: 600 }}>
+                  className="w-full">
                   <Form.Item name="firmName" label="Firm Name" rules={[{ required: true }]}>
                     <Input placeholder="Enter firm name" />
                   </Form.Item>
                   <Form.Item name="email" label="Contact Email" rules={[{ required: true, type: "email" }]}>
                     <Input placeholder="Enter contact email" />
                   </Form.Item>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                    <Form.Item name="firstName" label="First Name" rules={[{ required: true }]}>
-                      <Input placeholder="First name" />
-                    </Form.Item>
-                    <Form.Item name="lastName" label="Last Name" rules={[{ required: true }]}>
-                      <Input placeholder="Last name" />
-                    </Form.Item>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                      <Form.Item name="firstName" label="First Name" rules={[{ required: true }]}>
+                        <Input placeholder="First name" />
+                      </Form.Item>
+                      <Form.Item name="lastName" label="Last Name" rules={[{ required: true }]}>
+                        <Input placeholder="Last name" />
+                      </Form.Item>
+                    </div>
                   </div>
                   <Form.Item name="plan" label="Plan" initialValue="FREE">
                     <Select>
@@ -614,7 +616,7 @@ const PlatformAdminPanel = () => {
                       <Option value="female">Female</Option>
                     </Select>
                   </Form.Item>
-                  <Button type="primary" htmlType="submit">
+                  <Button type="primary" htmlType="submit" block>
                     Create Firm
                   </Button>
                 </Form>

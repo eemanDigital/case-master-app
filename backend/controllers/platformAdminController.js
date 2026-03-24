@@ -4,7 +4,7 @@ const User = require("../models/userModel");
 const PlatformInvite = require("../models/platformInviteModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
-const { sendCustomEmail } = require("../utils/email");
+const { sendCustomEmail, sendMail } = require("../utils/email");
 
 const PLAN_LIMITS = {
   FREE: { users: 3, storageGB: 5, casesPerMonth: 10 },
@@ -101,7 +101,23 @@ exports.createFirm = catchAsync(async (req, res, next) => {
   }
 
   const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.FREE;
-  const tempPassword = crypto.randomBytes(6).toString("hex");
+
+  // Generate a valid temp password that meets validation requirements
+  const generateValidPassword = () => {
+    const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+    const lower = "abcdefghjkmnpqrstuvwxyz";
+    const numbers = "23456789";
+    const special = "!@#$%&*";
+    const allChars = upper + lower + numbers + special;
+
+    const getRandom = (str) => str[Math.floor(crypto.randomBytes(2).readUInt16LE() % str.length)];
+    const base = getRandom(upper) + getRandom(lower) + getRandom(numbers) + getRandom(special);
+    const extra = Array.from({ length: 4 }, () => getRandom(allChars)).join("");
+
+    return (base + extra).split("").sort(() => crypto.randomBytes(1)[0] % 3 - 1).join("");
+  };
+
+  const tempPassword = generateValidPassword();
 
   const firm = await Firm.create({
     name: firmName,
@@ -135,9 +151,10 @@ exports.createFirm = catchAsync(async (req, res, next) => {
     userType: "super-admin",
     role: "super-admin",
     position: "Managing Partner",
+    address: address || "Platform created account",
     phone: phone || "+234",
     gender: gender || "male",
-    isVerified: true,
+    isVerified: false,
     isActive: true,
     status: "active",
     userAgent: ["platform-created"],
@@ -152,26 +169,27 @@ exports.createFirm = catchAsync(async (req, res, next) => {
   });
 
   try {
-    await sendCustomEmail(
-      "Welcome to LawMaster",
+    // Generate a verification token for the user
+    const verifyToken = crypto.randomBytes(32).toString("hex");
+    user.verifyToken = verifyToken;
+    await user.save({ validateBeforeSave: false });
+
+    const frontendUrl = process.env.FRONTEND_URL || "https://case-master-app.vercel.app";
+    const verifyLink = `${frontendUrl}/dashboard/verify-account/${verifyToken}`;
+
+    await sendMail(
+      "Welcome to LawMaster - Verify Your Account",
       email,
       process.env.SENDINBLUE_EMAIL || "noreply@lawmaster.ng",
       "noreply@lawmaster.ng",
-      `
-      <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #059669;">Welcome to LawMaster!</h2>
-        <p>Dear ${firstName},</p>
-        <p>Your firm <strong>${firmName}</strong> has been created.</p>
-        <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0;">
-          <p style="margin: 5px 0;"><strong>Login URL:</strong> ${process.env.FRONTEND_URL}/login</p>
-          <p style="margin: 5px 0;"><strong>Email:</strong> ${email}</p>
-          <p style="margin: 5px 0;"><strong>Temporary Password:</strong> ${tempPassword}</p>
-        </div>
-        <p><strong>Important:</strong> Please change your password after first login.</p>
-        <p>If you have any questions, contact support at support@lawmaster.ng</p>
-        <p style="margin-top: 30px;">Best regards,<br/>The LawMaster Team</p>
-      </div>
-      `
+      "verifyEmail",
+      {
+        name: firstName,
+        companyName: firmName,
+        password: tempPassword,
+        link: verifyLink,
+        toEmail: email,
+      }
     );
   } catch (emailError) {
     console.error("Failed to send welcome email:", emailError);
