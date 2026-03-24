@@ -19,6 +19,12 @@ import complianceReducer from "../features/compliance/complianceSlice";
 import watchdogReducer from "../features/watchdog/watchdogSlice";
 import automationReducer from "../features/automation/automationSlice";
 import feeProtectorReducer from "../features/feeProtector/feeProtectorSlice";
+import {
+  cacComplianceReducer,
+  cacTasksReducer,
+  cacLettersReducer,
+  cacAlertsReducer,
+} from "../features/cacCompliance";
 
 export const store = configureStore({
   reducer: {
@@ -42,6 +48,10 @@ export const store = configureStore({
     watchdog: watchdogReducer,
     automation: automationReducer,
     feeProtector: feeProtectorReducer,
+    cacCompliance: cacComplianceReducer,
+    cacTasks: cacTasksReducer,
+    cacLetters: cacLettersReducer,
+    cacAlerts: cacAlertsReducer,
   },
   // Thunk is included by default, no need to concat it!
   middleware: (getDefaultMiddleware) =>

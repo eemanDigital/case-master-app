@@ -109,6 +109,9 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
     else if (path.includes("/dashboard/premium/deadlines")) {
       setSelectedKeys(["deadline-manager"]);
       setOpenKeys(["premium"]);
+    } else if (path.includes("/dashboard/cac-compliance")) {
+      setSelectedKeys(["compliance-tracker"]);
+      setOpenKeys(["premium"]);
     } else if (path.includes("/dashboard/premium/compliance")) {
       setSelectedKeys(["compliance-tracker"]);
       setOpenKeys(["premium"]);
@@ -359,7 +362,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           key: "compliance-tracker",
           icon: <SafetyCertificateOutlined />,
           label: "CAC Compliance",
-          path: "/dashboard/premium/compliance",
+          path: "/dashboard/cac-compliance",
         },
         {
           key: "watchdog",

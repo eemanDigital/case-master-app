@@ -43,6 +43,7 @@ const deadlineRouter = require("./routes/deadlineRoutes");
 const complianceRouter = require("./routes/complianceRoutes");
 const watchdogRouter = require("./routes/watchdogRoutes");
 const automationRouter = require("./routes/automationRoutes");
+const cacComplianceRouter = require("./routes/cacComplianceRoutes");
 
 const AppError = require("./utils/appError");
 const errorController = require("./controllers/errorController");
@@ -347,6 +348,7 @@ app.use("/api/v1/deadlines", deadlineRouter);
 app.use("/api/v1/compliance", complianceRouter);
 app.use("/api/v1/watchdog", watchdogRouter);
 app.use("/api/v1/automations", automationRouter);
+app.use("/api/v1/cac-compliance", cacComplianceRouter);
 
 // Public invitation validation
 app.get(
@@ -527,10 +529,19 @@ const connectWithRetry = async (retries = 5, delay = 5000) => {
 connectWithRetry();
 
 // Start reminder service after database connection
-mongoose.connection.once("open", () => {
-  console.log("✅ Database connected, starting services...");
+  mongoose.connection.once("open", () => {
+    console.log("✅ Database connected, starting services...");
 
-  // Start the reminder service (checks every minute)
+    // Start CAC Compliance Scheduler
+    try {
+      const cacScheduler = require("./services/cacScheduler");
+      cacScheduler.start();
+      console.log("✅ CAC Compliance Scheduler started");
+    } catch (error) {
+      console.error("❌ Failed to start CAC Compliance Scheduler:", error.message);
+    }
+
+    // Start the reminder service (checks every minute)
   try {
     const reminderService = require("./services/reminderService");
     reminderService.start(60000); // Check every 60 seconds

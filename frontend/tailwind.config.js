@@ -7,6 +7,8 @@ export default {
       fontFamily: {
         poppins: ["Poppins", "sans-serif"],
         sans: ["Poppins", "system-ui", "sans-serif"],
+        mono: ["'IBM Plex Mono'", "monospace"],
+        serif: ["'Times New Roman'", "serif"],
       },
 
       // ============================================
@@ -206,6 +208,18 @@ export default {
           corporate: "#f59e0b",
           property: "#ef4444",
           general: "#6b7280",
+        },
+
+        // ============================================
+        // CAC COMPLIANCE RISK COLORS
+        // ============================================
+        risk: {
+          red: "#dc2626",
+          amber: "#d97706",
+          green: "#16a34a",
+          redBg: "#fef2f2",
+          amberBg: "#fffbeb",
+          greenBg: "#f0fdf4",
         },
 
         // ============================================

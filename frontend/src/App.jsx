@@ -6,6 +6,7 @@ import {
   RouterProvider,
   Outlet,
   useNavigate,
+  Navigate,
 } from "react-router-dom";
 import { ConfigProvider, Spin, Result, Button } from "antd";
 import { Link } from "react-router-dom";
@@ -229,6 +230,20 @@ const PerformanceReportPage = lazy(
 // Premium Features - Compliance
 const ComplianceTrackerPage = lazy(
   () => import("./pages/compliance/ComplianceTrackerPage.jsx"),
+);
+
+// CAC Compliance Module
+const CACDashboard = lazy(
+  () => import("./pages/cacCompliance/CACDashboard.jsx"),
+);
+const CACCompaniesList = lazy(
+  () => import("./pages/cacCompliance/CACCompaniesList.jsx"),
+);
+const CACCompanyDetail = lazy(
+  () => import("./pages/cacCompliance/CACCompanyDetail.jsx"),
+);
+const CACTasksPage = lazy(
+  () => import("./pages/cacCompliance/CACTasksPage.jsx"),
 );
 
 // Premium Features - Watchdog
@@ -1249,17 +1264,65 @@ const router = createBrowserRouter(
             }
           />
 
-          {/* CAC Compliance Tracker */}
+          {/* CAC Compliance Tracker - Redirect to new module */}
           <Route
             path="premium/compliance"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <ProtectedStaffRoute>
-                  <ComplianceTrackerPage />
-                </ProtectedStaffRoute>
-              </Suspense>
-            }
+            element={<Navigate to="/dashboard/cac-compliance" replace />}
           />
+
+          {/* CAC Compliance Module */}
+          <Route path="cac-compliance">
+            <Route
+              index
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedStaffRoute>
+                    <CACDashboard />
+                  </ProtectedStaffRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="companies"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedStaffRoute>
+                    <CACCompaniesList />
+                  </ProtectedStaffRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="companies/new"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedStaffRoute>
+                    <CACCompaniesList />
+                  </ProtectedStaffRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="companies/:id"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedStaffRoute>
+                    <CACCompanyDetail />
+                  </ProtectedStaffRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="tasks"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedStaffRoute>
+                    <CACTasksPage />
+                  </ProtectedStaffRoute>
+                </Suspense>
+              }
+            />
+          </Route>
 
           {/* CAC Status Watchdog */}
           <Route
