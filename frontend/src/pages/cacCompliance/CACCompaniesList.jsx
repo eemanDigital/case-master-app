@@ -51,11 +51,15 @@ const formatCurrency = (amount) => {
 };
 
 const companyTypes = [
-  { value: 'small_private', label: 'Small Private Company', color: '#8b5cf6' },
-  { value: 'private', label: 'Private Company', color: '#3b82f6' },
-  { value: 'public', label: 'Public Company', color: '#ef4444' },
-  { value: 'company_limited_by_guarantee', label: 'Company Limited by Guarantee', color: '#22c55e' },
-  { value: 'single_member', label: 'Single Member Company', color: '#f59e0b' },
+  { value: 'small_private', label: 'Small Private Company', color: '#8b5cf6', category: 'company' },
+  { value: 'private', label: 'Private Company', color: '#3b82f6', category: 'company' },
+  { value: 'public', label: 'Public Company', color: '#ef4444', category: 'company' },
+  { value: 'company_limited_by_guarantee', label: 'Company Limited by Guarantee', color: '#22c55e', category: 'company' },
+  { value: 'single_member', label: 'Single Member Company', color: '#f59e0b', category: 'company' },
+  { value: 'llp', label: 'Limited Liability Partnership (LLP)', color: '#6366f1', category: 'llp' },
+  { value: 'lp', label: 'Limited Partnership (LP)', color: '#8b5cf6', category: 'lp' },
+  { value: 'business_name', label: 'Business Name', color: '#10b981', category: 'business' },
+  { value: 'incorporated_trustees', label: 'Incorporated Trustees', color: '#ec4899', category: 'trustees' },
 ];
 
 const getCompanyTypeConfig = (type) => {
@@ -125,7 +129,18 @@ const CACCompaniesList = () => {
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedEntityType, setSelectedEntityType] = useState(null);
   const [form] = Form.useForm();
+
+  // Entity types that require share capital field
+  const requiresShareCapital = (type) => {
+    return ['small_private', 'private', 'public', 'company_limited_by_guarantee', 'single_member'].includes(type);
+  };
+
+  // Entity types that require PSC filing
+  const requiresPSC = (type) => {
+    return ['small_private', 'private', 'public', 'company_limited_by_guarantee', 'single_member', 'llp'].includes(type);
+  };
 
   const loadCompanies = useCallback(() => {
     const params = { page, limit: 20 };
@@ -531,13 +546,22 @@ const CACCompaniesList = () => {
               <Col span={12}>
                 <Form.Item
                   name="type"
-                  label="Company Type"
-                  rules={[{ required: true, message: 'Please select company type' }]}
+                  label="Entity Type"
+                  rules={[{ required: true, message: 'Please select entity type' }]}
                 >
                   <Select 
                     placeholder="Select type"
                     size="large"
                     className="rounded-lg"
+                    onChange={(value) => {
+                      setSelectedEntityType(value);
+                      // Set default share capital based on entity type
+                      if (requiresShareCapital(value)) {
+                        form.setFieldsValue({ shareCapital: 100000 });
+                      } else {
+                        form.setFieldsValue({ shareCapital: undefined });
+                      }
+                    }}
                   >
                     {companyTypes.map((type) => (
                       <Option key={type.value} value={type.value}>
@@ -565,8 +589,8 @@ const CACCompaniesList = () => {
               <Col span={12}>
                 <Form.Item
                   name="numDirectors"
-                  label="Number of Directors"
-                  rules={[{ required: true, message: 'Please enter number of directors' }]}
+                  label={requiresShareCapital(selectedEntityType) ? 'Number of Directors' : 'Number of Partners/Proprietors'}
+                  rules={[{ required: true, message: 'Please enter number' }]}
                   initialValue={1}
                 >
                   <Input 
@@ -579,19 +603,41 @@ const CACCompaniesList = () => {
               </Col>
             </Row>
             <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  name="pscFiled"
-                  label="PSC Filed"
-                  valuePropName="checked"
-                  initialValue={false}
-                >
-                  <Select size="large">
-                    <Option value={true}>Yes</Option>
-                    <Option value={false}>No</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
+              {requiresShareCapital(selectedEntityType) && (
+                <Col span={12}>
+                  <Form.Item
+                    name="shareCapital"
+                    label="Share Capital (₦)"
+                    tooltip="Used to calculate filing fee bracket"
+                    initialValue={100000}
+                  >
+                    <Input 
+                      type="number" 
+                      min={0}
+                      size="large"
+                      className="rounded-lg"
+                      placeholder="e.g., 1000000"
+                    />
+                  </Form.Item>
+                </Col>
+              )}
+              {requiresPSC(selectedEntityType) && (
+                <Col span={12}>
+                  <Form.Item
+                    name="pscFiled"
+                    label="PSC Filed"
+                    valuePropName="checked"
+                    initialValue={false}
+                  >
+                    <Select size="large">
+                      <Option value={true}>Yes</Option>
+                      <Option value={false}>No</Option>
+                    </Select>
+                  </Form.Item>
+                </Col>
+              )}
+            </Row>
+            <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
                   name="firstAnnualReturnFiled"

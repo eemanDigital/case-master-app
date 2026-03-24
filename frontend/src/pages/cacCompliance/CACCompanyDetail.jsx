@@ -161,6 +161,10 @@ const companyTypeLabels = {
   public: 'Public Company',
   company_limited_by_guarantee: 'Company Limited by Guarantee',
   single_member: 'Single Member Company',
+  llp: 'Limited Liability Partnership (LLP)',
+  lp: 'Limited Partnership (LP)',
+  business_name: 'Business Name',
+  incorporated_trustees: 'Incorporated Trustees',
 };
 
 const ComplianceCheckCard = ({ check, onResolve, onExpand, isExpanded }) => {
@@ -849,7 +853,7 @@ const CACCompanyDetail = () => {
                 <p className="font-medium">{currentCompany.rcNumber}</p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Company Type</p>
+                <p className="text-sm text-gray-500">Entity Type</p>
                 <p className="font-medium">{companyTypeLabels[currentCompany.type] || currentCompany.type}</p>
               </div>
               <div>
@@ -861,9 +865,19 @@ const CACCompanyDetail = () => {
                 </p>
               </div>
               <div>
-                <p className="text-sm text-gray-500">Number of Directors</p>
+                <p className="text-sm text-gray-500">Directors/Partners</p>
                 <p className="font-medium">{currentCompany.numDirectors}</p>
               </div>
+              {['small_private', 'private', 'public', 'company_limited_by_guarantee', 'single_member', 'llp', 'lp'].includes(currentCompany.type) && (
+                <div>
+                  <p className="text-sm text-gray-500">Share Capital</p>
+                  <p className="font-medium">
+                    {currentCompany.shareCapital 
+                      ? '₦' + currentCompany.shareCapital.toLocaleString('en-NG')
+                      : '₦100,000 (default)'}
+                  </p>
+                </div>
+              )}
               <div>
                 <p className="text-sm text-gray-500">PSC Filed</p>
                 <p className="font-medium">{currentCompany.pscFiled ? 'Yes' : 'No'}</p>
@@ -871,6 +885,14 @@ const CACCompanyDetail = () => {
               <div>
                 <p className="text-sm text-gray-500">First Annual Return Filed</p>
                 <p className="font-medium">{currentCompany.firstAnnualReturnFiled ? 'Yes' : 'No'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Filing Fee</p>
+                <p className="font-medium" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+                  {currentCompany.filingFee 
+                    ? '₦' + currentCompany.filingFee.toLocaleString('en-NG')
+                    : '-'}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">Notes</p>
