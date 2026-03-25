@@ -377,7 +377,7 @@ const litigationDetailSchema = new mongoose.Schema(
 // INDEXES
 // ============================================
 
-litigationDetailSchema.index({ matterId: 1 }, { unique: true });
+
 litigationDetailSchema.index({ firmId: 1, suitNo: 1 });
 litigationDetailSchema.index({ firmId: 1, courtName: 1 });
 litigationDetailSchema.index({ firmId: 1, nextHearingDate: 1 });

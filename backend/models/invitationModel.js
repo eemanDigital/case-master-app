@@ -93,7 +93,7 @@ const invitationSchema = new mongoose.Schema({
 });
 
 invitationSchema.index({ email: 1, status: 1 });
-invitationSchema.index({ token: 1 });
+
 invitationSchema.index({ expiresAt: 1 });
 
 invitationSchema.statics.generateToken = function () {

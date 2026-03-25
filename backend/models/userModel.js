@@ -598,7 +598,7 @@ userSchema.index({ firmId: 1, isActive: 1 });
 userSchema.index({ firmId: 1, isDeleted: 1 });
 userSchema.index({ firmId: 1, isLawyer: 1 }); // ✅ NEW
 userSchema.index({ firmId: 1, additionalRoles: 1 }); // ✅ NEW
-userSchema.index({ "lawyerDetails.barNumber": 1 }, { sparse: true });
+
 userSchema.index({ "lawyerDetails.practiceAreas": 1 });
 userSchema.index({ "lawyerDetails.isPartner": 1 });
 userSchema.index({ "clientDetails.clientCategory": 1 });

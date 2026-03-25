@@ -333,7 +333,7 @@ const advisoryDetailSchema = new mongoose.Schema(
 // INDEXES
 // ============================================
 
-advisoryDetailSchema.index({ matterId: 1 }, { unique: true });
+
 advisoryDetailSchema.index({ firmId: 1, advisoryType: 1 });
 advisoryDetailSchema.index({ firmId: 1, targetDeliveryDate: 1 });
 

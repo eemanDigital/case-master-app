@@ -483,7 +483,7 @@ const corporateDetailSchema = new mongoose.Schema(
 // INDEXES
 // ============================================
 
-corporateDetailSchema.index({ matterId: 1 }, { unique: true });
+
 corporateDetailSchema.index({ firmId: 1, transactionType: 1 });
 corporateDetailSchema.index({ firmId: 1, companyName: 1 });
 corporateDetailSchema.index({ firmId: 1, registrationNumber: 1 });

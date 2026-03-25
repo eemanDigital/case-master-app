@@ -723,12 +723,12 @@ const generalDetailSchema = new mongoose.Schema(
 // ============================================
 // INDEXES
 // ============================================
-retainerDetailSchema.index({ matterId: 1 }, { unique: true });
+
 retainerDetailSchema.index({ firmId: 1, retainerType: 1 });
 retainerDetailSchema.index({ firmId: 1, agreementEndDate: 1 });
 retainerDetailSchema.index({ firmId: 1, "billing.retainerFee": 1 });
 
-generalDetailSchema.index({ matterId: 1 }, { unique: true });
+
 generalDetailSchema.index({ firmId: 1, serviceType: 1 });
 generalDetailSchema.index({ firmId: 1, expectedCompletionDate: 1 });
 generalDetailSchema.index({ firmId: 1, "jurisdiction.state": 1 });

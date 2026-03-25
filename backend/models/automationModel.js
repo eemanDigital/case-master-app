@@ -188,7 +188,7 @@ const automationSchema = new mongoose.Schema(
       triggerData: mongoose.Schema.Types.Mixed,
       actionsExecuted: Number,
       actionsFailed: Number,
-      errors: [String],
+      executionErrors: [String],
       durationMs: Number,
     }],
 

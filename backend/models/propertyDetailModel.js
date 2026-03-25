@@ -442,7 +442,7 @@ const propertyDetailSchema = new mongoose.Schema(
 // INDEXES
 // ============================================
 
-propertyDetailSchema.index({ matterId: 1 }, { unique: true });
+
 propertyDetailSchema.index({ firmId: 1, transactionType: 1 });
 propertyDetailSchema.index({ firmId: 1, "properties.state": 1 });
 

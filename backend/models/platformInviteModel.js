@@ -87,8 +87,8 @@ const platformInviteSchema = new mongoose.Schema(
 );
 
 // Indexes
-platformInviteSchema.index({ token: 1 });
-platformInviteSchema.index({ firmId: 1 });
+
+
 platformInviteSchema.index({ status: 1 });
 platformInviteSchema.index({ expiresAt: 1 });
 

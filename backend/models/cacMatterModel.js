@@ -279,7 +279,7 @@ const cacMatterSchema = new mongoose.Schema(
 cacMatterSchema.index({ firmId: 1, status: 1 });
 cacMatterSchema.index({ firmId: 1, registrationType: 1 });
 cacMatterSchema.index({ firmId: 1, clientId: 1 });
-cacMatterSchema.index({ rcNumber: 1 });
+
 cacMatterSchema.index({ bnNumber: 1 });
 cacMatterSchema.index({ companyName: "text" });
 

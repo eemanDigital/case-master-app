@@ -389,7 +389,7 @@ complianceTrackerSchema.index({ firmId: 1, entityType: 1 });
 complianceTrackerSchema.index({ firmId: 1, currentComplianceStatus: 1 });
 complianceTrackerSchema.index({ firmId: 1, clientId: 1 });
 complianceTrackerSchema.index({ firmId: 1, isRevenueOpportunity: 1 });
-complianceTrackerSchema.index({ rcNumber: 1 });
+
 complianceTrackerSchema.index({ "cacPortalStatus.portalStatus": 1 });
 complianceTrackerSchema.index({ nextFilingDueDate: 1 });
 

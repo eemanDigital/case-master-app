@@ -326,7 +326,7 @@ firmSchema.pre("save", async function (next) {
  * Indexes (optimized for queries)
  * ======================
  */
-firmSchema.index({ subdomain: 1 });
+
 firmSchema.index({ "subscription.status": 1 });
 firmSchema.index({ "subscription.expiresAt": 1 });
 firmSchema.index({ isActive: 1 });
