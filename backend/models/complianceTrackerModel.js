@@ -60,7 +60,7 @@ const complianceTrackerSchema = new mongoose.Schema(
 
     entityName: {
       type: String,
-      required: [true, "Entity name is required"],
+      // required: [true, "Entity name is required"],
       trim: true,
     },
     entityType: {
@@ -87,32 +87,34 @@ const complianceTrackerSchema = new mongoose.Schema(
     },
     stateOfRegistration: String,
 
-    annualReturns: [{
-      year: {
-        type: Number,
-        required: true,
+    annualReturns: [
+      {
+        year: {
+          type: Number,
+          required: true,
+        },
+        dueDate: {
+          type: Date,
+          required: true,
+        },
+        filingDeadline: Date,
+        status: {
+          type: String,
+          enum: ["pending", "filed", "overdue", "exempted"],
+          default: "pending",
+        },
+        filedDate: Date,
+        filedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        receiptNumber: String,
+        filingFee: Number,
+        latePenalty: Number,
+        totalPaid: Number,
+        notes: String,
       },
-      dueDate: {
-        type: Date,
-        required: true,
-      },
-      filingDeadline: Date,
-      status: {
-        type: String,
-        enum: ["pending", "filed", "overdue", "exempted"],
-        default: "pending",
-      },
-      filedDate: Date,
-      filedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-      receiptNumber: String,
-      filingFee: Number,
-      latePenalty: Number,
-      totalPaid: Number,
-      notes: String,
-    }],
+    ],
 
     currentComplianceStatus: {
       type: String,
@@ -139,48 +141,57 @@ const complianceTrackerSchema = new mongoose.Schema(
       reason: String,
     },
 
-    actionItems: [{
-      id: {
-        type: mongoose.Schema.Types.ObjectId,
-        default: () => new mongoose.Types.ObjectId(),
+    actionItems: [
+      {
+        id: {
+          type: mongoose.Schema.Types.ObjectId,
+          default: () => new mongoose.Types.ObjectId(),
+        },
+        title: {
+          type: String,
+          required: true,
+        },
+        description: String,
+        type: {
+          type: String,
+          enum: [
+            "contact_client",
+            "restore_status",
+            "file_documents",
+            "send_notice",
+            "follow_up",
+            "other",
+          ],
+          default: "follow_up",
+        },
+        priority: {
+          type: String,
+          enum: ["low", "medium", "high", "urgent"],
+          default: "medium",
+        },
+        status: {
+          type: String,
+          enum: ["pending", "in_progress", "completed", "cancelled"],
+          default: "pending",
+        },
+        assignedTo: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        dueDate: Date,
+        completedAt: Date,
+        completedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        notes: String,
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+        updatedAt: Date,
       },
-      title: {
-        type: String,
-        required: true,
-      },
-      description: String,
-      type: {
-        type: String,
-        enum: ["contact_client", "restore_status", "file_documents", "send_notice", "follow_up", "other"],
-        default: "follow_up",
-      },
-      priority: {
-        type: String,
-        enum: ["low", "medium", "high", "urgent"],
-        default: "medium",
-      },
-      status: {
-        type: String,
-        enum: ["pending", "in_progress", "completed", "cancelled"],
-        default: "pending",
-      },
-      assignedTo: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-      dueDate: Date,
-      completedAt: Date,
-      completedBy: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-      },
-      notes: String,
-      createdAt: {
-        type: Date,
-        default: Date.now,
-      },
-      updatedAt: Date,
-    }],
+    ],
 
     clientOutreach: {
       outreachDate: Date,
@@ -288,29 +299,31 @@ const complianceTrackerSchema = new mongoose.Schema(
       },
     },
 
-    notificationsSent: [{
-      type: {
-        type: String,
-        enum: [
-          "filing-reminder",
-          "penalty-warning",
-          "status-change",
-          "inactive-alert",
-          "revenue-opportunity",
-        ],
+    notificationsSent: [
+      {
+        type: {
+          type: String,
+          enum: [
+            "filing-reminder",
+            "penalty-warning",
+            "status-change",
+            "inactive-alert",
+            "revenue-opportunity",
+          ],
+        },
+        sentAt: {
+          type: Date,
+          default: Date.now,
+        },
+        sentTo: String,
+        channel: {
+          type: String,
+          enum: ["email", "whatsapp"],
+        },
+        wasOpened: Boolean,
+        messagePreview: String,
       },
-      sentAt: {
-        type: Date,
-        default: Date.now,
-      },
-      sentTo: String,
-      channel: {
-        type: String,
-        enum: ["email", "whatsapp"],
-      },
-      wasOpened: Boolean,
-      messagePreview: String,
-    }],
+    ],
 
     nextFilingDueDate: Date,
     nextReminderDate: Date,
@@ -325,7 +338,14 @@ const complianceTrackerSchema = new mongoose.Schema(
     revenueOpportunityDetails: {
       serviceType: {
         type: String,
-        enum: ["status_restoration", "annual_return_filing", "compliance_filing", "name_change", "amendment", "other"],
+        enum: [
+          "status_restoration",
+          "annual_return_filing",
+          "compliance_filing",
+          "name_change",
+          "amendment",
+          "other",
+        ],
         default: "status_restoration",
       },
       estimatedFee: {
@@ -382,7 +402,7 @@ const complianceTrackerSchema = new mongoose.Schema(
     timestamps: true,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 complianceTrackerSchema.index({ firmId: 1, entityType: 1 });
@@ -404,7 +424,10 @@ complianceTrackerSchema.statics.getPenaltyRates = function (entityType) {
   };
 };
 
-complianceTrackerSchema.statics.getPenaltyRate = function (entityType, penaltyType = "monthly") {
+complianceTrackerSchema.statics.getPenaltyRate = function (
+  entityType,
+  penaltyType = "monthly",
+) {
   switch (penaltyType) {
     case "daily":
       return PENALTY_RATES_DAILY[entityType] || PENALTY_RATES_DAILY.other;
@@ -415,12 +438,20 @@ complianceTrackerSchema.statics.getPenaltyRate = function (entityType, penaltyTy
   }
 };
 
-complianceTrackerSchema.statics.getNextFilingDueDate = function (entityType, incorporationDate, lastFiledYear) {
+complianceTrackerSchema.statics.getNextFilingDueDate = function (
+  entityType,
+  incorporationDate,
+  lastFiledYear,
+) {
   const incorporation = new Date(incorporationDate);
   const currentYear = new Date().getFullYear();
 
   if (entityType === "business-name") {
-    return new Date(currentYear, ANNUAL_RETURN_DEADLINES["business-name"].month, ANNUAL_RETURN_DEADLINES["business-name"].day);
+    return new Date(
+      currentYear,
+      ANNUAL_RETURN_DEADLINES["business-name"].month,
+      ANNUAL_RETURN_DEADLINES["business-name"].day,
+    );
   }
 
   if (["private-limited", "public-limited", "llp"].includes(entityType)) {
@@ -453,7 +484,9 @@ complianceTrackerSchema.statics.getAtRiskEntities = async function (firmId) {
     .sort({ nextFilingDueDate: 1 });
 };
 
-complianceTrackerSchema.statics.getNonCompliantEntities = async function (firmId) {
+complianceTrackerSchema.statics.getNonCompliantEntities = async function (
+  firmId,
+) {
   return this.find({
     firmId,
     isActive: true,
@@ -464,7 +497,9 @@ complianceTrackerSchema.statics.getNonCompliantEntities = async function (firmId
         currentComplianceStatus: "non-compliant",
       },
       {
-        "cacPortalStatus.portalStatus": { $in: ["INACTIVE", "STRUCK-OFF", "WOUND-UP"] },
+        "cacPortalStatus.portalStatus": {
+          $in: ["INACTIVE", "STRUCK-OFF", "WOUND-UP"],
+        },
       },
     ],
   })
@@ -476,8 +511,11 @@ complianceTrackerSchema.statics.getNonCompliantEntities = async function (firmId
 complianceTrackerSchema.methods.calculateCurrentPenalty = function () {
   const penaltyType = this.penaltyTracking?.penaltyType || "monthly";
   const rate = this.penaltyTracking?.penaltyRate || 0;
-  
-  if (!this.penaltyTracking?.isPenaltyAccruing || !this.penaltyTracking?.penaltyStartDate) {
+
+  if (
+    !this.penaltyTracking?.isPenaltyAccruing ||
+    !this.penaltyTracking?.penaltyStartDate
+  ) {
     return {
       penaltyType,
       rate,
@@ -491,10 +529,10 @@ complianceTrackerSchema.methods.calculateCurrentPenalty = function () {
   const startDate = new Date(this.penaltyTracking.penaltyStartDate);
   const now = new Date();
   const graceDays = this.penaltyTracking.gracePeriodDays || 0;
-  
+
   const effectiveStartDate = new Date(startDate);
   effectiveStartDate.setDate(effectiveStartDate.getDate() + graceDays);
-  
+
   if (now <= effectiveStartDate) {
     return {
       penaltyType,
@@ -568,9 +606,16 @@ complianceTrackerSchema.methods.calculateTotalFees = function () {
   const adminCharge = this.otherFees?.administrativeCharge || 0;
   const otherFeesTotal = this.otherFees?.otherFeesTotal || 0;
   const professionalFee = this.professionalFee?.amount || 0;
-  
-  const totalPenaltyAndFees = penaltyCalc.penaltyAmount + filingFee + processingFee + adminCharge + otherFeesTotal;
-  const grandTotal = totalPenaltyAndFees + (this.professionalFee?.isIncluded ? 0 : professionalFee);
+
+  const totalPenaltyAndFees =
+    penaltyCalc.penaltyAmount +
+    filingFee +
+    processingFee +
+    adminCharge +
+    otherFeesTotal;
+  const grandTotal =
+    totalPenaltyAndFees +
+    (this.professionalFee?.isIncluded ? 0 : professionalFee);
 
   return {
     penaltyAmount: penaltyCalc.penaltyAmount,
@@ -588,6 +633,9 @@ complianceTrackerSchema.methods.calculateTotalFees = function () {
   };
 };
 
-const ComplianceTracker = mongoose.model("ComplianceTracker", complianceTrackerSchema);
+const ComplianceTracker = mongoose.model(
+  "ComplianceTracker",
+  complianceTrackerSchema,
+);
 
 module.exports = ComplianceTracker;
