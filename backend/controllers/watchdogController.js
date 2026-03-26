@@ -717,10 +717,6 @@ exports.createMonitoredEntity = catchAsync(async (req, res, next) => {
   res.status(201).json({
     status: "success",
     data: entity,
-    cacCheckAvailable,
-    message: cacCheckAvailable 
-      ? null 
-      : "Entity created. CAC status check unavailable in this environment.",
   });
 });
 
