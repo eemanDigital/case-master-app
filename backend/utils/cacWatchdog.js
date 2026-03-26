@@ -1,7 +1,9 @@
 const { chromium } = require("playwright");
 const fs = require("fs");
+const axios = require("axios");
 
 const CAC_SEARCH_URL = "https://icrp.cac.gov.ng/public-search";
+const BROWSERLESS_API_URL = process.env.BROWSERLESS_API_URL || "https://chrome.browserless.io";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -14,6 +16,11 @@ const checkCacStatus = async (
   entityType = "private-limited",
   debug = false,
 ) => {
+  // Try Browserless API first (for cloud deployments)
+  if (process.env.BROWSERLESS_API_KEY) {
+    return await checkCacStatusViaBrowserless(rcNumber, entityType, debug);
+  }
+  
   let browser = null;
 
   try {
@@ -545,6 +552,66 @@ const checkMultipleEntities = async (entities) => {
 
   console.log(`Completed ${results.length} CAC checks`);
   return results;
+};
+
+// ─── Browserless API Fallback (for cloud deployments) ───────────────────────
+const checkCacStatusViaBrowserless = async (rcNumber, entityType, debug = false) => {
+  const searchNumber = cleanRegistrationNumber(rcNumber);
+  const apiKey = process.env.BROWSERLESS_API_KEY;
+  
+  try {
+    const response = await axios.post(
+      `${BROWSERLESS_API_URL}/function`,
+      {
+        url: CAC_SEARCH_URL,
+        gotoOptions: { waitUntil: "networkidle2", timeout: 60000 },
+        steps: [
+          { action: "wait", selector: "body", timeout: 5000 },
+          { action: "type", selector: 'input[placeholder*="RC"]', value: searchNumber },
+          { action: "click", selector: 'button[type="submit"]' },
+          { action: "wait", selector: "table, .result, [class*='result']", timeout: 15000 },
+        ],
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+        params: {
+          token: apiKey,
+        },
+        timeout: 90000,
+      }
+    );
+
+    const pageContent = response.data;
+    
+    // Parse the HTML response to extract entity info
+    const entityNameMatch = pageContent.match(/<h[1-4][^>]*>([^<]+)<\/h[1-4]>/i);
+    const statusMatch = pageContent.match(/status[:\s]*([A-Z-]+)/i);
+    const rcMatch = pageContent.match(/RC\s*Number[:\s]*([0-9]+)/i);
+
+    return {
+      success: true,
+      available: true,
+      rcNumber: searchNumber,
+      originalRcNumber: rcNumber,
+      entityName: entityNameMatch ? entityNameMatch[1].trim() : null,
+      status: statusMatch ? statusMatch[1].toUpperCase() : "UNKNOWN",
+      registrationDate: null,
+      error: null,
+    };
+  } catch (error) {
+    console.error(`Browserless API error for ${rcNumber}:`, error.message);
+    return {
+      success: false,
+      available: false,
+      rcNumber,
+      entityName: null,
+      status: null,
+      registrationDate: null,
+      error: `Browserless API error: ${error.message}`,
+    };
+  }
 };
 
 module.exports = {

@@ -9,8 +9,7 @@
     "backend": "nodemon server.js",
     "prod": "cross-env NODE_ENV=production node server.js",
     "dev:env": "cross-env NODE_ENV=development nodemon server.js",
-    "debug": "nodemon --inspect server.js",
-    "postinstall": "npx playwright install chromium --with-deps 2>/dev/null || echo 'Playwright install skipped'"
+    "debug": "nodemon --inspect server.js"
   },
   "keywords": [],
   "author": "",

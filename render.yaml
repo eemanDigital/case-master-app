@@ -8,7 +8,7 @@ services:
     region: frankfurt
     plan: starter
     rootDir: backend
-    buildCommand: npm install && npx playwright install chromium --with-deps
+    buildCommand: npm ci
     startCommand: npm start
     healthCheckPath: /api/v1/health
     envVars:
@@ -17,4 +17,8 @@ services:
       - key: MONGODB_URI
         sync: false
       - key: JWT_SECRET
+        sync: false
+      # Optional: Use Browserless API for cloud CAC scraping
+      # Get free API key at https://browserless.io
+      - key: BROWSERLESS_API_KEY
         sync: false
