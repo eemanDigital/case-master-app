@@ -29,6 +29,17 @@ const checkCacStatus = async (
         "--window-size=1280,800",
       ],
     });
+  } catch (launchError) {
+    console.warn("Puppeteer launch failed - CAC check unavailable:", launchError.message);
+    return {
+      available: false,
+      error: "Browser not available in this environment",
+      status: null,
+      entityName: null
+    };
+  }
+
+  try {
 
     const page = await browser.newPage();
 
@@ -476,6 +487,7 @@ const checkCacStatus = async (
 
     return {
       success: finalResult.success,
+      available: true,
       rcNumber: searchNumber,
       originalRcNumber: rcNumber,
       entityName: finalResult.entityName,
@@ -487,6 +499,7 @@ const checkCacStatus = async (
     console.error(`Error checking CAC status for ${rcNumber}:`, error.message);
     return {
       success: false,
+      available: true,
       rcNumber,
       entityName: null,
       status: null,
