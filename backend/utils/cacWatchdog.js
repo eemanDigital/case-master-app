@@ -1,4 +1,4 @@
-const puppeteer = require("puppeteer");
+const { chromium } = require("playwright");
 const fs = require("fs");
 
 const CAC_SEARCH_URL = "https://icrp.cac.gov.ng/public-search";
@@ -17,23 +17,20 @@ const checkCacStatus = async (
   let browser = null;
 
   try {
-    browser = await puppeteer.launch({
+    browser = await chromium.launch({
       headless: true,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
-        "--disable-web-security",
-        "--allow-running-insecure-content",
-        "--window-size=1280,800",
       ],
     });
   } catch (launchError) {
-    console.warn("Puppeteer launch failed - CAC check unavailable:", launchError.message);
+    console.warn("Browser launch failed:", launchError.message);
     return {
       available: false,
-      error: "Browser not available in this environment",
+      error: `Browser not available: ${launchError.message}`,
       status: null,
       entityName: null
     };
@@ -43,17 +40,11 @@ const checkCacStatus = async (
 
     const page = await browser.newPage();
 
-    await page.setViewport({ width: 1280, height: 800 });
-
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
-        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    );
+    await page.setViewportSize({ width: 1280, height: 800 });
 
     await page.setExtraHTTPHeaders({
       "Accept-Language": "en-US,en;q=0.9",
-      Accept:
-        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     });
 
     const searchNumber = cleanRegistrationNumber(rcNumber);
@@ -61,7 +52,7 @@ const checkCacStatus = async (
 
     // ── Step 1: Load the page ─────────────────────────────────────────────
     await page.goto(CAC_SEARCH_URL, {
-      waitUntil: "networkidle2", // wait until network is idle, not just DOM
+      waitUntil: "networkidle", // wait until network is idle
       timeout: 60000,
     });
 
@@ -129,11 +120,8 @@ const checkCacStatus = async (
     }
 
     // ── Step 4: Find and fill the search input ────────────────────────────
-    // Try multiple approaches to fill the input
-
     let inputFilled = false;
 
-    // Approach A — direct puppeteer type (most reliable)
     const inputSelectors = [
       'input[placeholder*="RC Number"]',
       'input[placeholder*="BN Number"]',

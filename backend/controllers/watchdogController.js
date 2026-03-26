@@ -652,38 +652,30 @@ exports.createMonitoredEntity = catchAsync(async (req, res, next) => {
   let initialPortalStatus = "UNKNOWN";
   let initialWatchdogNotes = notes || undefined;
   let cacEntityName = null;
-  let cacCheckAvailable = true;
 
   try {
     const result = await checkCacStatus(registrationNumber, mappedEntityType);
+    
     if (result.available === false) {
-      // CAC check not available (e.g., browser not available in production)
-      cacCheckAvailable = false;
-      initialWatchdogNotes = `CAC check unavailable: ${result.error}. ${notes || ""}`.trim();
+      // CAC check not available (e.g., browser not available in cloud environment)
+      initialWatchdogNotes = `[Note: CAC portal check unavailable in this environment. Please verify entity details manually.] ${notes || ""}`.trim();
+      console.log("CAC check unavailable:", result.error);
     } else if (result.success) {
       initialPortalStatus = result.status;
       cacEntityName = result.entityName;
     } else {
       initialWatchdogNotes = result.error
-        ? `${notes || ""} | Initial check failed: ${result.error}`.trim()
+        ? `${notes || ""} | CAC check failed: ${result.error}`.trim()
         : notes;
     }
   } catch (error) {
     console.error("Initial CAC status check failed:", error.message);
-    cacCheckAvailable = false;
     initialWatchdogNotes = `CAC check error: ${error.message}. ${notes || ""}`.trim();
   }
 
-  // Use CAC entity name if not provided
+  // Use CAC entity name if provided and fetched, otherwise use manual input
+  // Entity name is optional - it can be added later
   const finalEntityName = entityName || cacEntityName;
-  
-  // Only require entity name if CAC check was available (meaning we expected to get it from CAC)
-  // If CAC check failed, we allow the entity to be created with just the RC number
-  if (!finalEntityName && cacCheckAvailable) {
-    return next(
-      new AppError("Could not determine entity name. Please provide it manually.", 400),
-    );
-  }
 
   const entity = await ComplianceTracker.create({
     firmId: req.firmId,
