@@ -655,27 +655,27 @@ exports.createMonitoredEntity = catchAsync(async (req, res, next) => {
 
   try {
     const result = await checkCacStatus(registrationNumber, mappedEntityType);
-    
-    if (result.available === false) {
-      // CAC check not available (e.g., browser not available in cloud environment)
-      initialWatchdogNotes = `[Note: CAC portal check unavailable in this environment. Please verify entity details manually.] ${notes || ""}`.trim();
-      console.log("CAC check unavailable:", result.error);
-    } else if (result.success) {
+    if (result.success) {
       initialPortalStatus = result.status;
       cacEntityName = result.entityName;
     } else {
       initialWatchdogNotes = result.error
-        ? `${notes || ""} | CAC check failed: ${result.error}`.trim()
+        ? `${notes || ""} | Initial check failed: ${result.error}`.trim()
         : notes;
     }
   } catch (error) {
     console.error("Initial CAC status check failed:", error.message);
-    initialWatchdogNotes = `CAC check error: ${error.message}. ${notes || ""}`.trim();
   }
 
-  // Use CAC entity name if provided and fetched, otherwise use manual input
-  // Entity name is optional - it can be added later
-  const finalEntityName = entityName || cacEntityName;
+  // Use CAC entity name if not provided, or validate if both provided
+  const finalEntityName = entityName || cacEntityName || req.body.fallbackName || `Company ${registrationNumber}`;
+
+  // Only block if explicitly required and truly missing
+  if (!finalEntityName && req.body.requireVerifiedName === true) {
+    return next(
+      new AppError("Could not determine entity name. Please provide it manually.", 400),
+    );
+  }
 
   const entity = await ComplianceTracker.create({
     firmId: req.firmId,

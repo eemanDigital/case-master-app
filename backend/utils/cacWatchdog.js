@@ -1,9 +1,10 @@
-const { chromium } = require("playwright");
+const puppeteer = require("puppeteer-extra");
+const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const fs = require("fs");
-const axios = require("axios");
+
+puppeteer.use(StealthPlugin());
 
 const CAC_SEARCH_URL = "https://icrp.cac.gov.ng/public-search";
-const BROWSERLESS_API_URL = process.env.BROWSERLESS_API_URL || "https://chrome.browserless.io";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -16,42 +17,44 @@ const checkCacStatus = async (
   entityType = "private-limited",
   debug = false,
 ) => {
-  // Try Browserless API first (for cloud deployments)
-  if (process.env.BROWSERLESS_API_KEY) {
-    return await checkCacStatusViaBrowserless(rcNumber, entityType, debug);
-  }
-  
   let browser = null;
 
   try {
-    browser = await chromium.launch({
-      headless: true,
+    const isProduction = process.env.NODE_ENV === "production";
+    const executablePath = isProduction
+      ? null
+      : process.env.PUPPETEER_EXECUTABLE_PATH || null;
+
+    browser = await puppeteer.launch({
+      executablePath,
+      headless: "new",
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--no-first-run",
+        "--no-zygote",
         "--disable-gpu",
+        "--disable-web-security",
+        "--allow-running-insecure-content",
+        "--window-size=1280,800",
       ],
     });
-  } catch (launchError) {
-    console.warn("Browser launch failed:", launchError.message);
-    return {
-      available: false,
-      error: `Browser not available: ${launchError.message}`,
-      status: null,
-      entityName: null
-    };
-  }
-
-  try {
 
     const page = await browser.newPage();
 
-    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.setViewport({ width: 1280, height: 800 });
+
+    await page.setUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    );
 
     await page.setExtraHTTPHeaders({
       "Accept-Language": "en-US,en;q=0.9",
-      "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+      Accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
     });
 
     const searchNumber = cleanRegistrationNumber(rcNumber);
@@ -59,7 +62,7 @@ const checkCacStatus = async (
 
     // ── Step 1: Load the page ─────────────────────────────────────────────
     await page.goto(CAC_SEARCH_URL, {
-      waitUntil: "networkidle", // wait until network is idle
+      waitUntil: "networkidle2", // wait until network is idle, not just DOM
       timeout: 60000,
     });
 
@@ -127,8 +130,11 @@ const checkCacStatus = async (
     }
 
     // ── Step 4: Find and fill the search input ────────────────────────────
+    // Try multiple approaches to fill the input
+
     let inputFilled = false;
 
+    // Approach A — direct puppeteer type (most reliable)
     const inputSelectors = [
       'input[placeholder*="RC Number"]',
       'input[placeholder*="BN Number"]',
@@ -482,7 +488,6 @@ const checkCacStatus = async (
 
     return {
       success: finalResult.success,
-      available: true,
       rcNumber: searchNumber,
       originalRcNumber: rcNumber,
       entityName: finalResult.entityName,
@@ -494,7 +499,6 @@ const checkCacStatus = async (
     console.error(`Error checking CAC status for ${rcNumber}:`, error.message);
     return {
       success: false,
-      available: true,
       rcNumber,
       entityName: null,
       status: null,
@@ -552,66 +556,6 @@ const checkMultipleEntities = async (entities) => {
 
   console.log(`Completed ${results.length} CAC checks`);
   return results;
-};
-
-// ─── Browserless API Fallback (for cloud deployments) ───────────────────────
-const checkCacStatusViaBrowserless = async (rcNumber, entityType, debug = false) => {
-  const searchNumber = cleanRegistrationNumber(rcNumber);
-  const apiKey = process.env.BROWSERLESS_API_KEY;
-  
-  try {
-    const response = await axios.post(
-      `${BROWSERLESS_API_URL}/function`,
-      {
-        url: CAC_SEARCH_URL,
-        gotoOptions: { waitUntil: "networkidle2", timeout: 60000 },
-        steps: [
-          { action: "wait", selector: "body", timeout: 5000 },
-          { action: "type", selector: 'input[placeholder*="RC"]', value: searchNumber },
-          { action: "click", selector: 'button[type="submit"]' },
-          { action: "wait", selector: "table, .result, [class*='result']", timeout: 15000 },
-        ],
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-        params: {
-          token: apiKey,
-        },
-        timeout: 90000,
-      }
-    );
-
-    const pageContent = response.data;
-    
-    // Parse the HTML response to extract entity info
-    const entityNameMatch = pageContent.match(/<h[1-4][^>]*>([^<]+)<\/h[1-4]>/i);
-    const statusMatch = pageContent.match(/status[:\s]*([A-Z-]+)/i);
-    const rcMatch = pageContent.match(/RC\s*Number[:\s]*([0-9]+)/i);
-
-    return {
-      success: true,
-      available: true,
-      rcNumber: searchNumber,
-      originalRcNumber: rcNumber,
-      entityName: entityNameMatch ? entityNameMatch[1].trim() : null,
-      status: statusMatch ? statusMatch[1].toUpperCase() : "UNKNOWN",
-      registrationDate: null,
-      error: null,
-    };
-  } catch (error) {
-    console.error(`Browserless API error for ${rcNumber}:`, error.message);
-    return {
-      success: false,
-      available: false,
-      rcNumber,
-      entityName: null,
-      status: null,
-      registrationDate: null,
-      error: `Browserless API error: ${error.message}`,
-    };
-  }
 };
 
 module.exports = {
