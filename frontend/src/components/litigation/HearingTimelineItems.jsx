@@ -200,10 +200,33 @@ LawyerAvatars.displayName = "LawyerAvatars";
 
 const HearingTimelineItem = React.memo(({ hearing, onEdit, onDelete }) => {
   const { phaseInfo } = hearing;
-  const { displayStatus, phase, isAfterGracePeriod } = phaseInfo;
+  const { displayStatus, phase, isAfterGracePeriod, isBeforeHearing } =
+    phaseInfo;
   const config = STATUS_CONFIG[displayStatus] ?? STATUS_CONFIG.upcoming;
 
   const isLocked = phase === "locked";
+  const isUpcoming = phase === "schedule";
+  const needsReport = phase === "report";
+  const canEditReport = phase === "report" || phase === "edit";
+
+  // Phase-based tooltip for Edit button
+  const getEditTooltip = () => {
+    if (isLocked) return "View only — grace period expired";
+    if (needsReport) return "File hearing report";
+    if (canEditReport) return "Edit hearing report";
+    if (isUpcoming) return "Edit hearing — assign lawyers, set next hearing date";
+    return "Edit hearing";
+  };
+
+  // Phase-based tooltip for Delete button
+  const getDeleteTooltip = () => {
+    if (isUpcoming) return "Delete hearing";
+    if (isLocked) return "Cannot delete — grace period expired";
+    if (needsReport || canEditReport) return "Cannot delete — hearing report pending";
+    return "Delete hearing";
+  };
+
+  const canDelete = isUpcoming;
 
   // FIX: Use stable callbacks to avoid prop-drilling re-renders
   const handleEdit = useCallback(() => onEdit(hearing), [onEdit, hearing]);
@@ -295,38 +318,30 @@ const HearingTimelineItem = React.memo(({ hearing, onEdit, onDelete }) => {
               </div>
             </div>
 
-            {/* ── ACTION BUTTONS ───────────────────────────
-                FIX: Removed the duplicate TeamOutlined button.
-                The Edit button opens the modal which contains the lawyer
-                assignment field — there is no need for a separate "assign
-                lawyers" button.
-                
-                FIX: Buttons are now truly disabled (not just visually dimmed)
-                when the phase is locked, preventing click-through issues.
-            ── */}
+            {/* ── ACTION BUTTONS ─────────────────────────── */}
             <Space size={2} className="shrink-0 ml-2">
-              <Tooltip
-                title={
-                  isLocked ? "View only — grace period expired" : "Edit hearing"
-                }>
+              <Tooltip title={getEditTooltip()}>
                 <Button
                   type="text"
                   icon={<EditOutlined />}
                   onClick={handleEdit}
                   size="small"
-                  // FIX: always allow view/edit modal to open — locked state
-                  // is enforced inside the modal, not here
-                  className="hover:bg-blue-50 text-slate-500 hover:text-blue-600"
+                  className={`hover:bg-blue-50 ${
+                    isLocked
+                      ? "text-slate-300 cursor-default"
+                      : "text-slate-500 hover:text-blue-600"
+                  }`}
                 />
               </Tooltip>
-              <Tooltip title="Delete hearing">
+              <Tooltip title={getDeleteTooltip()}>
                 <Button
                   type="text"
                   danger
                   icon={<DeleteOutlined />}
                   onClick={handleDelete}
                   size="small"
-                  className="hover:bg-red-50"
+                  disabled={!canDelete}
+                  className={`hover:bg-red-50 ${!canDelete ? "opacity-40" : ""}`}
                 />
               </Tooltip>
             </Space>

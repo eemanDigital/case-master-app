@@ -781,6 +781,11 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     hearing[key] = updateData[key];
   });
 
+  // Sync matter-level nextHearingDate with hearing's nextHearingDate
+  if (updateData.nextHearingDate) {
+    litigationDetail.nextHearingDate = updateData.nextHearingDate;
+  }
+
   // Save the litigation detail FIRST
   await litigationDetail.save();
 

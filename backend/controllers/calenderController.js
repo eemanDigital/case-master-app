@@ -209,12 +209,12 @@ exports.getAllEvents = catchAsync(async (req, res, next) => {
   // Also fetch litigation hearings if includeHearings is true
   let litigationHearings = [];
   const includeHearings = req.query.includeHearings === "true";
-  
+
   if (includeHearings) {
     try {
       // Get date range from query or default to current month
       let startDateVal, endDateVal;
-      
+
       if (startDate && endDate) {
         startDateVal = dayjs(startDate);
         endDateVal = dayjs(endDate);
@@ -229,9 +229,11 @@ exports.getAllEvents = catchAsync(async (req, res, next) => {
         firmId: req.user.firmId,
         matterType: "litigation",
         isDeleted: { $ne: true },
-      }).select("_id matterNumber title").lean();
+      })
+        .select("_id matterNumber title")
+        .lean();
 
-      const matterIds = matters.map(m => m._id);
+      const matterIds = matters.map((m) => m._id);
 
       // Get litigation details with hearings in date range
       const litigationDetails = await LitigationDetail.find({
@@ -239,26 +241,27 @@ exports.getAllEvents = catchAsync(async (req, res, next) => {
         matterId: { $in: matterIds },
         "hearings.0": { $exists: true },
       })
-      .populate("matterId", "matterNumber title client accountOfficer")
-      .lean();
+        .populate("matterId", "matterNumber title client accountOfficer")
+        .lean();
 
       // Extract hearings within date range
       const matterMap = {};
-      matters.forEach(m => matterMap[m._id.toString()] = m);
+      matters.forEach((m) => (matterMap[m._id.toString()] = m));
 
-      litigationDetails.forEach(detail => {
+      litigationDetails.forEach((detail) => {
         const matter = matterMap[detail.matterId?._id?.toString()] || detail;
-        
-        detail.hearings?.forEach(hearing => {
+
+        detail.hearings?.forEach((hearing) => {
           // Use nextHearingDate if in future, otherwise use hearing date
-          const hearingDate = hearing.nextHearingDate 
-            ? dayjs(hearing.nextHearingDate) 
+          const hearingDate = hearing.nextHearingDate
+            ? dayjs(hearing.nextHearingDate)
             : dayjs(hearing.date);
-          
+
           // Check if within range
-          if (hearingDate.isAfter(startDateVal.subtract(1, "day")) && 
-              hearingDate.isBefore(endDateVal.add(1, "day"))) {
-            
+          if (
+            hearingDate.isAfter(startDateVal.subtract(1, "day")) &&
+            hearingDate.isBefore(endDateVal.add(1, "day"))
+          ) {
             litigationHearings.push({
               _id: hearing._id,
               eventId: `hearing-${hearing._id}`,
@@ -299,9 +302,11 @@ exports.getAllEvents = catchAsync(async (req, res, next) => {
 
   // Merge calendar events and litigation hearings
   const allEvents = [...visibleEvents, ...litigationHearings];
-  
+
   // Sort by start date
-  allEvents.sort((a, b) => new Date(a.startDateTime) - new Date(b.startDateTime));
+  allEvents.sort(
+    (a, b) => new Date(a.startDateTime) - new Date(b.startDateTime),
+  );
 
   res.status(200).json({
     status: "success",

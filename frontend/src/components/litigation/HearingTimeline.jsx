@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useMemo,
-  useCallback,
-  useEffect,
-  useRef,
-} from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Card,
   Button,
@@ -58,7 +52,7 @@ import {
   selectMatterHearings,
 } from "../../redux/features/litigation/litigationSlice";
 import { getAllEvents } from "../../redux/features/calender/calenderSlice";
-import useUserSelectOptions from "../../hooks/useUserSelectOptions";
+import { getUsers, selectUsers } from "../../redux/features/auth/authSlice";
 import HearingTimelineItem from "./HearingTimelineItems";
 import HearingHeader from "./HearingHeader";
 import { SendHearingReportModal } from "../emails";
@@ -72,19 +66,44 @@ const { confirm } = Modal;
 
 // ─── CONSTANTS ──────────────────────────────────────────────────────────────
 
-const GRACE_PERIOD_HOURS = 48;
+export const GRACE_PERIOD_HOURS = 48;
 
-/**
- * Determines the phase and display metadata for a given hearing.
- * Phase controls what fields are editable in the modal.
- *
- * Phases:
- *   "schedule" — hearing is in the future, only scheduling fields editable
- *   "report"   — hearing has passed, within 48h grace, no outcome yet → must file
- *   "edit"     — hearing has passed, within 48h grace, outcome exists → can edit
- *   "locked"   — grace period expired, read-only
- */
-const getPhaseInfo = (hearingDate, hasOutcome) => {
+// ─── PHASE UTILITY ──────────────────────────────────────────────────────────
+//
+// DATA MODEL (from your MongoDB document):
+//   hearing.date            = Date the hearing WAS HELD (actual court date, past/present)
+//   hearing.nextHearingDate = Date the matter comes up NEXT (future session date)
+//   hearing.outcome         = What happened at hearing.date (null = report not filed yet)
+//   hearing.lawyerPresent   = Lawyers for this/next session
+//
+// PHASE RULES:
+//   "schedule" → hearing.date is future. Assign lawyers, set nextHearingDate.
+//                Cannot file outcome (hearing not held yet).
+//   "report"   → hearing.date is past, within 48h grace, no outcome filed yet.
+//   "edit"     → hearing.date is past, within 48h grace, outcome already exists.
+//   "locked"   → grace period expired. Read-only.
+//
+// LAWYER ASSIGNMENT (KEY FIX):
+//   Old logic: canAssignLawyers = hearing.date is future
+//   Problem:   For your data, hearing.date = March 28 (past),
+//              nextHearingDate = April 29 (future). Old logic blocked assignment.
+//   Fixed:     canAssignLawyers = hearing.date is future
+//                                 OR nextHearingDate is future
+//              This lets lawyers be assigned for the upcoming April 29 session
+//              even though the March 28 hearing date has already passed.
+//
+// NEXT HEARING DATE EDITABILITY (KEY FIX):
+//   Old logic: only editable in "schedule" phase
+//   Problem:   "Adjourned" outcome requires setting nextHearingDate AFTER
+//              the hearing (during "report" phase). Restricting to schedule-only
+//              made it impossible to correctly record adjournments.
+//   Fixed:     nextHearingDate editable in all phases except "locked".
+
+export const getPhaseInfo = (
+  hearingDate,
+  hasOutcome,
+  nextHearingDate = null,
+) => {
   const now = dayjs();
   const hearing = dayjs(hearingDate).startOf("day");
   const gracePeriodEnd = hearing.add(GRACE_PERIOD_HOURS, "hour");
@@ -101,7 +120,7 @@ const getPhaseInfo = (hearingDate, hasOutcome) => {
     ? gracePeriodEnd.diff(now, "minute") % 60
     : 0;
 
-  let phase = "schedule";
+  let phase;
   if (isBeforeHearing) {
     phase = "schedule";
   } else if (isWithinGracePeriod) {
@@ -110,12 +129,25 @@ const getPhaseInfo = (hearingDate, hasOutcome) => {
     phase = "locked";
   }
 
-  let displayStatus = "upcoming";
-  if (hasOutcome) displayStatus = "completed";
-  else if (hearing.isSame(now, "day")) displayStatus = "today";
-  else if (hearing.isAfter(now)) displayStatus = "upcoming";
-  else if (isWithinGracePeriod) displayStatus = "pending";
-  else displayStatus = "overdue";
+  let displayStatus;
+  if (hasOutcome) {
+    displayStatus = "completed";
+  } else if (hearing.isSame(now, "day")) {
+    displayStatus = "today";
+  } else if (isBeforeHearing) {
+    displayStatus = "upcoming";
+  } else if (isWithinGracePeriod) {
+    displayStatus = "pending";
+  } else {
+    displayStatus = "overdue";
+  }
+
+  // KEY FIX: Lawyer assignment allowed if hearing.date is future
+  // OR if nextHearingDate is in the future (need lawyers for next session).
+  const hasUpcomingNextSession =
+    !!nextHearingDate && dayjs(nextHearingDate).isAfter(now);
+
+  const canAssignLawyers = isBeforeHearing || hasUpcomingNextSession;
 
   return {
     phase,
@@ -127,11 +159,14 @@ const getPhaseInfo = (hearingDate, hasOutcome) => {
     minutesRemaining,
     gracePeriodEnd,
     hearingDate: hearing,
-    // Urgency flags for UI warnings
     isUrgent: isWithinGracePeriod && hoursRemaining < 12,
     isCritical: isWithinGracePeriod && hoursRemaining < 4,
+    canAssignLawyers,
+    hasUpcomingNextSession,
   };
 };
+
+// ─── OPTIONS ────────────────────────────────────────────────────────────────
 
 const OUTCOME_OPTIONS = [
   { value: "adjourned", label: "Adjourned", color: "orange" },
@@ -171,6 +206,8 @@ const PhaseBanner = React.memo(({ phaseInfo, hasOutcome }) => {
     hoursRemaining,
     minutesRemaining,
     gracePeriodEnd,
+    canAssignLawyers,
+    hasUpcomingNextSession,
   } = phaseInfo;
 
   if (phase === "schedule") {
@@ -182,7 +219,7 @@ const PhaseBanner = React.memo(({ phaseInfo, hasOutcome }) => {
         className="mb-4 rounded-lg border-blue-200"
         message={
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-sm">Scheduling Mode</span>
+            <span className="font-semibold text-sm">Upcoming Hearing</span>
             <Tag color="blue" className="!m-0">
               Pre-Hearing
             </Tag>
@@ -190,7 +227,7 @@ const PhaseBanner = React.memo(({ phaseInfo, hasOutcome }) => {
         }
         description={
           <span className="text-xs">
-            Assign lawyers and configure hearing notice. Outcome and court notes
+            Assign lawyers and set hearing notice. Outcome and court notes
             become available after the hearing date.
           </span>
         }
@@ -199,7 +236,6 @@ const PhaseBanner = React.memo(({ phaseInfo, hasOutcome }) => {
   }
 
   if (phase === "report" || phase === "edit") {
-    // Progress shows time CONSUMED (0% = just started, 100% = almost expired)
     const hoursConsumed = GRACE_PERIOD_HOURS - hoursRemaining;
     const progressPercent = Math.max(
       0,
@@ -237,7 +273,7 @@ const PhaseBanner = React.memo(({ phaseInfo, hasOutcome }) => {
               <span>
                 {phase === "edit"
                   ? "Report editable until grace period ends"
-                  : "Report must be filed within 48 hours of hearing date"}
+                  : "File report within 48 hours of the hearing date"}
               </span>
               <span className="font-medium ml-2 shrink-0">
                 Deadline: {gracePeriodEnd.format("DD MMM, HH:mm")}
@@ -252,6 +288,15 @@ const PhaseBanner = React.memo(({ phaseInfo, hasOutcome }) => {
               showInfo={false}
               size="small"
             />
+            {hasUpcomingNextSession && (
+              <div className="flex items-center gap-2 text-xs text-blue-600 bg-blue-50 rounded p-2">
+                <CalendarOutlined className="shrink-0" />
+                <span>
+                  Next session is already scheduled. Lawyers can still be
+                  assigned below.
+                </span>
+              </div>
+            )}
             {isCritical && (
               <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 rounded p-2">
                 <WarningOutlined className="mt-0.5 shrink-0" />
@@ -282,13 +327,22 @@ const PhaseBanner = React.memo(({ phaseInfo, hasOutcome }) => {
           </div>
         }
         description={
-          <span className="text-xs">
-            The 48-hour grace period ended on{" "}
-            <strong>{gracePeriodEnd.format("DD MMM YYYY [at] HH:mm")}</strong>.{" "}
-            {hasOutcome
-              ? "Report is now read-only."
-              : "Contact an administrator to file a late report."}
-          </span>
+          <div className="space-y-1.5">
+            <span className="text-xs">
+              Grace period ended on{" "}
+              <strong>{gracePeriodEnd.format("DD MMM YYYY [at] HH:mm")}</strong>
+              .{" "}
+              {hasOutcome
+                ? "Report is now read-only."
+                : "Contact an administrator to file a late report."}
+            </span>
+            {canAssignLawyers && (
+              <div className="text-xs text-blue-600 bg-blue-50 rounded p-2 flex items-center gap-1.5 mt-1">
+                <TeamOutlined />
+                Lawyer assignment for the next session is still available.
+              </div>
+            )}
+          </div>
         }
       />
     );
@@ -305,14 +359,12 @@ const FieldLockIndicator = React.memo(({ phase, fieldType }) => {
   const isReportField = ["outcome", "notes"].includes(fieldType);
   const isLocked =
     (isReportField && phase === "schedule") || phase === "locked";
-
   if (!isLocked) return null;
-
   return (
     <Tooltip
       title={
         phase === "schedule"
-          ? "Available after hearing date"
+          ? "Available after the hearing date"
           : "Grace period expired — contact admin"
       }>
       <LockOutlined className="text-slate-400 text-xs ml-1.5" />
@@ -322,7 +374,7 @@ const FieldLockIndicator = React.memo(({ phase, fieldType }) => {
 
 FieldLockIndicator.displayName = "FieldLockIndicator";
 
-// ─── STATS CARD ─────────────────────────────────────────────────────────────
+// ─── STAT CARD ──────────────────────────────────────────────────────────────
 
 const StatCard = React.memo(({ label, value, icon, colorClass }) => (
   <div
@@ -347,8 +399,9 @@ const HearingTimeline = ({
   const dispatch = useDispatch();
   const loading = useSelector(selectActionLoading);
   const matterHearings = useSelector(selectMatterHearings);
+  const allUsers = useSelector(selectUsers);
+  const usersLoading = useSelector((state) => state.auth?.loading ?? false);
 
-  // Prefer Redux-fetched hearings over prop-passed ones
   const hearings = matterHearings.length > 0 ? matterHearings : propsHearings;
 
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -358,32 +411,25 @@ const HearingTimeline = ({
   const [showSendReportModal, setShowSendReportModal] = useState(false);
   const [form] = Form.useForm();
 
-  // Stable string ID to avoid re-renders
   const stableMatterId = useMemo(() => String(matterId || ""), [matterId]);
 
-  // ── Fetch lawyers for the select ──────────────────────────────────────────
-  // FIX: Previously `data` was passed directly to the Select as options.
-  // useUserSelectOptions returns normalized { value, label } objects in `data`
-  // for non-fetchAll calls, but the API response shape can vary.
-  // We use `allUsers` which is guaranteed to be a flat normalized array.
-  const {
-    allUsers: lawyersOptions,
-    loading: lawyersLoading,
-    error: lawyersError,
-  } = useUserSelectOptions({
-    type: "lawyers",
-    lawyerOnly: true,
-    autoFetch: true,
-  });
-
-  // Debug: log if no lawyers loaded (remove in production)
   useEffect(() => {
-    if (lawyersError) {
-      console.warn("[HearingTimeline] Failed to load lawyers:", lawyersError);
-    }
-  }, [lawyersError]);
+    if (isModalVisible) dispatch(getUsers());
+  }, [isModalVisible, dispatch]);
 
-  // ── Fetch hearings on mount ────────────────────────────────────────────────
+  const lawyersOptions = useMemo(() => {
+    if (!allUsers?.data) return [];
+    return allUsers.data
+      .filter((u) => u.userType === "lawyer" || u.isLawyer === true)
+      .map((u) => ({
+        value: u._id,
+        label:
+          `${u.firstName || ""} ${u.lastName || ""}`.trim() ||
+          u.email ||
+          "Unknown",
+      }));
+  }, [allUsers]);
+
   useEffect(() => {
     if (!stableMatterId) return;
     dispatch(fetchMatterHearings(stableMatterId));
@@ -392,19 +438,21 @@ const HearingTimeline = ({
     };
   }, [dispatch, stableMatterId]);
 
-  // ── Sorted hearings with phase metadata ───────────────────────────────────
+  // KEY FIX: Pass h.nextHearingDate as third arg to getPhaseInfo so
+  // canAssignLawyers is correctly computed for each hearing.
   const sortedHearingsWithPhase = useMemo(
     () =>
       [...hearings]
         .sort((a, b) => new Date(b.date) - new Date(a.date))
         .map((h) => ({
           ...h,
-          phaseInfo: getPhaseInfo(h.date, !!h.outcome),
+          phaseInfo: getPhaseInfo(h.date, !!h.outcome, h.nextHearingDate),
         })),
     [hearings],
   );
 
-  // ── Next upcoming hearing (from nextHearingDate fields) ───────────────────
+  // The hearing record with the soonest upcoming nextHearingDate.
+  // We show this in HearingHeader as the "Next Hearing" banner.
   const nextHearing = useMemo(() => {
     const now = Date.now();
     return (
@@ -419,15 +467,8 @@ const HearingTimeline = ({
     );
   }, [hearings]);
 
-  // ── Stats ─────────────────────────────────────────────────────────────────
   const stats = useMemo(() => {
-    const acc = {
-      today: 0,
-      upcoming: 0,
-      pending: 0,
-      completed: 0,
-      overdue: 0,
-    };
+    const acc = { today: 0, upcoming: 0, pending: 0, completed: 0, overdue: 0 };
     for (const h of sortedHearingsWithPhase) {
       const s = h.phaseInfo.displayStatus;
       if (s in acc) acc[s]++;
@@ -435,7 +476,7 @@ const HearingTimeline = ({
     return { total: hearings.length, ...acc };
   }, [sortedHearingsWithPhase, hearings.length]);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── HANDLERS ──────────────────────────────────────────────────────────────
 
   const handleAddHearing = useCallback(() => {
     setEditingHearing(null);
@@ -447,14 +488,17 @@ const HearingTimeline = ({
 
   const handleEditHearing = useCallback(
     (hearing) => {
-      const phaseInfo = getPhaseInfo(hearing.date, !!hearing.outcome);
+      // KEY FIX: Pass nextHearingDate so canAssignLawyers reflects reality
+      const phaseInfo = getPhaseInfo(
+        hearing.date,
+        !!hearing.outcome,
+        hearing.nextHearingDate,
+      );
 
-      // Build form values: always include scheduling fields
       const formValues = {
         date: dayjs(hearing.date),
         purpose: hearing.purpose,
         hearingNoticeRequired: hearing.hearingNoticeRequired ?? false,
-        // FIX: Normalize lawyerPresent — can be array of objects or plain IDs
         lawyerPresent: (hearing.lawyerPresent ?? []).map((l) =>
           typeof l === "object" ? l._id || l.id : l,
         ),
@@ -463,7 +507,6 @@ const HearingTimeline = ({
           : null,
       };
 
-      // Pre-fill report fields if an outcome already exists
       if (hearing.outcome) {
         formValues.outcome = hearing.outcome;
         formValues.notes = hearing.notes ?? "";
@@ -484,7 +527,7 @@ const HearingTimeline = ({
         title: "Delete Hearing",
         icon: <WarningOutlined className="text-red-500" />,
         content:
-          "This hearing and its calendar event will be permanently removed. Continue?",
+          "This hearing record and its calendar event will be permanently removed. Continue?",
         okText: "Delete",
         okType: "danger",
         onOk: async () => {
@@ -510,7 +553,6 @@ const HearingTimeline = ({
         date: values.date.toISOString(),
         nextHearingDate: values.nextHearingDate?.toISOString() ?? null,
       };
-
       try {
         if (editingHearing) {
           await dispatch(
@@ -527,7 +569,6 @@ const HearingTimeline = ({
           ).unwrap();
           message.success("Hearing added and synced to calendar");
         }
-
         dispatch(getAllEvents({}));
         setIsModalVisible(false);
         setEditingHearing(null);
@@ -550,18 +591,36 @@ const HearingTimeline = ({
 
   const requiresAdjournedDate = selectedOutcome === REQUIRES_ADJOURNED_DATE;
 
-  // Phase info for the hearing currently being edited
+  // KEY FIX: Pass nextHearingDate as third arg
   const currentPhaseInfo = useMemo(
     () =>
       editingHearing
-        ? getPhaseInfo(editingHearing.date, !!editingHearing.outcome)
+        ? getPhaseInfo(
+            editingHearing.date,
+            !!editingHearing.outcome,
+            editingHearing.nextHearingDate,
+          )
         : null,
     [editingHearing],
   );
 
   const isModalLocked = modalPhase === "locked";
+  const isSchedulePhase = modalPhase === "schedule";
 
-  // ── STAT CARDS CONFIG ─────────────────────────────────────────────────────
+  // KEY FIX: canAssignLawyers from phaseInfo accounts for nextHearingDate.
+  // For new hearings, always allow (no editingHearing yet).
+  const canAssignLawyers = editingHearing
+    ? (currentPhaseInfo?.canAssignLawyers ?? true)
+    : true;
+
+  // Report fields: only editable after hearing date, within grace period
+  const canEditReportFields = !isSchedulePhase && !isModalLocked;
+
+  // KEY FIX: nextHearingDate editable in ALL non-locked phases.
+  // The "Adjourned" outcome requires setting nextHearingDate during the
+  // REPORT phase (after the hearing), not just the schedule phase.
+  const canEditNextHearingDate = !isModalLocked;
+
   const statCards = useMemo(
     () => [
       {
@@ -598,18 +657,16 @@ const HearingTimeline = ({
     [stats],
   );
 
-  // ─────────────────────────────────────────────────────────────────────────
-
   return (
     <div className="space-y-5">
-      {/* ── STATS ROW ──────────────────────────────────────────────── */}
+      {/* ── STATS ──────────────────────────────────────────── */}
       <div className="grid grid-cols-5 gap-3">
         {statCards.map((s) => (
           <StatCard key={s.label} {...s} />
         ))}
       </div>
 
-      {/* ── NEXT HEARING ALERT ─────────────────────────────────────── */}
+      {/* ── NEXT HEARING HEADER ────────────────────────────── */}
       {nextHearing && (
         <HearingHeader
           nextHearing={nextHearing}
@@ -617,7 +674,7 @@ const HearingTimeline = ({
         />
       )}
 
-      {/* ── TIMELINE CARD ──────────────────────────────────────────── */}
+      {/* ── TIMELINE ───────────────────────────────────────── */}
       <Card
         title={
           <div className="flex items-center justify-between py-1">
@@ -684,16 +741,12 @@ const HearingTimeline = ({
         )}
       </Card>
 
-      {/* ── ADD / EDIT MODAL ───────────────────────────────────────── */}
+      {/* ── MODAL ──────────────────────────────────────────── */}
       <Modal
         title={
           <div className="flex items-center gap-3">
             <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                editingHearing
-                  ? "bg-blue-100 text-blue-600"
-                  : "bg-violet-100 text-violet-600"
-              }`}>
+              className={`w-9 h-9 rounded-xl flex items-center justify-center ${editingHearing ? "bg-blue-100 text-blue-600" : "bg-violet-100 text-violet-600"}`}>
               {editingHearing ? <EditOutlined /> : <PlusOutlined />}
             </div>
             <div>
@@ -704,10 +757,10 @@ const HearingTimeline = ({
                 <p className="text-[11px] font-medium text-slate-400">
                   {
                     {
-                      schedule: "Scheduling Mode",
-                      report: "Filing Mode — report required",
-                      edit: "Editing Mode",
-                      locked: "View Only — grace period expired",
+                      schedule: "Upcoming — assign lawyers, set next date",
+                      report: "Report required — hearing has passed",
+                      edit: "Edit report — within grace period",
+                      locked: "View only — grace period expired",
                     }[currentPhaseInfo.phase]
                   }
                 </p>
@@ -721,7 +774,6 @@ const HearingTimeline = ({
         width={680}
         destroyOnClose
         className="hearing-modal">
-        {/* Phase Banner (edit mode only) */}
         {editingHearing && currentPhaseInfo && (
           <PhaseBanner
             phaseInfo={currentPhaseInfo}
@@ -734,7 +786,7 @@ const HearingTimeline = ({
           layout="vertical"
           onFinish={handleSubmit}
           requiredMark={false}>
-          {/* ── SCHEDULING SECTION ─────────────────────────────────── */}
+          {/* ── HEARING DETAILS ──────────────────────────── */}
           <div className="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-200">
             <div className="flex items-center gap-2 mb-3">
               <CalendarOutlined className="text-slate-500 text-xs" />
@@ -755,7 +807,6 @@ const HearingTimeline = ({
                   showTime
                   style={{ width: "100%" }}
                   format="DD/MM/YYYY HH:mm"
-                  // Date is locked when editing — immutable record
                   disabled={!!editingHearing}
                   className="rounded-lg"
                   size="large"
@@ -772,12 +823,12 @@ const HearingTimeline = ({
                 />
               </Form.Item>
 
-              {/* ── LAWYERS SELECT ─────────────────────────────────────────
-                  FIX: Use `allUsers` from hook (guaranteed flat normalized array).
-                  The Select `options` prop expects [{ value, label }] which is
-                  exactly what `allUsers` contains after normalization.
-                  FIX: Added `optionFilterProp="label"` so search works correctly.
-                  FIX: Added `notFoundContent` for clear empty/loading states.
+              {/* ── LAWYERS ──────────────────────────────────────────────
+                  canAssignLawyers = true when:
+                  - hearing.date is in future (schedule phase), OR
+                  - nextHearingDate is in future (next session exists)
+                  This means for your March 28 hearing with April 29 nextHearingDate,
+                  lawyers CAN be assigned even though March 28 has passed.
               ── */}
               <Form.Item
                 name="lawyerPresent"
@@ -785,32 +836,42 @@ const HearingTimeline = ({
                   <span className="flex items-center gap-1.5">
                     <UserOutlined className="text-xs text-slate-400" />
                     Assign Lawyers
+                    {canAssignLawyers &&
+                      currentPhaseInfo?.hasUpcomingNextSession && (
+                        <Tag
+                          color="blue"
+                          className="!text-[10px] !px-1.5 !py-0 ml-1">
+                          For next session
+                        </Tag>
+                      )}
+                    {!canAssignLawyers && (
+                      <Tooltip title="No upcoming sessions — lawyer assignment locked">
+                        <LockOutlined className="text-slate-400 text-xs ml-1" />
+                      </Tooltip>
+                    )}
                   </span>
                 }>
                 <Select
                   mode="multiple"
                   placeholder={
-                    lawyersLoading
+                    usersLoading
                       ? "Loading lawyers…"
-                      : lawyersOptions.length === 0
-                        ? "No lawyers found"
-                        : "Select lawyers to assign"
+                      : !canAssignLawyers
+                        ? "No upcoming session — locked"
+                        : lawyersOptions.length === 0
+                          ? "No lawyers found"
+                          : "Select lawyers to assign"
                   }
                   options={lawyersOptions}
-                  loading={lawyersLoading}
-                  disabled={isModalLocked}
+                  loading={usersLoading}
+                  disabled={!canAssignLawyers}
                   showSearch
-                  // FIX: filter by label (name), not by value (_id)
                   optionFilterProp="label"
                   size="large"
                   maxTagCount="responsive"
                   notFoundContent={
-                    lawyersLoading ? (
+                    usersLoading ? (
                       <Spin size="small" />
-                    ) : lawyersError ? (
-                      <span className="text-xs text-red-500 px-2">
-                        Failed to load lawyers
-                      </span>
                     ) : (
                       <span className="text-xs text-slate-400 px-2">
                         No lawyers available
@@ -835,20 +896,39 @@ const HearingTimeline = ({
               </Checkbox>
             </Form.Item>
 
-            {/* Next Hearing Date — available in scheduling + report phases */}
+            {/* ── NEXT HEARING DATE ────────────────────────────────────
+                KEY FIX: Available in ALL non-locked phases.
+                - In schedule phase: set future session date proactively
+                - In report/edit phase: REQUIRED when outcome is "Adjourned",
+                  also useful to record next session after any hearing.
+                - Hidden when outcome is "Adjourned" (shown in report section
+                  as "Adjourned To" with required validation instead).
+            ── */}
             {!requiresAdjournedDate && (
               <Form.Item
                 name="nextHearingDate"
-                label="Next Hearing Date"
-                tooltip="Set the date of the next court session (optional unless outcome is Adjourned)">
+                label={
+                  <span className="flex items-center gap-1.5">
+                    <CalendarOutlined className="text-blue-400 text-xs" />
+                    Next Hearing Date
+                    {!isSchedulePhase && !isModalLocked && (
+                      <Tag
+                        color="green"
+                        className="!text-[10px] !px-1.5 !py-0 ml-1">
+                        Set adjournment date here
+                      </Tag>
+                    )}
+                  </span>
+                }
+                tooltip="When this matter comes up next in court">
                 <DatePicker
                   showTime
                   style={{ width: "100%" }}
                   format="DD/MM/YYYY HH:mm"
-                  placeholder="Select next hearing date (optional)"
+                  placeholder="Select next session date"
                   className="rounded-lg"
                   size="large"
-                  disabled={isModalLocked}
+                  disabled={!canEditNextHearingDate}
                   disabledDate={(current) =>
                     current && current < dayjs().startOf("day")
                   }
@@ -857,7 +937,7 @@ const HearingTimeline = ({
             )}
           </div>
 
-          {/* ── COURT REPORT SECTION (post-hearing) ────────────────── */}
+          {/* ── COURT REPORT ─────────────────────────────── */}
           {(modalPhase === "report" ||
             modalPhase === "edit" ||
             modalPhase === "locked") && (
@@ -869,11 +949,7 @@ const HearingTimeline = ({
               </Divider>
 
               <div
-                className={`rounded-xl p-4 border-2 ${
-                  isModalLocked
-                    ? "bg-slate-50 border-slate-200"
-                    : "bg-blue-50 border-blue-200"
-                }`}>
+                className={`rounded-xl p-4 border-2 ${isModalLocked ? "bg-slate-50 border-slate-200" : "bg-blue-50 border-blue-200"}`}>
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-2">
                     <FileTextOutlined
@@ -882,15 +958,17 @@ const HearingTimeline = ({
                       }
                     />
                     <span
-                      className={`text-xs font-bold uppercase tracking-widest ${
-                        isModalLocked ? "text-slate-400" : "text-blue-700"
-                      }`}>
+                      className={`text-xs font-bold uppercase tracking-widest ${isModalLocked ? "text-slate-400" : "text-blue-700"}`}>
                       Outcome & Notes
                     </span>
                   </div>
-                  {isModalLocked && (
+                  {isModalLocked ? (
                     <Tag color="default" icon={<LockOutlined />}>
                       Read Only
+                    </Tag>
+                  ) : (
+                    <Tag color="green" icon={<CheckCircleOutlined />}>
+                      Ready to file
                     </Tag>
                   )}
                 </div>
@@ -899,7 +977,7 @@ const HearingTimeline = ({
                   name="outcome"
                   label={
                     <span className="flex items-center gap-1">
-                      Outcome
+                      Outcome{" "}
                       <FieldLockIndicator
                         phase={modalPhase}
                         fieldType="outcome"
@@ -917,21 +995,26 @@ const HearingTimeline = ({
                     options={OUTCOME_OPTIONS}
                     onChange={setSelectedOutcome}
                     size="large"
-                    disabled={isModalLocked}
+                    disabled={!canEditReportFields}
                     allowClear
                   />
                 </Form.Item>
 
-                {/* Adjourned-to date — shown inline in report section */}
+                {/* Adjourned-to date: shown here with required validation */}
                 {requiresAdjournedDate && (
                   <Form.Item
                     name="nextHearingDate"
-                    label="Adjourned To"
+                    label={
+                      <span className="flex items-center gap-1.5">
+                        <CalendarOutlined className="text-orange-400 text-xs" />
+                        Adjourned To
+                      </span>
+                    }
                     rules={[
                       {
                         required: true,
                         message:
-                          "Next hearing date is required for adjourned outcome",
+                          "Next hearing date required for adjourned outcome",
                       },
                     ]}>
                     <DatePicker
@@ -941,7 +1024,7 @@ const HearingTimeline = ({
                       placeholder="Select adjournment date"
                       className="rounded-lg"
                       size="large"
-                      disabled={isModalLocked}
+                      disabled={!canEditReportFields}
                       disabledDate={(current) =>
                         current && current < dayjs().startOf("day")
                       }
@@ -953,7 +1036,7 @@ const HearingTimeline = ({
                   name="notes"
                   label={
                     <span className="flex items-center gap-1">
-                      Court Notes
+                      Court Notes{" "}
                       <FieldLockIndicator
                         phase={modalPhase}
                         fieldType="notes"
@@ -970,7 +1053,7 @@ const HearingTimeline = ({
                     rows={5}
                     placeholder="Detailed summary of what transpired in court…"
                     className="rounded-lg"
-                    disabled={isModalLocked}
+                    disabled={!canEditReportFields}
                     maxLength={10000}
                     showCount
                   />
@@ -979,9 +1062,8 @@ const HearingTimeline = ({
             </>
           )}
 
-          {/* ── FOOTER ACTIONS ─────────────────────────────────────── */}
+          {/* ── FOOTER ───────────────────────────────────── */}
           <div className="flex items-center justify-between mt-6">
-            {/* Send to Client — only when editing an existing hearing with outcome */}
             <div>
               {editingHearing?.outcome && (
                 <Button
@@ -993,7 +1075,6 @@ const HearingTimeline = ({
                 </Button>
               )}
             </div>
-
             <Space size="small">
               <Button onClick={handleModalClose} size="large">
                 Cancel
@@ -1011,11 +1092,7 @@ const HearingTimeline = ({
                       <CheckCircleOutlined />
                     )
                   }
-                  className={`font-semibold ${
-                    modalPhase === "report" || modalPhase === "edit"
-                      ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-600"
-                      : "bg-violet-600 hover:bg-violet-700 border-violet-600"
-                  }`}>
+                  className={`font-semibold ${modalPhase === "report" || modalPhase === "edit" ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-600" : "bg-violet-600 hover:bg-violet-700 border-violet-600"}`}>
                   {editingHearing
                     ? modalPhase === "report"
                       ? "File Report"
@@ -1030,7 +1107,6 @@ const HearingTimeline = ({
         </Form>
       </Modal>
 
-      {/* ── SEND REPORT MODAL ──────────────────────────────────────── */}
       <SendHearingReportModal
         visible={showSendReportModal}
         onClose={() => setShowSendReportModal(false)}
