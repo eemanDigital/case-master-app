@@ -1,5 +1,27 @@
+// ─── FIX 1: In HearingTimeline.jsx ─────────────────────────────────────────
+// Change this line (around the HearingHeader render):
+//
+// BEFORE:
+//   {nextHearing && <HearingHeader nextHearing={nextHearing} />}
+//
+// AFTER:
+//   {nextHearing && (
+//     <HearingHeader
+//       nextHearing={nextHearing}
+//       onAssignLawyers={handleEditHearing}   // ← pass the handler
+//     />
+//   )}
+//
+// handleEditHearing already exists in HearingTimeline — it opens the modal
+// pre-filled with the hearing's data, including the lawyer select field.
+// No other changes needed in HearingTimeline.jsx.
+
+// ─── FIX 2: HearingHeader.jsx ───────────────────────────────────────────────
+// The button's onClick calls onAssignLawyers(nextHearing) which was undefined.
+// Now it receives the handler and works correctly.
+
 import React from "react";
-import { Card, Button, Avatar, Tooltip, Badge } from "antd";
+import { Card, Button, Avatar, Tooltip } from "antd";
 import {
   ThunderboltOutlined,
   CalendarOutlined,
@@ -11,6 +33,12 @@ import { formatDate, formatName } from "../../utils/formatters";
 
 const HearingHeader = ({ nextHearing, onAssignLawyers }) => {
   if (!nextHearing) return null;
+
+  const handleAssign = () => {
+    if (typeof onAssignLawyers === "function") {
+      onAssignLawyers(nextHearing);
+    }
+  };
 
   return (
     <Card
@@ -32,7 +60,7 @@ const HearingHeader = ({ nextHearing, onAssignLawyers }) => {
           <Button
             type="primary"
             icon={<TeamOutlined />}
-            onClick={() => onAssignLawyers(nextHearing)}
+            onClick={handleAssign}
             size="small"
             className="bg-blue-600">
             Assign Lawyers
@@ -78,9 +106,13 @@ const HearingHeader = ({ nextHearing, onAssignLawyers }) => {
                 ))}
               </Avatar.Group>
             ) : (
-              <div className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg">
+              <div
+                className="flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg cursor-pointer hover:bg-amber-100 transition-colors"
+                onClick={handleAssign}>
                 <WarningOutlined className="text-sm" />
-                <span className="text-xs font-medium">No lawyers assigned</span>
+                <span className="text-xs font-medium">
+                  No lawyers assigned — click to assign
+                </span>
               </div>
             )}
           </div>

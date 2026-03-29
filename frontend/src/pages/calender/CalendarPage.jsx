@@ -87,6 +87,8 @@ const CalendarPage = () => {
     }
   };
 
+  console.log("Rendering CalendarPage with events:", events);
+
   const handleFormSubmit = async (eventData) => {
     try {
       // Check if date is blocked

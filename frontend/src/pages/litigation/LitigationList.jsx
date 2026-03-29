@@ -210,10 +210,7 @@ const LitigationList = () => {
 
   // Handle create new matter - redirect to matter creation with litigation type
   const handleCreate = () => {
-    const returnPath = `/dashboard/matters/litigation/:matterId/create`;
-    navigate(
-      `/dashboard/matters/create?type=litigation&returnTo=${encodeURIComponent(returnPath)}`,
-    );
+    navigate("/dashboard/matters/create?type=litigation");
   };
 
   // Table row selection

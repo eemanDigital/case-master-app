@@ -791,7 +791,7 @@ const litigationSlice = createSlice({
         state.actionLoading = false;
         state._hearingsSnapshot = null;
 
-        const serverHearings = action.payload.data?.hearings;
+        const serverHearings = action.payload.data?.litigationDetail?.hearings;
         if (serverHearings) {
           // Use authoritative server list — removes the optimistic item.
           state.matterHearings = serverHearings;
@@ -858,7 +858,7 @@ const litigationSlice = createSlice({
         state.actionLoading = false;
         state._hearingSnapshot = null;
 
-        const serverHearings = action.payload.data?.hearings;
+        const serverHearings = action.payload.data?.litigationDetail?.hearings;
         if (serverHearings) {
           state.matterHearings = serverHearings;
         } else {
@@ -927,7 +927,7 @@ const litigationSlice = createSlice({
         state._hearingsSnapshot = null;
 
         // Prefer authoritative server list if returned.
-        const serverHearings = action.payload.data?.hearings;
+        const serverHearings = action.payload.data?.litigationDetail?.hearings;
         if (serverHearings) {
           state.matterHearings = serverHearings;
           state.matterHearingsStats = computeHearingsStats(serverHearings);
