@@ -529,19 +529,22 @@ const connectWithRetry = async (retries = 5, delay = 5000) => {
 connectWithRetry();
 
 // Start reminder service after database connection
-  mongoose.connection.once("open", () => {
-    console.log("✅ Database connected, starting services...");
+mongoose.connection.once("open", () => {
+  console.log("✅ Database connected, starting services...");
 
-    // Start CAC Compliance Scheduler
-    try {
-      const cacScheduler = require("./services/cacScheduler");
-      cacScheduler.start();
-      console.log("✅ CAC Compliance Scheduler started");
-    } catch (error) {
-      console.error("❌ Failed to start CAC Compliance Scheduler:", error.message);
-    }
+  // Start CAC Compliance Scheduler
+  try {
+    const cacScheduler = require("./services/cacScheduler");
+    cacScheduler.start();
+    console.log("✅ CAC Compliance Scheduler started");
+  } catch (error) {
+    console.error(
+      "❌ Failed to start CAC Compliance Scheduler:",
+      error.message,
+    );
+  }
 
-    // Start the reminder service (checks every minute)
+  // Start the reminder service (checks every minute)
   try {
     const reminderService = require("./services/reminderService");
     reminderService.start(60000); // Check every 60 seconds

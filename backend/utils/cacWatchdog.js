@@ -1,8 +1,5 @@
-const puppeteer = require("puppeteer-extra");
-const StealthPlugin = require("puppeteer-extra-plugin-stealth");
+const puppeteer = require("puppeteer");
 const fs = require("fs");
-
-puppeteer.use(StealthPlugin());
 
 const CAC_SEARCH_URL = "https://icrp.cac.gov.ng/public-search";
 
@@ -20,21 +17,12 @@ const checkCacStatus = async (
   let browser = null;
 
   try {
-    const isProduction = process.env.NODE_ENV === "production";
-    const executablePath = isProduction
-      ? null
-      : process.env.PUPPETEER_EXECUTABLE_PATH || null;
-
     browser = await puppeteer.launch({
-      executablePath,
-      headless: "new",
+      headless: true,
       args: [
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
-        "--disable-accelerated-2d-canvas",
-        "--no-first-run",
-        "--no-zygote",
         "--disable-gpu",
         "--disable-web-security",
         "--allow-running-insecure-content",

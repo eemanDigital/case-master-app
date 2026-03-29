@@ -665,16 +665,19 @@ exports.createMonitoredEntity = catchAsync(async (req, res, next) => {
     }
   } catch (error) {
     console.error("Initial CAC status check failed:", error.message);
+    initialWatchdogNotes = result?.error
+      ? `${notes || ""} | Initial check failed: ${result.error}`.trim()
+      : `${notes || ""} | Initial check failed: ${error.message}`.trim();
   }
 
   // Use CAC entity name if not provided, or validate if both provided
-  const finalEntityName = entityName || cacEntityName || req.body.fallbackName || `Company ${registrationNumber}`;
-
-  // Only block if explicitly required and truly missing
-  if (!finalEntityName && req.body.requireVerifiedName === true) {
-    return next(
-      new AppError("Could not determine entity name. Please provide it manually.", 400),
-    );
+  const finalEntityName = entityName || cacEntityName;
+  if (!finalEntityName) {
+    return res.status(400).json({
+      success: false,
+      message: "Could not determine entity name. Please provide it manually.",
+      error: initialWatchdogNotes || "The CAC portal is currently unreachable or the browser failed to launch.",
+    });
   }
 
   const entity = await ComplianceTracker.create({

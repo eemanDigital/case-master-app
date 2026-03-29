@@ -347,7 +347,7 @@ const STYLE = `
   }
 
   /* ── FEATURES ── */
-  .lm-features { padding: 120px 32px; }
+  .lm-features { padding: 80px 32px; }
   .lm-feat-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
   .lm-feat-card {
     background: var(--ink2); border: 1px solid var(--rim);
@@ -884,6 +884,10 @@ export default function HomePage() {
   const rFG = useReveal();
   const rSL = useReveal();
   const rSR = useReveal();
+  const rTL = useReveal();
+  const rTR = useReveal();
+  const rCL = useReveal();
+  const rCR = useReveal();
   const rStats = useReveal();
   const rTH = useReveal();
   const rTG = useReveal();
@@ -1219,41 +1223,7 @@ export default function HomePage() {
         {/* ── TEMPLATES SHOWCASE ── */}
         <section id="templates" className="lm-showcase">
           <div className="lm-showcase-inner">
-            <div ref={rSL} className="lm-reveal">
-              <div className="lm-showcase-screen">
-                <div className="lm-screen-hdr">
-                  <span className="lm-screen-title">
-                    Legal Templates Library
-                  </span>
-                  <span className="lm-pill lm-pill-blue">● 15+ templates</span>
-                </div>
-                <div className="lm-screen-body">
-                  {[
-                    { t: "Employment Contract", c: "Contracts" },
-                    { t: "Service Agreement", c: "Contracts" },
-                    { t: "Writ of Summons", c: "Court Processes" },
-                    { t: "Affidavit of Loss", c: "Court Processes" },
-                    { t: "Deed of Assignment", c: "Property" },
-                    { t: "Memorandum of Understanding", c: "Corporate" },
-                  ].map((m, i) => (
-                    <div key={i} className="lm-matter-row">
-                      <div className="lm-m-av">📄</div>
-                      <div className="lm-m-info">
-                        <div className="lm-m-name">{m.t}</div>
-                        <div className="lm-m-type">{m.c}</div>
-                      </div>
-                      <span
-                        className="lm-pill lm-pill-blue"
-                        style={{ marginRight: 8 }}>
-                        Available
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div ref={rSR} className="lm-reveal lm-rd2">
+            <div ref={rTR} className="lm-reveal">
               <div className="lm-eyebrow">
                 <div className="lm-eyebrow-line" />
                 Legal Templates
@@ -1302,24 +1272,80 @@ export default function HomePage() {
                 ))}
               </ul>
             </div>
+
+            <div ref={rTL} className="lm-reveal lm-rd2">
+              <div className="lm-showcase-screen">
+                <div className="lm-screen-hdr">
+                  <span className="lm-screen-title">
+                    Legal Templates Library
+                  </span>
+                  <span className="lm-pill lm-pill-blue">● 15+ templates</span>
+                </div>
+                <div className="lm-screen-body">
+                  {[
+                    { t: "Employment Contract", c: "Contracts" },
+                    { t: "Service Agreement", c: "Contracts" },
+                    { t: "Writ of Summons", c: "Court Processes" },
+                    { t: "Affidavit of Loss", c: "Court Processes" },
+                    { t: "Deed of Assignment", c: "Property" },
+                    { t: "Memorandum of Understanding", c: "Corporate" },
+                  ].map((m, i) => (
+                    <div key={i} className="lm-matter-row">
+                      <div className="lm-m-av">📄</div>
+                      <div className="lm-m-info">
+                        <div className="lm-m-name">{m.t}</div>
+                        <div className="lm-m-type">{m.c}</div>
+                      </div>
+                      <span
+                        className="lm-pill lm-pill-blue"
+                        style={{ marginRight: 8 }}>
+                        Available
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
         {/* ── CAC COMPLIANCE SHOWCASE ── */}
         <section id="cac-compliance" className="lm-showcase">
           <div className="lm-showcase-inner">
-            <div ref={rSL} className="lm-reveal">
+            <div ref={rCL} className="lm-reveal">
               <div className="lm-showcase-screen">
                 <div className="lm-screen-hdr">
-                  <span className="lm-screen-title">CAC Compliance Dashboard</span>
+                  <span className="lm-screen-title">
+                    CAC Compliance Dashboard
+                  </span>
                   <span className="lm-pill lm-pill-blue">● PRO</span>
                 </div>
                 <div className="lm-screen-body">
                   {[
-                    { n: "Babcock Industries Ltd", t: "Private Company", s: "Compliant", p: "lm-pill-blue" },
-                    { n: "Greenfield Ventures Ltd", t: "Small Private Co.", s: "Due in 14 days", p: "lm-pill-amber" },
-                    { n: "Prime Assets LP", t: "Limited Partnership", s: "Overdue", p: "lm-pill-rose" },
-                    { n: "Metro Trust Trustees", t: "Inc. Trustees", s: "Compliant", p: "lm-pill-blue" },
+                    {
+                      n: "Babcock Industries Ltd",
+                      t: "Private Company",
+                      s: "Compliant",
+                      p: "lm-pill-blue",
+                    },
+                    {
+                      n: "Greenfield Ventures Ltd",
+                      t: "Small Private Co.",
+                      s: "Due in 14 days",
+                      p: "lm-pill-amber",
+                    },
+                    {
+                      n: "Prime Assets LP",
+                      t: "Limited Partnership",
+                      s: "Overdue",
+                      p: "lm-pill-rose",
+                    },
+                    {
+                      n: "Metro Trust Trustees",
+                      t: "Inc. Trustees",
+                      s: "Compliant",
+                      p: "lm-pill-blue",
+                    },
                   ].map((m, i) => (
                     <div key={i} className="lm-matter-row">
                       <div className="lm-m-av">🏢</div>
@@ -1327,7 +1353,9 @@ export default function HomePage() {
                         <div className="lm-m-name">{m.n}</div>
                         <div className="lm-m-type">{m.t}</div>
                       </div>
-                      <span className={`lm-pill ${m.p}`} style={{ marginRight: 8 }}>
+                      <span
+                        className={`lm-pill ${m.p}`}
+                        style={{ marginRight: 8 }}>
                         {m.s}
                       </span>
                     </div>
@@ -1336,7 +1364,7 @@ export default function HomePage() {
               </div>
             </div>
 
-            <div ref={rSR} className="lm-reveal lm-rd2">
+            <div ref={rCR} className="lm-reveal lm-rd2">
               <div className="lm-eyebrow">
                 <div className="lm-eyebrow-line" />
                 CAC Compliance Module
@@ -1353,7 +1381,9 @@ export default function HomePage() {
                   fontWeight: 300,
                   lineHeight: 1.72,
                 }}>
-                Comprehensive CAC compliance tracking for Nigerian entities under CAMA 2020. Monitor all 9 entity types, calculate penalties, and generate advisory letters automatically.
+                Comprehensive CAC compliance tracking for Nigerian entities
+                under CAMA 2020. Monitor all 9 entity types, calculate
+                penalties, and generate advisory letters automatically.
               </p>
               <ul className="lm-benefits">
                 {[
