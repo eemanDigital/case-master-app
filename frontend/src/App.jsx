@@ -47,6 +47,8 @@ const VerifyAccount = lazy(() => import("./components/VerifyAccount.jsx"));
 
 // Profile & Settings
 const Profile = lazy(() => import("./pages/Profile.jsx"));
+const Settings = lazy(() => import("./pages/Settings.jsx"));
+const ContactList = lazy(() => import("./pages/ContactList.jsx"));
 
 // Staff Management
 const StaffDetails = lazy(() => import("./pages/StaffDetails.jsx"));
@@ -1178,31 +1180,54 @@ const router = createBrowserRouter(
 
           {/* Settings & Integrations */}
           <Route
-            path="settings/audit-logs"
+            path="settings"
             element={
               <Suspense fallback={<PageLoader />}>
                 <ProtectedStaffRoute>
-                  <AuditLogList />
+                  <Settings />
                 </ProtectedStaffRoute>
               </Suspense>
             }
-          />
+          >
+            <Route
+              path="audit-logs"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedStaffRoute>
+                    <AuditLogList />
+                  </ProtectedStaffRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="webhooks"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedStaffRoute>
+                    <WebhookList />
+                  </ProtectedStaffRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="invitations"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedStaffRoute>
+                    <InvitationList />
+                  </ProtectedStaffRoute>
+                </Suspense>
+              }
+            />
+          </Route>
+
+          {/* Support Tickets (Admin) */}
           <Route
-            path="settings/webhooks"
+            path="contact-list"
             element={
               <Suspense fallback={<PageLoader />}>
                 <ProtectedStaffRoute>
-                  <WebhookList />
-                </ProtectedStaffRoute>
-              </Suspense>
-            }
-          />
-          <Route
-            path="settings/invitations"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <ProtectedStaffRoute>
-                  <InvitationList />
+                  <ContactList />
                 </ProtectedStaffRoute>
               </Suspense>
             }

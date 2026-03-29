@@ -1,7 +1,5 @@
 import { useState, useCallback } from "react";
-import axios from "axios";
-
-const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api/v1";
+import apiService from "../services/api";
 
 export const useDataFetch = () => {
   const [data, setData] = useState(null);
@@ -9,8 +7,8 @@ export const useDataFetch = () => {
   const [error, setError] = useState(null);
 
   const handleResponse = useCallback((response) => {
-    setData(response.data);
-    return response.data;
+    setData(response);
+    return response;
   }, []);
 
   const handleError = useCallback((err) => {
@@ -27,15 +25,26 @@ export const useDataFetch = () => {
     async (endpoint, method = "GET", payload = null) => {
       setLoading(true);
       try {
-        const url = `${baseURL}/${endpoint}`;
-
-        const response = await axios({
-          method,
-          url,
-          data: payload,
-          withCredentials: true,
-        });
-
+        let response;
+        switch (method.toUpperCase()) {
+          case "GET":
+            response = await apiService.get(`/api/v1/${endpoint}`);
+            break;
+          case "POST":
+            response = await apiService.post(`/api/v1/${endpoint}`, payload);
+            break;
+          case "PUT":
+            response = await apiService.put(`/api/v1/${endpoint}`, payload);
+            break;
+          case "PATCH":
+            response = await apiService.patch(`/api/v1/${endpoint}`, payload);
+            break;
+          case "DELETE":
+            response = await apiService.delete(`/api/v1/${endpoint}`);
+            break;
+          default:
+            throw new Error(`Unsupported method: ${method}`);
+        }
         return handleResponse(response);
       } catch (err) {
         return handleError(err);

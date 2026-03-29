@@ -6,128 +6,149 @@ import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import { Form, Input, Select, Button, Card, Typography } from "antd";
 
 const devEmail = import.meta.env.VITE_DEVELOPER_EMAIL;
+const { TextArea } = Input;
+const { Option } = Select;
+const { Title, Text } = Typography;
+
+const categoryOptions = [
+  { value: "support", label: "General Support" },
+  { value: "bug", label: "Bug Report" },
+  { value: "feature", label: "Feature Request" },
+  { value: "billing", label: "Billing Question" },
+  { value: "other", label: "Other" },
+];
+
 const ContactForm = () => {
   useRedirectLogoutUser("/users/login");
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    message: "",
-  });
+  const [form] = Form.useForm();
   const { dataFetcher } = useDataFetch();
   const { user } = useSelector((state) => state.auth);
   const navigate = useNavigate();
-
   const dispatch = useDispatch();
+  const [loading, setLoading] = useState(false);
 
-  const [errors, setErrors] = useState({});
+  const firmName = user?.data?.firmId?.name || "Your Firm";
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const validate = () => {
-    const errors = {};
-    if (!formData.name) errors.name = "Name is required";
-
-    //
-    if (!formData.message) errors.message = "Message is required";
-    return errors;
-  };
-
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const validationErrors = validate();
-    if (Object.keys(validationErrors).length > 0) {
-      setErrors(validationErrors);
-      return;
-    }
-
+  const onFinish = async (values) => {
+    setLoading(true);
     try {
-      const { name, message } = formData;
-      console.log(devEmail);
-      // Prepare email data
       const emailData = {
-        subject: "Contact Request - A.T. Lukman & Co.",
+        subject: `Contact Request - ${firmName}`,
         send_to: devEmail,
-        // send_from: user?.data?.email,
         reply_to: user?.data?.email,
         template: "contactRequest",
         context: {
-          name,
+          name: values.name,
           email: user?.data?.email,
-          message,
+          category: values.category,
+          subject: values.subject,
+          message: values.message,
         },
       };
 
-      // Post data
-      const response = await dataFetcher("contacts", "post", formData);
+      await dataFetcher("contacts", "post", values);
       await dispatch(sendAutomatedCustomEmail(emailData));
 
-      if (response.message === "success") {
-        toast.success("Message sent successfully");
-        navigate("/dashboard"); // Navigate to the dashboard after sending the email
-      }
-      setFormData({ name: "", email: "", message: "" });
-      setErrors({});
+      toast.success("Message sent successfully. We'll get back to you soon!");
+      form.resetFields();
+      navigate("/dashboard");
     } catch (error) {
-      toast.error("Error sending message");
+      toast.error("Error sending message. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h2 className="text-2xl text-center font-medium text-gray-700  mb-4">
-        Contact Developer
-      </h2>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block text-gray-700">Name</label>
-          <input
-            type="text"
+    <div className="max-w-2xl mx-auto p-6">
+      <Card className="shadow-md">
+        <div className="text-center mb-6">
+          <Title level={3} className="mb-1">
+            Contact Support
+          </Title>
+          <Text type="secondary">
+            Have a question or need help? Fill out the form below and we'll get
+            back to you as soon as possible.
+          </Text>
+        </div>
+
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={onFinish}
+          initialValues={{
+            name: user?.data?.name || "",
+            email: user?.data?.email || "",
+          }}
+        >
+          <Form.Item
+            label="Your Name"
             name="name"
-            value={formData.name}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-          />
-          {errors.name && (
-            <div className="text-red-500 text-sm">{errors.name}</div>
-          )}
-        </div>
-        {/* <div className="mb-4">
-          <label className="block text-gray-700">Email</label>
-          <input
-            type="email"
+            rules={[{ required: true, message: "Please enter your name" }]}
+          >
+            <Input placeholder="Enter your full name" />
+          </Form.Item>
+
+          <Form.Item
+            label="Email Address"
             name="email"
-            value={formData.email}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-          />
-          {errors.email && (
-            <div className="text-red-500 text-sm">{errors.email}</div>
-          )}
-        </div> */}
-        <div className="mb-4">
-          <label className="block text-gray-700">Message</label>
-          <textarea
+            rules={[
+              { required: true, message: "Please enter your email" },
+              { type: "email", message: "Please enter a valid email" },
+            ]}
+          >
+            <Input placeholder="Enter your email address" />
+          </Form.Item>
+
+          <Form.Item
+            label="Category"
+            name="category"
+            rules={[{ required: true, message: "Please select a category" }]}
+          >
+            <Select placeholder="Select a category">
+              {categoryOptions.map((opt) => (
+                <Option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            label="Subject"
+            name="subject"
+            rules={[{ required: true, message: "Please enter a subject" }]}
+          >
+            <Input placeholder="Brief description of your inquiry" />
+          </Form.Item>
+
+          <Form.Item
+            label="Message"
             name="message"
-            value={formData.message}
-            onChange={handleChange}
-            className="w-full p-2 border border-gray-300 rounded"
-          />
-          {errors.message && (
-            <div className="text-red-500 text-sm">{errors.message}</div>
-          )}
-        </div>
-        <button
-          type="submit"
-          className="w-full bg-blue-500 text-white p-2 rounded">
-          Send
-        </button>
-      </form>
+            rules={[{ required: true, message: "Please enter your message" }]}
+          >
+            <TextArea
+              rows={5}
+              placeholder="Describe your question or issue in detail"
+            />
+          </Form.Item>
+
+          <Form.Item className="mb-0">
+            <Button
+              type="primary"
+              htmlType="submit"
+              loading={loading}
+              className="w-full"
+              size="large"
+            >
+              Send Message
+            </Button>
+          </Form.Item>
+        </Form>
+      </Card>
     </div>
   );
 };

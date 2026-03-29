@@ -1,10 +1,23 @@
 const express = require("express");
 const router = express.Router();
-const { createContactRequest } = require("../controllers/contactController");
-const { protect } = require("../controllers/authController");
+const {
+  createContactRequest,
+  getAllContacts,
+  getContact,
+  updateContact,
+  deleteContact,
+} = require("../controllers/contactController");
+const { protect, restrictTo } = require("../controllers/authController");
 
 router.use(protect);
-// Create a new contact/help request
+
+// User routes
 router.post("/", createContactRequest);
+
+// Admin routes (admin or super-admin)
+router.get("/", restrictTo("admin", "super-admin"), getAllContacts);
+router.get("/:id", restrictTo("admin", "super-admin"), getContact);
+router.put("/:id", restrictTo("admin", "super-admin"), updateContact);
+router.delete("/:id", restrictTo("admin", "super-admin"), deleteContact);
 
 module.exports = router;

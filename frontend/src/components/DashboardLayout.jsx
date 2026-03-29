@@ -391,7 +391,7 @@ const DashboardLayout = () => {
       key: "help",
       icon: <QuestionCircleOutlined />,
       label: "Help & Support",
-      onClick: () => navigate("/dashboard/help"),
+      onClick: () => navigate("/dashboard/contact-dev"),
     },
     {
       type: "divider",

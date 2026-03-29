@@ -30,9 +30,11 @@ import {
   SafetyCertificateOutlined,
   RobotOutlined,
   ThunderboltOutlined,
+  MessageOutlined,
 } from "@ant-design/icons";
 import { logout, RESET } from "../redux/features/auth/authSlice";
 import { useTheme } from "../providers/ThemeProvider";
+import { useAdminHook } from "../hooks/useAdminHook";
 
 const { Text } = Typography;
 
@@ -41,6 +43,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDarkMode } = useTheme();
+  const { isSuperOrAdmin } = useAdminHook();
 
   const [selectedKeys, setSelectedKeys] = useState(["dashboard"]);
   const [openKeys, setOpenKeys] = useState([]);
@@ -389,23 +392,39 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
       icon: <SettingOutlined />,
       label: "Settings",
       children: [
+        ...(isSuperOrAdmin
+          ? [
+              {
+                key: "audit-logs",
+                icon: <AuditOutlined />,
+                label: "Audit Logs",
+                path: "/dashboard/settings/audit-logs",
+              },
+              {
+                key: "webhooks",
+                icon: <ApiOutlined />,
+                label: "Webhooks",
+                path: "/dashboard/settings/webhooks",
+              },
+              {
+                key: "invitations",
+                icon: <UserAddOutlined />,
+                label: "Invitations",
+                path: "/dashboard/settings/invitations",
+              },
+              {
+                key: "contact-list",
+                icon: <MessageOutlined />,
+                label: "Support Tickets",
+                path: "/dashboard/contact-list",
+              },
+            ]
+          : []),
         {
-          key: "audit-logs",
-          icon: <AuditOutlined />,
-          label: "Audit Logs",
-          path: "/dashboard/settings/audit-logs",
-        },
-        {
-          key: "webhooks",
-          icon: <ApiOutlined />,
-          label: "Webhooks",
-          path: "/dashboard/settings/webhooks",
-        },
-        {
-          key: "invitations",
-          icon: <UserAddOutlined />,
-          label: "Invitations",
-          path: "/dashboard/settings/invitations",
+          key: "profile-settings",
+          icon: <UserOutlined />,
+          label: "Profile",
+          path: "/dashboard/profile",
         },
       ],
     },
