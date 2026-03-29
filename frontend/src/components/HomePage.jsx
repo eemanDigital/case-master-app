@@ -888,6 +888,8 @@ export default function HomePage() {
   const rTR = useReveal();
   const rCL = useReveal();
   const rCR = useReveal();
+  const rCalL = useReveal();
+  const rCalR = useReveal();
   const rStats = useReveal();
   const rTH = useReveal();
   const rTG = useReveal();
@@ -1591,7 +1593,7 @@ export default function HomePage() {
         {/* ── CALENDAR SHOWCASE ── */}
         <section id="calendar" className="lm-showcase">
           <div className="lm-showcase-inner">
-            <div className="lm-reveal">
+            <div ref={rCalL} className="lm-reveal">
               <div className="lm-eyebrow">
                 <div className="lm-eyebrow-line" />
                 Calendar & Scheduling
@@ -1646,7 +1648,7 @@ export default function HomePage() {
               </ul>
             </div>
 
-            <div className="lm-reveal lm-rd2">
+            <div ref={rCalR} className="lm-reveal lm-rd2">
               <div className="lm-showcase-screen">
                 <div className="lm-screen-hdr">
                   <span className="lm-screen-title">Calendar — March 2026</span>
