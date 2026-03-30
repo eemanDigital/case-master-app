@@ -130,7 +130,7 @@ const CreateDeadlineModal = ({ visible, onClose, onSuccess, loading }) => {
         ...values,
         dueDate: values.dueDate?.toISOString(),
         linkedEntityType: values.linkedMatterId ? "matter" : "custom",
-        linkedEntityId: values.linkedMatterId || undefined,
+        linkedEntityId: values.linkedMatterId?.value || values.linkedMatterId || undefined,
       };
 
       await dispatch(createDeadline(deadlineData)).unwrap();
@@ -612,6 +612,40 @@ const DeadlineManager = () => {
   useEffect(() => {
     loadData();
   }, [dispatch, filters]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const prevOverdueIds = new Set(
+        deadlines
+          .filter(
+            (d) =>
+              d.isOverdue ||
+              (dayjs(d.dueDate).isBefore(dayjs()) && d.status !== "completed"),
+          )
+          .map((d) => d._id),
+      );
+      dispatch(fetchDeadlines({ ...filters, page: pagination.page, limit: 20 })).then((result) => {
+        if (result.payload?.length) {
+          const newOverdue = result.payload.filter(
+            (d) =>
+              (d.isOverdue ||
+                (dayjs(d.dueDate).isBefore(dayjs()) && d.status !== "completed")) &&
+              !prevOverdueIds.has(d._id),
+          );
+          if (newOverdue.length > 0) {
+            message.warning(
+              `${newOverdue.length} deadline${newOverdue.length > 1 ? "s" : ""} now overdue: ${newOverdue
+                .map((d) => d.title)
+                .join(", ")}`,
+            );
+          }
+        }
+      });
+      dispatch(fetchDeadlineStats());
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, [dispatch, filters, pagination.page, deadlines]);
 
   const loadData = useCallback(() => {
     dispatch(fetchDeadlines({ ...filters, page: pagination.page, limit: 20 }));

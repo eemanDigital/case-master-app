@@ -28,19 +28,19 @@ export const useDataFetch = () => {
         let response;
         switch (method.toUpperCase()) {
           case "GET":
-            response = await apiService.get(`/api/v1/${endpoint}`);
+            response = await apiService.get(`${endpoint}`);
             break;
           case "POST":
-            response = await apiService.post(`/api/v1/${endpoint}`, payload);
+            response = await apiService.post(`${endpoint}`, payload);
             break;
           case "PUT":
-            response = await apiService.put(`/api/v1/${endpoint}`, payload);
+            response = await apiService.put(`${endpoint}`, payload);
             break;
           case "PATCH":
-            response = await apiService.patch(`/api/v1/${endpoint}`, payload);
+            response = await apiService.patch(`${endpoint}`, payload);
             break;
           case "DELETE":
-            response = await apiService.delete(`/api/v1/${endpoint}`);
+            response = await apiService.delete(`${endpoint}`);
             break;
           default:
             throw new Error(`Unsupported method: ${method}`);
@@ -52,7 +52,7 @@ export const useDataFetch = () => {
         setLoading(false);
       }
     },
-    [handleResponse, handleError]
+    [handleResponse, handleError],
   );
 
   return { data, loading, error, dataFetcher };

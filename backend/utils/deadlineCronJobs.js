@@ -2,6 +2,7 @@ const cron = require("node-cron");
 const Deadline = require("../models/deadlineModel");
 const User = require("../models/userModel");
 const Firm = require("../models/firmModel");
+const Notice = require("../models/notificationModel");
 const { sendCustomEmail } = require("../utils/email");
 const { dispatch } = require("./automationEngine");
 
@@ -62,6 +63,23 @@ const sendSupervisorAlert = async (deadline, message) => {
     return true;
   } catch (error) {
     console.error("Failed to send supervisor alert:", error);
+    return false;
+  }
+};
+
+const sendInAppNotification = async (recipientId, senderId, message, deadline) => {
+  try {
+    await Notice.create({
+      sender: senderId,
+      recipient: [recipientId],
+      message,
+      timestamp: new Date(),
+      status: "unread",
+      relatedDeadline: deadline._id,
+    });
+    return true;
+  } catch (error) {
+    console.error(`Failed to create in-app notification:`, error.message);
     return false;
   }
 };
@@ -233,6 +251,17 @@ const initDeadlineCronJobs = () => {
             channel: "email",
             success: true,
           });
+
+          const userMessage = `⏰ Deadline in 7 days: "${deadline.title}" is due ${formatDate(deadline.dueDate)}. Please take action.`;
+          await sendInAppNotification(deadline.assignedTo._id, deadline.assignedTo._id, userMessage, deadline);
+          deadline.notificationLog.push({
+            type: "7-day_in_app",
+            sentAt: new Date(),
+            sentTo: [deadline.assignedTo._id],
+            channel: "in-app",
+            success: true,
+          });
+
           await deadline.save();
         }
       }
@@ -297,6 +326,16 @@ const initDeadlineCronJobs = () => {
             channel: "email",
             success: true,
           });
+
+          const userMessage = `🚨 URGENT: "${deadline.title}" is due in less than 24 hours (${formatDate(deadline.dueDate)}). Take immediate action!`;
+          await sendInAppNotification(deadline.assignedTo._id, deadline.assignedTo._id, userMessage, deadline);
+          deadline.notificationLog.push({
+            type: "24-hour_in_app",
+            sentAt: new Date(),
+            sentTo: [deadline.assignedTo._id],
+            channel: "in-app",
+            success: true,
+          });
         }
 
         if (deadline.supervisor && !deadline.escalation.supervisorAlertSent) {
@@ -348,7 +387,8 @@ const initDeadlineCronJobs = () => {
         status: { $in: ["pending", "in-progress"] },
         "escalation.overdueAlertSent": false,
         isDeleted: { $ne: true },
-      }).populate("supervisor", "firstName lastName email");
+      }).populate("assignedTo", "firstName lastName email")
+        .populate("supervisor", "firstName lastName email");
 
       console.log(`Found ${overdueDeadlines.length} overdue deadlines`);
 
@@ -360,6 +400,48 @@ const initDeadlineCronJobs = () => {
           daysLate: Math.ceil((now - new Date(deadline.dueDate)) / (1000 * 60 * 60 * 24)),
         };
 
+        // Notify the assigned user
+        if (deadline.assignedTo) {
+          const userMessage = `🚨 DEADLINE OVERDUE: "${deadline.title}" was due ${formatDate(deadline.dueDate)} (${deadline.performance.daysLate} day${deadline.performance.daysLate !== 1 ? "s" : ""} late). Please take immediate action.`;
+          await sendDeadlineEmail(
+            deadline,
+            `🚨 OVERDUE: ${deadline.title}`,
+            `
+              <p>Dear ${deadline.assignedTo.firstName},</p>
+              <p style="color: #dc2626; font-size: 16px; font-weight: bold;">Your deadline is OVERDUE!</p>
+              <div style="background: #fef2f2; border: 2px solid #dc2626; padding: 15px; border-radius: 8px; margin: 20px 0;">
+                <p style="margin: 0;"><strong>${deadline.title}</strong></p>
+                <p style="margin: 10px 0 0;">Was due: ${formatDate(deadline.dueDate)}</p>
+                <p style="margin: 5px 0 0; color: #dc2626; font-weight: bold;">${deadline.performance.daysLate} day${deadline.performance.daysLate !== 1 ? "s" : ""} late</p>
+              </div>
+              <p>Please take immediate action to resolve this.</p>
+            `
+          );
+
+          await sendInAppNotification(
+            deadline.assignedTo._id,
+            deadline.assignedTo._id,
+            userMessage,
+            deadline
+          );
+
+          deadline.notificationLog.push({
+            type: "overdue",
+            sentAt: new Date(),
+            sentTo: [deadline.assignedTo._id],
+            channel: "email",
+            success: true,
+          });
+          deadline.notificationLog.push({
+            type: "overdue_in_app",
+            sentAt: new Date(),
+            sentTo: [deadline.assignedTo._id],
+            channel: "in-app",
+            success: true,
+          });
+        }
+
+        // Notify the supervisor
         if (deadline.supervisor) {
           await sendSupervisorAlert(
             deadline,
@@ -369,13 +451,14 @@ const initDeadlineCronJobs = () => {
                 <p style="margin: 0;"><strong>${deadline.title}</strong></p>
                 <p style="margin: 10px 0 0;">Was due: ${formatDate(deadline.dueDate)}</p>
                 <p style="margin: 5px 0 0; color: #dc2626;">Days late: ${deadline.performance.daysLate}</p>
+                ${deadline.assignedTo ? `<p style="margin: 5px 0 0;">Assigned to: ${deadline.assignedTo.firstName} ${deadline.assignedTo.lastName}</p>` : ""}
               </div>
               <p>Please investigate and take corrective action.</p>
             `
           );
 
           deadline.notificationLog.push({
-            type: "overdue",
+            type: "overdue_supervisor",
             sentAt: new Date(),
             sentTo: [deadline.supervisor._id],
             channel: "email",
@@ -488,6 +571,12 @@ const initDeadlineCronJobs = () => {
 
       for (const deadline of missedDeadlines) {
         await dispatch("deadline.missed", deadline.toObject(), deadline.firmId);
+
+        if (deadline.assignedTo) {
+          const userMessage = `🚨 DEADLINE MISSED: "${deadline.title}" was due ${formatDate(deadline.dueDate)}. Please take immediate action.`;
+          await sendInAppNotification(deadline.assignedTo._id, deadline.assignedTo._id, userMessage, deadline);
+        }
+
         deadline.automationFlags = deadline.automationFlags || {};
         deadline.automationFlags.missedAlertSent = true;
         await deadline.save();

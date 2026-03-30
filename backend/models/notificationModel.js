@@ -39,6 +39,12 @@ const notificationSchema = new mongoose.Schema(
         ref: "CalendarEvent",
       },
     ],
+    relatedDeadline: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Deadline",
+      },
+    ],
   },
 
   {
