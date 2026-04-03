@@ -436,14 +436,14 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
     },
   ];
 
-  const formatMenuItems = (items) => {
+  const formatMenuItems = (items, isPremium = false) => {
     return items.map((item) => {
       if (item.children) {
         return {
           key: item.key,
           icon: item.icon,
           label: item.label,
-          children: formatMenuItems(item.children),
+          children: formatMenuItems(item.children, item.key === "premium"),
         };
       }
 
@@ -453,6 +453,17 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
         label: (
           <Link to={item.path} onClick={isMobile ? closeDrawer : undefined}>
             {item.label}
+            {isPremium && (
+              <span
+                className={`ml-2 px-1.5 py-0.5 text-[10px] font-medium rounded ${
+                  isDarkMode
+                    ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
+                    : "bg-amber-50 text-amber-600 border border-amber-200"
+                }`}
+              >
+                Dev
+              </span>
+            )}
           </Link>
         ),
       };
