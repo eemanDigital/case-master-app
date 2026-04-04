@@ -7,7 +7,7 @@ const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const QueryBuilder = require("../utils/queryBuilder");
-const { generatePdf } = require("../utils/generatePdf");
+const { GenericPdfGenerator, getStatusColor, formatCurrency, formatDate } = require("../utils/generateGenericPdf");
 const path = require("path");
 
 // Initialize pagination services
@@ -1687,23 +1687,70 @@ exports.generateCorporateReportPdf = catchAsync(async (req, res, next) => {
   }
 
   const corporateDetails = await CorporateDetail.findOne({ matterId, firmId });
-
   const firm = await Firm.findById(firmId);
 
-  const reportData = {
-    matter: matter.toObject(),
-    corporateDetails: corporateDetails ? corporateDetails.toObject() : null,
-    firm: firm ? firm.toObject() : null,
-  };
+  const pdf = new GenericPdfGenerator({
+    title: "Corporate Matter Report",
+    firmName: firm?.name || "Law Firm",
+    matterNumber: matter?.matterNumber || "",
+  });
 
-  const filename = `${matter.matterNumber}_corporate_report_${Date.now()}.pdf`;
+  pdf.init(res, path.resolve(__dirname, `../output/${matter.matterNumber}_corporate_report_${Date.now()}.pdf`));
 
-  generatePdf(
-    reportData,
-    res,
-    path.resolve(__dirname, "../views/corporateReport.pug"),
-    path.resolve(__dirname, `../output/${filename}`),
-  );
+  // Firm Information
+  pdf.addSection("Firm Information");
+  pdf.addField("Firm Name", firm?.name);
+  pdf.addField("Email", firm?.email);
+  pdf.addField("Phone", firm?.phone);
+  pdf.addField("Address", firm?.address);
+
+  // Matter Information
+  pdf.addSection("Matter Information");
+  pdf.addField("Matter Number", matter?.matterNumber);
+  pdf.addField("Title", matter?.title);
+  pdf.addStatusField("Status", matter?.status);
+  pdf.addStatusField("Priority", matter?.priority);
+  pdf.addField("Date Opened", formatDate(matter?.dateOpened));
+  pdf.addField("Client", matter?.client ? `${matter.client.firstName} ${matter.client.lastName}` : null);
+  if (matter?.client?.companyName) pdf.addField("Company", matter.client.companyName);
+  if (matter?.client?.email) pdf.addField("Client Email", matter.client.email);
+
+  // Corporate Details
+  if (corporateDetails) {
+    pdf.addSection("Corporate Information");
+    pdf.addField("Company Name", corporateDetails.companyName);
+    pdf.addField("CAC Number", corporateDetails.cacRegNumber);
+    pdf.addField("Company Type", corporateDetails.companyType);
+    pdf.addField("Industry", corporateDetails.industry);
+
+    if (corporateDetails.registeredAddress) {
+      pdf.addSubSection("Registered Address");
+      pdf.addField("Address", corporateDetails.registeredAddress);
+      pdf.addField("State", corporateDetails.state);
+    }
+
+    if (corporateDetails.shareholders?.length > 0) {
+      pdf.addSection("Shareholders");
+      corporateDetails.shareholders.forEach(sh => {
+        pdf.addField(sh.name, `${sh.percentage || 0}% ownership`);
+      });
+    }
+
+    if (corporateDetails.directors?.length > 0) {
+      pdf.addSection("Directors");
+      corporateDetails.directors.forEach(dir => {
+        pdf.addField(dir.name, dir.designation || "Director");
+      });
+    }
+
+    if (corporateDetails.secretary) {
+      pdf.addSection("Company Secretary");
+      pdf.addField("Name", corporateDetails.secretary.name);
+      if (corporateDetails.secretary.contact) pdf.addField("Contact", corporateDetails.secretary.contact);
+    }
+  }
+
+  await pdf.generate();
 });
 
 module.exports = exports;

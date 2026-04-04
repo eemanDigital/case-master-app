@@ -1,0 +1,18 @@
+//- Signature & Stamp Block
+.signature-block
+  .signature-section
+    .signature-line
+    .signature-label Authorized Signatory
+    
+    if firm && firm.stampImage
+      .stamp-section
+        img.stamp-image(src=firm.stampImage, alt='Firm Stamp')
+    
+    if firm && firm.signatureName
+      .signatory-name #{firm.signatureName}
+    
+    if firm && firm.signatoryTitle
+      .signatory-title #{firm.signatoryTitle}
+    
+    if firm && firm.signatoryLicenseNumber
+      .signatory-license SC/#{firm.signatoryLicenseNumber}

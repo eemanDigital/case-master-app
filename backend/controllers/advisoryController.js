@@ -6,7 +6,7 @@ const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const mongoose = require("mongoose");
-const { generatePdf } = require("../utils/generatePdf");
+const { GenericPdfGenerator, formatDate } = require("../utils/generateGenericPdf");
 const path = require("path");
 
 // Initialize pagination services
@@ -1375,23 +1375,107 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
   }
 
   const advisoryDetails = await AdvisoryDetail.findOne({ matterId, firmId });
-
   const firm = await Firm.findById(firmId);
 
-  const reportData = {
-    matter: matter.toObject(),
-    advisoryDetails: advisoryDetails ? advisoryDetails.toObject() : null,
-    firm: firm ? firm.toObject() : null,
-  };
+  const pdf = new GenericPdfGenerator({
+    title: "Advisory Matter Report",
+    firmName: firm?.name || "Law Firm",
+    matterNumber: matter?.matterNumber || "",
+  });
 
-  const filename = `${matter.matterNumber}_advisory_report_${Date.now()}.pdf`;
+  pdf.init(res, path.resolve(__dirname, `../output/${matter.matterNumber}_advisory_report_${Date.now()}.pdf`));
 
-  generatePdf(
-    reportData,
-    res,
-    path.resolve(__dirname, "../views/advisoryReport.pug"),
-    path.resolve(__dirname, `../output/${filename}`),
-  );
+  // Firm Information
+  pdf.addSection("Firm Information");
+  pdf.addField("Firm Name", firm?.name);
+  pdf.addField("Email", firm?.email);
+  pdf.addField("Phone", firm?.phone);
+  pdf.addField("Address", firm?.address);
+
+  // Matter Information
+  pdf.addSection("Matter Information");
+  pdf.addField("Matter Number", matter?.matterNumber);
+  pdf.addField("Title", matter?.title);
+  pdf.addStatusField("Status", matter?.status);
+  pdf.addStatusField("Priority", matter?.priority);
+  pdf.addField("Date Opened", formatDate(matter?.dateOpened));
+  pdf.addField("Client", matter?.client ? `${matter.client.firstName} ${matter.client.lastName}` : null);
+  if (matter?.client?.companyName) pdf.addField("Company", matter.client.companyName);
+  if (matter?.client?.email) pdf.addField("Client Email", matter.client.email);
+  if (matter?.client?.phone) pdf.addField("Client Phone", matter.client.phone);
+  if (matter?.accountOfficer) pdf.addField("Account Officer", `${matter.accountOfficer.firstName} ${matter.accountOfficer.lastName}`);
+
+  // Advisory Details
+  if (advisoryDetails) {
+    // Advisory Type & Industry
+    pdf.addSection("Advisory Overview");
+    pdf.addField("Advisory Type", advisoryDetails.advisoryType?.replace(/_/g, " ").toUpperCase());
+    pdf.addField("Industry", advisoryDetails.industry);
+    pdf.addStatusField("Project Status", advisoryDetails.projectStatus);
+    pdf.addField("Engagement Start", formatDate(advisoryDetails.engagementStartDate));
+    if (advisoryDetails.engagementEndDate) pdf.addField("Engagement End", formatDate(advisoryDetails.engagementEndDate));
+
+    // Research Questions
+    if (advisoryDetails.researchQuestions?.length > 0) {
+      pdf.addSection("Research Questions");
+      const answeredCount = advisoryDetails.researchQuestions.filter(q => q.answer).length;
+      pdf.addField("Progress", `${answeredCount}/${advisoryDetails.researchQuestions.length} answered`);
+      advisoryDetails.researchQuestions.forEach((q, idx) => {
+        pdf.addField(`Q${idx + 1}`, q.question || "N/A", { color: q.answer ? "#38a169" : "#718096" });
+        if (q.answer) {
+          pdf.addField("Answer", q.answer, { color: "#2d3748" });
+        }
+      });
+    }
+
+    // Key Findings
+    if (advisoryDetails.keyFindings?.length > 0) {
+      pdf.addSection("Key Findings");
+      advisoryDetails.keyFindings.forEach((finding, idx) => {
+        pdf.addField(`Finding ${idx + 1}`, finding.finding || "N/A");
+        if (finding.significance) pdf.addField("Significance", finding.significance);
+      });
+    }
+
+    // Recommendations
+    if (advisoryDetails.recommendations?.length > 0) {
+      pdf.addSection("Recommendations");
+      advisoryDetails.recommendations.forEach((rec, idx) => {
+        pdf.addField(`Recommendation ${idx + 1}`, rec.recommendation || "N/A");
+        if (rec.priority) pdf.addStatusField("Priority", rec.priority);
+      });
+    }
+
+    // Deliverables
+    if (advisoryDetails.deliverables?.length > 0) {
+      pdf.addSection("Deliverables");
+      const completedDeliverables = advisoryDetails.deliverables.filter(d => d.status === "completed").length;
+      pdf.addField("Progress", `${completedDeliverables}/${advisoryDetails.deliverables.length} completed`);
+      advisoryDetails.deliverables.forEach((del, idx) => {
+        pdf.addStatusField(`Deliverable ${idx + 1}`, del.status);
+        pdf.addField("Title", del.title);
+        if (del.dueDate) pdf.addField("Due Date", formatDate(del.dueDate));
+      });
+    }
+
+    // Opinion
+    if (advisoryDetails.opinion) {
+      pdf.addSection("Legal Opinion");
+      if (advisoryDetails.opinion.summary) pdf.addField("Summary", advisoryDetails.opinion.summary);
+      if (advisoryDetails.opinion.riskLevel) pdf.addStatusField("Risk Level", advisoryDetails.opinion.riskLevel);
+    }
+
+    // Compliance Checklist
+    if (advisoryDetails.complianceChecklist?.length > 0) {
+      pdf.addSection("Compliance Checklist");
+      advisoryDetails.complianceChecklist.forEach((item, idx) => {
+        pdf.addStatusField(`Item ${idx + 1}`, item.completed ? "completed" : "pending");
+        pdf.addField("Requirement", item.requirement);
+      });
+    }
+  }
+
+  await pdf.generate();
 });
 
 module.exports = exports;

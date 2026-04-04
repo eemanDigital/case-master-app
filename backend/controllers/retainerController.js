@@ -8,7 +8,7 @@ const {
 const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
-const { generatePdf } = require("../utils/generatePdf");
+const { GenericPdfGenerator, formatDate } = require("../utils/generateGenericPdf");
 const path = require("path");
 
 // Initialize pagination services
@@ -1580,23 +1580,105 @@ exports.generateRetainerReportPdf = catchAsync(async (req, res, next) => {
   }
 
   const retainerDetails = await RetainerDetail.findOne({ matterId, firmId });
-
   const firm = await Firm.findById(firmId);
 
-  const reportData = {
-    matter: matter.toObject(),
-    retainerDetails: retainerDetails ? retainerDetails.toObject() : null,
-    firm: firm ? firm.toObject() : null,
-  };
+  const pdf = new GenericPdfGenerator({
+    title: "Retainer Matter Report",
+    firmName: firm?.name || "Law Firm",
+    matterNumber: matter?.matterNumber || "",
+  });
 
-  const filename = `${matter.matterNumber}_retainer_report_${Date.now()}.pdf`;
+  pdf.init(res, path.resolve(__dirname, `../output/${matter.matterNumber}_retainer_report_${Date.now()}.pdf`));
 
-  generatePdf(
-    reportData,
-    res,
-    path.resolve(__dirname, "../views/retainerReport.pug"),
-    path.resolve(__dirname, `../output/${filename}`),
-  );
+  // Firm Information
+  pdf.addSection("Firm Information");
+  pdf.addField("Firm Name", firm?.name);
+  pdf.addField("Email", firm?.email);
+  pdf.addField("Phone", firm?.phone);
+  pdf.addField("Address", firm?.address);
+
+  // Matter Information
+  pdf.addSection("Matter Information");
+  pdf.addField("Matter Number", matter?.matterNumber);
+  pdf.addField("Title", matter?.title);
+  pdf.addStatusField("Status", matter?.status);
+  pdf.addStatusField("Priority", matter?.priority);
+  pdf.addField("Date Opened", formatDate(matter?.dateOpened));
+  pdf.addField("Client", matter?.client ? `${matter.client.firstName} ${matter.client.lastName}` : null);
+  if (matter?.client?.companyName) pdf.addField("Company", matter.client.companyName);
+  if (matter?.client?.email) pdf.addField("Client Email", matter.client.email);
+  if (matter?.client?.phone) pdf.addField("Client Phone", matter.client.phone);
+  if (matter?.accountOfficer) pdf.addField("Account Officer", `${matter.accountOfficer.firstName} ${matter.accountOfficer.lastName}`);
+
+  // Retainer Details
+  if (retainerDetails) {
+    // Agreement Details
+    pdf.addSection("Retainer Agreement");
+    pdf.addField("Retainer Type", retainerDetails.retainerType?.replace(/_/g, " ").toUpperCase());
+    pdf.addField("Start Date", formatDate(retainerDetails.agreementStartDate));
+    pdf.addField("End Date", formatDate(retainerDetails.agreementEndDate));
+    pdf.addStatusField("Auto Renewal", retainerDetails.autoRenewal ? "Yes" : "No");
+    if (retainerDetails.agreementEndDate) {
+      const daysRemaining = Math.ceil((new Date(retainerDetails.agreementEndDate) - new Date()) / (1000 * 60 * 60 * 24));
+      if (daysRemaining > 0) {
+        pdf.addField("Days Remaining", `${daysRemaining} days`);
+      } else {
+        pdf.addField("Days Remaining", `Expired ${Math.abs(daysRemaining)} days ago`);
+      }
+    }
+
+    // Scope
+    if (retainerDetails.scopeDescription) {
+      pdf.addSection("Scope of Services");
+      pdf.addField("Description", retainerDetails.scopeDescription);
+    }
+
+    // Billing Information
+    if (retainerDetails.billing) {
+      pdf.addSection("Billing Information");
+      pdf.addField("Retainer Fee", `₦${Number(retainerDetails.billing.retainerFee || 0).toLocaleString()}`);
+      pdf.addField("Currency", retainerDetails.billing.currency || "NGN");
+      pdf.addField("Frequency", retainerDetails.billing.frequency?.toUpperCase());
+      if (retainerDetails.billing.applyVAT) pdf.addField("VAT Rate", `${retainerDetails.billing.vatRate || 7.5}%`);
+      if (retainerDetails.billing.applyWHT) pdf.addField("WHT Rate", `${retainerDetails.billing.whtRate || 5}%`);
+    }
+
+    // Services Included
+    if (retainerDetails.servicesIncluded?.length > 0) {
+      pdf.addSection("Services Included");
+      retainerDetails.servicesIncluded.forEach((service, idx) => {
+        pdf.addSubSection(`Service ${idx + 1}`);
+        pdf.addField("Type", service.serviceType);
+        pdf.addField("Description", service.description);
+        pdf.addField("Billing Model", service.billingModel?.replace(/-/g, " ").toUpperCase());
+        if (service.serviceLimit) pdf.addField("Limit", `${service.serviceLimit} ${service.unitDescription || "units"}`);
+        if (service.usageCount !== undefined) pdf.addField("Usage", `${service.usageCount}/${service.serviceLimit || "∞"}`);
+      });
+    }
+
+    // Termination Clause
+    if (retainerDetails.terminationClause) {
+      pdf.addSection("Termination Clause");
+      if (retainerDetails.terminationClause.noticePeriod) {
+        pdf.addField("Notice Period", `${retainerDetails.terminationClause.noticePeriod.value || 30} ${retainerDetails.terminationClause.noticePeriod.unit || "days"}`);
+      }
+      if (retainerDetails.terminationClause.conditions) {
+        pdf.addField("Conditions", retainerDetails.terminationClause.conditions);
+      }
+    }
+
+    // Performance Metrics
+    if (retainerDetails.totalRequestsHandled !== undefined) {
+      pdf.addSection("Performance Metrics");
+      pdf.addField("Total Requests Handled", retainerDetails.totalRequestsHandled.toString());
+      const pendingRequests = retainerDetails.requests?.filter(r => r.status === "pending").length || 0;
+      pdf.addField("Pending Requests", pendingRequests.toString());
+      if (retainerDetails.activityLog?.length) pdf.addField("Activities Logged", retainerDetails.activityLog.length.toString());
+      if (retainerDetails.courtAppearances?.length) pdf.addField("Court Appearances", retainerDetails.courtAppearances.length.toString());
+    }
+  }
+
+  await pdf.generate();
 });
 
 module.exports = exports;

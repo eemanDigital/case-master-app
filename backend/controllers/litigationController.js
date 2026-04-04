@@ -8,6 +8,9 @@ const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
 const AppError = require("../utils/appError");
 const PaginationServiceFactory = require("../services/PaginationServiceFactory");
 const calendarSync = require("../services/calendarSyncService");
+const path = require("path");
+const { GenericPdfGenerator, getStatusColor, formatCurrency, formatDate } = require("../utils/generateGenericPdf");
+const { generateCauseListPdf } = require("../utils/generateCauseListPdf");
 
 // Initialize dayjs plugins
 dayjs.extend(isSameOrAfter);
@@ -1707,35 +1710,20 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
 
   hearings.sort((a, b) => new Date(a.hearingDate) - new Date(b.hearingDate));
 
-  // Use existing generatePdf utility
-  const { generatePdf } = require("../utils/generatePdf");
   const Firm = require("../models/firmModel");
-
   const firm = await Firm.findById(firmId);
 
-  generatePdf(
+  await generateCauseListPdf(
     {
       hearings,
       firm,
       periodName,
       startDate: startDate.format("MMMM D, YYYY"),
       endDate: endDate.format("MMMM D, YYYY"),
-      generatedAt: new Date().toLocaleDateString("en-US", {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
       totalHearings: hearings.length,
     },
     res,
-    path.resolve(__dirname, "../views/causeListSimple.pug"),
-    path.resolve(
-      __dirname,
-      `../output/hearings-${range || "this-week"}-${Date.now()}.pdf`,
-    ),
+    path.resolve(__dirname, `../output/hearings-${range || "this-week"}-${Date.now()}.pdf`),
   );
 });
 
@@ -2091,23 +2079,112 @@ exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
   const Firm = require("../models/firmModel");
   const firm = await Firm.findById(firmId);
 
-  const reportData = {
-    matter: matter.toObject(),
-    litigationDetails: litigationDetail ? litigationDetail.toObject() : null,
-    firm: firm ? firm.toObject() : null,
-  };
+  const pdf = new GenericPdfGenerator({
+    title: "Litigation Matter Report",
+    firmName: firm?.name || "Law Firm",
+    matterNumber: matter?.matterNumber || "",
+  });
 
-  const filename = `${matter.matterNumber}_litigation_report_${Date.now()}.pdf`;
+  pdf.init(res, path.resolve(__dirname, `../output/${matter.matterNumber}_litigation_report_${Date.now()}.pdf`));
 
-  const { generatePdf } = require("../utils/generatePdf");
-  const pdfPath = require("path");
+  // Firm Information
+  pdf.addSection("Firm Information");
+  pdf.addField("Firm Name", firm?.name);
+  pdf.addField("Email", firm?.email);
+  pdf.addField("Phone", firm?.phone);
+  pdf.addField("Address", firm?.address);
 
-  generatePdf(
-    reportData,
-    res,
-    pdfPath.resolve(__dirname, "../views/litigationReport.pug"),
-    pdfPath.resolve(__dirname, `../output/${filename}`),
-  );
+  // Matter Information
+  pdf.addSection("Matter Information");
+  pdf.addField("Matter Number", matter?.matterNumber);
+  pdf.addField("Title", matter?.title);
+  pdf.addStatusField("Status", matter?.status);
+  pdf.addStatusField("Priority", matter?.priority);
+  pdf.addField("Date Opened", formatDate(matter?.dateOpened));
+  pdf.addField("Client", matter?.client ? `${matter.client.firstName} ${matter.client.lastName}` : null);
+  if (matter?.client?.companyName) pdf.addField("Company", matter.client.companyName);
+  if (matter?.client?.email) pdf.addField("Client Email", matter.client.email);
+
+  // Litigation Details
+  if (litigationDetail) {
+    pdf.addSection("Case Information");
+    pdf.addField("Suit Number", litigationDetail.suitNo);
+    pdf.addField("Court", litigationDetail.courtName?.replace(/_/g, " ").toUpperCase());
+    pdf.addField("Court Location", litigationDetail.courtLocation);
+    pdf.addField("State", litigationDetail.state);
+    if (litigationDetail.judge?.length > 0) {
+      pdf.addField("Judge", litigationDetail.judge.map(j => j.name).join(", "));
+    }
+    pdf.addField("Mode of Commencement", litigationDetail.modeOfCommencement?.replace(/_/g, " ").toUpperCase());
+    pdf.addField("Filing Date", formatDate(litigationDetail.filingDate));
+
+    // First Party
+    if (litigationDetail.firstParty?.name?.length > 0) {
+      pdf.addSubSection("First Party (Claimant/Plaintiff)");
+      litigationDetail.firstParty.name.forEach(n => {
+        pdf.addField("Name", n.name);
+      });
+      if (litigationDetail.firstParty.description) {
+        pdf.addField("Description", litigationDetail.firstParty.description);
+      }
+    }
+
+    // Second Party
+    if (litigationDetail.secondParty?.name?.length > 0) {
+      pdf.addSubSection("Second Party (Defendant)");
+      litigationDetail.secondParty.name.forEach(n => {
+        pdf.addField("Name", n.name);
+      });
+      if (litigationDetail.secondParty.description) {
+        pdf.addField("Description", litigationDetail.secondParty.description);
+      }
+    }
+
+    // Case Status
+    pdf.addSection("Case Status");
+    pdf.addStatusField("Current Stage", litigationDetail.currentStage);
+    pdf.addField("Next Hearing Date", formatDate(litigationDetail.nextHearingDate));
+    pdf.addField("Case Value", litigationDetail.caseValue?.amount ? formatCurrency(litigationDetail.caseValue.amount) : null);
+
+    // Hearings
+    if (litigationDetail.hearings?.length > 0) {
+      pdf.addSection("Hearings");
+      const upcomingHearings = litigationDetail.hearings.filter(h => new Date(h.date) >= new Date()).slice(0, 5);
+      if (upcomingHearings.length > 0) {
+        pdf.addSubSection("Upcoming Hearings");
+        upcomingHearings.forEach(h => {
+          pdf.addField(
+            formatDate(h.date),
+            `${h.purpose || "Hearing"} | ${h.outcome || "Pending"}`
+          );
+        });
+      }
+    }
+
+    // Court Orders
+    if (litigationDetail.courtOrders?.length > 0) {
+      pdf.addSection("Court Orders");
+      litigationDetail.courtOrders.slice(0, 10).forEach(order => {
+        pdf.addField(
+          formatDate(order.orderDate),
+          `${order.orderType || "Order"} - ${order.description?.substring(0, 50) || ""}`,
+          { color: getStatusColor(order.complianceStatus) }
+        );
+      });
+    }
+
+    // Litigation Steps
+    if (litigationDetail.litigationSteps?.length > 0) {
+      pdf.addSection("Case Progress");
+      const completed = litigationDetail.litigationSteps.filter(s => s.status === "completed").length;
+      pdf.addField("Progress", `${completed}/${litigationDetail.litigationSteps.length} steps completed`);
+      litigationDetail.litigationSteps.forEach(step => {
+        pdf.addField(step.title, step.status?.toUpperCase(), { color: getStatusColor(step.status) });
+      });
+    }
+  }
+
+  await pdf.generate();
 });
 
 module.exports = exports;

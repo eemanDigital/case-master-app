@@ -5,7 +5,7 @@ const PropertyDetail = require("../models/propertyDetailModel");
 const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
-const { generatePdf } = require("../utils/generatePdfPdfkit");
+const { GenericPdfGenerator, getStatusColor, getStatusBg, formatCurrency, formatDate } = require("../utils/generateGenericPdf");
 const path = require("path");
 
 // Initialize pagination services
@@ -1450,37 +1450,225 @@ exports.generatePropertyReportPdf = catchAsync(async (req, res, next) => {
   const propertyDetails = await PropertyDetail.findOne({ matterId });
   const firm = await Firm.findById(firmId);
 
-  const purchasePrice =
-    propertyDetails?.purchasePrice?.amount ||
-    propertyDetails?.purchasePrice ||
-    0;
-  const rentAmount =
-    propertyDetails?.rentAmount?.amount || propertyDetails?.rentAmount || 0;
-  const totalAmount = purchasePrice || rentAmount || 0;
-  const amountPaid =
-    propertyDetails?.paymentSchedule
-      ?.filter((p) => p.status === "paid")
-      ?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
+  const amountPaid = propertyDetails?.paymentSchedule
+    ?.filter((p) => p.status === "paid")
+    ?.reduce((sum, p) => sum + (p.amount || 0), 0) || 0;
 
-  const reportData = {
-    matter: matter.toObject(),
-    propertyDetails: {
-      ...propertyDetails?.toObject(),
-      purchasePrice,
-      rentAmount,
-      amountPaid,
-      balance: totalAmount - amountPaid,
-    },
-    firm,
-  };
+  const purchasePriceAmt = propertyDetails?.purchasePrice?.amount || 0;
+  const rentAmountAmt = propertyDetails?.rentAmount?.amount || 0;
+  const totalAmount = purchasePriceAmt || rentAmountAmt || 0;
 
-  const filename = `${matter.matterNumber}_property_report_${Date.now()}.pdf`;
+  const pdf = new GenericPdfGenerator({
+    title: "Property Matter Report",
+    firmName: firm?.name || "Law Firm",
+    matterNumber: matter?.matterNumber || "",
+  });
 
-  await generatePdf(
-    reportData,
-    res,
-    path.resolve(__dirname, `../output/${filename}`),
-  );
+  pdf.init(res, path.resolve(__dirname, `../output/${matter.matterNumber}_property_report_${Date.now()}.pdf`));
+
+  // Firm Information
+  pdf.addSection("Firm Information");
+  pdf.addField("Firm Name", firm?.name);
+  pdf.addField("Email", firm?.email);
+  pdf.addField("Phone", firm?.phone);
+  pdf.addField("Address", firm?.address);
+
+  // Matter Information
+  pdf.addSection("Matter Information");
+  pdf.addField("Matter Number", matter?.matterNumber);
+  pdf.addField("Title", matter?.title);
+  pdf.addStatusField("Status", matter?.status);
+  pdf.addStatusField("Priority", matter?.priority);
+  pdf.addField("Date Opened", formatDate(matter?.dateOpened));
+  pdf.addField("Client", matter?.client ? `${matter.client.firstName} ${matter.client.lastName}` : null);
+  if (matter?.client?.email) pdf.addField("Client Email", matter.client.email);
+  if (matter?.assignedTo) pdf.addField("Assigned To", `${matter.assignedTo.firstName} ${matter.assignedTo.lastName}`);
+
+  // Transaction Details
+  pdf.addSection("Transaction Details");
+  pdf.addField("Transaction Type", propertyDetails?.transactionType?.replace(/_/g, " ").toUpperCase());
+  pdf.addField("Payment Terms", propertyDetails?.paymentTerms?.replace(/-/g, " ").toUpperCase());
+
+  // Financial Information
+  pdf.addSection("Financial Information");
+  if (propertyDetails?.purchasePrice?.amount) pdf.addMoneyField("Purchase Price", propertyDetails.purchasePrice.amount);
+  if (propertyDetails?.rentAmount?.amount) pdf.addMoneyField("Rent Amount", propertyDetails.rentAmount.amount);
+  if (propertyDetails?.securityDeposit?.amount) pdf.addMoneyField("Security Deposit", propertyDetails.securityDeposit.amount);
+  pdf.addMoneyField("Amount Paid", amountPaid);
+  pdf.addMoneyField("Balance", totalAmount - amountPaid);
+
+  // Lease Information
+  if (["lease", "sublease", "tenancy_matter"].includes(propertyDetails?.transactionType)) {
+    const lease = propertyDetails?.leaseAgreement || {};
+
+    pdf.addSection("Lease Agreement");
+    pdf.addStatusField("Lease Status", lease?.status);
+    pdf.addField("Commencement Date", formatDate(lease?.commencementDate));
+    pdf.addField("Expiry Date", formatDate(lease?.expiryDate));
+    if (lease?.duration) {
+      pdf.addField("Duration", `${lease.duration.years || 0} years, ${lease.duration.months || 0} months`);
+    }
+    pdf.addField("Renewal Option", lease?.renewalOption ? "Yes" : "No");
+
+    if (lease?.expiryDate) {
+      const daysRemaining = Math.ceil((new Date(lease.expiryDate) - new Date()) / (1000 * 60 * 60 * 24));
+      let timeText, timeColor;
+      if (daysRemaining < 0) {
+        timeText = `Expired ${Math.abs(daysRemaining)} days ago`;
+        timeColor = getStatusColor("expired");
+      } else if (daysRemaining <= 7) {
+        timeText = `${daysRemaining} days - CRITICAL`;
+        timeColor = getStatusColor("critical");
+      } else if (daysRemaining <= 30) {
+        timeText = `${daysRemaining} days - WARNING`;
+        timeColor = getStatusColor("warning");
+      } else {
+        timeText = `${daysRemaining} days remaining`;
+        timeColor = getStatusColor("active");
+      }
+      pdf.addField("Time Remaining", timeText, { color: timeColor, bold: true });
+    }
+
+    // Alert Settings
+    if (propertyDetails?.leaseAlertSettings?.enabled) {
+      pdf.addSection("Alert Settings");
+      pdf.addField("Alerts Enabled", "Yes");
+      pdf.addField("Email Notifications", propertyDetails.leaseAlertSettings.emailNotification ? "Yes" : "No");
+      pdf.addField("SMS Notifications", propertyDetails.leaseAlertSettings.smsNotification ? "Yes" : "No");
+      pdf.addField("Notify Landlord", propertyDetails.leaseAlertSettings.notifyLandlord ? "Yes" : "No");
+      pdf.addField("Notify Tenant", propertyDetails.leaseAlertSettings.notifyTenant ? "Yes" : "No");
+    }
+
+    // Renewal Tracking
+    if (propertyDetails?.renewalTracking?.renewalInitiated) {
+      pdf.addSection("Renewal Tracking");
+      pdf.addStatusField("Renewal Status", propertyDetails.renewalTracking.renewalStatus);
+      pdf.addField("Initiated Date", formatDate(propertyDetails.renewalTracking.renewalInitiatedDate));
+      pdf.addField("Renewal Deadline", formatDate(propertyDetails.renewalTracking.renewalDeadline));
+      pdf.addField("Notice Period", propertyDetails.renewalTracking.renewalNoticePeriod ? `${propertyDetails.renewalTracking.renewalNoticePeriod} days` : null);
+      if (propertyDetails.renewalTracking.proposedNewRent?.amount) {
+        pdf.addMoneyField("Proposed New Rent", propertyDetails.renewalTracking.proposedNewRent.amount);
+      }
+      if (propertyDetails.renewalTracking.rentIncreasePercentage) {
+        pdf.addField("Proposed Increase", `+${propertyDetails.renewalTracking.rentIncreasePercentage}%`);
+      }
+      pdf.addField("Negotiations", `${propertyDetails.renewalTracking.negotiationsHistory?.length || 0} recorded`);
+    }
+
+    // Milestones
+    if (propertyDetails?.leaseMilestones?.length > 0) {
+      pdf.addSection("Lease Milestones");
+      const completed = propertyDetails.leaseMilestones.filter(m => m.status === "completed").length;
+      pdf.addField("Progress", `${completed}/${propertyDetails.leaseMilestones.length} completed`);
+
+      propertyDetails.leaseMilestones.forEach(milestone => {
+        pdf.addField(
+          milestone.title,
+          `${milestone.status?.toUpperCase() || "PENDING"} | Target: ${formatDate(milestone.targetDate) || "N/A"}`,
+          { color: getStatusColor(milestone.status) }
+        );
+      });
+    }
+  }
+
+  // Parties Involved
+  pdf.addSection("Parties Involved");
+  if (propertyDetails?.landlord?.name) {
+    pdf.addSubSection("Landlord");
+    pdf.addField("Name", propertyDetails.landlord.name);
+    if (propertyDetails.landlord.contact) pdf.addField("Contact", propertyDetails.landlord.contact);
+    if (propertyDetails.landlord.email) pdf.addField("Email", propertyDetails.landlord.email);
+  }
+  if (propertyDetails?.tenant?.name) {
+    pdf.addSubSection("Tenant");
+    pdf.addField("Name", propertyDetails.tenant.name);
+    if (propertyDetails.tenant.contact) pdf.addField("Contact", propertyDetails.tenant.contact);
+    if (propertyDetails.tenant.email) pdf.addField("Email", propertyDetails.tenant.email);
+  }
+  if (propertyDetails?.vendor?.name) {
+    pdf.addSubSection("Vendor");
+    pdf.addField("Name", propertyDetails.vendor.name);
+    if (propertyDetails.vendor.contact) pdf.addField("Contact", propertyDetails.vendor.contact);
+  }
+  if (propertyDetails?.purchaser?.name) {
+    pdf.addSubSection("Purchaser");
+    pdf.addField("Name", propertyDetails.purchaser.name);
+    if (propertyDetails.purchaser.contact) pdf.addField("Contact", propertyDetails.purchaser.contact);
+  }
+
+  // Property Information
+  if (propertyDetails?.properties?.length > 0) {
+    pdf.addSection("Property Information");
+    propertyDetails.properties.forEach((prop, idx) => {
+      if (propertyDetails.properties.length > 1) {
+        pdf.addSubSection(`Property ${idx + 1}`);
+      }
+      if (prop?.address) pdf.addField("Address", prop.address);
+      pdf.addTwoColumnField("State", prop?.state, "LGA", prop?.lga);
+      if (prop?.propertyType) pdf.addField("Property Type", prop.propertyType.replace(/_/g, " ").toUpperCase());
+      if (prop?.titleDocument) pdf.addField("Title Document", prop.titleDocument.replace(/_/g, " ").toUpperCase());
+      if (prop?.landSize?.value) pdf.addField("Land Size", `${prop.landSize.value.toLocaleString()} ${prop.landSize.unit || ""}`);
+    });
+  }
+
+  // Legal Status
+  pdf.addSection("Legal Status");
+  const contract = propertyDetails?.contractOfSale || {};
+  pdf.addStatusField("Contract of Sale", contract?.status);
+  if (contract?.executionDate) pdf.addField("Contract Date", formatDate(contract.executionDate));
+
+  const govConsent = propertyDetails?.governorsConsent || {};
+  pdf.addStatusField("Governor's Consent", govConsent?.status);
+  if (govConsent?.applicationDate) pdf.addField("Application Date", formatDate(govConsent.applicationDate));
+  if (govConsent?.approvalDate) pdf.addField("Approval Date", formatDate(govConsent.approvalDate));
+  if (govConsent?.referenceNumber) pdf.addField("Reference #", govConsent.referenceNumber);
+
+  const deed = propertyDetails?.deedOfAssignment || {};
+  pdf.addStatusField("Deed of Assignment", deed?.status);
+  if (deed?.executionDate) pdf.addField("Execution Date", formatDate(deed.executionDate));
+  if (deed?.registrationDate) pdf.addField("Registration Date", formatDate(deed.registrationDate));
+  if (deed?.registrationNumber) pdf.addField("Registration #", deed.registrationNumber);
+
+  // Due Diligence
+  pdf.addSection("Due Diligence");
+  const titleSearch = propertyDetails?.titleSearch || {};
+  pdf.addStatusField("Title Search", titleSearch.isCompleted ? "Completed" : "Pending");
+  if (titleSearch?.searchDate) pdf.addField("Search Date", formatDate(titleSearch.searchDate));
+  if (titleSearch?.encumbrances?.length > 0) pdf.addField("Encumbrances", titleSearch.encumbrances.join(", "));
+
+  const inspection = propertyDetails?.physicalInspection || {};
+  pdf.addStatusField("Physical Inspection", inspection.isCompleted ? "Completed" : "Pending");
+  if (inspection?.inspectionDate) pdf.addField("Inspection Date", formatDate(inspection.inspectionDate));
+
+  const survey = propertyDetails?.surveyPlan || {};
+  pdf.addStatusField("Survey Plan", survey.isAvailable ? "Available" : "Not Available");
+  if (survey?.surveyNumber) pdf.addField("Survey #", survey.surveyNumber);
+
+  // Payment Schedule
+  if (propertyDetails?.paymentSchedule?.length > 0) {
+    pdf.addSection("Payment Schedule");
+    pdf.addTable(
+      ["#", "Due Date", "Amount", "Status", "Paid Date"],
+      propertyDetails.paymentSchedule.map(p => [
+        `#${p.installmentNumber || "?"}`,
+        formatDate(p.dueDate) || "-",
+        formatCurrency(p.amount || 0),
+        (p.status || "pending").toUpperCase(),
+        formatDate(p.paidDate) || "-"
+      ]),
+      { colWidths: [30, 80, 90, 70, 80] }
+    );
+  }
+
+  // Conditions
+  if (propertyDetails?.conditions?.length > 0) {
+    pdf.addSection("Conditions");
+    propertyDetails.conditions.forEach(c => {
+      pdf.addField(c.condition, `${c.status?.toUpperCase() || "PENDING"} | Due: ${formatDate(c.dueDate) || "N/A"}`, { color: getStatusColor(c.status) });
+    });
+  }
+
+  await pdf.generate();
 });
 
 module.exports = exports;

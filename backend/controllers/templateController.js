@@ -28,6 +28,8 @@ try {
   );
 }
 
+const PDFDocument = require("pdfkit");
+
 // ─── Template Library ─────────────────────────────────────────────────────────
 
 const getAllTemplates = catchAsync(async (req, res, next) => {
@@ -625,67 +627,25 @@ const exportDocument = catchAsync(async (req, res, next) => {
 
   // ── PDF ────────────────────────────────────────────────────────────────────
   if (format === "pdf") {
-    if (!puppeteer) {
-      return next(
-        new AppError(
-          "PDF export not available. Please install the puppeteer package.",
-          503,
-        ),
-      );
-    }
-
-    let browser;
     try {
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <style>
-            body {
-              font-family: 'Times New Roman', Times, serif;
-              font-size: 12pt;
-              line-height: 1.5;
-              padding: 2cm;
-              white-space: pre-wrap;
-              color: #000;
-            }
-            @page {
-              size: A4;
-              margin: 2cm;
-            }
-          </style>
-        </head>
-        <body>${document.content.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</body>
-        </html>
-      `;
-
-      browser = await puppeteer.launch({
-        headless: true,
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-gpu",
-          "--disable-web-security",
-        ],
+      const chunks = [];
+      const doc = new PDFDocument({
+        size: "A4",
+        margins: { top: 56, bottom: 56, left: 56, right: 56 },
       });
 
-      const page = await browser.newPage();
-      await page.setContent(htmlContent, {
-        waitUntil: "networkidle0",
-        timeout: 30000,
-      });
+      doc.on("data", (chunk) => chunks.push(chunk));
 
-      const pdfBuffer = await page.pdf({
-        format: "A4",
-        printBackground: true,
-        margin: {
-          top: "2cm",
-          bottom: "2cm",
-          left: "2cm",
-          right: "2cm",
-        },
+      doc.font("Times-Roman").fontSize(12);
+
+      const lines = document.content.split("\n");
+      lines.forEach((line) => {
+        const trimmed = line.trim();
+        if (trimmed === "") {
+          doc.moveDown(0.5);
+        } else {
+          doc.text(trimmed, { continued: false });
+        }
       });
 
       await GeneratedDocument.findByIdAndUpdate(documentId, {
@@ -698,24 +658,23 @@ const exportDocument = catchAsync(async (req, res, next) => {
         },
       });
 
-      res.setHeader("Content-Type", "application/pdf");
-      res.setHeader(
-        "Content-Disposition",
-        `attachment; filename="${filename}"`,
-      );
-      return res.send(pdfBuffer);
+      return new Promise((resolve, reject) => {
+        doc.end();
+        doc.on("end", () => {
+          const pdfBuffer = Buffer.concat(chunks);
+          res.setHeader("Content-Type", "application/pdf");
+          res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+          res.setHeader("Content-Length", pdfBuffer.length);
+          res.end(pdfBuffer);
+          resolve();
+        });
+        doc.on("error", reject);
+      });
     } catch (error) {
       console.error("PDF generation error:", error);
       return next(
         new AppError(`Failed to generate PDF: ${error.message}`, 500),
       );
-    } finally {
-      // Always close browser even if an error occurs
-      if (browser) {
-        await browser
-          .close()
-          .catch((err) => console.error("Failed to close browser:", err));
-      }
     }
   }
 });

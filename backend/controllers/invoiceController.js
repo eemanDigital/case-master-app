@@ -4,7 +4,7 @@ const User = require("../models/userModel");
 const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
-const { generatePdf } = require("../utils/generatePdf");
+const { generateInvoicePdf, generateReceiptPdf, generateBillOfChargesPdf } = require("../utils/generateInvoicePdf");
 const Payment = require("../models/paymentModel");
 
 /**
@@ -544,11 +544,10 @@ exports.generateInvoicePdf = catchAsync(async (req, res, next) => {
     amountPaidToDate: invoice.amountPaid || 0,
   };
 
-  generatePdf(
+  await generateInvoicePdf(
     { invoice: safeInvoice, firm },
     res,
-    path.resolve(__dirname, "../views/invoice.pug"),
-    path.resolve(__dirname, `../output/${invoice.invoiceNumber}_invoice.pdf`),
+    path.resolve(__dirname, `../output/${invoice.invoiceNumber}_invoice_${Date.now()}.pdf`),
   );
 });
 
@@ -826,14 +825,10 @@ exports.generateReceiptPdf = catchAsync(async (req, res, next) => {
       `RCT-${payment._id.toString().slice(-8).toUpperCase()}`,
   };
 
-  generatePdf(
+  await generateReceiptPdf(
     { receipt: receiptData, firm },
     res,
-    path.resolve(__dirname, "../views/receipt.pug"),
-    path.resolve(
-      __dirname,
-      `../output/${receiptData.receiptNumber}_receipt.pdf`,
-    ),
+    path.resolve(__dirname, `../output/${receiptData.receiptNumber}_receipt_${Date.now()}.pdf`),
   );
 });
 
@@ -873,13 +868,9 @@ exports.generateBillOfChargesPdf = catchAsync(async (req, res, next) => {
 
   const firm = await Firm.findById(firmId);
 
-  generatePdf(
+  await generateBillOfChargesPdf(
     { invoice: invoice.toObject(), firm },
     res,
-    path.resolve(__dirname, "../views/billOfCharges.pug"),
-    path.resolve(
-      __dirname,
-      `../output/${invoice.invoiceNumber}_bill_of_charges.pdf`,
-    ),
+    path.resolve(__dirname, `../output/${invoice.invoiceNumber}_bill_of_charges_${Date.now()}.pdf`),
   );
 });
