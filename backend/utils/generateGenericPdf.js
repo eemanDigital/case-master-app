@@ -1,69 +1,63 @@
-/**
- * generateGenericPdf.js - Reusable PDF generator for all matter types
- * Uses PDFKit - no Chrome/Puppeteer required
- */
 "use strict";
 
+/**
+ * generateGenericPdf.js
+ * Reusable premium PDF generator base class for all matter types.
+ *
+ * FIXES:
+ *  - Wrong page number: uses getCurrentPageNumber() from design system
+ *  - generate() no longer double-calls addHeader (caller must call addHeader once)
+ *  - generate() renamed role: only finalizes/streams; content is built by caller
+ *  - All color tokens unified via pdfDesignSystem
+ *
+ * DESIGN UPGRADES:
+ *  - Navy + gold premium palette
+ *  - Left-accent section headers (gold rule) instead of flat fills
+ *  - Status badges with semantic color coding
+ *  - Timeline items with filled circles and connector lines
+ *  - Table headers use navy background with white text
+ *  - Alternating row tints for readability
+ *  - Two-column fields properly aligned
+ *  - Footer with separator rule and centered metadata
+ */
+
 const PDFDocument = require("pdfkit");
-const fs = require("fs");
-const path = require("path");
-
-const COLORS = {
-  headerBg: "#1a365d",
-  sectionBg: "#e2e8f0",
-  labelColor: "#718096",
-  valueColor: "#2d3748",
-  accentColor: "#3182ce",
-  successColor: "#38a169",
-  warningColor: "#dd6b20",
-  errorColor: "#e53e3e",
-  white: "#ffffff",
-};
-
-function getStatusColor(status) {
-  if (!status) return COLORS.labelColor;
-  const s = status.toLowerCase();
-  if (["completed", "active", "registered", "agreed", "approved"].includes(s)) return COLORS.successColor;
-  if (["pending", "in-progress", "processing"].includes(s)) return COLORS.accentColor;
-  if (["expired", "rejected", "terminated", "disputed"].includes(s)) return COLORS.errorColor;
-  if (["executed"].includes(s)) return COLORS.warningColor;
-  return COLORS.labelColor;
-}
-
-function getStatusBg(status) {
-  if (!status) return "#e2e8f0";
-  const s = status.toLowerCase();
-  if (["completed", "active", "registered", "agreed", "approved"].includes(s)) return "#c6f6d5";
-  if (["pending", "in-progress", "processing"].includes(s)) return "#bee3f8";
-  if (["expired", "rejected", "terminated", "disputed"].includes(s)) return "#fed7d7";
-  if (["executed"].includes(s)) return "#feebc8";
-  return "#e2e8f0";
-}
-
-function formatCurrency(amount, currency = "NGN") {
-  return `${currency} ${Number(amount || 0).toLocaleString()}`;
-}
-
-function formatDate(date) {
-  if (!date) return null;
-  return new Date(date).toLocaleDateString("en-GB");
-}
+const {
+  COLORS,
+  FONTS,
+  SIZES,
+  getStatusColors,
+  formatCurrency,
+  formatDate,
+  formatDateTime,
+  getCurrentPageNumber,
+  finalizePdf,
+} = require("./pdfDesignSystem");
 
 class GenericPdfGenerator {
   constructor(options = {}) {
     this.options = options;
     this.doc = null;
-    this.y = 50;
+    this.y = 70;
     this.chunks = [];
     this.pageWidth = 0;
-    this.col1Width = 140;
-    this.lineHeight = 15;
+    this.col1Width = 145;
+    this.lineHeight = 16;
+    this.leftMargin = 50;
+    this.res = null;
+    this.outputPath = null;
   }
 
+  // ── Lifecycle ────────────────────────────────────────────────────────────
+
   init(res, outputPath) {
+    this.res = res;
+    this.outputPath = outputPath;
+
     this.doc = new PDFDocument({
       size: "A4",
       margins: { top: 50, bottom: 50, left: 50, right: 50 },
+      bufferPages: true,
       info: {
         Title: this.options.title || "Matter Report",
         Author: this.options.firmName || "Law Firm",
@@ -71,255 +65,364 @@ class GenericPdfGenerator {
     });
 
     this.doc.on("data", (chunk) => this.chunks.push(chunk));
-
-    this.pageWidth = this.doc.page.width - 100;
-    this.col2X = 50 + this.col1Width + 10;
-
-    this.res = res;
-    this.outputPath = outputPath;
+    this.pageWidth = this.doc.page.width - 100; // 495
+    this.col2X = this.leftMargin + this.col1Width + 10;
+    this.bottomGuard = this.doc.page.height - 55;
 
     return this;
+  }
+
+  // ── Page Structure ───────────────────────────────────────────────────────
+
+  addHeader() {
+    const { headerTitle = "Matter Report", matterNumber = "" } = this.options;
+
+    // Navy band
+    this.doc.rect(0, 0, this.doc.page.width, 60).fill(COLORS.navy);
+
+    // Firm name
+    this.doc
+      .fillColor(COLORS.white)
+      .fontSize(SIZES.h1)
+      .font(FONTS.bold)
+      .text(this.options.firmName || "Law Firm", this.leftMargin, 12, {
+        width: 340,
+      });
+
+    // Gold accent rule
+    this.doc.rect(this.leftMargin, 34, 50, 1.5).fill(COLORS.gold);
+
+    // Report type
+    this.doc
+      .fontSize(SIZES.micro)
+      .fillColor(COLORS.gold)
+      .font(FONTS.bold)
+      .text(headerTitle.toUpperCase(), this.leftMargin, 38);
+
+    // Matter number top-right
+    if (matterNumber) {
+      this.doc
+        .fontSize(SIZES.small)
+        .fillColor(COLORS.white)
+        .font(FONTS.regular)
+        .text("MATTER NO.", 400, 16, { width: 145, align: "right" });
+      this.doc
+        .fontSize(SIZES.body)
+        .fillColor(COLORS.white)
+        .font(FONTS.bold)
+        .text(matterNumber, 400, 28, { width: 145, align: "right" });
+    }
+
+    // Generated date
+    this.doc
+      .fontSize(SIZES.micro)
+      .fillColor(COLORS.navyLight)
+      .font(FONTS.regular)
+      .text(formatDateTime(new Date()), 400, 46, {
+        width: 145,
+        align: "right",
+      });
+
+    this.y = 78;
+  }
+
+  addFooter() {
+    const pageNum = getCurrentPageNumber(this.doc);
+    const footerY = this.doc.page.height - 30;
+
+    this.doc
+      .moveTo(this.leftMargin, footerY - 8)
+      .lineTo(this.leftMargin + this.pageWidth, footerY - 8)
+      .lineWidth(0.4)
+      .strokeColor(COLORS.gray200)
+      .stroke();
+
+    this.doc
+      .fontSize(SIZES.micro)
+      .fillColor(COLORS.textMuted)
+      .font(FONTS.regular)
+      .text(
+        `${this.options.firmName || "Law Firm"}  ·  ${formatDateTime(new Date())}  ·  Page ${pageNum}`,
+        this.leftMargin,
+        footerY,
+        { align: "center", width: this.pageWidth },
+      );
   }
 
   addPageBreak() {
     this.addFooter();
     this.doc.addPage();
-    this.y = 50;
+    this.y = 78;
     this.addHeader();
   }
 
-  addHeader() {
-    const { headerTitle = "Matter Report", matterNumber = "" } = this.options;
-
-    this.doc.rect(0, 0, this.doc.page.width, 55).fill(COLORS.headerBg);
-
-    this.doc.fillColor(COLORS.white)
-      .fontSize(14)
-      .font("Helvetica-Bold")
-      .text(this.options.firmName || "Law Firm", 50, 12);
-
-    this.doc.fontSize(8)
-      .font("Helvetica")
-      .text(headerTitle, 50, 32);
-
-    this.doc.fontSize(10)
-      .font("Helvetica-Bold")
-      .text(matterNumber, 450, 18, { width: 100, align: "right" });
-
-    this.y = 70;
-  }
-
-  addFooter() {
-    const pageNum = this.doc.bufferedPageRange().start + 1;
-    this.doc.fontSize(7)
-      .fillColor(COLORS.labelColor)
-      .text(
-        `Generated: ${new Date().toLocaleDateString("en-GB", {
-          day: "2-digit", month: "short", year: "numeric",
-          hour: "2-digit", minute: "2-digit"
-        })} | ${this.options.firmName || "Law Firm"} | Page ${pageNum}`,
-        50, this.doc.page.height - 25,
-        { align: "center", width: this.pageWidth }
-      );
-  }
-
   checkPageBreak(needed = 50) {
-    if (this.y > this.doc.page.height - needed) {
+    if (this.y + needed > this.bottomGuard) {
       this.addPageBreak();
     }
   }
+
+  // ── Section & Field Primitives ───────────────────────────────────────────
 
   addSection(title) {
-    this.checkPageBreak(50);
-    this.y += 8;
+    this.checkPageBreak(55);
+    this.y += 10;
 
-    this.doc.rect(40, this.y, this.pageWidth, 20).fill(COLORS.sectionBg);
-    this.doc.fillColor(COLORS.headerBg)
-      .fontSize(9)
-      .font("Helvetica-Bold")
-      .text(title, 50, this.y + 5);
+    // Gold left accent bar
+    this.doc.rect(this.leftMargin, this.y, 3, 16).fill(COLORS.gold);
 
-    this.y += 28;
+    this.doc
+      .fontSize(SIZES.h3)
+      .font(FONTS.bold)
+      .fillColor(COLORS.navy)
+      .text(title, this.leftMargin + 10, this.y + 2, {
+        width: this.pageWidth - 10,
+      });
+
+    // Underline rule
+    this.doc
+      .moveTo(this.leftMargin, this.y + 20)
+      .lineTo(this.leftMargin + this.pageWidth, this.y + 20)
+      .lineWidth(0.5)
+      .strokeColor(COLORS.navyLight)
+      .stroke();
+
+    this.y += 30;
   }
 
+  addSubSection(title) {
+    this.checkPageBreak(40);
+    this.y += 4;
+    this.doc
+      .fontSize(SIZES.body)
+      .font(FONTS.bold)
+      .fillColor(COLORS.navyMid)
+      .text(title, this.leftMargin, this.y);
+    this.y += this.lineHeight + 2;
+  }
+
+  /**
+   * Renders a label: value row.
+   * Returns the display value (or null if empty) so callers can branch.
+   */
   addField(label, value, options = {}) {
-    if (this.y > this.doc.page.height - 40) {
-      this.addPageBreak();
+    this.checkPageBreak(this.lineHeight + 4);
+
+    const {
+      color = COLORS.textPrimary,
+      bold = false,
+      skipIfEmpty = true,
+    } = options;
+    const display =
+      value !== undefined && value !== null && value !== ""
+        ? String(value)
+        : null;
+
+    if (!display && skipIfEmpty) {
+      this.y += this.lineHeight;
+      return null;
     }
 
-    const { color = COLORS.valueColor, bold = false } = options;
-    const displayValue = value !== undefined && value !== null ? String(value) : null;
+    this.doc
+      .fontSize(SIZES.small)
+      .font(FONTS.regular)
+      .fillColor(COLORS.textMuted)
+      .text(`${label}:`, this.leftMargin, this.y, { width: this.col1Width });
 
-    if (displayValue) {
-      this.doc.fontSize(8)
-        .font("Helvetica")
-        .fillColor(COLORS.labelColor)
-        .text(label + ":", 50, this.y, { width: this.col1Width });
-
-      this.doc.fontSize(8)
-        .font(bold ? "Helvetica-Bold" : "Helvetica")
-        .fillColor(color)
-        .text(displayValue, this.col2X, this.y, { width: this.pageWidth - this.col1Width - 10 });
-    }
+    this.doc
+      .fontSize(SIZES.small)
+      .font(bold ? FONTS.bold : FONTS.regular)
+      .fillColor(display ? color : COLORS.gray400)
+      .text(display || "—", this.col2X, this.y, {
+        width: this.pageWidth - this.col1Width - 10,
+      });
 
     this.y += this.lineHeight;
-    return displayValue;
+    return display;
   }
 
   addStatusField(label, status) {
-    if (this.y > this.doc.page.height - 40) {
-      this.addPageBreak();
-    }
+    this.checkPageBreak(this.lineHeight + 4);
 
+    this.doc
+      .fontSize(SIZES.small)
+      .font(FONTS.regular)
+      .fillColor(COLORS.textMuted)
+      .text(`${label}:`, this.leftMargin, this.y, { width: this.col1Width });
+
+    const { fg, bg } = getStatusColors(status);
     const statusText = String(status || "N/A").toUpperCase();
-    const statusColor = getStatusColor(status);
-    const statusBg = getStatusBg(status);
-
-    this.doc.fontSize(8)
-      .font("Helvetica")
-      .fillColor(COLORS.labelColor)
-      .text(label + ":", 50, this.y, { width: this.col1Width });
-
-    const textWidth = this.doc.widthOfString(statusText);
-    this.doc.roundedRect(this.col2X, this.y - 1, textWidth + 10, 13, 2).fill(statusBg);
-    this.doc.fillColor(statusColor)
-      .fontSize(7)
-      .font("Helvetica-Bold")
-      .text(statusText, this.col2X + 5, this.y + 1);
+    const badgeW =
+      this.doc.widthOfString(statusText, { fontSize: SIZES.micro }) + 12;
+    this.doc.roundedRect(this.col2X, this.y - 1, badgeW, 13, 2).fill(bg);
+    this.doc
+      .fillColor(fg)
+      .fontSize(SIZES.micro)
+      .font(FONTS.bold)
+      .text(statusText, this.col2X + 6, this.y + 2);
 
     this.y += this.lineHeight;
   }
 
   addMoneyField(label, amount, currency = "NGN") {
-    const displayValue = amount ? formatCurrency(amount, currency) : null;
-    return this.addField(label, displayValue);
+    const display = amount ? formatCurrency(amount, currency) : null;
+    return this.addField(label, display, { bold: true, color: COLORS.navy });
+  }
+
+  addDateField(label, date) {
+    return this.addField(label, formatDate(date));
   }
 
   addTwoColumnField(label1, value1, label2, value2) {
-    if (this.y > this.doc.page.height - 40) {
-      this.addPageBreak();
-    }
+    this.checkPageBreak(this.lineHeight + 4);
 
-    this.doc.fontSize(8).font("Helvetica").fillColor(COLORS.labelColor)
-      .text(label1 + ":", 50, this.y, { width: this.col1Width })
-      .text(label2 + ":", 280, this.y, { width: this.col1Width });
+    const halfW = this.pageWidth / 2 - 10;
+    const mid = this.leftMargin + halfW + 20;
 
-    this.doc.fontSize(8).font("Helvetica").fillColor(COLORS.valueColor)
-      .text(String(value1 || "N/A"), this.col2X, this.y, { width: 120 })
-      .text(String(value2 || "N/A"), 280 + this.col1Width + 10, this.y, { width: 120 });
+    this.doc
+      .fontSize(SIZES.small)
+      .font(FONTS.regular)
+      .fillColor(COLORS.textMuted)
+      .text(`${label1}:`, this.leftMargin, this.y, { width: this.col1Width });
+    this.doc
+      .fillColor(COLORS.textPrimary)
+      .text(String(value1 ?? "—"), this.col2X, this.y, {
+        width: halfW - this.col1Width,
+      });
+
+    this.doc
+      .fillColor(COLORS.textMuted)
+      .text(`${label2}:`, mid, this.y, { width: this.col1Width });
+    this.doc
+      .fillColor(COLORS.textPrimary)
+      .text(String(value2 ?? "—"), mid + this.col1Width + 10, this.y, {
+        width: halfW - this.col1Width,
+      });
 
     this.y += this.lineHeight;
   }
 
-  addSubSection(title) {
-    this.checkPageBreak(40);
-    this.doc.fontSize(9).font("Helvetica-Bold").fillColor(COLORS.headerBg)
-      .text(title, 50, this.y);
-    this.y += this.lineHeight;
-  }
+  // ── Table ────────────────────────────────────────────────────────────────
 
   addTable(headers, rows, options = {}) {
     const { colWidths = [] } = options;
-    const startY = this.y;
+    this.checkPageBreak(50);
 
-    if (this.y > this.doc.page.height - 60) {
-      this.addPageBreak();
-    }
-
-    // Header
-    this.doc.rect(40, this.y, this.pageWidth, 18).fill(COLORS.accentColor);
-    let x = 45;
+    // Header bar
+    this.doc
+      .rect(this.leftMargin, this.y, this.pageWidth, 20)
+      .fill(COLORS.navy);
+    let x = this.leftMargin + 5;
     headers.forEach((h, i) => {
-      this.doc.fillColor(COLORS.white).fontSize(7).font("Helvetica-Bold")
-        .text(h, x, this.y + 5);
+      this.doc
+        .fillColor(COLORS.white)
+        .fontSize(SIZES.small)
+        .font(FONTS.bold)
+        .text(h, x, this.y + 6, { width: (colWidths[i] || 80) - 5 });
       x += colWidths[i] || 80;
     });
-    this.y += 22;
+    this.y += 24;
 
-    // Rows
-    rows.forEach((row) => {
+    rows.forEach((row, rowIdx) => {
       this.checkPageBreak(20);
-
-      x = 45;
-      row.forEach((cell, i) => {
-        const cellColor = i === 0 ? getStatusColor(cell) : COLORS.valueColor;
-        this.doc.fillColor(cellColor)
-          .fontSize(7)
-          .font(i === 0 ? "Helvetica-Bold" : "Helvetica")
-          .text(String(cell || "-").substring(0, 25), x, this.y, { width: colWidths[i] - 5 });
-        x += colWidths[i] || 80;
+      if (rowIdx % 2 === 1) {
+        this.doc
+          .rect(this.leftMargin, this.y - 2, this.pageWidth, 18)
+          .fill(COLORS.gray50);
+      }
+      x = this.leftMargin + 5;
+      row.forEach((cell, colIdx) => {
+        const isFirst = colIdx === 0;
+        const { fg } = getStatusColors(isFirst ? cell : null);
+        this.doc
+          .fillColor(isFirst ? fg : COLORS.textPrimary)
+          .fontSize(SIZES.small)
+          .font(isFirst ? FONTS.bold : FONTS.regular)
+          .text(String(cell ?? "—").substring(0, 30), x, this.y + 1, {
+            width: (colWidths[colIdx] || 80) - 5,
+          });
+        x += colWidths[colIdx] || 80;
       });
-      this.y += 16;
+      this.y += 18;
     });
 
-    this.y += 8;
+    this.y += 10;
   }
 
+  // ── Timeline ─────────────────────────────────────────────────────────────
+
   addTimeline(items) {
-    items.forEach((item) => {
-      this.checkPageBreak(30);
+    items.forEach((item, idx) => {
+      this.checkPageBreak(35);
 
-      const color = getStatusColor(item.status);
+      const { fg } = getStatusColors(item.status);
+      const circleX = this.leftMargin + 8;
+      const circleY = this.y + 6;
 
-      this.doc.circle(52, this.y + 4, 4).fill(color);
-      this.doc.moveTo(56, this.y + 4).lineTo(70, this.y + 4).stroke(COLORS.labelColor);
+      // Connector line to next item
+      if (idx < items.length - 1) {
+        this.doc
+          .moveTo(circleX, circleY + 6)
+          .lineTo(circleX, circleY + 28)
+          .lineWidth(1)
+          .strokeColor(COLORS.gray300)
+          .stroke();
+      }
 
-      this.doc.fontSize(8).font("Helvetica-Bold").fillColor(COLORS.valueColor)
-        .text(item.title, 75, this.y, { width: 300 });
+      // Status circle
+      this.doc.circle(circleX, circleY, 5).fill(fg);
 
+      // Title
+      this.doc
+        .fontSize(SIZES.body)
+        .font(FONTS.bold)
+        .fillColor(COLORS.textPrimary)
+        .text(item.title, this.leftMargin + 22, this.y, { width: 320 });
+
+      // Date (right-aligned)
       if (item.date) {
-        this.doc.fontSize(7).font("Helvetica").fillColor(COLORS.labelColor)
-          .text(formatDate(item.date), 380, this.y);
+        this.doc
+          .fontSize(SIZES.small)
+          .font(FONTS.regular)
+          .fillColor(COLORS.textMuted)
+          .text(formatDate(item.date), 390, this.y, {
+            width: 110,
+            align: "right",
+          });
       }
 
       this.y += 18;
 
       if (item.description) {
-        this.doc.fontSize(7).font("Helvetica").fillColor(COLORS.labelColor)
-          .text(item.description, 75, this.y, { width: 400 });
-        this.y += 14;
+        this.checkPageBreak(16);
+        this.doc
+          .fontSize(SIZES.small)
+          .font(FONTS.regular)
+          .fillColor(COLORS.textSecondary)
+          .text(item.description, this.leftMargin + 22, this.y, { width: 370 });
+        this.y += this.doc.heightOfString(item.description, { width: 370 }) + 4;
       }
     });
   }
 
+  // ── Finalize ─────────────────────────────────────────────────────────────
+
+  /**
+   * Call this AFTER all content methods.
+   * Adds footer to final page, then streams/saves the PDF.
+   * Does NOT call addHeader() — caller must call addHeader() once before content.
+   */
   async generate() {
-    this.addHeader();
     this.addFooter();
-
-    return new Promise((resolve, reject) => {
-      this.doc.end();
-
-      this.doc.on("end", () => {
-        try {
-          const pdfBuffer = Buffer.concat(this.chunks);
-
-          if (!fs.existsSync(path.dirname(this.outputPath))) {
-            fs.mkdirSync(path.dirname(this.outputPath), { recursive: true });
-          }
-          fs.writeFileSync(this.outputPath, pdfBuffer);
-
-          const filename = path.basename(this.outputPath);
-          this.res.setHeader("Content-Type", "application/pdf");
-          this.res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-          this.res.setHeader("Content-Length", pdfBuffer.length);
-          this.res.end(pdfBuffer);
-
-          console.log(`✅ PDF generated: ${this.outputPath}`);
-          resolve(this.outputPath);
-        } catch (err) {
-          reject(err);
-        }
-      });
-
-      this.doc.on("error", reject);
-    });
+    return finalizePdf(this.doc, this.chunks, this.res, this.outputPath);
   }
 }
 
 module.exports = {
   GenericPdfGenerator,
-  getStatusColor,
-  getStatusBg,
+  // Re-export helpers so existing callers don't need to change imports
+  getStatusColors,
   formatCurrency,
   formatDate,
+  COLORS,
 };
