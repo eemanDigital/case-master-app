@@ -266,6 +266,154 @@ const propertyDetailSchema = new mongoose.Schema(
       },
     },
 
+    leaseAlertSettings: {
+      enabled: {
+        type: Boolean,
+        default: true,
+      },
+      alertThresholds: [
+        {
+          days: {
+            type: Number,
+            required: true,
+          },
+          label: {
+            type: String,
+            enum: ["critical", "warning", "notice"],
+          },
+          isActive: {
+            type: Boolean,
+            default: true,
+          },
+        },
+      ],
+      defaultAlerts: {
+        type: Boolean,
+        default: true,
+      },
+      emailNotification: {
+        type: Boolean,
+        default: true,
+      },
+      smsNotification: {
+        type: Boolean,
+        default: false,
+      },
+      notifyLandlord: {
+        type: Boolean,
+        default: true,
+      },
+      notifyTenant: {
+        type: Boolean,
+        default: true,
+      },
+      customMessage: {
+        type: String,
+        trim: true,
+        maxlength: 500,
+      },
+    },
+
+    leaseMilestones: [
+      {
+        title: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        description: {
+          type: String,
+          trim: true,
+        },
+        targetDate: {
+          type: Date,
+        },
+        completedDate: {
+          type: Date,
+        },
+        status: {
+          type: String,
+          enum: ["pending", "completed", "skipped", "overdue"],
+          default: "pending",
+        },
+        reminderDays: {
+          type: Number,
+          default: 7,
+        },
+        notified: {
+          type: Boolean,
+          default: false,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
+
+    renewalTracking: {
+      renewalInitiated: {
+        type: Boolean,
+        default: false,
+      },
+      renewalInitiatedDate: {
+        type: Date,
+      },
+      renewalDeadline: {
+        type: Date,
+      },
+      renewalNoticePeriod: {
+        type: Number,
+        default: 90,
+      },
+      proposedNewRent: {
+        amount: Number,
+        currency: {
+          type: String,
+          default: "NGN",
+        },
+      },
+      rentIncreasePercentage: {
+        type: Number,
+        default: 0,
+      },
+      renewalTerms: {
+        type: String,
+        trim: true,
+      },
+      renewalStatus: {
+        type: String,
+        enum: ["not-initiated", "in-progress", "agreed", "disputed", "declined", "completed"],
+        default: "not-initiated",
+      },
+      negotiationsHistory: [
+        {
+          proposedBy: {
+            type: String,
+            enum: ["landlord", "tenant"],
+          },
+          proposedAmount: Number,
+          proposedDate: Date,
+          response: {
+            type: String,
+            enum: ["pending", "accepted", "rejected", "counter-offered"],
+          },
+          responseDate: Date,
+          notes: String,
+        },
+      ],
+      renewedExpiryDate: {
+        type: Date,
+      },
+      renewedRentAmount: {
+        amount: Number,
+        currency: {
+          type: String,
+          default: "NGN",
+        },
+      },
+    },
+
     deedOfAssignment: {
       executionDate: {
         type: Date,

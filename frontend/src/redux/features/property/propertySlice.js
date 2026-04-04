@@ -27,6 +27,17 @@ const initialState = {
   conditions: [],
   stats: null,
   pendingConsents: [],
+  expiringLeases: [],
+  leaseStats: null,
+  leasePagination: {
+    page: 1,
+    limit: 50,
+    total: 0,
+  },
+  leaseFilters: {
+    urgency: "",
+    daysThreshold: "",
+  },
   loading: false,
   detailsLoading: false,
   statsLoading: false,
@@ -449,6 +460,171 @@ export const fetchPendingConsents = createAsyncThunk(
 );
 
 // ============================================
+// LEASE TRACKING THUNKS
+// ============================================
+
+export const fetchExpiringLeases = createAsyncThunk(
+  "property/fetchExpiringLeases",
+  async (params = {}, { rejectWithValue }) => {
+    try {
+      const response = await propertyService.getExpiringLeases(params);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch expiring leases",
+      );
+    }
+  },
+);
+
+export const fetchLeaseStats = createAsyncThunk(
+  "property/fetchLeaseStats",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await propertyService.getLeaseStats();
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch lease statistics",
+      );
+    }
+  },
+);
+
+export const updateLeaseAlertSettings = createAsyncThunk(
+  "property/updateLeaseAlertSettings",
+  async ({ matterId, data }, { rejectWithValue }) => {
+    try {
+      const response = await propertyService.updateLeaseAlertSettings(matterId, data);
+      message.success("Alert settings updated successfully");
+      return response.data;
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Failed to update alert settings",
+      );
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update alert settings",
+      );
+    }
+  },
+);
+
+export const addLeaseMilestone = createAsyncThunk(
+  "property/addLeaseMilestone",
+  async ({ matterId, data }, { rejectWithValue }) => {
+    try {
+      const response = await propertyService.addLeaseMilestone(matterId, data);
+      message.success("Milestone added successfully");
+      return response.data;
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Failed to add milestone",
+      );
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to add milestone",
+      );
+    }
+  },
+);
+
+export const updateLeaseMilestone = createAsyncThunk(
+  "property/updateLeaseMilestone",
+  async ({ matterId, milestoneId, data }, { rejectWithValue }) => {
+    try {
+      const response = await propertyService.updateLeaseMilestone(
+        matterId,
+        milestoneId,
+        data,
+      );
+      message.success("Milestone updated successfully");
+      return response.data;
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Failed to update milestone",
+      );
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update milestone",
+      );
+    }
+  },
+);
+
+export const deleteLeaseMilestone = createAsyncThunk(
+  "property/deleteLeaseMilestone",
+  async ({ matterId, milestoneId }, { rejectWithValue }) => {
+    try {
+      const response = await propertyService.deleteLeaseMilestone(
+        matterId,
+        milestoneId,
+      );
+      message.success("Milestone removed successfully");
+      return response.data;
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Failed to remove milestone",
+      );
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to remove milestone",
+      );
+    }
+  },
+);
+
+export const initiateRenewal = createAsyncThunk(
+  "property/initiateRenewal",
+  async ({ matterId, data }, { rejectWithValue }) => {
+    try {
+      const response = await propertyService.initiateRenewal(matterId, data);
+      message.success("Renewal process initiated successfully");
+      return response.data;
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Failed to initiate renewal",
+      );
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to initiate renewal",
+      );
+    }
+  },
+);
+
+export const updateRenewalTracking = createAsyncThunk(
+  "property/updateRenewalTracking",
+  async ({ matterId, data }, { rejectWithValue }) => {
+    try {
+      const response = await propertyService.updateRenewalTracking(matterId, data);
+      message.success("Renewal tracking updated successfully");
+      return response.data;
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Failed to update renewal tracking",
+      );
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update renewal tracking",
+      );
+    }
+  },
+);
+
+export const addNegotiation = createAsyncThunk(
+  "property/addNegotiation",
+  async ({ matterId, data }, { rejectWithValue }) => {
+    try {
+      const response = await propertyService.addNegotiation(matterId, data);
+      message.success("Negotiation added successfully");
+      return response.data;
+    } catch (error) {
+      message.error(
+        error.response?.data?.message || "Failed to add negotiation",
+      );
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to add negotiation",
+      );
+    }
+  },
+);
+
+// ============================================
 // SLICE
 // ============================================
 
@@ -483,6 +659,17 @@ const propertySlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+    },
+    setLeaseFilters: (state, action) => {
+      state.leaseFilters = { ...state.leaseFilters, ...action.payload };
+      state.leasePagination.page = 1;
+    },
+    clearLeaseFilters: (state) => {
+      state.leaseFilters = initialState.leaseFilters;
+      state.leasePagination.page = 1;
+    },
+    setLeasePage: (state, action) => {
+      state.leasePagination.page = action.payload;
     },
   },
 
@@ -678,6 +865,144 @@ const propertySlice = createSlice({
         state.error = action.payload;
         message.error(action.payload || "Failed to fetch pending consents");
       });
+
+    // Lease tracking reducers
+    builder
+      .addCase(fetchExpiringLeases.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchExpiringLeases.fulfilled, (state, action) => {
+        state.loading = false;
+        state.expiringLeases = action.payload.data?.leases || action.payload.leases || [];
+        state.leasePagination = {
+          page: action.payload.page || 1,
+          limit: action.payload.limit || 50,
+          total: action.payload.total || 0,
+        };
+      })
+      .addCase(fetchExpiringLeases.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+        message.error(action.payload || "Failed to fetch expiring leases");
+      })
+      .addCase(fetchLeaseStats.pending, (state) => {
+        state.statsLoading = true;
+      })
+      .addCase(fetchLeaseStats.fulfilled, (state, action) => {
+        state.statsLoading = false;
+        state.leaseStats = action.payload.data || action.payload;
+      })
+      .addCase(fetchLeaseStats.rejected, (state, action) => {
+        state.statsLoading = false;
+        state.error = action.payload;
+        message.error(action.payload || "Failed to fetch lease statistics");
+      })
+      .addCase(updateLeaseAlertSettings.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(updateLeaseAlertSettings.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        const propertyDetail =
+          action.payload.propertyDetail ||
+          action.payload.data?.propertyDetail ||
+          action.payload.data;
+        state.selectedDetails = propertyDetail;
+      })
+      .addCase(updateLeaseAlertSettings.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(addLeaseMilestone.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(addLeaseMilestone.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        const propertyDetail =
+          action.payload.propertyDetail ||
+          action.payload.data?.propertyDetail ||
+          action.payload.data;
+        state.selectedDetails = propertyDetail;
+      })
+      .addCase(addLeaseMilestone.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(updateLeaseMilestone.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(updateLeaseMilestone.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        const propertyDetail =
+          action.payload.propertyDetail ||
+          action.payload.data?.propertyDetail ||
+          action.payload.data;
+        state.selectedDetails = propertyDetail;
+      })
+      .addCase(updateLeaseMilestone.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(deleteLeaseMilestone.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(deleteLeaseMilestone.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        const propertyDetail =
+          action.payload.propertyDetail ||
+          action.payload.data?.propertyDetail ||
+          action.payload.data;
+        state.selectedDetails = propertyDetail;
+      })
+      .addCase(deleteLeaseMilestone.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(initiateRenewal.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(initiateRenewal.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        const propertyDetail =
+          action.payload.propertyDetail ||
+          action.payload.data?.propertyDetail ||
+          action.payload.data;
+        state.selectedDetails = propertyDetail;
+      })
+      .addCase(initiateRenewal.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(updateRenewalTracking.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(updateRenewalTracking.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        const propertyDetail =
+          action.payload.propertyDetail ||
+          action.payload.data?.propertyDetail ||
+          action.payload.data;
+        state.selectedDetails = propertyDetail;
+      })
+      .addCase(updateRenewalTracking.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(addNegotiation.pending, (state) => {
+        state.actionLoading = true;
+      })
+      .addCase(addNegotiation.fulfilled, (state, action) => {
+        state.actionLoading = false;
+        const propertyDetail =
+          action.payload.propertyDetail ||
+          action.payload.data?.propertyDetail ||
+          action.payload.data;
+        state.selectedDetails = propertyDetail;
+      })
+      .addCase(addNegotiation.rejected, (state, action) => {
+        state.actionLoading = false;
+        state.error = action.payload;
+      });
   },
 });
 
@@ -690,6 +1015,9 @@ export const {
   clearSelectedMatter,
   setSearchMode,
   clearError,
+  setLeaseFilters,
+  clearLeaseFilters,
+  setLeasePage,
 } = propertySlice.actions;
 
 export const selectPropertyMatters = (state) => state.property.matters;
@@ -718,5 +1046,16 @@ export const selectDetailsLoading = (state) =>
 export const selectActionLoading = (state) =>
   state.property?.actionLoading || false;
 export const selectPropertyError = (state) => state.property?.error || null;
+export const selectExpiringLeases = (state) =>
+  state.property?.expiringLeases || [];
+export const selectLeaseStats = (state) => state.property?.leaseStats || null;
+export const selectLeasePagination = (state) =>
+  state.property?.leasePagination || {
+    page: 1,
+    limit: 50,
+    total: 0,
+  };
+export const selectLeaseFilters = (state) =>
+  state.property?.leaseFilters || initialState.leaseFilters;
 
 export default propertySlice.reducer;

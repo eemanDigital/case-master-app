@@ -142,6 +142,50 @@ export const getPendingConsents = (params = {}) => {
 };
 
 // ============================================
+// LEASE TRACKING & EXPIRATION MANAGEMENT
+// ============================================
+
+export const getExpiringLeases = (params = {}) => {
+  const queryString = buildQueryString(params);
+  return apiService.get(`/property/leases/expiring${queryString}`);
+};
+
+export const getLeaseStats = () => {
+  return apiService.get("/property/leases/stats");
+};
+
+export const updateLeaseAlertSettings = (matterId, data) => {
+  return apiService.patch(`/property/${matterId}/lease-alerts`, data);
+};
+
+export const addLeaseMilestone = (matterId, data) => {
+  return apiService.post(`/property/${matterId}/lease-milestones`, data);
+};
+
+export const updateLeaseMilestone = (matterId, milestoneId, data) => {
+  return apiService.patch(
+    `/property/${matterId}/lease-milestones/${milestoneId}`,
+    data,
+  );
+};
+
+export const deleteLeaseMilestone = (matterId, milestoneId) => {
+  return apiService.delete(`/property/${matterId}/lease-milestones/${milestoneId}`);
+};
+
+export const initiateRenewal = (matterId, data) => {
+  return apiService.post(`/property/${matterId}/renewal/initiate`, data);
+};
+
+export const updateRenewalTracking = (matterId, data) => {
+  return apiService.patch(`/property/${matterId}/renewal`, data);
+};
+
+export const addNegotiation = (matterId, data) => {
+  return apiService.post(`/property/${matterId}/renewal/negotiation`, data);
+};
+
+// ============================================
 // BULK OPERATIONS
 // ============================================
 
@@ -179,6 +223,15 @@ const propertyService = {
   getPropertyStats,
   getPendingConsents,
   bulkUpdatePropertyMatters,
+  getExpiringLeases,
+  getLeaseStats,
+  updateLeaseAlertSettings,
+  addLeaseMilestone,
+  updateLeaseMilestone,
+  deleteLeaseMilestone,
+  initiateRenewal,
+  updateRenewalTracking,
+  addNegotiation,
 };
 
 export default propertyService;

@@ -15,10 +15,66 @@ propertyRouter.post("/search", propertyController.searchPropertyMatters);
 propertyRouter.get("/stats", propertyController.getPropertyStats);
 propertyRouter.get("/pending-consents", propertyController.getPendingConsents);
 
-// Property report PDF - must be before /:matterId routes
+// Lease tracking & expiration management
+propertyRouter.get("/leases/expiring", propertyController.getExpiringLeases);
+propertyRouter.get("/leases/stats", propertyController.getLeaseStats);
+
+// Bulk operations — must be before /:matterId to avoid param conflict
+propertyRouter.patch(
+  "/bulk-update",
+  restrictTo("admin", "lawyer"),
+  propertyController.bulkUpdatePropertyMatters,
+);
+
+// Property report PDF — must be before /:matterId routes
 propertyRouter.get(
   "/:matterId/report",
   propertyController.generatePropertyReportPdf,
+);
+
+// Lease alert settings
+propertyRouter.patch(
+  "/:matterId/lease-alerts",
+  restrictTo("admin", "lawyer"),
+  propertyController.updateLeaseAlertSettings,
+);
+
+// Lease milestones
+propertyRouter.post(
+  "/:matterId/lease-milestones",
+  restrictTo("admin", "lawyer"),
+  propertyController.addLeaseMilestone,
+);
+
+propertyRouter.patch(
+  "/:matterId/lease-milestones/:milestoneId",
+  restrictTo("admin", "lawyer"),
+  propertyController.updateLeaseMilestone,
+);
+
+propertyRouter.delete(
+  "/:matterId/lease-milestones/:milestoneId",
+  restrictTo("admin", "lawyer"),
+  propertyController.deleteLeaseMilestone,
+);
+
+// Renewal tracking
+propertyRouter.post(
+  "/:matterId/renewal/initiate",
+  restrictTo("admin", "lawyer"),
+  propertyController.initiateRenewal,
+);
+
+propertyRouter.patch(
+  "/:matterId/renewal",
+  restrictTo("admin", "lawyer"),
+  propertyController.updateRenewalTracking,
+);
+
+propertyRouter.post(
+  "/:matterId/renewal/negotiation",
+  restrictTo("admin", "lawyer"),
+  propertyController.addNegotiation,
 );
 
 // Property details CRUD
@@ -134,19 +190,6 @@ propertyRouter.patch(
   "/:matterId/completion",
   restrictTo("admin", "lawyer"),
   propertyController.recordCompletion,
-);
-
-// Bulk operations
-propertyRouter.patch(
-  "/bulk-update",
-  restrictTo("admin", "lawyer"),
-  propertyController.bulkUpdatePropertyMatters,
-);
-
-// Property report PDF
-propertyRouter.get(
-  "/:id/report",
-  propertyController.generatePropertyReportPdf,
 );
 
 module.exports = propertyRouter;
