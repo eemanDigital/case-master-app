@@ -12,7 +12,12 @@ import {
   Footer,
 } from "./home/sections";
 
-import { MatterShowcase, TemplatesShowcase, CACShowcase, CalendarShowcase } from "./home/sections/showcase";
+import {
+  MatterShowcase,
+  TemplatesShowcase,
+  CACShowcase,
+  CalendarShowcase,
+} from "./home/sections/showcase";
 
 export default function HomePage() {
   return (
@@ -29,8 +34,8 @@ export default function HomePage() {
           <CACShowcase />
           <CalendarShowcase />
           <StatsSection />
-          <TestimonialsSection />
-          <PricingSection />
+          {/* <TestimonialsSection /> */}
+          {/* <PricingSection /> */}
           <CTASection />
         </main>
         <Footer />

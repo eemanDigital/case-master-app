@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { Menu, Typography, Badge } from "antd";
+import { Menu, Typography, Badge, message } from "antd";
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -37,6 +37,8 @@ import { useTheme } from "../providers/ThemeProvider";
 import { useAdminHook } from "../hooks/useAdminHook";
 
 const { Text } = Typography;
+
+const isDevMode = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
 
 const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
   const dispatch = useDispatch();
@@ -447,11 +449,22 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
         };
       }
 
+      const handlePremiumClick = (e) => {
+        if (isMobile && closeDrawer) closeDrawer();
+        if (!isDevMode) {
+          e.preventDefault();
+          message.warning({
+            content: "This feature is currently under development and will be available soon.",
+            className: isDarkMode ? "dark-message" : "",
+          });
+        }
+      };
+
       return {
         key: item.key,
         icon: item.icon,
         label: (
-          <Link to={item.path} onClick={isMobile ? closeDrawer : undefined}>
+          <Link to={item.path} onClick={isPremium ? handlePremiumClick : (isMobile ? closeDrawer : undefined)}>
             {item.label}
             {isPremium && (
               <span
@@ -755,7 +768,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
         )}
       </div>
 
-      <style jsx>{`
+      <style jsx global>{`
         @keyframes pulse {
           0%,
           100% {
@@ -764,6 +777,13 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           50% {
             opacity: 0.5;
           }
+        }
+        .dark-message .ant-message-notice-content {
+          background: #1f2937;
+          color: #f3f4f6;
+        }
+        .dark-message .ant-message-warning .anticon {
+          color: #f59e0b;
         }
       `}</style>
     </div>
