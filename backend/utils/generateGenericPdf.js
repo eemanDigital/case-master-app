@@ -40,8 +40,8 @@ function getStatusBg(status) {
   return "#e2e8f0";
 }
 
-function formatCurrency(amount, symbol = "₦") {
-  return `${symbol}${Number(amount || 0).toLocaleString()}`;
+function formatCurrency(amount, currency = "NGN") {
+  return `${currency} ${Number(amount || 0).toLocaleString()}`;
 }
 
 function formatDate(date) {
@@ -118,7 +118,7 @@ class GenericPdfGenerator {
           day: "2-digit", month: "short", year: "numeric",
           hour: "2-digit", minute: "2-digit"
         })} | ${this.options.firmName || "Law Firm"} | Page ${pageNum}`,
-        50, this.doc.page.height - 35,
+        50, this.doc.page.height - 25,
         { align: "center", width: this.pageWidth }
       );
   }
@@ -190,7 +190,7 @@ class GenericPdfGenerator {
     this.y += this.lineHeight;
   }
 
-  addMoneyField(label, amount, currency = "₦") {
+  addMoneyField(label, amount, currency = "NGN") {
     const displayValue = amount ? formatCurrency(amount, currency) : null;
     return this.addField(label, displayValue);
   }
