@@ -90,9 +90,9 @@ const LeaseMilestonesManager = ({ matterId, milestones = [] }) => {
             milestoneId: editingMilestone._id,
             data: formattedValues,
           }),
-        );
+        ).unwrap();
       } else {
-        await dispatch(addLeaseMilestone({ matterId, data: formattedValues }));
+        await dispatch(addLeaseMilestone({ matterId, data: formattedValues })).unwrap();
       }
       setModalVisible(false);
       form.resetFields();
@@ -103,7 +103,7 @@ const LeaseMilestonesManager = ({ matterId, milestones = [] }) => {
           : "Milestone added successfully",
       );
     } catch (error) {
-      message.error("Failed to save milestone");
+      message.error(error?.message || "Failed to save milestone");
     } finally {
       setLoading(false);
     }
@@ -111,10 +111,10 @@ const LeaseMilestonesManager = ({ matterId, milestones = [] }) => {
 
   const handleDelete = async (milestoneId) => {
     try {
-      await dispatch(deleteLeaseMilestone({ matterId, milestoneId }));
+      await dispatch(deleteLeaseMilestone({ matterId, milestoneId })).unwrap();
       message.success("Milestone removed successfully");
     } catch (error) {
-      message.error("Failed to remove milestone");
+      message.error(error?.message || "Failed to remove milestone");
     }
   };
 
@@ -130,10 +130,10 @@ const LeaseMilestonesManager = ({ matterId, milestones = [] }) => {
             completedDate: new Date().toISOString(),
           },
         }),
-      );
+      ).unwrap();
       message.success("Milestone marked as completed");
     } catch (error) {
-      message.error("Failed to update milestone");
+      message.error(error?.message || "Failed to update milestone");
     }
   };
 

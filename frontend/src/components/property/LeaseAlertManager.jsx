@@ -55,10 +55,10 @@ const LeaseAlertManager = ({ matterId, alertSettings }) => {
             })),
           },
         }),
-      );
+      ).unwrap();
       message.success("Alert settings updated successfully");
     } catch (error) {
-      message.error("Failed to update alert settings");
+      message.error(error?.message || "Failed to update alert settings");
     } finally {
       setLoading(false);
     }

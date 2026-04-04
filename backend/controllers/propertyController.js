@@ -989,7 +989,15 @@ exports.deleteLeaseMilestone = catchAsync(async (req, res, next) => {
 
 exports.initiateRenewal = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
-  const { renewalTerms, proposedNewRent, rentIncreasePercentage } = req.body;
+  const { renewalTerms, rentIncreasePercentage, renewalNoticePeriod } = req.body;
+  
+  let proposedNewRent = req.body.proposedNewRent;
+  if (proposedNewRent && typeof proposedNewRent === "number") {
+    proposedNewRent = {
+      amount: proposedNewRent,
+      currency: "NGN",
+    };
+  }
 
   const propertyDetail = await PropertyDetail.findOne({
     matterId,
@@ -1003,7 +1011,7 @@ exports.initiateRenewal = catchAsync(async (req, res, next) => {
   const leaseExpiryDate = new Date(propertyDetail.leaseAgreement?.expiryDate);
   const renewalDeadline = new Date(leaseExpiryDate);
   const noticePeriod =
-    req.body.renewalNoticePeriod ||
+    renewalNoticePeriod ||
     propertyDetail.renewalTracking?.renewalNoticePeriod ||
     90;
   renewalDeadline.setDate(renewalDeadline.getDate() - noticePeriod);

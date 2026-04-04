@@ -37,6 +37,9 @@ import {
   DownloadOutlined,
   FileAddOutlined,
   FilePdfOutlined,
+  KeyOutlined,
+  AlertOutlined,
+  RocketOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
@@ -58,6 +61,10 @@ import PropertiesManager from "../../components/property/PropertiesManager";
 import PaymentScheduleManager from "../../components/property/PaymentScheduleManager";
 import ConditionsManager from "../../components/property/ConditionsManager";
 import TransactionCompletionModal from "../../components/property/TransactionCompletionModal";
+import LeaseTracker from "../../components/property/LeaseTracker";
+import LeaseAlertManager from "../../components/property/LeaseAlertManager";
+import LeaseMilestonesManager from "../../components/property/LeaseMilestonesManager";
+import LeaseRenewalSection from "../../components/property/LeaseRenewalSection";
 import { downloadPropertyReport } from "../../utils/pdfDownload";
 
 // Utils
@@ -159,10 +166,12 @@ const PropertyDetails = () => {
     transactionType,
     purchasePrice,
     rentAmount,
-    // securityDeposit,
     paymentTerms,
     contractOfSale = {},
     leaseAgreement = {},
+    leaseAlertSettings = {},
+    leaseMilestones = [],
+    renewalTracking = {},
     deedOfAssignment = {},
     governorsConsent = {},
     titleSearch = {},
@@ -198,6 +207,27 @@ const PropertyDetails = () => {
   const overdueConditions =
     conditions?.filter((c) => c.status === "pending" && isOverdue(c.dueDate))
       ?.length || 0;
+
+  // Lease-specific metrics
+  const isLeaseTransaction = ["lease", "sublease", "tenancy_matter"].includes(transactionType);
+  const pendingMilestones = leaseMilestones?.filter((m) => m.status === "pending")?.length || 0;
+  const completedMilestones = leaseMilestones?.filter((m) => m.status === "completed")?.length || 0;
+
+  // Calculate lease urgency
+  const calculateUrgency = () => {
+    if (!leaseAgreement?.expiryDate) return null;
+    const now = new Date();
+    const expiry = new Date(leaseAgreement.expiryDate);
+    const daysRemaining = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+
+    if (daysRemaining <= 0) return { level: "expired", days: daysRemaining };
+    if (daysRemaining <= 7) return { level: "critical", days: daysRemaining };
+    if (daysRemaining <= 30) return { level: "warning", days: daysRemaining };
+    if (daysRemaining <= 90) return { level: "notice", days: daysRemaining };
+    return { level: "safe", days: daysRemaining };
+  };
+
+  const leaseUrgency = isLeaseTransaction ? calculateUrgency() : null;
 
   // No data state - show create form
   if (!propertyDetails && !editMode) {
@@ -733,6 +763,26 @@ const PropertyDetails = () => {
                         onClick={() => setActiveTab("inspection")}>
                         Due Diligence
                       </Button>
+                      {isLeaseTransaction && (
+                        <>
+                          <Button
+                            block
+                            icon={<KeyOutlined />}
+                            onClick={() => setActiveTab("lease")}>
+                            Lease Tracker {leaseUrgency && leaseUrgency.level !== "safe" && (
+                              <Tag color={leaseUrgency.level === "critical" ? "red" : leaseUrgency.level === "warning" ? "orange" : "blue"} className="ml-2">
+                                {leaseUrgency.days}d
+                              </Tag>
+                            )}
+                          </Button>
+                          <Button
+                            block
+                            icon={<AlertOutlined />}
+                            onClick={() => setActiveTab("lease-alerts")}>
+                            Alert Settings
+                          </Button>
+                        </>
+                      )}
                     </Space>
                   </Card>
 
@@ -843,6 +893,33 @@ const PropertyDetails = () => {
                         type="warning"
                         showIcon
                         // icon={<MapOutlined />}
+                        className="mb-2"
+                      />
+                    )}
+                    {isLeaseTransaction && leaseUrgency?.level === "critical" && (
+                      <Alert
+                        message={`Lease expires in ${leaseUrgency.days} day(s) - CRITICAL`}
+                        type="error"
+                        showIcon
+                        icon={<ExclamationCircleOutlined />}
+                        className="mb-2"
+                      />
+                    )}
+                    {isLeaseTransaction && leaseUrgency?.level === "warning" && (
+                      <Alert
+                        message={`Lease expires in ${leaseUrgency.days} day(s) - Review required`}
+                        type="warning"
+                        showIcon
+                        icon={<AlertOutlined />}
+                        className="mb-2"
+                      />
+                    )}
+                    {isLeaseTransaction && pendingMilestones > 0 && (
+                      <Alert
+                        message={`${pendingMilestones} pending milestone(s)`}
+                        type="info"
+                        showIcon
+                        icon={<ClockCircleOutlined />}
                         className="mb-2"
                       />
                     )}
@@ -1112,6 +1189,202 @@ const PropertyDetails = () => {
                 </Tabs>
               </Card>
             </Tabs.TabPane>
+
+            {/* Lease Tracking Tab - Only show for lease transactions */}
+            {isLeaseTransaction && (
+              <Tabs.TabPane tab={
+                <span>
+                  <KeyOutlined className="mr-1" />
+                  Lease
+                  {leaseUrgency && leaseUrgency.level !== "safe" && (
+                    <Tag 
+                      color={leaseUrgency.level === "critical" ? "red" : leaseUrgency.level === "warning" ? "orange" : "blue"} 
+                      className="ml-2"
+                    >
+                      {leaseUrgency.days}d
+                    </Tag>
+                  )}
+                </span>
+              } key="lease">
+                <Row gutter={16}>
+                  <Col xs={24} lg={24}>
+                    {/* Lease Tracker Component */}
+                    <LeaseTracker 
+                      leaseAgreement={leaseAgreement}
+                      renewalTracking={renewalTracking}
+                      tenant={tenant}
+                      landlord={landlord}
+                    />
+                  </Col>
+                </Row>
+
+                <Row gutter={16} className="mt-4">
+                  <Col xs={24} lg={12}>
+                    {/* Milestones Manager */}
+                    <LeaseMilestonesManager 
+                      matterId={matterId}
+                      milestones={leaseMilestones}
+                    />
+                  </Col>
+                  <Col xs={24} lg={12}>
+                    {/* Import LeaseDetails for renewal management */}
+                    <LeaseRenewalSection 
+                      matterId={matterId}
+                      renewalTracking={renewalTracking}
+                      rentAmount={rentAmount}
+                    />
+                  </Col>
+                </Row>
+
+                {/* Lease Agreement Edit Form */}
+                <Card title="Lease Agreement Details" className="mt-4">
+                  <Descriptions column={2} bordered>
+                    <Descriptions.Item label="Status">
+                      <Tag
+                        color={
+                          leaseAgreement?.status === "active"
+                            ? "success"
+                            : leaseAgreement?.status === "executed"
+                              ? "blue"
+                              : leaseAgreement?.status === "expired"
+                                ? "default"
+                                : "processing"
+                        }>
+                        {leaseAgreement?.status?.toUpperCase() || "NOT SET"}
+                      </Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Renewal Option">
+                      <Tag color={leaseAgreement?.renewalOption ? "green" : "default"}>
+                        {leaseAgreement?.renewalOption ? "YES" : "NO"}
+                      </Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Commencement Date">
+                      {leaseAgreement?.commencementDate
+                        ? dayjs(leaseAgreement.commencementDate).format("DD/MM/YYYY")
+                        : "Not set"}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Expiry Date">
+                      {leaseAgreement?.expiryDate
+                        ? dayjs(leaseAgreement.expiryDate).format("DD/MM/YYYY")
+                        : "Not set"}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Duration">
+                      {leaseAgreement?.duration
+                        ? `${leaseAgreement.duration.years || 0} years, ${leaseAgreement.duration.months || 0} months`
+                        : "Not set"}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Time Remaining">
+                      {leaseUrgency && (
+                        <Tag
+                          color={
+                            leaseUrgency.level === "critical" ? "red" :
+                            leaseUrgency.level === "warning" ? "orange" :
+                            leaseUrgency.level === "notice" ? "blue" : "green"
+                          }
+                        >
+                          {leaseUrgency.level === "expired" 
+                            ? `Expired ${Math.abs(leaseUrgency.days)} days ago`
+                            : `${leaseUrgency.days} days remaining`
+                          }
+                        </Tag>
+                      )}
+                    </Descriptions.Item>
+                  </Descriptions>
+                </Card>
+              </Tabs.TabPane>
+            )}
+
+            {/* Lease Alerts Tab */}
+            {isLeaseTransaction && (
+              <Tabs.TabPane tab={
+                <span>
+                  <AlertOutlined className="mr-1" />
+                  Alert Settings
+                </span>
+              } key="lease-alerts">
+                <Row gutter={16}>
+                  <Col xs={24} lg={24}>
+                    <LeaseAlertManager 
+                      matterId={matterId}
+                      alertSettings={leaseAlertSettings}
+                    />
+                  </Col>
+                </Row>
+
+                <Card title="Lease Expiration Summary" className="mt-4">
+                  <Row gutter={16}>
+                    <Col xs={24} sm={8}>
+                      <Card size="small">
+                        <Statistic
+                          title="Total Milestones"
+                          value={leaseMilestones?.length || 0}
+                          prefix={<RocketOutlined />}
+                        />
+                      </Card>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                      <Card size="small">
+                        <Statistic
+                          title="Completed"
+                          value={completedMilestones}
+                          valueStyle={{ color: "#52c41a" }}
+                        />
+                      </Card>
+                    </Col>
+                    <Col xs={24} sm={8}>
+                      <Card size="small">
+                        <Statistic
+                          title="Pending"
+                          value={pendingMilestones}
+                          valueStyle={{ color: pendingMilestones > 0 ? "#fa8c16" : "#52c41a" }}
+                        />
+                      </Card>
+                    </Col>
+                  </Row>
+                </Card>
+
+                <Card title="Renewal Status" className="mt-4">
+                  <Descriptions column={1} bordered>
+                    <Descriptions.Item label="Renewal Initiated">
+                      <Tag color={renewalTracking?.renewalInitiated ? "green" : "default"}>
+                        {renewalTracking?.renewalInitiated ? "YES" : "NO"}
+                      </Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Renewal Status">
+                      <Tag
+                        color={
+                          renewalTracking?.renewalStatus === "agreed" ? "green" :
+                          renewalTracking?.renewalStatus === "in-progress" ? "blue" :
+                          renewalTracking?.renewalStatus === "disputed" ? "orange" :
+                          renewalTracking?.renewalStatus === "completed" ? "success" :
+                          "default"
+                        }
+                      >
+                        {renewalTracking?.renewalStatus?.replace(/-/g, " ").toUpperCase() || "NOT INITIATED"}
+                      </Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Renewal Deadline">
+                      {renewalTracking?.renewalDeadline
+                        ? dayjs(renewalTracking.renewalDeadline).format("DD/MM/YYYY")
+                        : "Not set"}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Proposed New Rent">
+                      {renewalTracking?.proposedNewRent?.amount
+                        ? `${renewalTracking.proposedNewRent.currency || "NGN"} ${renewalTracking.proposedNewRent.amount.toLocaleString()}`
+                        : "Not proposed"}
+                      {renewalTracking?.rentIncreasePercentage > 0 && (
+                        <Tag color="green" className="ml-2">
+                          +{renewalTracking.rentIncreasePercentage}%
+                        </Tag>
+                      )}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Negotiations">
+                      {renewalTracking?.negotiationsHistory?.length || 0} recorded
+                    </Descriptions.Item>
+                  </Descriptions>
+                </Card>
+              </Tabs.TabPane>
+            )}
 
             {/* History Tab */}
             <Tabs.TabPane tab="History" key="history">

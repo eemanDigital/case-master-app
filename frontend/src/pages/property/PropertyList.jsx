@@ -32,6 +32,7 @@ import {
   MoreOutlined,
   SyncOutlined,
   CheckCircleOutlined,
+  KeyOutlined,
 } from "@ant-design/icons";
 
 import {
@@ -402,6 +403,12 @@ const PropertyList = () => {
             </p>
           </div>
           <Space>
+            <Button 
+              icon={<KeyOutlined />} 
+              onClick={() => navigate("/dashboard/matters/property/lease-dashboard")}
+            >
+              Lease Dashboard
+            </Button>
             <Button icon={<DownloadOutlined />} onClick={handleExport}>
               Export
             </Button>

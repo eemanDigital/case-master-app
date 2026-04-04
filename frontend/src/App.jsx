@@ -121,6 +121,9 @@ const EditProperty = lazy(() => import("./pages/property/EditProperty.jsx"));
 const PropertyDetails = lazy(
   () => import("./pages/property/PropertyDetails.jsx"),
 );
+const LeaseDashboard = lazy(
+  () => import("./pages/property/LeaseDashboard.jsx"),
+);
 
 // Retainer Management
 const RetainerList = lazy(() => import("./pages/retainer/RetainerList.jsx"));
@@ -790,6 +793,16 @@ const router = createBrowserRouter(
                 <Suspense fallback={<PageLoader />}>
                   <ProtectedStaffRoute>
                     <PropertyList />
+                  </ProtectedStaffRoute>
+                </Suspense>
+              }
+            />
+            <Route
+              path="lease-dashboard"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <ProtectedStaffRoute>
+                    <LeaseDashboard />
                   </ProtectedStaffRoute>
                 </Suspense>
               }
