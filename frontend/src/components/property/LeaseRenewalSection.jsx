@@ -54,6 +54,7 @@ const LeaseRenewalSection = ({ matterId, renewalTracking, rentAmount }) => {
   const [renewalModalVisible, setRenewalModalVisible] = useState(false);
   const [negotiationModalVisible, setNegotiationModalVisible] = useState(false);
   const [editingNegotiation, setEditingNegotiation] = useState(null);
+  const [isEditingRenewal, setIsEditingRenewal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form] = Form.useForm();
   const [negotiationForm] = Form.useForm();
@@ -77,12 +78,19 @@ const LeaseRenewalSection = ({ matterId, renewalTracking, rentAmount }) => {
   };
 
   const handleEditRenewal = () => {
+    setIsEditingRenewal(true);
     editForm.setFieldsValue({
       renewalNoticePeriod: renewalTracking?.renewalNoticePeriod || 90,
       proposedNewRent: renewalTracking?.proposedNewRent?.amount || "",
       rentIncreasePercentage: renewalTracking?.rentIncreasePercentage || 0,
       renewalTerms: renewalTracking?.renewalTerms || "",
     });
+    setRenewalModalVisible(true);
+  };
+
+  const handleInitiateNewRenewal = () => {
+    setIsEditingRenewal(false);
+    form.resetFields();
     setRenewalModalVisible(true);
   };
 
@@ -329,7 +337,7 @@ const LeaseRenewalSection = ({ matterId, renewalTracking, rentAmount }) => {
             <Button
               type="primary"
               icon={<RocketOutlined />}
-              onClick={() => setRenewalModalVisible(true)}
+              onClick={handleInitiateNewRenewal}
             >
               Initiate Renewal
             </Button>
@@ -446,20 +454,22 @@ const LeaseRenewalSection = ({ matterId, renewalTracking, rentAmount }) => {
 
       {/* Create/Edit Renewal Modal */}
       <Modal
-        title={editingNegotiation ? "Edit Renewal Details" : "Initiate Lease Renewal"}
+        title={isEditingRenewal ? "Edit Renewal Details" : "Initiate Lease Renewal"}
         open={renewalModalVisible}
         onCancel={() => {
           setRenewalModalVisible(false);
+          setIsEditingRenewal(false);
           editForm.resetFields();
+          form.resetFields();
         }}
         footer={null}
         width={500}
         centered
       >
         <Form
-          form={editingNegotiation ? editForm : form}
+          form={isEditingRenewal ? editForm : form}
           layout="vertical"
-          onFinish={editingNegotiation ? handleUpdateRenewal : handleInitiateRenewal}
+          onFinish={isEditingRenewal ? handleUpdateRenewal : handleInitiateRenewal}
         >
           <Form.Item
             name="renewalNoticePeriod"
@@ -495,12 +505,14 @@ const LeaseRenewalSection = ({ matterId, renewalTracking, rentAmount }) => {
             <div className="flex justify-end gap-2">
               <Button onClick={() => {
                 setRenewalModalVisible(false);
+                setIsEditingRenewal(false);
                 editForm.resetFields();
+                form.resetFields();
               }}>
                 Cancel
               </Button>
               <Button type="primary" htmlType="submit" loading={loading} icon={<SaveOutlined />}>
-                {editingNegotiation ? "Update" : "Initiate Renewal"}
+                {isEditingRenewal ? "Update" : "Initiate Renewal"}
               </Button>
             </div>
           </Form.Item>
