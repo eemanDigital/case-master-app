@@ -5,7 +5,7 @@ const PropertyDetail = require("../models/propertyDetailModel");
 const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
-const { generatePdf } = require("../utils/generatePdf");
+const { generatePdf } = require("../utils/generatePdfPdfkit");
 const path = require("path");
 
 // Initialize pagination services
@@ -1476,10 +1476,9 @@ exports.generatePropertyReportPdf = catchAsync(async (req, res, next) => {
 
   const filename = `${matter.matterNumber}_property_report_${Date.now()}.pdf`;
 
-  generatePdf(
+  await generatePdf(
     reportData,
     res,
-    path.resolve(__dirname, "../views/propertyReport.pug"),
     path.resolve(__dirname, `../output/${filename}`),
   );
 });

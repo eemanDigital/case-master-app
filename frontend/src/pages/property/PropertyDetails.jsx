@@ -166,6 +166,7 @@ const PropertyDetails = () => {
     transactionType,
     purchasePrice,
     rentAmount,
+    securityDeposit,
     paymentTerms,
     contractOfSale = {},
     leaseAgreement = {},
@@ -174,6 +175,7 @@ const PropertyDetails = () => {
     renewalTracking = {},
     deedOfAssignment = {},
     governorsConsent = {},
+    surveyPlan = {},
     titleSearch = {},
     physicalInspection = {},
     development = {},
@@ -467,7 +469,7 @@ const PropertyDetails = () => {
                 {/* Left Column - Basic Info */}
                 <Col xs={24} lg={16}>
                   <Card title="Transaction Details" className="mb-6">
-                    <Descriptions column={2} bordered>
+                    <Descriptions column={2} bordered size="small">
                       <Descriptions.Item label="Transaction Type" span={2}>
                         <Tag color={transactionTypeConfig?.color}>
                           {transactionTypeConfig?.icon}{" "}
@@ -479,27 +481,227 @@ const PropertyDetails = () => {
                           ? paymentTerms.replace("-", " ").toUpperCase()
                           : "Not specified"}
                       </Descriptions.Item>
-                      <Descriptions.Item label="Financial Value">
+                      <Descriptions.Item label="Purchase Price">
                         {purchasePrice?.amount ? (
                           <span className="font-semibold">
-                            {formatCurrency(
-                              purchasePrice.amount,
-                              purchasePrice.currency,
+                            {formatCurrency(purchasePrice.amount, purchasePrice.currency)}
+                          </span>
+                        ) : "Not applicable"}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Rent Amount">
+                        {rentAmount?.amount ? (
+                          <Space>
+                            <span className="font-semibold">
+                              {formatCurrency(rentAmount.amount, rentAmount.currency)}
+                            </span>
+                            {rentAmount.frequency && (
+                              <Tag color="blue">/{rentAmount.frequency}</Tag>
                             )}
-                          </span>
-                        ) : rentAmount?.amount ? (
-                          <span className="font-semibold">
-                            {formatCurrency(
-                              rentAmount.amount,
-                              rentAmount.currency,
-                            )}{" "}
-                            {rentAmount.frequency && `/${rentAmount.frequency}`}
-                          </span>
-                        ) : (
-                          "Not specified"
-                        )}
+                          </Space>
+                        ) : "Not applicable"}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Security Deposit">
+                        {securityDeposit?.amount
+                          ? formatCurrency(securityDeposit.amount, securityDeposit.currency)
+                          : "Not specified"}
                       </Descriptions.Item>
                     </Descriptions>
+                  </Card>
+
+                  {/* Lease Overview - Only for lease transactions */}
+                  {isLeaseTransaction && (
+                    <Card 
+                      title={
+                        <Space>
+                          <KeyOutlined />
+                          <span>Lease Information</span>
+                          {leaseUrgency && leaseUrgency.level !== "safe" && (
+                            <Tag 
+                              color={leaseUrgency.level === "critical" ? "red" : leaseUrgency.level === "warning" ? "orange" : "blue"}
+                            >
+                              {leaseUrgency.level === "expired" 
+                                ? `Expired ${Math.abs(leaseUrgency.days)} days ago`
+                                : `${leaseUrgency.days} days remaining`
+                              }
+                            </Tag>
+                          )}
+                        </Space>
+                      } 
+                      className="mb-6"
+                      style={leaseUrgency?.level === "critical" ? { borderColor: "#ff4d4f" } : {}}
+                    >
+                      <Descriptions column={2} bordered size="small">
+                        <Descriptions.Item label="Lease Status">
+                          <Tag
+                            color={
+                              leaseAgreement?.status === "active"
+                                ? "success"
+                                : leaseAgreement?.status === "executed"
+                                  ? "blue"
+                                  : leaseAgreement?.status === "expired"
+                                    ? "default"
+                                    : "processing"
+                            }
+                          >
+                            {leaseAgreement?.status?.toUpperCase() || "NOT SET"}
+                          </Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Renewal Option">
+                          <Tag color={leaseAgreement?.renewalOption ? "green" : "default"}>
+                            {leaseAgreement?.renewalOption ? "YES" : "NO"}
+                          </Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Commencement Date">
+                          {leaseAgreement?.commencementDate
+                            ? dayjs(leaseAgreement.commencementDate).format("DD/MM/YYYY")
+                            : "Not set"}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Expiry Date">
+                          <Text strong style={{ color: leaseUrgency?.level === "critical" ? "#ff4d4f" : leaseUrgency?.level === "warning" ? "#fa8c16" : "inherit" }}>
+                            {leaseAgreement?.expiryDate
+                              ? dayjs(leaseAgreement.expiryDate).format("DD/MM/YYYY")
+                              : "Not set"}
+                          </Text>
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Duration">
+                          {leaseAgreement?.duration
+                            ? `${leaseAgreement.duration.years || 0}y ${leaseAgreement.duration.months || 0}m`
+                            : "Not set"}
+                        </Descriptions.Item>
+                        <Descriptions.Item label="Time Remaining">
+                          {leaseUrgency ? (
+                            <Tag
+                              color={
+                                leaseUrgency.level === "critical" ? "red" :
+                                leaseUrgency.level === "warning" ? "orange" :
+                                leaseUrgency.level === "notice" ? "blue" : "green"
+                              }
+                            >
+                              {leaseUrgency.days < 0 
+                                ? `Expired ${Math.abs(leaseUrgency.days)} days ago`
+                                : `${leaseUrgency.days} days`
+                              }
+                            </Tag>
+                          ) : "N/A"}
+                        </Descriptions.Item>
+                        {renewalTracking?.renewalInitiated && (
+                          <>
+                            <Descriptions.Item label="Renewal Status" span={2}>
+                              <Tag
+                                color={
+                                  renewalTracking.renewalStatus === "agreed" ? "success" :
+                                  renewalTracking.renewalStatus === "in-progress" ? "processing" :
+                                  renewalTracking.renewalStatus === "completed" ? "green" :
+                                  renewalTracking.renewalStatus === "disputed" ? "orange" :
+                                  "default"
+                                }
+                              >
+                                {renewalTracking.renewalStatus?.replace(/-/g, " ").toUpperCase()}
+                              </Tag>
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Renewal Deadline">
+                              {renewalTracking?.renewalDeadline
+                                ? dayjs(renewalTracking.renewalDeadline).format("DD/MM/YYYY")
+                                : "Not set"}
+                            </Descriptions.Item>
+                            <Descriptions.Item label="Proposed New Rent">
+                              {renewalTracking?.proposedNewRent?.amount
+                                ? formatCurrency(renewalTracking.proposedNewRent.amount, renewalTracking.proposedNewRent.currency)
+                                : "Not proposed"}
+                            </Descriptions.Item>
+                            {renewalTracking?.rentIncreasePercentage > 0 && (
+                              <Descriptions.Item label="Increase">
+                                <Tag color="green">+{renewalTracking.rentIncreasePercentage}%</Tag>
+                              </Descriptions.Item>
+                            )}
+                            <Descriptions.Item label="Negotiations">
+                              {renewalTracking?.negotiationsHistory?.length || 0} recorded
+                            </Descriptions.Item>
+                          </>
+                        )}
+                      </Descriptions>
+                      
+                      {/* Milestones Summary */}
+                      {leaseMilestones?.length > 0 && (
+                        <div className="mt-4 pt-4 border-t">
+                          <div className="flex justify-between items-center mb-2">
+                            <Text strong>Milestones ({completedMilestones}/{leaseMilestones.length} completed)</Text>
+                          </div>
+                          <Progress 
+                            percent={leaseMilestones.length > 0 ? Math.round((completedMilestones / leaseMilestones.length) * 100) : 0} 
+                            size="small"
+                            strokeColor="#52c41a"
+                          />
+                        </div>
+                      )}
+                    </Card>
+                  )}
+
+                  {/* Due Diligence Summary */}
+                  <Card title="Due Diligence Summary" className="mb-6">
+                    <Row gutter={[16, 16]}>
+                      <Col xs={24} md={8}>
+                        <div className="text-center p-3 border rounded">
+                          <div className="text-sm text-gray-500 mb-1">Title Search</div>
+                          <Tag
+                            color={titleSearch?.isCompleted ? "success" : "warning"}
+                            className="text-base px-3 py-1"
+                          >
+                            {titleSearch?.isCompleted ? "COMPLETED" : "PENDING"}
+                          </Tag>
+                          {titleSearch?.searchDate && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {dayjs(titleSearch.searchDate).format("DD/MM/YYYY")}
+                            </div>
+                          )}
+                        </div>
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <div className="text-center p-3 border rounded">
+                          <div className="text-sm text-gray-500 mb-1">Physical Inspection</div>
+                          <Tag
+                            color={physicalInspection?.isCompleted ? "success" : "warning"}
+                            className="text-base px-3 py-1"
+                          >
+                            {physicalInspection?.isCompleted ? "COMPLETED" : "PENDING"}
+                          </Tag>
+                          {physicalInspection?.inspectionDate && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              {dayjs(physicalInspection.inspectionDate).format("DD/MM/YYYY")}
+                            </div>
+                          )}
+                        </div>
+                      </Col>
+                      <Col xs={24} md={8}>
+                        <div className="text-center p-3 border rounded">
+                          <div className="text-sm text-gray-500 mb-1">Survey Plan</div>
+                          <Tag
+                            color={surveyPlan?.isAvailable ? "success" : "warning"}
+                            className="text-base px-3 py-1"
+                          >
+                            {surveyPlan?.isAvailable ? "AVAILABLE" : "NOT AVAILABLE"}
+                          </Tag>
+                          {surveyPlan?.surveyNumber && (
+                            <div className="text-xs text-gray-500 mt-1">
+                              #{surveyPlan.surveyNumber}
+                            </div>
+                          )}
+                        </div>
+                      </Col>
+                    </Row>
+                    {titleSearch?.encumbrances?.length > 0 && (
+                      <div className="mt-4 pt-4 border-t">
+                        <Text type="secondary" className="text-sm">Encumbrances:</Text>
+                        <ul className="mt-1 text-sm text-orange-600">
+                          {titleSearch.encumbrances.slice(0, 3).map((enc, idx) => (
+                            <li key={idx}>{enc}</li>
+                          ))}
+                          {titleSearch.encumbrances.length > 3 && (
+                            <li>+{titleSearch.encumbrances.length - 3} more...</li>
+                          )}
+                        </ul>
+                      </div>
+                    )}
                   </Card>
 
                   {/* Parties Information */}

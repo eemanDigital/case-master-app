@@ -219,13 +219,18 @@ async function generatePdf(data, res, templatePath, outputPath) {
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
+        "--disable-web-security",
       ],
+      timeout: 60_000,
     });
 
     const page = await browser.newPage();
 
-    // Load the HTML; waitUntil:'networkidle0' lets Google Fonts finish loading
-    await page.setContent(html, { waitUntil: "networkidle0", timeout: 30_000 });
+    // Load the HTML; use domcontentloaded for faster rendering, then wait a bit for styles
+    await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 60_000 });
+    
+    // Give a short delay for CSS to apply
+    await page.waitForTimeout(1000);
 
     // ── 3. Generate PDF buffer ─────────────────────────────────────────────────
     const pdfBuffer = await page.pdf({
