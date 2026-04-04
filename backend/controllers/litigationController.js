@@ -2125,7 +2125,7 @@ exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
         pdf.addField("Name", n.name);
       });
       if (litigationDetail.firstParty.description) {
-        pdf.addField("Description", litigationDetail.firstParty.description);
+        pdf.addLongTextField("Description", litigationDetail.firstParty.description);
       }
     }
 
@@ -2136,7 +2136,7 @@ exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
         pdf.addField("Name", n.name);
       });
       if (litigationDetail.secondParty.description) {
-        pdf.addField("Description", litigationDetail.secondParty.description);
+        pdf.addLongTextField("Description", litigationDetail.secondParty.description);
       }
     }
 

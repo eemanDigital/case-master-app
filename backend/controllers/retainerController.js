@@ -1649,7 +1649,7 @@ exports.generateRetainerReportPdf = catchAsync(async (req, res, next) => {
       retainerDetails.servicesIncluded.forEach((service, idx) => {
         pdf.addSubSection(`Service ${idx + 1}`);
         pdf.addField("Type", service.serviceType);
-        pdf.addField("Description", service.description);
+        if (service.description) pdf.addLongTextField("Description", service.description);
         pdf.addField("Billing Model", service.billingModel?.replace(/-/g, " ").toUpperCase());
         if (service.serviceLimit) pdf.addField("Limit", `${service.serviceLimit} ${service.unitDescription || "units"}`);
         if (service.usageCount !== undefined) pdf.addField("Usage", `${service.usageCount}/${service.serviceLimit || "∞"}`);

@@ -1414,7 +1414,7 @@ exports.generateGeneralReportPdf = catchAsync(async (req, res, next) => {
   if (generalDetails) {
     if (generalDetails.matterDescription) {
       pdf.addSection("Matter Description");
-      pdf.addField("Description", generalDetails.matterDescription);
+      pdf.addLongTextField("Description", generalDetails.matterDescription);
     }
 
     if (generalDetails.keyParties?.length > 0) {
