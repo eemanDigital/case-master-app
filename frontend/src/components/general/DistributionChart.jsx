@@ -13,21 +13,45 @@ const DistributionChart = ({
   renderExtra,
   emptyMessage = "No data available",
 }) => {
+  const colors = [
+    "#1890ff",
+    "#52c41a",
+    "#faad14",
+    "#722ed1",
+    "#13c2c2",
+    "#eb2f96",
+    "#fa8c16",
+    "#f5222d",
+  ];
+
   return (
     <Card
-      title={<span style={{ fontSize: "16px", fontWeight: 600 }}>{title}</span>}
+      title={
+        <span style={{ fontSize: "16px", fontWeight: 600, color: "#1f1f1f" }}>
+          {title}
+        </span>
+      }
       extra={
         renderExtra ||
         (onViewAll && (
-          <Button type="link" size="small" onClick={onViewAll}>
+          <Button
+            type="link"
+            size="small"
+            onClick={onViewAll}
+            style={{ fontWeight: 500 }}>
             View All <RightOutlined />
           </Button>
         ))
       }
-      bodyStyle={{ padding: "16px" }}
+      bodyStyle={{ padding: "8px 16px 16px" }}
       headStyle={{
-        borderBottom: "2px solid #f0f0f0",
+        borderBottom: "1px solid #f0f0f0",
         padding: "16px 20px",
+      }}
+      style={{
+        borderRadius: "16px",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+        border: "none",
       }}>
       {data.length === 0 ? (
         <Empty
@@ -43,28 +67,49 @@ const DistributionChart = ({
           renderItem={(item, index) => (
             <List.Item
               style={{
-                padding: "12px 0",
+                padding: "14px 12px",
                 borderBottom:
-                  index < data.length - 1 ? "1px solid #f0f0f0" : "none",
+                  index < data.length - 1 ? "1px solid #f5f5f5" : "none",
                 cursor: onItemClick ? "pointer" : "default",
-                transition: "background-color 0.2s",
+                transition: "all 0.2s ease",
+                borderRadius: "8px",
+                marginBottom: "4px",
               }}
               className="distribution-item"
               onClick={() => onItemClick && onItemClick(item)}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                {/* Item Header */}
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    marginBottom: "8px",
+                    marginBottom: "10px",
                   }}>
-                  <Text strong style={{ fontSize: "14px" }}>
-                    {item.name}
-                  </Text>
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <Tag color="blue">{item.count}</Tag>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                    <div
+                      style={{
+                        width: "8px",
+                        height: "8px",
+                        borderRadius: "50%",
+                        backgroundColor: colors[index % colors.length],
+                      }}
+                    />
+                    <Text strong style={{ fontSize: "14px", color: "#262626" }}>
+                      {item.name}
+                    </Text>
+                  </div>
+                  <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <Tag
+                      style={{
+                        borderRadius: "6px",
+                        fontWeight: 600,
+                        fontSize: "12px",
+                        border: "none",
+                        backgroundColor: `${colors[index % colors.length]}15`,
+                        color: colors[index % colors.length],
+                      }}>
+                      {item.count}
+                    </Tag>
                     {item.formattedAvgFee && (
                       <Text type="secondary" style={{ fontSize: "12px" }}>
                         {item.formattedAvgFee}
@@ -73,7 +118,6 @@ const DistributionChart = ({
                   </div>
                 </div>
 
-                {/* Progress Bar */}
                 {item.percentage !== undefined && (
                   <div
                     style={{
@@ -85,31 +129,33 @@ const DistributionChart = ({
                       percent={Math.round(item.percentage)}
                       size="small"
                       strokeColor={{
-                        "0%": "#1890ff",
-                        "100%": "#52c41a",
+                        "0%": colors[index % colors.length],
+                        "100%": colors[(index + 1) % colors.length],
                       }}
+                      trailColor="#f0f0f0"
                       style={{ flex: 1, margin: 0 }}
+                      showInfo={false}
                     />
                     <Text
-                      type="secondary"
+                      strong
                       style={{
                         fontSize: "12px",
                         minWidth: "40px",
                         textAlign: "right",
+                        color: "#8c8c8c",
                       }}>
                       {Math.round(item.percentage)}%
                     </Text>
                   </div>
                 )}
 
-                {/* Description */}
                 {item.description && (
                   <Text
                     type="secondary"
                     style={{
                       fontSize: "12px",
                       display: "block",
-                      marginTop: "4px",
+                      marginTop: "6px",
                     }}>
                     {item.description}
                   </Text>
@@ -123,9 +169,10 @@ const DistributionChart = ({
       <style jsx>{`
         .distribution-item:hover {
           background-color: #fafafa;
-          border-radius: 4px;
-          padding-left: 8px !important;
-          padding-right: 8px !important;
+          margin-left: -4px;
+          margin-right: -4px;
+          padding-left: 16px !important;
+          padding-right: 16px !important;
         }
       `}</style>
     </Card>

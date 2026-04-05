@@ -534,9 +534,7 @@ const GeneralList = () => {
           <Button
             type="primary"
             icon={<PlusOutlined />}
-            onClick={() =>
-              message.info("Create a matter first, then add general details")
-            }>
+            onClick={() => navigate("/dashboard/matters/create?type=general")}>
             New Matter
           </Button>
         </Space>

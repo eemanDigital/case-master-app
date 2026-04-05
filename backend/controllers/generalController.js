@@ -1375,13 +1375,16 @@ exports.generateGeneralReportPdf = catchAsync(async (req, res, next) => {
     isDeleted: { $ne: true },
   })
     .populate("client", "firstName lastName email phone companyName")
-    .populate("accountOfficer", "firstName lastName email");
+    .populate("accountOfficer", "firstName lastName email phone")
+    .populate("assignedTo", "firstName lastName email");
 
   if (!matter) {
     return next(new AppError("No general matter found with that ID", 404));
   }
 
-  const generalDetails = await GeneralDetail.findOne({ matterId, firmId });
+  const generalDetails = await GeneralDetail.findOne({ matterId, firmId })
+    .populate("createdBy", "firstName lastName")
+    .populate("lastModifiedBy", "firstName lastName");
   const firm = await Firm.findById(firmId);
 
   const pdf = new GenericPdfGenerator({
@@ -1409,28 +1412,165 @@ exports.generateGeneralReportPdf = catchAsync(async (req, res, next) => {
   pdf.addField("Client", matter?.client ? `${matter.client.firstName} ${matter.client.lastName}` : null);
   if (matter?.client?.companyName) pdf.addField("Company", matter.client.companyName);
   if (matter?.client?.email) pdf.addField("Client Email", matter.client.email);
+  if (matter?.client?.phone) pdf.addField("Client Phone", matter.client.phone);
+  if (matter?.accountOfficer) pdf.addField("Account Officer", `${matter.accountOfficer.firstName} ${matter.accountOfficer.lastName}`);
+  if (matter?.assignedTo) pdf.addField("Assigned To", `${matter.assignedTo.firstName} ${matter.assignedTo.lastName}`);
+  pdf.addField("Date Closed", formatDate(matter?.dateClosed));
+  pdf.addField("Completion Notes", matter?.completionNotes);
 
-  // General Details
+  // Service Information
   if (generalDetails) {
-    if (generalDetails.matterDescription) {
-      pdf.addSection("Matter Description");
-      pdf.addLongTextField("Description", generalDetails.matterDescription);
+    pdf.addSection("Service Information");
+    const serviceTypeLabel = {
+      "notarial-services": "Notarial Services",
+      "cac-registration": "CAC Registration",
+      "perfection-of-title": "Perfection of Title",
+      "litigation": "Litigation",
+      "arbitration": "Arbitration",
+      "mediation": "Mediation",
+      "legal-opinion": "Legal Opinion",
+      "drafting": "Contract Drafting",
+      "attestation": "Document Attestation",
+      "certification": "Document Certification",
+      "verification": "Document Verification",
+      "regulatory-filing": "Regulatory Filing",
+      "other": "Other",
+    }[generalDetails.serviceType] || generalDetails.serviceType;
+    pdf.addField("Service Type", serviceTypeLabel);
+    if (generalDetails.otherServiceType) pdf.addField("Other Service", generalDetails.otherServiceType);
+    pdf.addField("Service Description", generalDetails.serviceDescription);
+
+    // Billing Information
+    if (generalDetails.billing) {
+      pdf.addSection("Billing Information");
+      const billingTypeLabel = {
+        "fixed-fee": "Fixed Fee",
+        "lpro-scale": "LPRO Scale",
+        "percentage": "Percentage-based",
+        "hybrid": "Hybrid",
+      }[generalDetails.billing.billingType] || generalDetails.billing.billingType;
+      pdf.addField("Billing Type", billingTypeLabel);
+
+      if (generalDetails.billing.fixedFee?.amount) {
+        pdf.addField("Fixed Fee", formatCurrency(generalDetails.billing.fixedFee.amount));
+      }
+      if (generalDetails.billing.lproScale?.calculatedAmount) {
+        pdf.addField("LPRO Amount", formatCurrency(generalDetails.billing.lproScale.calculatedAmount));
+        pdf.addField("LPRO Scale", generalDetails.billing.lproScale.scale);
+      }
+      if (generalDetails.billing.percentage?.calculatedFee) {
+        pdf.addField("Percentage Fee", formatCurrency(generalDetails.billing.percentage.calculatedFee));
+        pdf.addField("Rate", `${generalDetails.billing.percentage.rate}%`);
+      }
+
+      // Financial Summary
+      if (generalDetails.financialSummary) {
+        pdf.addField("Base Fee", formatCurrency(generalDetails.financialSummary.baseFee || 0));
+        pdf.addField("VAT Amount", formatCurrency(generalDetails.financialSummary.vatAmount || 0));
+        pdf.addField("WHT Amount", formatCurrency(generalDetails.financialSummary.whtAmount || 0));
+        pdf.addField("Total With Tax", formatCurrency(generalDetails.financialSummary.totalWithTax || 0));
+      }
+      if (generalDetails.billing.applyVAT !== undefined) {
+        pdf.addField("VAT Applied", generalDetails.billing.applyVAT ? "Yes" : "No");
+        pdf.addField("VAT Rate", `${generalDetails.billing.vatRate || 7.5}%`);
+      }
+      if (generalDetails.billing.applyWHT !== undefined) {
+        pdf.addField("WHT Applied", generalDetails.billing.applyWHT ? "Yes" : "No");
+        pdf.addField("WHT Rate", `${generalDetails.billing.whtRate || 5}%`);
+      }
     }
 
-    if (generalDetails.keyParties?.length > 0) {
-      pdf.addSection("Key Parties");
-      generalDetails.keyParties.forEach(party => {
+    // Timeline
+    pdf.addSection("Timeline");
+    pdf.addField("Request Date", formatDate(generalDetails.requestDate));
+    pdf.addField("Expected Completion", formatDate(generalDetails.expectedCompletionDate));
+    pdf.addField("Actual Completion", formatDate(generalDetails.actualCompletionDate));
+
+    // Jurisdiction
+    if (generalDetails.jurisdiction?.state) {
+      pdf.addSection("Jurisdiction");
+      pdf.addField("State", generalDetails.jurisdiction.state);
+      if (generalDetails.jurisdiction.lga) pdf.addField("LGA", generalDetails.jurisdiction.lga);
+      if (generalDetails.jurisdiction.court) pdf.addField("Court", generalDetails.jurisdiction.court);
+    }
+
+    // Parties Involved
+    if (generalDetails.partiesInvolved?.length > 0) {
+      pdf.addSection("Parties Involved");
+      generalDetails.partiesInvolved.forEach(party => {
         pdf.addField(party.role || "Party", party.name);
-        if (party.contact) pdf.addField("Contact", party.contact);
+        if (party.contact) pdf.addField(`${party.role || "Party"} Contact`, party.contact);
       });
     }
 
-    if (generalDetails.documents?.length > 0) {
-      pdf.addSection("Documents");
-      generalDetails.documents.forEach(doc => {
-        pdf.addField(doc.documentType || "Document", doc.status?.toUpperCase() || "N/A");
+    // Project Stages
+    if (generalDetails.projectStages?.length > 0) {
+      pdf.addSection("Project Stages");
+      generalDetails.projectStages.forEach(stage => {
+        const status = stage.isCompleted ? "Completed" : stage.isPaid ? "Paid" : "Pending";
+        pdf.addField(stage.stageName, `${status} - ${formatCurrency(stage.amount || 0)}`);
       });
     }
+
+    // Deliverables
+    if (generalDetails.expectedDeliverables?.length > 0) {
+      pdf.addSection("Deliverables");
+      generalDetails.expectedDeliverables.forEach(del => {
+        const status = del.status || "pending";
+        const dueDate = del.dueDate ? formatDate(del.dueDate) : "Not set";
+        pdf.addField(del.deliverable, `${status.toUpperCase()} (Due: ${dueDate})`);
+      });
+    }
+
+    // Specific Requirements
+    if (generalDetails.specificRequirements?.length > 0) {
+      pdf.addSection("Requirements");
+      generalDetails.specificRequirements.forEach(req => {
+        pdf.addField(req.requirement, req.status?.toUpperCase() || "PENDING");
+      });
+    }
+
+    // Documents Received
+    if (generalDetails.documentsReceived?.length > 0) {
+      pdf.addSection("Documents Received");
+      generalDetails.documentsReceived.forEach(doc => {
+        const received = doc.receivedDate ? formatDate(doc.receivedDate) : "Not received";
+        pdf.addField(doc.docName, `${doc.docType?.replace(/-/g, " ")?.toUpperCase() || "N/A"} - ${received}`);
+      });
+    }
+
+    // Disbursements
+    if (generalDetails.disbursements?.length > 0) {
+      pdf.addSection("Disbursements");
+      generalDetails.disbursements.forEach(disb => {
+        pdf.addField(disb.description || "Disbursement", formatCurrency(disb.actualAmount || disb.estimatedAmount || 0));
+      });
+      pdf.addField("Total Disbursements", formatCurrency(generalDetails.totalDisbursements || 0));
+    }
+
+    // NBA Stamp Details
+    if (generalDetails.requiresNBAStamp) {
+      pdf.addSection("NBA Stamp Duty");
+      pdf.addField("NBA Stamp Required", "Yes");
+      if (generalDetails.nbaStampDetails?.stampNumber) {
+        pdf.addField("Stamp Number", generalDetails.nbaStampDetails.stampNumber);
+        pdf.addField("Stamp Date", formatDate(generalDetails.nbaStampDetails.stampDate));
+        pdf.addField("Stamp Value", formatCurrency(generalDetails.nbaStampDetails.stampValue));
+      }
+    }
+
+    // Procedure Notes
+    if (generalDetails.procedureNotes) {
+      pdf.addSection("Procedure Notes");
+      pdf.addLongTextField("Notes", generalDetails.procedureNotes);
+    }
+
+    // Audit Information
+    pdf.addSection("Audit Information");
+    if (generalDetails.createdBy) pdf.addField("Created By", `${generalDetails.createdBy.firstName} ${generalDetails.createdBy.lastName}`);
+    pdf.addField("Created At", formatDate(generalDetails.createdAt));
+    if (generalDetails.lastModifiedBy) pdf.addField("Last Modified By", `${generalDetails.lastModifiedBy.firstName} ${generalDetails.lastModifiedBy.lastName}`);
+    pdf.addField("Last Modified At", formatDate(generalDetails.updatedAt));
   }
 
   await pdf.generate();
