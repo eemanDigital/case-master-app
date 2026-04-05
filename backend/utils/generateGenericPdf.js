@@ -27,6 +27,7 @@
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
+const { PDFDocument: PdfLibDocument } = require("pdf-lib");
 const {
   COLORS,
   FONTS,
@@ -187,7 +188,7 @@ class GenericPdfGenerator {
       });
 
     this.y = 90;
-    // Note: addHeader is infrastructure, not user data — do NOT call _markContent here.
+    this.isCurrentPageDirty = true; // Header counts as content
   }
 
   /**
@@ -232,6 +233,7 @@ class GenericPdfGenerator {
   addPageBreak() {
     this.doc.addPage();
     this._addContinuationBanner();
+    this.isCurrentPageDirty = true; // Continuation banner counts as content
   }
 
   checkY(needed = 20) {
@@ -621,10 +623,12 @@ class GenericPdfGenerator {
     const range = this.doc.bufferedPageRange();
     const bufferedCount = range.count;
 
-    // Determine real page count using dirty flag
-    const totalPages = this.isCurrentPageDirty
-      ? bufferedCount
-      : Math.max(1, bufferedCount - 1);
+    let totalPages = bufferedCount;
+    if (!this.isCurrentPageDirty) {
+      totalPages = Math.max(1, bufferedCount - 1);
+    }
+
+    if (totalPages < 1) totalPages = 1;
 
     // Stamp footers only on real content pages
     for (let i = 0; i < totalPages; i++) {
@@ -637,9 +641,25 @@ class GenericPdfGenerator {
 
     // Finalize — collect buffer, write to disk, send response
     return new Promise((resolve, reject) => {
-      this.doc.on("end", () => {
+      this.doc.on("end", async () => {
         try {
-          const pdfBuffer = Buffer.concat(this.chunks);
+          let pdfBuffer = Buffer.concat(this.chunks);
+
+          // Remove trailing blank pages using pdf-lib
+          if (!this.isCurrentPageDirty && bufferedCount > totalPages) {
+            const pdfDoc = await PdfLibDocument.load(pdfBuffer);
+            const pageCount = pdfDoc.getPageCount();
+            
+            if (pageCount > totalPages) {
+              // Remove extra blank pages from the end
+              for (let i = pageCount - 1; i >= totalPages; i--) {
+                pdfDoc.removePage(i);
+              }
+              pdfBuffer = await pdfDoc.save();
+              console.log(`🧹 Removed ${pageCount - totalPages} blank page(s)`);
+            }
+          }
+
           const filename = getFilename(this.outputPath);
 
           ensureOutputDir(this.outputPath);
