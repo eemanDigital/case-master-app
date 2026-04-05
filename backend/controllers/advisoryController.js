@@ -6,7 +6,17 @@ const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const mongoose = require("mongoose");
-const { GenericPdfGenerator, formatDate } = require("../utils/generateGenericPdf");
+const { GenericPdfGenerator, formatDate, COLORS, getStatusColors } = require("../utils/generateGenericPdf");
+const PDFDocument = require("pdfkit");
+
+// Helper function to draw status badge in PDF
+function drawStatusBadge(doc, status, x, y) {
+  const { fg, bg } = getStatusColors(status);
+  const label = String(status || "N/A").toUpperCase();
+  const badgeW = doc.widthOfString(label, { fontSize: 8 }) + 12;
+  doc.roundedRect(x, y, badgeW, 14, 2).fill(bg);
+  doc.fillColor(fg).fontSize(8).font("Helvetica-Bold").text(label, x + 6, y + 3);
+}
 const path = require("path");
 
 // Initialize pagination services
@@ -1741,46 +1751,86 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
 
   pdf.init(res, path.resolve(__dirname, `../output/${matter.matterNumber}_advisory_report_${Date.now()}.pdf`));
 
-  // Firm Information
-  pdf.addSection("Firm Information");
-  pdf.addField("Firm Name", firm?.name);
-  pdf.addField("Email", firm?.email);
-  pdf.addField("Phone", firm?.phone);
-  pdf.addField("Address", firm?.address);
+  // Add Header
+  pdf.addHeader();
 
   // Matter Information
   pdf.addSection("Matter Information");
-  pdf.addField("Matter Number", matter?.matterNumber);
-  pdf.addField("Title", matter?.title);
-  pdf.addStatusField("Status", matter?.status);
-  pdf.addStatusField("Priority", matter?.priority);
-  pdf.addField("Date Opened", formatDate(matter?.dateOpened));
-  pdf.addField("Client", matter?.client ? `${matter.client.firstName} ${matter.client.lastName}` : null);
-  if (matter?.client?.companyName) pdf.addField("Company", matter.client.companyName);
-  if (matter?.client?.email) pdf.addField("Client Email", matter.client.email);
-  if (matter?.client?.phone) pdf.addField("Client Phone", matter.client.phone);
-  if (matter?.accountOfficer) pdf.addField("Account Officer", `${matter.accountOfficer.firstName} ${matter.accountOfficer.lastName}`);
+  pdf.addTwoColumnField("Matter Number", matter?.matterNumber, "Status", matter?.status);
+  pdf.addTwoColumnField("Title", matter?.title, "Priority", matter?.priority);
+  pdf.addTwoColumnField("Date Opened", formatDate(matter?.dateOpened), "Client", matter?.client ? `${matter.client.firstName} ${matter.client.lastName}` : null);
+  if (matter?.client?.companyName) pdf.addTwoColumnField("Company", matter.client.companyName, "Account Officer", matter?.accountOfficer ? `${matter.accountOfficer.firstName} ${matter.accountOfficer.lastName}` : null);
+  if (matter?.client?.email) pdf.addTwoColumnField("Client Email", matter.client.email, "Client Phone", matter?.client?.phone || null);
 
   // Advisory Details
   if (advisoryDetails) {
     // Advisory Type & Industry
     pdf.addSection("Advisory Overview");
-    pdf.addField("Advisory Type", advisoryDetails.advisoryType?.replace(/_/g, " ").toUpperCase());
-    pdf.addField("Industry", advisoryDetails.industry);
-    pdf.addStatusField("Project Status", advisoryDetails.projectStatus);
-    pdf.addField("Engagement Start", formatDate(advisoryDetails.engagementStartDate));
-    if (advisoryDetails.engagementEndDate) pdf.addField("Engagement End", formatDate(advisoryDetails.engagementEndDate));
+    pdf.addTwoColumnField("Advisory Type", advisoryDetails.advisoryType?.replace(/_/g, " ").toUpperCase(), "Industry", advisoryDetails.industry || "N/A");
+    pdf.addTwoColumnField("Project Status", advisoryDetails.projectStatus, "Request Date", formatDate(advisoryDetails.requestDate));
+    pdf.addTwoColumnField("Target Delivery", formatDate(advisoryDetails.targetDeliveryDate), "Actual Delivery", formatDate(advisoryDetails.actualDeliveryDate));
+
+    // Scope & Request
+    if (advisoryDetails.requestDescription) {
+      pdf.addSubSection("Request Description");
+      pdf.addLongTextField("", advisoryDetails.requestDescription);
+    }
+
+    if (advisoryDetails.scope) {
+      pdf.addSubSection("Scope");
+      pdf.addLongTextField("", advisoryDetails.scope);
+    }
+
+    // Jurisdiction & Laws
+    if (advisoryDetails.jurisdiction?.length > 0 || advisoryDetails.applicableLaws?.length > 0 || advisoryDetails.regulatoryBodies?.length > 0) {
+      pdf.addSection("Jurisdiction & Regulatory");
+      if (advisoryDetails.jurisdiction?.length > 0) {
+        pdf.addField("Jurisdiction", advisoryDetails.jurisdiction.join(", "));
+      }
+      if (advisoryDetails.applicableLaws?.length > 0) {
+        pdf.addField("Applicable Laws", advisoryDetails.applicableLaws.join(", "));
+      }
+      if (advisoryDetails.regulatoryBodies?.length > 0) {
+        pdf.addField("Regulatory Bodies", advisoryDetails.regulatoryBodies.join(", "));
+      }
+    }
 
     // Research Questions
     if (advisoryDetails.researchQuestions?.length > 0) {
       pdf.addSection("Research Questions");
       const answeredCount = advisoryDetails.researchQuestions.filter(q => q.answer).length;
       pdf.addField("Progress", `${answeredCount}/${advisoryDetails.researchQuestions.length} answered`);
+
       advisoryDetails.researchQuestions.forEach((q, idx) => {
-        pdf.addField(`Q${idx + 1}`, q.question || "N/A", { color: q.answer ? "#38a169" : "#718096" });
+        pdf.checkY(60);
+        const startY = pdf.y;
+        
+        // Question number badge
+        pdf.doc.roundedRect(pdf.leftMargin, startY, 24, 16, 3).fill(COLORS.navy);
+        pdf.doc.fillColor(COLORS.white).fontSize(9).font("Helvetica-Bold").text(`Q${idx + 1}`, pdf.leftMargin + 5, startY + 3);
+        
+        // Question text
+        pdf.doc.fontSize(9).font("Helvetica").fillColor(q.answer ? COLORS.textPrimary : COLORS.textMuted)
+          .text(q.question || "N/A", pdf.leftMargin + 30, startY + 2, { width: pdf.pageWidth - 60 });
+        
+        pdf.y = startY + 18;
+
         if (q.answer) {
-          pdf.addField("Answer", q.answer, { color: "#2d3748" });
+          // Answer label
+          pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica").text("Answer:", pdf.leftMargin + 30, pdf.y);
+          pdf.y += 12;
+          
+          // Answer text
+          pdf.doc.fontSize(9).fillColor(COLORS.textPrimary).font("Helvetica")
+            .text(q.answer, pdf.leftMargin + 30, pdf.y, { width: pdf.pageWidth - 60, height: 80 });
+          const answerH = pdf.doc.heightOfString(q.answer, { width: pdf.pageWidth - 60 });
+          pdf.y += Math.max(answerH, 20) + 10;
+        } else {
+          pdf.y += 10;
         }
+        
+        // Status badge
+        drawStatusBadge(pdf.doc, q.status, pdf.leftMargin + pdf.pageWidth - 60, startY);
       });
     }
 
@@ -1788,46 +1838,203 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
     if (advisoryDetails.keyFindings?.length > 0) {
       pdf.addSection("Key Findings");
       advisoryDetails.keyFindings.forEach((finding, idx) => {
-        pdf.addField(`Finding ${idx + 1}`, finding.finding || "N/A");
-        if (finding.significance) pdf.addField("Significance", finding.significance);
+        pdf.checkY(50);
+        const startY = pdf.y;
+        
+        // Finding number
+        pdf.doc.roundedRect(pdf.leftMargin, startY, 24, 16, 3).fill(COLORS.gold);
+        pdf.doc.fillColor(COLORS.white).fontSize(9).font("Helvetica-Bold").text(`${idx + 1}`, pdf.leftMargin + 7, startY + 3);
+        
+        // Finding text
+        pdf.doc.fontSize(10).fillColor(COLORS.textPrimary).font("Helvetica-Bold")
+          .text(finding.finding || "N/A", pdf.leftMargin + 30, startY + 2, { width: pdf.pageWidth - 90 });
+        
+        const findingH = pdf.doc.heightOfString(finding.finding || "", { width: pdf.pageWidth - 90 });
+        pdf.y = startY + Math.max(findingH, 16) + 8;
+
+        if (finding.source) {
+          pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica").text("Source: ", pdf.leftMargin + 30, pdf.y, { continued: true });
+          pdf.doc.fillColor(COLORS.navy).font("Helvetica").text(finding.source, pdf.leftMargin + 30 + pdf.doc.widthOfString("Source: ", { fontSize: 8 }), pdf.y, { width: pdf.pageWidth - 90 });
+          pdf.y += 14;
+        }
+        if (finding.relevance) {
+          pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica").text("Relevance: ", pdf.leftMargin + 30, pdf.y, { continued: true });
+          pdf.doc.fillColor(COLORS.gold).font("Helvetica").text(finding.relevance, pdf.leftMargin + 30 + pdf.doc.widthOfString("Relevance: ", { fontSize: 8 }), pdf.y, { width: pdf.pageWidth - 90 });
+          pdf.y += 14;
+        }
+        
+        pdf.y += 5;
       });
+    }
+
+    // Legal Precedents
+    if (advisoryDetails.legalPrecedents?.length > 0) {
+      pdf.addSection("Legal Precedents");
+      advisoryDetails.legalPrecedents.forEach((precedent, idx) => {
+        pdf.checkY(60);
+        const startY = pdf.y;
+        
+        // Case name
+        pdf.doc.fontSize(10).fillColor(COLORS.navy).font("Helvetica-Bold")
+          .text(`${idx + 1}. ${precedent.caseName || "N/A"}`, pdf.leftMargin, startY, { width: pdf.pageWidth });
+        pdf.y = startY + 16;
+
+        if (precedent.citation) {
+          pdf.doc.fontSize(9).fillColor(COLORS.textMuted).font("Helvetica-Oblique")
+            .text(precedent.citation, pdf.leftMargin + 15, pdf.y, { width: pdf.pageWidth - 15 });
+          pdf.y += 14;
+        }
+        if (precedent.summary) {
+          pdf.doc.fontSize(9).fillColor(COLORS.textSecondary).font("Helvetica")
+            .text(precedent.summary.substring(0, 200) + (precedent.summary.length > 200 ? "..." : ""), pdf.leftMargin + 15, pdf.y, { width: pdf.pageWidth - 15 });
+          const summaryH = pdf.doc.heightOfString(precedent.summary.substring(0, 200), { width: pdf.pageWidth - 15 });
+          pdf.y += Math.max(summaryH, 16) + 8;
+        }
+        if (precedent.relevance) {
+          pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica").text("Relevance: ", pdf.leftMargin + 15, pdf.y, { continued: true });
+          pdf.doc.fillColor(COLORS.navyMid).font("Helvetica").text(precedent.relevance, pdf.leftMargin + 15 + pdf.doc.widthOfString("Relevance: ", { fontSize: 8 }), pdf.y);
+          pdf.y += 14;
+        }
+        
+        pdf.y += 8;
+      });
+    }
+
+    // Risk Assessment
+    if (advisoryDetails.riskAssessment) {
+      pdf.addSection("Risk Assessment");
+      
+      if (advisoryDetails.riskAssessment.overallRisk) {
+        pdf.addTwoColumnField("Overall Risk", advisoryDetails.riskAssessment.overallRisk?.toUpperCase(), "", null);
+      }
+
+      if (advisoryDetails.riskAssessment.risks?.length > 0) {
+        pdf.addSubSection("Identified Risks");
+        advisoryDetails.riskAssessment.risks.forEach((risk, idx) => {
+          pdf.checkY(45);
+          const startY = pdf.y;
+          
+          // Risk description
+          pdf.doc.fontSize(9).fillColor(COLORS.textPrimary).font("Helvetica")
+            .text(`${idx + 1}. ${risk.risk || "N/A"}`, pdf.leftMargin, startY, { width: pdf.pageWidth - 120 });
+          
+          const riskH = pdf.doc.heightOfString(risk.risk || "", { width: pdf.pageWidth - 120 });
+          pdf.y = startY + Math.max(riskH, 14) + 4;
+
+          // Likelihood and Impact badges
+          if (risk.likelihood) drawStatusBadge(pdf.doc, risk.likelihood, pdf.leftMargin, pdf.y);
+          if (risk.impact) drawStatusBadge(pdf.doc, risk.impact, pdf.leftMargin + 60, pdf.y);
+          
+          pdf.y += 16;
+
+          if (risk.mitigation) {
+            pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica").text("Mitigation: ", pdf.leftMargin, pdf.y, { continued: true });
+            pdf.doc.fillColor(COLORS.textSecondary).font("Helvetica")
+              .text(risk.mitigation, pdf.leftMargin + pdf.doc.widthOfString("Mitigation: ", { fontSize: 8 }), pdf.y, { width: pdf.pageWidth - 30 });
+            pdf.y += 14;
+          }
+          
+          pdf.y += 5;
+        });
+      }
+    }
+
+    // Opinion
+    if (advisoryDetails.opinion && (advisoryDetails.opinion.summary || advisoryDetails.opinion.conclusion)) {
+      pdf.addSection("Legal Opinion");
+      if (advisoryDetails.opinion.summary) {
+        pdf.addSubSection("Summary");
+        pdf.addLongTextField("", advisoryDetails.opinion.summary);
+      }
+      if (advisoryDetails.opinion.conclusion) {
+        pdf.addSubSection("Conclusion");
+        pdf.addLongTextField("", advisoryDetails.opinion.conclusion);
+      }
+      if (advisoryDetails.opinion.confidence) {
+        pdf.addTwoColumnField("Confidence Level", advisoryDetails.opinion.confidence?.toUpperCase(), "", null);
+      }
     }
 
     // Recommendations
     if (advisoryDetails.recommendations?.length > 0) {
       pdf.addSection("Recommendations");
       advisoryDetails.recommendations.forEach((rec, idx) => {
-        pdf.addField(`Recommendation ${idx + 1}`, rec.recommendation || "N/A");
-        if (rec.priority) pdf.addStatusField("Priority", rec.priority);
+        pdf.checkY(40);
+        const startY = pdf.y;
+        
+        pdf.doc.fontSize(9).fillColor(COLORS.textPrimary).font("Helvetica-Bold")
+          .text(`${idx + 1}. ${rec.recommendation || "N/A"}`, pdf.leftMargin, startY, { width: pdf.pageWidth - 100 });
+        
+        const recH = pdf.doc.heightOfString(rec.recommendation || "", { width: pdf.pageWidth - 100 });
+        pdf.y = startY + Math.max(recH, 14) + 4;
+
+        if (rec.priority) {
+          drawStatusBadge(pdf.doc, rec.priority, pdf.leftMargin, pdf.y);
+        }
+        if (rec.implementationStatus) {
+          drawStatusBadge(pdf.doc, rec.implementationStatus, pdf.leftMargin + 60, pdf.y);
+        }
+        
+        pdf.y += 18;
       });
     }
 
     // Deliverables
     if (advisoryDetails.deliverables?.length > 0) {
       pdf.addSection("Deliverables");
-      const completedDeliverables = advisoryDetails.deliverables.filter(d => d.status === "completed").length;
-      pdf.addField("Progress", `${completedDeliverables}/${advisoryDetails.deliverables.length} completed`);
-      advisoryDetails.deliverables.forEach((del, idx) => {
-        pdf.addStatusField(`Deliverable ${idx + 1}`, del.status);
-        pdf.addField("Title", del.title);
-        if (del.dueDate) pdf.addField("Due Date", formatDate(del.dueDate));
-      });
-    }
+      const completedCount = advisoryDetails.deliverables.filter(d => d.status === "delivered" || d.status === "approved").length;
+      pdf.addField("Progress", `${completedCount}/${advisoryDetails.deliverables.length} completed`);
 
-    // Opinion
-    if (advisoryDetails.opinion) {
-      pdf.addSection("Legal Opinion");
-      if (advisoryDetails.opinion.summary) pdf.addField("Summary", advisoryDetails.opinion.summary);
-      if (advisoryDetails.opinion.riskLevel) pdf.addStatusField("Risk Level", advisoryDetails.opinion.riskLevel);
+      advisoryDetails.deliverables.forEach((del, idx) => {
+        pdf.checkY(35);
+        const startY = pdf.y;
+        
+        pdf.doc.fontSize(9).fillColor(COLORS.textPrimary).font("Helvetica-Bold")
+          .text(`${idx + 1}. ${del.title || "N/A"}`, pdf.leftMargin, startY, { width: pdf.pageWidth - 150 });
+        
+        const titleH = pdf.doc.heightOfString(del.title || "", { width: pdf.pageWidth - 150 });
+        pdf.y = startY + Math.max(titleH, 14) + 4;
+
+        drawStatusBadge(pdf.doc, del.status, pdf.leftMargin, pdf.y);
+        if (del.dueDate) {
+          pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica")
+            .text(`Due: ${formatDate(del.dueDate)}`, pdf.leftMargin + 70, pdf.y + 2);
+        }
+        
+        pdf.y += 18;
+      });
     }
 
     // Compliance Checklist
     if (advisoryDetails.complianceChecklist?.length > 0) {
       pdf.addSection("Compliance Checklist");
+      const compliantCount = advisoryDetails.complianceChecklist.filter(c => c.status === "compliant").length;
+      pdf.addField("Status", `${compliantCount}/${advisoryDetails.complianceChecklist.length} compliant`);
+
       advisoryDetails.complianceChecklist.forEach((item, idx) => {
-        pdf.addStatusField(`Item ${idx + 1}`, item.completed ? "completed" : "pending");
-        pdf.addField("Requirement", item.requirement);
+        pdf.checkY(35);
+        const startY = pdf.y;
+        
+        pdf.doc.fontSize(9).fillColor(COLORS.textPrimary).font("Helvetica")
+          .text(`${idx + 1}. ${item.requirement || "N/A"}`, pdf.leftMargin, startY, { width: pdf.pageWidth - 100 });
+        
+        const reqH = pdf.doc.heightOfString(item.requirement || "", { width: pdf.pageWidth - 100 });
+        pdf.y = startY + Math.max(reqH, 14) + 4;
+
+        drawStatusBadge(pdf.doc, item.status, pdf.leftMargin, pdf.y);
+        if (item.dueDate) {
+          pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica")
+            .text(`Due: ${formatDate(item.dueDate)}`, pdf.leftMargin + 90, pdf.y + 2);
+        }
+        
+        pdf.y += 18;
       });
+    }
+
+    // Research Notes
+    if (advisoryDetails.researchNotes) {
+      pdf.addSection("Research Notes");
+      pdf.addLongTextField("", advisoryDetails.researchNotes);
     }
   }
 

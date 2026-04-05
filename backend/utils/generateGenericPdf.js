@@ -27,7 +27,6 @@ const {
 // ─── Shared Drawing Primitives ───────────────────────────────────────────────
 
 function drawFooter(doc, firmName, pageWidth, leftMargin = 40) {
-  const pageNum = getCurrentPageNumber(doc);
   const footerY = doc.page.height - 30;
 
   doc.moveTo(leftMargin, footerY - 8)
@@ -40,7 +39,7 @@ function drawFooter(doc, firmName, pageWidth, leftMargin = 40) {
     .fillColor(COLORS.textMuted)
     .font(FONTS.regular)
     .text(
-      `${firmName || "Law Firm"}  ·  ${formatDateTime(new Date())}  ·  Page ${pageNum}`,
+      `${firmName || "Law Firm"}  ·  ${formatDateTime(new Date())}`,
       leftMargin,
       footerY,
       { align: "center", width: pageWidth },
@@ -96,7 +95,7 @@ class GenericPdfGenerator {
 
     this.doc = new PDFDocument({
       size: "A4",
-      margins: { top: 40, bottom: 40, left: 0, right: 0 },
+      margins: { top: 40, bottom: 40, left: 40, right: 40 },
       bufferPages: true,
       info: {
         Title: this.options.title || "Matter Report",
@@ -106,7 +105,12 @@ class GenericPdfGenerator {
 
     this.doc.on("data", (chunk) => this.chunks.push(chunk));
     this.pageWidth = this.doc.page.width - 80;
-    this.bottomGuard = this.doc.page.height - 55;
+    this.bottomGuard = this.doc.page.height - 80;
+
+    // Page added event - auto add header to new pages
+    this.doc.on("pageAdded", () => {
+      this.addHeader();
+    });
 
     // Bind methods
     this.addHeader = this.addHeader.bind(this);
@@ -157,13 +161,30 @@ class GenericPdfGenerator {
   }
 
   addFooter() {
-    drawFooter(this.doc, this.options.firmName, this.pageWidth, this.leftMargin);
+    const doc = this.doc;
+    const footerY = doc.page.height - 30;
+    const pageWidth = this.pageWidth;
+    const leftMargin = this.leftMargin;
+
+    doc.moveTo(leftMargin, footerY - 8)
+      .lineTo(leftMargin + pageWidth, footerY - 8)
+      .lineWidth(0.4)
+      .strokeColor(COLORS.gray200)
+      .stroke();
+
+    doc.fontSize(SIZES.micro)
+      .fillColor(COLORS.textMuted)
+      .font(FONTS.regular)
+      .text(
+        `${this.options.firmName || "Law Firm"}  ·  ${formatDateTime(new Date())}`,
+        leftMargin,
+        footerY,
+        { align: "center", width: pageWidth },
+      );
   }
 
   addPageBreak() {
-    this.addFooter();
     this.doc.addPage();
-    this.addHeader();
   }
 
   checkY(needed = 30) {
@@ -173,18 +194,18 @@ class GenericPdfGenerator {
   }
 
   addSection(title) {
-    this.checkY(35);
+    this.checkY(40);
     this.y = drawSectionHeader(this.doc, title, this.leftMargin, this.y, this.pageWidth);
   }
 
   addSubSection(title) {
-    this.checkY(25);
+    this.checkY(30);
     const startY = this.y;
 
     this.doc.fontSize(SIZES.body).font(FONTS.bold).fillColor(COLORS.navyMid)
       .text(title, this.leftMargin, startY);
 
-    this.y = startY + 14;
+    this.y = startY + 16;
   }
 
   addField(label, value, options = {}) {
@@ -195,11 +216,13 @@ class GenericPdfGenerator {
     const valueX = this.leftMargin + labelWidth + 15;
     const valueWidth = this.pageWidth - valueX - 10;
 
+    // Estimate height BEFORE checking page
     const labelH = this.doc.heightOfString(`${label}:`, { width: labelWidth, fontSize: SIZES.small });
     const valueH = this.doc.heightOfString(text, { width: valueWidth, fontSize: SIZES.small });
-    const rowH = Math.max(labelH, valueH, 12);
+    const rowH = Math.max(labelH, valueH) + 2;
 
-    this.checkY(rowH + 6);
+    // Check space BEFORE rendering
+    this.checkY(rowH + 8);
     const startY = this.y;
 
     this.doc.fontSize(SIZES.small).font(FONTS.regular).fillColor(COLORS.textMuted)
@@ -207,9 +230,9 @@ class GenericPdfGenerator {
 
     this.doc.fontSize(SIZES.small).font(options.bold ? FONTS.bold : FONTS.regular)
       .fillColor(options.color || COLORS.textPrimary)
-      .text(text, valueX, startY, { width: valueWidth });
+      .text(text, valueX, startY, { width: valueWidth, lineBreak: true });
 
-    this.y = startY + rowH + 4;
+    this.y = startY + rowH + 6;
     return text;
   }
 
@@ -217,7 +240,7 @@ class GenericPdfGenerator {
     const labelWidth = 140;
     const valueX = this.leftMargin + labelWidth + 15;
 
-    this.checkY(20);
+    this.checkY(24);
     const startY = this.y;
 
     this.doc.fontSize(SIZES.small).font(FONTS.regular).fillColor(COLORS.textMuted)
@@ -225,7 +248,7 @@ class GenericPdfGenerator {
 
     drawStatusBadge(this.doc, status, valueX, startY);
 
-    this.y = startY + 18;
+    this.y = startY + 20;
   }
 
   addMoneyField(label, amount, currency = "NGN") {
@@ -244,45 +267,59 @@ class GenericPdfGenerator {
     if (!value) return null;
 
     const labelWidth = 140;
-    const startY = this.y;
-
-    this.doc.fontSize(SIZES.small).font(FONTS.bold).fillColor(COLORS.textMuted)
-      .text(`${label}:`, this.leftMargin, startY, { width: labelWidth });
-
     const textX = this.leftMargin + labelWidth + 15;
     const textWidth = this.pageWidth - textX - 10;
-    const textH = this.doc.heightOfString(value, { width: textWidth, fontSize: SIZES.small });
 
-    this.checkY(textH + 20);
+    // Estimate height BEFORE checking page
+    const estimatedHeight = this.doc.heightOfString(value, {
+      width: textWidth,
+      fontSize: SIZES.small,
+    });
+
+    // Check space BEFORE rendering
+    this.checkY(estimatedHeight + 30);
+
+    const startY = this.y;
+
+    if (label) {
+      this.doc.fontSize(SIZES.small).font(FONTS.bold).fillColor(COLORS.textMuted)
+        .text(`${label}:`, this.leftMargin, startY, { width: labelWidth });
+    }
 
     this.doc.fontSize(SIZES.small).font(FONTS.regular).fillColor(COLORS.textPrimary)
-      .text(value, textX, startY, { width: textWidth });
+      .text(value, textX, startY, { width: textWidth, lineGap: 2 });
 
-    this.y = startY + textH + 10;
+    this.y = startY + estimatedHeight + 12;
     return value;
   }
 
   addTwoColumnField(label1, val1, label2, val2) {
-    this.checkY(20);
+    // Estimate height before checking
+    const halfW = this.pageWidth / 2;
+    const valOffset = 155;
+    const val1H = this.doc.heightOfString(String(val1 ?? "—"), { width: halfW - valOffset - 10, fontSize: SIZES.small });
+    const val2H = this.doc.heightOfString(String(val2 ?? "—"), { width: halfW - valOffset - 10, fontSize: SIZES.small });
+    const rowH = Math.max(val1H, val2H) + 4;
+
+    // Check space BEFORE rendering
+    this.checkY(rowH + 10);
     const startY = this.y;
     const colW = 140;
-    const valOffset = 155;
-    const halfW = this.pageWidth / 2;
     const midX = this.leftMargin + halfW;
 
     this.doc.fontSize(SIZES.small).font(FONTS.regular).fillColor(COLORS.textMuted)
-      .text(`${label1}:`, this.leftMargin, startY, { width: colW });
+      .text(`${label1 || ""}:`, this.leftMargin, startY, { width: colW });
 
     this.doc.fontSize(SIZES.small).font(FONTS.regular).fillColor(COLORS.textPrimary)
-      .text(String(val1 ?? "—"), this.leftMargin + valOffset, startY, { width: halfW - valOffset - 10 });
+      .text(String(val1 ?? "—"), this.leftMargin + valOffset, startY, { width: halfW - valOffset - 10, lineBreak: true });
 
     this.doc.fontSize(SIZES.small).font(FONTS.regular).fillColor(COLORS.textMuted)
-      .text(`${label2}:`, midX, startY, { width: colW });
+      .text(`${label2 || ""}:`, midX, startY, { width: colW });
 
     this.doc.fontSize(SIZES.small).font(FONTS.regular).fillColor(COLORS.textPrimary)
-      .text(String(val2 ?? "—"), midX + valOffset, startY, { width: halfW - valOffset - 10 });
+      .text(String(val2 ?? "—"), midX + valOffset, startY, { width: halfW - valOffset - 10, lineBreak: true });
 
-    this.y += 18;
+    this.y = startY + rowH + 8;
   }
 
   addTable(headers, rows, options = {}) {
@@ -368,7 +405,15 @@ class GenericPdfGenerator {
   }
 
   async generate() {
-    this.addFooter();
+    // Draw footer on all buffered pages
+    const range = this.doc.bufferedPageRange();
+    for (let i = 0; i < range.count; i++) {
+      this.doc.switchToPage(i);
+      this.addFooter();
+    }
+    // Switch back to last page
+    this.doc.switchToPage(range.count - 1);
+    
     return finalizePdf(this.doc, this.chunks, this.res, this.outputPath);
   }
 }
