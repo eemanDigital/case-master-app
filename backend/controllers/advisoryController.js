@@ -560,7 +560,7 @@ exports.updateResearchQuestion = catchAsync(async (req, res, next) => {
     return next(new AppError("Invalid ID format", 400));
   }
 
-  // FIXED: Use $set with specific field paths, not replacing entire object
+  // Use $set with specific field paths, not replacing entire object
   const setFields = {};
   Object.keys(updateData).forEach((key) => {
     setFields[`researchQuestions.$.${key}`] = updateData[key];
@@ -569,6 +569,8 @@ exports.updateResearchQuestion = catchAsync(async (req, res, next) => {
   // Add metadata fields
   setFields["researchQuestions.$.updatedBy"] = req.user._id;
   setFields["researchQuestions.$.updatedAt"] = new Date();
+  setFields.lastModifiedBy = req.user._id;
+  setFields.lastModifiedAt = new Date();
 
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     {
@@ -578,10 +580,6 @@ exports.updateResearchQuestion = catchAsync(async (req, res, next) => {
     },
     {
       $set: setFields,
-      $set: {
-        lastModifiedBy: req.user._id,
-        lastModifiedAt: new Date(),
-      },
     },
     { new: true, runValidators: true },
   );

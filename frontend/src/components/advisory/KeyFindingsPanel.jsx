@@ -11,13 +11,15 @@ import {
   message,
   Empty,
   Tag,
+  Row,
+  Col,
 } from "antd";
 import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
-  FileTextOutlined,
+  BulbOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
@@ -32,6 +34,7 @@ const { TextArea } = Input;
 
 const KeyFindingsPanel = () => {
   const dispatch = useDispatch();
+  const [modalVisible, setModalVisible] = useState(false);
   const [editingFinding, setEditingFinding] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [form] = Form.useForm();
@@ -49,6 +52,22 @@ const KeyFindingsPanel = () => {
         finding.relevance?.toLowerCase().includes(term)
     );
   }, [keyFindings, searchTerm]);
+
+  const handleAdd = () => {
+    setEditingFinding(null);
+    form.resetFields();
+    setModalVisible(true);
+  };
+
+  const handleEdit = (finding) => {
+    setEditingFinding(finding);
+    form.setFieldsValue({
+      finding: finding.finding,
+      source: finding.source || "",
+      relevance: finding.relevance || "",
+    });
+    setModalVisible(true);
+  };
 
   const handleSave = async (values) => {
     try {
@@ -73,6 +92,7 @@ const KeyFindingsPanel = () => {
         data: { keyFindings: updatedFindings },
       })).unwrap();
 
+      setModalVisible(false);
       setEditingFinding(null);
       form.resetFields();
       message.success(editingFinding?._id ? "Finding updated" : "Finding added");
@@ -98,144 +118,100 @@ const KeyFindingsPanel = () => {
 
   return (
     <Card
-      title="Key Findings"
-      extra={
+      title={
         <Space>
+          <BulbOutlined style={{ color: "#faad14" }} />
+          <span>Key Findings</span>
+        </Space>
+      }
+      extra={
+        <Space wrap>
           <Input
             placeholder="Search findings..."
             prefix={<SearchOutlined />}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: 200 }}
+            style={{ width: 180, marginRight: 8 }}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingFinding({});
-              form.resetFields();
-              Modal.confirm({
-                title: "Add Key Finding",
-                content: (
-                  <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-                    <Form.Item
-                      name="finding"
-                      label="Finding"
-                      rules={[{ required: true, message: "Please enter finding" }]}
-                    >
-                      <TextArea rows={3} placeholder="Enter key finding..." />
-                    </Form.Item>
-
-                    <Form.Item name="source" label="Source">
-                      <Input placeholder="Source reference (optional)" />
-                    </Form.Item>
-
-                    <Form.Item name="relevance" label="Relevance">
-                      <Input placeholder="Relevance to the matter (optional)" />
-                    </Form.Item>
-                  </Form>
-                ),
-                onOk: () => {
-                  form.validateFields().then(handleSave);
-                },
-                onCancel: () => {
-                  form.resetFields();
-                },
-              });
-            }}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
             Add Finding
           </Button>
         </Space>
-      }>
+      }
+      styles={{ body: { padding: 0 } }}>
       {filteredFindings.length > 0 ? (
         <List
           dataSource={filteredFindings}
-          renderItem={(finding) => (
+          renderItem={(finding, index) => (
             <List.Item
+              style={{
+                padding: "16px 24px",
+                borderBottom: index < filteredFindings.length - 1 ? "1px solid #f0f0f0" : "none",
+              }}
               actions={[
                 <Button
-                  key="btn1"
+                  key="edit"
                   type="text"
                   icon={<EditOutlined />}
-                  onClick={() => {
-                    setEditingFinding(finding);
-                    form.setFieldsValue(finding);
-                    Modal.confirm({
-                      title: "Edit Key Finding",
-                      content: (
-                        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-                          <Form.Item
-                            name="finding"
-                            label="Finding"
-                            rules={[{ required: true, message: "Please enter finding" }]}
-                          >
-                            <TextArea rows={3} placeholder="Enter key finding..." />
-                          </Form.Item>
-
-                          <Form.Item name="source" label="Source">
-                            <Input placeholder="Source reference (optional)" />
-                          </Form.Item>
-
-                          <Form.Item name="relevance" label="Relevance">
-                            <Input placeholder="Relevance to the matter (optional)" />
-                          </Form.Item>
-                        </Form>
-                      ),
-                      onOk: () => {
-                        form.validateFields().then(handleSave);
-                      },
-                      onCancel: () => {
-                        form.resetFields();
-                      },
-                    });
-                  }}
+                  onClick={() => handleEdit(finding)}
                 />,
                 <Button
-                  key="btn2"
+                  key="delete"
                   type="text"
                   danger
                   icon={<DeleteOutlined />}
                   onClick={() => handleDelete(finding._id)}
                 />,
               ]}>
-              <List.Item.Meta
-                avatar={
-                  <div
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: "50%",
-                      background: "#f0f5ff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}>
-                    <FileTextOutlined style={{ color: "#1890ff" }} />
-                  </div>
-                }
-                title={<Text strong>{finding.finding || "Untitled Finding"}</Text>}
-                description={
-                  <Space direction="vertical" size={0}>
-                    {finding.source && (
-                      <Text type="secondary">
-                        <Tag style={{ marginRight: 4 }}>Source</Tag>
-                        {finding.source}
+              <div style={{ width: "100%" }}>
+                <Row gutter={[16, 8]} align="middle">
+                  <Col xs={24} sm={24} md={20}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                      <Tag color="orange" style={{ marginTop: 2, flexShrink: 0 }}>
+                        #{index + 1}
+                      </Tag>
+                      <Text strong style={{ fontSize: 15, lineHeight: 1.4 }}>
+                        {finding.finding || "Untitled Finding"}
                       </Text>
-                    )}
-                    {finding.relevance && (
-                      <Text type="secondary">
-                        <Tag style={{ marginRight: 4 }}>Relevance</Tag>
-                        {finding.relevance}
-                      </Text>
-                    )}
-                    {finding.addedAt && (
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        Added {dayjs(finding.addedAt).format("DD MMM YYYY")}
-                      </Text>
-                    )}
-                  </Space>
-                }
-              />
+                    </div>
+                  </Col>
+                </Row>
+
+                <Row gutter={[16, 8]} style={{ marginTop: 12 }}>
+                  {finding.source && (
+                    <Col xs={24} sm={12}>
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                          Source
+                        </Text>
+                        <div style={{ marginTop: 2 }}>
+                          <Text style={{ fontSize: 13, color: "#1890ff" }}>
+                            {finding.source}
+                          </Text>
+                        </div>
+                      </div>
+                    </Col>
+                  )}
+                  {finding.relevance && (
+                    <Col xs={24} sm={finding.source ? 12 : 24}>
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                          Relevance
+                        </Text>
+                        <div style={{ marginTop: 2 }}>
+                          <Tag color="purple" style={{ marginTop: 4 }}>{finding.relevance}</Tag>
+                        </div>
+                      </div>
+                    </Col>
+                  )}
+                </Row>
+
+                {finding.addedAt && (
+                  <Text type="secondary" style={{ fontSize: 11, marginTop: 8, display: "block" }}>
+                    Added on {dayjs(finding.addedAt).format("DD MMM YYYY")}
+                  </Text>
+                )}
+              </div>
             </List.Item>
           )}
         />
@@ -246,13 +222,20 @@ const KeyFindingsPanel = () => {
               ? "No findings match your search"
               : "No key findings added yet"
           }
+          style={{ margin: "40px 0" }}
         />
       )}
 
       <Modal
-        title={editingFinding?._id ? "Edit Key Finding" : "Add Key Finding"}
-        open={!!editingFinding}
+        title={
+          <Space>
+            <BulbOutlined style={{ color: "#faad14" }} />
+            <span>{editingFinding?._id ? "Edit Key Finding" : "Add Key Finding"}</span>
+          </Space>
+        }
+        open={modalVisible}
         onCancel={() => {
+          setModalVisible(false);
           setEditingFinding(null);
           form.resetFields();
         }}
@@ -262,23 +245,23 @@ const KeyFindingsPanel = () => {
           <Form.Item
             name="finding"
             label="Finding"
-            rules={[{ required: true, message: "Please enter finding" }]}
-            initialValue={editingFinding?.finding}>
-            <TextArea rows={3} placeholder="Enter key finding..." />
+            rules={[{ required: true, message: "Please enter finding" }]}>
+            <TextArea rows={4} placeholder="Enter the key finding..." />
           </Form.Item>
 
-          <Form.Item name="source" label="Source" initialValue={editingFinding?.source}>
-            <Input placeholder="Source reference (optional)" />
+          <Form.Item name="source" label="Source">
+            <Input placeholder="e.g., Section 5.2 of Regulation XYZ" />
           </Form.Item>
 
-          <Form.Item name="relevance" label="Relevance" initialValue={editingFinding?.relevance}>
-            <Input placeholder="Relevance to the matter (optional)" />
+          <Form.Item name="relevance" label="Relevance to this Matter">
+            <Input placeholder="e.g., Critical for compliance timeline" />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
             <Space>
               <Button
                 onClick={() => {
+                  setModalVisible(false);
                   setEditingFinding(null);
                   form.resetFields();
                 }}>

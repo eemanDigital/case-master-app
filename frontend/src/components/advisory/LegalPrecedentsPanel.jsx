@@ -11,6 +11,8 @@ import {
   message,
   Empty,
   Tag,
+  Row,
+  Col,
 } from "antd";
 import {
   PlusOutlined,
@@ -20,7 +22,6 @@ import {
   BookOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import dayjs from "dayjs";
 import {
   selectCurrentAdvisoryDetail,
   updateAdvisoryDetails,
@@ -31,6 +32,7 @@ const { TextArea } = Input;
 
 const LegalPrecedentsPanel = () => {
   const dispatch = useDispatch();
+  const [modalVisible, setModalVisible] = useState(false);
   const [editingPrecedent, setEditingPrecedent] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [form] = Form.useForm();
@@ -48,6 +50,23 @@ const LegalPrecedentsPanel = () => {
         p.summary?.toLowerCase().includes(term)
     );
   }, [legalPrecedents, searchTerm]);
+
+  const handleAdd = () => {
+    setEditingPrecedent(null);
+    form.resetFields();
+    setModalVisible(true);
+  };
+
+  const handleEdit = (precedent) => {
+    setEditingPrecedent(precedent);
+    form.setFieldsValue({
+      caseName: precedent.caseName,
+      citation: precedent.citation || "",
+      summary: precedent.summary || "",
+      relevance: precedent.relevance || "",
+    });
+    setModalVisible(true);
+  };
 
   const handleSave = async (values) => {
     try {
@@ -70,6 +89,7 @@ const LegalPrecedentsPanel = () => {
         data: { legalPrecedents: updatedPrecedents },
       })).unwrap();
 
+      setModalVisible(false);
       setEditingPrecedent(null);
       form.resetFields();
       message.success(editingPrecedent?._id ? "Precedent updated" : "Precedent added");
@@ -95,152 +115,111 @@ const LegalPrecedentsPanel = () => {
 
   return (
     <Card
-      title="Legal Precedents"
-      extra={
+      title={
         <Space>
+          <BookOutlined style={{ color: "#1890ff" }} />
+          <span>Legal Precedents</span>
+        </Space>
+      }
+      extra={
+        <Space wrap>
           <Input
             placeholder="Search precedents..."
             prefix={<SearchOutlined />}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: 200 }}
+            style={{ width: 180, marginRight: 8 }}
           />
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => {
-              setEditingPrecedent({});
-              form.resetFields();
-              Modal.confirm({
-                title: "Add Legal Precedent",
-                content: (
-                  <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-                    <Form.Item
-                      name="caseName"
-                      label="Case Name"
-                      rules={[{ required: true, message: "Please enter case name" }]}
-                    >
-                      <Input placeholder="e.g., Donoghue v Stevenson [1932] AC 562" />
-                    </Form.Item>
-
-                    <Form.Item name="citation" label="Citation">
-                      <Input placeholder="Full citation reference" />
-                    </Form.Item>
-
-                    <Form.Item name="summary" label="Summary">
-                      <TextArea rows={3} placeholder="Brief summary of the precedent" />
-                    </Form.Item>
-
-                    <Form.Item name="relevance" label="Relevance">
-                      <Input placeholder="Relevance to this matter" />
-                    </Form.Item>
-                  </Form>
-                ),
-                onOk: () => {
-                  form.validateFields().then(handleSave);
-                },
-                onCancel: () => {
-                  form.resetFields();
-                },
-              });
-            }}>
+          <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
             Add Precedent
           </Button>
         </Space>
-      }>
+      }
+      styles={{ body: { padding: 0 } }}>
       {filteredPrecedents.length > 0 ? (
         <List
           dataSource={filteredPrecedents}
-          renderItem={(precedent) => (
+          renderItem={(precedent, index) => (
             <List.Item
+              style={{
+                padding: "16px 24px",
+                borderBottom: index < filteredPrecedents.length - 1 ? "1px solid #f0f0f0" : "none",
+              }}
               actions={[
                 <Button
-                  key="btn1"
+                  key="edit"
                   type="text"
                   icon={<EditOutlined />}
-                  onClick={() => {
-                    setEditingPrecedent(precedent);
-                    form.setFieldsValue(precedent);
-                    Modal.confirm({
-                      title: "Edit Legal Precedent",
-                      content: (
-                        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-                          <Form.Item
-                            name="caseName"
-                            label="Case Name"
-                            rules={[{ required: true, message: "Please enter case name" }]}
-                          >
-                            <Input placeholder="e.g., Donoghue v Stevenson [1932] AC 562" />
-                          </Form.Item>
-
-                          <Form.Item name="citation" label="Citation">
-                            <Input placeholder="Full citation reference" />
-                          </Form.Item>
-
-                          <Form.Item name="summary" label="Summary">
-                            <TextArea rows={3} placeholder="Brief summary of the precedent" />
-                          </Form.Item>
-
-                          <Form.Item name="relevance" label="Relevance">
-                            <Input placeholder="Relevance to this matter" />
-                          </Form.Item>
-                        </Form>
-                      ),
-                      onOk: () => {
-                        form.validateFields().then(handleSave);
-                      },
-                      onCancel: () => {
-                        form.resetFields();
-                      },
-                    });
-                  }}
+                  onClick={() => handleEdit(precedent)}
                 />,
                 <Button
-                  key="btn2"
+                  key="delete"
                   type="text"
                   danger
                   icon={<DeleteOutlined />}
                   onClick={() => handleDelete(precedent._id)}
                 />,
               ]}>
-              <List.Item.Meta
-                avatar={
-                  <div
-                    style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: "50%",
-                      background: "#f0f5ff",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}>
-                    <BookOutlined style={{ color: "#1890ff" }} />
-                  </div>
-                }
-                title={<Text strong>{precedent.caseName || "Untitled Precedent"}</Text>}
-                description={
-                  <Space direction="vertical" size={0}>
-                    {precedent.citation && (
-                      <Text type="secondary">
-                        <Tag style={{ marginRight: 4 }}>Citation</Tag>
-                        {precedent.citation}
+              <div style={{ width: "100%" }}>
+                <Row gutter={[16, 8]} align="top">
+                  <Col xs={22} sm={23}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                      <Tag color="blue" style={{ marginTop: 2, flexShrink: 0, fontSize: 11 }}>
+                        #{index + 1}
+                      </Tag>
+                      <Text strong style={{ fontSize: 16, lineHeight: 1.4, color: "#1f1f1f" }}>
+                        {precedent.caseName || "Untitled Precedent"}
                       </Text>
-                    )}
-                    {precedent.summary && (
-                      <Text type="secondary" ellipsis={{ rows: 2 }}>
-                        {precedent.summary}
+                    </div>
+                  </Col>
+                </Row>
+
+                <Row gutter={[24, 8]} style={{ marginTop: 10 }}>
+                  {precedent.citation && (
+                    <Col xs={24} sm={12}>
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                          Citation
+                        </Text>
+                        <div style={{ marginTop: 2 }}>
+                          <Text style={{ fontSize: 13, color: "#1890ff" }}>
+                            {precedent.citation}
+                          </Text>
+                        </div>
+                      </div>
+                    </Col>
+                  )}
+                  {precedent.relevance && (
+                    <Col xs={24} sm={precedent.citation ? 12 : 24}>
+                      <div>
+                        <Text type="secondary" style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                          Relevance
+                        </Text>
+                        <div style={{ marginTop: 4 }}>
+                          <Tag color="cyan">{precedent.relevance}</Tag>
+                        </div>
+                      </div>
+                    </Col>
+                  )}
+                </Row>
+
+                {precedent.summary && (
+                  <Row style={{ marginTop: 12 }}>
+                    <Col span={24}>
+                      <Text type="secondary" style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                        Summary
                       </Text>
-                    )}
-                    {precedent.relevance && (
-                      <Text type="secondary">
-                        <Tag style={{ marginRight: 4 }}>Relevance</Tag>
-                        {precedent.relevance}
-                      </Text>
-                    )}
-                  </Space>
-                }
-              />
+                      <div style={{ marginTop: 4 }}>
+                        <Text style={{ fontSize: 14, color: "#262626", lineHeight: 1.6 }}>
+                          {precedent.summary.length > 300
+                            ? `${precedent.summary.substring(0, 300)}...`
+                            : precedent.summary}
+                        </Text>
+                      </div>
+                    </Col>
+                  </Row>
+                )}
+              </div>
             </List.Item>
           )}
         />
@@ -251,13 +230,20 @@ const LegalPrecedentsPanel = () => {
               ? "No precedents match your search"
               : "No legal precedents added yet"
           }
+          style={{ margin: "40px 0" }}
         />
       )}
 
       <Modal
-        title={editingPrecedent?._id ? "Edit Legal Precedent" : "Add Legal Precedent"}
-        open={!!editingPrecedent}
+        title={
+          <Space>
+            <BookOutlined style={{ color: "#1890ff" }} />
+            <span>{editingPrecedent?._id ? "Edit Legal Precedent" : "Add Legal Precedent"}</span>
+          </Space>
+        }
+        open={modalVisible}
         onCancel={() => {
+          setModalVisible(false);
           setEditingPrecedent(null);
           form.resetFields();
         }}
@@ -267,27 +253,27 @@ const LegalPrecedentsPanel = () => {
           <Form.Item
             name="caseName"
             label="Case Name"
-            rules={[{ required: true, message: "Please enter case name" }]}
-            initialValue={editingPrecedent?.caseName}>
+            rules={[{ required: true, message: "Please enter case name" }]}>
             <Input placeholder="e.g., Donoghue v Stevenson [1932] AC 562" />
           </Form.Item>
 
-          <Form.Item name="citation" label="Citation" initialValue={editingPrecedent?.citation}>
-            <Input placeholder="Full citation reference" />
+          <Form.Item name="citation" label="Citation">
+            <Input placeholder="Full citation reference (e.g., [1932] AC 562)" />
           </Form.Item>
 
-          <Form.Item name="summary" label="Summary" initialValue={editingPrecedent?.summary}>
-            <TextArea rows={3} placeholder="Brief summary of the precedent" />
+          <Form.Item name="summary" label="Summary">
+            <TextArea rows={4} placeholder="Brief summary of the precedent and its relevance..." />
           </Form.Item>
 
-          <Form.Item name="relevance" label="Relevance" initialValue={editingPrecedent?.relevance}>
-            <Input placeholder="Relevance to this matter" />
+          <Form.Item name="relevance" label="Relevance to this Matter">
+            <Input placeholder="e.g., Establishes duty of care principle" />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
             <Space>
               <Button
                 onClick={() => {
+                  setModalVisible(false);
                   setEditingPrecedent(null);
                   form.resetFields();
                 }}>

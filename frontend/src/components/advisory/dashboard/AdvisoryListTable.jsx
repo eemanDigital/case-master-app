@@ -315,7 +315,7 @@ const AdvisoryListTable = ({
             </div>
             <button
               onClick={() =>
-                navigate(`/dashboard/matters/advisory/${record._id}`)
+                navigate(`/dashboard/matters/advisory/${record._id}/details`)
               }
               className="text-left text-sm font-semibold text-slate-800 hover:text-indigo-600 transition-colors line-clamp-2">
               {title}
