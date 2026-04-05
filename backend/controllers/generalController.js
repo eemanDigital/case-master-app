@@ -1395,6 +1395,8 @@ exports.generateGeneralReportPdf = catchAsync(async (req, res, next) => {
 
   pdf.init(res, path.resolve(__dirname, `../output/${matter.matterNumber}_general_report_${Date.now()}.pdf`));
 
+  pdf.addHeader();
+
   // Firm Information
   pdf.addSection("Firm Information");
   pdf.addField("Firm Name", firm?.name);
