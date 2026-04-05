@@ -245,7 +245,7 @@ const initDeadlineCronJobs = () => {
           deadline.escalation.sevenDayReminderSent = true;
           deadline.escalation.sevenDayReminderSentAt = new Date();
           deadline.notificationLog.push({
-            type: "7-day",
+            notificationType: "7-day",
             sentAt: new Date(),
             sentTo: [deadline.assignedTo._id],
             channel: "email",
@@ -255,7 +255,7 @@ const initDeadlineCronJobs = () => {
           const userMessage = `⏰ Deadline in 7 days: "${deadline.title}" is due ${formatDate(deadline.dueDate)}. Please take action.`;
           await sendInAppNotification(deadline.assignedTo._id, deadline.assignedTo._id, userMessage, deadline);
           deadline.notificationLog.push({
-            type: "7-day_in_app",
+            notificationType: "7-day_in_app",
             sentAt: new Date(),
             sentTo: [deadline.assignedTo._id],
             channel: "in-app",
@@ -320,7 +320,7 @@ const initDeadlineCronJobs = () => {
           deadline.escalation.oneDayReminderSent = true;
           deadline.escalation.oneDayReminderSentAt = new Date();
           deadline.notificationLog.push({
-            type: "24-hour",
+            notificationType: "24-hour",
             sentAt: new Date(),
             sentTo: [deadline.assignedTo._id],
             channel: "email",
@@ -330,7 +330,7 @@ const initDeadlineCronJobs = () => {
           const userMessage = `🚨 URGENT: "${deadline.title}" is due in less than 24 hours (${formatDate(deadline.dueDate)}). Take immediate action!`;
           await sendInAppNotification(deadline.assignedTo._id, deadline.assignedTo._id, userMessage, deadline);
           deadline.notificationLog.push({
-            type: "24-hour_in_app",
+            notificationType: "24-hour_in_app",
             sentAt: new Date(),
             sentTo: [deadline.assignedTo._id],
             channel: "in-app",
@@ -358,7 +358,7 @@ const initDeadlineCronJobs = () => {
             deadline.escalation.escalatedAt = new Date();
             deadline.escalation.escalationReason = "24-hour escalation";
             deadline.notificationLog.push({
-              type: "escalation",
+              notificationType: "escalation",
               sentAt: new Date(),
               sentTo: [deadline.supervisor._id],
               channel: "email",
@@ -426,14 +426,14 @@ const initDeadlineCronJobs = () => {
           );
 
           deadline.notificationLog.push({
-            type: "overdue",
+            notificationType: "overdue",
             sentAt: new Date(),
             sentTo: [deadline.assignedTo._id],
             channel: "email",
             success: true,
           });
           deadline.notificationLog.push({
-            type: "overdue_in_app",
+            notificationType: "overdue_in_app",
             sentAt: new Date(),
             sentTo: [deadline.assignedTo._id],
             channel: "in-app",
@@ -458,7 +458,7 @@ const initDeadlineCronJobs = () => {
           );
 
           deadline.notificationLog.push({
-            type: "overdue_supervisor",
+            notificationType: "overdue_supervisor",
             sentAt: new Date(),
             sentTo: [deadline.supervisor._id],
             channel: "email",

@@ -160,7 +160,9 @@ const deadlineSchema = new mongoose.Schema(
     },
 
     notificationLog: [{
-      type: String,
+      notificationType: {
+        type: String,
+      },
       sentAt: {
         type: Date,
         default: Date.now,
