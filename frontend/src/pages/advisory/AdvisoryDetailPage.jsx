@@ -65,6 +65,8 @@ const CompliancePanel = lazy(
   () => import("../../components/advisory/CompliancePanel"),
 );
 const ActivityLog = lazy(() => import("../../components/advisory/ActivityLog"));
+const KeyFindingsPanel = lazy(() => import("../../components/advisory/KeyFindingsPanel"));
+const LegalPrecedentsPanel = lazy(() => import("../../components/advisory/LegalPrecedentsPanel"));
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -580,6 +582,24 @@ const buildTabItems = (advisoryId) => {
       ),
     },
     {
+      key: "analysis",
+      label: (
+        <span className="flex items-center gap-2">
+          <BulbOutlined /> Analysis
+        </span>
+      ),
+      children: (
+        <div className="space-y-6">
+          <Suspense fallback={<PanelLoadingFallback />}>
+            <KeyFindingsPanel advisoryId={advisoryId} />
+          </Suspense>
+          <Suspense fallback={<PanelLoadingFallback />}>
+            <LegalPrecedentsPanel advisoryId={advisoryId} />
+          </Suspense>
+        </div>
+      ),
+    },
+    {
       key: "findings",
       label: (
         <span className="flex items-center gap-2">
@@ -587,9 +607,9 @@ const buildTabItems = (advisoryId) => {
         </span>
       ),
       children: (
-        <div className="p-4 text-gray-400 text-sm">
-          Findings panel coming soon.
-        </div>
+        <Suspense fallback={<PanelLoadingFallback />}>
+          <KeyFindingsPanel advisoryId={advisoryId} />
+        </Suspense>
       ),
     },
     {

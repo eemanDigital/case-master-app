@@ -129,6 +129,50 @@ advisoryRouter.delete(
   advisoryController.deleteDeliverable,
 );
 
+// Compliance Checklist
+advisoryRouter.post(
+  "/:matterId/compliance",
+  restrictTo("admin", "lawyer"),
+  advisoryController.addComplianceItem,
+);
+
+advisoryRouter.patch(
+  "/:matterId/compliance/:itemId",
+  restrictTo("admin", "lawyer"),
+  advisoryController.updateComplianceItem,
+);
+
+advisoryRouter.delete(
+  "/:matterId/compliance/:itemId",
+  restrictTo("admin", "lawyer"),
+  advisoryController.deleteComplianceItem,
+);
+
+// Risk Assessment
+advisoryRouter.patch(
+  "/:matterId/risk-assessment",
+  restrictTo("admin", "lawyer"),
+  advisoryController.updateRiskAssessment,
+);
+
+advisoryRouter.post(
+  "/:matterId/risk-items",
+  restrictTo("admin", "lawyer"),
+  advisoryController.addRiskItem,
+);
+
+advisoryRouter.patch(
+  "/:matterId/risk-items/:riskId",
+  restrictTo("admin", "lawyer"),
+  advisoryController.updateRiskItem,
+);
+
+advisoryRouter.delete(
+  "/:matterId/risk-items/:riskId",
+  restrictTo("admin", "lawyer"),
+  advisoryController.deleteRiskItem,
+);
+
 // Service completion
 advisoryRouter.post(
   "/:matterId/complete",

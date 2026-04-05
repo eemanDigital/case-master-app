@@ -390,6 +390,87 @@ export const deleteDeliverable = createAsyncThunk(
   },
 );
 
+// --- Compliance Checklist ---
+
+export const addComplianceItem = createAsyncThunk(
+  `${ADVISORY_SLICE_NAME}/addComplianceItem`,
+  async ({ matterId, data }, { rejectWithValue }) => {
+    try {
+      return await advisoryService.addComplianceItem(matterId, data);
+    } catch (err) {
+      return rejectWithValue(extractError(err));
+    }
+  },
+);
+
+export const updateComplianceItem = createAsyncThunk(
+  `${ADVISORY_SLICE_NAME}/updateComplianceItem`,
+  async ({ matterId, itemId, data }, { rejectWithValue }) => {
+    try {
+      return await advisoryService.updateComplianceItem(matterId, itemId, data);
+    } catch (err) {
+      return rejectWithValue(extractError(err));
+    }
+  },
+);
+
+export const deleteComplianceItem = createAsyncThunk(
+  `${ADVISORY_SLICE_NAME}/deleteComplianceItem`,
+  async ({ matterId, itemId }, { rejectWithValue }) => {
+    try {
+      return await advisoryService.deleteComplianceItem(matterId, itemId);
+    } catch (err) {
+      return rejectWithValue(extractError(err));
+    }
+  },
+);
+
+// --- Risk Assessment ---
+
+export const updateRiskAssessment = createAsyncThunk(
+  `${ADVISORY_SLICE_NAME}/updateRiskAssessment`,
+  async ({ matterId, data }, { rejectWithValue }) => {
+    try {
+      return await advisoryService.updateRiskAssessment(matterId, data);
+    } catch (err) {
+      return rejectWithValue(extractError(err));
+    }
+  },
+);
+
+export const addRiskItem = createAsyncThunk(
+  `${ADVISORY_SLICE_NAME}/addRiskItem`,
+  async ({ matterId, data }, { rejectWithValue }) => {
+    try {
+      return await advisoryService.addRiskItem(matterId, data);
+    } catch (err) {
+      return rejectWithValue(extractError(err));
+    }
+  },
+);
+
+export const updateRiskItem = createAsyncThunk(
+  `${ADVISORY_SLICE_NAME}/updateRiskItem`,
+  async ({ matterId, riskId, data }, { rejectWithValue }) => {
+    try {
+      return await advisoryService.updateRiskItem(matterId, riskId, data);
+    } catch (err) {
+      return rejectWithValue(extractError(err));
+    }
+  },
+);
+
+export const deleteRiskItem = createAsyncThunk(
+  `${ADVISORY_SLICE_NAME}/deleteRiskItem`,
+  async ({ matterId, riskId }, { rejectWithValue }) => {
+    try {
+      return await advisoryService.deleteRiskItem(matterId, riskId);
+    } catch (err) {
+      return rejectWithValue(extractError(err));
+    }
+  },
+);
+
 // --- Bulk ---
 
 export const bulkUpdateAdvisoryMatters = createAsyncThunk(
@@ -755,6 +836,52 @@ const advisorySlice = createSlice({
       builder,
       deleteDeliverable,
       L.DELIVERABLE,
+      updateCurrentDetail,
+    );
+
+    // ── Compliance Checklist ─────────────────────────────────
+    addThunkCases(
+      builder,
+      addComplianceItem,
+      L.COMPLIANCE,
+      updateCurrentDetail,
+    );
+    addThunkCases(
+      builder,
+      updateComplianceItem,
+      L.COMPLIANCE,
+      updateCurrentDetail,
+    );
+    addThunkCases(
+      builder,
+      deleteComplianceItem,
+      L.COMPLIANCE,
+      updateCurrentDetail,
+    );
+
+    // ── Risk Assessment ──────────────────────────────────────
+    addThunkCases(
+      builder,
+      updateRiskAssessment,
+      L.RISK_ASSESSMENT,
+      updateCurrentDetail,
+    );
+    addThunkCases(
+      builder,
+      addRiskItem,
+      L.RISK_ASSESSMENT,
+      updateCurrentDetail,
+    );
+    addThunkCases(
+      builder,
+      updateRiskItem,
+      L.RISK_ASSESSMENT,
+      updateCurrentDetail,
+    );
+    addThunkCases(
+      builder,
+      deleteRiskItem,
+      L.RISK_ASSESSMENT,
       updateCurrentDetail,
     );
 

@@ -245,6 +245,8 @@ export const ADVISORY_LOADING_KEYS = {
   OPINION: "opinion",
   RECOMMENDATION: "recommendation",
   DELIVERABLE: "deliverable",
+  COMPLIANCE: "compliance",
+  RISK_ASSESSMENT: "riskAssessment",
 };
 
 // ── Pagination Defaults ───────────────────────────────────────

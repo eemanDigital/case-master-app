@@ -1,5 +1,4 @@
-// components/advisory/panels/CompliancePanel.jsx
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Card,
   Table,
@@ -11,6 +10,8 @@ import {
   DatePicker,
   Modal,
   Input,
+  message,
+  Empty,
 } from "antd";
 import {
   CheckCircleOutlined,
@@ -18,12 +19,23 @@ import {
   EditOutlined,
   PlusOutlined,
 } from "@ant-design/icons";
-import { useDispatch } from "react-redux";
-// import { updateComplianceItem } from "../../redux/features/advisory/advisorySlice";
+import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
+import {
+  selectCurrentAdvisoryDetail,
+  selectComplianceChecklist,
+  updateAdvisoryDetails,
+} from "../../redux/features/advisory/advisorySlice";
 
 const { Option } = Select;
 const { TextArea } = Input;
+
+const COMPLIANCE_STATUS_OPTIONS = [
+  { value: "compliant", label: "Compliant" },
+  { value: "non-compliant", label: "Non-Compliant" },
+  { value: "partially-compliant", label: "Partially Compliant" },
+  { value: "not-applicable", label: "Not Applicable" },
+];
 
 const CompliancePanel = ({ advisoryId }) => {
   const dispatch = useDispatch();
@@ -31,61 +43,89 @@ const CompliancePanel = ({ advisoryId }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm();
 
-  // Mock data
-  const complianceChecklist = [
-    {
-      _id: "1",
-      requirement: "Submit annual compliance report",
-      status: "compliant",
-      notes: "Submitted on time",
-      dueDate: "2024-12-31",
-      completedDate: "2024-11-15",
-    },
-    {
-      _id: "2",
-      requirement: "Obtain regulatory approval",
-      status: "non-compliant",
-      notes: "Pending review",
-      dueDate: "2024-12-01",
-      completedDate: null,
-    },
-  ];
+  const advisory = useSelector(selectCurrentAdvisoryDetail);
+  const complianceChecklist = useSelector(selectComplianceChecklist) || [];
 
-  // const handleStatusUpdate = async (itemId, newStatus) => {
-  //   try {
-  //     await dispatch(
-  //       updateComplianceItem({
-  //         advisoryId,
-  //         itemId,
-  //         data: { status: newStatus },
-  //       }),
-  //     );
-  //   } catch (error) {
-  //     console.error("Failed to update compliance item:", error);
-  //   }
-  // };
+  const stats = useMemo(() => ({
+    total: complianceChecklist.length,
+    compliant: complianceChecklist.filter((item) => item.status === "compliant").length,
+    nonCompliant: complianceChecklist.filter((item) => item.status === "non-compliant").length,
+    partiallyCompliant: complianceChecklist.filter((item) => item.status === "partially-compliant").length,
+    notApplicable: complianceChecklist.filter((item) => item.status === "not-applicable").length,
+  }), [complianceChecklist]);
 
-  // const handleSave = async (values) => {
-  //   try {
-  //     if (editingItem) {
-  //       await dispatch(
-  //         updateComplianceItem({
-  //           advisoryId,
-  //           itemId: editingItem._id,
-  //           data: {
-  //             ...values,
-  //             dueDate: values.dueDate?.toISOString(),
-  //           },
-  //         }),
-  //       );
-  //     }
-  //     setModalVisible(false);
-  //     setEditingItem(null);
-  //     form.resetFields();
-  //   } catch (error) {
-  //     console.error("Failed to save:", error);
-  //   }
-  // };
+  const handleStatusUpdate = async (itemId, newStatus) => {
+    try {
+      const updatedChecklist = complianceChecklist.map((item) =>
+        item._id === itemId ? { ...item, status: newStatus } : item
+      );
+      
+      await dispatch(updateAdvisoryDetails({
+        matterId: advisory.matterId,
+        data: { complianceChecklist: updatedChecklist },
+      })).unwrap();
+      
+      message.success("Compliance status updated");
+    } catch (error) {
+      message.error("Failed to update compliance status");
+    }
+  };
+
+  const handleSave = async (values) => {
+    try {
+      let updatedChecklist;
+      
+      if (editingItem) {
+        updatedChecklist = complianceChecklist.map((item) =>
+          item._id === editingItem._id
+            ? {
+                ...item,
+                requirement: values.requirement,
+                status: values.status,
+                dueDate: values.dueDate?.toISOString() || item.dueDate,
+                notes: values.notes || "",
+              }
+            : item
+        );
+      } else {
+        const newItem = {
+          _id: `temp_${Date.now()}`,
+          requirement: values.requirement,
+          status: values.status || "compliant",
+          dueDate: values.dueDate?.toISOString() || null,
+          notes: values.notes || "",
+        };
+        updatedChecklist = [...complianceChecklist, newItem];
+      }
+
+      await dispatch(updateAdvisoryDetails({
+        matterId: advisory.matterId,
+        data: { complianceChecklist: updatedChecklist },
+      })).unwrap();
+
+      setModalVisible(false);
+      setEditingItem(null);
+      form.resetFields();
+      message.success(editingItem ? "Compliance item updated" : "Compliance item added");
+    } catch (error) {
+      message.error("Failed to save compliance item");
+    }
+  };
+
+  const handleDelete = async (itemId) => {
+    try {
+      const updatedChecklist = complianceChecklist.filter((item) => item._id !== itemId);
+      
+      await dispatch(updateAdvisoryDetails({
+        matterId: advisory.matterId,
+        data: { complianceChecklist: updatedChecklist },
+      })).unwrap();
+      
+      message.success("Compliance item deleted");
+    } catch (error) {
+      message.error("Failed to delete compliance item");
+    }
+  };
 
   const columns = [
     {
@@ -98,6 +138,7 @@ const CompliancePanel = ({ advisoryId }) => {
       title: "Status",
       dataIndex: "status",
       key: "status",
+      width: 200,
       render: (status, record) => {
         const statusConfig = {
           compliant: {
@@ -124,7 +165,7 @@ const CompliancePanel = ({ advisoryId }) => {
 
         const config = statusConfig[status] || {
           color: "default",
-          text: status,
+          text: status || "Unknown",
         };
 
         return (
@@ -133,18 +174,14 @@ const CompliancePanel = ({ advisoryId }) => {
             onChange={(value) => handleStatusUpdate(record._id, value)}
             style={{ width: 180 }}
             bordered={false}>
-            <Option value="compliant">
-              <Tag color="success">Compliant</Tag>
-            </Option>
-            <Option value="non-compliant">
-              <Tag color="error">Non-Compliant</Tag>
-            </Option>
-            <Option value="partially-compliant">
-              <Tag color="warning">Partially Compliant</Tag>
-            </Option>
-            <Option value="not-applicable">
-              <Tag>Not Applicable</Tag>
-            </Option>
+            {COMPLIANCE_STATUS_OPTIONS.map((opt) => (
+              <Option key={opt.value} value={opt.value}>
+                <Tag color={statusConfig[opt.value]?.color || "default"}>
+                  {statusConfig[opt.value]?.icon}
+                  {opt.label}
+                </Tag>
+              </Option>
+            ))}
           </Select>
         );
       },
@@ -164,38 +201,34 @@ const CompliancePanel = ({ advisoryId }) => {
     {
       title: "Actions",
       key: "actions",
+      width: 120,
       render: (_, record) => (
-        <Button
-          type="text"
-          icon={<EditOutlined />}
-          onClick={() => {
-            setEditingItem(record);
-            form.setFieldsValue({
-              ...record,
-              dueDate: record.dueDate ? dayjs(record.dueDate) : null,
-            });
-            setModalVisible(true);
-          }}
-        />
+        <Space>
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => {
+              setEditingItem(record);
+              form.setFieldsValue({
+                ...record,
+                dueDate: record.dueDate ? dayjs(record.dueDate) : null,
+              });
+              setModalVisible(true);
+            }}
+          />
+          <Button
+            type="text"
+            danger
+            icon={<CloseCircleOutlined />}
+            onClick={() => handleDelete(record._id)}
+          />
+        </Space>
       ),
     },
   ];
 
-  const stats = {
-    total: complianceChecklist.length,
-    compliant: complianceChecklist.filter((item) => item.status === "compliant")
-      .length,
-    nonCompliant: complianceChecklist.filter(
-      (item) => item.status === "non-compliant",
-    ).length,
-    partiallyCompliant: complianceChecklist.filter(
-      (item) => item.status === "partially-compliant",
-    ).length,
-  };
-
   return (
     <div>
-      {/* Compliance Stats */}
       <div
         style={{
           display: "grid",
@@ -249,15 +282,18 @@ const CompliancePanel = ({ advisoryId }) => {
             Add Requirement
           </Button>
         }>
-        <Table
-          columns={columns}
-          dataSource={complianceChecklist}
-          rowKey="_id"
-          pagination={false}
-        />
+        {complianceChecklist.length > 0 ? (
+          <Table
+            columns={columns}
+            dataSource={complianceChecklist}
+            rowKey="_id"
+            pagination={false}
+          />
+        ) : (
+          <Empty description="No compliance requirements added yet" />
+        )}
       </Card>
 
-      {/* Edit Modal */}
       <Modal
         title={editingItem ? "Edit Compliance Item" : "Add Compliance Item"}
         open={modalVisible}
@@ -268,8 +304,7 @@ const CompliancePanel = ({ advisoryId }) => {
         }}
         footer={null}
         width={600}>
-        {/* <Form form={form} layout="vertical" onFinish={handleSave}> */}
-        <Form form={form} layout="vertical">
+        <Form form={form} layout="vertical" onFinish={handleSave}>
           <Form.Item
             name="requirement"
             label="Requirement"
@@ -279,10 +314,11 @@ const CompliancePanel = ({ advisoryId }) => {
 
           <Form.Item name="status" label="Status" initialValue="compliant">
             <Select>
-              <Option value="compliant">Compliant</Option>
-              <Option value="non-compliant">Non-Compliant</Option>
-              <Option value="partially-compliant">Partially Compliant</Option>
-              <Option value="not-applicable">Not Applicable</Option>
+              {COMPLIANCE_STATUS_OPTIONS.map((opt) => (
+                <Option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </Option>
+              ))}
             </Select>
           </Form.Item>
 

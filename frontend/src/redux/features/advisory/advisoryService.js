@@ -226,7 +226,10 @@ const addDeliverable = (matterId, data) =>
  * @param {Object} data
  */
 const updateDeliverable = (matterId, deliverableId, data) =>
-  apiService.patch(ADVISORY_ROUTES.DELIVERABLE(matterId, deliverableId), data);
+  apiService.patch(
+    ADVISORY_ROUTES.DELIVERABLE(matterId, deliverableId),
+    data,
+  );
 
 /**
  * Delete a specific deliverable.
@@ -235,6 +238,68 @@ const updateDeliverable = (matterId, deliverableId, data) =>
  */
 const deleteDeliverable = (matterId, deliverableId) =>
   apiService.delete(ADVISORY_ROUTES.DELIVERABLE(matterId, deliverableId));
+
+// ── Compliance Checklist ──────────────────────────────────────
+
+/**
+ * Add a compliance item.
+ * @param {string} matterId
+ * @param {{ requirement: string, status?: string, dueDate?: string, notes?: string }} data
+ */
+const addComplianceItem = (matterId, data) =>
+  apiService.post(`/api/advisory-matters/${matterId}/compliance`, data);
+
+/**
+ * Update a specific compliance item.
+ * @param {string} matterId
+ * @param {string} itemId
+ * @param {Object} data
+ */
+const updateComplianceItem = (matterId, itemId, data) =>
+  apiService.patch(`/api/advisory-matters/${matterId}/compliance/${itemId}`, data);
+
+/**
+ * Delete a specific compliance item.
+ * @param {string} matterId
+ * @param {string} itemId
+ */
+const deleteComplianceItem = (matterId, itemId) =>
+  apiService.delete(`/api/advisory-matters/${matterId}/compliance/${itemId}`);
+
+// ── Risk Assessment ──────────────────────────────────────────
+
+/**
+ * Update risk assessment.
+ * @param {string} matterId
+ * @param {{ overallRisk?: string, risks?: Array }} data
+ */
+const updateRiskAssessment = (matterId, data) =>
+  apiService.patch(`/api/advisory-matters/${matterId}/risk-assessment`, data);
+
+/**
+ * Add a risk item.
+ * @param {string} matterId
+ * @param {{ risk: string, likelihood?: string, impact?: string, mitigation?: string }} data
+ */
+const addRiskItem = (matterId, data) =>
+  apiService.post(`/api/advisory-matters/${matterId}/risk-items`, data);
+
+/**
+ * Update a specific risk item.
+ * @param {string} matterId
+ * @param {string} riskId
+ * @param {Object} data
+ */
+const updateRiskItem = (matterId, riskId, data) =>
+  apiService.patch(`/api/advisory-matters/${matterId}/risk-items/${riskId}`, data);
+
+/**
+ * Delete a specific risk item.
+ * @param {string} matterId
+ * @param {string} riskId
+ */
+const deleteRiskItem = (matterId, riskId) =>
+  apiService.delete(`/api/advisory-matters/${matterId}/risk-items/${riskId}`);
 
 // ── Bulk Operations ───────────────────────────────────────────
 
@@ -281,6 +346,17 @@ const advisoryService = {
   addDeliverable,
   updateDeliverable,
   deleteDeliverable,
+
+  // Compliance Checklist
+  addComplianceItem,
+  updateComplianceItem,
+  deleteComplianceItem,
+
+  // Risk Assessment
+  updateRiskAssessment,
+  addRiskItem,
+  updateRiskItem,
+  deleteRiskItem,
 
   // Bulk
   bulkUpdateAdvisoryMatters,

@@ -17,92 +17,89 @@ import {
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
-  FileTextOutlined,
+  BookOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
 import {
   selectCurrentAdvisoryDetail,
-  selectKeyFindings,
   updateAdvisoryDetails,
 } from "../../redux/features/advisory/advisorySlice";
 
 const { Text } = Typography;
 const { TextArea } = Input;
 
-const KeyFindingsPanel = () => {
+const LegalPrecedentsPanel = () => {
   const dispatch = useDispatch();
-  const [editingFinding, setEditingFinding] = useState(null);
+  const [editingPrecedent, setEditingPrecedent] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [form] = Form.useForm();
 
   const advisory = useSelector(selectCurrentAdvisoryDetail);
-  const keyFindings = useSelector(selectKeyFindings) || [];
+  const legalPrecedents = advisory?.legalPrecedents || [];
 
-  const filteredFindings = useMemo(() => {
-    if (!searchTerm) return keyFindings;
+  const filteredPrecedents = useMemo(() => {
+    if (!searchTerm) return legalPrecedents;
     const term = searchTerm.toLowerCase();
-    return keyFindings.filter(
-      (finding) =>
-        finding.finding?.toLowerCase().includes(term) ||
-        finding.source?.toLowerCase().includes(term) ||
-        finding.relevance?.toLowerCase().includes(term)
+    return legalPrecedents.filter(
+      (p) =>
+        p.caseName?.toLowerCase().includes(term) ||
+        p.citation?.toLowerCase().includes(term) ||
+        p.summary?.toLowerCase().includes(term)
     );
-  }, [keyFindings, searchTerm]);
+  }, [legalPrecedents, searchTerm]);
 
   const handleSave = async (values) => {
     try {
-      let updatedFindings;
+      let updatedPrecedents;
 
-      if (editingFinding?._id) {
-        updatedFindings = keyFindings.map((finding) =>
-          finding._id === editingFinding._id
-            ? { ...finding, ...values }
-            : finding
+      if (editingPrecedent?._id) {
+        updatedPrecedents = legalPrecedents.map((p) =>
+          p._id === editingPrecedent._id ? { ...p, ...values } : p
         );
       } else {
-        const newFinding = {
+        const newPrecedent = {
           _id: `temp_${Date.now()}`,
           ...values,
         };
-        updatedFindings = [...keyFindings, newFinding];
+        updatedPrecedents = [...legalPrecedents, newPrecedent];
       }
 
       await dispatch(updateAdvisoryDetails({
         matterId: advisory.matterId,
-        data: { keyFindings: updatedFindings },
+        data: { legalPrecedents: updatedPrecedents },
       })).unwrap();
 
-      setEditingFinding(null);
+      setEditingPrecedent(null);
       form.resetFields();
-      message.success(editingFinding?._id ? "Finding updated" : "Finding added");
+      message.success(editingPrecedent?._id ? "Precedent updated" : "Precedent added");
     } catch (error) {
-      message.error("Failed to save finding");
+      message.error("Failed to save precedent");
     }
   };
 
-  const handleDelete = async (findingId) => {
+  const handleDelete = async (precedentId) => {
     try {
-      const updatedFindings = keyFindings.filter((f) => f._id !== findingId);
+      const updatedPrecedents = legalPrecedents.filter((p) => p._id !== precedentId);
 
       await dispatch(updateAdvisoryDetails({
         matterId: advisory.matterId,
-        data: { keyFindings: updatedFindings },
+        data: { legalPrecedents: updatedPrecedents },
       })).unwrap();
 
-      message.success("Finding deleted");
+      message.success("Precedent deleted");
     } catch (error) {
-      message.error("Failed to delete finding");
+      message.error("Failed to delete precedent");
     }
   };
 
   return (
     <Card
-      title="Key Findings"
+      title="Legal Precedents"
       extra={
         <Space>
           <Input
-            placeholder="Search findings..."
+            placeholder="Search precedents..."
             prefix={<SearchOutlined />}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -112,26 +109,30 @@ const KeyFindingsPanel = () => {
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => {
-              setEditingFinding({});
+              setEditingPrecedent({});
               form.resetFields();
               Modal.confirm({
-                title: "Add Key Finding",
+                title: "Add Legal Precedent",
                 content: (
                   <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
                     <Form.Item
-                      name="finding"
-                      label="Finding"
-                      rules={[{ required: true, message: "Please enter finding" }]}
+                      name="caseName"
+                      label="Case Name"
+                      rules={[{ required: true, message: "Please enter case name" }]}
                     >
-                      <TextArea rows={3} placeholder="Enter key finding..." />
+                      <Input placeholder="e.g., Donoghue v Stevenson [1932] AC 562" />
                     </Form.Item>
 
-                    <Form.Item name="source" label="Source">
-                      <Input placeholder="Source reference (optional)" />
+                    <Form.Item name="citation" label="Citation">
+                      <Input placeholder="Full citation reference" />
+                    </Form.Item>
+
+                    <Form.Item name="summary" label="Summary">
+                      <TextArea rows={3} placeholder="Brief summary of the precedent" />
                     </Form.Item>
 
                     <Form.Item name="relevance" label="Relevance">
-                      <Input placeholder="Relevance to the matter (optional)" />
+                      <Input placeholder="Relevance to this matter" />
                     </Form.Item>
                   </Form>
                 ),
@@ -143,14 +144,14 @@ const KeyFindingsPanel = () => {
                 },
               });
             }}>
-            Add Finding
+            Add Precedent
           </Button>
         </Space>
       }>
-      {filteredFindings.length > 0 ? (
+      {filteredPrecedents.length > 0 ? (
         <List
-          dataSource={filteredFindings}
-          renderItem={(finding) => (
+          dataSource={filteredPrecedents}
+          renderItem={(precedent) => (
             <List.Item
               actions={[
                 <Button
@@ -158,26 +159,30 @@ const KeyFindingsPanel = () => {
                   type="text"
                   icon={<EditOutlined />}
                   onClick={() => {
-                    setEditingFinding(finding);
-                    form.setFieldsValue(finding);
+                    setEditingPrecedent(precedent);
+                    form.setFieldsValue(precedent);
                     Modal.confirm({
-                      title: "Edit Key Finding",
+                      title: "Edit Legal Precedent",
                       content: (
                         <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
                           <Form.Item
-                            name="finding"
-                            label="Finding"
-                            rules={[{ required: true, message: "Please enter finding" }]}
+                            name="caseName"
+                            label="Case Name"
+                            rules={[{ required: true, message: "Please enter case name" }]}
                           >
-                            <TextArea rows={3} placeholder="Enter key finding..." />
+                            <Input placeholder="e.g., Donoghue v Stevenson [1932] AC 562" />
                           </Form.Item>
 
-                          <Form.Item name="source" label="Source">
-                            <Input placeholder="Source reference (optional)" />
+                          <Form.Item name="citation" label="Citation">
+                            <Input placeholder="Full citation reference" />
+                          </Form.Item>
+
+                          <Form.Item name="summary" label="Summary">
+                            <TextArea rows={3} placeholder="Brief summary of the precedent" />
                           </Form.Item>
 
                           <Form.Item name="relevance" label="Relevance">
-                            <Input placeholder="Relevance to the matter (optional)" />
+                            <Input placeholder="Relevance to this matter" />
                           </Form.Item>
                         </Form>
                       ),
@@ -195,7 +200,7 @@ const KeyFindingsPanel = () => {
                   type="text"
                   danger
                   icon={<DeleteOutlined />}
-                  onClick={() => handleDelete(finding._id)}
+                  onClick={() => handleDelete(precedent._id)}
                 />,
               ]}>
               <List.Item.Meta
@@ -210,27 +215,27 @@ const KeyFindingsPanel = () => {
                       alignItems: "center",
                       justifyContent: "center",
                     }}>
-                    <FileTextOutlined style={{ color: "#1890ff" }} />
+                    <BookOutlined style={{ color: "#1890ff" }} />
                   </div>
                 }
-                title={<Text strong>{finding.finding || "Untitled Finding"}</Text>}
+                title={<Text strong>{precedent.caseName || "Untitled Precedent"}</Text>}
                 description={
                   <Space direction="vertical" size={0}>
-                    {finding.source && (
+                    {precedent.citation && (
                       <Text type="secondary">
-                        <Tag style={{ marginRight: 4 }}>Source</Tag>
-                        {finding.source}
+                        <Tag style={{ marginRight: 4 }}>Citation</Tag>
+                        {precedent.citation}
                       </Text>
                     )}
-                    {finding.relevance && (
+                    {precedent.summary && (
+                      <Text type="secondary" ellipsis={{ rows: 2 }}>
+                        {precedent.summary}
+                      </Text>
+                    )}
+                    {precedent.relevance && (
                       <Text type="secondary">
                         <Tag style={{ marginRight: 4 }}>Relevance</Tag>
-                        {finding.relevance}
-                      </Text>
-                    )}
-                    {finding.addedAt && (
-                      <Text type="secondary" style={{ fontSize: 12 }}>
-                        Added {dayjs(finding.addedAt).format("DD MMM YYYY")}
+                        {precedent.relevance}
                       </Text>
                     )}
                   </Space>
@@ -243,49 +248,53 @@ const KeyFindingsPanel = () => {
         <Empty
           description={
             searchTerm
-              ? "No findings match your search"
-              : "No key findings added yet"
+              ? "No precedents match your search"
+              : "No legal precedents added yet"
           }
         />
       )}
 
       <Modal
-        title={editingFinding?._id ? "Edit Key Finding" : "Add Key Finding"}
-        open={!!editingFinding}
+        title={editingPrecedent?._id ? "Edit Legal Precedent" : "Add Legal Precedent"}
+        open={!!editingPrecedent}
         onCancel={() => {
-          setEditingFinding(null);
+          setEditingPrecedent(null);
           form.resetFields();
         }}
         footer={null}
         width={600}>
         <Form form={form} layout="vertical" onFinish={handleSave}>
           <Form.Item
-            name="finding"
-            label="Finding"
-            rules={[{ required: true, message: "Please enter finding" }]}
-            initialValue={editingFinding?.finding}>
-            <TextArea rows={3} placeholder="Enter key finding..." />
+            name="caseName"
+            label="Case Name"
+            rules={[{ required: true, message: "Please enter case name" }]}
+            initialValue={editingPrecedent?.caseName}>
+            <Input placeholder="e.g., Donoghue v Stevenson [1932] AC 562" />
           </Form.Item>
 
-          <Form.Item name="source" label="Source" initialValue={editingFinding?.source}>
-            <Input placeholder="Source reference (optional)" />
+          <Form.Item name="citation" label="Citation" initialValue={editingPrecedent?.citation}>
+            <Input placeholder="Full citation reference" />
           </Form.Item>
 
-          <Form.Item name="relevance" label="Relevance" initialValue={editingFinding?.relevance}>
-            <Input placeholder="Relevance to the matter (optional)" />
+          <Form.Item name="summary" label="Summary" initialValue={editingPrecedent?.summary}>
+            <TextArea rows={3} placeholder="Brief summary of the precedent" />
+          </Form.Item>
+
+          <Form.Item name="relevance" label="Relevance" initialValue={editingPrecedent?.relevance}>
+            <Input placeholder="Relevance to this matter" />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
             <Space>
               <Button
                 onClick={() => {
-                  setEditingFinding(null);
+                  setEditingPrecedent(null);
                   form.resetFields();
                 }}>
                 Cancel
               </Button>
               <Button type="primary" htmlType="submit">
-                {editingFinding?._id ? "Update" : "Add"}
+                {editingPrecedent?._id ? "Update" : "Add"}
               </Button>
             </Space>
           </Form.Item>
@@ -295,4 +304,4 @@ const KeyFindingsPanel = () => {
   );
 };
 
-export default KeyFindingsPanel;
+export default LegalPrecedentsPanel;

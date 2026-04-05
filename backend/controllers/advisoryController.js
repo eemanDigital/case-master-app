@@ -303,23 +303,74 @@ exports.updateAdvisoryDetails = catchAsync(async (req, res, next) => {
     return next(new AppError("Invalid matter ID format", 400));
   }
 
-  // Remove array fields from direct update - they need special handling
-  const {
-    researchQuestions,
-    keyFindings,
-    recommendations,
-    deliverables,
-    complianceChecklist,
-    ...safeUpdates
-  } = updateData;
+  // Helper function to process array items - convert temp IDs to real ObjectIds
+  const processArrayItems = (arr) => {
+    if (!Array.isArray(arr)) return arr;
+    return arr.map((item) => {
+      const processed = { ...item };
+      // If _id starts with "temp_", remove it so MongoDB generates a new one
+      if (processed._id && typeof processed._id === "string" && processed._id.startsWith("temp_")) {
+        delete processed._id;
+      }
+      return processed;
+    });
+  };
+
+  // Build update object with proper field path updates for nested objects
+  const setFields = {};
+  const updateObj = { ...updateData };
+
+  // Handle top-level fields and nested objects
+  Object.keys(updateObj).forEach((key) => {
+    if (key === "riskAssessment" && typeof updateObj[key] === "object") {
+      // Handle riskAssessment nested object
+      Object.keys(updateObj[key]).forEach((nestedKey) => {
+        if (nestedKey === "risks") {
+          // Process risks array - convert temp IDs
+          setFields[`riskAssessment.${nestedKey}`] = processArrayItems(updateObj[key][nestedKey]);
+        } else {
+          setFields[`riskAssessment.${nestedKey}`] = updateObj[key][nestedKey];
+        }
+      });
+    } else if (key === "opinion" && typeof updateObj[key] === "object") {
+      // Handle opinion nested object
+      Object.keys(updateObj[key]).forEach((nestedKey) => {
+        setFields[`opinion.${nestedKey}`] = updateObj[key][nestedKey];
+      });
+    } else if (key === "researchQuestions") {
+      // Process and replace entire research questions array
+      setFields[key] = processArrayItems(updateObj[key]);
+    } else if (key === "keyFindings") {
+      // Process and replace entire key findings array
+      setFields[key] = processArrayItems(updateObj[key]);
+    } else if (key === "recommendations") {
+      // Process and replace entire recommendations array
+      setFields[key] = processArrayItems(updateObj[key]);
+    } else if (key === "deliverables") {
+      // Process and replace entire deliverables array
+      setFields[key] = processArrayItems(updateObj[key]);
+    } else if (key === "complianceChecklist") {
+      // Process and replace entire compliance checklist array
+      setFields[key] = processArrayItems(updateObj[key]);
+    } else if (key === "legalPrecedents") {
+      // Process and replace entire legal precedents array
+      setFields[key] = processArrayItems(updateObj[key]);
+    } else if (key === "jurisdiction" || key === "applicableLaws" || key === "regulatoryBodies") {
+      // Replace array fields
+      setFields[key] = updateObj[key];
+    } else {
+      // Regular top-level field
+      setFields[key] = updateObj[key];
+    }
+  });
+
+  // Add metadata
+  setFields.lastModifiedBy = req.user._id;
+  setFields.lastModifiedAt = new Date();
 
   const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
     { matterId, firmId: req.firmId },
-    {
-      ...safeUpdates,
-      lastModifiedBy: req.user._id,
-      lastModifiedAt: new Date(),
-    },
+    { $set: setFields },
     { new: true, runValidators: true },
   ).populate({
     path: "matter",
@@ -1345,6 +1396,313 @@ exports.bulkUpdateAdvisoryMatters = catchAsync(async (req, res, next) => {
       matchedCount: result.matchedCount,
       modifiedCount: result.modifiedCount,
     },
+  });
+});
+
+// ============================================
+// COMPLIANCE CHECKLIST MANAGEMENT
+// ============================================
+
+exports.addComplianceItem = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const complianceData = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
+
+  const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $push: {
+        complianceChecklist: {
+          ...complianceData,
+          _id: new mongoose.Types.ObjectId(),
+          addedBy: req.user._id,
+          addedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+      $set: {
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!advisoryDetail) {
+    return next(new AppError("Advisory details not found", 404));
+  }
+
+  const newItem =
+    advisoryDetail.complianceChecklist[advisoryDetail.complianceChecklist.length - 1];
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      advisoryDetail,
+      newItem,
+    },
+  });
+});
+
+exports.updateComplianceItem = catchAsync(async (req, res, next) => {
+  const { matterId, itemId } = req.params;
+  const updateData = req.body;
+
+  if (
+    !mongoose.Types.ObjectId.isValid(matterId) ||
+    !mongoose.Types.ObjectId.isValid(itemId)
+  ) {
+    return next(new AppError("Invalid ID format", 400));
+  }
+
+  const setFields = {};
+  Object.keys(updateData).forEach((key) => {
+    setFields[`complianceChecklist.$.${key}`] = updateData[key];
+  });
+  setFields["complianceChecklist.$.updatedBy"] = req.user._id;
+  setFields["complianceChecklist.$.updatedAt"] = new Date();
+
+  const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
+    {
+      matterId,
+      firmId: req.firmId,
+      "complianceChecklist._id": itemId,
+    },
+    {
+      $set: {
+        ...setFields,
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!advisoryDetail) {
+    return next(new AppError("Compliance item not found", 404));
+  }
+
+  const updatedItem = advisoryDetail.complianceChecklist.id(itemId);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      advisoryDetail,
+      updatedItem,
+    },
+  });
+});
+
+exports.deleteComplianceItem = catchAsync(async (req, res, next) => {
+  const { matterId, itemId } = req.params;
+
+  if (
+    !mongoose.Types.ObjectId.isValid(matterId) ||
+    !mongoose.Types.ObjectId.isValid(itemId)
+  ) {
+    return next(new AppError("Invalid ID format", 400));
+  }
+
+  const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $pull: { complianceChecklist: { _id: itemId } },
+      $set: {
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
+    },
+    { new: true },
+  );
+
+  if (!advisoryDetail) {
+    return next(new AppError("Advisory details or compliance item not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      advisoryDetail,
+    },
+    message: "Compliance item removed successfully",
+  });
+});
+
+// ============================================
+// RISK ASSESSMENT MANAGEMENT
+// ============================================
+
+exports.updateRiskAssessment = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const { overallRisk, risks } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
+
+  const setFields = {};
+
+  if (overallRisk !== undefined) {
+    setFields["riskAssessment.overallRisk"] = overallRisk;
+  }
+
+  if (risks !== undefined) {
+    setFields["riskAssessment.risks"] = risks.map((risk) => ({
+      ...risk,
+      _id: risk._id || new mongoose.Types.ObjectId(),
+      updatedAt: new Date(),
+    }));
+  }
+
+  setFields.lastModifiedBy = req.user._id;
+  setFields.lastModifiedAt = new Date();
+
+  const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    { $set: setFields },
+    { new: true, runValidators: true },
+  );
+
+  if (!advisoryDetail) {
+    return next(new AppError("Advisory details not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      advisoryDetail,
+    },
+  });
+});
+
+exports.addRiskItem = catchAsync(async (req, res, next) => {
+  const { matterId } = req.params;
+  const riskData = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(matterId)) {
+    return next(new AppError("Invalid matter ID format", 400));
+  }
+
+  const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $push: {
+        "riskAssessment.risks": {
+          ...riskData,
+          _id: new mongoose.Types.ObjectId(),
+          addedBy: req.user._id,
+          addedAt: new Date(),
+          updatedAt: new Date(),
+        },
+      },
+      $set: {
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!advisoryDetail) {
+    return next(new AppError("Advisory details not found", 404));
+  }
+
+  const newRisk =
+    advisoryDetail.riskAssessment.risks[advisoryDetail.riskAssessment.risks.length - 1];
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      advisoryDetail,
+      newRisk,
+    },
+  });
+});
+
+exports.updateRiskItem = catchAsync(async (req, res, next) => {
+  const { matterId, riskId } = req.params;
+  const updateData = req.body;
+
+  if (
+    !mongoose.Types.ObjectId.isValid(matterId) ||
+    !mongoose.Types.ObjectId.isValid(riskId)
+  ) {
+    return next(new AppError("Invalid ID format", 400));
+  }
+
+  const setFields = {};
+  Object.keys(updateData).forEach((key) => {
+    setFields[`riskAssessment.risks.$.${key}`] = updateData[key];
+  });
+  setFields["riskAssessment.risks.$.updatedBy"] = req.user._id;
+  setFields["riskAssessment.risks.$.updatedAt"] = new Date();
+
+  const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
+    {
+      matterId,
+      firmId: req.firmId,
+      "riskAssessment.risks._id": riskId,
+    },
+    {
+      $set: {
+        ...setFields,
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
+    },
+    { new: true, runValidators: true },
+  );
+
+  if (!advisoryDetail) {
+    return next(new AppError("Risk item not found", 404));
+  }
+
+  const updatedRisk = advisoryDetail.riskAssessment.risks.id(riskId);
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      advisoryDetail,
+      updatedRisk,
+    },
+  });
+});
+
+exports.deleteRiskItem = catchAsync(async (req, res, next) => {
+  const { matterId, riskId } = req.params;
+
+  if (
+    !mongoose.Types.ObjectId.isValid(matterId) ||
+    !mongoose.Types.ObjectId.isValid(riskId)
+  ) {
+    return next(new AppError("Invalid ID format", 400));
+  }
+
+  const advisoryDetail = await AdvisoryDetail.findOneAndUpdate(
+    { matterId, firmId: req.firmId },
+    {
+      $pull: { "riskAssessment.risks": { _id: riskId } },
+      $set: {
+        lastModifiedBy: req.user._id,
+        lastModifiedAt: new Date(),
+      },
+    },
+    { new: true },
+  );
+
+  if (!advisoryDetail) {
+    return next(new AppError("Advisory details or risk item not found", 404));
+  }
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      advisoryDetail,
+    },
+    message: "Risk item removed successfully",
   });
 });
 
