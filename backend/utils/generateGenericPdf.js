@@ -11,15 +11,22 @@
  *    page and resets Y — footers are handled exclusively in generate().
  * 2. Double-footer bug: addPageBreak() no longer calls addFooter(); the
  *    generate() loop is the single place footers are stamped (bufferPages mode).
- * 3. Two-column alignment: valOffset reduced from 155 → 145 so values render
- *    inside their column width (colW = 140 + 5px padding).
+ * 3. Two-column alignment: colWidth-based math replaces hardcoded valOffset so
+ *    columns never overflow regardless of content length.
  * 4. addSubSection y-tracking: now uses heightOfString instead of fixed +12.
  * 5. Status badge: fillColor reset to textPrimary after badge render.
  * 6. Page header on continuation pages: lightweight "continuation" banner
  *    replaces the full addHeader() to avoid duplicate navy blocks.
+ * 7. Trailing blank pages: replaced Python/pypdf execSync post-process with
+ *    isCurrentPageDirty flag. A page must receive real user data (not just a
+ *    banner) before it is counted as a content page. generate() uses this flag
+ *    to stamp footers only on real pages — no external dependencies needed.
+ * 8. Page X of Y footer added across all content pages.
  */
 
 const PDFDocument = require("pdfkit");
+const fs = require("fs");
+const path = require("path");
 const {
   COLORS,
   FONTS,
@@ -28,33 +35,11 @@ const {
   formatCurrency,
   formatDate,
   formatDateTime,
-  getCurrentPageNumber,
-  finalizePdf,
+  ensureOutputDir,
+  getFilename,
 } = require("./pdfDesignSystem");
 
 // ─── Shared Drawing Primitives ───────────────────────────────────────────────
-
-function drawFooter(doc, firmName, pageWidth, leftMargin = 40) {
-  const footerY = doc.page.height - 30;
-
-  doc
-    .moveTo(leftMargin, footerY - 8)
-    .lineTo(leftMargin + pageWidth, footerY - 8)
-    .lineWidth(0.4)
-    .strokeColor(COLORS.gray200)
-    .stroke();
-
-  doc
-    .fontSize(SIZES.micro)
-    .fillColor(COLORS.textMuted)
-    .font(FONTS.regular)
-    .text(
-      `${firmName || "Law Firm"}  ·  ${formatDateTime(new Date())}`,
-      leftMargin,
-      footerY,
-      { align: "center", width: pageWidth },
-    );
-}
 
 function drawStatusBadge(doc, status, x, y) {
   const { fg, bg } = getStatusColors(status);
@@ -118,6 +103,13 @@ class GenericPdfGenerator {
       md: 6,
       lg: 10,
     };
+
+    // Dirty-page tracking: true when the current page has real user data.
+    // Banners and headers alone do NOT set this — only field/text/table draws do.
+    // generate() uses this to know the last page that truly has content.
+    this.isCurrentPageDirty = false;
+    // Running list of page indices confirmed to have content (index 0-based).
+    this._contentPageCount = 0;
   }
 
   init(res, outputPath) {
@@ -138,6 +130,9 @@ class GenericPdfGenerator {
     this.pageWidth = this.doc.page.width - 80;
     // Keep 60px above the footer line so content never bleeds into the footer
     this.bottomGuard = this.doc.page.height - 60;
+    // Reset page tracking
+    this.isCurrentPageDirty = false;
+    this._contentPageCount = 0;
 
     return this;
   }
@@ -192,6 +187,7 @@ class GenericPdfGenerator {
       });
 
     this.y = 90;
+    // Note: addHeader is infrastructure, not user data — do NOT call _markContent here.
   }
 
   /**
@@ -223,20 +219,7 @@ class GenericPdfGenerator {
     }
 
     this.y = 40;
-  }
-
-  // ── Footer ────────────────────────────────────────────────────────────────
-
-  /**
-   * Draw footer on the current page (used inside generate() only).
-   */
-  _drawFooterOnPage() {
-    drawFooter(
-      this.doc,
-      this.options.firmName,
-      this.pageWidth,
-      this.leftMargin,
-    );
+    // Note: continuation banner is infrastructure — do NOT call _markContent here.
   }
 
   // ── Page Break ────────────────────────────────────────────────────────────
@@ -253,6 +236,11 @@ class GenericPdfGenerator {
 
   checkY(needed = 20) {
     if (this.y + needed > this.bottomGuard) {
+      // Commit current page to content count only if it had real data
+      if (this.isCurrentPageDirty) {
+        this._contentPageCount++;
+      }
+      this.isCurrentPageDirty = false;
       this.addPageBreak();
     }
   }
@@ -287,6 +275,7 @@ class GenericPdfGenerator {
       .fillColor(COLORS.navyMid)
       .text(title, this.leftMargin, startY, { width: this.pageWidth });
 
+    this.isCurrentPageDirty = true;
     this.y = startY + textH + this.spacing.sm;
   }
 
@@ -325,6 +314,7 @@ class GenericPdfGenerator {
       .fillColor(options.color || COLORS.textPrimary)
       .text(text, valueX, startY, { width: valueWidth, lineBreak: true });
 
+    this.isCurrentPageDirty = true;
     this.y = startY + rowH + this.spacing.sm;
     return text;
   }
@@ -344,6 +334,7 @@ class GenericPdfGenerator {
 
     drawStatusBadge(this.doc, status, valueX, startY);
 
+    this.isCurrentPageDirty = true;
     this.y = startY + 16;
   }
 
@@ -388,60 +379,66 @@ class GenericPdfGenerator {
       .fillColor(COLORS.textPrimary)
       .text(value, textX, startY, { width: textWidth, lineGap: 2 });
 
+    this.isCurrentPageDirty = true;
     this.y = startY + estimatedHeight + this.spacing.md;
     return value;
   }
 
   addTwoColumnField(label1, val1, label2, val2) {
-    const halfW = this.pageWidth / 2;
-    // FIX: valOffset was 155, wider than colW (140) — reduced to 145
-    const valOffset = 145;
-    const colW = 140;
+    // Each column is half the page width. Label gets 90px, value gets the rest.
+    const colWidth = this.pageWidth / 2;
+    const labelWidth = 90;
+    const valueWidth = colWidth - labelWidth - 10;
+    const col2X = this.leftMargin + colWidth;
 
     const val1H = this.doc.heightOfString(String(val1 ?? "—"), {
-      width: halfW - valOffset - 5,
+      width: valueWidth,
       fontSize: SIZES.small,
     });
     const val2H = this.doc.heightOfString(String(val2 ?? "—"), {
-      width: halfW - valOffset - 5,
+      width: valueWidth,
       fontSize: SIZES.small,
     });
     const rowH = Math.max(val1H, val2H) + 2;
 
     this.checkY(rowH + this.spacing.sm);
     const startY = this.y;
-    const midX = this.leftMargin + halfW;
 
+    // Column 1 — label
     this.doc
       .fontSize(SIZES.small)
       .font(FONTS.regular)
       .fillColor(COLORS.textMuted)
-      .text(`${label1 || ""}:`, this.leftMargin, startY, { width: colW });
+      .text(`${label1 || ""}:`, this.leftMargin, startY, { width: labelWidth });
 
+    // Column 1 — value
     this.doc
       .fontSize(SIZES.small)
       .font(FONTS.regular)
       .fillColor(COLORS.textPrimary)
-      .text(String(val1 ?? "—"), this.leftMargin + valOffset, startY, {
-        width: halfW - valOffset - 5,
+      .text(String(val1 ?? "—"), this.leftMargin + labelWidth, startY, {
+        width: valueWidth,
         lineBreak: true,
       });
 
+    // Column 2 — label
     this.doc
       .fontSize(SIZES.small)
       .font(FONTS.regular)
       .fillColor(COLORS.textMuted)
-      .text(`${label2 || ""}:`, midX, startY, { width: colW });
+      .text(`${label2 || ""}:`, col2X, startY, { width: labelWidth });
 
+    // Column 2 — value
     this.doc
       .fontSize(SIZES.small)
       .font(FONTS.regular)
       .fillColor(COLORS.textPrimary)
-      .text(String(val2 ?? "—"), midX + valOffset, startY, {
-        width: halfW - valOffset - 5,
+      .text(String(val2 ?? "—"), col2X + labelWidth, startY, {
+        width: valueWidth,
         lineBreak: true,
       });
 
+    this.isCurrentPageDirty = true;
     this.y = startY + rowH + this.spacing.sm;
   }
 
@@ -500,6 +497,7 @@ class GenericPdfGenerator {
       this.y += rowH;
     });
 
+    this.isCurrentPageDirty = true;
     this.y += this.spacing.md;
   }
 
@@ -555,26 +553,115 @@ class GenericPdfGenerator {
           });
         this.y += descH + this.spacing.sm;
       }
+      this.isCurrentPageDirty = true;
     });
   }
 
   // ── Finalize ──────────────────────────────────────────────────────────────
 
   /**
-   * FIX: Stamp footers on every page exactly once using bufferedPageRange.
-   * Previously addPageBreak() also called addFooter(), causing double-footers
-   * and triggering extra blank pages in PDFKit's buffer.
+   * Stamp footer + "Page X of Y" on a single buffered page.
+   * totalPages is passed in from generate() so all pages share the same count.
+   */
+  _drawFooterOnPage(pageNumber, totalPages) {
+    const doc = this.doc;
+    const footerY = doc.page.height - 30;
+    const { leftMargin, pageWidth } = this;
+
+    doc
+      .moveTo(leftMargin, footerY - 8)
+      .lineTo(leftMargin + pageWidth, footerY - 8)
+      .lineWidth(0.4)
+      .strokeColor(COLORS.gray200)
+      .stroke();
+
+    // Firm name + timestamp — left/center
+    doc
+      .fontSize(SIZES.micro)
+      .fillColor(COLORS.textMuted)
+      .font(FONTS.regular)
+      .text(
+        `${this.options.firmName || "Law Firm"}  ·  ${formatDateTime(new Date())}`,
+        leftMargin,
+        footerY,
+        { align: "center", width: pageWidth },
+      );
+
+    // Page X of Y — right aligned
+    doc
+      .fontSize(SIZES.micro)
+      .fillColor(COLORS.textMuted)
+      .font(FONTS.regular)
+      .text(`Page ${pageNumber} of ${totalPages}`, leftMargin, footerY, {
+        align: "right",
+        width: pageWidth,
+      });
+  }
+
+  /**
+   * Finalize the PDF.
+   *
+   * TRAILING-BLANK-PAGE STRATEGY (no Python, no execSync):
+   *
+   * Every drawing method sets `this.isCurrentPageDirty = true` after writing
+   * real user data. checkY() resets it to false when it opens a new page.
+   * This means if the last page was created by a preemptive checkY() but then
+   * received no content, isCurrentPageDirty stays false.
+   *
+   * In generate():
+   *   - If the last buffered page is dirty  → include it (totalPages = count)
+   *   - If the last buffered page is clean  → exclude it (totalPages = count - 1)
+   *
+   * Footers are stamped only on the real content pages. PDFKit emits all
+   * buffered pages regardless, but the extra blank page will have no footer
+   * and no visible content — effectively invisible. If you later need hard
+   * removal, wrap the final buffer with pdf-lib (pure JS, no Python needed).
    */
   async generate() {
     const range = this.doc.bufferedPageRange();
-    for (let i = 0; i < range.count; i++) {
-      this.doc.switchToPage(range.start + i);
-      this._drawFooterOnPage();
-    }
-    // Leave cursor on last page
-    this.doc.switchToPage(range.start + range.count - 1);
+    const bufferedCount = range.count;
 
-    return finalizePdf(this.doc, this.chunks, this.res, this.outputPath);
+    // Determine real page count using dirty flag
+    const totalPages = this.isCurrentPageDirty
+      ? bufferedCount
+      : Math.max(1, bufferedCount - 1);
+
+    // Stamp footers only on real content pages
+    for (let i = 0; i < totalPages; i++) {
+      this.doc.switchToPage(range.start + i);
+      this._drawFooterOnPage(i + 1, totalPages);
+    }
+
+    // Park cursor on last real page before ending
+    this.doc.switchToPage(range.start + totalPages - 1);
+
+    // Finalize — collect buffer, write to disk, send response
+    return new Promise((resolve, reject) => {
+      this.doc.on("end", () => {
+        try {
+          const pdfBuffer = Buffer.concat(this.chunks);
+          const filename = getFilename(this.outputPath);
+
+          ensureOutputDir(this.outputPath);
+          fs.writeFileSync(this.outputPath, pdfBuffer);
+
+          this.res.setHeader("Content-Type", "application/pdf");
+          this.res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="${filename}"`,
+          );
+          this.res.setHeader("Content-Length", pdfBuffer.length);
+          this.res.end(pdfBuffer);
+
+          console.log(`✅ PDF generated (${totalPages} pages): ${filename}`);
+          resolve(this.outputPath);
+        } catch (err) {
+          reject(err);
+        }
+      });
+      this.doc.on("error", reject);
+      this.doc.end();
+    });
   }
 }
 
