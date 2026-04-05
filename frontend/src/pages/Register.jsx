@@ -149,7 +149,7 @@ const Register = () => {
 
   if (validatingToken) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
         <Spin size="large" />
       </div>
     );
@@ -162,21 +162,15 @@ const Register = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      {/* Background Effects */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[100px]" />
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center p-4">
       <div className="w-full max-w-xl relative z-10">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-3">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg">
               <span className="text-white font-bold text-xl">L</span>
             </div>
-            <span className="text-2xl font-bold text-white">LawMaster</span>
+            <span className="text-2xl font-bold text-slate-800">LawMaster</span>
           </Link>
         </div>
 
@@ -191,12 +185,12 @@ const Register = () => {
           />
         )}
 
-        <Card className="bg-white/10 backdrop-blur-xl border-white/10 shadow-2xl">
+        <Card className="bg-white border border-slate-200 shadow-xl rounded-2xl">
           <div className="text-center mb-6">
-            <Title level={2} className="!mb-2 !text-white">
+            <Title level={2} className="!mb-2 !text-slate-800">
               {token ? "Accept Invitation" : "Start Free Trial"}
             </Title>
-            <Text className="text-gray-400">
+            <Text className="text-slate-500">
               {token
                 ? "Complete your registration to join the firm"
                 : "Create your firm account in just a few steps"}
@@ -231,83 +225,66 @@ const Register = () => {
               <div className="grid grid-cols-2 gap-4">
                 <Form.Item
                   name="firstName"
-                  label={<span style={{ color: "white" }}>First Name</span>}
+                  label={<span style={{ color: "#334155" }}>First Name</span>}
                   rules={[{ required: true, message: "Required" }]}>
                   <Input
-                    prefix={<UserOutlined style={{ color: "#9ca3af" }} />}
+                    prefix={<UserOutlined style={{ color: "#64748b" }} />}
                     placeholder="John"
                     size="large"
-                    className="bg-transparent"
-                    style={{
-                      background: "rgba(255,255,255,0.05)",
-                      borderColor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                    }}
+                    className="bg-white"
                   />
                 </Form.Item>
 
                 <Form.Item
                   name="lastName"
-                  label={<span style={{ color: "white" }}>Last Name</span>}
+                  label={<span style={{ color: "#334155" }}>Last Name</span>}
                   rules={[{ required: true, message: "Required" }]}>
                   <Input
-                    prefix={<UserOutlined style={{ color: "#9ca3af" }} />}
+                    prefix={<UserOutlined style={{ color: "#64748b" }} />}
                     placeholder="Doe"
                     size="large"
-                    style={{
-                      background: "rgba(255,255,255,0.05)",
-                      borderColor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                    }}
+                    className="bg-white"
                   />
                 </Form.Item>
               </div>
 
               <Form.Item
                 name="email"
-                label={<span style={{ color: "white" }}>Email Address</span>}
+                label={<span style={{ color: "#334155" }}>Email Address</span>}
                 rules={[
                   { required: true, message: "Required" },
                   { type: "email", message: "Invalid email" },
                 ]}
                 initialValue={invitationData?.email}>
                 <Input
-                  prefix={<MailOutlined style={{ color: "#9ca3af" }} />}
+                  prefix={<MailOutlined style={{ color: "#64748b" }} />}
                   placeholder="john@example.com"
                   size="large"
                   disabled={!!invitationData?.email}
-                  style={{
-                    background: "rgba(255,255,255,0.05)",
-                    borderColor: "rgba(255,255,255,0.2)",
-                    color: invitationData?.email ? "#9ca3af" : "white",
-                  }}
+                  className="bg-white"
                 />
               </Form.Item>
 
               <div className="grid grid-cols-2 gap-4">
                 <Form.Item
                   name="password"
-                  label={<span style={{ color: "white" }}>Password</span>}
+                  label={<span style={{ color: "#334155" }}>Password</span>}
                   rules={[
                     { required: true, message: "Required" },
                     { min: 8, message: "At least 8 characters" },
                   ]}>
                   <Input.Password
-                    prefix={<LockOutlined style={{ color: "#9ca3af" }} />}
+                    prefix={<LockOutlined style={{ color: "#64748b" }} />}
                     placeholder="Create password"
                     size="large"
-                    style={{
-                      background: "rgba(255,255,255,0.05)",
-                      borderColor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                    }}
+                    className="bg-white"
                   />
                 </Form.Item>
 
                 <Form.Item
                   name="passwordConfirm"
                   label={
-                    <span style={{ color: "white" }}>Confirm Password</span>
+                    <span style={{ color: "#334155" }}>Confirm Password</span>
                   }
                   dependencies={["password"]}
                   rules={[
@@ -324,17 +301,94 @@ const Register = () => {
                     }),
                   ]}>
                   <Input.Password
-                    prefix={<LockOutlined style={{ color: "#9ca3af" }} />}
+                    prefix={<LockOutlined style={{ color: "#64748b" }} />}
                     placeholder="Confirm password"
                     size="large"
-                    style={{
-                      background: "rgba(255,255,255,0.05)",
-                      borderColor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                    }}
+                    className="bg-white"
                   />
                 </Form.Item>
               </div>
+
+              {/* Gender field - required for staff/lawyer */}
+              {(!token || invitationData?.role !== "client") && (
+                <Form.Item
+                  name="gender"
+                  label={<span style={{ color: "#334155" }}>Gender</span>}
+                  rules={[{ required: true, message: "Please select your gender" }]}>
+                  <Select
+                    placeholder="Select gender"
+                    size="large"
+                    className="w-full bg-white">
+                    <Option value="male">Male</Option>
+                    <Option value="female">Female</Option>
+                    <Option value="other">Other</Option>
+                    <Option value="prefer-not-to-say">Prefer not to say</Option>
+                  </Select>
+                </Form.Item>
+              )}
+
+              {/* Phone - always required */}
+              <Form.Item
+                name="phone"
+                label={<span style={{ color: "#334155" }}>Phone Number</span>}
+                rules={[{ required: true, message: "Required" }]}>
+                <Input
+                  prefix={<PhoneOutlined style={{ color: "#64748b" }} />}
+                  placeholder="+2348012345678"
+                  size="large"
+                  className="bg-white"
+                />
+              </Form.Item>
+
+              {/* Address - required for staff/lawyer */}
+              {(!token || invitationData?.role !== "client") && (
+                <>
+                  <div className="grid grid-cols-2 gap-4">
+                    <Form.Item
+                      name="state"
+                      label={<span style={{ color: "#334155" }}>State</span>}
+                      rules={[{ required: true, message: "Required" }]}>
+                      <Select
+                        placeholder="Select state"
+                        size="large"
+                        showSearch
+                        className="w-full bg-white">
+                        {nigerianStates.map((state) => (
+                          <Option key={state} value={state}>
+                            {state}
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+
+                    <Form.Item
+                      name="city"
+                      label={<span style={{ color: "#334155" }}>City</span>}
+                      rules={[{ required: true, message: "Required" }]}>
+                      <Input
+                        prefix={
+                          <EnvironmentOutlined style={{ color: "#64748b" }} />
+                        }
+                        placeholder="Lagos"
+                        size="large"
+                        className="bg-white"
+                      />
+                    </Form.Item>
+                  </div>
+
+                  <Form.Item
+                    name="address"
+                    label={<span style={{ color: "#334155" }}>Residential Address</span>}
+                    rules={[{ required: true, message: "Please provide your residential address" }]}>
+                    <Input.TextArea
+                      placeholder="123 Macaulay Street, Surulere"
+                      rows={2}
+                      size="large"
+                      className="bg-white"
+                    />
+                  </Form.Item>
+                </>
+              )}
             </div>
 
             {/* Step 2: Firm Info (only for new registration) */}
@@ -342,27 +396,23 @@ const Register = () => {
               <div style={{ display: currentStep === 1 ? "block" : "none" }}>
                 <Form.Item
                   name="firmName"
-                  label={<span style={{ color: "white" }}>Firm Name</span>}
+                  label={<span style={{ color: "#334155" }}>Firm Name</span>}
                   rules={[{ required: true, message: "Required" }]}>
                   <Input
-                    prefix={<BankOutlined style={{ color: "#9ca3af" }} />}
+                    prefix={<BankOutlined style={{ color: "#64748b" }} />}
                     placeholder="A.T Lukman & Co"
                     size="large"
-                    style={{
-                      background: "rgba(255,255,255,0.05)",
-                      borderColor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                    }}
+                    className="bg-white"
                   />
                 </Form.Item>
 
                 <Form.Item
                   name="subdomain"
                   label={
-                    <span style={{ color: "white" }}>Subdomain (optional)</span>
+                    <span style={{ color: "#334155" }}>Subdomain (optional)</span>
                   }
                   extra={
-                    <span style={{ color: "#9ca3af" }}>
+                    <span style={{ color: "#64748b" }}>
                       Your firm URL will be: [subdomain].lawmaster.ng
                     </span>
                   }
@@ -373,50 +423,37 @@ const Register = () => {
                     },
                   ]}>
                   <Input
-                    prefix={<HomeOutlined style={{ color: "#9ca3af" }} />}
+                    prefix={<HomeOutlined style={{ color: "#64748b" }} />}
                     placeholder="atlukman"
                     size="large"
-                    style={{
-                      background: "rgba(255,255,255,0.05)",
-                      borderColor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                    }}
+                    className="bg-white"
                   />
                 </Form.Item>
 
                 <Form.Item
                   name="phone"
-                  label={<span style={{ color: "white" }}>Phone Number</span>}
+                  label={<span style={{ color: "#334155" }}>Phone Number</span>}
                   rules={[{ required: true, message: "Required" }]}>
                   <Input
-                    prefix={<PhoneOutlined style={{ color: "#9ca3af" }} />}
+                    prefix={<PhoneOutlined style={{ color: "#64748b" }} />}
                     placeholder="+2348012345678"
                     size="large"
-                    style={{
-                      background: "rgba(255,255,255,0.05)",
-                      borderColor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                    }}
+                    className="bg-white"
                   />
                 </Form.Item>
 
                 <div className="grid grid-cols-2 gap-4">
                   <Form.Item
                     name="state"
-                    label={<span style={{ color: "white" }}>State</span>}
+                    label={<span style={{ color: "#334155" }}>State</span>}
                     rules={[{ required: true, message: "Required" }]}>
                     <Select
                       placeholder="Select state"
                       size="large"
                       showSearch
-                      style={{ background: "rgba(255,255,255,0.05)" }}
-                      dropdownStyle={{ background: "#1f2937" }}
-                      className="custom-select">
+                      className="w-full bg-white">
                       {nigerianStates.map((state) => (
-                        <Option
-                          key={state}
-                          value={state}
-                          style={{ color: "white" }}>
+                        <Option key={state} value={state}>
                           {state}
                         </Option>
                       ))}
@@ -425,60 +462,43 @@ const Register = () => {
 
                   <Form.Item
                     name="city"
-                    label={<span style={{ color: "white" }}>City</span>}
+                    label={<span style={{ color: "#334155" }}>City</span>}
                     rules={[{ required: true, message: "Required" }]}>
                     <Input
                       prefix={
-                        <EnvironmentOutlined style={{ color: "#9ca3af" }} />
+                        <EnvironmentOutlined style={{ color: "#64748b" }} />
                       }
                       placeholder="Lagos"
                       size="large"
-                      style={{
-                        background: "rgba(255,255,255,0.05)",
-                        borderColor: "rgba(255,255,255,0.2)",
-                        color: "white",
-                      }}
+                      className="bg-white"
                     />
                   </Form.Item>
                 </div>
 
                 <Form.Item
                   name="address"
-                  label={<span style={{ color: "white" }}>Address</span>}
+                  label={<span style={{ color: "#334155" }}>Address</span>}
                   rules={[{ required: true, message: "Required" }]}>
                   <Input.TextArea
                     placeholder="123 Macaulay Street, Surulere"
                     rows={2}
                     size="large"
-                    style={{
-                      background: "rgba(255,255,255,0.05)",
-                      borderColor: "rgba(255,255,255,0.2)",
-                      color: "white",
-                    }}
+                    className="bg-white"
                   />
                 </Form.Item>
 
                 <Form.Item
                   name="plan"
-                  label={<span style={{ color: "white" }}>Select Plan</span>}
+                  label={<span style={{ color: "#334155" }}>Select Plan</span>}
                   rules={[{ required: true }]}
                   hidden={!!invitationData}>
                   <Select
                     size="large"
-                    style={{ background: "rgba(255,255,255,0.05)" }}
-                    dropdownStyle={{ background: "#1f2937" }}>
-                    <Option value="FREE" style={{ color: "white" }}>
-                      Free Trial (14 days)
-                    </Option>
-                    <Option value="STARTER" style={{ color: "white" }}>
-                      Starter - ₦49/month
-                    </Option>
-                    <Option value="PROFESSIONAL" style={{ color: "white" }}>
-                      Professional - ₦149/month
-                    </Option>
-                    <Option value="ENTERPRISE" style={{ color: "white" }}>
-                      Enterprise - Custom
-                    </Option>
+                    className="w-full bg-white">
+                    <Option value="FREE">Free Trial (14 days)</Option>
+                    <Option value="STARTER">Starter - ₦49/month</Option>
+                    <Option value="PROFESSIONAL">Professional - ₦149/month</Option>
+                    <Option value="ENTERPRISE">Enterprise - Custom</Option>
                   </Select>
                 </Form.Item>
               </div>
@@ -491,7 +511,7 @@ const Register = () => {
                   size="large"
                   icon={<ArrowLeftOutlined />}
                   onClick={prevStep}
-                  className="bg-white/10 border-white/20 text-white hover:bg-white/20">
+                  className="bg-slate-100 border-slate-300 text-slate-700 hover:bg-slate-200">
                   Back
                 </Button>
               )}
@@ -510,22 +530,22 @@ const Register = () => {
                   htmlType="submit"
                   size="large"
                   loading={loading}
-                  className="bg-gradient-to-r from-blue-600 to-purple-600 border-none">
+                  className="bg-blue-600 border-none">
                   {token ? "Accept Invitation" : "Create Account"}
                 </Button>
               )}
             </div>
           </Form>
 
-          <Divider className="border-white/10">
-            <Text className="text-gray-400 text-sm">
+          <Divider className="border-slate-200">
+            <Text className="text-slate-500 text-sm">
               Already have an account?
             </Text>
           </Divider>
 
           <div className="text-center">
             <Link to="/users/login">
-              <Button type="link" className="text-blue-400">
+              <Button type="link" className="text-blue-600">
                 Sign In
               </Button>
             </Link>
@@ -534,58 +554,18 @@ const Register = () => {
 
         {/* Footer Links */}
         <div className="text-center mt-6">
-          <Text className="text-gray-500 text-sm">
+          <Text className="text-slate-500 text-sm">
             By registering, you agree to our{" "}
-            <Link to="/terms-of-service" className="text-blue-400">
+            <Link to="/terms-of-service" className="text-blue-600">
               Terms of Service
             </Link>{" "}
             and{" "}
-            <Link to="/privacy-policy" className="text-blue-400">
+            <Link to="/privacy-policy" className="text-blue-600">
               Privacy Policy
             </Link>
           </Text>
         </div>
       </div>
-
-      <style>{`
-        .register-form .ant-form-item-label > label {
-          color: white !important;
-        }
-        .register-form .ant-input, 
-        .register-form .ant-input-password,
-        .register-form .ant-select-selector,
-        .register-form .ant-input-textarea textarea {
-          background: rgba(255,255,255,0.05) !important;
-          border-color: rgba(255,255,255,0.2) !important;
-          color: white !important;
-        }
-        .register-form .ant-input::placeholder,
-        .register-form .ant-input-password input::placeholder {
-          color: #9ca3af !important;
-        }
-        .register-form .ant-select-selection-placeholder {
-          color: #9ca3af !important;
-        }
-        .register-form .ant-select-arrow {
-          color: #9ca3af !important;
-        }
-        .register-form .ant-input-prefix, 
-        .register-form .ant-input-password-prefix {
-          color: #9ca3af !important;
-        }
-        .register-form .ant-select-dropdown {
-          background: #1f2937 !important;
-        }
-        .register-form .ant-select-item {
-          color: white !important;
-        }
-        .register-form .ant-select-item-option-active {
-          background: rgba(59, 130, 246, 0.3) !important;
-        }
-        .register-form .ant-form-item-explain-error {
-          color: #f87171 !important;
-        }
-      `}</style>
     </div>
   );
 };
