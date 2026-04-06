@@ -70,16 +70,22 @@ function drawSectionHeader(doc, title, x, y, width) {
 }
 
 function numberToWords(num) {
+  // Handle invalid/NaN values
+  if (typeof num !== 'number' || isNaN(num)) {
+    return "Zero Naira Only";
+  }
+  
   const units = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"];
   const teens = ["Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
   const tens = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
   
   if (num === 0) return "Zero Naira Only";
   
-  const naira = Math.floor(num);
-  const kobo = Math.round((num - naira) * 100);
+  const naira = Math.floor(Math.abs(num));
+  const kobo = Math.round((Math.abs(num) - naira) * 100);
   
   const convertBelowThousand = (n) => {
+    if (n <= 0) return "Zero";
     if (n < 10) return units[n];
     if (n < 20) return teens[n - 10];
     if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? " " + units[n % 10] : "");
@@ -94,19 +100,24 @@ function numberToWords(num) {
     if (naira % 1000000000 !== 0) {
       result += numberToWords(naira % 1000000000);
     }
-    return result.trim() + " Naira" + (kobo > 0 ? " and " + convertBelowThousand(kobo) + " Kobo" : "") + " Only";
-  }
-  
-  if (naira >= 1000000) {
+  } else if (naira >= 1000000) {
     const millions = Math.floor(naira / 1000000);
     result += convertBelowThousand(millions) + " Million ";
-    if (naira % 1000000 !== 0) {
-      result += convertBelowThousand(naira % 1000000);
+    const remainingMillions = naira % 1000000;
+    if (remainingMillions >= 1000) {
+      const thousands = Math.floor(remainingMillions / 1000);
+      result += convertBelowThousand(thousands) + " Thousand ";
+      const remainingThousands = remainingMillions % 1000;
+      if (remainingThousands > 0) {
+        result += convertBelowThousand(remainingThousands);
+      }
+    } else if (remainingMillions > 0) {
+      result += convertBelowThousand(remainingMillions);
     }
   } else if (naira >= 1000) {
     const thousands = Math.floor(naira / 1000);
     result += convertBelowThousand(thousands) + " Thousand ";
-    if (naira % 1000 !== 0) {
+    if (naira % 1000 > 0) {
       result += convertBelowThousand(naira % 1000);
     }
   } else {
@@ -435,10 +446,19 @@ async function generateInvoicePdf(data, res, outputPath) {
     payments.forEach((pmt, idx) => {
       checkY(22);
       if (idx % 2 === 1) doc.rect(leftMargin, y - 2, pageWidth, 18).fill(COLORS.gray50);
+      const paymentMethod = pmt.method || pmt.paymentMethod || "N/A";
+      const methodLabel = {
+        "credit_card": "Card",
+        "bank_transfer": "Transfer",
+        "cash": "Cash",
+        "cheque": "Cheque",
+        "card": "Card",
+        "other": "Other"
+      }[paymentMethod] || paymentMethod;
       doc.fillColor(COLORS.textPrimary).fontSize(SIZES.small).font(FONTS.regular)
         .text(formatDate(pmt.paymentDate), leftMargin + 6, y + 1, { width: 90 })
-        .text(pmt.reference || pmt.paymentReference || "N/A", 160, y + 1, { width: 120 })
-        .text((pmt.paymentMethod || "N/A").toUpperCase(), 284, y + 1, { width: 90 });
+        .text(pmt.reference || "N/A", 160, y + 1, { width: 120 })
+        .text(methodLabel.toUpperCase(), 284, y + 1, { width: 90 });
       doc.fillColor(COLORS.success).font(FONTS.bold)
         .text(formatCurrency(pmt.amount), 400, y + 1, { width: 110, align: "right" });
       y += 18;
@@ -625,10 +645,21 @@ async function generateReceiptPdf(data, res, outputPath) {
   doc.rect(leftMargin, y, pageWidth, 38).lineWidth(0.4).strokeColor(COLORS.success).stroke();
   const metaY = y + 9;
   const seg   = pageWidth / 3;
+  
+  const receiptMethod = receipt?.method || receipt?.paymentMethod || "N/A";
+  const methodLabel = {
+    "credit_card": "Card",
+    "bank_transfer": "Transfer",
+    "cash": "Cash",
+    "cheque": "Cheque",
+    "card": "Card",
+    "other": "Other"
+  }[receiptMethod] || receiptMethod;
+  
   [
     ["Payment Date",      formatDate(receipt?.paymentDate)],
     ["Payment Reference", receipt?.reference || receipt?.paymentReference || "N/A"],
-    ["Payment Method",    (receipt?.paymentMethod || "N/A").toUpperCase()],
+    ["Payment Method",    methodLabel.toUpperCase()],
   ].forEach(([label, val], i) => {
     const mx = leftMargin + 10 + i * seg;
     doc.fontSize(SIZES.micro).font(FONTS.regular).fillColor(COLORS.textMuted).text(label, mx, metaY);
