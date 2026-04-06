@@ -361,7 +361,7 @@ const HearingTimelineItem = React.memo(({
   const isUpcoming = phase === "schedule";
   const needsReport = phase === "report";
   const canEditReport = phase === "report" || phase === "edit";
-  const canDelete = isUpcoming;
+  const canDelete = !hearing.outcome;
   const canEditNextHearing = !isLocked;
 
   const handleEdit = useCallback(() => onEdit(hearing), [onEdit, hearing]);
@@ -398,6 +398,15 @@ const HearingTimelineItem = React.memo(({
                 onClick={handleEdit}
                 className="text-slate-500"
               />
+              {canDelete && (
+                <Button
+                  type="text"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                  onClick={handleDelete}
+                />
+              )}
             </div>
           </div>
           

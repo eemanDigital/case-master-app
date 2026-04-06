@@ -1,5 +1,6 @@
 const Matter = require("../models/matterModel");
 const LitigationDetail = require("../models/litigationDetailModel");
+const BlockedDate = require("../models/blockedDateModel");
 const mongoose = require("mongoose");
 const catchAsync = require("../utils/catchAsync");
 const dayjs = require("dayjs");
@@ -9,7 +10,12 @@ const AppError = require("../utils/appError");
 const PaginationServiceFactory = require("../services/PaginationServiceFactory");
 const calendarSync = require("../services/calendarSyncService");
 const path = require("path");
-const { GenericPdfGenerator, getStatusColor, formatCurrency, formatDate } = require("../utils/generateGenericPdf");
+const {
+  GenericPdfGenerator,
+  getStatusColor,
+  formatCurrency,
+  formatDate,
+} = require("../utils/generateGenericPdf");
 const { generateCauseListPdf } = require("../utils/generateCauseListPdf");
 
 // Initialize dayjs plugins
@@ -23,6 +29,100 @@ dayjs.extend(isSameOrBefore);
 const matterService = PaginationServiceFactory.createService(Matter);
 const litigationService =
   PaginationServiceFactory.createService(LitigationDetail);
+
+// ============================================
+// HEARING DATE BLOCK CHECKER
+// ============================================
+
+/**
+ * Checks both hearing.date and hearing.nextHearingDate against firm blocked dates.
+ *
+ * Runs each date through BlockedDate.isDateBlocked() independently so that a
+ * blocked nextHearingDate is caught even when the primary hearing.date is fine.
+ *
+ * Returns the FIRST hard block found, or the first warning if no hard block exists.
+ *
+ * @param {string} firmId
+ * @param {string} userId
+ * @param {string} role        - user's primary role string
+ * @param {object} hearingData - may contain `date` and/or `nextHearingDate`
+ * @returns {{ isBlocked: boolean, hasWarning: boolean, field?: string, message?: string }}
+ */
+const checkHearingDatesAgainstBlocks = async (
+  firmId,
+  userId,
+  role,
+  hearingData,
+) => {
+  const checks = [];
+
+  // Build check entry for primary hearing date
+  if (hearingData.date) {
+    const startOfDay = new Date(hearingData.date);
+    startOfDay.setHours(9, 0, 0, 0);
+    const endOfDay = new Date(hearingData.date);
+    endOfDay.setHours(17, 0, 0, 0);
+
+    checks.push({
+      field: "Hearing Date",
+      start: startOfDay,
+      end: endOfDay,
+    });
+  }
+
+  // Build check entry for next hearing date
+  if (hearingData.nextHearingDate) {
+    const startOfNext = new Date(hearingData.nextHearingDate);
+    startOfNext.setHours(9, 0, 0, 0);
+    const endOfNext = new Date(hearingData.nextHearingDate);
+    endOfNext.setHours(17, 0, 0, 0);
+
+    checks.push({
+      field: "Next Hearing Date",
+      start: startOfNext,
+      end: endOfNext,
+    });
+  }
+
+  let firstWarning = null;
+
+  for (const check of checks) {
+    const result = await BlockedDate.isDateBlocked(
+      firmId,
+      userId,
+      check.start,
+      check.end,
+      "hearing", // eventType
+      role,
+    );
+
+    // Hard block — abort immediately, do not save the hearing
+    if (result.isBlocked) {
+      return {
+        isBlocked: true,
+        hasWarning: false,
+        field: check.field,
+        message: `${check.field} falls on a blocked date: ${result.message}`,
+        block: result.block || null,
+      };
+    }
+
+    // Soft warning — record but keep checking remaining dates
+    if (result.hasWarning && !firstWarning) {
+      firstWarning = {
+        isBlocked: false,
+        hasWarning: true,
+        field: check.field,
+        message: `${check.field} warning: ${result.message}`,
+      };
+    }
+  }
+
+  // Return first warning if any, otherwise all clear
+  if (firstWarning) return firstWarning;
+
+  return { isBlocked: false, hasWarning: false };
+};
 
 // ============================================
 // GET ALL LITIGATION MATTERS (WITH PAGINATION)
@@ -450,7 +550,7 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// ADD HEARING (WITH AUTO-CALENDAR SYNC) 🔥
+// ADD HEARING (WITH BLOCKED DATE CHECK + AUTO-CALENDAR SYNC)
 // ============================================
 
 exports.addHearing = catchAsync(async (req, res, next) => {
@@ -471,6 +571,25 @@ exports.addHearing = catchAsync(async (req, res, next) => {
   if (!hearingData.date) {
     return next(new AppError("Hearing date is required", 400));
   }
+
+  // ─── Blocked date check ───────────────────────────────────────────────────
+  // Validates both hearing.date AND hearing.nextHearingDate (if provided)
+  // against firm-wide and user-specific blocked date rules.
+  // Hard blocks (isBlocked: true) abort with 400.
+  // Soft warnings (hasWarning: true) are forwarded in the response.
+  const blockCheck = await checkHearingDatesAgainstBlocks(
+    req.firmId,
+    req.user._id,
+    req.user.role,
+    hearingData,
+  );
+
+  console.log(blockCheck);
+
+  if (blockCheck.isBlocked) {
+    return next(new AppError(blockCheck.message, 400));
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   let litigationDetail = await LitigationDetail.findOne({
     matterId,
@@ -504,7 +623,7 @@ exports.addHearing = catchAsync(async (req, res, next) => {
   // Save the litigation detail FIRST
   await litigationDetail.save();
 
-  // Then explicitly sync to calendar using the new service
+  // Then explicitly sync to calendar using the service
   const latestHearing =
     litigationDetail.hearings[litigationDetail.hearings.length - 1];
 
@@ -545,9 +664,16 @@ exports.addHearing = catchAsync(async (req, res, next) => {
       "Hearing added" +
       (calendarResult.success ? " and synced to calendar" : ""),
     calendarSync: calendarResult.success ? calendarResult.message : null,
+    // Forward any soft warning so the client can display it as a toast/alert
+    warning: blockCheck.hasWarning ? blockCheck.message : null,
     data: { litigationDetail },
   });
 });
+
+// ============================================
+// GET MATTER HEARINGS
+// ============================================
+
 exports.getMatterHearings = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
 
@@ -660,7 +786,7 @@ exports.getMatterHearings = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// UPDATE HEARING (WITH AUTO-CALENDAR SYNC) 🔥
+// UPDATE HEARING (WITH BLOCKED DATE CHECK + AUTO-CALENDAR SYNC)
 // ============================================
 
 exports.updateHearing = catchAsync(async (req, res, next) => {
@@ -780,6 +906,35 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     }
   }
 
+  // ─── Blocked date check ───────────────────────────────────────────────────
+  // Only runs when date fields are actually part of this update request.
+  // Checks the new date(s) — not the existing stored dates — so we don't
+  // re-validate historical hearing dates that are already saved.
+  const datesToCheck = {};
+  if (updateData.date) datesToCheck.date = updateData.date;
+  if (updateData.nextHearingDate)
+    datesToCheck.nextHearingDate = updateData.nextHearingDate;
+
+  let hearingBlockWarning = null;
+
+  if (Object.keys(datesToCheck).length > 0) {
+    const blockCheck = await checkHearingDatesAgainstBlocks(
+      req.firmId,
+      req.user._id,
+      req.user.role,
+      datesToCheck,
+    );
+
+    if (blockCheck.isBlocked) {
+      return next(new AppError(blockCheck.message, 400));
+    }
+
+    if (blockCheck.hasWarning) {
+      hearingBlockWarning = blockCheck.message;
+    }
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   // ════════════════════════════════════════════════════════════
   // PROCEED WITH UPDATE
   // ════════════════════════════════════════════════════════════
@@ -796,7 +951,7 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   // Save the litigation detail FIRST
   await litigationDetail.save();
 
-  // Explicitly sync to calendar using the new service
+  // Explicitly sync to calendar using the service
   let calendarResult = { success: true, message: "Calendar sync skipped" };
   try {
     calendarResult = await calendarSync.syncHearing(
@@ -835,9 +990,12 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
       "Hearing updated" +
       (calendarResult.success ? " and synced to calendar" : ""),
     calendarSync: calendarResult.success ? calendarResult.message : null,
+    // Forward any soft warning so the client can display it as a toast/alert
+    warning: hearingBlockWarning,
     data: { litigationDetail },
   });
 });
+
 // ============================================
 // DELETE HEARING (WITH CALENDAR SYNC)
 // ============================================
@@ -860,7 +1018,7 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
     return next(new AppError("Hearing not found", 404));
   }
 
-  // Delete associated calendar event using new service
+  // Delete associated calendar event using service
   let calendarResult = { success: true };
   try {
     calendarResult = await calendarSync.deleteEvent(hearingId, req.firmId);
@@ -902,7 +1060,7 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// ADD COURT ORDER (WITH AUTO-DEADLINE) 🔥
+// ADD COURT ORDER (WITH AUTO-DEADLINE)
 // ============================================
 
 exports.addCourtOrder = catchAsync(async (req, res, next) => {
@@ -930,7 +1088,7 @@ exports.addCourtOrder = catchAsync(async (req, res, next) => {
   matter.lastActivityDate = new Date();
   await matter.save();
 
-  // AUTO-SYNC: Create deadline if compliance date exists using new service
+  // AUTO-SYNC: Create deadline if compliance date exists using service
   const newOrder =
     litigationDetail.courtOrders[litigationDetail.courtOrders.length - 1];
   let calendarResult = { success: true };
@@ -1204,7 +1362,7 @@ exports.recordJudgment = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Mark past hearings as completed using new service
+  // Mark past hearings as completed using service
   let calendarResult = { success: true };
   try {
     calendarResult = await calendarSync.markPastHearingsCompleted(
@@ -1259,7 +1417,7 @@ exports.recordSettlement = catchAsync(async (req, res, next) => {
   }
   await matter.save();
 
-  // Mark past hearings as completed using new service
+  // Mark past hearings as completed using service
   let calendarResult = { success: true };
   try {
     calendarResult = await calendarSync.markPastHearingsCompleted(
@@ -1609,7 +1767,6 @@ exports.getHearingsCalendar = catchAsync(async (req, res, next) => {
 exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
   const { range } = req.query; // 'this-week', 'next-week', 'this-month', 'all'
   const firmId = req.firmId;
-  const path = require("path");
 
   const today = dayjs().startOf("day");
   let startDate, endDate, periodName;
@@ -1672,8 +1829,7 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
     if (!litigation || !litigation.hearings) return;
 
     litigation.hearings.forEach((hearing) => {
-      // ONLY use nextHearingDate for upcoming hearings - NOT the old hearing date
-      // If nextHearingDate doesn't exist or is in the past, skip this hearing
+      // ONLY use nextHearingDate for upcoming hearings
       if (!hearing.nextHearingDate) return;
 
       const hearingDate = dayjs(hearing.nextHearingDate);
@@ -1688,7 +1844,6 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
       if (!isInRange) return;
 
       hearings.push({
-        // Keep original date for reference (the actual hearing date that passed)
         originalDate: hearing.date,
         matterNumber: matter.matterNumber,
         matterTitle: matter.title,
@@ -1700,7 +1855,6 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
         judge: litigation.judge?.[0]?.name,
         client: matter.client,
         accountOfficer: matter.accountOfficer,
-        // Use nextHearingDate for display
         hearingDate: hearingDate.format("YYYY-MM-DD"),
         hearingDay: hearingDate.format("dddd"),
         hearingTime: "09:00 AM",
@@ -1727,7 +1881,10 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
       totalHearings: hearings.length,
     },
     res,
-    path.resolve(__dirname, `../output/hearings-${range || "this-week"}-${Date.now()}.pdf`),
+    path.resolve(
+      __dirname,
+      `../output/hearings-${range || "this-week"}-${Date.now()}.pdf`,
+    ),
   );
 });
 
@@ -1773,9 +1930,10 @@ exports.addLitigationStep = catchAsync(async (req, res, next) => {
   litigationDetail.litigationSteps.push(newStep);
   await litigationDetail.save();
 
-  const addedStep = litigationDetail.litigationSteps[
-    litigationDetail.litigationSteps.length - 1
-  ];
+  const addedStep =
+    litigationDetail.litigationSteps[
+      litigationDetail.litigationSteps.length - 1
+    ];
 
   matter.lastActivityDate = new Date();
   await matter.save();
@@ -2089,7 +2247,13 @@ exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
     matterNumber: matter?.matterNumber || "",
   });
 
-  pdf.init(res, path.resolve(__dirname, `../output/${matter.matterNumber}_litigation_report_${Date.now()}.pdf`));
+  pdf.init(
+    res,
+    path.resolve(
+      __dirname,
+      `../output/${matter.matterNumber}_litigation_report_${Date.now()}.pdf`,
+    ),
+  );
 
   // Firm Information
   pdf.addSection("Firm Information");
@@ -2105,61 +2269,92 @@ exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
   pdf.addStatusField("Status", matter?.status);
   pdf.addStatusField("Priority", matter?.priority);
   pdf.addField("Date Opened", formatDate(matter?.dateOpened));
-  pdf.addField("Client", matter?.client ? `${matter.client.firstName} ${matter.client.lastName}` : null);
-  if (matter?.client?.companyName) pdf.addField("Company", matter.client.companyName);
+  pdf.addField(
+    "Client",
+    matter?.client
+      ? `${matter.client.firstName} ${matter.client.lastName}`
+      : null,
+  );
+  if (matter?.client?.companyName)
+    pdf.addField("Company", matter.client.companyName);
   if (matter?.client?.email) pdf.addField("Client Email", matter.client.email);
 
   // Litigation Details
   if (litigationDetail) {
     pdf.addSection("Case Information");
     pdf.addField("Suit Number", litigationDetail.suitNo);
-    pdf.addField("Court", litigationDetail.courtName?.replace(/_/g, " ").toUpperCase());
+    pdf.addField(
+      "Court",
+      litigationDetail.courtName?.replace(/_/g, " ").toUpperCase(),
+    );
     pdf.addField("Court Location", litigationDetail.courtLocation);
     pdf.addField("State", litigationDetail.state);
     if (litigationDetail.judge?.length > 0) {
-      pdf.addField("Judge", litigationDetail.judge.map(j => j.name).join(", "));
+      pdf.addField(
+        "Judge",
+        litigationDetail.judge.map((j) => j.name).join(", "),
+      );
     }
-    pdf.addField("Mode of Commencement", litigationDetail.modeOfCommencement?.replace(/_/g, " ").toUpperCase());
+    pdf.addField(
+      "Mode of Commencement",
+      litigationDetail.modeOfCommencement?.replace(/_/g, " ").toUpperCase(),
+    );
     pdf.addField("Filing Date", formatDate(litigationDetail.filingDate));
 
     // First Party
     if (litigationDetail.firstParty?.name?.length > 0) {
       pdf.addSubSection("First Party (Claimant/Plaintiff)");
-      litigationDetail.firstParty.name.forEach(n => {
+      litigationDetail.firstParty.name.forEach((n) => {
         pdf.addField("Name", n.name);
       });
       if (litigationDetail.firstParty.description) {
-        pdf.addLongTextField("Description", litigationDetail.firstParty.description);
+        pdf.addLongTextField(
+          "Description",
+          litigationDetail.firstParty.description,
+        );
       }
     }
 
     // Second Party
     if (litigationDetail.secondParty?.name?.length > 0) {
       pdf.addSubSection("Second Party (Defendant)");
-      litigationDetail.secondParty.name.forEach(n => {
+      litigationDetail.secondParty.name.forEach((n) => {
         pdf.addField("Name", n.name);
       });
       if (litigationDetail.secondParty.description) {
-        pdf.addLongTextField("Description", litigationDetail.secondParty.description);
+        pdf.addLongTextField(
+          "Description",
+          litigationDetail.secondParty.description,
+        );
       }
     }
 
     // Case Status
     pdf.addSection("Case Status");
     pdf.addStatusField("Current Stage", litigationDetail.currentStage);
-    pdf.addField("Next Hearing Date", formatDate(litigationDetail.nextHearingDate));
-    pdf.addField("Case Value", litigationDetail.caseValue?.amount ? formatCurrency(litigationDetail.caseValue.amount) : null);
+    pdf.addField(
+      "Next Hearing Date",
+      formatDate(litigationDetail.nextHearingDate),
+    );
+    pdf.addField(
+      "Case Value",
+      litigationDetail.caseValue?.amount
+        ? formatCurrency(litigationDetail.caseValue.amount)
+        : null,
+    );
 
     // Hearings
     if (litigationDetail.hearings?.length > 0) {
       pdf.addSection("Hearings");
-      const upcomingHearings = litigationDetail.hearings.filter(h => new Date(h.date) >= new Date()).slice(0, 5);
+      const upcomingHearings = litigationDetail.hearings
+        .filter((h) => new Date(h.date) >= new Date())
+        .slice(0, 5);
       if (upcomingHearings.length > 0) {
         pdf.addSubSection("Upcoming Hearings");
-        upcomingHearings.forEach(h => {
+        upcomingHearings.forEach((h) => {
           pdf.addField(
             formatDate(h.date),
-            `${h.purpose || "Hearing"} | ${h.outcome || "Pending"}`
+            `${h.purpose || "Hearing"} | ${h.outcome || "Pending"}`,
           );
         });
       }
@@ -2168,11 +2363,11 @@ exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
     // Court Orders
     if (litigationDetail.courtOrders?.length > 0) {
       pdf.addSection("Court Orders");
-      litigationDetail.courtOrders.slice(0, 10).forEach(order => {
+      litigationDetail.courtOrders.slice(0, 10).forEach((order) => {
         pdf.addField(
           formatDate(order.orderDate),
           `${order.orderType || "Order"} - ${order.description?.substring(0, 50) || ""}`,
-          { color: getStatusColor(order.complianceStatus) }
+          { color: getStatusColor(order.complianceStatus) },
         );
       });
     }
@@ -2180,10 +2375,17 @@ exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
     // Litigation Steps
     if (litigationDetail.litigationSteps?.length > 0) {
       pdf.addSection("Case Progress");
-      const completed = litigationDetail.litigationSteps.filter(s => s.status === "completed").length;
-      pdf.addField("Progress", `${completed}/${litigationDetail.litigationSteps.length} steps completed`);
-      litigationDetail.litigationSteps.forEach(step => {
-        pdf.addField(step.title, step.status?.toUpperCase(), { color: getStatusColor(step.status) });
+      const completed = litigationDetail.litigationSteps.filter(
+        (s) => s.status === "completed",
+      ).length;
+      pdf.addField(
+        "Progress",
+        `${completed}/${litigationDetail.litigationSteps.length} steps completed`,
+      );
+      litigationDetail.litigationSteps.forEach((step) => {
+        pdf.addField(step.title, step.status?.toUpperCase(), {
+          color: getStatusColor(step.status),
+        });
       });
     }
   }
