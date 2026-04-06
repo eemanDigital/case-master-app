@@ -14,6 +14,7 @@ import {
   useCalendarView,
   useEventOperations,
   useDateBlockCheck,
+  useBlockedDates,
 } from "../../hooks/useCalendar";
 const { Content } = Layout;
 
@@ -60,6 +61,7 @@ const CalendarPage = () => {
   } = useEventOperations();
 
   const { checkDate } = useDateBlockCheck();
+  const { blockedDates, refresh: refreshBlockedDates } = useBlockedDates();
 
   // Handlers
   const handleCreateEvent = () => {
@@ -183,6 +185,7 @@ const CalendarPage = () => {
           <MonthView
             currentDate={currentDate}
             events={events}
+            blockedDates={blockedDates}
             onDateClick={handleDateClick}
             onEventClick={handleViewEvent}
           />
@@ -193,6 +196,7 @@ const CalendarPage = () => {
           <WeekView
             currentDate={currentDate}
             events={events}
+            blockedDates={blockedDates}
             onDateClick={handleDateClick}
             onEventClick={handleViewEvent}
           />
@@ -202,6 +206,7 @@ const CalendarPage = () => {
         return (
           <AgendaView
             events={events}
+            blockedDates={blockedDates}
             onEventClick={handleViewEvent}
             dateRange={{ start: currentDate, end: currentDate }}
           />
@@ -213,6 +218,7 @@ const CalendarPage = () => {
           <MonthView
             currentDate={currentDate}
             events={events}
+            blockedDates={blockedDates}
             onDateClick={handleDateClick}
             onEventClick={handleViewEvent}
           />
@@ -236,33 +242,33 @@ const CalendarPage = () => {
         loading={loading}
       />
 
-      <Content className="p-6">
+      <Content className="p-4 md:p-6">
         {/* Statistics Bar */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+        <div className="bg-white rounded-lg shadow-sm p-3 md:p-4 mb-4 md:mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <div className="text-center py-2">
+              <div className="text-xl md:text-2xl font-bold text-blue-600">
                 {statistics.total}
               </div>
-              <div className="text-sm text-gray-500">Total Events</div>
+              <div className="text-xs md:text-sm text-gray-500">Total</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
+            <div className="text-center py-2">
+              <div className="text-xl md:text-2xl font-bold text-green-600">
                 {statistics.today}
               </div>
-              <div className="text-sm text-gray-500">Today</div>
+              <div className="text-xs md:text-sm text-gray-500">Today</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
+            <div className="text-center py-2">
+              <div className="text-xl md:text-2xl font-bold text-orange-600">
                 {statistics.upcoming}
               </div>
-              <div className="text-sm text-gray-500">Upcoming</div>
+              <div className="text-xs md:text-sm text-gray-500">Upcoming</div>
             </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-gray-600">
+            <div className="text-center py-2">
+              <div className="text-xl md:text-2xl font-bold text-gray-600">
                 {statistics.past}
               </div>
-              <div className="text-sm text-gray-500">Past</div>
+              <div className="text-xs md:text-sm text-gray-500">Past</div>
             </div>
           </div>
         </div>

@@ -305,43 +305,104 @@ const InvitationList = () => {
     },
   ];
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  const mobileColumns = [
+    {
+      title: "Details",
+      key: "details",
+      render: (_, record) => (
+        <div className="space-y-2">
+          <div>
+            <Text strong className="text-sm">{record.email}</Text>
+            {record.firstName && (
+              <Text type="secondary" className="block text-xs">
+                {record.firstName} {record.lastName}
+              </Text>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2 items-center">
+            <Tag color="blue">{record.role?.toUpperCase()}</Tag>
+            {getStatusTag(record.status)}
+          </div>
+          <Text type="secondary" className="text-xs block">
+            Expires: {dayjs(record.expiresAt).fromNow()}
+          </Text>
+          <Text type="secondary" className="text-xs block">
+            By: {record.invitedBy?.firstName} {record.invitedBy?.lastName}
+          </Text>
+          <div className="flex gap-2 pt-1">
+            {record.status === "pending" && (
+              <>
+                <Button
+                  type="text"
+                  size="small"
+                  icon={<SendOutlined />}
+                  onClick={() => handleResendInvitation(record._id)}
+                />
+                <Popconfirm
+                  title="Cancel this invitation?"
+                  onConfirm={() => handleCancelInvitation(record._id)}>
+                  <Button type="text" size="small" danger icon={<CloseCircleOutlined />} />
+                </Popconfirm>
+              </>
+            )}
+            <Popconfirm
+              title="Delete this invitation permanently?"
+              onConfirm={() => handleDeleteInvitation(record._id)}>
+              <Button type="text" size="small" danger icon={<DeleteOutlined />} />
+            </Popconfirm>
+          </div>
+        </div>
+      ),
+    },
+  ];
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="p-4 md:p-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 md:mb-6">
         <div>
           <Title level={3} className="!mb-1">
             Invitations
           </Title>
-          <Text type="secondary">
-            Manage user invitations and subscription plans
+          <Text type="secondary" className="text-sm md:text-base">
+            Manage user invitations
           </Text>
         </div>
         <Button
           type="primary"
           icon={<PlusOutlined />}
-          onClick={() => setModalVisible(true)}>
-          Generate Invitation
+          onClick={() => setModalVisible(true)}
+          className="w-full md:w-auto">
+          Generate
         </Button>
       </div>
 
       <Card className="mb-4">
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-col sm:flex-row gap-3">
           <Input
-            placeholder="Search by email or name..."
+            placeholder="Search..."
             prefix={<MailOutlined />}
             value={filters.search}
             onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-            className="w-64"
+            className="w-full sm:w-48 md:w-64"
             allowClear
           />
           <Select
-            placeholder="Filter by status"
+            placeholder="Status"
             value={filters.status || undefined}
             onChange={(value) =>
               setFilters({ ...filters, status: value || "" })
             }
             allowClear
-            className="w-40">
+            className="w-full sm:w-32 md:w-40">
             <Option value="pending">Pending</Option>
             <Option value="accepted">Accepted</Option>
             <Option value="expired">Expired</Option>
@@ -349,7 +410,8 @@ const InvitationList = () => {
           </Select>
           <Button
             icon={<ReloadOutlined />}
-            onClick={() => fetchInvitations(pagination.current)}>
+            onClick={() => fetchInvitations(pagination.current)}
+            className="w-full sm:w-auto">
             Refresh
           </Button>
         </div>
@@ -366,18 +428,22 @@ const InvitationList = () => {
               </Button>
             </Empty>
           ) : (
-            <Table
-              columns={columns}
-              dataSource={invitations}
-              rowKey="_id"
-              pagination={{
-                current: pagination.current,
-                pageSize: pagination.pageSize,
-                total: pagination.total,
-                onChange: (page) => fetchInvitations(page),
-                showSizeChanger: false,
-              }}
-            />
+            <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
+              <Table
+                columns={isMobile ? mobileColumns : columns}
+                dataSource={invitations}
+                rowKey="_id"
+                pagination={{
+                  current: pagination.current,
+                  pageSize: pagination.pageSize,
+                  total: pagination.total,
+                  onChange: (page) => fetchInvitations(page),
+                  showSizeChanger: false,
+                  size: isMobile ? "small" : "default",
+                }}
+                scroll={{ x: isMobile ? 400 : undefined }}
+              />
+            </div>
           )}
         </Spin>
       </Card>
@@ -390,15 +456,8 @@ const InvitationList = () => {
           form.resetFields();
         }}
         footer={null}
-        width={500}>
-        <Alert
-          message="Invitation Link"
-          description="An invitation link will be sent to this person. When they register using the link, they will be assigned the selected role within your firm."
-          type="info"
-          showIcon
-          className="mb-4"
-        />
-
+        width={isMobile ? "95vw" : 500}
+        className="md:hidden">
         <Form
           form={form}
           layout="vertical"
@@ -414,17 +473,17 @@ const InvitationList = () => {
             <Input prefix={<MailOutlined />} placeholder="user@example.com" />
           </Form.Item>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Form.Item name="firstName" label="First Name">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Form.Item name="firstName" label="First Name" className="flex-1">
               <Input placeholder="John" />
             </Form.Item>
-            <Form.Item name="lastName" label="Last Name">
+            <Form.Item name="lastName" label="Last Name" className="flex-1">
               <Input placeholder="Doe" />
             </Form.Item>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <Form.Item name="role" label="Role" rules={[{ required: true }]}>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Form.Item name="role" label="Role" rules={[{ required: true }]} className="flex-1">
               <Select>
                 <Option value="staff">Staff</Option>
                 <Option value="lawyer">Lawyer</Option>
@@ -436,8 +495,9 @@ const InvitationList = () => {
 
             <Form.Item
               name="expiresInDays"
-              label="Expires In (days)"
-              rules={[{ required: true }]}>
+              label="Expires In"
+              rules={[{ required: true }]}
+              className="flex-1">
               <Select>
                 <Option value={3}>3 days</Option>
                 <Option value={7}>7 days</Option>
@@ -447,18 +507,6 @@ const InvitationList = () => {
             </Form.Item>
           </div>
 
-          <Form.Item
-            name="expiresInDays"
-            label="Expires In (days)"
-            rules={[{ required: true }]}>
-            <Select>
-              <Option value={3}>3 days</Option>
-              <Option value={7}>7 days</Option>
-              <Option value={14}>14 days</Option>
-              <Option value={30}>30 days</Option>
-            </Select>
-          </Form.Item>
-
           <Form.Item name="message" label="Welcome Message (optional)">
             <Input.TextArea
               rows={3}
@@ -466,15 +514,17 @@ const InvitationList = () => {
             />
           </Form.Item>
 
-          <Form.Item className="mb-0 flex justify-end gap-2">
-            <Button onClick={() => setModalVisible(false)}>Cancel</Button>
-            <Button
-              type="primary"
-              htmlType="submit"
-              loading={submitting}
-              icon={<UserAddOutlined />}>
-              Generate Invitation
-            </Button>
+          <Form.Item className="mb-0">
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2">
+              <Button onClick={() => setModalVisible(false)}>Cancel</Button>
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={submitting}
+                icon={<UserAddOutlined />}>
+                Generate
+              </Button>
+            </div>
           </Form.Item>
         </Form>
       </Modal>
