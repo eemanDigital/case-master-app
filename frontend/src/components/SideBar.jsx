@@ -38,7 +38,9 @@ import { useAdminHook } from "../hooks/useAdminHook";
 
 const { Text } = Typography;
 
-const isDevMode = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+const isDevMode =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1";
 
 const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
   const dispatch = useDispatch();
@@ -304,11 +306,11 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           label: "Blocked Dates",
           path: "/dashboard/calendar/blocked-dates",
         },
-        {
-          key: "deleted-events",
-          label: "Deleted Events",
-          path: "/dashboard/calendar/deleted",
-        },
+        // {
+        //   key: "deleted-events",
+        //   label: "Deleted Events",
+        //   path: "/dashboard/calendar/deleted",
+        // },
       ],
     },
     // {
@@ -454,7 +456,8 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
         if (!isDevMode) {
           e.preventDefault();
           message.warning({
-            content: "This feature is currently under development and will be available soon.",
+            content:
+              "This feature is currently under development and will be available soon.",
             className: isDarkMode ? "dark-message" : "",
           });
         }
@@ -464,7 +467,15 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
         key: item.key,
         icon: item.icon,
         label: (
-          <Link to={item.path} onClick={isPremium ? handlePremiumClick : (isMobile ? closeDrawer : undefined)}>
+          <Link
+            to={item.path}
+            onClick={
+              isPremium
+                ? handlePremiumClick
+                : isMobile
+                  ? closeDrawer
+                  : undefined
+            }>
             {item.label}
             {isPremium && (
               <span
@@ -472,8 +483,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
                   isDarkMode
                     ? "bg-amber-500/20 text-amber-400 border border-amber-500/30"
                     : "bg-amber-50 text-amber-600 border border-amber-200"
-                }`}
-              >
+                }`}>
                 Dev
               </span>
             )}
