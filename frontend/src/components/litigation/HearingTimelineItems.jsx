@@ -427,15 +427,19 @@ const HearingTimelineItem = React.memo(({
             </div>
           )}
           
-          {hearing.nextHearingDate && (
+          {(hearing.nextHearingDate || hearing.dateToBeCommunicated) && (
             <div className="flex items-center justify-between bg-blue-50 rounded-lg p-2">
               <div className="flex items-center gap-2">
                 <CalendarOutlined className="text-blue-600 text-xs" />
                 <div>
                   <p className="text-[10px] font-bold text-blue-800">Next</p>
-                  <p className="text-[9px] text-blue-500">
-                    {formatDate(hearing.nextHearingDate, "DD MMM, HH:mm")}
-                  </p>
+                  {hearing.dateToBeCommunicated ? (
+                    <Tag color="orange" className="!text-[9px]">TBC</Tag>
+                  ) : (
+                    <p className="text-[9px] text-blue-500">
+                      {formatDate(hearing.nextHearingDate, "DD MMM, HH:mm")}
+                    </p>
+                  )}
                 </div>
               </div>
               {canEditNextHearing && (
@@ -590,16 +594,20 @@ const HearingTimelineItem = React.memo(({
             <GracePeriodIndicator phaseInfo={phaseInfo} />
 
             {/* NEXT HEARING */}
-            {hearing.nextHearingDate && (
+            {(hearing.nextHearingDate || hearing.dateToBeCommunicated) && (
               <div className="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <CalendarOutlined className="text-blue-600" style={{ fontSize: 13 }} />
                     <div>
                       <p className="text-xs font-bold text-blue-800 leading-none mb-0.5">Next Hearing</p>
-                      <p className="text-[11px] text-blue-500 font-medium">
-                        {formatDate(hearing.nextHearingDate, "DD MMM YYYY [at] HH:mm")}
-                      </p>
+                      {hearing.dateToBeCommunicated ? (
+                        <Tag color="orange" className="!text-[10px]">Date to be communicated</Tag>
+                      ) : (
+                        <p className="text-[11px] text-blue-500 font-medium">
+                          {formatDate(hearing.nextHearingDate, "DD MMM YYYY [at] HH:mm")}
+                        </p>
+                      )}
                     </div>
                   </div>
                   {canEditNextHearing && (

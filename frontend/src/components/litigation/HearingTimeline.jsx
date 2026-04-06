@@ -15,7 +15,6 @@ import {
   Alert,
   Tag,
   Tooltip,
-  Badge,
   Progress,
   Spin,
 } from "antd";
@@ -52,7 +51,7 @@ import {
   selectMatterHearings,
 } from "../../redux/features/litigation/litigationSlice";
 import { getAllEvents } from "../../redux/features/calender/calenderSlice";
-import { getUsers, selectUsers } from "../../redux/features/auth/authSlice";
+import { getUsers, selectUsers, selectUser } from "../../redux/features/auth/authSlice";
 import HearingTimelineItem from "./HearingTimelineItems";
 import HearingHeader from "./HearingHeader";
 import { SendHearingReportModal } from "../emails";
@@ -105,19 +104,19 @@ export const getPhaseInfo = (
   nextHearingDate = null,
 ) => {
   const now = dayjs();
-  const hearing = dayjs(hearingDate).startOf("day");
+  const hearing = dayjs(hearingDate);
   const gracePeriodEnd = hearing.add(GRACE_PERIOD_HOURS, "hour");
 
   const isBeforeHearing = now.isBefore(hearing);
   const isWithinGracePeriod =
-    now.isSameOrAfter(hearing) && now.isSameOrBefore(gracePeriodEnd);
-  const isAfterGracePeriod = now.isAfter(gracePeriodEnd);
+    now.isSameOrAfter(hearing) && now.isBefore(gracePeriodEnd);
+  const isAfterGracePeriod = now.isSameOrAfter(gracePeriodEnd);
 
   const hoursRemaining = isWithinGracePeriod
-    ? gracePeriodEnd.diff(now, "hour")
+    ? Math.max(0, gracePeriodEnd.diff(now, "hour"))
     : 0;
   const minutesRemaining = isWithinGracePeriod
-    ? gracePeriodEnd.diff(now, "minute") % 60
+    ? Math.max(0, gracePeriodEnd.diff(now, "minute") % 60)
     : 0;
 
   let phase;
@@ -401,6 +400,8 @@ const HearingTimeline = ({
   const matterHearings = useSelector(selectMatterHearings);
   const allUsers = useSelector(selectUsers);
   const usersLoading = useSelector((state) => state.auth?.loading ?? false);
+  const currentUser = useSelector(selectUser);
+  const isAdmin = currentUser?.userType === "admin" || currentUser?.role === "admin" || currentUser?.isAdmin === true;
 
   const hearings = matterHearings.length > 0 ? matterHearings : propsHearings;
 
@@ -409,13 +410,16 @@ const HearingTimeline = ({
   const [selectedOutcome, setSelectedOutcome] = useState(null);
   const [modalPhase, setModalPhase] = useState("schedule");
   const [showSendReportModal, setShowSendReportModal] = useState(false);
+  const [dateToBeCommunicated, setDateToBeCommunicated] = useState(false);
   const [form] = Form.useForm();
 
   const stableMatterId = useMemo(() => String(matterId || ""), [matterId]);
 
   useEffect(() => {
-    if (isModalVisible) dispatch(getUsers());
-  }, [isModalVisible, dispatch]);
+    if (isModalVisible && !allUsers?.data?.length) {
+      dispatch(getUsers());
+    }
+  }, [isModalVisible, dispatch, allUsers]);
 
   const lawyersOptions = useMemo(() => {
     if (!allUsers?.data) return [];
@@ -505,6 +509,7 @@ const HearingTimeline = ({
         nextHearingDate: hearing.nextHearingDate
           ? dayjs(hearing.nextHearingDate)
           : null,
+        dateToBeCommunicated: hearing.dateToBeCommunicated ?? false,
       };
 
       if (hearing.outcome) {
@@ -548,10 +553,24 @@ const HearingTimeline = ({
 
   const handleSubmit = useCallback(
     async (values) => {
+      if (
+        values.outcome === REQUIRES_ADJOURNED_DATE &&
+        !values.nextHearingDate &&
+        !values.dateToBeCommunicated
+      ) {
+        return message.error(
+          "Please provide an Adjourned Date or mark as TBC",
+        );
+      }
+
       const hearingData = {
         ...values,
         date: values.date.toISOString(),
-        nextHearingDate: values.nextHearingDate?.toISOString() ?? null,
+        nextHearingDate:
+          values.dateToBeCommunicated
+            ? null
+            : values.nextHearingDate?.toISOString() ?? null,
+        dateToBeCommunicated: values.dateToBeCommunicated ?? false,
       };
       try {
         if (editingHearing) {
@@ -586,6 +605,7 @@ const HearingTimeline = ({
     setIsModalVisible(false);
     setEditingHearing(null);
     setSelectedOutcome(null);
+    setDateToBeCommunicated(false);
     form.resetFields();
   }, [form]);
 
@@ -614,12 +634,13 @@ const HearingTimeline = ({
     : true;
 
   // Report fields: only editable after hearing date, within grace period
-  const canEditReportFields = !isSchedulePhase && !isModalLocked;
+  const canEditReportFields = !isSchedulePhase && (!isModalLocked || isAdmin);
 
   // KEY FIX: nextHearingDate editable in ALL non-locked phases.
   // The "Adjourned" outcome requires setting nextHearingDate during the
   // REPORT phase (after the hearing), not just the schedule phase.
-  const canEditNextHearingDate = !isModalLocked;
+  // Admin override: admins can always edit next hearing date even when locked.
+  const canEditNextHearingDate = !isModalLocked || isAdmin;
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -851,7 +872,7 @@ const HearingTimeline = ({
                   options={PURPOSE_OPTIONS}
                   allowClear
                   size={isMobile ? "middle" : "large"}
-                  disabled={isModalLocked}
+                  disabled={isModalLocked && !isAdmin}
                 />
               </Form.Item>
 
@@ -918,7 +939,7 @@ const HearingTimeline = ({
               name="hearingNoticeRequired"
               valuePropName="checked"
               className="!mb-2">
-              <Checkbox disabled={isModalLocked}>
+              <Checkbox disabled={isModalLocked && !isAdmin}>
                 <span className="flex items-center gap-2 text-xs sm:text-sm">
                   <BellOutlined className="text-amber-500" />
                   <span className="font-medium">
@@ -935,14 +956,22 @@ const HearingTimeline = ({
                   also useful to record next session after any hearing.
                 - Hidden when outcome is "Adjourned" (shown in report section
                   as "Adjourned To" with required validation instead).
+                - Admin override: admins can always edit even when locked.
             ── */}
             {!requiresAdjournedDate && (
               <Form.Item
                 name="nextHearingDate"
                 label={
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-1.5 flex-wrap">
                     <CalendarOutlined className="text-blue-400 text-xs" />
                     Next Hearing Date
+                    {isAdmin && isModalLocked && (
+                      <Tag
+                        color="red"
+                        className="!text-[10px] !px-1 !py-0 ml-1">
+                        Admin Override
+                      </Tag>
+                    )}
                     {!isSchedulePhase && !isModalLocked && (
                       <Tag
                         color="green"
@@ -961,6 +990,7 @@ const HearingTimeline = ({
                   className="rounded-lg"
                   size={isMobile ? "middle" : "large"}
                   disabled={!canEditNextHearingDate}
+                  status={isModalLocked && !isAdmin ? "error" : ""}
                   disabledDate={(current) =>
                     current && current < dayjs().startOf("day")
                   }
@@ -1034,34 +1064,62 @@ const HearingTimeline = ({
 
                 {/* Adjourned-to date: shown here with required validation */}
                 {requiresAdjournedDate && (
-                  <Form.Item
-                    name="nextHearingDate"
-                    label={
-                      <span className="flex items-center gap-1.5">
-                        <CalendarOutlined className="text-orange-400 text-xs" />
-                        Adjourned To
-                      </span>
-                    }
-                    rules={[
-                      {
-                        required: true,
-                        message:
-                          "Next hearing date required for adjourned outcome",
-                      },
-                    ]}>
-                    <DatePicker
-                      showTime
-                      style={{ width: "100%" }}
-                      format="DD/MM/YYYY HH:mm"
-                      placeholder="Select adjournment date"
-                      className="rounded-lg"
-                      size="large"
-                      disabled={!canEditReportFields}
-                      disabledDate={(current) =>
-                        current && current < dayjs().startOf("day")
+                  <>
+                    <Form.Item
+                      name="dateToBeCommunicated"
+                      valuePropName="checked"
+                      className="!mb-3">
+                      <Checkbox onChange={(e) => setDateToBeCommunicated(e.target.checked)} disabled={!canEditReportFields}>
+                        <span className="text-xs sm:text-sm font-medium text-orange-600">
+                          Next date to be communicated later (Adjourned Sine Die)
+                        </span>
+                      </Checkbox>
+                    </Form.Item>
+                    
+                    <Form.Item
+                      noStyle
+                      shouldUpdate={(prev, curr) => prev.dateToBeCommunicated !== curr.dateToBeCommunicated}>
+                      {({ getFieldValue }) =>
+                        !getFieldValue("dateToBeCommunicated") && (
+                          <Form.Item
+                            name="nextHearingDate"
+                            label={
+                              <span className="flex items-center gap-1.5">
+                                <CalendarOutlined className="text-orange-400 text-xs" />
+                                Adjourned To
+                                {isAdmin && isModalLocked && (
+                                  <Tag
+                                    color="red"
+                                    className="!text-[10px] !px-1 !py-0 ml-1">
+                                    Admin Override
+                                  </Tag>
+                                )}
+                              </span>
+                            }
+                            rules={[
+                              {
+                                required: !getFieldValue("dateToBeCommunicated"),
+                                message:
+                                  "Next hearing date required for adjourned outcome",
+                              },
+                            ]}>
+                            <DatePicker
+                              showTime
+                              style={{ width: "100%" }}
+                              format="DD/MM/YYYY HH:mm"
+                              placeholder="Select adjournment date"
+                              className="rounded-lg"
+                              size="large"
+                              disabled={!canEditReportFields && !isAdmin}
+                              disabledDate={(current) =>
+                                current && current < dayjs().startOf("day")
+                              }
+                            />
+                          </Form.Item>
+                        )
                       }
-                    />
-                  </Form.Item>
+                    </Form.Item>
+                  </>
                 )}
 
                 <Form.Item
@@ -1112,7 +1170,7 @@ const HearingTimeline = ({
               <Button onClick={handleModalClose} size={isMobile ? "middle" : "large"}>
                 Cancel
               </Button>
-              {!isModalLocked && (
+              {(isModalLocked ? isAdmin : true) && (
                 <Button
                   type="primary"
                   htmlType="submit"
