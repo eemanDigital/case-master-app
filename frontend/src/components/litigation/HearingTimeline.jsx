@@ -376,12 +376,12 @@ FieldLockIndicator.displayName = "FieldLockIndicator";
 
 // ─── STAT CARD ──────────────────────────────────────────────────────────────
 
-const StatCard = React.memo(({ label, value, icon, colorClass }) => (
+const StatCard = React.memo(({ label, value, icon, colorClass, isMobile }) => (
   <div
-    className={`flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-shadow hover:shadow-md ${colorClass}`}>
-    <div className="text-base mb-1">{icon}</div>
-    <div className="text-2xl font-black leading-none mb-1">{value}</div>
-    <div className="text-[10px] font-bold uppercase tracking-wider opacity-70">
+    className={`flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 transition-shadow hover:shadow-md ${colorClass}`}>
+    <div className={`mb-0.5 sm:mb-1 ${isMobile ? "text-sm" : "text-base"}`}>{icon}</div>
+    <div className={`font-black leading-none mb-0.5 sm:mb-1 ${isMobile ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"}`}>{value}</div>
+    <div className={`font-bold uppercase tracking-wider opacity-70 ${isMobile ? "text-[8px] sm:text-[10px]" : "text-[10px]"}`}>
       {label}
     </div>
   </div>
@@ -621,6 +621,15 @@ const HearingTimeline = ({
   // REPORT phase (after the hearing), not just the schedule phase.
   const canEditNextHearingDate = !isModalLocked;
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const statCards = useMemo(
     () => [
       {
@@ -657,12 +666,33 @@ const HearingTimeline = ({
     [stats],
   );
 
+  // Handler for updating next hearing date and lawyers from timeline
+  const handleUpdateNextHearing = useCallback(
+    async (hearingId, updateData) => {
+      try {
+        await dispatch(
+          updateHearing({
+            matterId: stableMatterId,
+            hearingId,
+            hearingData: updateData,
+          }),
+        ).unwrap();
+        message.success("Updated successfully");
+        dispatch(getAllEvents({}));
+      } catch (err) {
+        message.error(err?.message ?? "Failed to update");
+        throw err;
+      }
+    },
+    [dispatch, stableMatterId],
+  );
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       {/* ── STATS ──────────────────────────────────────────── */}
-      <div className="grid grid-cols-5 gap-3">
+      <div className={`grid gap-2 sm:gap-3 ${isMobile ? "grid-cols-3" : "grid-cols-5"}`}>
         {statCards.map((s) => (
-          <StatCard key={s.label} {...s} />
+          <StatCard key={s.label} {...s} isMobile={isMobile} />
         ))}
       </div>
 
@@ -675,85 +705,87 @@ const HearingTimeline = ({
       )}
 
       {/* ── TIMELINE ───────────────────────────────────────── */}
-      <Card
-        title={
-          <div className="flex items-center justify-between py-1">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md shadow-violet-200">
-                <HistoryOutlined className="text-white" />
+        <Card
+          title={
+            <div className="flex items-center justify-between py-1">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md shadow-violet-200">
+                  <HistoryOutlined className="text-white text-sm sm:text-base" />
+                </div>
+                <div>
+                  <h4 className={`font-bold text-slate-800 leading-none mb-0.5 ${isMobile ? "text-xs" : "text-sm"}`}>
+                    Hearings
+                  </h4>
+                  <p className="text-slate-400 font-medium text-[10px] sm:text-xs">
+                    {hearings.length} recorded
+                  </p>
+                </div>
               </div>
-              <div>
-                <h4 className="text-sm font-bold text-slate-800 leading-none mb-0.5">
-                  Hearings Timeline
-                </h4>
-                <p className="text-xs text-slate-400 font-medium">
-                  {hearings.length} hearing{hearings.length !== 1 ? "s" : ""}{" "}
-                  recorded
-                </p>
-              </div>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAddHearing}
+                className="bg-violet-600 hover:bg-violet-700 border-violet-600 font-semibold shadow"
+                size={isMobile ? "small" : "middle"}>
+                {isMobile ? "Add" : "Add Hearing"}
+              </Button>
             </div>
-            <Button
-              type="primary"
-              icon={<PlusOutlined />}
-              onClick={handleAddHearing}
-              className="bg-violet-600 hover:bg-violet-700 border-violet-600 font-semibold shadow"
-              size="middle">
-              Add Hearing
-            </Button>
-          </div>
-        }
-        bordered={false}
-        className="rounded-2xl shadow-sm border border-slate-100">
-        {sortedHearingsWithPhase.length === 0 ? (
-          <Empty
-            image={Empty.PRESENTED_IMAGE_SIMPLE}
-            description={
-              <div className="py-10 text-center">
-                <p className="text-4xl mb-3">⚖️</p>
-                <p className="text-slate-700 font-semibold text-sm mb-1">
-                  No hearings recorded
-                </p>
-                <p className="text-slate-400 text-xs mb-5">
-                  Start tracking court hearings to manage your litigation
-                  workflow
-                </p>
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={handleAddHearing}
-                  className="bg-violet-600 hover:bg-violet-700 border-violet-600">
-                  Add First Hearing
-                </Button>
-              </div>
-            }
-          />
-        ) : (
-          <div className="divide-y divide-slate-50">
-            {sortedHearingsWithPhase.map((hearing) => (
-              <HearingTimelineItem
-                key={hearing._id}
-                hearing={hearing}
-                onEdit={handleEditHearing}
-                onDelete={handleDeleteHearing}
-              />
-            ))}
-          </div>
-        )}
-      </Card>
+          }
+          bordered={false}
+          className="rounded-xl sm:rounded-2xl shadow-sm border border-slate-100">
+          {sortedHearingsWithPhase.length === 0 ? (
+            <Empty
+              image={Empty.PRESENTED_IMAGE_SIMPLE}
+              description={
+                <div className="py-6 sm:py-10 text-center">
+                  <p className="text-3xl sm:text-4xl mb-2 sm:mb-3">⚖️</p>
+                  <p className="text-slate-700 font-semibold text-xs sm:text-sm mb-1">
+                    No hearings recorded
+                  </p>
+                  <p className="text-slate-400 text-[10px] sm:text-xs mb-4 sm:mb-5">
+                    Start tracking court hearings
+                  </p>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={handleAddHearing}
+                    className="bg-violet-600 hover:bg-violet-700 border-violet-600"
+                    size="small">
+                    Add First Hearing
+                  </Button>
+                </div>
+              }
+            />
+          ) : (
+            <div className="divide-y divide-slate-50 -mx-2 sm:mx-0">
+              {sortedHearingsWithPhase.map((hearing) => (
+                <HearingTimelineItem
+                  key={hearing._id}
+                  hearing={hearing}
+                  onEdit={handleEditHearing}
+                  onDelete={handleDeleteHearing}
+                  onUpdateNextHearing={handleUpdateNextHearing}
+                  lawyersOptions={lawyersOptions}
+                  usersLoading={usersLoading}
+                />
+              ))}
+            </div>
+          )}
+        </Card>
 
       {/* ── MODAL ──────────────────────────────────────────── */}
       <Modal
         title={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div
-              className={`w-9 h-9 rounded-xl flex items-center justify-center ${editingHearing ? "bg-blue-100 text-blue-600" : "bg-violet-100 text-violet-600"}`}>
+              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center ${editingHearing ? "bg-blue-100 text-blue-600" : "bg-violet-100 text-violet-600"}`}>
               {editingHearing ? <EditOutlined /> : <PlusOutlined />}
             </div>
             <div>
-              <p className="text-sm font-bold text-slate-800 leading-none mb-0.5">
+              <p className={`font-bold text-slate-800 leading-none mb-0.5 ${isMobile ? "text-xs" : "text-sm"}`}>
                 {editingHearing ? "Edit Hearing" : "Add New Hearing"}
               </p>
-              {editingHearing && currentPhaseInfo && (
+              {editingHearing && currentPhaseInfo && !isMobile && (
                 <p className="text-[11px] font-medium text-slate-400">
                   {
                     {
@@ -771,7 +803,7 @@ const HearingTimeline = ({
         open={isModalVisible}
         onCancel={handleModalClose}
         footer={null}
-        width={680}
+        width={isMobile ? "95vw" : 680}
         destroyOnClose
         className="hearing-modal">
         {editingHearing && currentPhaseInfo && (
@@ -787,19 +819,19 @@ const HearingTimeline = ({
           onFinish={handleSubmit}
           requiredMark={false}>
           {/* ── HEARING DETAILS ──────────────────────────── */}
-          <div className="bg-slate-50 rounded-xl p-4 mb-4 border border-slate-200">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="bg-slate-50 rounded-xl p-3 sm:p-4 mb-3 sm:mb-4 border border-slate-200">
+            <div className="flex items-center gap-2 mb-2 sm:mb-3">
               <CalendarOutlined className="text-slate-500 text-xs" />
-              <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+              <span className="text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">
                 Hearing Details
               </span>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className={`grid gap-3 ${isMobile ? "grid-cols-1" : "grid-cols-2"}`}>
               <Form.Item
                 name="date"
                 label="Hearing Date & Time"
-                className="col-span-2"
+                className={isMobile ? "" : "col-span-2"}
                 rules={[
                   { required: true, message: "Please select hearing date" },
                 ]}>
@@ -809,7 +841,7 @@ const HearingTimeline = ({
                   format="DD/MM/YYYY HH:mm"
                   disabled={!!editingHearing}
                   className="rounded-lg"
-                  size="large"
+                  size={isMobile ? "middle" : "large"}
                 />
               </Form.Item>
 
@@ -818,7 +850,7 @@ const HearingTimeline = ({
                   placeholder="Select purpose"
                   options={PURPOSE_OPTIONS}
                   allowClear
-                  size="large"
+                  size={isMobile ? "middle" : "large"}
                   disabled={isModalLocked}
                 />
               </Form.Item>
@@ -833,19 +865,19 @@ const HearingTimeline = ({
               <Form.Item
                 name="lawyerPresent"
                 label={
-                  <span className="flex items-center gap-1.5">
+                  <span className="flex items-center gap-1">
                     <UserOutlined className="text-xs text-slate-400" />
                     Assign Lawyers
                     {canAssignLawyers &&
                       currentPhaseInfo?.hasUpcomingNextSession && (
                         <Tag
                           color="blue"
-                          className="!text-[10px] !px-1.5 !py-0 ml-1">
-                          For next session
+                          className="!text-[10px] !px-1 !py-0 ml-1">
+                          Next session
                         </Tag>
                       )}
                     {!canAssignLawyers && (
-                      <Tooltip title="No upcoming sessions — lawyer assignment locked">
+                      <Tooltip title="No upcoming sessions — locked">
                         <LockOutlined className="text-slate-400 text-xs ml-1" />
                       </Tooltip>
                     )}
@@ -855,19 +887,19 @@ const HearingTimeline = ({
                   mode="multiple"
                   placeholder={
                     usersLoading
-                      ? "Loading lawyers…"
+                      ? "Loading…"
                       : !canAssignLawyers
-                        ? "No upcoming session — locked"
+                        ? "Locked"
                         : lawyersOptions.length === 0
-                          ? "No lawyers found"
-                          : "Select lawyers to assign"
+                          ? "No lawyers"
+                          : "Select lawyers"
                   }
                   options={lawyersOptions}
                   loading={usersLoading}
                   disabled={!canAssignLawyers}
                   showSearch
                   optionFilterProp="label"
-                  size="large"
+                  size={isMobile ? "middle" : "large"}
                   maxTagCount="responsive"
                   notFoundContent={
                     usersLoading ? (
@@ -887,7 +919,7 @@ const HearingTimeline = ({
               valuePropName="checked"
               className="!mb-2">
               <Checkbox disabled={isModalLocked}>
-                <span className="flex items-center gap-2 text-sm">
+                <span className="flex items-center gap-2 text-xs sm:text-sm">
                   <BellOutlined className="text-amber-500" />
                   <span className="font-medium">
                     Ensure Hearing Notice is Served
@@ -914,8 +946,8 @@ const HearingTimeline = ({
                     {!isSchedulePhase && !isModalLocked && (
                       <Tag
                         color="green"
-                        className="!text-[10px] !px-1.5 !py-0 ml-1">
-                        Set adjournment date here
+                        className="!text-[10px] !px-1 !py-0 ml-1">
+                        Adjournment
                       </Tag>
                     )}
                   </span>
@@ -927,7 +959,7 @@ const HearingTimeline = ({
                   format="DD/MM/YYYY HH:mm"
                   placeholder="Select next session date"
                   className="rounded-lg"
-                  size="large"
+                  size={isMobile ? "middle" : "large"}
                   disabled={!canEditNextHearingDate}
                   disabledDate={(current) =>
                     current && current < dayjs().startOf("day")
@@ -1063,20 +1095,21 @@ const HearingTimeline = ({
           )}
 
           {/* ── FOOTER ───────────────────────────────────── */}
-          <div className="flex items-center justify-between mt-6">
-            <div>
+          <div className={`flex items-center justify-between mt-4 sm:mt-6 ${isMobile ? "flex-col gap-2" : ""}`}>
+            <div className={isMobile ? "w-full" : ""}>
               {editingHearing?.outcome && (
                 <Button
                   type="default"
                   icon={<MailOutlined />}
                   onClick={() => setShowSendReportModal(true)}
-                  className="border-indigo-300 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-400">
-                  Send to Client
+                  className="border-indigo-300 text-indigo-600 hover:bg-indigo-50 hover:border-indigo-400"
+                  size={isMobile ? "small" : "middle"}>
+                  {isMobile ? "" : "Send to Client"}
                 </Button>
               )}
             </div>
-            <Space size="small">
-              <Button onClick={handleModalClose} size="large">
+            <Space size={isMobile ? "small" : "small"} className={isMobile ? "w-full justify-end" : ""}>
+              <Button onClick={handleModalClose} size={isMobile ? "middle" : "large"}>
                 Cancel
               </Button>
               {!isModalLocked && (
@@ -1084,7 +1117,7 @@ const HearingTimeline = ({
                   type="primary"
                   htmlType="submit"
                   loading={loading}
-                  size="large"
+                  size={isMobile ? "middle" : "large"}
                   icon={
                     modalPhase === "report" ? (
                       <FileTextOutlined />
@@ -1095,11 +1128,11 @@ const HearingTimeline = ({
                   className={`font-semibold ${modalPhase === "report" || modalPhase === "edit" ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-600" : "bg-violet-600 hover:bg-violet-700 border-violet-600"}`}>
                   {editingHearing
                     ? modalPhase === "report"
-                      ? "File Report"
+                      ? "File"
                       : modalPhase === "edit"
-                        ? "Update Report"
-                        : "Update Hearing"
-                    : "Add Hearing"}
+                        ? "Update"
+                        : "Update"
+                    : "Add"}
                 </Button>
               )}
             </Space>
