@@ -61,6 +61,7 @@ const { TextArea } = Input;
 const VIEW = {
   ALL: "all",
   TODAY_REPORTS: "today_reports",
+  TOMORROW: "tomorrow",
   URGENT: "urgent",
   HEARING_NOTICE: "hearing_notice",
 };
@@ -90,12 +91,14 @@ const formatDisplayDate = (date) => dayjs(date).format("ddd, DD MMM YYYY");
 const formatTime = (date) => dayjs(date).format("HH:mm");
 
 const getRelative = (date) => {
-  const diff = dayjs(date).diff(dayjs(), "day");
-  if (diff === 0) return "Today";
-  if (diff === 1) return "Tomorrow";
-  if (diff < 0) return `${Math.abs(diff)}d ago`;
-  if (diff < 7) return `In ${diff} days`;
-  return dayjs(date).from(dayjs());
+  const d = dayjs(date);
+  const now = dayjs();
+  
+  if (d.isSame(now, "day")) return "Today";
+  if (d.isSame(now.add(1, "day"), "day")) return "Tomorrow";
+  if (d.isBefore(now, "day")) return `${now.diff(d, "day")}d ago`;
+  if (d.diff(now, "day") < 7) return `In ${d.diff(now, "day")} days`;
+  return d.from(now);
 };
 
 const getEditPermissions = (hearing) => {
@@ -1018,41 +1021,48 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
     }
   }, [dispatch]);
 
-  const { todayReports, urgentSimple, upcomingSimple, hearingNoticeRequired } =
+  const { todayReports, urgentSimple, upcomingSimple, hearingNoticeRequired, tomorrowHearings } =
     useMemo(() => {
-      const today = dayjs().startOf("day");
-      const threeDays = dayjs().add(3, "day").endOf("day");
+      const now = dayjs();
+      const today = now.startOf("day");
+      const tomorrow = now.add(1, "day").startOf("day");
+      const threeDays = now.add(3, "day").endOf("day");
       const reports = [],
         urgent = [],
         upcoming = [],
-        noticeRequired = [];
+        noticeRequired = [],
+        tomorrowList = [];
 
       hearings.forEach((h) => {
         // Use hearingDate (which is nextHearingDate from backend)
         const displayDate = h.hearingDate;
         const d = dayjs(displayDate);
         const hasReport = !!h.outcome;
-        // FIX 11: `needsNotice` should not depend on `hasReport`. A hearing
-        // notice is a separate requirement from filing a post-hearing report.
-        // Removing `&& !hasReport` ensures hearings still show as needing a
-        // notice even after their outcome has been recorded.
         const needsNotice = !!h.hearingNoticeRequired;
 
-        if (needsNotice && d.isAfter(today)) {
-          noticeRequired.push(h);
-          // FIX 12: Do NOT `return` early here. A hearing can require a notice
-          // AND also fall into today/urgent/upcoming at the same time. Returning
-          // early caused those hearings to disappear from all other sections.
-          // We intentionally fall through so they also populate the right bucket.
-        }
-
+        // Check if hearing is today
         if (d.isSame(today, "day")) {
           if (hasReport) reports.push(h);
           else upcoming.push(h);
-        } else if (d.isAfter(today) && d.isSameOrBefore(threeDays)) {
-          urgent.push(h);
-        } else if (d.isAfter(today)) {
+        } 
+        // Check if hearing is tomorrow
+        else if (d.isSame(tomorrow, "day")) {
+          tomorrowList.push(h);
+          if (d.isSameOrBefore(threeDays)) {
+            urgent.push(h);
+          }
+        }
+        // Future hearing (after tomorrow)
+        else if (d.isAfter(today)) {
+          if (d.isSameOrBefore(threeDays)) {
+            urgent.push(h);
+          }
           upcoming.push(h);
+        }
+
+        // Hearing notice required - only for future hearings
+        if (needsNotice && d.isAfter(today)) {
+          noticeRequired.push(h);
         }
       });
 
@@ -1061,6 +1071,7 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
         urgentSimple: urgent,
         upcomingSimple: upcoming,
         hearingNoticeRequired: noticeRequired,
+        tomorrowHearings: tomorrowList,
       };
     }, [hearings]);
 
@@ -1071,6 +1082,12 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
           type: "single",
           items: todayReports,
           componentType: "detailed",
+        };
+      case VIEW.TOMORROW:
+        return {
+          type: "single",
+          items: tomorrowHearings,
+          componentType: "simple",
         };
       case VIEW.URGENT:
         return { type: "single", items: urgentSimple, componentType: "simple" };
@@ -1102,6 +1119,15 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
                   },
                 ]
               : []),
+            ...(tomorrowHearings.length > 0
+              ? [
+                  {
+                    title: "📅 Tomorrow",
+                    items: tomorrowHearings,
+                    type: "simple",
+                  },
+                ]
+              : []),
             ...(urgentSimple.length > 0
               ? [
                   {
@@ -1129,10 +1155,8 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
     urgentSimple,
     upcomingSimple,
     hearingNoticeRequired,
+    tomorrowHearings,
   ]);
-  // FIX 13: Added `hearingNoticeRequired` to the dependency array above.
-  // It was previously missing, which meant the "sections" view would not
-  // re-render when the hearingNoticeRequired list changed.
 
   const handleCardClick = useCallback((hearing) => {
     setSelectedHearing(hearing);
@@ -1152,7 +1176,8 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
     todayReports.length +
     urgentSimple.length +
     upcomingSimple.length +
-    hearingNoticeRequired.length;
+    hearingNoticeRequired.length +
+    tomorrowHearings.length;
 
   return (
     <>
@@ -1200,6 +1225,14 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
               colorKey="blue"
               active={activeView === VIEW.TODAY_REPORTS}
               onClick={() => handleViewChange(VIEW.TODAY_REPORTS)}
+            />
+            <StatPill
+              icon={<CalendarOutlined />}
+              label="Tomorrow"
+              value={tomorrowHearings.length}
+              colorKey="violet"
+              active={activeView === VIEW.TOMORROW}
+              onClick={() => handleViewChange(VIEW.TOMORROW)}
             />
             <StatPill
               icon={<ExclamationCircleOutlined />}
@@ -1254,6 +1287,21 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
               <p className="text-sm font-bold flex-1 text-left">
                 {todayReports.length} Report
                 {todayReports.length !== 1 ? "s" : ""} Filed Today
+              </p>
+              <RightOutlined className="text-xs opacity-60" />
+            </button>
+          )}
+
+          {/* Tomorrow banner */}
+          {tomorrowHearings.length > 0 && activeView !== VIEW.TOMORROW && (
+            <button
+              onClick={() => handleViewChange(VIEW.TOMORROW)}
+              className="w-full mb-4 flex items-center gap-3 bg-gradient-to-r
+                         from-violet-600 to-purple-500 hover:from-violet-700 hover:to-purple-600
+                         text-white rounded-xl px-4 py-3 transition-all shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <p className="text-sm font-bold flex-1 text-left">
+                {tomorrowHearings.length} Hearing Tomorrow
               </p>
               <RightOutlined className="text-xs opacity-60" />
             </button>

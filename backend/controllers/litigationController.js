@@ -402,36 +402,40 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
   // Apply limit
   const limitedHearings = upcomingHearings.slice(0, parseInt(limit));
 
-  // Stats
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date();
-  todayEnd.setHours(23, 59, 59, 999);
-
-  const thisWeekStart = today.startOf("week").toDate();
-  const thisWeekEnd = today.endOf("week").toDate();
-  const nextWeekStart = today.add(1, "week").startOf("week").toDate();
-  const nextWeekEnd = today.add(1, "week").endOf("week").toDate();
-  const thisMonthStart = today.startOf("month").toDate();
-  const thisMonthEnd = today.endOf("month").toDate();
+  // Stats - use dayjs consistently to avoid timezone issues
+  const now = dayjs();
+  const todayStart = now.startOf("day");
+  const todayEnd = now.endOf("day");
+  const tomorrowStart = now.add(1, "day").startOf("day");
+  const tomorrowEnd = now.add(1, "day").endOf("day");
+  const thisWeekStart = now.startOf("week");
+  const thisWeekEnd = now.endOf("week");
+  const nextWeekStart = now.add(1, "week").startOf("week");
+  const nextWeekEnd = now.add(1, "week").endOf("week");
+  const thisMonthStart = now.startOf("month");
+  const thisMonthEnd = now.endOf("month");
 
   const stats = {
     total: limitedHearings.length,
     today: limitedHearings.filter((h) => {
-      const d = new Date(h.displayDate);
-      return d >= todayStart && d <= todayEnd;
+      const d = dayjs(h.displayDate);
+      return d.isSame(now, "day");
+    }).length,
+    tomorrow: limitedHearings.filter((h) => {
+      const d = dayjs(h.displayDate);
+      return d.isSame(now.add(1, "day"), "day");
     }).length,
     thisWeek: limitedHearings.filter((h) => {
-      const d = new Date(h.displayDate);
-      return d >= thisWeekStart && d <= thisWeekEnd;
+      const d = dayjs(h.displayDate);
+      return d.isAfter(todayEnd) && d.isSameOrBefore(thisWeekEnd);
     }).length,
     nextWeek: limitedHearings.filter((h) => {
-      const d = new Date(h.displayDate);
-      return d >= nextWeekStart && d <= nextWeekEnd;
+      const d = dayjs(h.displayDate);
+      return d.isAfter(thisWeekEnd) && d.isSameOrBefore(nextWeekEnd);
     }).length,
     thisMonth: limitedHearings.filter((h) => {
-      const d = new Date(h.displayDate);
-      return d >= thisMonthStart && d <= thisMonthEnd;
+      const d = dayjs(h.displayDate);
+      return d.isAfter(thisWeekEnd) && d.isSameOrBefore(thisMonthEnd);
     }).length,
     pending: limitedHearings.filter((h) => !h.outcome).length,
     completed: limitedHearings.filter((h) => !!h.outcome).length,

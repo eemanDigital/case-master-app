@@ -1,5 +1,6 @@
 // components/litigation/dashboard/UpcomingHearingsWidget.jsx
 import { Card, List, Button, Tag, Avatar, Tooltip, Empty, Badge } from "antd";
+import dayjs from "dayjs";
 import {
   CalendarOutlined,
   ClockCircleOutlined,
@@ -22,7 +23,7 @@ const UpcomingHearingsWidget = ({ hearings = [], loading, onViewAll }) => {
 
       // Check if it's the new flat format (has matterId directly)
       const isNewFormat = item.matterId && item.suitNo;
-      
+
       if (isNewFormat) {
         // New flat format from getUpcomingHearings API
         const displayDate = item.nextHearingDate || item.date;
@@ -45,7 +46,8 @@ const UpcomingHearingsWidget = ({ hearings = [], loading, onViewAll }) => {
             currentStage: item.currentStage || "unknown",
             matterId: item.matterId || null,
             matterNumber: item.matter?.matterNumber || "—",
-            matterTitle: item.matter?.title || item.matterTitle || "Untitled Matter",
+            matterTitle:
+              item.matter?.title || item.matterTitle || "Untitled Matter",
             client: item.matter?.client || item.client || null,
             accountOfficer: item.matter?.accountOfficer || [],
             assignedLawyers: [],
@@ -76,7 +78,8 @@ const UpcomingHearingsWidget = ({ hearings = [], loading, onViewAll }) => {
           );
 
           const upcomingHearing = {
-            id: litigationDetail._id || `hearing-${Date.now()}-${Math.random()}`,
+            id:
+              litigationDetail._id || `hearing-${Date.now()}-${Math.random()}`,
             suitNo: litigationDetail.suitNo || "—",
             courtName: litigationDetail.courtName || "",
             courtNo: litigationDetail.courtNo || "",
@@ -229,12 +232,14 @@ const UpcomingHearingsWidget = ({ hearings = [], loading, onViewAll }) => {
                 split={false}
                 renderItem={(hearing) => {
                   const hearingDate = hearing.nextHearingDate
-                    ? new Date(hearing.nextHearingDate)
-                    : new Date();
-                  const isValidDate = !isNaN(hearingDate.getTime());
+                    ? dayjs(hearing.nextHearingDate)
+                    : dayjs();
+                  const isValidDate = hearingDate.isValid();
+                  const hoursUntilHearing = hearingDate.diff(dayjs(), "hour");
                   const isUrgent =
                     isValidDate &&
-                    hearingDate - new Date() < 3 * 24 * 60 * 60 * 1000;
+                    hoursUntilHearing > 0 &&
+                    hoursUntilHearing < 72;
 
                   const hasLawyers =
                     hearing.lawyersPresent && hearing.lawyersPresent.length > 0;
@@ -252,17 +257,13 @@ const UpcomingHearingsWidget = ({ hearings = [], loading, onViewAll }) => {
                               className={`text-base font-bold leading-none ${
                                 isUrgent ? "text-red-700" : "text-indigo-700"
                               }`}>
-                              {isValidDate ? hearingDate.getDate() : "-"}
+                              {isValidDate ? hearingDate.date() : "-"}
                             </span>
                             <span
                               className={`text-[9px] ${
                                 isUrgent ? "text-red-600" : "text-indigo-600"
                               }`}>
-                              {isValidDate
-                                ? hearingDate.toLocaleString("default", {
-                                    month: "short",
-                                  })
-                                : "TBD"}
+                              {isValidDate ? hearingDate.format("MMM") : "TBD"}
                             </span>
                           </div>
                         </div>

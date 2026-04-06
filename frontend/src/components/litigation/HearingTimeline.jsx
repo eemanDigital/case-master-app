@@ -519,6 +519,7 @@ const HearingTimeline = ({
 
       form.setFieldsValue(formValues);
       setSelectedOutcome(hearing.outcome ?? null);
+      setDateToBeCommunicated(hearing.dateToBeCommunicated ?? false);
       setEditingHearing(hearing);
       setModalPhase(phaseInfo.phase);
       setIsModalVisible(true);
@@ -1069,7 +1070,15 @@ const HearingTimeline = ({
                       name="dateToBeCommunicated"
                       valuePropName="checked"
                       className="!mb-3">
-                      <Checkbox onChange={(e) => setDateToBeCommunicated(e.target.checked)} disabled={!canEditReportFields}>
+                      <Checkbox 
+                        onChange={(e) => {
+                          setDateToBeCommunicated(e.target.checked);
+                          if (e.target.checked) {
+                            form.setFieldValue("nextHearingDate", null);
+                          }
+                        }} 
+                        disabled={!canEditReportFields}
+                      >
                         <span className="text-xs sm:text-sm font-medium text-orange-600">
                           Next date to be communicated later (Adjourned Sine Die)
                         </span>
@@ -1078,9 +1087,16 @@ const HearingTimeline = ({
                     
                     <Form.Item
                       noStyle
-                      shouldUpdate={(prev, curr) => prev.dateToBeCommunicated !== curr.dateToBeCommunicated}>
-                      {({ getFieldValue }) =>
-                        !getFieldValue("dateToBeCommunicated") && (
+                      shouldUpdate={(prev, curr) => 
+                        prev.dateToBeCommunicated !== curr.dateToBeCommunicated ||
+                        prev.outcome !== curr.outcome
+                      }
+                    >
+                      {({ getFieldValue }) => {
+                        const isTBC = getFieldValue("dateToBeCommunicated");
+                        if (isTBC) return null;
+                        
+                        return (
                           <Form.Item
                             name="nextHearingDate"
                             label={
@@ -1098,7 +1114,7 @@ const HearingTimeline = ({
                             }
                             rules={[
                               {
-                                required: !getFieldValue("dateToBeCommunicated"),
+                                required: !isTBC,
                                 message:
                                   "Next hearing date required for adjourned outcome",
                               },
@@ -1110,14 +1126,14 @@ const HearingTimeline = ({
                               placeholder="Select adjournment date"
                               className="rounded-lg"
                               size="large"
-                              disabled={!canEditReportFields && !isAdmin}
+                              disabled={isTBC || (isModalLocked && !isAdmin)}
                               disabledDate={(current) =>
                                 current && current < dayjs().startOf("day")
                               }
                             />
                           </Form.Item>
-                        )
-                      }
+                        );
+                      }}
                     </Form.Item>
                   </>
                 )}
