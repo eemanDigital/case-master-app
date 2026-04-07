@@ -6,8 +6,12 @@ const { auditMiddleware } = require("../middleware/auditMiddleware");
 
 const router = express.Router();
 
-router.use(protect);
+// Public routes (no auth required)
+router.get("/validate/:token", invitationController.validateInvitation);
+router.post("/accept/:token", invitationController.acceptInvitation);
 
+// Protected routes (auth required)
+router.use(protect);
 router.use(restrictTo("admin", "super-admin"));
 router.use(auditMiddleware);
 

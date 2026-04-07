@@ -350,16 +350,6 @@ app.use("/api/v1/watchdog", watchdogRouter);
 app.use("/api/v1/automations", automationRouter);
 app.use("/api/v1/cac-compliance", cacComplianceRouter);
 
-// Public invitation validation
-app.get(
-  "/api/v1/invitations/validate/:token",
-  require("./controllers/invitationController").validateInvitation,
-);
-app.post(
-  "/api/v1/invitations/accept/:token",
-  require("./controllers/invitationController").acceptInvitation,
-);
-
 // Platform admin routes
 app.use("/api/v1/platform", require("./routes/platformAdminRoutes"));
 
