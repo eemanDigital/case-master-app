@@ -396,6 +396,10 @@ exports.acceptInvitation = catchAsync(async (req, res, next) => {
     city 
   } = req.body;
 
+  const userAgent = req.headers["user-agent"] || "Unknown";
+  const parser = require("ua-parser-js");
+  const currentDevice = parser(userAgent).ua;
+
   const invitation = await Invitation.validateToken(token);
 
   if (!invitation) {
@@ -428,6 +432,10 @@ exports.acceptInvitation = catchAsync(async (req, res, next) => {
     existingUser.role = invitation.role;
     existingUser.userType = isClient ? "client" : "staff";
     existingUser.isVerified = true;
+    if (!existingUser.userAgent) existingUser.userAgent = [];
+    if (!existingUser.userAgent.includes(currentDevice)) {
+      existingUser.userAgent.push(currentDevice);
+    }
     await existingUser.save();
 
     invitation.status = "accepted";
@@ -477,6 +485,7 @@ exports.acceptInvitation = catchAsync(async (req, res, next) => {
     role: invitation.role,
     userType: isClient ? "client" : "staff",
     isVerified: true,
+    userAgent: [currentDevice],
   });
 
   invitation.status = "accepted";
