@@ -33,18 +33,20 @@ const settingsItems = [
     description: "Send and manage team invitations",
     icon: <UserAddOutlined />,
     path: "/dashboard/settings/invitations",
-    adminOnly: true,
+    permission: "canManageUsers",
   },
 ];
 
 const Settings = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isSuperOrAdmin } = useAdminHook();
+  const { isSuperOrAdmin, canManageUsers, hasAnyRole } = useAdminHook();
 
-  const visibleItems = settingsItems.filter(
-    (item) => !item.adminOnly || isSuperOrAdmin
-  );
+  const visibleItems = settingsItems.filter((item) => {
+    if (item.adminOnly) return isSuperOrAdmin;
+    if (item.permission === "canManageUsers") return canManageUsers || isSuperOrAdmin;
+    return true;
+  });
 
   return (
     <div className="p-6">

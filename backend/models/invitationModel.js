@@ -6,7 +6,9 @@ const invitationSchema = new mongoose.Schema({
   firmId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Firm",
-    required: true,
+    required: function() {
+      return this.invitationType !== "new-firm";
+    },
     index: true,
   },
 
@@ -29,14 +31,16 @@ const invitationSchema = new mongoose.Schema({
 
   role: {
     type: String,
-    enum: ["staff", "lawyer", "secretary", "admin", "client"],
+    enum: ["staff", "lawyer", "secretary", "admin", "client", "super-admin"],
     default: "staff",
   },
 
   invitedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
-    required: true,
+    required: function() {
+      return this.invitationType !== "new-firm";
+    },
   },
 
   token: {
@@ -47,7 +51,7 @@ const invitationSchema = new mongoose.Schema({
 
   plan: {
     type: String,
-    enum: ["FREE", "STARTER", "PROFESSIONAL", "ENTERPRISE"],
+    enum: ["FREE", "BASIC", "PRO", "ENTERPRISE", "STARTER", "PROFESSIONAL"],
     default: "FREE",
   },
 
@@ -81,6 +85,12 @@ const invitationSchema = new mongoose.Schema({
     maxlength: 500,
   },
 
+  invitationType: {
+    type: String,
+    enum: ["user", "new-firm"],
+    default: "user",
+  },
+
   isDeleted: {
     type: Boolean,
     default: false,
@@ -110,10 +120,24 @@ invitationSchema.statics.validateToken = async function (token) {
   return invitation;
 };
 
+// Validate token for new firm registration
+invitationSchema.statics.validateNewFirmToken = async function (token) {
+  const invitation = await this.findOne({
+    token,
+    status: "pending",
+    expiresAt: { $gt: new Date() },
+    isDeleted: { $ne: true },
+    invitationType: "new-firm",
+  });
+  return invitation;
+};
+
 invitationSchema.statics.applyPlanLimits = function (plan) {
   const planLimits = {
-    FREE: { maxUsers: 5 },
+    FREE: { maxUsers: 3 },
+    BASIC: { maxUsers: 10 },
     STARTER: { maxUsers: 10 },
+    PRO: { maxUsers: 25 },
     PROFESSIONAL: { maxUsers: 25 },
     ENTERPRISE: { maxUsers: 999999 },
   };

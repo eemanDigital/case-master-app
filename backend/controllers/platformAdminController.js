@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const Firm = require("../models/firmModel");
 const User = require("../models/userModel");
 const PlatformInvite = require("../models/platformInviteModel");
+const Invitation = require("../models/invitationModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
 const { sendCustomEmail, sendMail } = require("../utils/email");
@@ -14,6 +15,87 @@ const PLAN_LIMITS = {
 };
 
 const PLAN_ORDER = ["FREE", "BASIC", "PRO", "ENTERPRISE"];
+
+// Email template for Platform Admin (App Owner) inviting new law firms
+const getPlatformFirmInvitationEmailHTML = ({
+  firmName,
+  inviteUrl,
+  message,
+  expiresAt,
+  targetPlan,
+}) => `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
+  <div style="background-color: #f4f4f4; padding: 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px;">
+      <tr>
+        <td style="padding: 0;">
+          <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 30px; border-radius: 8px 8px 0 0;">
+            <h1 style="color: #ffffff; margin: 0; font-size: 24px;">You're Invited to Join LawMaster!</h1>
+          </div>
+          
+          <div style="padding: 30px;">
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">Dear <strong>${firmName}</strong>,</p>
+            
+            <p style="color: #374151; font-size: 16px; line-height: 1.6;">
+              The LawMaster Team is excited to invite you to join our legal practice management platform! 
+              Get started with the <strong>${targetPlan || "PRO"}</strong> plan and transform how your firm handles cases and clients.
+            </p>
+            
+            ${
+              message
+                ? `
+            <div style="background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+              <p style="color: #4b5563; font-size: 14px; margin: 0; font-style: italic;">"${message}"</p>
+            </div>
+            `
+                : ""
+            }
+            
+            <div style="background-color: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 20px; margin: 25px 0;">
+              <h3 style="color: #065f46; margin-top: 0;">Why LawMaster?</h3>
+              <ul style="color: #047857; padding-left: 20px;">
+                <li>Manage cases, clients, and deadlines in one place</li>
+                <li>Automate deadline reminders and compliance alerts</li>
+                <li>Secure cloud storage for all your documents</li>
+                <li>Team collaboration tools</li>
+                <li>Real-time analytics and reporting</li>
+              </ul>
+            </div>
+            
+            <table width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0;">
+              <tr>
+                <td align="center">
+                  <a href="${inviteUrl}" style="background-color: #059669; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 6px; font-weight: 600; font-size: 18px; display: inline-block;">
+                    Get Started Now
+                  </a>
+                </td>
+              </tr>
+            </table>
+            
+            <p style="color: #6b7280; font-size: 14px; line-height: 1.6;">
+              This invitation will expire on <strong>${expiresAt}</strong>. Claim your spot today!
+            </p>
+            
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 25px 0;">
+            
+            <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+              Questions? Contact us at support@lawmaster.ng<br>
+              © ${new Date().getFullYear()} LawMaster. All rights reserved.
+            </p>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>
+`;
 
 exports.getAllFirms = catchAsync(async (req, res, next) => {
   const {
@@ -534,6 +616,94 @@ exports.cancelUpgradeInvitation = catchAsync(async (req, res, next) => {
   res.status(200).json({
     status: "success",
     data: invite,
+  });
+});
+
+// Platform Admin invites a new law firm to subscribe
+exports.inviteNewFirm = catchAsync(async (req, res, next) => {
+  const {
+    firmName,
+    contactEmail,
+    contactName,
+    phone,
+    targetPlan = "PRO",
+    message,
+    expiresInDays = 14,
+  } = req.body;
+
+  // Check if firm with this email already exists
+  const existingFirm = await Firm.findOne({
+    $or: [
+      { "contact.email": contactEmail.toLowerCase() },
+      { name: { $regex: new RegExp(`^${firmName}$`, "i") } },
+    ],
+  });
+
+  if (existingFirm) {
+    return next(new AppError("A firm with this name or email already exists", 400));
+  }
+
+  const token = Invitation.generateToken();
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + parseInt(expiresInDays));
+
+  const invitation = await Invitation.create({
+    firmId: null, // No firm yet - this is for new firm registration
+    email: contactEmail.toLowerCase(),
+    firstName: contactName,
+    lastName: "",
+    role: "super-admin",
+    invitedBy: null, // Platform admin - special case
+    token,
+    plan: targetPlan,
+    maxUsers: PLAN_LIMITS[targetPlan]?.users || 25,
+    expiresAt,
+    message,
+    invitationType: "new-firm", // Mark as new firm invitation
+  });
+
+  const inviteUrl = `${process.env.FRONTEND_URL || "https://case-master-app.vercel.app"}/register-firm?token=${token}&plan=${targetPlan}`;
+
+  const expiresAtDate = expiresAt.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const htmlContent = getPlatformFirmInvitationEmailHTML({
+    firmName,
+    inviteUrl,
+    message,
+    expiresAt: expiresAtDate,
+    targetPlan,
+  });
+
+  try {
+    await sendCustomEmail(
+      `You're Invited to Join LawMaster - ${targetPlan} Plan`,
+      contactEmail.toLowerCase(),
+      process.env.SENDINBLUE_EMAIL || "noreply@lawmaster.ng",
+      process.env.DEFAULT_REPLY_TO || "support@lawmaster.ng",
+      htmlContent,
+    );
+    console.log("✅ Platform firm invitation sent to:", contactEmail);
+  } catch (emailError) {
+    console.error("❌ Failed to send platform firm invitation:", emailError.message);
+  }
+
+  res.status(201).json({
+    status: "success",
+    data: {
+      invitation: {
+        id: invitation._id,
+        email: invitation.email,
+        firmName,
+        targetPlan,
+        expiresAt: invitation.expiresAt,
+        status: invitation.status,
+      },
+      inviteUrl,
+    },
   });
 });
 

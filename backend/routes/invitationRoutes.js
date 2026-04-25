@@ -8,11 +8,12 @@ const router = express.Router();
 
 // Public routes (no auth required)
 router.get("/validate/:token", invitationController.validateInvitation);
+router.get("/validate-firm/:token", invitationController.validateNewFirmInvitation);
 router.post("/accept/:token", invitationController.acceptInvitation);
 
 // Protected routes (auth required)
 router.use(protect);
-router.use(restrictTo("admin", "super-admin"));
+router.use(restrictTo("admin", "super-admin", "lawyer", "hr"));
 router.use(auditMiddleware);
 
 router.post("/generate", invitationController.generateInvitation);

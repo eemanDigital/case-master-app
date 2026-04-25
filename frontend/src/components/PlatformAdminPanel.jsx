@@ -33,6 +33,7 @@ import {
   CheckCircleOutlined,
   CopyOutlined,
   UserOutlined,
+  MailOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import dayjs from "dayjs";
@@ -79,6 +80,10 @@ const PlatformAdminPanel = () => {
 
   const [inviteUrlModalVisible, setInviteUrlModalVisible] = useState(false);
   const [inviteUrl, setInviteUrl] = useState("");
+
+  // New firm invitation
+  const [inviteFirmModalVisible, setInviteFirmModalVisible] = useState(false);
+  const [inviteFirmForm] = Form.useForm();
 
   const [allFirmsForSelect, setAllFirmsForSelect] = useState([]);
 
@@ -274,6 +279,29 @@ const PlatformAdminPanel = () => {
       setInviteUrlModalVisible(true);
     } catch (error) {
       message.error(error.response?.data?.message || "Failed to send upgrade invitation");
+    }
+  };
+
+  // Invite a new law firm (platform admin invites firm to subscribe)
+  const handleInviteNewFirm = async (values) => {
+    try {
+      const response = await api.post("/platform/invite-firm", {
+        firmName: values.firmName,
+        contactEmail: values.contactEmail,
+        contactName: values.contactName,
+        phone: values.phone,
+        targetPlan: values.targetPlan || "PRO",
+        message: values.message,
+        expiresInDays: values.expiresInDays || 14,
+      });
+      message.success("Firm invitation sent successfully!");
+      setInviteFirmModalVisible(false);
+      inviteFirmForm.resetFields();
+      setInviteUrl(response.data.data.inviteUrl);
+      setInviteUrlModalVisible(true);
+      fetchStats();
+    } catch (error) {
+      message.error(error.response?.data?.message || "Failed to send firm invitation");
     }
   };
 
@@ -618,6 +646,56 @@ const PlatformAdminPanel = () => {
                   </Form.Item>
                   <Button type="primary" htmlType="submit" block>
                     Create Firm
+                  </Button>
+                </Form>
+              </Card>
+            ),
+          },
+          {
+            key: "invitefirm",
+            label: "Invite Firm",
+            children: (
+              <Card>
+                <Alert
+                  type="info"
+                  showIcon
+                  message="Invite a New Law Firm"
+                  description="Send an invitation to a law firm to join LawMaster. The firm will receive an email with a registration link and can sign up directly with the selected plan."
+                  style={{ marginBottom: 16 }}
+                />
+                <Form
+                  form={inviteFirmForm}
+                  layout="vertical"
+                  onFinish={handleInviteNewFirm}
+                  className="w-full">
+                  <Form.Item name="firmName" label="Law Firm Name" rules={[{ required: true, message: "Please enter firm name" }]}>
+                    <Input placeholder="Enter law firm name" />
+                  </Form.Item>
+                  <Form.Item name="contactName" label="Contact Person Name" rules={[{ required: true, message: "Please enter contact name" }]}>
+                    <Input placeholder="Enter contact person's name" />
+                  </Form.Item>
+                  <Form.Item name="contactEmail" label="Contact Email" rules={[{ required: true, type: "email", message: "Please enter a valid email" }]}>
+                    <Input placeholder="Enter contact email" />
+                  </Form.Item>
+                  <Form.Item name="phone" label="Phone Number">
+                    <Input placeholder="Phone number (optional)" />
+                  </Form.Item>
+                  <Form.Item name="targetPlan" label="Plan" initialValue="PRO" rules={[{ required: true }]}>
+                    <Select placeholder="Select plan">
+                      <Option value="FREE">FREE (Up to 3 users)</Option>
+                      <Option value="BASIC">BASIC (Up to 10 users)</Option>
+                      <Option value="PRO">PRO (Up to 25 users)</Option>
+                      <Option value="ENTERPRISE">ENTERPRISE (Unlimited users)</Option>
+                    </Select>
+                  </Form.Item>
+                  <Form.Item name="message" label="Personal Message">
+                    <Input.TextArea rows={3} placeholder="Optional message to include in the invitation..." />
+                  </Form.Item>
+                  <Form.Item name="expiresInDays" label="Expires In (days)" initialValue={14}>
+                    <Input type="number" placeholder="14" />
+                  </Form.Item>
+                  <Button type="primary" htmlType="submit" block icon={<MailOutlined />}>
+                    Send Invitation
                   </Button>
                 </Form>
               </Card>

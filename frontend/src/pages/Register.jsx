@@ -92,11 +92,22 @@ const Register = () => {
 
   const validateInvitation = async (token) => {
     try {
-      const response = await axios.get(
-        `${baseURL}/invitations/validate/${token}`,
-      );
-      setInvitationData(response.data.data);
-      message.success("Invitation validated!");
+      // First try to validate as new firm invitation (platform admin invited)
+      let response;
+      try {
+        response = await axios.get(
+          `${baseURL}/invitations/validate-firm/${token}`,
+        );
+        setInvitationData({ ...response.data.data, isNewFirmInvitation: true });
+        message.success("Firm invitation validated! Complete your registration.");
+      } catch (firmError) {
+        // If not a firm invitation, try as user invitation
+        response = await axios.get(
+          `${baseURL}/invitations/validate/${token}`,
+        );
+        setInvitationData({ ...response.data.data, isNewFirmInvitation: false });
+        message.success("Invitation validated!");
+      }
     } catch (error) {
       message.error(
         error.response?.data?.message || "Invalid or expired invitation",
@@ -109,18 +120,24 @@ const Register = () => {
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      const data = {
-        ...values,
-        ...(invitationData && { firmId: invitationData.firmId }),
-      };
-
-      const endpoint = token
-        ? `${baseURL}/invitations/accept/${token}`
-        : `${baseURL}/users/register-firm`;
-
-      await axios.post(endpoint, data);
-
-      message.success("Registration successful! Please login.");
+      // Check if this is a new firm invitation
+      if (invitationData?.isNewFirmInvitation) {
+        const data = {
+          ...values,
+          invitationToken: token,
+          targetPlan: invitationData.targetPlan || values.plan,
+        };
+        await axios.post(`${baseURL}/users/register-firm`, data);
+        message.success("Firm registered successfully! You can now log in.");
+      } else {
+        // Regular user invitation
+        const data = {
+          ...values,
+          ...(invitationData && { firmId: invitationData.firmId }),
+        };
+        await axios.post(`${baseURL}/invitations/accept/${token}`, data);
+        message.success("Registration successful! Please login.");
+      }
       navigate("/users/login");
     } catch (error) {
       message.error(error.response?.data?.message || "Registration failed");
@@ -177,8 +194,16 @@ const Register = () => {
         {/* Invitation Alert */}
         {invitationData && (
           <Alert
-            message={`You've been invited to join with ${invitationData.plan} plan`}
-            description={`You're registering as ${invitationData.role} with access for up to ${invitationData.maxUsers} users.`}
+            message={
+              invitationData.isNewFirmInvitation
+                ? `You're invited to join LawMaster with ${invitationData.targetPlan || invitationData.plan} plan`
+                : `You've been invited to join with ${invitationData.plan} plan`
+            }
+            description={
+              invitationData.isNewFirmInvitation
+                ? `Complete your firm registration to get started with up to ${invitationData.maxUsers} users.`
+                : `You're registering as ${invitationData.role} with access for up to ${invitationData.maxUsers} users.`
+            }
             type="info"
             showIcon
             className="mb-6"
@@ -188,11 +213,17 @@ const Register = () => {
         <Card className="bg-white border border-slate-200 shadow-xl rounded-2xl">
           <div className="text-center mb-6">
             <Title level={2} className="!mb-2 !text-slate-800">
-              {token ? "Accept Invitation" : "Start Free Trial"}
+              {token
+                ? invitationData?.isNewFirmInvitation
+                  ? "Register Your Firm"
+                  : "Accept Invitation"
+                : "Start Free Trial"}
             </Title>
             <Text className="text-slate-500">
               {token
-                ? "Complete your registration to join the firm"
+                ? invitationData?.isNewFirmInvitation
+                  ? "Complete your law firm registration"
+                  : "Complete your registration to join the firm"
                 : "Create your firm account in just a few steps"}
             </Text>
           </div>

@@ -28,7 +28,7 @@ const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
  * ===============================
  */
 exports.registerFirm = catchAsync(async (req, res, next) => {
-  const {
+  let {
     firmName,
     subdomain,
     phone,
@@ -41,13 +41,43 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
     email,
     password,
     passwordConfirm,
+    invitationToken,
+    targetPlan,
   } = req.body;
+
+  const Invitation = require("../models/invitationModel");
+
+  // Check for platform invitation token
+  let invitedPlan = targetPlan || "FREE";
+  let isInvitedUser = false;
+  
+  if (invitationToken) {
+    const platformInvite = await Invitation.validateNewFirmToken(invitationToken);
+    if (platformInvite) {
+      isInvitedUser = true;
+      invitedPlan = platformInvite.plan;
+      
+      // Pre-fill from invitation if matches
+      if (platformInvite.email === email?.toLowerCase()) {
+        firmName = firmName || platformInvite.firstName;
+      }
+    }
+  }
 
   const FREE_LIMITS = {
     users: 3,
     storageGB: 5,
     casesPerMonth: 10,
   };
+
+  // Apply plan limits
+  const planLimits = {
+    FREE: { users: 3, storageGB: 5, casesPerMonth: 10 },
+    BASIC: { users: 10, storageGB: 20, casesPerMonth: 50 },
+    PRO: { users: 25, storageGB: 100, casesPerMonth: 500 },
+    ENTERPRISE: { users: 999999, storageGB: 999999, casesPerMonth: 999999 },
+  };
+  const selectedPlanLimits = planLimits[invitedPlan] || planLimits.FREE;
 
   // 1) Validate required fields
   if (!firmName || !firstName || !lastName || !email || !password) {
@@ -90,7 +120,11 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
   }
 
   try {
-    // 6) Create Firm - always FREE plan with PENDING_APPROVAL status
+    // 6) Create Firm - with invited plan or FREE with PENDING_APPROVAL status
+    const initialPlan = isInvitedUser ? invitedPlan : "FREE";
+    const initialStatus = isInvitedUser ? "ACTIVE" : "PENDING_APPROVAL";
+    const trialDays = isInvitedUser ? 14 : 0;
+    
     const firmData = {
       name: firmName,
       subdomain: subdomain || null,
@@ -105,14 +139,14 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
         },
       },
       subscription: {
-        plan: "FREE",
-        status: "PENDING_APPROVAL",
-        trialEndsAt: null,
+        plan: initialPlan,
+        status: initialStatus,
+        trialEndsAt: trialDays > 0 ? new Date(Date.now() + trialDays * 24 * 60 * 60 * 1000) : null,
       },
       limits: {
-        users: FREE_LIMITS.users,
-        storageGB: FREE_LIMITS.storageGB,
-        casesPerMonth: FREE_LIMITS.casesPerMonth,
+        users: selectedPlanLimits.users,
+        storageGB: selectedPlanLimits.storageGB,
+        casesPerMonth: selectedPlanLimits.casesPerMonth,
       },
       usage: {
         currentUserCount: 0,
@@ -129,7 +163,7 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
     const ua = parser(req.headers["user-agent"]);
     const userAgent = [ua.ua];
 
-    // 8) Create super-admin user with pending status (cannot login until approved)
+    // 8) Create super-admin user - invited users are verified and active immediately
     const userData = {
       firmId,
       firstName,
@@ -143,9 +177,9 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
       address: address || "Not provided",
       phone: phone || "+234",
       gender: req.body.gender || "male",
-      isVerified: false,
-      isActive: false,
-      status: "pending",
+      isVerified: isInvitedUser, // Platform invited users are pre-verified
+      isActive: isInvitedUser, // Platform invited users are active immediately
+      status: isInvitedUser ? "active" : "pending",
       userAgent,
       adminDetails: {
         adminLevel: "firm",
@@ -217,61 +251,106 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
       console.error("Failed to notify platform admin:", notifyError);
     }
 
-    // 10) Send confirmation email to the registering firm
-    try {
-      await sendCustomEmail(
-        "Application Received - LawMaster",
-        email,
-        process.env.SENDINBLUE_EMAIL || "noreply@lawmaster.ng",
-        "noreply@lawmaster.ng",
-        `
-        <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #059669;">Thank You for Registering!</h2>
-          <p>Dear ${firstName},</p>
-          <p>We have received your application for <strong>${firmName}</strong>.</p>
-          <p>
-            Your application is currently under review. You will receive an 
-            email notification once your account has been activated.
-          </p>
-          <p>This process typically takes 1-2 business days.</p>
-          <div style="
-            background: #f0fdf4; 
-            border: 1px solid #bbf7d0; 
-            border-radius: 8px; 
-            padding: 16px; 
-            margin: 20px 0;
-          ">
-            <p style="margin: 0; color: #065f46;">
-              <strong>What happens next?</strong>
-            </p>
-            <ul style="color: #065f46; margin-top: 8px;">
-              <li>Our team will review your application</li>
-              <li>You will receive an approval email with your login details</li>
-              <li>You can then log in and start managing your firm</li>
-            </ul>
-          </div>
-          <p>
-            If you have any questions, please contact our support team at 
-            <a href="mailto:${process.env.PLATFORM_ADMIN_EMAIL || "support@lawmaster.ng"}">
-              ${process.env.PLATFORM_ADMIN_EMAIL || "support@lawmaster.ng"}
-            </a>
-          </p>
-          <p style="margin-top: 30px;">
-            Best regards,<br/>
-            <strong>The LawMaster Team</strong>
-          </p>
-        </div>
-        `,
+    // 9b) Mark platform invitation as accepted
+    if (isInvitedUser && invitationToken) {
+      await Invitation.updateOne(
+        { token: invitationToken },
+        { 
+          status: "accepted", 
+          acceptedAt: new Date(),
+          firmId: newFirm._id,
+        }
       );
+    }
+
+    // 10) Send confirmation/welcome email to the registering firm
+    try {
+      if (isInvitedUser) {
+        // Invited users get welcome email with immediate access
+        await sendCustomEmail(
+          `Welcome to LawMaster - ${invitedPlan} Plan Activated!`,
+          email,
+          process.env.SENDINBLUE_EMAIL || "noreply@lawmaster.ng",
+          process.env.DEFAULT_REPLY_TO || "support@lawmaster.ng",
+          `
+          <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">Welcome to LawMaster!</h2>
+            <p>Dear ${firstName},</p>
+            <p>Congratulations! Your firm <strong>${firmName}</strong> has been created with the <strong>${invitedPlan}</strong> plan.</p>
+            <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; margin: 20px 0;">
+              <p style="margin: 0; color: #065f46;"><strong>Your Plan Details:</strong></p>
+              <ul style="color: #065f46; margin-top: 8px;">
+                <li>Users: Up to ${selectedPlanLimits.users}</li>
+                <li>Storage: ${selectedPlanLimits.storageGB}GB</li>
+                <li>Cases/month: ${selectedPlanLimits.casesPerMonth}</li>
+                <li>Trial: 14 days free</li>
+              </ul>
+            </div>
+            <p>You can now log in and start managing your firm!</p>
+            <p>If you have any questions, contact us at support@lawmaster.ng</p>
+            <p style="margin-top: 30px;">Best regards,<br/><strong>The LawMaster Team</strong></p>
+          </div>
+          `,
+        );
+      } else {
+        // Non-invited users go through approval process
+        await sendCustomEmail(
+          "Application Received - LawMaster",
+          email,
+          process.env.SENDINBLUE_EMAIL || "noreply@lawmaster.ng",
+          "noreply@lawmaster.ng",
+          `
+          <div style="font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #059669;">Thank You for Registering!</h2>
+            <p>Dear ${firstName},</p>
+            <p>We have received your application for <strong>${firmName}</strong>.</p>
+            <p>
+              Your application is currently under review. You will receive an 
+              email notification once your account has been activated.
+            </p>
+            <p>This process typically takes 1-2 business days.</p>
+            <div style="
+              background: #f0fdf4; 
+              border: 1px solid #bbf7d0; 
+              border-radius: 8px; 
+              padding: 16px; 
+              margin: 20px 0;
+            ">
+              <p style="margin: 0; color: #065f46;">
+                <strong>What happens next?</strong>
+              </p>
+              <ul style="color: #065f46; margin-top: 8px;">
+                <li>Our team will review your application</li>
+                <li>You will receive an approval email with your login details</li>
+                <li>You can then log in and start managing your firm</li>
+              </ul>
+            </div>
+            <p>
+              If you have any questions, please contact our support team at 
+              <a href="mailto:${process.env.PLATFORM_ADMIN_EMAIL || "support@lawmaster.ng"}">
+                ${process.env.PLATFORM_ADMIN_EMAIL || "support@lawmaster.ng"}
+              </a>
+            </p>
+            <p style="margin-top: 30px;">
+              Best regards,<br/>
+              <strong>The LawMaster Team</strong>
+            </p>
+          </div>
+          `,
+        );
+      }
     } catch (confirmError) {
       console.error("Failed to send confirmation email:", confirmError);
     }
 
     // 11) Send success response
+    const successMessage = isInvitedUser 
+      ? `Your firm has been created with ${invitedPlan} plan. You can now log in!`
+      : "Your application has been submitted and is under review. You will be notified once approved.";
+    
     res.status(201).json({
       status: "success",
-      message:
-        "Your application has been submitted and is under review. You will be notified once approved.",
+      message: successMessage,
       data: {
         firm: {
           id: newFirm._id,
@@ -379,7 +458,7 @@ exports.register = catchAsync(async (req, res, next) => {
     gender: req.body.gender,
     dateOfBirth: req.body.dateOfBirth,
     position: req.body.position,
-    isVerified: false,
+    isVerified: true,
     isActive: req.body.isActive ?? true,
     userAgent,
     createdBy: req.user._id,
@@ -686,7 +765,7 @@ exports.register = catchAsync(async (req, res, next) => {
 
   res.status(201).json({
     status: "success",
-    message: "User registered successfully. Verification email sent.",
+    message: "User registered successfully.",
     data: {
       user: {
         id: newUser._id,

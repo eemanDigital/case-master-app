@@ -33,4 +33,7 @@ router.patch("/firms/:firmId/confirm-payment", ctrl.confirmPayment);
 router.post("/firms/:firmId/upgrade-invite", ctrl.sendUpgradeInvitation);
 router.delete("/invites/:inviteId/cancel", ctrl.cancelUpgradeInvitation);
 
+// New firm invitations
+router.post("/invite-firm", ctrl.inviteNewFirm);
+
 module.exports = router;

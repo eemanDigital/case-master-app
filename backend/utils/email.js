@@ -23,8 +23,20 @@ const sendViaBrevoAPI = async (
     throw new Error("BREVO_API_KEY is not configured in environment variables");
   }
 
+  // Validate sender email
+  let senderEmail = send_from;
+  let senderName = process.env.COMPANY_NAME || "LawMaster";
+  
+  // If using Gmail, extract just the email for Brevo
+  if (senderEmail.includes('@gmail.com')) {
+    senderEmail = send_from;
+  }
+
   const payload = {
-    sender: { email: send_from },
+    sender: { 
+      email: senderEmail,
+      name: senderName 
+    },
     to: Array.isArray(send_to)
       ? send_to.map((email) => ({ email }))
       : [{ email: send_to }],
@@ -33,8 +45,8 @@ const sendViaBrevoAPI = async (
     replyTo: reply_to ? { email: reply_to } : undefined,
   };
 
-  console.log("Sender email:", send_from);
-  console.log("Recipient email:", send_to);
+  console.log("Sender:", senderName, `<${senderEmail}>`);
+  console.log("Recipient:", send_to);
 
   // Add attachments if provided
   if (attachments.length > 0) {

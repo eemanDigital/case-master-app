@@ -501,6 +501,14 @@ const router = createBrowserRouter(
           }
         />
         <Route
+          path="register-firm"
+          element={
+            <Suspense fallback={<PageLoader />}>
+              <Register />
+            </Suspense>
+          }
+        />
+        <Route
           path="forgotpassword"
           element={
             <Suspense fallback={<PageLoader />}>
