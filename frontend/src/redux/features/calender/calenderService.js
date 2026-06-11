@@ -132,46 +132,6 @@ const calendarService = {
   },
 
   // ============================================
-  // CALENDAR SYNC OPERATIONS
-  // ============================================
-
-  /**
-   * Sync hearing to calendar
-   * @param {Object} syncData - Sync data containing litigationDetail, hearing, and matter
-   * @returns {Promise} Response data
-   */
-  syncHearingToCalendar: async (syncData) => {
-    return apiService.post("/calendar/sync/hearing", syncData);
-  },
-
-  /**
-   * Update next hearing date in calendar
-   * @param {Object} updateData - Update data containing litigationDetail and matter
-   * @returns {Promise} Response data
-   */
-  updateNextHearingDate: async (updateData) => {
-    return apiService.patch("/calendar/sync/next-hearing", updateData);
-  },
-
-  /**
-   * Mark past hearings as completed
-   * @param {Object} completionData - Completion data containing litigationDetail and matter
-   * @returns {Promise} Response data
-   */
-  completeHearings: async (completionData) => {
-    return apiService.patch("/calendar/sync/complete-hearings", completionData);
-  },
-
-  /**
-   * Create deadline from court order
-   * @param {Object} deadlineData - Deadline data containing litigationDetail, courtOrder, and matter
-   * @returns {Promise} Response data
-   */
-  createCourtOrderDeadline: async (deadlineData) => {
-    return apiService.post("/calendar/sync/court-order-deadline", deadlineData);
-  },
-
-  // ============================================
   // BLOCKED DATES
   // ============================================
 

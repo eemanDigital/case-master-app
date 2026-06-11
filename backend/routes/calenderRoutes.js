@@ -3,12 +3,6 @@ const express = require("express");
 const calendarController = require("../controllers/calenderController");
 const blockedDateController = require("../controllers/blockedDateController");
 const { protect, restrictTo } = require("../controllers/authController");
-const {
-  createCalendarEventFromHearing,
-  updateNextHearingInCalendar,
-  markHearingAsCompleted,
-  createDeadlineFromCourtOrder,
-} = require("../controllers/calenderSync");
 
 const router = express.Router();
 
@@ -78,122 +72,6 @@ router.patch("/events/:id/respond", calendarController.respondToInvitation);
 
 // Restore deleted event
 router.patch("/events/:id/restore", calendarController.restoreEvent);
-
-// ============================================
-// CALENDAR SYNC ENDPOINTS
-// Valid roles from userModel: "lawyer", "admin", "super-admin"
-// "secretary" and "hr" are excluded from sync operations
-// ============================================
-const syncRestriction = restrictTo("super-admin", "admin", "lawyer");
-
-// Sync hearing to calendar
-router.post("/sync/hearing", syncRestriction, async (req, res, next) => {
-  try {
-    const { litigationDetail, hearing, matter } = req.body;
-
-    if (!litigationDetail || !hearing || !matter) {
-      return res.status(400).json({
-        status: "fail",
-        message:
-          "Missing required fields: litigationDetail, hearing, and matter are required",
-      });
-    }
-
-    const event = await createCalendarEventFromHearing(
-      litigationDetail,
-      hearing,
-      matter,
-    );
-
-    res.status(201).json({
-      status: "success",
-      message: "Hearing synced to calendar successfully",
-      data: { event },
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Update next hearing date in calendar
-router.patch("/sync/next-hearing", syncRestriction, async (req, res, next) => {
-  try {
-    const { litigationDetail, matter } = req.body;
-
-    if (!litigationDetail || !matter) {
-      return res.status(400).json({
-        status: "fail",
-        message:
-          "Missing required fields: litigationDetail and matter are required",
-      });
-    }
-
-    await updateNextHearingInCalendar(litigationDetail, matter);
-
-    res.status(200).json({
-      status: "success",
-      message: "Next hearing date updated in calendar",
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
-// Mark past hearings as completed
-router.patch(
-  "/sync/complete-hearings",
-  syncRestriction,
-  async (req, res, next) => {
-    try {
-      const { litigationDetail, matter } = req.body;
-
-      if (!litigationDetail || !matter) {
-        return res.status(400).json({
-          status: "fail",
-          message:
-            "Missing required fields: litigationDetail and matter are required",
-        });
-      }
-
-      await markHearingAsCompleted(litigationDetail, matter);
-
-      res.status(200).json({
-        status: "success",
-        message: "Past hearings marked as completed",
-      });
-    } catch (error) {
-      next(error);
-    }
-  },
-);
-
-// Create deadline from court order
-router.post(
-  "/sync/court-order-deadline",
-  syncRestriction,
-  async (req, res, next) => {
-    try {
-      const { litigationDetail, courtOrder, matter } = req.body;
-
-      if (!litigationDetail || !courtOrder || !matter) {
-        return res.status(400).json({
-          status: "fail",
-          message:
-            "Missing required fields: litigationDetail, courtOrder, and matter are required",
-        });
-      }
-
-      await createDeadlineFromCourtOrder(litigationDetail, courtOrder, matter);
-
-      res.status(201).json({
-        status: "success",
-        message: "Court order deadline created successfully",
-      });
-    } catch (error) {
-      next(error);
-    }
-  },
-);
 
 // ============================================
 // BLOCKED DATES - PUBLIC ENDPOINTS
