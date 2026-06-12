@@ -17,7 +17,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { toast } from "react-toastify";
 import { getUsers } from "../redux/features/auth/authSlice";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
-import moment from "moment";
+import dayjs from "dayjs";
 import { FaCalendar } from "react-icons/fa";
 
 const { TextArea } = Input;
@@ -88,12 +88,12 @@ const EventForm = () => {
 
           // Function to format date and time
           const formatDateTime = (date) => {
-            return moment(date).format("MMMM D, YYYY [at] h:mm A");
+            return dayjs(date).format("MMMM D, YYYY [at] h:mm A");
           };
 
           // Function to format time only
           const formatTime = (date) => {
-            return moment(date).format("h:mm A");
+            return dayjs(date).format("h:mm A");
           };
 
           // Prepare email data

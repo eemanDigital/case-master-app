@@ -2,9 +2,10 @@ import { Link } from "react-router-dom";
 import { Table, Modal, Space, Button } from "antd";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { formatDate } from "../utils/formatDate";
-import CreatePaymentForm from "./CreatePaymentForm";
 import SearchBar from "../components/SearchBar";
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
+
+const CreatePaymentForm = lazy(() => import("./CreatePaymentForm"));
 
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useDispatch, useSelector } from "react-redux";
@@ -163,7 +164,9 @@ const PaymentList = () => {
             Payments
           </h1>
           <div className="flex flex-col md:flex-row justify-between items-center m-3">
-            <CreatePaymentForm />
+            <Suspense fallback={null}>
+              <CreatePaymentForm />
+            </Suspense>
             <SearchBar onSearch={handleSearchChange} />
           </div>
           <div className="overflow-x-auto">

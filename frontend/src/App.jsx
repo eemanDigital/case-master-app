@@ -266,8 +266,8 @@ const FeeProtectorPage = lazy(
 import CookieConsent from "./components/CookieConsent";
 
 // Public Pages
-import PublicPreviewPage from "./pages/public/PublicPreviewPage";
-import PublicDownloadPage from "./pages/public/PublicDownloadPage";
+const PublicPreviewPage = lazy(() => import("./pages/public/PublicPreviewPage"));
+const PublicDownloadPage = lazy(() => import("./pages/public/PublicDownloadPage"));
 
 // ============================================
 // AXIOS CONFIGURATION

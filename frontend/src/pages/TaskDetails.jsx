@@ -59,7 +59,7 @@ import {
 import { useDataFetch } from "../hooks/useDataFetch";
 import { formatDate } from "../utils/formatDate";
 import TaskResponseForm from "../components/TaskResponseForm";
-import moment from "moment";
+import dayjs from "dayjs";
 import TaskResponse from "../components/TaskResponse";
 import { useSelector } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
@@ -264,9 +264,9 @@ const TaskDetails = () => {
 
   const timeMetrics = useMemo(() => {
     if (!task) return {};
-    const dueDate = moment(task.dueDate);
-    const startDate = moment(task.startDate || task.dateCreated);
-    const today = moment();
+    const dueDate = dayjs(task.dueDate);
+    const startDate = dayjs(task.startDate || task.dateCreated);
+    const today = dayjs();
     const daysRemaining = dueDate.diff(today, "days");
     const isOverdue = daysRemaining < 0;
     const daysUntilDue = Math.abs(daysRemaining);

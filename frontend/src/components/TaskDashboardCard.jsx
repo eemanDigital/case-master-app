@@ -1,6 +1,8 @@
 import PropTypes from "prop-types";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import moment from "moment";
+import dayjs from "dayjs";
+import duration from "dayjs/plugin/duration";
+dayjs.extend(duration);
 import {
   Card,
   Avatar,
@@ -110,9 +112,9 @@ const TaskDashboardCard = ({ tasks, userId, onTaskUpdate }) => {
       const updated = {};
       tasks?.forEach((task) => {
         if (!task?.dueDate) return;
-        const dueDate = moment(task.dueDate);
-        const now = moment();
-        const duration = moment.duration(dueDate.diff(now));
+        const dueDate = dayjs(task.dueDate);
+        const now = dayjs();
+        const duration = dayjs.duration(dueDate.diff(now));
         if (duration.asMilliseconds() < 0) {
           updated[task._id] = { text: "Overdue", isUrgent: true };
         } else {
@@ -168,9 +170,9 @@ const TaskDashboardCard = ({ tasks, userId, onTaskUpdate }) => {
       ).length;
       const overdue = taskList.filter((t) => {
         if (!t?.dueDate) return false;
-        const dueDate = moment(t.dueDate);
+        const dueDate = dayjs(t.dueDate);
         return (
-          dueDate.isBefore(moment()) &&
+          dueDate.isBefore(dayjs()) &&
           !(t.taskResponse?.[0]?.completed || t.status === "completed")
         );
       }).length;
@@ -629,7 +631,7 @@ const TaskDashboardCard = ({ tasks, userId, onTaskUpdate }) => {
                             {task.dueDate && (
                               <span className="flex items-center gap-1 text-xs text-gray-500">
                                 <CalendarOutlined className="w-3 h-3" />
-                                {moment(task.dueDate).format("MMM D, YYYY")}
+                                {dayjs(task.dueDate).format("MMM D, YYYY")}
                               </span>
                             )}
                             {isAssignedByMe && task.assignees?.length > 1 && (

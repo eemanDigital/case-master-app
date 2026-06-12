@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { Table, Modal, Space, Button, Tag, Progress, Tooltip } from "antd";
 import { useDispatch, useSelector } from "react-redux";
@@ -10,7 +10,7 @@ import {
   DeleteOutlined,
   FilePdfOutlined,
 } from "@ant-design/icons";
-import moment from "moment";
+import dayjs from "dayjs";
 import ButtonWithIcon from "../components/ButtonWithIcon";
 import { formatDate } from "../utils/formatDate";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
@@ -19,7 +19,7 @@ import SearchBar from "../components/SearchBar";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
-import PaymentDashboard from "../components/PaymentDashboard";
+const PaymentDashboard = lazy(() => import("../components/PaymentDashboard"));
 
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
@@ -115,8 +115,8 @@ const InvoiceList = () => {
   }, [isError, isSuccess, message, fetchData]);
 
   const getStatusConfig = (status, dueDate, balance) => {
-    const today = moment();
-    const isOverdue = moment(dueDate).isBefore(today) && balance > 0;
+    const today = dayjs();
+    const isOverdue = dayjs(dueDate).isBefore(today) && balance > 0;
 
     switch (status?.toLowerCase()) {
       case "paid":
@@ -206,14 +206,14 @@ const InvoiceList = () => {
       key: "dueDate",
       render: (dueDate, record) => {
         const isPastDue =
-          moment(dueDate).isBefore(moment()) && record.balance > 0;
+          dayjs(dueDate).isBefore(dayjs()) && record.balance > 0;
         return (
           <div className={isPastDue ? "text-red-600 font-medium" : ""}>
             {formatDate(dueDate)}
           </div>
         );
       },
-      sorter: (a, b) => moment(a.dueDate) - moment(b.dueDate),
+      sorter: (a, b) => dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf(),
     },
     {
       title: "Total",
@@ -393,7 +393,9 @@ const InvoiceList = () => {
             </div>
           </div>
 
-          <PaymentDashboard />
+          <Suspense fallback={<LoadingSpinner />}>
+            <PaymentDashboard />
+          </Suspense>
 
           <div className="bg-white rounded-lg shadow-sm border">
             <Table

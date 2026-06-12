@@ -32,7 +32,7 @@ import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { getUsers } from "../redux/features/auth/authSlice";
 import { formatDate } from "../utils/formatDate";
 import { toast } from "react-toastify";
-import moment from "moment";
+import dayjs from "dayjs";
 import GoBackButton from "../components/GoBackButton";
 import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
 import { useParams } from "react-router-dom";
@@ -101,8 +101,8 @@ const EditTaskForm = () => {
           customCaseReference: formData.customCaseReference,
         }),
         // Dates
-        ...(formData.startDate && { startDate: moment(formData.startDate) }),
-        ...(formData.dueDate && { dueDate: moment(formData.dueDate) }),
+        ...(formData.startDate && { startDate: dayjs(formData.startDate) }),
+        ...(formData.dueDate && { dueDate: dayjs(formData.dueDate) }),
         // Other fields
         estimatedEffort: formData.estimatedEffort || 0,
         tags: formData.tags || [],
@@ -113,7 +113,7 @@ const EditTaskForm = () => {
         ...(formData.recurrence && {
           recurrencePattern: formData.recurrence.pattern || "none",
           ...(formData.recurrence.endAfter && {
-            recurrenceEndDate: moment(formData.recurrence.endAfter),
+            recurrenceEndDate: dayjs(formData.recurrence.endAfter),
           }),
           recurrenceOccurrences: formData.recurrence.occurrences,
         }),

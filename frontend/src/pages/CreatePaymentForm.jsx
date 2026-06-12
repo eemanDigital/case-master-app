@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
-import moment from "moment-timezone";
+import dayjs from "dayjs";
 import {
   Button,
   Form,
@@ -265,14 +265,14 @@ const CreatePaymentForm = ({
                 rules={requiredRule}
                 initialValue={
                   formData?.paymentDate
-                    ? moment(formData.paymentDate).local()
-                    : moment()
+                    ? dayjs(formData.paymentDate)
+                    : dayjs()
                 }>
                 <DatePicker
                   className="w-full"
                   format="YYYY-MM-DD"
                   disabledDate={(current) =>
-                    current && current > moment().endOf("day")
+                    current && current > dayjs().endOf("day")
                   }
                 />
               </Form.Item>

@@ -19,7 +19,7 @@ import {
 } from "@ant-design/icons";
 import { useDataFetch } from "../hooks/useDataFetch";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
-import moment from "moment";
+import dayjs from "dayjs";
 
 const { Option } = Select;
 const { TextArea } = Input;
@@ -301,7 +301,7 @@ const TaskQuickActions = ({ task, onUpdate, canModifyTask }) => {
               },
               {
                 validator: (_, value) => {
-                  if (value && value.isBefore(moment())) {
+                  if (value && value.isBefore(dayjs())) {
                     return Promise.reject("Due date must be in the future");
                   }
                   return Promise.resolve();
@@ -313,7 +313,7 @@ const TaskQuickActions = ({ task, onUpdate, canModifyTask }) => {
               showTime
               format="YYYY-MM-DD HH:mm"
               disabledDate={(current) =>
-                current && current < moment().startOf("day")
+                current && current < dayjs().startOf("day")
               }
             />
           </Form.Item>

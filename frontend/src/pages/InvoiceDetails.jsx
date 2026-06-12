@@ -1,5 +1,5 @@
 // export default InvoiceDetails;
-import { useEffect, useState } from "react";
+import { useEffect, useState, lazy, Suspense } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   Button,
@@ -43,7 +43,7 @@ import PageErrorAlert from "../components/PageErrorAlert";
 import GoBackButton from "../components/GoBackButton";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import { useDownloadPdfHandler } from "../hooks/useDownloadPdfHandler";
-import CreatePaymentForm from "./CreatePaymentForm";
+const CreatePaymentForm = lazy(() => import("./CreatePaymentForm"));
 import { useSelector } from "react-redux";
 import { toast } from "react-toastify";
 
@@ -300,18 +300,21 @@ const InvoiceDetails = () => {
               footer={null}
               width={800}
               title="Record Payment">
-              <CreatePaymentForm
-                invoiceId={invoice?._id}
-                clientId={invoice?.client?._id}
-                matterId={invoice?.matter?._id}
-                otherActivity={invoice?.otherActivity}
-                invoiceNumber={invoice?.invoiceNumber}
-                currentBalance={invoice?.balance}
-                onSuccess={() => {
-                  setPaymentModalVisible(false);
-                  refreshInvoiceData();
-                }}
-                onCancel={() => setPaymentModalVisible(false)}
+              <Suspense fallback={null}>
+                <CreatePaymentForm
+                  invoiceId={invoice?._id}
+                  clientId={invoice?.client?._id}
+                  matterId={invoice?.matter?._id}
+                  otherActivity={invoice?.otherActivity}
+                  invoiceNumber={invoice?.invoiceNumber}
+                  currentBalance={invoice?.balance}
+                  onSuccess={() => {
+                    setPaymentModalVisible(false);
+                    refreshInvoiceData();
+                  }}
+                  onCancel={() => setPaymentModalVisible(false)}
+                />
+              </Suspense>
               />
             </Modal>
           </div>

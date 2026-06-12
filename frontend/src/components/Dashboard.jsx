@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { Card, Skeleton, Alert } from "antd";
 import { useAdminHook } from "../hooks/useAdminHook";
 import {
@@ -28,11 +28,13 @@ import { fetchUpcomingHearings } from "../redux/features/litigation/litigationSl
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
 
-const StatCard = ({ icon: Icon, value, label, href, gradient, accent }) => (
+const now = dayjs();
+
+const StatCard = ({ icon: Icon, value, label, href, gradient }) => (
   <Link to={href} className="block h-full">
     <Card
       className={`h-full bg-gradient-to-br ${gradient} border-0 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer overflow-hidden relative`}
-      bodyStyle={{ height: '100%' }}>
+      bodyStyle={{ height: "100%" }}>
       <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl" />
       <div className="flex items-center justify-between h-full relative z-10">
         <div className="text-white">
@@ -47,9 +49,30 @@ const StatCard = ({ icon: Icon, value, label, href, gradient, accent }) => (
   </Link>
 );
 
-const CompactHearingRow = ({ hearing }) => {
-  const date = hearing.nextHearingDate || hearing.date;
-  const isToday = dayjs(date).isSame(dayjs(), "day");
+const CardHeader = ({ icon, title, viewAllTo }) => (
+  <div className="flex items-center justify-between">
+    <span className="text-base font-bold text-content-primary flex items-center gap-2">
+      {icon}
+      {title}
+    </span>
+    <Link
+      to={viewAllTo}
+      className="text-xs text-primary-600 font-semibold hover:text-primary-700 flex items-center gap-1">
+      View all <RightOutlined />
+    </Link>
+  </div>
+);
+
+const EmptyState = ({ icon: Icon, text }) => (
+  <div className="py-8 text-center text-gray-400">
+    <Icon className="text-3xl mb-3 block mx-auto" />
+    <p className="text-sm font-medium">{text}</p>
+  </div>
+);
+
+const CompactHearingRow = React.memo(({ hearing }) => {
+  const d = dayjs(hearing.nextHearingDate || hearing.date);
+  const isToday = d.isSame(now, "day");
   return (
     <Link
       to={`/dashboard/matters/litigation/${hearing.matterId}`}
@@ -65,12 +88,8 @@ const CompactHearingRow = ({ hearing }) => {
               ? "bg-gradient-to-br from-emerald-500 to-teal-500 text-white"
               : "bg-gray-100 text-gray-600"
           }`}>
-          <span className="text-sm font-bold leading-none">
-            {dayjs(date).format("D")}
-          </span>
-          <span className="text-[8px] font-semibold uppercase">
-            {dayjs(date).format("MMM")}
-          </span>
+          <span className="text-sm font-bold leading-none">{d.format("D")}</span>
+          <span className="text-[8px] font-semibold uppercase">{d.format("MMM")}</span>
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-gray-900 truncate">
@@ -84,16 +103,15 @@ const CompactHearingRow = ({ hearing }) => {
           className={`text-xs font-medium whitespace-nowrap ${
             isToday ? "text-emerald-600 font-bold" : "text-gray-400"
           }`}>
-          {isToday ? "TODAY" : dayjs(date).format("MMM D")}
+          {isToday ? "TODAY" : d.format("MMM D")}
         </span>
       </div>
     </Link>
   );
-};
+});
 
-const CompactTaskRow = ({ task }) => {
-  const overdue =
-    task.dueDate && dayjs(task.dueDate).isBefore(dayjs(), "day");
+const CompactTaskRow = React.memo(({ task }) => {
+  const overdue = task.dueDate && dayjs(task.dueDate).isBefore(now, "day");
   return (
     <Link
       to={`/dashboard/tasks/${task._id}/details`}
@@ -133,34 +151,45 @@ const CompactTaskRow = ({ task }) => {
       </div>
     </Link>
   );
-};
+});
+
+const MatterStatusBadge = React.memo(({ status }) => {
+  const colorMap = {
+    active: "bg-emerald-100 text-emerald-700",
+    pending: "bg-amber-100 text-amber-700",
+    completed: "bg-blue-100 text-blue-700",
+  };
+  return (
+    <span
+      className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
+        colorMap[status] || "bg-gray-100 text-gray-600"
+      }`}>
+      {status}
+    </span>
+  );
+});
 
 const Dashboard = () => {
   useRedirectLogoutUser("/users/login");
   const dispatch = useDispatch();
 
   const { user } = useSelector((state) => state.auth);
-  const { stats: matterStats, isLoading: matterLoading } = useSelector(
-    (state) => state.matter,
-  );
-  const { myMattersSummary } = useSelector((state) => state.matter);
+  const {
+    stats: matterStats,
+    isLoading: matterLoading,
+    myMattersSummary,
+  } = useSelector((state) => state.matter);
 
-  const taskState = useSelector((state) => state.task);
-  const tasksData = taskState?.entities
-    ? Object.values(taskState.entities)
-    : [];
+  const taskEntities = useSelector((state) => state.task?.entities);
+  const litigationState = useSelector((state) => state.litigation);
 
-  const hearings = useSelector(
-    (state) => state.litigation?.upcomingHearings ?? [],
-  );
-  const hearingsLoading = useSelector(
-    (state) => state.litigation?.statsLoading ?? false,
-  );
+  const hearings = litigationState?.upcomingHearings ?? [];
+  const hearingsLoading = litigationState?.statsLoading ?? false;
 
   const { isStaff, isClient, isVerified } = useAdminHook();
 
   const greeting = useMemo(() => {
-    const hour = new Date().getHours();
+    const hour = now.hour();
     if (hour < 12) return "Good morning";
     if (hour < 18) return "Good afternoon";
     return "Good evening";
@@ -175,11 +204,22 @@ const Dashboard = () => {
     }
   }, [dispatch, isClient, matterStats, myMattersSummary]);
 
+  const tasksData = useMemo(
+    () => (taskEntities ? Object.values(taskEntities) : []),
+    [taskEntities],
+  );
+
   const tasksForMe = useMemo(
+    () => tasksData.filter((t) => t.status !== "completed").slice(0, 5),
+    [tasksData],
+  );
+
+  const overdueCount = useMemo(
     () =>
-      tasksData
-        .filter((t) => t.status !== "completed")
-        .slice(0, 5),
+      tasksData.filter(
+        (t) =>
+          t.status !== "completed" && t.dueDate && dayjs(t.dueDate).isBefore(now, "day"),
+      ).length,
     [tasksData],
   );
 
@@ -188,7 +228,7 @@ const Dashboard = () => {
       (Array.isArray(hearings) ? hearings : [])
         .filter((h) => {
           const d = h.nextHearingDate || h.date;
-          return d && dayjs(d).isAfter(dayjs().subtract(1, "day"));
+          return d && dayjs(d).isAfter(now.subtract(1, "day"));
         })
         .slice(0, 5),
     [hearings],
@@ -253,15 +293,7 @@ const Dashboard = () => {
                     />
                     <StatCard
                       icon={FaExclamationTriangle}
-                      value={
-                        tasksData.filter((t) => {
-                          if (t.status === "completed") return false;
-                          return (
-                            t.dueDate &&
-                            dayjs(t.dueDate).isBefore(dayjs(), "day")
-                          );
-                        }).length
-                      }
+                      value={overdueCount}
                       label="Overdue Items"
                       href="/dashboard/tasks"
                       gradient="from-red-600 to-red-700"
@@ -274,17 +306,11 @@ const Dashboard = () => {
                     className="shadow-lg border-border rounded-2xl"
                     bordered={false}
                     title={
-                      <div className="flex items-center justify-between">
-                        <span className="text-base font-bold text-content-primary flex items-center gap-2">
-                          <CalendarOutlined className="text-primary-500" />
-                          Upcoming Hearings
-                        </span>
-                        <Link
-                          to="/dashboard/calendar"
-                          className="text-xs text-primary-600 font-semibold hover:text-primary-700 flex items-center gap-1">
-                          View all <RightOutlined />
-                        </Link>
-                      </div>
+                      <CardHeader
+                        icon={<CalendarOutlined className="text-primary-500" />}
+                        title="Upcoming Hearings"
+                        viewAllTo="/dashboard/calendar"
+                      />
                     }>
                     {hearingsLoading ? (
                       <Skeleton active paragraph={{ rows: 5 }} />
@@ -295,10 +321,7 @@ const Dashboard = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="py-8 text-center text-gray-400">
-                        <CalendarOutlined className="text-3xl mb-3 block" />
-                        <p className="text-sm font-medium">No upcoming hearings</p>
-                      </div>
+                      <EmptyState icon={CalendarOutlined} text="No upcoming hearings" />
                     )}
                   </Card>
 
@@ -306,19 +329,13 @@ const Dashboard = () => {
                     className="shadow-lg border-border rounded-2xl"
                     bordered={false}
                     title={
-                      <div className="flex items-center justify-between">
-                        <span className="text-base font-bold text-content-primary flex items-center gap-2">
-                          <ClockCircleOutlined className="text-warning-500" />
-                          My Tasks
-                        </span>
-                        <Link
-                          to="/dashboard/tasks"
-                          className="text-xs text-primary-600 font-semibold hover:text-primary-700 flex items-center gap-1">
-                          View all <RightOutlined />
-                        </Link>
-                      </div>
+                      <CardHeader
+                        icon={<ClockCircleOutlined className="text-warning-500" />}
+                        title="My Tasks"
+                        viewAllTo="/dashboard/tasks"
+                      />
                     }>
-                    {taskState.loading ? (
+                    {matterLoading ? (
                       <Skeleton active paragraph={{ rows: 5 }} />
                     ) : tasksForMe.length > 0 ? (
                       <div className="space-y-2">
@@ -327,10 +344,7 @@ const Dashboard = () => {
                         ))}
                       </div>
                     ) : (
-                      <div className="py-8 text-center text-gray-400">
-                        <ClockCircleOutlined className="text-3xl mb-3 block" />
-                        <p className="text-sm font-medium">No pending tasks</p>
-                      </div>
+                      <EmptyState icon={ClockCircleOutlined} text="No pending tasks" />
                     )}
                   </Card>
                 </div>
@@ -339,17 +353,11 @@ const Dashboard = () => {
                   className="shadow-lg border-border rounded-2xl mb-8"
                   bordered={false}
                   title={
-                    <div className="flex items-center justify-between">
-                      <span className="text-base font-bold text-content-primary flex items-center gap-2">
-                        <FaBriefcase className="text-primary-500" />
-                        Recent Matters
-                      </span>
-                      <Link
-                        to="/dashboard/matters"
-                        className="text-xs text-primary-600 font-semibold hover:text-primary-700 flex items-center gap-1">
-                        View all <RightOutlined />
-                      </Link>
-                    </div>
+                    <CardHeader
+                      icon={<FaBriefcase className="text-primary-500" />}
+                      title="Recent Matters"
+                      viewAllTo="/dashboard/matters"
+                    />
                   }>
                   {recentMatters.length > 0 ? (
                     <div className="divide-y divide-gray-100">
@@ -367,28 +375,14 @@ const Dashboard = () => {
                             </p>
                           </div>
                           <div className="flex items-center gap-3 flex-shrink-0">
-                            <span
-                              className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${
-                                m.status === "active"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : m.status === "pending"
-                                    ? "bg-amber-100 text-amber-700"
-                                    : m.status === "completed"
-                                      ? "bg-blue-100 text-blue-700"
-                                      : "bg-gray-100 text-gray-600"
-                              }`}>
-                              {m.status}
-                            </span>
+                            <MatterStatusBadge status={m.status} />
                             <RightOutlined className="text-gray-300 text-xs" />
                           </div>
                         </Link>
                       ))}
                     </div>
                   ) : (
-                    <div className="py-8 text-center text-gray-400">
-                      <FaBriefcase className="text-3xl mb-3 mx-auto" />
-                      <p className="text-sm font-medium">No matters assigned</p>
-                    </div>
+                    <EmptyState icon={FaBriefcase} text="No matters assigned" />
                   )}
                 </Card>
               </>

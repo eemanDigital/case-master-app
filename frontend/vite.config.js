@@ -30,6 +30,18 @@ export default defineConfig({
   },
   build: {
     outDir: "dist",
-    sourcemap: true,
+    sourcemap: false,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+          antd: ["antd", "@ant-design/icons"],
+          icons: ["react-icons"],
+          date: ["dayjs"],
+          charts: ["recharts"],
+          redux: ["react-redux", "@reduxjs/toolkit"],
+        },
+      },
+    },
   },
 });

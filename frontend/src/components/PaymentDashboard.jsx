@@ -56,7 +56,7 @@ import {
   Area,
 } from "recharts";
 import { usePaymentStats } from "../hooks/usePaymentStats";
-import moment from "moment";
+import dayjs from "dayjs";
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -761,7 +761,7 @@ const PaymentDashboard = () => {
                             Last Payment
                           </Text>
                           <Text strong className="text-sm block">
-                            {moment(client.lastPayment).format("MMM DD")}
+                            {dayjs(client.lastPayment).format("MMM DD")}
                           </Text>
                         </div>
                       </div>
@@ -828,7 +828,7 @@ const PaymentDashboard = () => {
                           {payment.invoice?.title}
                         </Text>
                         <Text className="text-xs text-gray-400 block mt-1">
-                          {moment(payment.paymentDate).format(
+                          {dayjs(payment.paymentDate).format(
                             "MMM DD, YYYY HH:mm",
                           )}
                         </Text>
@@ -880,7 +880,7 @@ const PaymentDashboard = () => {
                           {invoice.title}
                         </Text>
                         <Text className="text-xs text-gray-400 block mt-1">
-                          Due: {moment(invoice.dueDate).format("MMM DD, YYYY")}
+                          Due: {dayjs(invoice.dueDate).format("MMM DD, YYYY")}
                         </Text>
                       </div>
                       <div className="text-right flex-shrink-0">
@@ -1001,7 +1001,7 @@ const PaymentDashboard = () => {
             </Text>
             <Text strong className="text-sm">
               {stats?.metadata?.generatedAt
-                ? moment(stats.metadata.generatedAt).format("MMM DD, h:mm A")
+                ? dayjs(stats.metadata.generatedAt).format("MMM DD, h:mm A")
                 : "Loading..."}
             </Text>
           </div>

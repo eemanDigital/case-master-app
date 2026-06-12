@@ -1,6 +1,8 @@
 import PropTypes from "prop-types";
 import { Input, Form, Button, DatePicker } from "antd";
-import moment from "moment"; // Assuming you're using moment.js for date parsing
+import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat";
+dayjs.extend(customParseFormat);
 
 const PaymentFilterForm = ({ setYear, setMonth, removeMonthInput }) => {
   const handleFilterSubmit = (values) => {
@@ -8,7 +10,7 @@ const PaymentFilterForm = ({ setYear, setMonth, removeMonthInput }) => {
     // Example backend date string: "30 Jun 2023 23:00:00 GMT"
     // Assuming `values.year` is the date string from the backend
     let backendDateString = decodeURIComponent(values.year); // Decode if URL encoded
-    let yearFromBackendDate = moment(
+    let yearFromBackendDate = dayjs(
       backendDateString,
       "DD MMM YYYY HH:mm:ss Z"
     ).year();

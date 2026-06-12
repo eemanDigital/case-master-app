@@ -43,8 +43,10 @@ import {
   BankOutlined,
   MessageOutlined,
 } from "@ant-design/icons";
-import SideBar from "./SideBar.jsx";
+import { lazy, Suspense } from "react";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser.jsx";
+
+const SideBar = lazy(() => import("./SideBar.jsx"));
 import { useTheme } from "../providers/ThemeProvider";
 import { useAdminHook } from "../hooks/useAdminHook";
 import BreadcrumbNavigation from "../components/navigation/BreadcrumbNavigation";
@@ -561,7 +563,7 @@ const DashboardLayout = () => {
         <div
           className="fixed left-0 top-0 h-screen z-50 transition-all duration-300 ease-in-out"
           style={{ width: sidebarWidth }}>
-          <SideBar isMobile={false} collapsed={collapsed} />
+          <Suspense fallback={null}><SideBar isMobile={false} collapsed={collapsed} /></Suspense>
         </div>
       )}
 
@@ -728,11 +730,13 @@ const DashboardLayout = () => {
             body: { padding: 0 },
           }}
           className={isDarkMode ? "dark" : ""}>
-          <SideBar
-            isMobile={true}
-            closeDrawer={() => setDrawerVisible(false)}
-            collapsed={false}
-          />
+          <Suspense fallback={null}>
+            <SideBar
+              isMobile={true}
+              closeDrawer={() => setDrawerVisible(false)}
+              collapsed={false}
+            />
+          </Suspense>
         </Drawer>
       )}
     </Layout>

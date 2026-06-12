@@ -18,7 +18,7 @@ import {
 } from "antd";
 import { invoiceOptions } from "../data/options";
 import useMattersSelectOptions from "../hooks/useMattersSelectOptions";
-import moment from "moment";
+import dayjs from "dayjs";
 import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
 import useHandleSubmit from "../hooks/useHandleSubmit";
 import GoBackButton from "../components/GoBackButton";
@@ -48,12 +48,12 @@ const UpdateInvoice = () => {
 
       const servicesWithDates = formData?.services?.map((service) => ({
         ...service,
-        date: service.date && moment(service.date).isValid() ? moment(service.date) : null,
+        date: service.date && dayjs(service.date).isValid() ? dayjs(service.date) : null,
       })) || [];
 
       const expensesWithDates = formData?.expenses?.map((expense) => ({
         ...expense,
-        date: expense.date && moment(expense.date).isValid() ? moment(expense.date) : null,
+        date: expense.date && dayjs(expense.date).isValid() ? dayjs(expense.date) : null,
       })) || [];
 
       form.setFieldsValue({
@@ -63,8 +63,8 @@ const UpdateInvoice = () => {
         client: formData?.client,
         title: formData?.title,
         description: formData?.description,
-        billingPeriodStart: formData?.billingPeriodStart && moment(formData.billingPeriodStart).isValid() ? moment(formData.billingPeriodStart) : null,
-        billingPeriodEnd: formData?.billingPeriodEnd && moment(formData.billingPeriodEnd).isValid() ? moment(formData.billingPeriodEnd) : null,
+        billingPeriodStart: formData?.billingPeriodStart && dayjs(formData.billingPeriodStart).isValid() ? dayjs(formData.billingPeriodStart) : null,
+        billingPeriodEnd: formData?.billingPeriodEnd && dayjs(formData.billingPeriodEnd).isValid() ? dayjs(formData.billingPeriodEnd) : null,
         services: servicesWithDates,
         expenses: expensesWithDates,
         discountType: formData?.discountType || "none",
@@ -73,9 +73,9 @@ const UpdateInvoice = () => {
         taxRate: formData?.taxRate,
         previousBalance: formData?.previousBalance,
         status: formData?.status,
-        dueDate: formData?.dueDate && moment(formData.dueDate).isValid() ? moment(formData.dueDate) : null,
+        dueDate: formData?.dueDate && dayjs(formData.dueDate).isValid() ? dayjs(formData.dueDate) : null,
         paymentTerms: formData?.paymentTerms,
-        issueDate: formData?.issueDate && moment(formData.issueDate).isValid() ? moment(formData.issueDate) : null,
+        issueDate: formData?.issueDate && dayjs(formData.issueDate).isValid() ? dayjs(formData.issueDate) : null,
         notes: formData?.notes,
       });
     }
