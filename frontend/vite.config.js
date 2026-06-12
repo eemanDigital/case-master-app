@@ -2,7 +2,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
-// https://vitejs.dev/config/
 export default defineConfig({
   base: "/",
   plugins: [react()],
@@ -11,11 +10,6 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
     extensions: [".mjs", ".js", ".jsx", ".json", ".node"],
-  },
-  css: {
-    preprocessorOptions: {
-      // Configure CSS modules if needed
-    },
   },
   server: {
     port: 5173,
@@ -35,10 +29,6 @@ export default defineConfig({
       output: {
         manualChunks: {
           vendor: ["react", "react-dom", "react-router-dom"],
-          antd: ["antd", "@ant-design/icons"],
-          icons: ["react-icons"],
-          date: ["dayjs"],
-          charts: ["recharts"],
           redux: ["react-redux", "@reduxjs/toolkit"],
         },
       },
