@@ -25,6 +25,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   UserOutlined,
+  TeamOutlined,
   CalendarOutlined,
   FilterOutlined,
   AppstoreOutlined,
@@ -46,6 +47,7 @@ import {
 import {
   getMatters,
   getMatterStats,
+  getAllMattersWithOfficers,
   deleteMatter,
   resetMatterState,
   bulkUpdateMatters,
@@ -59,7 +61,6 @@ import {
 } from "../../redux/features/matter/matterSlice";
 
 import DashBoardDataCount from "../DashBoardDataCount";
-import MyMattersDashboard from "../MyMattersDashboard";
 import { useTheme } from "../../providers/ThemeProvider";
 
 const { Title, Text } = Typography;
@@ -79,6 +80,7 @@ const MatterListView = () => {
     selectedMatters,
     bulkLoading,
     stats: matterStats,
+    officerStatistics,
   } = useSelector((state) => state.matter);
   const matterStatsLoading = useSelector((state) => state.matter.isLoading);
 
@@ -92,6 +94,7 @@ const MatterListView = () => {
   useEffect(() => {
     dispatch(getMatters());
     dispatch(getMatterStats());
+    dispatch(getAllMattersWithOfficers({ limit: 100 }));
     return () => {
       dispatch(resetMatterState());
     };
@@ -454,6 +457,34 @@ const MatterListView = () => {
         ),
     },
     {
+      title: "Account Officer",
+      dataIndex: "accountOfficer",
+      key: "accountOfficer",
+      width: 160,
+      responsive: ["lg"],
+      render: (officers) => (
+        <div className="flex flex-wrap gap-1">
+          {officers && officers.length > 0 ? (
+            officers.map((officer, idx) => (
+              <Tooltip
+                key={idx}
+                title={`${officer.firstName} ${officer.lastName}${officer.role ? ` - ${officer.role}` : ""}`}
+              >
+                <Avatar
+                  src={officer.photo}
+                  size="small"
+                  icon={<TeamOutlined />}
+                  className="cursor-pointer flex-shrink-0"
+                />
+              </Tooltip>
+            ))
+          ) : (
+            <Tag color="default" className="text-xs">Unassigned</Tag>
+          )}
+        </div>
+      ),
+    },
+    {
       title: "Type",
       dataIndex: "matterType",
       key: "matterType",
@@ -515,6 +546,18 @@ const MatterListView = () => {
             {dayjs(date).format(screens.xs ? "MM/DD" : "MMM DD, YYYY")}
           </span>
         </div>
+      ),
+    },
+    {
+      title: "Exp. Closure",
+      dataIndex: "expectedClosureDate",
+      key: "expectedClosureDate",
+      width: 100,
+      responsive: ["xl"],
+      render: (date) => (
+        <span className="text-sm">
+          {date ? dayjs(date).format("MMM DD, YYYY") : "—"}
+        </span>
       ),
     },
     {
@@ -635,6 +678,37 @@ const MatterListView = () => {
         matterStats={matterStats}
         loading={matterStatsLoading}
       />
+
+      {officerStatistics && officerStatistics.length > 0 && (
+        <Card className="mb-6 shadow-sm border-0 rounded-2xl">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <TeamOutlined className="text-blue-500 text-lg" />
+              <span className="font-semibold text-gray-800">
+                Officer Workload ({officerStatistics.length})
+              </span>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            {officerStatistics.map((officer) => (
+              <div
+                key={officer.officerId}
+                className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <Avatar src={officer.officerPhoto} size="default" icon={<TeamOutlined />} />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">
+                    {officer.officerName}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    {officer.activeCount ?? 0} active / {officer.matterCount ?? 0} total
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <div className="hidden md:block mb-6">
         <MatterFilters
@@ -814,10 +888,6 @@ const MatterListView = () => {
           </>
         )}
       </Card>
-
-      <div className="mt-8">
-        <MyMattersDashboard limit={10} showHeader={true} />
-      </div>
     </div>
   );
 };

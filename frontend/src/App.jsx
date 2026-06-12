@@ -83,10 +83,6 @@ const MatterDetails = lazy(() => import("./pages/matters/MatterDetails.jsx"));
 const MatterFormContainer = lazy(
   () => import("./components/matters/MatterForm/MatterFormContainer.jsx"),
 );
-const AllMattersWithOfficers = lazy(
-  () => import("./pages/AllMattersWithOfficers.jsx"),
-);
-
 // Litigation Management
 const LitigationDashboardPage = lazy(
   () => import("./pages/dashboard/litigation/LitigationDashboardPage"),
@@ -706,16 +702,6 @@ const router = createBrowserRouter(
               <Suspense fallback={<PageLoader />}>
                 <ProtectedStaffRoute>
                   <MatterFormContainer isEditMode={true} />
-                </ProtectedStaffRoute>
-              </Suspense>
-            }
-          />
-          <Route
-            path="matters-with-officers"
-            element={
-              <Suspense fallback={<PageLoader />}>
-                <ProtectedStaffRoute>
-                  <AllMattersWithOfficers />
                 </ProtectedStaffRoute>
               </Suspense>
             }

@@ -186,10 +186,10 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           path: "/dashboard/matters",
         },
         {
-          key: "matters-with-officers",
+          key: "officer-workload",
           icon: <TeamOutlined />,
-          label: "Matters & Officers",
-          path: "/dashboard/matters-with-officers",
+          label: "Officer Workload",
+          path: "/dashboard/matters",
         },
         {
           key: "litigation",
