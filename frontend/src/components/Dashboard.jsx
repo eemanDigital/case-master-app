@@ -1,13 +1,10 @@
 import { useEffect, useMemo } from "react";
-import { Card, Skeleton } from "antd";
-import { useDataFetch } from "../hooks/useDataFetch";
-import { useDataGetterHook } from "../hooks/useDataGetterHook";
+import { Card, Skeleton, Alert } from "antd";
 import { useAdminHook } from "../hooks/useAdminHook";
 import {
   RightOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
-  AlertOutlined,
 } from "@ant-design/icons";
 import {
   FaBriefcase,
@@ -20,22 +17,24 @@ import { useSelector, useDispatch } from "react-redux";
 import ScrollingEvents from "./ScrollingEvents";
 
 import { ShowOnlyVerifiedUser, ShowStaff } from "./protect/Protect";
-import { Alert } from "antd";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import VerifyAccountNotice from "./VerifyAccountNotice";
 import ClientMatterDashboard from "./clientDashboard/ClientMatterDashboard";
-import { getMatterStats } from "../redux/features/matter/matterSlice";
-import { getUserStatistics } from "../redux/features/auth/authSlice";
+import {
+  getMatterStats,
+  getMyMattersSummary,
+} from "../redux/features/matter/matterSlice";
 import { fetchUpcomingHearings } from "../redux/features/litigation/litigationSlice";
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
 
 const StatCard = ({ icon: Icon, value, label, href, gradient, accent }) => (
-  <Link to={href}>
+  <Link to={href} className="block h-full">
     <Card
-      className={`bg-gradient-to-br ${gradient} border-0 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer overflow-hidden relative`}>
+      className={`h-full bg-gradient-to-br ${gradient} border-0 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-0.5 cursor-pointer overflow-hidden relative`}
+      bodyStyle={{ height: '100%' }}>
       <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10 blur-2xl" />
-      <div className="flex items-center justify-between relative z-10">
+      <div className="flex items-center justify-between h-full relative z-10">
         <div className="text-white">
           <div className="text-3xl font-bold tracking-tight">{value ?? 0}</div>
           <div className="text-sm font-medium opacity-90 mt-1">{label}</div>
@@ -170,10 +169,11 @@ const Dashboard = () => {
   useEffect(() => {
     if (!isClient) {
       if (!matterStats) dispatch(getMatterStats());
+      if (!myMattersSummary) dispatch(getMyMattersSummary());
       if (!hearings || hearings.length === 0)
         dispatch(fetchUpcomingHearings({ range: "all", limit: 50 }));
     }
-  }, [dispatch, isClient, matterStats]);
+  }, [dispatch, isClient, matterStats, myMattersSummary]);
 
   const tasksForMe = useMemo(
     () =>

@@ -16,6 +16,7 @@ import {
   useDateBlockCheck,
   useBlockedDates,
 } from "../../hooks/useCalendar";
+import QuickActionsPanel from "../../components/QuickActionsPanel";
 const { Content } = Layout;
 
 const CalendarPage = () => {
@@ -243,6 +244,8 @@ const CalendarPage = () => {
       />
 
       <Content className="p-4 md:p-6">
+        <QuickActionsPanel />
+
         {/* Statistics Bar */}
         <div className="bg-white rounded-lg shadow-sm p-3 md:p-4 mb-4 md:mb-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">

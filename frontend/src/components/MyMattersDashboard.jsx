@@ -52,7 +52,7 @@ const MyMattersDashboard = ({ limit = 5, showHeader = true }) => {
   }, [dispatch, myMattersSummary]);
 
   const summary = myMattersSummary?.summary || {};
-  const recentMatters = myMattersSummary?.recentMatters || [];
+  const recentMatters = (myMattersSummary?.recentMatters || []).slice(0, limit);
   const byType = myMattersSummary?.byType || [];
   const byStatus = myMattersSummary?.byStatus || [];
 

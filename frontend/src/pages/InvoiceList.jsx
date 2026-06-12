@@ -19,6 +19,7 @@ import SearchBar from "../components/SearchBar";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import PaymentDashboard from "../components/PaymentDashboard";
 
 const downloadURL = import.meta.env.VITE_BASE_URL;
 
@@ -392,40 +393,7 @@ const InvoiceList = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white p-4 rounded-lg shadow-sm border">
-              <div className="text-sm text-gray-600">Total Invoices</div>
-              <div className="text-2xl font-bold text-gray-800">
-                {searchResults.length}
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border">
-              <div className="text-sm text-gray-600">Overdue</div>
-              <div className="text-2xl font-bold text-red-600">
-                {
-                  searchResults.filter(
-                    (inv) =>
-                      moment(inv.dueDate).isBefore(moment()) && inv.balance > 0,
-                  ).length
-                }
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border">
-              <div className="text-sm text-gray-600">Paid</div>
-              <div className="text-2xl font-bold text-green-600">
-                {searchResults.filter((inv) => inv.status === "paid").length}
-              </div>
-            </div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border">
-              <div className="text-sm text-gray-600">Outstanding</div>
-              <div className="text-2xl font-bold text-orange-600">
-                ₦
-                {searchResults
-                  .reduce((sum, inv) => sum + (inv.balance || 0), 0)
-                  .toLocaleString()}
-              </div>
-            </div>
-          </div>
+          <PaymentDashboard />
 
           <div className="bg-white rounded-lg shadow-sm border">
             <Table

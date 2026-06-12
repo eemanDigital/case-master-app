@@ -39,6 +39,7 @@ import { Link, useLocation } from "react-router-dom";
 import dayjs from "dayjs";
 import { useUserManagement } from "../hooks/useUserManagement";
 import avatar from "../assets/avatar.png";
+import LeaveNotification from "../components/LeaveNotification";
 
 const { Option } = Select;
 const { Search } = Input;
@@ -623,6 +624,10 @@ const UserManagement = ({
           <p className="text-gray-600 mt-2">
             Manage all users — staff, clients, and their permissions
           </p>
+        </div>
+
+        <div className="mb-4">
+          <LeaveNotification />
         </div>
 
         {/* Filters toolbar */}

@@ -45,6 +45,7 @@ import {
 } from "../../config/matterConfig";
 import {
   getMatters,
+  getMatterStats,
   deleteMatter,
   resetMatterState,
   bulkUpdateMatters,
@@ -56,6 +57,9 @@ import {
   toggleSelectMatter,
   clearSelectedMatters,
 } from "../../redux/features/matter/matterSlice";
+
+import DashBoardDataCount from "../DashBoardDataCount";
+import MyMattersDashboard from "../MyMattersDashboard";
 import { useTheme } from "../../providers/ThemeProvider";
 
 const { Title, Text } = Typography;
@@ -74,7 +78,9 @@ const MatterListView = () => {
     message: matterMessage,
     selectedMatters,
     bulkLoading,
+    stats: matterStats,
   } = useSelector((state) => state.matter);
+  const matterStatsLoading = useSelector((state) => state.matter.isLoading);
 
   const [activeFilters, setActiveFilters] = useState({});
   const [initialFilters, setInitialFilters] = useState({});
@@ -85,6 +91,7 @@ const MatterListView = () => {
 
   useEffect(() => {
     dispatch(getMatters());
+    dispatch(getMatterStats());
     return () => {
       dispatch(resetMatterState());
     };
@@ -624,6 +631,11 @@ const MatterListView = () => {
         </div>
       </div>
 
+      <DashBoardDataCount
+        matterStats={matterStats}
+        loading={matterStatsLoading}
+      />
+
       <div className="hidden md:block mb-6">
         <MatterFilters
           onFilter={handleFilterChange}
@@ -802,6 +814,10 @@ const MatterListView = () => {
           </>
         )}
       </Card>
+
+      <div className="mt-8">
+        <MyMattersDashboard limit={10} showHeader={true} />
+      </div>
     </div>
   );
 };
