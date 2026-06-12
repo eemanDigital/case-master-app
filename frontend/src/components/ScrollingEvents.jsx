@@ -175,7 +175,7 @@ const EventCard = ({ event, now }) => {
 
   return (
     <div
-      className="flex items-stretch mr-3 rounded-xl shadow-sm overflow-hidden min-w-[300px] max-w-[340px] bg-white border border-gray-100 hover:shadow-md transition-shadow duration-200"
+      className="flex items-stretch mr-3 rounded-xl shadow-sm overflow-hidden min-w-[300px] max-w-[340px] h-[78px] bg-white border border-gray-100 hover:shadow-md transition-shadow duration-200"
       style={{ borderLeft: `4px solid ${color}` }}>
       <div className="flex items-start gap-3 p-3 flex-1 min-w-0">
         {/* Icon */}
@@ -206,7 +206,7 @@ const EventCard = ({ event, now }) => {
           </div>
 
           {/* Time + type */}
-          <div className="flex items-center gap-2 text-xs text-gray-500 flex-wrap">
+          <div className="flex items-center gap-2 text-xs text-gray-500 truncate">
             <span className="flex items-center gap-1">
               <FaRegClock size={10} />
               {formatStart(event.start)}
@@ -223,11 +223,9 @@ const EventCard = ({ event, now }) => {
           </div>
 
           {/* Location */}
-          {event.location && (
-            <div className="text-xs text-gray-400 mt-0.5 truncate">
-              📍 {event.location}
-            </div>
-          )}
+          <div className="text-xs text-gray-400 mt-0.5 truncate h-4 leading-4">
+            {event.location ? `📍 ${event.location}` : ""}
+          </div>
         </div>
 
         {/* Status pill */}
