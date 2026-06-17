@@ -195,7 +195,7 @@ const WeekView = ({ currentDate, events, blockedDates = [], onDateClick, onEvent
       </div>
 
       {/* Time Grid */}
-      <div className="max-h-[600px] overflow-y-auto">
+      <div className="max-h-[800px] overflow-y-auto">
         {HOURS.map((hour) => (
           <div key={hour} className="grid grid-cols-8 border-b border-gray-100">
             {/* Time Column */}

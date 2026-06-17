@@ -255,6 +255,18 @@ async function injectHearingEvents(firmId, userId, { startDate, endDate, matter 
     .select("matterId suitNo courtName courtNo courtLocation state judge hearings")
     .lean();
 
+  // Fetch matter titles for display
+  const matterIds = [...new Set(details.map((d) => d.matterId).filter(Boolean))];
+  const matters = matterIds.length
+    ? await Matter.find({ _id: { $in: matterIds } })
+        .select("title matterNumber")
+        .lean()
+    : [];
+  const matterMap = {};
+  matters.forEach((m) => {
+    matterMap[m._id.toString()] = m.title || m.matterNumber || "";
+  });
+
   const now = new Date();
   const lookback = dayjs().subtract(30, "day").toDate();
   const lookahead = dayjs().add(365, "day").toDate();
@@ -266,8 +278,10 @@ async function injectHearingEvents(firmId, userId, { startDate, endDate, matter 
   for (const detail of details) {
     if (!detail.hearings?.length) continue;
 
-    // Also fetch matter for title display
-    const suitLabel = detail.suitNo || `Matter #${detail.matterId}`;
+    const matterName =
+      matterMap[detail.matterId?.toString()] ||
+      detail.suitNo ||
+      `Matter #${detail.matterId}`;
     const courtLabel = detail.courtName
       ? `${detail.courtName}${detail.courtLocation ? ` - ${detail.courtLocation}` : ""}`
       : "";
@@ -293,9 +307,7 @@ async function injectHearingEvents(firmId, userId, { startDate, endDate, matter 
       endDT.setHours(11, 0, 0, 0);
 
       const isCompleted = !!hearing.outcome;
-      const title = useNextDate
-        ? `Court Hearing (Next): ${suitLabel}`
-        : `Court Hearing: ${suitLabel}`;
+      const title = matterName;
 
       events.push({
         // Unique ID to avoid conflicts with CalendarEvent _ids
@@ -303,7 +315,7 @@ async function injectHearingEvents(firmId, userId, { startDate, endDate, matter 
         title,
         description: [
           courtLabel && `Court: ${courtLabel}`,
-          `Suit No: ${suitLabel}`,
+          detail.suitNo && `Suit No: ${detail.suitNo}`,
           hearing.purpose && `Purpose: ${hearing.purpose}`,
           useNextDate && `📅 Next Hearing: ${eventDate.toLocaleDateString()}`,
           hearing.outcome && `Outcome: ${hearing.outcome}`,
@@ -320,7 +332,7 @@ async function injectHearingEvents(firmId, userId, { startDate, endDate, matter 
         matter: {
           _id: detail.matterId,
           matterNumber: detail.suitNo || "",
-          title: suitLabel,
+          title: matterName,
         },
         location: detail.courtName
           ? {
@@ -346,7 +358,7 @@ async function injectHearingEvents(firmId, userId, { startDate, endDate, matter 
           hearingId: hearing._id,
           judge: detail.judge?.[0]?.name,
           courtRoom: detail.courtNo,
-          suitNumber: suitLabel,
+          suitNumber: detail.suitNo || "",
           hearingType: hearing.purpose,
           outcome: hearing.outcome,
           isNextHearing: useNextDate,

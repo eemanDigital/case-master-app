@@ -77,7 +77,7 @@ const MonthView = ({ currentDate, events, blockedDates = [], onDateClick, onEven
       <div
         key={date.toString()}
         className={`
-          min-h-[120px] border border-gray-200 p-2 cursor-pointer
+          min-h-[170px] border border-gray-200 p-1.5 cursor-pointer
           transition-all duration-200 relative
           ${isCurrentMonth ? "bg-white" : "bg-gray-50"}
           ${isTodayDate ? "ring-2 ring-blue-500 ring-inset" : ""}
@@ -150,41 +150,39 @@ const MonthView = ({ currentDate, events, blockedDates = [], onDateClick, onEven
         )}
 
         {/* Events */}
-        <div className="space-y-1 relative z-10">
-          {dayEvents.slice(0, 3).map((event, index) => {
+        <div className="space-y-0.5 relative z-10">
+          {dayEvents.slice(0, 4).map((event, index) => {
             const isAutoSynced = isAutoSyncedHearing(event);
+            const eventTime = dayjs(event.startDateTime).format("h:mm A");
 
             return (
               <div
                 key={event._id || index}
                 className={`
-                  group px-2 py-1 rounded text-xs truncate cursor-pointer
-                  bg-gradient-to-r from-white to-gray-50
-                  border-l-2 hover:shadow-sm transition-all
-                  ${isAutoSynced ? "ring-1 ring-purple-200" : ""}
+                  group px-1.5 py-1 rounded text-[11px] cursor-pointer
+                  hover:shadow-sm transition-all leading-tight
+                  ${isAutoSynced ? "ring-1 ring-purple-200 bg-purple-50/30" : "hover:bg-blue-50"}
                 `}
-                style={{ borderColor: getEventColor(event) }}
+                style={{ borderLeft: `3px solid ${getEventColor(event)}` }}
+                title={`${event.title} — ${eventTime}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onEventClick && onEventClick(event);
                 }}>
-                <div className="flex items-center gap-1">
-                  <div
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: getEventColor(event) }}
-                  />
-                  <span className="truncate font-medium text-gray-700 group-hover:text-blue-600 flex-1">
-                    {event.title}
-                  </span>
+                <div className="font-semibold text-gray-800 group-hover:text-blue-600 truncate">
+                  {event.title}
+                </div>
+                <div className="text-[10px] text-gray-400 flex items-center gap-1">
+                  {eventTime}
                   {getEventIcon(event)}
                 </div>
               </div>
             );
           })}
 
-          {dayEvents.length > 3 && (
-            <Text className="!text-xs text-gray-500 ml-2">
-              +{dayEvents.length - 3} more
+          {dayEvents.length > 4 && (
+            <Text className="!text-[11px] text-gray-500 ml-1">
+              +{dayEvents.length - 4} more
             </Text>
           )}
         </div>

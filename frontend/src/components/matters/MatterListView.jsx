@@ -468,8 +468,7 @@ const MatterListView = () => {
             officers.map((officer, idx) => (
               <Tooltip
                 key={idx}
-                title={`${officer.firstName} ${officer.lastName}${officer.role ? ` - ${officer.role}` : ""}`}
-              >
+                title={`${officer.firstName} ${officer.lastName}${officer.role ? ` - ${officer.role}` : ""}`}>
                 <Avatar
                   src={officer.photo}
                   size="small"
@@ -479,7 +478,9 @@ const MatterListView = () => {
               </Tooltip>
             ))
           ) : (
-            <Tag color="default" className="text-xs">Unassigned</Tag>
+            <Tag color="default" className="text-xs">
+              Unassigned
+            </Tag>
           )}
         </div>
       ),
@@ -693,15 +694,19 @@ const MatterListView = () => {
             {officerStatistics.map((officer) => (
               <div
                 key={officer.officerId}
-                className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <Avatar src={officer.officerPhoto} size="default" icon={<TeamOutlined />} />
+                className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors">
+                <Avatar
+                  src={officer.officerPhoto}
+                  size="default"
+                  icon={<TeamOutlined />}
+                />
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
                     {officer.officerName}
                   </p>
                   <p className="text-xs text-gray-500">
-                    {officer.activeCount ?? 0} active / {officer.matterCount ?? 0} total
+                    {officer.activeCount ?? 0} active /{" "}
+                    {officer.matterCount ?? 0} total
                   </p>
                 </div>
               </div>

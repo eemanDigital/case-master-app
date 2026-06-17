@@ -633,7 +633,7 @@ const TaskList = () => {
                 icon: <BellOutlined />,
                 label: (
                   <Suspense fallback="Set Reminder">
-                    <TaskReminderForm id={record._id} />
+                    <TaskReminderForm taskId={record._id} />
                   </Suspense>
                 ),
               },

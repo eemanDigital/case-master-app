@@ -47,7 +47,8 @@ const { TabPane } = Tabs;
 const LitigationDashboardPage = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { handleDownloadPdf, loading: downloadLoading } = useDownloadPdfHandler();
+  const { handleDownloadPdf, loading: downloadLoading } =
+    useDownloadPdfHandler();
 
   // Local state
   const [activeView, setActiveView] = useState("list");
@@ -62,7 +63,7 @@ const LitigationDashboardPage = () => {
     handleDownloadPdf(
       e,
       `${downloadUrl}/litigation/upcoming-hearings/download?range=this-week`,
-      `hearings-this-week-${new Date().toISOString().split('T')[0]}.pdf`
+      `hearings-this-week-${new Date().toISOString().split("T")[0]}.pdf`,
     );
   };
 
@@ -70,7 +71,7 @@ const LitigationDashboardPage = () => {
     handleDownloadPdf(
       e,
       `${downloadUrl}/litigation/upcoming-hearings/download?range=next-week`,
-      `hearings-next-week-${new Date().toISOString().split('T')[0]}.pdf`
+      `hearings-next-week-${new Date().toISOString().split("T")[0]}.pdf`,
     );
   };
 
@@ -78,7 +79,7 @@ const LitigationDashboardPage = () => {
     handleDownloadPdf(
       e,
       `${downloadUrl}/litigation/upcoming-hearings/download?range=this-month`,
-      `hearings-this-month-${new Date().toISOString().split('T')[0]}.pdf`
+      `hearings-this-month-${new Date().toISOString().split("T")[0]}.pdf`,
     );
   };
 
@@ -178,9 +179,9 @@ const LitigationDashboardPage = () => {
   );
 
   // Handle selection clear
-  const handleClearSelection = useCallback(() => {
-    setSelectedRowKeys([]);
-  }, []);
+  // const handleClearSelection = useCallback(() => {
+  //   setSelectedRowKeys([]);
+  // }, []);
 
   // Calculate if filters are active
   const isFiltersActive = useMemo(
@@ -291,24 +292,21 @@ const LitigationDashboardPage = () => {
                       size="small"
                       icon={<DownloadOutlined />}
                       onClick={handleDownloadThisWeek}
-                      loading={downloadLoading}
-                    >
+                      loading={downloadLoading}>
                       This Week
                     </Button>
                     <Button
                       size="small"
                       icon={<DownloadOutlined />}
                       onClick={handleDownloadNextWeek}
-                      loading={downloadLoading}
-                    >
+                      loading={downloadLoading}>
                       Next Week
                     </Button>
                     <Button
                       size="small"
                       icon={<DownloadOutlined />}
                       onClick={handleDownloadThisMonth}
-                      loading={downloadLoading}
-                    >
+                      loading={downloadLoading}>
                       Month
                     </Button>
                   </div>

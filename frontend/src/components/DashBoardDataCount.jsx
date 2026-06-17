@@ -93,10 +93,14 @@ const MiniStatCard = ({ icon: Icon, value, label, color, bgColor }) => (
         <Icon className="text-base sm:text-lg" style={{ color }} />
       </div>
       <div className="min-w-0">
-        <div className="text-lg sm:text-2xl font-bold truncate" style={{ color }}>
+        <div
+          className="text-lg sm:text-2xl font-bold truncate"
+          style={{ color }}>
           {value ?? 0}
         </div>
-        <div className="text-xs text-gray-500 font-medium truncate">{label}</div>
+        <div className="text-xs text-gray-500 font-medium truncate">
+          {label}
+        </div>
       </div>
     </div>
   </Card>
@@ -166,35 +170,41 @@ const DashBoardDataCount = ({ matterStats, userStats, loading = false }) => {
   const userStatistics = userData.statistics || {};
   const userRoles = userStatistics.breakdown || {};
 
-  const cardData = useMemo(
-    () => [
+  const hasUserStats = userStats && (userStatistics.total || userStatistics.lawyers);
+
+  const cardData = useMemo(() => {
+    const cards = [
       {
         icon: FaBriefcase,
         count: matterData.totalMatters || 0,
         label: "Total Matters",
         gradient: "from-slate-600 via-slate-700 to-slate-800",
       },
-      {
-        icon: FaUsers,
-        count: userStatistics.total || 0,
-        label: "Total Users",
-        gradient: "from-emerald-500 via-emerald-600 to-emerald-700",
-      },
-      {
-        icon: FaGavel,
-        count: userStatistics.lawyers || 0,
-        label: "Lawyers",
-        gradient: "from-violet-500 via-violet-600 to-violet-700",
-      },
-      {
-        icon: FaUserCheck,
-        count: userStatistics.verified || 0,
-        label: "Verified Users",
-        gradient: "from-cyan-500 via-cyan-600 to-cyan-700",
-      },
-    ],
-    [matterData, userStatistics],
-  );
+    ];
+    if (hasUserStats) {
+      cards.push(
+        {
+          icon: FaUsers,
+          count: userStatistics.total || 0,
+          label: "Total Users",
+          gradient: "from-emerald-500 via-emerald-600 to-emerald-700",
+        },
+        {
+          icon: FaGavel,
+          count: userStatistics.lawyers || 0,
+          label: "Lawyers",
+          gradient: "from-violet-500 via-violet-600 to-violet-700",
+        },
+        {
+          icon: FaUserCheck,
+          count: userStatistics.verified || 0,
+          label: "Verified Users",
+          gradient: "from-cyan-500 via-cyan-600 to-cyan-700",
+        },
+      );
+    }
+    return cards;
+  }, [matterData, userStatistics, hasUserStats]);
 
   const matterMetrics = useMemo(
     () => [
@@ -395,119 +405,121 @@ const DashBoardDataCount = ({ matterStats, userStats, loading = false }) => {
             </Card>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+          {/* <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
             {matterMetrics.map((metric, index) => (
               <MiniStatCard key={`matter-${index}`} {...metric} />
             ))}
-          </div>
+          </div> */}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-            <Card className="border-0 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-indigo-100">
-                  <FaUsers className="text-indigo-600" />
+          {hasUserStats && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <Card className="border-0 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-indigo-100">
+                    <FaUsers className="text-indigo-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    User Role Distribution
+                  </h3>
                 </div>
-                <h3 className="text-lg font-semibold text-gray-800">
-                  User Role Distribution
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="flex justify-center">
-                  <CircularProgress
-                    percentage={
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="flex justify-center">
+                    <CircularProgress
+                      percentage={
+                        userStatistics.total
+                          ? Math.round(
+                              ((userRoles.lawyers || 0) / userStatistics.total) *
+                                100,
+                            )
+                          : 0
+                      }
+                      color="#8B5CF6"
+                      label="Lawyers"
+                    />
+                  </div>
+                  <div className="flex flex-col justify-center space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 flex items-center gap-2">
+                        <FaUserTie className="text-violet-500" /> Lawyers
+                      </span>
+                      <span className="font-bold text-violet-600">
+                        {userRoles.lawyers || 0}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 flex items-center gap-2">
+                        <FaUsers className="text-blue-500" /> Staff
+                      </span>
+                      <span className="font-bold text-blue-600">
+                        {userRoles.staff || 0}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 flex items-center gap-2">
+                        <FaHandshake className="text-purple-500" /> Clients
+                      </span>
+                      <span className="font-bold text-purple-600">
+                        {userRoles.clients || 0}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 flex items-center gap-2">
+                        <FaShieldAlt className="text-amber-500" /> Admins
+                      </span>
+                      <span className="font-bold text-amber-600">
+                        {userRoles.admins || 0}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="border-0 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 rounded-lg bg-emerald-100">
+                    <FaUserCheck className="text-emerald-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-800">
+                    User Status Overview
+                  </h3>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {userMetrics.map((metric, index) => (
+                    <MiniStatCard key={`user-${index}`} {...metric} />
+                  ))}
+                </div>
+                <div className="mt-6 pt-4 border-t border-gray-100">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-sm font-medium text-gray-600">
+                      Verification Rate
+                    </span>
+                    <span className="text-sm font-bold text-green-600">
+                      {userStatistics.total
+                        ? Math.round(
+                            (userStatistics.verified / userStatistics.total) *
+                              100,
+                          )
+                        : 0}
+                      %
+                    </span>
+                  </div>
+                  <Progress
+                    percent={
                       userStatistics.total
                         ? Math.round(
-                            ((userRoles.lawyers || 0) / userStatistics.total) *
+                            (userStatistics.verified / userStatistics.total) *
                               100,
                           )
                         : 0
                     }
-                    color="#8B5CF6"
-                    label="Lawyers"
+                    strokeColor="#10B981"
+                    trailColor="#E5E7EB"
+                    showInfo={false}
                   />
                 </div>
-                <div className="flex flex-col justify-center space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 flex items-center gap-2">
-                      <FaUserTie className="text-violet-500" /> Lawyers
-                    </span>
-                    <span className="font-bold text-violet-600">
-                      {userRoles.lawyers || 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 flex items-center gap-2">
-                      <FaUsers className="text-blue-500" /> Staff
-                    </span>
-                    <span className="font-bold text-blue-600">
-                      {userRoles.staff || 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 flex items-center gap-2">
-                      <FaHandshake className="text-purple-500" /> Clients
-                    </span>
-                    <span className="font-bold text-purple-600">
-                      {userRoles.clients || 0}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-600 flex items-center gap-2">
-                      <FaShieldAlt className="text-amber-500" /> Admins
-                    </span>
-                    <span className="font-bold text-amber-600">
-                      {userRoles.admins || 0}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            <Card className="border-0 rounded-2xl shadow-lg hover:shadow-xl transition-shadow">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-emerald-100">
-                  <FaUserCheck className="text-emerald-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-800">
-                  User Status Overview
-                </h3>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                {userMetrics.map((metric, index) => (
-                  <MiniStatCard key={`user-${index}`} {...metric} />
-                ))}
-              </div>
-              <div className="mt-6 pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-between mb-4">
-                  <span className="text-sm font-medium text-gray-600">
-                    Verification Rate
-                  </span>
-                  <span className="text-sm font-bold text-green-600">
-                    {userStatistics.total
-                      ? Math.round(
-                          (userStatistics.verified / userStatistics.total) *
-                            100,
-                        )
-                      : 0}
-                    %
-                  </span>
-                </div>
-                <Progress
-                  percent={
-                    userStatistics.total
-                      ? Math.round(
-                          (userStatistics.verified / userStatistics.total) *
-                            100,
-                        )
-                      : 0
-                  }
-                  strokeColor="#10B981"
-                  trailColor="#E5E7EB"
-                  showInfo={false}
-                />
-              </div>
-            </Card>
-          </div>
+              </Card>
+            </div>
+          )}
         </>
       )}
 
