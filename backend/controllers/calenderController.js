@@ -164,13 +164,14 @@ exports.getAllEvents = catchAsync(async (req, res, next) => {
   // Exclude auto-synced hearing events (they are injected live below instead)
   filter["tags"] = { $nin: ["auto-synced"] };
 
-  // Date range filter
-  if (startDate && endDate) {
-    filter.startDateTime = {
-      $gte: new Date(startDate),
-      $lte: new Date(endDate),
-    };
-  }
+  // Date range filter — default to past 30 days → next 365 days
+  // to prevent old events from filling the limit and pushing future hearings out.
+  const defaultStart = dayjs().subtract(30, "day").toDate();
+  const defaultEnd = dayjs().add(365, "day").toDate();
+  filter.startDateTime = {
+    $gte: startDate ? new Date(startDate) : defaultStart,
+    $lte: endDate ? new Date(endDate) : defaultEnd,
+  };
 
   // Other filters
   if (eventType) filter.eventType = eventType;
@@ -255,8 +256,10 @@ async function injectHearingEvents(firmId, userId, { startDate, endDate, matter 
     .lean();
 
   const now = new Date();
-  const dateStart = startDate ? new Date(startDate) : null;
-  const dateEnd = endDate ? new Date(endDate) : null;
+  const lookback = dayjs().subtract(30, "day").toDate();
+  const lookahead = dayjs().add(365, "day").toDate();
+  const dateStart = startDate ? new Date(startDate) : lookback;
+  const dateEnd = endDate ? new Date(endDate) : lookahead;
 
   const events = [];
 

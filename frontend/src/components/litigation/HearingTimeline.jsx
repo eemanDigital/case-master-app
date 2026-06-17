@@ -900,7 +900,7 @@ const HearingTimeline = ({
                         </Tag>
                       )}
                     {!canAssignLawyers && (
-                      <Tooltip title="No upcoming sessions — locked">
+                      <Tooltip title="No upcoming sessions">
                         <LockOutlined className="text-slate-400 text-xs ml-1" />
                       </Tooltip>
                     )}
@@ -1187,29 +1187,27 @@ const HearingTimeline = ({
               <Button onClick={handleModalClose} size={isMobile ? "middle" : "large"}>
                 Cancel
               </Button>
-              {(isModalLocked ? isAdmin : true) && (
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  loading={loading}
-                  size={isMobile ? "middle" : "large"}
-                  icon={
-                    modalPhase === "report" ? (
-                      <FileTextOutlined />
-                    ) : (
-                      <CheckCircleOutlined />
-                    )
-                  }
-                  className={`font-semibold ${modalPhase === "report" || modalPhase === "edit" ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-600" : "bg-violet-600 hover:bg-violet-700 border-violet-600"}`}>
-                  {editingHearing
-                    ? modalPhase === "report"
-                      ? "File"
-                      : modalPhase === "edit"
-                        ? "Update"
-                        : "Update"
-                    : "Add"}
-                </Button>
-              )}
+              <Button
+                type="primary"
+                htmlType="submit"
+                loading={loading}
+                size={isMobile ? "middle" : "large"}
+                icon={
+                  modalPhase === "report" ? (
+                    <FileTextOutlined />
+                  ) : (
+                    <CheckCircleOutlined />
+                  )
+                }
+                className={`font-semibold ${modalPhase === "report" || modalPhase === "edit" ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-600" : "bg-violet-600 hover:bg-violet-700 border-violet-600"}`}>
+                {editingHearing
+                  ? modalPhase === "report"
+                    ? "File"
+                    : modalPhase === "edit"
+                      ? "Update"
+                      : "Update"
+                  : "Add"}
+              </Button>
             </Space>
           </div>
         </Form>
