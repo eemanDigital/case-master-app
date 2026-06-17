@@ -637,11 +637,10 @@ const HearingTimeline = ({
   // Report fields: only editable after hearing date, within grace period
   const canEditReportFields = !isSchedulePhase && (!isModalLocked || isAdmin);
 
-  // KEY FIX: nextHearingDate editable in ALL non-locked phases.
-  // The "Adjourned" outcome requires setting nextHearingDate during the
-  // REPORT phase (after the hearing), not just the schedule phase.
-  // Admin override: admins can always edit next hearing date even when locked.
-  const canEditNextHearingDate = !isModalLocked || isAdmin;
+  // KEY FIX: nextHearingDate ALWAYS editable — court dates change frequently,
+  // even after the grace period expires. Lawyers must be able to update the
+  // next session date regardless of phase (schedule, report, edit, or locked).
+  const canEditNextHearingDate = true;
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -891,7 +890,7 @@ const HearingTimeline = ({
                 label={
                   <span className="flex items-center gap-1">
                     <UserOutlined className="text-xs text-slate-400" />
-                    Assign Lawyers
+                    Counsel
                     {canAssignLawyers &&
                       currentPhaseInfo?.hasUpcomingNextSession && (
                         <Tag
@@ -1128,7 +1127,7 @@ const HearingTimeline = ({
                               placeholder="Select adjournment date"
                               className="rounded-lg"
                               size="large"
-                              disabled={isTBC || (isModalLocked && !isAdmin)}
+                              disabled={isTBC}
                               disabledDate={(current) =>
                                 current && current < dayjs().startOf("day")
                               }
