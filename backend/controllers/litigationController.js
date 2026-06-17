@@ -8,7 +8,6 @@ const isSameOrAfter = require("dayjs/plugin/isSameOrAfter");
 const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
 const AppError = require("../utils/appError");
 const PaginationServiceFactory = require("../services/PaginationServiceFactory");
-const calendarSync = require("../services/calendarSyncService");
 const path = require("path");
 const {
   GenericPdfGenerator,
@@ -620,31 +619,8 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     litigationDetail.nextHearingDate = hearingData.nextHearingDate;
   }
 
-  // Save the litigation detail FIRST
+  // Save the litigation detail
   await litigationDetail.save();
-
-  // Then explicitly sync to calendar using the service
-  const latestHearing =
-    litigationDetail.hearings[litigationDetail.hearings.length - 1];
-
-  let calendarResult = { success: true, message: "Calendar sync skipped" };
-  try {
-    calendarResult = await calendarSync.syncHearing(
-      matterId,
-      req.firmId,
-      latestHearing,
-      litigationDetail,
-    );
-
-    if (!calendarResult.success) {
-      console.warn("⚠️ Calendar sync failed:", calendarResult.message);
-    } else {
-      console.log("✅ Calendar sync:", calendarResult.message);
-    }
-  } catch (syncError) {
-    console.error("❌ Calendar sync error:", syncError);
-    // Don't fail the request if calendar sync fails
-  }
 
   // Update matter last activity
   matter.lastActivityDate = new Date();
@@ -660,10 +636,7 @@ exports.addHearing = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message:
-      "Hearing added" +
-      (calendarResult.success ? " and synced to calendar" : ""),
-    calendarSync: calendarResult.success ? calendarResult.message : null,
+    message: "Hearing added",
     // Forward any soft warning so the client can display it as a toast/alert
     warning: blockCheck.hasWarning ? blockCheck.message : null,
     data: { litigationDetail },
@@ -948,28 +921,8 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     litigationDetail.nextHearingDate = updateData.nextHearingDate;
   }
 
-  // Save the litigation detail FIRST
+  // Save the litigation detail
   await litigationDetail.save();
-
-  // Explicitly sync to calendar using the service
-  let calendarResult = { success: true, message: "Calendar sync skipped" };
-  try {
-    calendarResult = await calendarSync.syncHearing(
-      matterId,
-      req.firmId,
-      hearing,
-      litigationDetail,
-    );
-
-    if (!calendarResult.success) {
-      console.warn("⚠️ Calendar sync failed:", calendarResult.message);
-    } else {
-      console.log("✅ Calendar sync:", calendarResult.message);
-    }
-  } catch (syncError) {
-    console.error("❌ Calendar sync error:", syncError);
-    // Don't fail the request if calendar sync fails
-  }
 
   // Update matter
   matter.lastActivityDate = new Date();
@@ -986,10 +939,7 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message:
-      "Hearing updated" +
-      (calendarResult.success ? " and synced to calendar" : ""),
-    calendarSync: calendarResult.success ? calendarResult.message : null,
+    message: "Hearing updated",
     // Forward any soft warning so the client can display it as a toast/alert
     warning: hearingBlockWarning,
     data: { litigationDetail },
@@ -1012,18 +962,10 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
     return next(new AppError("Litigation not found", 404));
   }
 
-  // Find the hearing before deleting to get its ID
+  // Find the hearing before deleting
   const hearing = litigationDetail.hearings.id(hearingId);
   if (!hearing) {
     return next(new AppError("Hearing not found", 404));
-  }
-
-  // Delete associated calendar event using service
-  let calendarResult = { success: true };
-  try {
-    calendarResult = await calendarSync.deleteEvent(hearingId, req.firmId);
-  } catch (calendarError) {
-    console.error("❌ Calendar event deletion failed:", calendarError);
   }
 
   // Delete the hearing
@@ -1091,30 +1033,10 @@ exports.addCourtOrder = catchAsync(async (req, res, next) => {
   // AUTO-SYNC: Create deadline if compliance date exists using service
   const newOrder =
     litigationDetail.courtOrders[litigationDetail.courtOrders.length - 1];
-  let calendarResult = { success: true };
-
-  if (newOrder.complianceDeadline) {
-    try {
-      calendarResult = await calendarSync.syncCourtOrderDeadline(
-        matterId,
-        req.firmId,
-        newOrder,
-      );
-      if (!calendarResult.success) {
-        console.warn("⚠️ Deadline creation failed:", calendarResult.message);
-      }
-    } catch (calendarError) {
-      console.error("❌ Deadline creation failed:", calendarError);
-    }
-  }
 
   res.status(200).json({
     status: "success",
-    message:
-      "Court order added" +
-      (calendarResult.success && newOrder.complianceDeadline
-        ? " and deadline synced to calendar"
-        : ""),
+    message: "Court order added",
     data: { litigationDetail },
   });
 });
@@ -1362,20 +1284,6 @@ exports.recordJudgment = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Mark past hearings as completed using service
-  let calendarResult = { success: true };
-  try {
-    calendarResult = await calendarSync.markPastHearingsCompleted(
-      matterId,
-      req.firmId,
-    );
-    if (!calendarResult.success) {
-      console.warn("⚠️ Calendar update failed:", calendarResult.message);
-    }
-  } catch (calendarError) {
-    console.error("❌ Calendar update failed:", calendarError);
-  }
-
   res.status(200).json({
     status: "success",
     data: { litigationDetail, matter },
@@ -1416,20 +1324,6 @@ exports.recordSettlement = catchAsync(async (req, res, next) => {
     matter.actualClosureDate = settlementData.settlementDate;
   }
   await matter.save();
-
-  // Mark past hearings as completed using service
-  let calendarResult = { success: true };
-  try {
-    calendarResult = await calendarSync.markPastHearingsCompleted(
-      matterId,
-      req.firmId,
-    );
-    if (!calendarResult.success) {
-      console.warn("⚠️ Calendar update failed:", calendarResult.message);
-    }
-  } catch (calendarError) {
-    console.error("❌ Calendar update failed:", calendarError);
-  }
 
   res.status(200).json({
     status: "success",

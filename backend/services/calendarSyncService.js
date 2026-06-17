@@ -216,6 +216,21 @@ class CalendarSyncService {
         });
       }
 
+      // Fallback user when matter has no account officer
+      const fallbackUserId =
+        hearingData.preparedBy?._id || hearingData.preparedBy || null;
+
+      if (
+        fallbackUserId &&
+        !participants.some((p) => p.user.toString() === fallbackUserId.toString())
+      ) {
+        participants.push({
+          user: fallbackUserId,
+          role: "attendee",
+          responseStatus: "accepted",
+        });
+      }
+
       const eventData = {
         firmId,
         eventType,
@@ -240,7 +255,9 @@ class CalendarSyncService {
             }
           : undefined,
         organizer:
-          matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
+          matter.accountOfficer?.[0]?._id ||
+          matter.accountOfficer?.[0] ||
+          fallbackUserId,
         participants,
         visibility: "team",
         hearingMetadata: {
@@ -263,7 +280,9 @@ class CalendarSyncService {
         color,
         notes: hearing.notes,
         createdBy:
-          matter.accountOfficer?.[0]?._id || matter.accountOfficer?.[0],
+          matter.accountOfficer?.[0]?._id ||
+          matter.accountOfficer?.[0] ||
+          fallbackUserId,
         customFields: {
           hearingId: hearing._id?.toString() || `new-${Date.now()}`,
           originalHearingId: hasNextHearingDate

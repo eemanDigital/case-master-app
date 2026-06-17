@@ -87,7 +87,7 @@ const DashboardLayout = () => {
 
     dispatch(fetchTasks({ limit: 5, sort: "-createdAt" }));
     dispatch(getMatters({ limit: 5, sort: "-createdAt" }));
-    dispatch(getAllEvents({ limit: 5 }));
+    dispatch(getAllEvents({}));
   }, [dispatch]);
 
   useEffect(() => {

@@ -140,12 +140,9 @@ exports.createEvent = catchAsync(async (req, res, next) => {
  * @route   GET /api/calendar/events
  * @access  Private
  *
- * NOTE: The previous `includeHearings` logic that injected virtual hearing
- * objects from LitigationDetail has been intentionally removed.
- * Court hearings are now written as proper CalendarEvent documents by
- * calendarSyncService.syncHearing() whenever a hearing is added or updated.
- * Keeping the inline injection caused every hearing to appear twice on the
- * calendar — once as the real CalendarEvent and once as the virtual object.
+ * Hearing events are injected directly from LitigationDetail (see
+ * injectHearingEvents below) instead of relying on a fragile sync service.
+ * This ensures hearings are always up-to-date on the calendar with zero sync lag.
  */
 exports.getAllEvents = catchAsync(async (req, res, next) => {
   const {
@@ -161,9 +158,13 @@ exports.getAllEvents = catchAsync(async (req, res, next) => {
     limit = 100,
   } = req.query;
 
+  // ── 1. Fetch manually created calendar events ──────────────────────────
   const filter = buildFirmQuery(req);
 
-  // Date range filter (most common query)
+  // Exclude auto-synced hearing events (they are injected live below instead)
+  filter["tags"] = { $nin: ["auto-synced"] };
+
+  // Date range filter
   if (startDate && endDate) {
     filter.startDateTime = {
       $gte: new Date(startDate),
@@ -178,51 +179,190 @@ exports.getAllEvents = catchAsync(async (req, res, next) => {
   if (organizer) filter.organizer = organizer;
   if (visibility) filter.visibility = visibility;
 
-  // Participant filter (user is in participants array)
   if (participant) {
     filter["participants.user"] = participant;
   }
 
-  const skip = (page - 1) * limit;
+  const skip = Number((page - 1) * limit);
+  const limitNum = Number(limit);
 
-  const events = await CalendarEvent.find(filter)
-    .sort({ startDateTime: 1 })
-    .skip(skip)
-    .limit(Number(limit))
-    .populate("organizer", "firstName lastName email photo")
-    .populate("participants.user", "firstName lastName email")
-    .populate("matter", "matterNumber title matterType client")
-    .lean();
+  const [calendarEvents, total] = await Promise.all([
+    CalendarEvent.find(filter)
+      .sort({ startDateTime: 1 })
+      .skip(skip)
+      .limit(limitNum)
+      .populate("organizer", "firstName lastName email photo")
+      .populate("participants.user", "firstName lastName email")
+      .populate("matter", "matterNumber title matterType client")
+      .lean(),
+    CalendarEvent.countDocuments(filter),
+  ]);
 
-  // Filter by visibility (user can only see events they're allowed to see)
-  const visibleEvents = events.filter((event) => {
+  // Filter manually created events by visibility
+  const visibleEvents = calendarEvents.filter((event) => {
     if (event.visibility === "firm") return true;
     if (event.visibility === "team") {
       return (
-        event.organizer._id.toString() === req.user._id.toString() ||
-        event.participants.some(
-          (p) => p.user._id.toString() === req.user._id.toString(),
+        event.organizer?._id?.toString() === req.user._id.toString() ||
+        event.participants?.some(
+          (p) => p.user?._id?.toString() === req.user._id.toString(),
         )
       );
     }
     if (event.visibility === "private") {
-      return event.organizer._id.toString() === req.user._id.toString();
+      return event.organizer?._id?.toString() === req.user._id.toString();
     }
     return false;
   });
 
-  const total = await CalendarEvent.countDocuments(filter);
+  // ── 2. Inject hearing events directly from LitigationDetail ────────────
+  const hearingEvents = await injectHearingEvents(
+    req.firmId,
+    req.user._id,
+    { startDate, endDate, matter },
+  );
+
+  // Merge, sort by startDateTime, and limit
+  const allEvents = [...visibleEvents, ...hearingEvents].sort(
+    (a, b) => new Date(a.startDateTime) - new Date(b.startDateTime),
+  );
+
+  // Combine total (include hearing events count in results)
+  const combinedResults = allEvents.slice(0, limitNum);
 
   res.status(200).json({
     status: "success",
-    results: visibleEvents.length,
-    total,
+    results: combinedResults.length,
+    total: total + hearingEvents.length,
     page: Number(page),
     data: {
-      events: visibleEvents,
+      events: combinedResults,
     },
   });
 });
+
+/**
+ * Fetch hearings from LitigationDetail and convert them to event-like objects.
+ * Replaces the old calendar sync service — hearings are always live from source.
+ */
+async function injectHearingEvents(firmId, userId, { startDate, endDate, matter }) {
+  // Build the query filter for litigation details
+  const detailFilter = { firmId, isDeleted: false };
+  if (matter) detailFilter.matterId = matter;
+
+  const details = await LitigationDetail.find(detailFilter)
+    .select("matterId suitNo courtName courtNo courtLocation state judge hearings")
+    .lean();
+
+  const now = new Date();
+  const dateStart = startDate ? new Date(startDate) : null;
+  const dateEnd = endDate ? new Date(endDate) : null;
+
+  const events = [];
+
+  for (const detail of details) {
+    if (!detail.hearings?.length) continue;
+
+    // Also fetch matter for title display
+    const suitLabel = detail.suitNo || `Matter #${detail.matterId}`;
+    const courtLabel = detail.courtName
+      ? `${detail.courtName}${detail.courtLocation ? ` - ${detail.courtLocation}` : ""}`
+      : "";
+
+    for (const hearing of detail.hearings) {
+      // Determine which date to use: nextHearingDate (if future) or original date
+      const useNextDate = hearing.nextHearingDate && new Date(hearing.nextHearingDate) > now;
+      const eventDate = useNextDate
+        ? new Date(hearing.nextHearingDate)
+        : hearing.date
+          ? new Date(hearing.date)
+          : null;
+
+      if (!eventDate) continue;
+
+      // Apply date range filter
+      if (dateStart && eventDate < dateStart) continue;
+      if (dateEnd && eventDate > dateEnd) continue;
+
+      const startDT = new Date(eventDate);
+      startDT.setHours(9, 0, 0, 0);
+      const endDT = new Date(eventDate);
+      endDT.setHours(11, 0, 0, 0);
+
+      const isCompleted = !!hearing.outcome;
+      const title = useNextDate
+        ? `Court Hearing (Next): ${suitLabel}`
+        : `Court Hearing: ${suitLabel}`;
+
+      events.push({
+        // Unique ID to avoid conflicts with CalendarEvent _ids
+        _id: `hearing-${detail._id}-${hearing._id}`,
+        title,
+        description: [
+          courtLabel && `Court: ${courtLabel}`,
+          `Suit No: ${suitLabel}`,
+          hearing.purpose && `Purpose: ${hearing.purpose}`,
+          useNextDate && `📅 Next Hearing: ${eventDate.toLocaleDateString()}`,
+          hearing.outcome && `Outcome: ${hearing.outcome}`,
+        ]
+          .filter(Boolean)
+          .join("\n"),
+        startDateTime: startDT,
+        endDateTime: endDT,
+        isAllDay: false,
+        timezone: "Africa/Lagos",
+        eventType: "hearing",
+        status: isCompleted ? "completed" : "scheduled",
+        priority: "high",
+        matter: {
+          _id: detail.matterId,
+          matterNumber: detail.suitNo || "",
+          title: suitLabel,
+        },
+        location: detail.courtName
+          ? {
+              type: "court",
+              courtName: detail.courtName,
+              courtRoom: detail.courtNo,
+              address: detail.courtLocation
+                ? `${detail.courtLocation}, ${detail.state || ""}`
+                : detail.state || "",
+            }
+          : undefined,
+        organizer: {
+          _id: userId,
+          firstName: "Court",
+          lastName: "System",
+          name: "Court System",
+        },
+        participants: [],
+        visibility: "team",
+        tags: ["court-hearing", useNextDate ? "next-hearing" : "past-hearing"],
+        color: useNextDate ? "#fa8c16" : isCompleted ? "#52c41a" : "#722ed1",
+        hearingMetadata: {
+          hearingId: hearing._id,
+          judge: detail.judge?.[0]?.name,
+          courtRoom: detail.courtNo,
+          suitNumber: suitLabel,
+          hearingType: hearing.purpose,
+          outcome: hearing.outcome,
+          isNextHearing: useNextDate,
+          originalHearingDate: hearing.date,
+          nextHearingDate: hearing.nextHearingDate,
+        },
+        customFields: {
+          source: "litigation_detail",
+          litigationDetailId: detail._id?.toString(),
+          hearingId: hearing._id?.toString(),
+        },
+        reminders: [],
+        notes: hearing.notes,
+      });
+    }
+  }
+
+  return events;
+}
 
 // ============================================
 // GET SINGLE EVENT

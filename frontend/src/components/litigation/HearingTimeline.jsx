@@ -743,14 +743,16 @@ const HearingTimeline = ({
                   </p>
                 </div>
               </div>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleAddHearing}
-                className="bg-violet-600 hover:bg-violet-700 border-violet-600 font-semibold shadow"
-                size={isMobile ? "small" : "middle"}>
-                {isMobile ? "Add" : "Add Hearing"}
-              </Button>
+              <Space>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleAddHearing}
+                  className="bg-violet-600 hover:bg-violet-700 border-violet-600 font-semibold shadow"
+                  size={isMobile ? "small" : "middle"}>
+                  {isMobile ? "Add" : "Add Hearing"}
+                </Button>
+              </Space>
             </div>
           }
           bordered={false}
