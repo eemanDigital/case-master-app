@@ -632,6 +632,14 @@ const PlatformAdminPanel = () => {
                       <Option value="ENTERPRISE">ENTERPRISE</Option>
                     </Select>
                   </Form.Item>
+                  <Form.Item name="userType" label="User Role" initialValue="super-admin">
+                    <Select>
+                      <Option value="super-admin">Super Admin</Option>
+                      <Option value="admin">Admin</Option>
+                      <Option value="lawyer">Lawyer</Option>
+                      <Option value="staff">Staff</Option>
+                    </Select>
+                  </Form.Item>
                   <Form.Item name="phone" label="Phone">
                     <Input placeholder="Phone number" />
                   </Form.Item>

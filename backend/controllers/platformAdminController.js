@@ -176,6 +176,7 @@ exports.createFirm = catchAsync(async (req, res, next) => {
     phone,
     address,
     gender,
+    userType = "super-admin",
   } = req.body;
 
   if (!firmName || !email || !firstName || !lastName) {
@@ -223,16 +224,17 @@ exports.createFirm = catchAsync(async (req, res, next) => {
     },
   });
 
-  const user = await User.create({
+  const role = userType === "super-admin" ? "super-admin" : userType;
+
+  let userData = {
     firmId: firm._id,
     firstName,
     lastName,
     email: email.toLowerCase(),
     password: tempPassword,
     passwordConfirm: tempPassword,
-    userType: "super-admin",
-    role: "super-admin",
-    position: "Managing Partner",
+    userType,
+    role,
     address: address || "Platform created account",
     phone: phone || "+234",
     gender: gender || "male",
@@ -240,15 +242,23 @@ exports.createFirm = catchAsync(async (req, res, next) => {
     isActive: true,
     status: "active",
     userAgent: ["platform-created"],
-    adminDetails: {
+  };
+
+  if (userType === "super-admin" || userType === "admin") {
+    userData.position = "Managing Partner";
+    userData.adminDetails = {
       adminLevel: "firm",
       canManageUsers: true,
       canManageCases: true,
       canManageBilling: true,
       canViewReports: true,
       systemAccessLevel: "full",
-    },
-  });
+    };
+  } else if (userType === "lawyer") {
+    userData.lawyerDetails = { barNumber: "N/A", specialization: "General" };
+  }
+
+  const user = await User.create(userData);
 
   try {
     // Generate a verification token for the user
