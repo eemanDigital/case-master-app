@@ -65,10 +65,7 @@ const userSchema = new mongoose.Schema(
 
     gender: {
       type: String,
-      enum: ["male", "female", "other", "prefer-not-to-say"],
-      required: function () {
-        return this.userType !== "client";
-      },
+      enum: ["male", "female"],
     },
 
     address: {
@@ -429,7 +426,7 @@ const userSchema = new mongoose.Schema(
       validate: {
         validator: function (value) {
           return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
-            value
+            value,
           );
         },
         message:
@@ -552,7 +549,7 @@ const userSchema = new mongoose.Schema(
     minimize: false,
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 /**
@@ -564,24 +561,28 @@ userSchema.pre("save", async function (next) {
   if (this.isModified("address") && this.address) {
     this.encryptedAddress = encryptField(this.address);
   }
-  
+
   if (this.isModified("phone") && this.phone) {
     this.encryptedPhone = encryptField(this.phone);
   }
-  
+
   if (this.isModified("dateOfBirth") && this.dateOfBirth) {
     this.encryptedDateOfBirth = encryptField(this.dateOfBirth.toISOString());
   }
-  
+
   if (this.isModified("clientDetails")) {
     if (this.clientDetails?.billingAddress) {
-      this.clientDetails.encryptedBillingAddress = encryptField(this.clientDetails.billingAddress);
+      this.clientDetails.encryptedBillingAddress = encryptField(
+        this.clientDetails.billingAddress,
+      );
     }
     if (this.clientDetails?.taxId) {
-      this.clientDetails.encryptedTaxId = encryptField(this.clientDetails.taxId);
+      this.clientDetails.encryptedTaxId = encryptField(
+        this.clientDetails.taxId,
+      );
     }
   }
-  
+
   next();
 });
 
@@ -645,27 +646,39 @@ userSchema.virtual("allRoles").get(function () {
  * INSTANCE METHODS
  * ===============================
  */
-userSchema.methods.correctPassword = async function (candidatePassword, userPassword) {
+userSchema.methods.correctPassword = async function (
+  candidatePassword,
+  userPassword,
+) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
 userSchema.methods.createPasswordResetToken = function () {
   const resetToken = crypto.randomBytes(32).toString("hex");
-  this.passwordResetToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+  this.passwordResetToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
   this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
   return resetToken;
 };
 
 userSchema.methods.createVerificationToken = function () {
   const verificationToken = crypto.randomBytes(32).toString("hex");
-  this.verificationToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
+  this.verificationToken = crypto
+    .createHash("sha256")
+    .update(verificationToken)
+    .digest("hex");
   this.verificationTokenExpires = Date.now() + 24 * 60 * 60 * 1000;
   return verificationToken;
 };
 
 userSchema.methods.changePasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
-    const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+    const changedTimestamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10,
+    );
     return JWTTimestamp < changedTimestamp;
   }
   return false;
@@ -685,7 +698,8 @@ userSchema.methods.getUserTypeLabel = function () {
 // ✅ NEW: Check if user has specific privilege
 userSchema.methods.hasPrivilege = function (privilege) {
   // Super admin has all privileges
-  if (this.role === "super-admin" || this.userType === "super-admin") return true;
+  if (this.role === "super-admin" || this.userType === "super-admin")
+    return true;
 
   // Check primary role
   if (this.role === privilege) return true;
@@ -717,7 +731,9 @@ userSchema.methods.can = function (permission) {
   if (this.userType === "super-admin") return true;
 
   if (this.hasPrivilege("admin") && this.adminDetails) {
-    return this.adminDetails.permissions.some((p) => p.actions.includes(permission));
+    return this.adminDetails.permissions.some((p) =>
+      p.actions.includes(permission),
+    );
   }
 
   return false;

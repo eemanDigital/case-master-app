@@ -349,23 +349,18 @@ const Register = () => {
                 </Form.Item>
               </div>
 
-              {/* Gender field - required for staff/lawyer */}
-              {(!token || invitationData?.role !== "client") && (
-                <Form.Item
-                  name="gender"
-                  label={<span style={{ color: "#334155" }}>Gender</span>}
-                  rules={[
-                    { required: true, message: "Please select your gender" },
-                  ]}>
-                  <Select
-                    placeholder="Select gender"
-                    size="large"
-                    className="w-full bg-white">
-                    <Option value="male">Male</Option>
-                    <Option value="female">Female</Option>
-                  </Select>
-                </Form.Item>
-              )}
+              {/* Gender */}
+              <Form.Item
+                name="gender"
+                label={<span style={{ color: "#334155" }}>Gender</span>}>
+                <Select
+                  placeholder="Select gender"
+                  size="large"
+                  className="w-full bg-white">
+                  <Option value="male">Male</Option>
+                  <Option value="female">Female</Option>
+                </Select>
+              </Form.Item>
 
               {/* Phone - always required */}
               <Form.Item
@@ -380,33 +375,32 @@ const Register = () => {
                 />
               </Form.Item>
 
-              {/* Address - required for staff/lawyer */}
-              {(!token || invitationData?.role !== "client") && (
-                <>
-                  <div className="grid grid-cols-2 gap-4">
-                    <Form.Item
-                      name="state"
-                      label={<span style={{ color: "#334155" }}>State</span>}
-                      rules={[{ required: true, message: "Required" }]}>
-                      <Select
-                        placeholder="Select state"
-                        size="large"
-                        showSearch
-                        className="w-full bg-white">
-                        {nigerianStates.map((state) => (
-                          <Option key={state} value={state}>
-                            {state}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
+              {/* Address */}
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <Form.Item
+                    name="state"
+                    label={<span style={{ color: "#334155" }}>State</span>}
+                    rules={[{ required: true, message: "Required" }]}>
+                    <Select
+                      placeholder="Select state"
+                      size="large"
+                      showSearch
+                      className="w-full bg-white">
+                      {nigerianStates.map((state) => (
+                        <Option key={state} value={state}>
+                          {state}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
 
-                    <Form.Item
-                      name="city"
-                      label={<span style={{ color: "#334155" }}>City</span>}
-                      rules={[{ required: true, message: "Required" }]}>
-                      <Input
-                        prefix={
+                  <Form.Item
+                    name="city"
+                    label={<span style={{ color: "#334155" }}>City</span>}
+                    rules={[{ required: true, message: "Required" }]}>
+                    <Input
+                      prefix={
                           <EnvironmentOutlined style={{ color: "#64748b" }} />
                         }
                         placeholder="Lagos"
@@ -437,8 +431,7 @@ const Register = () => {
                     />
                   </Form.Item>
                 </>
-              )}
-            </div>
+              </div>
 
             {/* Step 2: Firm Info (only for new registration) */}
             {!token && (
