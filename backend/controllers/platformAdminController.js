@@ -327,10 +327,10 @@ exports.approveFirm = catchAsync(async (req, res, next) => {
   firm.isActive = true;
   await firm.save();
 
-  // Activate ALL users in the firm, not just super-admin
+  // Activate ALL users in the firm and mark email as verified
   await User.updateMany(
     { firmId: firm._id },
-    { isActive: true, status: "active" },
+    { isActive: true, status: "active", isVerified: true },
   );
 
   const superAdmin = await User.findOne({
