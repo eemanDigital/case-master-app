@@ -99,13 +99,16 @@ const Register = () => {
           `${baseURL}/invitations/validate-firm/${token}`,
         );
         setInvitationData({ ...response.data.data, isNewFirmInvitation: true });
-        message.success("Firm invitation validated! Complete your registration.");
+        message.success(
+          "Firm invitation validated! Complete your registration.",
+        );
       } catch (firmError) {
         // If not a firm invitation, try as user invitation
-        response = await axios.get(
-          `${baseURL}/invitations/validate/${token}`,
-        );
-        setInvitationData({ ...response.data.data, isNewFirmInvitation: false });
+        response = await axios.get(`${baseURL}/invitations/validate/${token}`);
+        setInvitationData({
+          ...response.data.data,
+          isNewFirmInvitation: false,
+        });
         message.success("Invitation validated!");
       }
     } catch (error) {
@@ -140,7 +143,9 @@ const Register = () => {
       } else {
         // Direct registration (no invitation)
         await axios.post(`${baseURL}/users/register-firm`, values);
-        message.success("Firm registered successfully! Please wait for approval.");
+        message.success(
+          "Firm registered successfully! Please wait for approval.",
+        );
       }
       navigate("/users/login");
     } catch (error) {
@@ -349,15 +354,15 @@ const Register = () => {
                 <Form.Item
                   name="gender"
                   label={<span style={{ color: "#334155" }}>Gender</span>}
-                  rules={[{ required: true, message: "Please select your gender" }]}>
+                  rules={[
+                    { required: true, message: "Please select your gender" },
+                  ]}>
                   <Select
                     placeholder="Select gender"
                     size="large"
                     className="w-full bg-white">
                     <Option value="male">Male</Option>
                     <Option value="female">Female</Option>
-                    <Option value="other">Other</Option>
-                    <Option value="prefer-not-to-say">Prefer not to say</Option>
                   </Select>
                 </Form.Item>
               )}
@@ -413,8 +418,17 @@ const Register = () => {
 
                   <Form.Item
                     name="address"
-                    label={<span style={{ color: "#334155" }}>Residential Address</span>}
-                    rules={[{ required: true, message: "Please provide your residential address" }]}>
+                    label={
+                      <span style={{ color: "#334155" }}>
+                        Residential Address
+                      </span>
+                    }
+                    rules={[
+                      {
+                        required: true,
+                        message: "Please provide your residential address",
+                      },
+                    ]}>
                     <Input.TextArea
                       placeholder="123 Macaulay Street, Surulere"
                       rows={2}
@@ -444,7 +458,9 @@ const Register = () => {
                 <Form.Item
                   name="subdomain"
                   label={
-                    <span style={{ color: "#334155" }}>Subdomain (optional)</span>
+                    <span style={{ color: "#334155" }}>
+                      Subdomain (optional)
+                    </span>
                   }
                   extra={
                     <span style={{ color: "#64748b" }}>
@@ -527,12 +543,12 @@ const Register = () => {
                   label={<span style={{ color: "#334155" }}>Select Plan</span>}
                   rules={[{ required: true }]}
                   hidden={!!invitationData}>
-                  <Select
-                    size="large"
-                    className="w-full bg-white">
+                  <Select size="large" className="w-full bg-white">
                     <Option value="FREE">Free Trial (14 days)</Option>
                     <Option value="STARTER">Starter - ₦49/month</Option>
-                    <Option value="PROFESSIONAL">Professional - ₦149/month</Option>
+                    <Option value="PROFESSIONAL">
+                      Professional - ₦149/month
+                    </Option>
                     <Option value="ENTERPRISE">Enterprise - Custom</Option>
                   </Select>
                 </Form.Item>
