@@ -528,7 +528,9 @@ const Register = () => {
 
                 <Form.Item
                   name="address"
-                  label={<span style={{ color: "#334155" }}>Address</span>}
+                  label={
+                    <span style={{ color: "#334155" }}>Office Address</span>
+                  }
                   rules={[{ required: true, message: "Required" }]}>
                   <Input.TextArea
                     placeholder="123 Macaulay Street, Surulere"
