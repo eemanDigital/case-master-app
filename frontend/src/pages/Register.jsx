@@ -120,8 +120,8 @@ const Register = () => {
   const handleSubmit = async (values) => {
     setLoading(true);
     try {
-      // Check if this is a new firm invitation
       if (invitationData?.isNewFirmInvitation) {
+        // Platform admin invited this firm
         const data = {
           ...values,
           invitationToken: token,
@@ -129,14 +129,18 @@ const Register = () => {
         };
         await axios.post(`${baseURL}/users/register-firm`, data);
         message.success("Firm registered successfully! You can now log in.");
-      } else {
-        // Regular user invitation
+      } else if (invitationData && token) {
+        // Invitation to join an existing firm
         const data = {
           ...values,
-          ...(invitationData && { firmId: invitationData.firmId }),
+          firmId: invitationData.firmId,
         };
         await axios.post(`${baseURL}/invitations/accept/${token}`, data);
         message.success("Registration successful! Please login.");
+      } else {
+        // Direct registration (no invitation)
+        await axios.post(`${baseURL}/users/register-firm`, values);
+        message.success("Firm registered successfully! Please wait for approval.");
       }
       navigate("/users/login");
     } catch (error) {
