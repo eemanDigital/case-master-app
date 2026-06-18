@@ -98,13 +98,7 @@ const getPlatformFirmInvitationEmailHTML = ({
 `;
 
 exports.getAllFirms = catchAsync(async (req, res, next) => {
-  const {
-    page = 1,
-    limit = 20,
-    plan,
-    status,
-    search,
-  } = req.query;
+  const { page = 1, limit = 20, plan, status, search } = req.query;
 
   const query = {};
 
@@ -180,7 +174,12 @@ exports.createFirm = catchAsync(async (req, res, next) => {
   } = req.body;
 
   if (!firmName || !email || !firstName || !lastName) {
-    return next(new AppError("Please provide firmName, email, firstName, and lastName", 400));
+    return next(
+      new AppError(
+        "Please provide firmName, email, firstName, and lastName",
+        400,
+      ),
+    );
   }
 
   const limits = PLAN_LIMITS[plan] || PLAN_LIMITS.FREE;
@@ -193,11 +192,19 @@ exports.createFirm = catchAsync(async (req, res, next) => {
     const special = "!@#$%&*";
     const allChars = upper + lower + numbers + special;
 
-    const getRandom = (str) => str[Math.floor(crypto.randomBytes(2).readUInt16LE() % str.length)];
-    const base = getRandom(upper) + getRandom(lower) + getRandom(numbers) + getRandom(special);
+    const getRandom = (str) =>
+      str[Math.floor(crypto.randomBytes(2).readUInt16LE() % str.length)];
+    const base =
+      getRandom(upper) +
+      getRandom(lower) +
+      getRandom(numbers) +
+      getRandom(special);
     const extra = Array.from({ length: 4 }, () => getRandom(allChars)).join("");
 
-    return (base + extra).split("").sort(() => crypto.randomBytes(1)[0] % 3 - 1).join("");
+    return (base + extra)
+      .split("")
+      .sort(() => (crypto.randomBytes(1)[0] % 3) - 1)
+      .join("");
   };
 
   const tempPassword = generateValidPassword();
@@ -266,7 +273,8 @@ exports.createFirm = catchAsync(async (req, res, next) => {
     user.verifyToken = verifyToken;
     await user.save({ validateBeforeSave: false });
 
-    const frontendUrl = process.env.FRONTEND_URL || "https://case-master-app.vercel.app";
+    const frontendUrl =
+      process.env.FRONTEND_URL || "https://case-master-app.vercel.app";
     const verifyLink = `${frontendUrl}/dashboard/verify-account/${verifyToken}`;
 
     await sendMail(
@@ -281,7 +289,7 @@ exports.createFirm = catchAsync(async (req, res, next) => {
         password: tempPassword,
         link: verifyLink,
         toEmail: email,
-      }
+      },
     );
   } catch (emailError) {
     console.error("Failed to send welcome email:", emailError);
@@ -322,7 +330,7 @@ exports.approveFirm = catchAsync(async (req, res, next) => {
   // Activate ALL users in the firm, not just super-admin
   await User.updateMany(
     { firmId: firm._id },
-    { isActive: true, status: "active" }
+    { isActive: true, status: "active" },
   );
 
   const superAdmin = await User.findOne({
@@ -344,13 +352,13 @@ exports.approveFirm = catchAsync(async (req, res, next) => {
           <p>Your firm <strong>${firm.name}</strong> has been approved and is now active.</p>
           <p>You can now log in to your account:</p>
           <ul>
-            <li><strong>Login URL:</strong> ${process.env.FRONTEND_URL}/login</li>
+            <li><strong>Login URL:</strong> ${process.env.FRONTEND_URL}/users/login</li>
             <li><strong>Email:</strong> ${superAdmin.email}</li>
           </ul>
           <p>If you have any questions, contact support at support@lawmaster.ng</p>
           <p style="margin-top: 30px;">Best regards,<br/>The LawMaster Team</p>
         </div>
-        `
+        `,
       );
     } catch (emailError) {
       console.error("Failed to send approval email:", emailError);
@@ -395,7 +403,7 @@ exports.rejectFirm = catchAsync(async (req, res, next) => {
         <p>If you believe this is an error or would like to discuss further, please contact support.</p>
         <p style="margin-top: 30px;">Best regards,<br/>The LawMaster Team</p>
       </div>
-      `
+      `,
     );
   } catch (emailError) {
     console.error("Failed to send rejection email:", emailError);
@@ -420,10 +428,7 @@ exports.suspendFirm = catchAsync(async (req, res, next) => {
   firm.isActive = false;
   await firm.save();
 
-  await User.updateMany(
-    { firmId: firm._id },
-    { isActive: false }
-  );
+  await User.updateMany({ firmId: firm._id }, { isActive: false });
 
   res.status(200).json({
     status: "success",
@@ -445,10 +450,12 @@ exports.reactivateFirm = catchAsync(async (req, res, next) => {
   // Reactivate ALL users in the firm
   const result = await User.updateMany(
     { firmId: firm._id },
-    { isActive: true, status: "active" }
+    { isActive: true, status: "active" },
   );
 
-  console.log(`Reactivated ${result.modifiedCount} users for firm ${firm.name}`);
+  console.log(
+    `Reactivated ${result.modifiedCount} users for firm ${firm.name}`,
+  );
 
   res.status(200).json({
     status: "success",
@@ -475,12 +482,17 @@ exports.sendUpgradeInvitation = catchAsync(async (req, res, next) => {
   const targetPlanIndex = PLAN_ORDER.indexOf(targetPlan);
 
   if (targetPlanIndex <= currentPlanIndex) {
-    return next(new AppError("Target plan must be higher than the firm's current plan", 400));
+    return next(
+      new AppError(
+        "Target plan must be higher than the firm's current plan",
+        400,
+      ),
+    );
   }
 
   await PlatformInvite.updateMany(
     { firmId, status: "pending" },
-    { status: "cancelled" }
+    { status: "cancelled" },
   );
 
   const token = PlatformInvite.generateToken();
@@ -499,7 +511,7 @@ exports.sendUpgradeInvitation = catchAsync(async (req, res, next) => {
     sentBy: "Platform Admin",
   });
 
-  const upgradeUrl = `${process.env.FRONTEND_URL || 'https://case-master-app.vercel.app'}/upgrade?token=${token}`;
+  const upgradeUrl = `${process.env.FRONTEND_URL || "https://case-master-app.vercel.app"}/upgrade?token=${token}`;
 
   try {
     await sendCustomEmail(
@@ -520,7 +532,7 @@ exports.sendUpgradeInvitation = catchAsync(async (req, res, next) => {
         <p>This upgrade includes a 14-day free trial. After the trial, you can confirm payment to continue with the full plan.</p>
         <p style="margin-top: 30px;">Best regards,<br/>The LawMaster Team</p>
       </div>
-      `
+      `,
     );
   } catch (emailError) {
     console.error("Failed to send upgrade email:", emailError);
@@ -549,11 +561,13 @@ exports.acceptUpgradeInvitation = catchAsync(async (req, res, next) => {
     status: anyInvite.status,
     expiresAt: anyInvite.expiresAt,
     isExpired: anyInvite.expiresAt < new Date(),
-    isDeleted: anyInvite.isDeleted
+    isDeleted: anyInvite.isDeleted,
   });
 
   if (anyInvite.status !== "pending") {
-    return next(new AppError("This invitation has already been used or cancelled", 400));
+    return next(
+      new AppError("This invitation has already been used or cancelled", 400),
+    );
   }
 
   if (anyInvite.expiresAt < new Date()) {
@@ -650,7 +664,9 @@ exports.inviteNewFirm = catchAsync(async (req, res, next) => {
   });
 
   if (existingFirm) {
-    return next(new AppError("A firm with this name or email already exists", 400));
+    return next(
+      new AppError("A firm with this name or email already exists", 400),
+    );
   }
 
   const token = Invitation.generateToken();
@@ -698,7 +714,10 @@ exports.inviteNewFirm = catchAsync(async (req, res, next) => {
     );
     console.log("✅ Platform firm invitation sent to:", contactEmail);
   } catch (emailError) {
-    console.error("❌ Failed to send platform firm invitation:", emailError.message);
+    console.error(
+      "❌ Failed to send platform firm invitation:",
+      emailError.message,
+    );
   }
 
   res.status(201).json({
@@ -718,27 +737,22 @@ exports.inviteNewFirm = catchAsync(async (req, res, next) => {
 });
 
 exports.getPlatformStats = catchAsync(async (req, res) => {
-  const [
-    totalFirms,
-    planCounts,
-    statusCounts,
-    totalUsers,
-    newFirmsThisMonth,
-  ] = await Promise.all([
-    Firm.countDocuments(),
-    Firm.aggregate([
-      { $group: { _id: "$subscription.plan", count: { $sum: 1 } } },
-    ]),
-    Firm.aggregate([
-      { $group: { _id: "$subscription.status", count: { $sum: 1 } } },
-    ]),
-    User.countDocuments({ isDeleted: { $ne: true } }),
-    Firm.countDocuments({
-      createdAt: {
-        $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-      },
-    }),
-  ]);
+  const [totalFirms, planCounts, statusCounts, totalUsers, newFirmsThisMonth] =
+    await Promise.all([
+      Firm.countDocuments(),
+      Firm.aggregate([
+        { $group: { _id: "$subscription.plan", count: { $sum: 1 } } },
+      ]),
+      Firm.aggregate([
+        { $group: { _id: "$subscription.status", count: { $sum: 1 } } },
+      ]),
+      User.countDocuments({ isDeleted: { $ne: true } }),
+      Firm.countDocuments({
+        createdAt: {
+          $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+        },
+      }),
+    ]);
 
   const planBreakdown = {
     FREE: 0,
@@ -787,7 +801,7 @@ exports.getPendingFirms = catchAsync(async (req, res) => {
         ...firm.toObject(),
         superAdmin,
       };
-    })
+    }),
   );
 
   res.status(200).json({
