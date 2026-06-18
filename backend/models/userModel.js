@@ -71,7 +71,9 @@ const userSchema = new mongoose.Schema(
     address: {
       type: String,
       trim: true,
-      required: [true, "Please provide your residential address"],
+      required: function () {
+        return this.userType !== "client";
+      },
     },
 
     encryptedAddress: encryptedField,
