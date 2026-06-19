@@ -72,6 +72,7 @@ const Login = () => {
     // ── Success path: known device, login approved ───────────────────────
     if (isSuccess && isLoggedIn) {
       hasHandled.current = true;
+      toast.success("Login successful!");
 
       dispatch(getUser())
         .unwrap()

@@ -14,7 +14,7 @@ const GoogleUserLogin = () => {
   // ✅ Handle successful Google login
   useEffect(() => {
     if (isSuccess && isLoggedIn) {
-      // User data is already fetched in the loginWithGoogle thunk
+      toast.success("Login successful!");
       navigate("/dashboard");
       dispatch(RESET());
     }

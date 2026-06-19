@@ -487,7 +487,6 @@ const authSlice = createSlice({
         state.isSuccess = true;
         state.isLoggedIn = true;
         state.user = action.payload;
-        toast.success("Login Successful");
       })
       .addCase(login.rejected, (state, action) => {
         state.isLoading = false;
@@ -854,7 +853,6 @@ const authSlice = createSlice({
         state.isSuccess = true;
         state.isLoggedIn = true;
         state.twoFactor = false;
-        toast.success("Login Successful");
       })
       .addCase(loginWithCode.rejected, (state, action) => {
         state.isLoading = false;
@@ -872,7 +870,6 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.isLoggedIn = true;
-        toast.success("Login Successful");
       })
       .addCase(loginWithGoogle.rejected, (state, action) => {
         state.isLoading = false;

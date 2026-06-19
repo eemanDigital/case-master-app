@@ -456,8 +456,7 @@ const InvitationList = () => {
           form.resetFields();
         }}
         footer={null}
-        width={isMobile ? "95vw" : 500}
-        className="md:hidden">
+        width={isMobile ? "95vw" : 500}>
         <Form
           form={form}
           layout="vertical"
