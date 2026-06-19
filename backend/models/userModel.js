@@ -14,6 +14,8 @@ const encryptedField = {
   select: false,
 };
 
+const ROLES = ["client", "staff", "lawyer", "secretary", "hr", "admin", "super-admin"];
+
 const userSchema = new mongoose.Schema(
   {
     firmId: {
@@ -116,15 +118,7 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: {
-        values: [
-          "client",
-          "staff",
-          "lawyer",
-          "secretary",
-          "hr",
-          "admin",
-          "super-admin",
-        ],
+        values: ROLES,
         message: "{VALUE} is not a valid role",
       },
       default: function () {
@@ -136,11 +130,16 @@ const userSchema = new mongoose.Schema(
       },
     },
 
-    // ✅ NEW: Multiple roles/privileges support
+    // ✅ Multiple roles/privileges support
     additionalRoles: {
       type: [String],
-      enum: ["lawyer", "admin", "hr", "secretary"],
+      enum: ROLES,
       default: [],
+      set: function (roles) {
+        if (!roles) return [];
+        const uniqueRoles = [...new Set(roles)];
+        return uniqueRoles.filter((r) => r !== this.role);
+      },
     },
 
     // ✅ NEW: Position field (moved from nested objects)
@@ -159,6 +158,7 @@ const userSchema = new mongoose.Schema(
         "Administrator",
         "Secretary",
         "HR Manager",
+        "Client",
         "Other",
       ],
     },

@@ -1184,9 +1184,14 @@ exports.restrictTo = (...roles) => {
     const hasAccess = roles.some((role) => userRoles.includes(role));
 
     if (!hasAccess) {
-      return next(
-        new AppError("You do not have permission to perform this action", 403),
-      );
+      return res.status(200).json({
+        status: "success",
+        message: "No records found",
+        data: [],
+        total: 0,
+        page: 1,
+        results: 0,
+      });
     }
 
     next();
