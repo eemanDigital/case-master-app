@@ -964,6 +964,9 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 
   const filteredBody = filterObj(req.body, ...allowedFields);
 
+  // Never take photo from body — multipart/JSON parsing can corrupt it to {}
+  delete filteredBody.photo;
+
   // Add type-specific fields based on userType
   const user = await User.findById(req.user.id);
   if (user) {

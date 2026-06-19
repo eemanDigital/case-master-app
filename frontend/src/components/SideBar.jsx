@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { Menu, Typography, Badge, message } from "antd";
 import {
   DashboardOutlined,
@@ -48,6 +48,10 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
   const location = useLocation();
   const { isDarkMode } = useTheme();
   const { isSuperOrAdmin } = useAdminHook();
+  const { user } = useSelector((state) => state.auth);
+  const firmData = user?.data?.firmId || user?.firmId || {};
+  const firmName = firmData?.name || "LawMaster";
+  const firmLogo = firmData?.settings?.firmLogo;
 
   const [selectedKeys, setSelectedKeys] = useState(["dashboard"]);
   const [openKeys, setOpenKeys] = useState([]);
@@ -525,26 +529,34 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
         style={{ height: 64, minHeight: 64 }}>
         {!collapsed ? (
           <div className="flex items-center gap-3 w-full">
-            <div
-              className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg ${
-                isDarkMode
-                  ? "bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700"
-                  : "bg-gradient-to-br from-primary-500 via-primary-600 to-deepBlue-700"
-              }`}
-              style={{
-                boxShadow: isDarkMode
-                  ? "0 4px 14px rgba(59, 130, 246, 0.4)"
-                  : "0 4px 14px rgba(59, 130, 246, 0.3)",
-              }}>
-              <HomeOutlined className="text-white text-xl" />
-            </div>
+            {firmLogo ? (
+              <img
+                src={firmLogo}
+                alt={firmName}
+                className="w-11 h-11 rounded-xl object-cover flex-shrink-0 shadow-lg"
+              />
+            ) : (
+              <div
+                className={`w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg ${
+                  isDarkMode
+                    ? "bg-gradient-to-br from-primary-600 via-primary-500 to-primary-700"
+                    : "bg-gradient-to-br from-primary-500 via-primary-600 to-deepBlue-700"
+                }`}
+                style={{
+                  boxShadow: isDarkMode
+                    ? "0 4px 14px rgba(59, 130, 246, 0.4)"
+                    : "0 4px 14px rgba(59, 130, 246, 0.3)",
+                }}>
+                <HomeOutlined className="text-white text-xl" />
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <Text
                 strong
                 className={`block text-lg leading-tight font-semibold ${
                   isDarkMode ? "text-white" : "text-gray-900"
                 }`}>
-                LawMaster
+                {firmName}
               </Text>
               <Text
                 className={`block text-xs ${
@@ -566,7 +578,15 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
                 ? "0 4px 14px rgba(59, 130, 246, 0.4)"
                 : "0 4px 14px rgba(59, 130, 246, 0.3)",
             }}>
-            <HomeOutlined className="text-white text-xl" />
+            {firmLogo ? (
+              <img
+                src={firmLogo}
+                alt={firmName}
+                className="w-full h-full rounded-xl object-cover"
+              />
+            ) : (
+              <HomeOutlined className="text-white text-xl" />
+            )}
           </div>
         )}
       </div>

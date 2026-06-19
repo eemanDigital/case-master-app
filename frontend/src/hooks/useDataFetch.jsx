@@ -22,25 +22,25 @@ export const useDataFetch = () => {
   }, []);
 
   const dataFetcher = useCallback(
-    async (endpoint, method = "GET", payload = null) => {
+    async (endpoint, method = "GET", payload = null, config = {}) => {
       setLoading(true);
       try {
         let response;
         switch (method.toUpperCase()) {
           case "GET":
-            response = await apiService.get(`${endpoint}`);
+            response = await apiService.get(`${endpoint}`, config);
             break;
           case "POST":
-            response = await apiService.post(`${endpoint}`, payload);
+            response = await apiService.post(`${endpoint}`, payload, config);
             break;
           case "PUT":
-            response = await apiService.put(`${endpoint}`, payload);
+            response = await apiService.put(`${endpoint}`, payload, config);
             break;
           case "PATCH":
-            response = await apiService.patch(`${endpoint}`, payload);
+            response = await apiService.patch(`${endpoint}`, payload, config);
             break;
           case "DELETE":
-            response = await apiService.delete(`${endpoint}`);
+            response = await apiService.delete(`${endpoint}`, config);
             break;
           default:
             throw new Error(`Unsupported method: ${method}`);

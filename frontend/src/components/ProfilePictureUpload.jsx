@@ -29,10 +29,6 @@ const ProfilePictureUpload = () => {
     }
   };
 
-  const fileHeaders = {
-    "Content-Type": "multipart/form-data",
-  };
-
   // Handle file upload
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,7 +46,7 @@ const ProfilePictureUpload = () => {
     ) {
       const payload = new FormData();
       payload.append("photo", formData.photo);
-      await dataFetcher("users/updateUser", "patch", payload, fileHeaders);
+      await dataFetcher("users/updateUser", "patch", payload);
       dispatch(getUser());
     } else {
       return toast.error("Image type is not acceptable");
