@@ -245,7 +245,7 @@ exports.createFirm = catchAsync(async (req, res, next) => {
     address: address || "Platform created account",
     phone: phone || "+234",
     gender: gender || "male",
-    isVerified: false,
+    isVerified: true,
     isActive: true,
     status: "active",
     userAgent: ["platform-created"],
@@ -268,27 +268,22 @@ exports.createFirm = catchAsync(async (req, res, next) => {
   const user = await User.create(userData);
 
   try {
-    // Generate a verification token for the user
-    const verifyToken = crypto.randomBytes(32).toString("hex");
-    user.verifyToken = verifyToken;
-    await user.save({ validateBeforeSave: false });
-
     const frontendUrl =
       process.env.FRONTEND_URL || "https://case-master-app.vercel.app";
-    const verifyLink = `${frontendUrl}/dashboard/verify-account/${verifyToken}`;
+    const loginUrl = `${frontendUrl}/users/login`;
 
     await sendMail(
-      "Welcome to LawMaster - Verify Your Account",
+      "Welcome to LawMaster - Your Account Credentials",
       email,
       process.env.SENDINBLUE_EMAIL || "noreply@lawmaster.ng",
       "noreply@lawmaster.ng",
-      "verifyEmail",
+      "welcome",
       {
-        name: firstName,
-        companyName: firmName,
+        firstName,
+        email,
         password: tempPassword,
-        link: verifyLink,
-        toEmail: email,
+        loginUrl,
+        baseUrl: frontendUrl,
       },
     );
   } catch (emailError) {
