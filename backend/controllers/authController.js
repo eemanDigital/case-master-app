@@ -67,15 +67,15 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
   const FREE_LIMITS = {
     users: 3,
     storageGB: 5,
-    casesPerMonth: 10,
+    activeMatters: 3,
   };
 
   // Apply plan limits
   const planLimits = {
-    FREE: { users: 3, storageGB: 5, casesPerMonth: 10 },
-    BASIC: { users: 10, storageGB: 20, casesPerMonth: 50 },
-    PRO: { users: 25, storageGB: 100, casesPerMonth: 500 },
-    ENTERPRISE: { users: 999999, storageGB: 999999, casesPerMonth: 999999 },
+    FREE: { users: 3, storageGB: 5, activeMatters: 3 },
+    BASIC: { users: 10, storageGB: 20, activeMatters: 15 },
+    PRO: { users: 25, storageGB: 100, activeMatters: 50 },
+    ENTERPRISE: { users: 999999, storageGB: 999999, activeMatters: 999999 },
   };
   const selectedPlanLimits = planLimits[invitedPlan] || planLimits.FREE;
 
@@ -146,13 +146,12 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
       limits: {
         users: selectedPlanLimits.users,
         storageGB: selectedPlanLimits.storageGB,
-        casesPerMonth: selectedPlanLimits.casesPerMonth,
+        activeMatters: selectedPlanLimits.activeMatters,
       },
       usage: {
         currentUserCount: 0,
         storageUsedGB: 0,
-        casesThisMonth: 0,
-        lastResetAt: new Date(),
+        activeMatterCount: 0,
       },
     };
 
@@ -282,7 +281,7 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
               <ul style="color: #065f46; margin-top: 8px;">
                 <li>Users: Up to ${selectedPlanLimits.users}</li>
                 <li>Storage: ${selectedPlanLimits.storageGB}GB</li>
-                <li>Cases/month: ${selectedPlanLimits.casesPerMonth}</li>
+                <li>Active matters: ${selectedPlanLimits.activeMatters}</li>
                 <li>Trial: 14 days free</li>
               </ul>
             </div>
@@ -1716,23 +1715,24 @@ exports.checkUserLimit = catchAsync(async (req, res, next) => {
   next();
 });
 
-exports.checkCaseLimit = catchAsync(async (req, res, next) => {
+exports.checkMatterLimit = catchAsync(async (req, res, next) => {
   const firm = await Firm.findById(req.firmId);
 
   if (!firm) {
     return next(new AppError("Firm not found", 404));
   }
 
-  // Reset cases counter if new month
-  await firm.resetCasesIfNewMonth();
-
-  if (!firm.canCreateCase()) {
+  if (!(await firm.canCreateMatter())) {
     return next(
       new AppError(
-        `Your firm has reached the monthly case limit (${firm.limits.casesPerMonth}). Please upgrade your plan.`,
+        `Your firm has reached the active matter limit (${firm.limits.activeMatters}). Please close some matters or upgrade your plan.`,
         403,
       ),
     );
+  }
+
+  if (firm.isModified()) {
+    await firm.save({ validateBeforeSave: false });
   }
 
   next();

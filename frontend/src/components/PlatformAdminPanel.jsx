@@ -866,11 +866,11 @@ const PlatformAdminPanel = () => {
             <Title level={5}>Limits</Title>
             <p>Users: {selectedFirm.limits?.users}</p>
             <p>Storage (GB): {selectedFirm.limits?.storageGB}</p>
-            <p>Cases per Month: {selectedFirm.limits?.casesPerMonth}</p>
+            <p>Active Matters Limit: {selectedFirm.limits?.activeMatters}</p>
             <Title level={5}>Usage</Title>
             <p>Current Users: {selectedFirm.usage?.currentUserCount || 0}</p>
             <p>Storage Used (GB): {selectedFirm.usage?.storageUsedGB || 0}</p>
-            <p>Cases This Month: {selectedFirm.usage?.casesThisMonth || 0}</p>
+            <p>Active Matters: {selectedFirm.usage?.activeMatterCount || 0}</p>
             {selectedFirm.superAdmin && (
               <>
                 <Title level={5}>Super Admin</Title>

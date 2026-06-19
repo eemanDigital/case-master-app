@@ -1,6 +1,7 @@
 const PaginationServiceFactory = require("../services/PaginationServiceFactory");
 const modelConfigs = require("../config/modelConfigs");
 const Matter = require("../models/matterModel");
+const Firm = require("../models/firmModel");
 const User = require("../models/userModel");
 const LitigationDetail = require("../models/litigationDetailModel");
 const CorporateDetail = require("../models/corporateDetailModel");
@@ -142,6 +143,16 @@ exports.createMatter = catchAsync(async (req, res, next) => {
       .populate("client", "firstName lastName email phone");
 
     await populateDetailByType(populatedMatter);
+
+    // Sync active matter count for firm
+    try {
+      const firm = await Firm.findById(req.firmId);
+      if (firm) {
+        await firm.syncMatterCount();
+      }
+    } catch (syncErr) {
+      console.error("Failed to sync matter count:", syncErr.message);
+    }
 
     dispatch("matter.created", populatedMatter.toObject(), req.firmId).catch(err => {
       console.error("Automation dispatch error (matter.created):", err.message);
@@ -373,6 +384,16 @@ exports.updateMatter = catchAsync(async (req, res, next) => {
 
     await populateDetailByType(updatedMatter);
 
+    // Sync active matter count in case status changed
+    try {
+      const firm = await Firm.findById(req.firmId);
+      if (firm) {
+        await firm.syncMatterCount();
+      }
+    } catch (syncErr) {
+      console.error("Failed to sync matter count:", syncErr.message);
+    }
+
     res.status(200).json({
       status: "success",
       data: {
@@ -429,6 +450,16 @@ exports.deleteMatter = catchAsync(async (req, res, next) => {
 
     await session.commitTransaction();
     session.endSession();
+
+    // Sync active matter count
+    try {
+      const firm = await Firm.findById(req.firmId);
+      if (firm) {
+        await firm.syncMatterCount();
+      }
+    } catch (syncErr) {
+      console.error("Failed to sync matter count:", syncErr.message);
+    }
 
     res.status(204).json({
       status: "success",
@@ -487,6 +518,16 @@ exports.restoreMatter = catchAsync(async (req, res, next) => {
 
     await session.commitTransaction();
     session.endSession();
+
+    // Sync active matter count
+    try {
+      const firm = await Firm.findById(req.firmId);
+      if (firm) {
+        await firm.syncMatterCount();
+      }
+    } catch (syncErr) {
+      console.error("Failed to sync matter count:", syncErr.message);
+    }
 
     res.status(200).json({
       status: "success",
@@ -2000,7 +2041,6 @@ exports.logBulkOperation = catchAsync(async (req, res, next) => {
 // ============================================
 
 const File = require("../models/fileModel");
-const Firm = require("../models/firmModel");
 const s3Service = require("../services/s3Service");
 const path = require("path");
 

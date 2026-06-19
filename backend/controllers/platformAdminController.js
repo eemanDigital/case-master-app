@@ -8,10 +8,10 @@ const catchAsync = require("../utils/catchAsync");
 const { sendCustomEmail, sendMail } = require("../utils/email");
 
 const PLAN_LIMITS = {
-  FREE: { users: 3, storageGB: 5, casesPerMonth: 10 },
-  BASIC: { users: 10, storageGB: 20, casesPerMonth: 50 },
-  PRO: { users: 25, storageGB: 100, casesPerMonth: 500 },
-  ENTERPRISE: { users: 999999, storageGB: 999999, casesPerMonth: 999999 },
+  FREE: { users: 3, storageGB: 5, activeMatters: 3 },
+  BASIC: { users: 10, storageGB: 20, activeMatters: 15 },
+  PRO: { users: 25, storageGB: 100, activeMatters: 50 },
+  ENTERPRISE: { users: 999999, storageGB: 999999, activeMatters: 999999 },
 };
 
 const PLAN_ORDER = ["FREE", "BASIC", "PRO", "ENTERPRISE"];
@@ -226,8 +226,7 @@ exports.createFirm = catchAsync(async (req, res, next) => {
     usage: {
       currentUserCount: 1,
       storageUsedGB: 0,
-      casesThisMonth: 0,
-      lastResetAt: new Date(),
+      activeMatterCount: 0,
     },
   });
 

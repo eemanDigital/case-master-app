@@ -32,7 +32,7 @@ const PLANS = [
     period: "/month",
     features: [
       "Up to 3 users",
-      "50 cases per month",
+      "15 active matters",
       "20GB storage",
       "Email support",
     ],
@@ -44,7 +44,7 @@ const PLANS = [
     period: "/month",
     features: [
       "Up to 10 users",
-      "Unlimited cases",
+      "50 active matters",
       "100GB storage",
       "Priority support",
       "Advanced reporting",
@@ -58,7 +58,7 @@ const PLANS = [
     period: "",
     features: [
       "Unlimited users",
-      "Unlimited cases",
+      "Unlimited active matters",
       "Unlimited storage",
       "24/7 Dedicated support",
       "Custom integrations",
@@ -110,9 +110,9 @@ const SubscriptionInfoCard = ({ firmData, showUpgradeButton = true }) => {
   const currentStorage = usage?.storageUsedGB || 0;
   const storagePercentage = storageLimit === 999999 ? 0 : (currentStorage / storageLimit) * 100;
 
-  const casesLimit = limits?.casesPerMonth || 10;
-  const currentCases = usage?.casesThisMonth || 0;
-  const casesPercentage = casesLimit === 999999 ? 0 : (currentCases / casesLimit) * 100;
+  const mattersLimit = limits?.activeMatters || 3;
+  const currentMatters = usage?.activeMatterCount || 0;
+  const mattersPercentage = mattersLimit === 999999 ? 0 : (currentMatters / mattersLimit) * 100;
 
   const formatLimit = (value) => (value === 999999 ? "Unlimited" : value);
 
@@ -257,20 +257,20 @@ const SubscriptionInfoCard = ({ firmData, showUpgradeButton = true }) => {
               <div className="bg-white/10 rounded-lg p-3">
                 <div className="flex items-center justify-between mb-2">
                   <Text className="text-white/90">
-                    <FileTextOutlined className="mr-1" /> Cases/Month
+                    <FileTextOutlined className="mr-1" /> Active Matters
                   </Text>
                   <Text className="text-white font-semibold">
-                    {currentCases} / {formatLimit(casesLimit)}
+                    {currentMatters} / {formatLimit(mattersLimit)}
                   </Text>
                 </div>
                 <Progress
-                  percent={Math.min(casesPercentage, 100)}
+                  percent={Math.min(mattersPercentage, 100)}
                   showInfo={false}
                   strokeColor="white"
                   trailColor="rgba(255,255,255,0.2)"
                   size="small"
                 />
-                {casesPercentage >= 80 && (
+                {mattersPercentage >= 80 && (
                   <Text className="text-yellow-300 text-xs">
                     <WarningOutlined /> Approaching limit
                   </Text>

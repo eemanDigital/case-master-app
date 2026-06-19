@@ -25,10 +25,10 @@ router.get("/firm-storage-info", async (req, res, next) => {
 
     // Apply correct plan limits if needed (in case they weren't synced)
     const planLimits = {
-      FREE: { users: 1, storageGB: 5, casesPerMonth: 10 },
-      BASIC: { users: 3, storageGB: 20, casesPerMonth: 50 },
-      PRO: { users: 10, storageGB: 100, casesPerMonth: 999999 },
-      ENTERPRISE: { users: 999999, storageGB: 999999, casesPerMonth: 999999 },
+      FREE: { users: 1, storageGB: 5, activeMatters: 3 },
+      BASIC: { users: 3, storageGB: 20, activeMatters: 15 },
+      PRO: { users: 10, storageGB: 100, activeMatters: 50 },
+      ENTERPRISE: { users: 999999, storageGB: 999999, activeMatters: 999999 },
     };
 
     const plan = firm.subscription.plan;
@@ -145,10 +145,10 @@ router.post("/sync-storage", async (req, res, next) => {
 
     // Define plan limits
     const planLimits = {
-      FREE: { users: 1, storageGB: 5, casesPerMonth: 10 },
-      BASIC: { users: 3, storageGB: 20, casesPerMonth: 50 },
-      PRO: { users: 10, storageGB: 100, casesPerMonth: 999999 },
-      ENTERPRISE: { users: 999999, storageGB: 999999, casesPerMonth: 999999 },
+      FREE: { users: 1, storageGB: 5, activeMatters: 3 },
+      BASIC: { users: 3, storageGB: 20, activeMatters: 15 },
+      PRO: { users: 10, storageGB: 100, activeMatters: 50 },
+      ENTERPRISE: { users: 999999, storageGB: 999999, activeMatters: 999999 },
     };
 
     const plan = firm.subscription.plan;
@@ -161,7 +161,7 @@ router.post("/sync-storage", async (req, res, next) => {
       $set: {
         "limits.storageGB": limits.storageGB,
         "limits.users": limits.users,
-        "limits.casesPerMonth": limits.casesPerMonth,
+        "limits.activeMatters": limits.activeMatters,
         "usage.storageUsedGB": usageGB,
       },
     });

@@ -219,10 +219,10 @@ const firmSchema = new mongoose.Schema(
         type: Number,
         default: 5, // ✅ Perfect for budget hosting
       },
-      // ✅ ADDED: Monthly case limit (for FREE tier)
-      casesPerMonth: {
+      // Active matter limit per subscription plan
+      activeMatters: {
         type: Number,
-        default: 10, // FREE tier: 10 cases/month
+        default: 3, // FREE tier: 3 active matters
       },
     },
 
@@ -236,13 +236,9 @@ const firmSchema = new mongoose.Schema(
         type: Number,
         default: 0,
       },
-      casesThisMonth: {
+      activeMatterCount: {
         type: Number,
         default: 0,
-      },
-      lastResetAt: {
-        type: Date,
-        default: Date.now,
       },
     },
 
@@ -373,24 +369,6 @@ firmSchema.methods.isSubscriptionActive = function () {
 };
 
 /**
- * Reset cases counter if new month
- */
-firmSchema.methods.resetCasesIfNewMonth = async function () {
-  const now = new Date();
-  const lastReset = new Date(this.usage.lastResetAt);
-
-  const isNewMonth =
-    now.getMonth() !== lastReset.getMonth() ||
-    now.getFullYear() !== lastReset.getFullYear();
-
-  if (isNewMonth) {
-    this.usage.casesThisMonth = 0;
-    this.usage.lastResetAt = now;
-    await this.save({ validateBeforeSave: false });
-  }
-};
-
-/**
  * Check and handle trial expiry
  */
 firmSchema.methods.checkTrialExpiry = async function () {
@@ -404,7 +382,7 @@ firmSchema.methods.checkTrialExpiry = async function () {
     this.subscription.trialEndsAt = null;
     this.limits.users = 3;
     this.limits.storageGB = 5;
-    this.limits.casesPerMonth = 10;
+    this.limits.activeMatters = 3;
     await this.save({ validateBeforeSave: false });
   }
 };
@@ -417,27 +395,30 @@ firmSchema.methods.canAddUser = function (currentUserCount) {
 };
 
 /**
- * Check if firm can create more cases this month
+ * Check if firm can create more matters (active matter limit)
  */
-firmSchema.methods.canCreateCase = function () {
-  // PRO and ENTERPRISE have unlimited cases
+firmSchema.methods.canCreateMatter = async function () {
+  // PRO and ENTERPRISE have unlimited active matters
   if (["PRO", "ENTERPRISE"].includes(this.subscription.plan)) {
     return true;
   }
 
-  // Reset counter if month has changed
-  const now = new Date();
-  const lastReset = new Date(this.usage.lastResetAt);
+  // Count active (non-terminal) matters for this firm
+  const Matter = require("../models/matterModel");
+  const terminalStatuses = [
+    "completed", "closed", "archived", "settled",
+    "withdrawn", "won", "lost",
+  ];
 
-  if (
-    now.getMonth() !== lastReset.getMonth() ||
-    now.getFullYear() !== lastReset.getFullYear()
-  ) {
-    this.usage.casesThisMonth = 0;
-    this.usage.lastResetAt = now;
-  }
+  const activeCount = await Matter.countDocuments({
+    firmId: this._id,
+    isDeleted: { $ne: true },
+    status: { $nin: terminalStatuses },
+  });
 
-  return this.usage.casesThisMonth < this.limits.casesPerMonth;
+  this.usage.activeMatterCount = activeCount;
+
+  return activeCount < this.limits.activeMatters;
 };
 
 /**
@@ -449,10 +430,22 @@ firmSchema.methods.hasStorageAvailable = function (fileSizeGB) {
 };
 
 /**
- * Increment case counter (call after creating case)
+ * Sync active matter count from live query (call after creating/closing matter)
  */
-firmSchema.methods.incrementCaseCount = async function () {
-  this.usage.casesThisMonth += 1;
+firmSchema.methods.syncMatterCount = async function () {
+  const Matter = require("../models/matterModel");
+  const terminalStatuses = [
+    "completed", "closed", "archived", "settled",
+    "withdrawn", "won", "lost",
+  ];
+
+  const activeCount = await Matter.countDocuments({
+    firmId: this._id,
+    isDeleted: { $ne: true },
+    status: { $nin: terminalStatuses },
+  });
+
+  this.usage.activeMatterCount = activeCount;
   await this.save();
 };
 
@@ -470,22 +463,22 @@ firmSchema.methods.applyPlanLimits = function () {
     FREE: {
       users: 1,
       storageGB: 5,
-      casesPerMonth: 10,
+      activeMatters: 3,
     },
     BASIC: {
       users: 3,
       storageGB: 20,
-      casesPerMonth: 50,
+      activeMatters: 15,
     },
     PRO: {
       users: 10,
       storageGB: 100,
-      casesPerMonth: 999999, // Unlimited
+      activeMatters: 50,
     },
     ENTERPRISE: {
       users: 999999, // Unlimited
       storageGB: 999999, // Unlimited
-      casesPerMonth: 999999, // Unlimited
+      activeMatters: 999999, // Unlimited
     },
   };
 
@@ -493,7 +486,7 @@ firmSchema.methods.applyPlanLimits = function () {
 
   this.limits.users = limits.users;
   this.limits.storageGB = limits.storageGB;
-  this.limits.casesPerMonth = limits.casesPerMonth;
+  this.limits.activeMatters = limits.activeMatters;
 
   return this;
 };
@@ -508,7 +501,7 @@ firmSchema.methods.getPlanDetails = function () {
       price: 0,
       features: [
         "1 user",
-        "10 cases per month",
+        "3 active matters",
         "5GB storage",
         "Basic features",
       ],
@@ -518,7 +511,7 @@ firmSchema.methods.getPlanDetails = function () {
       price: 5000, // ₦5,000/month
       features: [
         "Up to 3 users",
-        "50 cases per month",
+        "15 active matters",
         "20GB storage",
         "Email support",
       ],
@@ -528,7 +521,7 @@ firmSchema.methods.getPlanDetails = function () {
       price: 15000, // ₦15,000/month
       features: [
         "Up to 10 users",
-        "Unlimited cases",
+        "50 active matters",
         "100GB storage",
         "Priority support",
         "Advanced reporting",
@@ -539,7 +532,7 @@ firmSchema.methods.getPlanDetails = function () {
       price: null, // Custom pricing
       features: [
         "Unlimited users",
-        "Unlimited cases",
+        "Unlimited active matters",
         "Unlimited storage",
         "Dedicated support",
         "Custom features",

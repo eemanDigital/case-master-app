@@ -6,6 +6,7 @@ const {
   canManageCases,
   canViewReports,
   checkPermission,
+  checkMatterLimit,
 } = require("../controllers/authController");
 const { auditMiddleware } = require("../middleware/auditMiddleware");
 
@@ -91,6 +92,7 @@ matterRouter.get(
 matterRouter.post(
   "/",
   canManageCases,
+  checkMatterLimit,
   matterController.validateMatterType,
   matterController.createMatter,
 );
