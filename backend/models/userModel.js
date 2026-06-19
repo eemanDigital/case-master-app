@@ -74,6 +74,7 @@ const userSchema = new mongoose.Schema(
       required: function () {
         return this.userType !== "client";
       },
+      
     },
 
     encryptedAddress: encryptedField,
