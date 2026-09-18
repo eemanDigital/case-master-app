@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 // components/TaskFileUploader.jsx
 import { useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
@@ -9,7 +10,6 @@ import {
   FileOutlined,
 } from "@ant-design/icons";
 import useModal from "../hooks/useModal";
-import { toast } from "react-toastify";
 
 const { Dragger } = Upload;
 
@@ -32,7 +32,7 @@ const TaskFileUploader = ({
 
   const handleUpload = async (values) => {
     if (fileList.length === 0) {
-      toast.error("Please select at least one file to upload");
+      notify.error("Please select at least one file to upload");
       return;
     }
 
@@ -72,7 +72,7 @@ const TaskFileUploader = ({
       });
 
       if (response) {
-        toast.success(`Successfully uploaded ${fileList.length} file(s)`);
+        notify.success(`Successfully uploaded ${fileList.length} file(s)`);
         form.resetFields();
         setFileList([]);
         handleCancel();
@@ -84,7 +84,7 @@ const TaskFileUploader = ({
     } catch (err) {
       console.error("Upload error:", err);
       const errorMsg = err?.message || "Failed to upload files";
-      toast.error(errorMsg);
+      notify.error(errorMsg);
     } finally {
       setUploading(false);
     }
@@ -93,7 +93,7 @@ const TaskFileUploader = ({
   const beforeUpload = (file) => {
     const isLt10M = file.size / 1024 / 1024 < 10;
     if (!isLt10M) {
-      toast.error("File must be smaller than 10MB!");
+      notify.error("File must be smaller than 10MB!");
       return false;
     }
 

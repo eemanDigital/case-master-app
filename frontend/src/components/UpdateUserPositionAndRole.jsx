@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 // components/UpdateUserPositionAndRole.jsx - COMPLETE REFACTOR
 import { useEffect, useState } from "react";
 import { Modal, Button, Form, Select, Input, Checkbox, Alert, Space, Tag } from "antd";
@@ -8,7 +9,6 @@ import {
   TeamOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
-import { toast } from "react-toastify";
 import PropTypes from "prop-types";
 import useModal from "../hooks/useModal";
 import { useDataFetch } from "../hooks/useDataFetch";
@@ -67,15 +67,15 @@ const UpdateUserPositionAndRole = ({ userId, userData }) => {
       );
 
       if (result && !result.error) {
-        toast.success("User information updated successfully");
+        notify.success("User information updated successfully");
         dispatch(getUsers());
         handleCancel();
       } else {
-        toast.error(result?.error || "Failed to update user");
+        notify.error(result?.error || "Failed to update user");
       }
     } catch (err) {
       console.error("Update error:", err);
-      toast.error("An error occurred while updating");
+      notify.error("An error occurred while updating");
     }
   };
 

@@ -1,3 +1,4 @@
+import notify from "../../utils/notify";
 import React, { useState } from "react";
 import { Button, Space, Modal, Dropdown } from "antd";
 import {
@@ -10,7 +11,6 @@ import {
   EyeOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 
 import TaskReviewModal from "../TaskReviewModal";
 import { useDataFetch } from "../../hooks/useDataFetch";
@@ -68,10 +68,10 @@ const TaskReviewActions = ({
             { comment: "Submitted for review" },
           );
           if (response.error) throw new Error(response.error);
-          toast.success("Task submitted for review!");
+          notify.success("Task submitted for review!");
           onStatusChange && onStatusChange();
         } catch (error) {
-          toast.error(error.message || "Failed to submit for review");
+          notify.error(error.message || "Failed to submit for review");
         }
       },
     });
@@ -91,10 +91,10 @@ const TaskReviewActions = ({
             { completionComment: "Task force completed" },
           );
           if (response.error) throw new Error(response.error);
-          toast.success("Task marked as completed!");
+          notify.success("Task marked as completed!");
           onStatusChange && onStatusChange();
         } catch (error) {
-          toast.error("Failed to mark as complete");
+          notify.error("Failed to mark as complete");
         }
       },
     });

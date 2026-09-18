@@ -56,7 +56,6 @@ import {
   postData,
   patchData,
 } from "../redux/features/delete/deleteSlice";
-import { toast } from "react-toastify";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 
 const { Title, Text, Paragraph } = Typography;

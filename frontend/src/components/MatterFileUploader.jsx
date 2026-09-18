@@ -1,10 +1,10 @@
+import notify from "../utils/notify";
 // components/MatterFileUploader.jsx
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import { Button, Modal, Upload, Form, Input, message } from "antd";
 import { UploadOutlined, InboxOutlined } from "@ant-design/icons";
 import useModal from "../hooks/useModal";
-import { toast } from "react-toastify";
 
 const { Dragger } = Upload;
 
@@ -27,7 +27,7 @@ const MatterFileUploader = ({
 
   const handleUpload = async (values) => {
     if (fileList.length === 0) {
-      toast.error("Please select at least one file to upload");
+      notify.error("Please select at least one file to upload");
       return;
     }
 
@@ -62,7 +62,7 @@ const MatterFileUploader = ({
       const data = await response.json();
 
       if (data.status === "success") {
-        toast.success(
+        notify.success(
           `Successfully uploaded ${fileList.length} file(s)`
         );
         form.resetFields();
@@ -76,7 +76,7 @@ const MatterFileUploader = ({
       }
     } catch (error) {
       console.error("Upload error:", error);
-      toast.error(error.message || "Failed to upload files");
+      notify.error(error.message || "Failed to upload files");
     } finally {
       setUploading(false);
     }

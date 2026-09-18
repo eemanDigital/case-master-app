@@ -1,7 +1,7 @@
+import notify from "../utils/notify";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { toast } from "react-toastify";
 import {
   login,
   RESET,
@@ -22,6 +22,8 @@ const Login = () => {
 
   // Guard refs — prevent the effect from firing more than once per login attempt
   const hasHandled = useRef(false);
+  // Only the email/password flow should be handled here, not Google login
+  const isEmailLogin = useRef(false);
 
   // Remove spaces from password field
   useEffect(() => {
@@ -37,10 +39,11 @@ const Login = () => {
   const loginUser = async (e) => {
     e.preventDefault();
     if (!inputValue.email || !inputValue.password) {
-      toast.error("Enter both your email and password");
+      notify.error("Enter both your email and password");
       return;
     }
     hasHandled.current = false; // allow the effect to run for this attempt
+    isEmailLogin.current = true; // only the email/password flow uses this effect
     await dispatch(login(inputValue));
   };
 
@@ -53,6 +56,8 @@ const Login = () => {
   useEffect(() => {
     // Only run once per login attempt
     if (hasHandled.current) return;
+    // Ignore Google login state changes — handled by GoogleUserLogin
+    if (!isEmailLogin.current) return;
 
     // ── 2FA path: new device detected ───────────────────────────────────
     // isError + twoFactor means the backend returned 400 "New device detected"
@@ -72,7 +77,7 @@ const Login = () => {
     // ── Success path: known device, login approved ───────────────────────
     if (isSuccess && isLoggedIn) {
       hasHandled.current = true;
-      toast.success("Login successful!");
+      notify.success("Login successful!");
 
       dispatch(getUser())
         .unwrap()

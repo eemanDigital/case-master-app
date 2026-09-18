@@ -1,8 +1,8 @@
+import notify from "../utils/notify";
 import { useEffect, useState, useCallback, lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { Table, Modal, Space, Button, Tag, Progress, Tooltip } from "antd";
 import { useDispatch, useSelector } from "react-redux";
-import { toast } from "react-toastify";
 import {
   PlusOutlined,
   EyeOutlined,
@@ -100,16 +100,16 @@ const InvoiceList = () => {
     try {
       await dispatch(deleteData(`invoices/${id}`));
     } catch (error) {
-      toast.error("Failed to delete invoice");
+      notify.error("Failed to delete invoice");
     }
   };
 
   useEffect(() => {
     if (isError) {
-      toast.error(message);
+      notify.error(message);
     }
     if (isSuccess) {
-      toast.success(message);
+      notify.success(message);
       fetchData();
     }
   }, [isError, isSuccess, message, fetchData]);

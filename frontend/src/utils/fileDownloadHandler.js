@@ -1,4 +1,4 @@
-import { toast } from "react-toastify";
+import notify from "./notify";
 
 /**
  * Universal file download handler (binary-safe)
@@ -62,10 +62,10 @@ export const downloadFile = async (
     link.remove();
     window.URL.revokeObjectURL(downloadUrl);
 
-    toast.success(`Downloading ${fileName}`);
+    notify.success(`Downloading ${fileName}`);
   } catch (error) {
     console.error("Download error:", error);
-    toast.error(error.message || "Failed to download file");
+    notify.error(error.message || "Failed to download file");
   }
 };
 
@@ -88,11 +88,11 @@ export const deleteFile = async (url, onSuccess) => {
     }
 
     const data = await response.json();
-    toast.success(data.message || "File deleted successfully");
+    notify.success(data.message || "File deleted successfully");
 
     if (onSuccess) onSuccess();
   } catch (error) {
     console.error("Delete error:", error);
-    toast.error(error.message || "Failed to delete file");
+    notify.error(error.message || "Failed to delete file");
   }
 };

@@ -1,8 +1,8 @@
+import notify from "../utils/notify";
 import { Form } from "antd";
 import { useCallback } from "react";
 import { useDataFetch } from "./useDataFetch";
 import { useDispatch } from "react-redux";
-import { toast } from "react-toastify";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { useDataGetterHook } from "./useDataGetterHook";
 import { useNavigate } from "react-router-dom";
@@ -27,16 +27,16 @@ const useHandleSubmit = (
     try {
       values = await form.validateFields(); // Validate the form fields
     } catch (errorInfo) {
-      toast.error("Validation failed");
+      notify.error("Validation failed");
       return;
     }
     try {
       const response = await dataFetcher(endpoint, method, values); // Submit the form data to the backend
 
       if (response?.error) {
-        toast.error(response?.error || "Error submitting data");
+        notify.error(response?.error || "Error submitting data");
       } else {
-        toast.success("Data submitted successfully");
+        notify.success("Data submitted successfully");
         if (path) {
           navigate(path);
         }
@@ -51,7 +51,7 @@ const useHandleSubmit = (
         }
       }
     } catch (error) {
-      toast.error("Error submitting report");
+      notify.error("Error submitting report");
     }
   }, [
     form,

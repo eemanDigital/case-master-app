@@ -49,7 +49,7 @@
 //         state.message = true;
 //         state.user = action.payload;
 //         state.isLoggedIn = true; // Update isLoggedIn state
-//         toast.success("Registration Successful");
+//         notify.success("Registration Successful");
 //       })
 //       .addCase(register.rejected, (state, action) => {
 //         state.isError = true;
@@ -57,7 +57,7 @@
 //         state.message = action.payload;
 //         state.user = null;
 //         state.isLoggedIn = false; // Update isLoggedIn state
-//         toast.error(action.payload);
+//         notify.error(action.payload);
 //       })
 // });
 

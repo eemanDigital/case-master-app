@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import PropTypes from "prop-types";
 import { useState } from "react";
 import {
@@ -12,7 +13,6 @@ import {
   Space,
 } from "antd";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
-import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { useDataFetch } from "../hooks/useDataFetch";
@@ -105,7 +105,7 @@ const LeaveResponseForm = ({ application, onSuccess }) => {
       );
 
       if (response?.status === "success") {
-        toast.success(`Leave application ${values.status} successfully`);
+        notify.success(`Leave application ${values.status} successfully`);
 
         // Prepare email data
         const emailData = {
@@ -141,7 +141,7 @@ const LeaveResponseForm = ({ application, onSuccess }) => {
       }
     } catch (err) {
       console.error("Response submission error:", err);
-      toast.error(err.message || "Failed to submit response");
+      notify.error(err.message || "Failed to submit response");
     }
   };
 

@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 // hooks/useTaskOperations.js
 import { useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -12,7 +13,6 @@ import {
   selectTaskError,
   selectTaskPagination,
 } from "../redux/features/task/taskSlice";
-import { toast } from "react-toastify";
 
 export const useTaskOperations = () => {
   const dispatch = useDispatch();
@@ -28,7 +28,7 @@ export const useTaskOperations = () => {
       try {
         await dispatch(fetchTasks(params)).unwrap();
       } catch (error) {
-        toast.error(error || "Failed to load tasks");
+        notify.error(error || "Failed to load tasks");
       }
     },
     [dispatch],
@@ -38,10 +38,10 @@ export const useTaskOperations = () => {
     async (taskId) => {
       try {
         await dispatch(deleteTask(taskId)).unwrap();
-        toast.success("Task deleted successfully");
+        notify.success("Task deleted successfully");
         return true;
       } catch (error) {
-        toast.error(error || "Failed to delete task");
+        notify.error(error || "Failed to delete task");
         return false;
       }
     },
@@ -52,10 +52,10 @@ export const useTaskOperations = () => {
     async (taskId, comment = "Submitted for review") => {
       try {
         await dispatch(submitForReview({ taskId, data: { comment } })).unwrap();
-        toast.success("Task submitted for review");
+        notify.success("Task submitted for review");
         return true;
       } catch (error) {
-        toast.error(error || "Failed to submit for review");
+        notify.error(error || "Failed to submit for review");
         return false;
       }
     },
@@ -68,10 +68,10 @@ export const useTaskOperations = () => {
         await dispatch(
           forceCompleteTask({ taskId, data: { completionComment: comment } }),
         ).unwrap();
-        toast.success("Task marked as complete");
+        notify.success("Task marked as complete");
         return true;
       } catch (error) {
-        toast.error(error || "Failed to mark task as complete");
+        notify.error(error || "Failed to mark task as complete");
         return false;
       }
     },

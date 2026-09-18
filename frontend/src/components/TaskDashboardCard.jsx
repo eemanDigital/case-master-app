@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import PropTypes from "prop-types";
 import { useState, useEffect, useMemo, useCallback } from "react";
 import dayjs from "dayjs";
@@ -33,7 +34,6 @@ import {
   FileSearchOutlined,
 } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import { useDataFetch } from "../hooks/useDataFetch";
 import TaskReviewModal from "./TaskReviewModal";
 
@@ -305,10 +305,10 @@ const TaskDashboardCard = ({ tasks, userId, onTaskUpdate }) => {
         { comment: "Submitted for review from dashboard" },
       );
       if (response.error) throw new Error(response.error);
-      toast.success("Task submitted for review!");
+      notify.success("Task submitted for review!");
       if (onTaskUpdate) onTaskUpdate();
     } catch (error) {
-      toast.error(error.message || "Failed to submit for review");
+      notify.error(error.message || "Failed to submit for review");
     }
   };
 

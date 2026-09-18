@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 // components/EditUserProfile.jsx - COMPLETE REFACTOR
 import { useState, useEffect } from "react";
 import {
@@ -19,7 +20,6 @@ import {
   TeamOutlined,
 } from "@ant-design/icons";
 import { useSelector, useDispatch } from "react-redux";
-import { toast } from "react-toastify";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import PropTypes from "prop-types";
@@ -162,7 +162,7 @@ const EditUserProfile = ({ userData }) => {
   // Success handling
   useEffect(() => {
     if (data) {
-      toast.success("Profile updated successfully");
+      notify.success("Profile updated successfully");
       handleCancel();
       navigate(0);
     }
@@ -171,7 +171,7 @@ const EditUserProfile = ({ userData }) => {
   // Error handling
   useEffect(() => {
     if (error) {
-      toast.error(error || "Failed to update profile");
+      notify.error(error || "Failed to update profile");
     }
   }, [error]);
 

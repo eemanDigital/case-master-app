@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import { useState, useCallback, useEffect } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import dayjs from "dayjs";
@@ -21,7 +22,6 @@ import useInvoiceRefSelectOptions from "../hooks/useInvoiceRefSelectOptions";
 import { PlusOutlined } from "@ant-design/icons";
 import { methodOptions, paymentStatusOptions } from "../data/options";
 import useModal from "../hooks/useModal";
-import { toast } from "react-toastify";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import ButtonWithIcon from "../components/ButtonWithIcon";
 
@@ -94,9 +94,9 @@ const CreatePaymentForm = ({
     await fetchData("payments", "payments");
 
     if (result?.error) {
-      toast.error("Submission Failed: " + (result?.error || result));
+      notify.error("Submission Failed: " + (result?.error || result));
     } else {
-      toast.success("Payment recorded successfully!");
+      notify.success("Payment recorded successfully!");
       if (onSuccess) {
         onSuccess();
       }

@@ -1,8 +1,8 @@
+import notify from "../utils/notify";
 import { Form, Input, Button, Typography, Card } from "antd";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { RESET, resetPassword } from "../redux/features/auth/authSlice";
-import { toast } from "react-toastify";
 import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 
 const { Title, Paragraph } = Typography;
@@ -20,10 +20,10 @@ const ForgotPasswordReset = () => {
         resetPassword({ resetToken: token, userData: values })
       ).unwrap();
       await dispatch(RESET());
-      toast.success("Password reset successfully!");
+      notify.success("Password reset successfully!");
       navigate("/users/login");
     } catch (error) {
-      toast.error("Failed to reset password. Please try again.");
+      notify.error("Failed to reset password. Please try again.");
     }
   };
 

@@ -1,7 +1,7 @@
+import notify from "../utils/notify";
 // pages/AddClientForm.jsx
 import { useEffect } from "react";
 import { Button, Form, Input, Card, Row, Col, Alert, Divider } from "antd";
-import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -33,21 +33,21 @@ const AddClientForm = () => {
       const result = await dispatch(register(clientData));
 
       if (result.error) {
-        toast.error("Failed to add client.");
+        notify.error("Failed to add client.");
         // ✅ Don't reset form - data is preserved
         return;
       }
 
       if (result.payload) {
         await dispatch(sendVerificationMail(values.email));
-        toast.success("Client added successfully! Verification email sent.");
+        notify.success("Client added successfully! Verification email sent.");
         
         // ✅ Only reset on success
         form.resetFields();
         setTimeout(() => navigate("/dashboard/clients"), 2000);
       }
     } catch (err) {
-      toast.error("Failed to add client.");
+      notify.error("Failed to add client.");
       console.error(err);
       // ✅ Form data preserved on error
     }

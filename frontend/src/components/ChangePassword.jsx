@@ -1,7 +1,6 @@
+import notify from "../utils/notify";
 import { useNavigate } from "react-router-dom";
 import { Modal, Button, Form, Input, Typography } from "antd";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import { EyeInvisibleOutlined, EyeTwoTone } from "@ant-design/icons";
 import {
   changePassword,
@@ -39,10 +38,10 @@ const ChangePassword = () => {
       await dispatch(sendAutomatedEmail(emailData));
       await dispatch(logout()).unwrap();
       await dispatch(RESET());
-      toast.success("Password changed successfully! Please log in again.");
+      notify.success("Password changed successfully! Please log in again.");
       navigate("/users/login");
     } catch (error) {
-      toast.error("Failed to change password. Please try again.");
+      notify.error("Failed to change password. Please try again.");
     }
   };
 

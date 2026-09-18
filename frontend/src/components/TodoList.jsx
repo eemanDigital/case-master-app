@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { Card, Empty, Modal, Tag, Statistic, Progress, Button } from "antd";
@@ -16,7 +17,6 @@ import {
 import TodoTask from "./TodoTask";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import TodoForm from "../pages/TodoForm";
-import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 
 const TodoList = () => {
@@ -76,7 +76,7 @@ const TodoList = () => {
   }
 
   if (error.todos) {
-    toast.error(error.todos);
+    notify.error(error.todos);
     return (
       <Card className="bg-gradient-to-br from-red-50 to-red-100/50 border-0 rounded-2xl h-[200px]">
         <div className="flex items-center justify-center h-full">

@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import { useEffect, useState } from "react";
 import {
   Button,
@@ -17,7 +18,6 @@ import useModal from "../hooks/useModal";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import { useDispatch, useSelector } from "react-redux";
 import { getUsers } from "../redux/features/auth/authSlice";
-import { toast } from "react-toastify";
 import {
   PlusOutlined,
   CalendarOutlined,
@@ -64,7 +64,7 @@ const CreateLeaveBalanceForm = () => {
       // Validate year (must be current or future year)
       const currentYear = new Date().getFullYear();
       if (values.year && values.year < currentYear) {
-        toast.error("Cannot create leave balance for past years");
+        notify.error("Cannot create leave balance for past years");
         return;
       }
 
@@ -84,7 +84,7 @@ const CreateLeaveBalanceForm = () => {
       // Get selected user for email data
       const selectedUser = users?.data?.find((u) => u._id === values.employee);
       if (!selectedUser) {
-        toast.error("Selected user not found");
+        notify.error("Selected user not found");
         return;
       }
 
@@ -123,7 +123,7 @@ const CreateLeaveBalanceForm = () => {
         // Send email notification
         await dispatch(sendAutomatedCustomEmail(emailData));
 
-        toast.success("Leave balance created successfully!");
+        notify.success("Leave balance created successfully!");
         handleCancel();
       }
     } catch (error) {
@@ -131,11 +131,11 @@ const CreateLeaveBalanceForm = () => {
 
       // Handle specific backend errors
       if (error.includes("already exists")) {
-        toast.error("Leave balance already exists for this employee and year");
+        notify.error("Leave balance already exists for this employee and year");
       } else if (error.includes("negative")) {
-        toast.error("Leave balance cannot be negative");
+        notify.error("Leave balance cannot be negative");
       } else {
-        toast.error(error || "An error occurred while creating leave balance");
+        notify.error(error || "An error occurred while creating leave balance");
       }
     }
   };
@@ -143,7 +143,7 @@ const CreateLeaveBalanceForm = () => {
   // Handle API responses
   useEffect(() => {
     if (data?.message === "success") {
-      toast.success("Leave balance created successfully!");
+      notify.success("Leave balance created successfully!");
       handleCancel();
     }
   }, [data, handleCancel]);
@@ -152,13 +152,13 @@ const CreateLeaveBalanceForm = () => {
     if (dataError) {
       // Handle specific error messages from backend
       if (dataError.includes("already exists")) {
-        toast.error("Leave balance already exists for this employee and year");
+        notify.error("Leave balance already exists for this employee and year");
       } else if (dataError.includes("negative")) {
-        toast.error("Leave balance values cannot be negative");
+        notify.error("Leave balance values cannot be negative");
       } else if (dataError.includes("required")) {
-        toast.error("Please fill all required fields");
+        notify.error("Please fill all required fields");
       } else {
-        toast.error(dataError);
+        notify.error(dataError);
       }
     }
   }, [dataError]);

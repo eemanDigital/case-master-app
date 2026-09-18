@@ -1,6 +1,5 @@
 // import { useState } from "react";
 // import { Modal, Select, Input, Progress, Alert } from "antd";
-// import { toast } from "react-toastify";
 // import ButtonWithIcon from "../components/ButtonWithIcon";
 // import { FaUpload, FaFileAlt, FaTimes } from "react-icons/fa";
 // import useFileManager from "../hooks/useFileManager";
@@ -94,7 +93,7 @@
 //     if (error) {
 //       setFileError(error);
 //       setFormData((prev) => ({ ...prev, file: null }));
-//       toast.error(error);
+//       notify.error(error);
 //       return;
 //     }
 
@@ -104,7 +103,7 @@
 //       file: file,
 //       fileName: prev.fileName || file.name.replace(/\.[^/.]+$/, ""),
 //     }));
-//     toast.success("File selected successfully");
+//     notify.success("File selected successfully");
 //   };
 
 //   // Handle drag events
@@ -166,12 +165,12 @@
 
 //     // Validate required fields
 //     if (!formData.file) {
-//       toast.error("Please select a file to upload");
+//       notify.error("Please select a file to upload");
 //       return;
 //     }
 
 //     if (!formData.fileName.trim()) {
-//       toast.error("Please enter a file name");
+//       notify.error("Please enter a file name");
 //       return;
 //     }
 
@@ -188,13 +187,13 @@
 //       const uploadedFiles = await uploadFiles([formData.file], additionalData);
 
 //       if (uploadedFiles && uploadedFiles.length > 0) {
-//         toast.success("Document uploaded successfully!");
+//         notify.success("Document uploaded successfully!");
 //         resetForm();
 //         setIsModalVisible(false);
 //       }
 //     } catch (error) {
 //       console.error("Upload error:", error);
-//       toast.error("Failed to upload document. Please try again.");
+//       notify.error("Failed to upload document. Please try again.");
 //     }
 //   };
 
@@ -220,7 +219,7 @@
 //   // Handle cancel
 //   const handleCancel = () => {
 //     if (loading) {
-//       toast.warning("Please wait for the upload to complete");
+//       notify.warning("Please wait for the upload to complete");
 //       return;
 //     }
 //     resetForm();

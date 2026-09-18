@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 // components/LoginWithCode.jsx
 import { useEffect, useState, useRef } from "react";
 import {
@@ -11,7 +12,6 @@ import {
   Divider,
 } from "antd";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { toast } from "react-toastify";
 import { useDispatch, useSelector } from "react-redux";
 import {
   KeyOutlined,
@@ -58,7 +58,7 @@ const LoginWithCode = () => {
   useEffect(() => {
     if (isSuccess && isLoggedIn && !hasNavigated.current) {
       hasNavigated.current = true;
-      toast.success("Login successful!");
+      notify.success("Login successful!");
       setTimeout(() => {
         dispatch(RESET());
         navigate("/dashboard");
@@ -71,7 +71,7 @@ const LoginWithCode = () => {
     const code = String(codeToSubmit || loginCode).trim();
 
     if (!/^\d{6}$/.test(code)) {
-      toast.error("Please enter a valid 6-digit code");
+      notify.error("Please enter a valid 6-digit code");
       return;
     }
 
@@ -96,10 +96,10 @@ const LoginWithCode = () => {
 
     try {
       await dispatch(sendLoginCode(email)).unwrap();
-      toast.success("New verification code sent!");
+      notify.success("New verification code sent!");
       setCountdown(60);
     } catch {
-      toast.error("Failed to send code. Please try again.");
+      notify.error("Failed to send code. Please try again.");
     } finally {
       setResendLoading(false);
       dispatch(RESET());

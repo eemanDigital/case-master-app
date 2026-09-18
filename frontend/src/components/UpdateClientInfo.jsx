@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 // components/UpdateClientInfo.jsx - ENHANCED VERSION
 import { useEffect } from "react";
 import { Modal, Button, Form, Input, Alert } from "antd";
@@ -7,7 +8,6 @@ import useModal from "../hooks/useModal";
 import useHandleSubmit from "../hooks/useHandleSubmit";
 import { useDispatch } from "react-redux";
 import { getUsers } from "../redux/features/auth/authSlice";
-import { toast } from "react-toastify";
 import PropTypes from "prop-types";
 
 const UpdateClientInfo = ({ clientData }) => {
@@ -38,7 +38,7 @@ const UpdateClientInfo = ({ clientData }) => {
   // Handle successful update
   useEffect(() => {
     if (data) {
-      toast.success("Client information updated successfully");
+      notify.success("Client information updated successfully");
       dispatch(getUsers());
       handleCancel();
       form.resetFields();

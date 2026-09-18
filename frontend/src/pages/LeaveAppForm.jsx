@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import { useState, useEffect } from "react";
 import {
   Modal,
@@ -11,7 +12,6 @@ import {
 } from "antd";
 import { CalendarOutlined, FileTextOutlined } from "@ant-design/icons";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { toast } from "react-toastify";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -128,7 +128,7 @@ const LeaveAppForm = ({ onSuccess }) => {
       );
 
       if (response?.status === "success") {
-        toast.success("Leave application submitted successfully");
+        notify.success("Leave application submitted successfully");
 
         // Prepare email data
         const emailData = {
@@ -160,7 +160,7 @@ const LeaveAppForm = ({ onSuccess }) => {
       }
     } catch (err) {
       console.error("Submit error:", err);
-      toast.error(err.message || "Failed to submit leave application");
+      notify.error(err.message || "Failed to submit leave application");
     }
   };
 

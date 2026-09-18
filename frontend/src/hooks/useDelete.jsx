@@ -1,6 +1,6 @@
+import notify from "../utils/notify";
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
 
 const baseURL = import.meta.env.VITE_BASE_URL;
 
@@ -21,7 +21,7 @@ const useDelete = (docData, storageName) => {
 
     try {
       await axios.delete(`${baseURL}/${url}`);
-      toast.success("Delete Successful");
+      notify.success("Delete Successful");
     } catch (err) {
       setDocuments((prevDocs) => [
         ...prevDocs,
@@ -32,7 +32,7 @@ const useDelete = (docData, storageName) => {
         err.response?.data?.message ||
         err.message ||
         "There was an error deleting the document.";
-      toast.error(errorMessage);
+      notify.error(errorMessage);
       console.error(err);
     }
   };

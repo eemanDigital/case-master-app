@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import { useCallback, useEffect, useState } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { MailOutlined } from "@ant-design/icons";
@@ -31,7 +32,6 @@ import { useDispatch, useSelector } from "react-redux";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { getUsers } from "../redux/features/auth/authSlice";
 import { formatDate } from "../utils/formatDate";
-import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import GoBackButton from "../components/GoBackButton";
 import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
@@ -196,7 +196,7 @@ const EditTaskForm = () => {
         const result = await dataFetcher(`tasks/${id}`, "PATCH", taskData);
 
         if (result?.error) {
-          toast.error(result.error || "Failed to update task");
+          notify.error(result.error || "Failed to update task");
           return;
         }
 
@@ -242,19 +242,19 @@ const EditTaskForm = () => {
             // Send email notification
             if (sendToEmails.length > 0) {
               await dispatch(sendAutomatedCustomEmail(emailData));
-              toast.success("Task updated and email notifications sent!");
+              notify.success("Task updated and email notifications sent!");
             }
           } catch (emailError) {
             console.error("Email sending error:", emailError);
-            toast.warning("Task updated but email notification failed.");
+            notify.warning("Task updated but email notification failed.");
           }
         } else {
           // Show success message without email
-          toast.success("Task updated successfully!");
+          notify.success("Task updated successfully!");
         }
       } catch (err) {
         console.error("Task update error:", err);
-        toast.error("Failed to update task. Please try again.");
+        notify.error("Failed to update task. Please try again.");
       }
     },
     [
@@ -277,7 +277,7 @@ const EditTaskForm = () => {
       values = await form.validateFields();
     } catch (errorInfo) {
       console.log("Validation failed:", errorInfo);
-      toast.error("Please fill in all required fields");
+      notify.error("Please fill in all required fields");
       return;
     }
     await handleSubmit(values);
@@ -286,7 +286,7 @@ const EditTaskForm = () => {
   // DataFetcher error
   useEffect(() => {
     if (dataError) {
-      toast.error(dataError || "An error occurred");
+      notify.error(dataError || "An error occurred");
     }
   }, [dataError]);
 

@@ -1,9 +1,9 @@
+import notify from "../utils/notify";
 import { useState } from "react";
 import { Button, Modal, Tabs, Empty } from "antd";
 import { UploadOutlined, PictureOutlined } from "@ant-design/icons";
 import { useSelector, useDispatch } from "react-redux";
 import { uploadFirmLogo, uploadFirmStamp, uploadFirmSignature } from "../redux/features/auth/authSlice";
-import { toast } from "react-toastify";
 
 const FirmBrandingUpload = () => {
   const [open, setOpen] = useState(false);
@@ -45,11 +45,11 @@ const FirmBrandingUpload = () => {
   const validateImage = (file) => {
     const allowedTypes = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
-      toast.error("Only JPG, PNG, and WebP images are allowed");
+      notify.error("Only JPG, PNG, and WebP images are allowed");
       return false;
     }
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image must be less than 5MB");
+      notify.error("Image must be less than 5MB");
       return false;
     }
     return true;
@@ -59,17 +59,17 @@ const FirmBrandingUpload = () => {
     let file, uploadAction;
 
     if (type === "logo") {
-      if (!logoFile) return toast.error("Please select a logo image");
+      if (!logoFile) return notify.error("Please select a logo image");
       if (!validateImage(logoFile)) return;
       file = logoFile;
       uploadAction = uploadFirmLogo;
     } else if (type === "stamp") {
-      if (!stampFile) return toast.error("Please select a stamp image");
+      if (!stampFile) return notify.error("Please select a stamp image");
       if (!validateImage(stampFile)) return;
       file = stampFile;
       uploadAction = uploadFirmStamp;
     } else if (type === "signature") {
-      if (!signatureFile) return toast.error("Please select a signature image");
+      if (!signatureFile) return notify.error("Please select a signature image");
       if (!validateImage(signatureFile)) return;
       file = signatureFile;
       uploadAction = uploadFirmSignature;
@@ -93,7 +93,7 @@ const FirmBrandingUpload = () => {
       }
       setOpen(false);
     } catch (error) {
-      toast.error(error || "Upload failed");
+      notify.error(error || "Upload failed");
     }
   };
 

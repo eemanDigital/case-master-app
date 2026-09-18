@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 // components/FileUploader.jsx
 import PropTypes from "prop-types";
 import { useState } from "react";
@@ -9,7 +10,6 @@ import {
   FileOutlined,
 } from "@ant-design/icons";
 import useModal from "../hooks/useModal";
-import { toast } from "react-toastify";
 
 const { Dragger } = Upload;
 const { Option } = Select;
@@ -50,7 +50,7 @@ const FileUploader = ({
 
   const handleUpload = async (values) => {
     if (fileList.length === 0) {
-      toast.error("Please select at least one file to upload");
+      notify.error("Please select at least one file to upload");
       return;
     }
 
@@ -126,7 +126,7 @@ const FileUploader = ({
       }
 
       // ✅ Success notification
-      toast.success(`Successfully uploaded ${uploadedFiles.length} file(s)`, {
+      notify.success(`Successfully uploaded ${uploadedFiles.length} file(s)`, {
         autoClose: 3000,
       });
 
@@ -155,7 +155,7 @@ const FileUploader = ({
       }
 
       // ✅ Show error notification (only once)
-      toast.error(errorMsg, {
+      notify.error(errorMsg, {
         autoClose: 5000,
       });
 

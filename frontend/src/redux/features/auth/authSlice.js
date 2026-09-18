@@ -1,6 +1,6 @@
+import notify from "../../../utils/notify";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import authService from "./authService";
-import { toast } from "react-toastify";
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
@@ -469,13 +469,13 @@ const authSlice = createSlice({
         state.message = "User added successfully";
         state.users = null;
         state.usersLastFetched = null;
-        toast.success("User added successfully");
+        notify.success("User added successfully");
       })
       .addCase(register.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── login ─────────────────────────────────────
@@ -494,7 +494,7 @@ const authSlice = createSlice({
         state.message = action.payload;
         state.user = null;
         state.isLoggedIn = false;
-        toast.error(action.payload);
+        notify.error(action.payload);
         if (
           action.payload?.includes("New Browser") ||
           action.payload?.includes("new browser")
@@ -518,13 +518,13 @@ const authSlice = createSlice({
         state.staffStatistics = null;
         state.clientStatistics = null;
         state.statusStatistics = null;
-        toast.success(action.payload);
+        notify.success(action.payload);
       })
       .addCase(logout.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── getLoginStatus ────────────────────────────
@@ -573,7 +573,7 @@ const authSlice = createSlice({
         state.usersLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── getUserStatistics ─────────────────────────
@@ -591,7 +591,7 @@ const authSlice = createSlice({
         state.statisticsError = String(
           action.payload || "Failed to load statistics",
         );
-        toast.error(state.statisticsError);
+        notify.error(state.statisticsError);
       })
 
       // ── getStaffStatistics ────────────────────────
@@ -608,7 +608,7 @@ const authSlice = createSlice({
         state.statisticsError = String(
           action.payload || "Failed to load staff statistics",
         );
-        toast.error(state.statisticsError);
+        notify.error(state.statisticsError);
       })
 
       // ── getClientStatistics ───────────────────────
@@ -625,7 +625,7 @@ const authSlice = createSlice({
         state.statisticsError = String(
           action.payload || "Failed to load client statistics",
         );
-        toast.error(state.statisticsError);
+        notify.error(state.statisticsError);
       })
 
       // ── getStatusStatistics ───────────────────────
@@ -642,7 +642,7 @@ const authSlice = createSlice({
         state.statisticsError = String(
           action.payload || "Failed to load status statistics",
         );
-        toast.error(state.statisticsError);
+        notify.error(state.statisticsError);
       })
 
       // ── sendVerificationMail ──────────────────────
@@ -653,13 +653,13 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.message = action.payload;
-        toast.success(action.payload);
+        notify.success(action.payload);
       })
       .addCase(sendVerificationMail.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── verifyUser ────────────────────────────────
@@ -670,13 +670,13 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.message = action.payload;
-        toast.success(action.payload);
+        notify.success(action.payload);
       })
       .addCase(verifyUser.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── forgotUserPassword ────────────────────────
@@ -687,13 +687,13 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.message = action.payload;
-        toast.success(action.payload);
+        notify.success(action.payload);
       })
       .addCase(forgotUserPassword.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── resetPassword ─────────────────────────────
@@ -704,13 +704,13 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.message = action.payload;
-        toast.success(action.payload);
+        notify.success(action.payload);
       })
       .addCase(resetPassword.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── changePassword ────────────────────────────
@@ -721,13 +721,13 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.message = action.payload;
-        toast.success(action.payload);
+        notify.success(action.payload);
       })
       .addCase(changePassword.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── deleteUser (hard) ─────────────────────────
@@ -740,13 +740,13 @@ const authSlice = createSlice({
         state.message = action.payload;
         state.users = null;
         state.usersLastFetched = null;
-        toast.success(action.payload);
+        notify.success(action.payload);
       })
       .addCase(deleteUser.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── softDeleteUser ────────────────────────────
@@ -761,13 +761,13 @@ const authSlice = createSlice({
           const idx = state.users.data.findIndex((u) => u._id === updated._id);
           if (idx !== -1) state.users.data[idx] = updated;
         }
-        toast.success("User deactivated successfully");
+        notify.success("User deactivated successfully");
       })
       .addCase(softDeleteUser.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── restoreUser ───────────────────────────────
@@ -782,13 +782,13 @@ const authSlice = createSlice({
           const idx = state.users.data.findIndex((u) => u._id === updated._id);
           if (idx !== -1) state.users.data[idx] = updated;
         }
-        toast.success("User restored successfully");
+        notify.success("User restored successfully");
       })
       .addCase(restoreUser.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── getDeletedUsers ─────────────────────────────
@@ -818,13 +818,13 @@ const authSlice = createSlice({
           const idx = state.users.data.findIndex((u) => u._id === updated._id);
           if (idx !== -1) state.users.data[idx] = updated;
         }
-        toast.success("User updated successfully");
+        notify.success("User updated successfully");
       })
       .addCase(upgradeUser.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── sendLoginCode ─────────────────────────────
@@ -835,13 +835,13 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.message = action.payload;
-        toast.success(action.payload);
+        notify.success(action.payload);
       })
       .addCase(sendLoginCode.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── loginWithCode ─────────────────────────────
@@ -859,7 +859,7 @@ const authSlice = createSlice({
         state.isError = true;
         state.message = action.payload;
         state.user = null;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── loginWithGoogle ───────────────────────────
@@ -876,7 +876,7 @@ const authSlice = createSlice({
         state.isError = true;
         state.message = action.payload;
         state.user = null;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── uploadFirmLogo ─────────────────────────────
@@ -886,13 +886,13 @@ const authSlice = createSlice({
       .addCase(uploadFirmLogo.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        toast.success(action.payload?.message || "Logo uploaded successfully");
+        notify.success(action.payload?.message || "Logo uploaded successfully");
       })
       .addCase(uploadFirmLogo.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── uploadFirmStamp ─────────────────────────────
@@ -902,13 +902,13 @@ const authSlice = createSlice({
       .addCase(uploadFirmStamp.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        toast.success(action.payload?.message || "Stamp uploaded successfully");
+        notify.success(action.payload?.message || "Stamp uploaded successfully");
       })
       .addCase(uploadFirmStamp.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
 
       // ── uploadFirmSignature ─────────────────────────
@@ -918,13 +918,13 @@ const authSlice = createSlice({
       .addCase(uploadFirmSignature.fulfilled, (state, action) => {
         state.isLoading = false;
         state.isSuccess = true;
-        toast.success(action.payload?.message || "Signature uploaded successfully");
+        notify.success(action.payload?.message || "Signature uploaded successfully");
       })
       .addCase(uploadFirmSignature.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       });
   },
 });

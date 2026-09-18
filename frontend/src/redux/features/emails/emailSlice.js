@@ -1,5 +1,5 @@
+import notify from "../../../utils/notify";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { toast } from "react-toastify";
 import emailService from "./emailService";
 
 const initialState = {
@@ -81,13 +81,13 @@ const emailSlice = createSlice({
         state.sendingEmail = false;
         state.emailSent = true;
         state.msg = action.payload;
-        toast.success(action.payload);
+        notify.success(action.payload);
       })
       .addCase(sendAutomatedEmail.rejected, (state, action) => {
         state.sendingEmail = false;
         state.emailSent = false;
         state.msg = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
       // send Automated Custom Email
       .addCase(sendAutomatedCustomEmail.pending, (state) => {
@@ -97,13 +97,13 @@ const emailSlice = createSlice({
         state.sendingEmail = false;
         state.emailSent = true;
         state.msg = action.payload;
-        toast.success(action.payload);
+        notify.success(action.payload);
       })
       .addCase(sendAutomatedCustomEmail.rejected, (state, action) => {
         state.sendingEmail = false;
         state.emailSent = false;
         state.msg = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       })
       // Send Custom Email with attachments
       .addCase(sendCustomEmail.pending, (state) => {
@@ -113,13 +113,13 @@ const emailSlice = createSlice({
         state.sendingEmail = false;
         state.emailSent = true;
         state.msg = action.payload.message;
-        toast.success(action.payload.message);
+        notify.success(action.payload.message);
       })
       .addCase(sendCustomEmail.rejected, (state, action) => {
         state.sendingEmail = false;
         state.emailSent = false;
         state.msg = action.payload;
-        toast.error(action.payload);
+        notify.error(action.payload);
       });
   },
 });

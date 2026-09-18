@@ -8,10 +8,8 @@ import {
   useNavigate,
   Navigate,
 } from "react-router-dom";
-import { ConfigProvider, Spin, Result, Button } from "antd";
+import { ConfigProvider, Spin, Result, Button, App as AntdApp } from "antd";
 import { Link } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
 import { getLoginStatus, getUser } from "./redux/features/auth/authSlice.js";
@@ -25,6 +23,7 @@ import DashboardLayout from "./components/DashboardLayout.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import Error from "./components/Error.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
+import NotificationHost from "./components/NotificationHost.jsx";
 import {
   ShowOnlyVerifiedUser,
   ShowStaff,
@@ -1434,27 +1433,6 @@ function App() {
     initialAuthCheck();
   }, [dispatch]);
 
-  const toastContainerProps = useMemo(
-    () => ({
-      position: "top-right",
-      autoClose: 4000,
-      hideProgressBar: false,
-      newestOnTop: false,
-      closeOnClick: true,
-      rtl: false,
-      pauseOnFocusLoss: true,
-      draggable: true,
-      pauseOnHover: true,
-      theme: isDarkMode ? "dark" : "light",
-      toastStyle: {
-        fontSize: "14px",
-        fontFamily: "'Poppins', sans-serif",
-        borderRadius: "8px",
-      },
-    }),
-    [isDarkMode],
-  );
-
   const antdTheme = useMemo(() => getAntdTheme(isDarkMode), [isDarkMode]);
 
   // ✅ FIX: Only show the boot loader during the very first auth check.
@@ -1469,8 +1447,10 @@ function App() {
       <ConfigProvider theme={antdTheme}>
         {/* ✅ Router is defined OUTSIDE the component (module level)
             so it's never recreated on re-renders */}
-        <RouterProvider router={router} />
-        <ToastContainer {...toastContainerProps} />
+        <AntdApp>
+          <RouterProvider router={router} />
+          <NotificationHost />
+        </AntdApp>
       </ConfigProvider>
     </ThemeProvider>
   );

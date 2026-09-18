@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 // TaskActions.jsx
 import React, { useCallback, useState, lazy, Suspense } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -20,7 +21,6 @@ import {
   selectTaskActionLoading,
 } from "../redux/features/task/taskSlice";
 import { selectUser } from "../redux/features/auth/authSlice";
-import { toast } from "react-toastify";
 
 const TaskReviewModal = lazy(() => import("./TaskReviewModal"));
 
@@ -66,10 +66,10 @@ const TaskActions = ({ task, onTaskUpdate, showDelete = true }) => {
               data: { comment: "Task submitted for review" },
             }),
           ).unwrap();
-          toast.success("Task submitted for review successfully");
+          notify.success("Task submitted for review successfully");
           onTaskUpdate?.();
         } catch (error) {
-          toast.error(error || "Failed to submit for review");
+          notify.error(error || "Failed to submit for review");
         } finally {
           setActionInProgress(false);
         }
@@ -99,11 +99,11 @@ const TaskActions = ({ task, onTaskUpdate, showDelete = true }) => {
         setActionInProgress(true);
         try {
           await dispatch(deleteTask(task._id)).unwrap();
-          toast.success("Task deleted successfully");
+          notify.success("Task deleted successfully");
           onTaskUpdate?.();
           navigate("/dashboard/tasks");
         } catch (error) {
-          toast.error(error || "Failed to delete task");
+          notify.error(error || "Failed to delete task");
         } finally {
           setActionInProgress(false);
         }
@@ -142,10 +142,10 @@ const TaskActions = ({ task, onTaskUpdate, showDelete = true }) => {
               data: { completionComment: "Task force completed by manager" },
             }),
           ).unwrap();
-          toast.success("Task marked as completed");
+          notify.success("Task marked as completed");
           onTaskUpdate?.();
         } catch (error) {
-          toast.error(error || "Failed to mark task as complete");
+          notify.error(error || "Failed to mark task as complete");
         } finally {
           setActionInProgress(false);
         }

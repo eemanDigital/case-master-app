@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import { useCallback, useEffect, useState } from "react";
 import useModal from "../hooks/useModal";
 import { Form } from "antd";
@@ -10,7 +11,6 @@ import {
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { getUsers, selectUsers } from "../redux/features/auth/authSlice";
 import { formatDate } from "../utils/formatDate";
-import { toast } from "react-toastify";
 import { Modal, Typography, Space, Alert, Checkbox, Divider } from "antd";
 import {
   PlusOutlined,
@@ -73,14 +73,14 @@ const CreateTaskForm = () => {
       try {
         // Validate required fields
         if (!values.title || !values.instruction || !values.dueDate) {
-          toast.error("Please fill in all required fields");
+          notify.error("Please fill in all required fields");
           return;
         }
 
         // Get current user ID safely
         const currentUserId = user?.data?._id || user?._id;
         if (!currentUserId) {
-          toast.error("User information not found");
+          notify.error("User information not found");
           return;
         }
 
@@ -183,14 +183,14 @@ const CreateTaskForm = () => {
                 }),
               ).unwrap();
 
-              toast.success("Task created and email notifications sent!");
+              notify.success("Task created and email notifications sent!");
             }
           } catch (emailError) {
             console.error("Email sending error:", emailError);
-            toast.warning("Task created but email notification failed.");
+            notify.warning("Task created but email notification failed.");
           }
         } else {
-          toast.success("Task created successfully!");
+          notify.success("Task created successfully!");
         }
 
         // Reset and close
@@ -200,7 +200,7 @@ const CreateTaskForm = () => {
         console.error("Task creation error:", err);
         const errorMessage =
           err?.message || "Failed to create task. Please try again.";
-        toast.error(errorMessage);
+        notify.error(errorMessage);
       }
     },
     [
@@ -221,10 +221,10 @@ const CreateTaskForm = () => {
     } catch (error) {
       if (error.errorFields) {
         // Form validation error
-        toast.error("Please fill in all required fields correctly");
+        notify.error("Please fill in all required fields correctly");
       } else {
         console.error("Submission error:", error);
-        toast.error("An error occurred while submitting the form");
+        notify.error("An error occurred while submitting the form");
       }
     }
   }, [form, handleSubmit]);

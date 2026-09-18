@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 // components/DocumentsList.jsx
 import PropTypes from "prop-types";
 import { useState, useEffect, useMemo } from "react";
@@ -46,7 +47,6 @@ import { formatDate } from "../utils/formatDate";
 import useFileManager from "../hooks/useFileManager";
 import useFirmStorage from "../hooks/useFirmStorage";
 import { useSelector } from "react-redux";
-import { toast } from "react-toastify";
 import FileUploader from "./FileUpload";
 
 const { Text, Title } = Typography;
@@ -245,10 +245,10 @@ const DocumentsList = ({
 
     try {
       await downloadFile(file);
-      toast.success(`Downloading ${file.fileName}...`);
+      notify.success(`Downloading ${file.fileName}...`);
     } catch (error) {
       console.error("Download failed:", error);
-      toast.error(`Failed to download ${file.fileName}`);
+      notify.error(`Failed to download ${file.fileName}`);
     }
   };
 
@@ -259,21 +259,21 @@ const DocumentsList = ({
     try {
       const success = await deleteFile(file);
       if (success) {
-        toast.success(`${file.fileName} deleted successfully`);
+        notify.success(`${file.fileName} deleted successfully`);
         setSelectedFiles((prev) => prev.filter((id) => id !== file._id));
         // Delay refresh to allow backend to complete storage update
         setTimeout(() => refreshStorage(), 500);
       }
     } catch (error) {
       console.error("Delete failed:", error);
-      toast.error(`Failed to delete ${file.fileName}`);
+      notify.error(`Failed to delete ${file.fileName}`);
     }
   };
 
   // Handle bulk delete
   const handleBulkDelete = async () => {
     if (selectedFiles.length === 0) {
-      toast.warning("No files selected for deletion");
+      notify.warning("No files selected for deletion");
       return;
     }
 
@@ -281,14 +281,14 @@ const DocumentsList = ({
     try {
       const success = await bulkDeleteFiles(selectedFiles);
       if (success) {
-        toast.success(`Successfully deleted ${selectedFiles.length} file(s)`);
+        notify.success(`Successfully deleted ${selectedFiles.length} file(s)`);
         setSelectedFiles([]);
         // Delay refresh to allow backend to complete storage update
         setTimeout(() => refreshStorage(), 500);
       }
     } catch (error) {
       console.error("Bulk delete failed:", error);
-      toast.error("Failed to delete selected files");
+      notify.error("Failed to delete selected files");
     } finally {
       setBatchActionLoading(false);
     }
@@ -297,7 +297,7 @@ const DocumentsList = ({
   // Handle bulk download
   const handleBulkDownload = async () => {
     if (selectedFiles.length === 0) {
-      toast.warning("No files selected for download");
+      notify.warning("No files selected for download");
       return;
     }
 
@@ -310,10 +310,10 @@ const DocumentsList = ({
           await downloadFile(file);
         }
       }
-      toast.success(`Downloading ${selectedFiles.length} file(s)...`);
+      notify.success(`Downloading ${selectedFiles.length} file(s)...`);
     } catch (error) {
       console.error("Bulk download failed:", error);
-      toast.error("Failed to download selected files");
+      notify.error("Failed to download selected files");
     } finally {
       setBatchActionLoading(false);
     }
@@ -1138,15 +1138,15 @@ const DocumentsList = ({
                       fetchFiles();
                       // Delay refresh to allow backend to complete storage update
                       setTimeout(() => refreshStorage(), 500);
-                      toast.success("Files uploaded successfully");
+                      notify.success("Files uploaded successfully");
                     }}
                     onUploadError={(error) => {
                       // Check if it's a storage limit error
                       const errorMessage = error?.response?.data?.message || "";
                       if (errorMessage.includes("storage") || errorMessage.includes("limit")) {
-                        toast.error("Storage limit reached. Please upgrade your plan to upload more files.");
+                        notify.error("Storage limit reached. Please upgrade your plan to upload more files.");
                       } else {
-                        toast.error(error.message || "Upload failed");
+                        notify.error(error.message || "Upload failed");
                       }
                       setTimeout(() => refreshStorage(), 500);
                     }}
@@ -1336,7 +1336,7 @@ const DocumentsList = ({
                 buttonText="Upload Files"
                 onUploadSuccess={() => {
                   fetchFiles();
-                  toast.success("Files uploaded successfully");
+                  notify.success("Files uploaded successfully");
                 }}
               />
             )}

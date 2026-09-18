@@ -1,6 +1,6 @@
+import notify from "../utils/notify";
 // components/ContactForm.jsx
 import { useState } from "react";
-import { toast } from "react-toastify";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -52,11 +52,11 @@ const ContactForm = () => {
       await dataFetcher("contacts", "post", values);
       await dispatch(sendAutomatedCustomEmail(emailData));
 
-      toast.success("Message sent successfully. We'll get back to you soon!");
+      notify.success("Message sent successfully. We'll get back to you soon!");
       form.resetFields();
       navigate("/dashboard");
     } catch (error) {
-      toast.error("Error sending message. Please try again.");
+      notify.error("Error sending message. Please try again.");
     } finally {
       setLoading(false);
     }

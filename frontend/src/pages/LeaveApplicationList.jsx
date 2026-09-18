@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import { useEffect, useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import {
@@ -25,7 +26,6 @@ import {
   MenuOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
-import { toast } from "react-toastify";
 import debounce from "lodash/debounce";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { useAdminHook } from "../hooks/useAdminHook";
@@ -169,20 +169,20 @@ const LeaveApplicationList = () => {
       await dataFetcher(`leaves/applications/${id}/cancel`, "PATCH", {
         cancellationReason: reason || "Cancelled by user",
       });
-      toast.success("Leave application cancelled successfully");
+      notify.success("Leave application cancelled successfully");
       fetchLeaveApplications();
     } catch (error) {
-      toast.error(error.message || "Failed to cancel leave application");
+      notify.error(error.message || "Failed to cancel leave application");
     }
   };
 
   const removeApplication = async (id) => {
     try {
       await dispatch(deleteData(`leaves/applications/${id}`)).unwrap();
-      toast.success("Leave application deleted successfully");
+      notify.success("Leave application deleted successfully");
       fetchLeaveApplications();
     } catch (error) {
-      toast.error("Failed to delete leave application");
+      notify.error("Failed to delete leave application");
     }
   };
 

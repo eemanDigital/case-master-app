@@ -1,9 +1,9 @@
+import notify from "../utils/notify";
 import PropTypes from "prop-types";
 import { useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { MdNotificationsNone } from "react-icons/md";
 import { Button, Input, Form, Modal, Card, Tooltip, DatePicker } from "antd";
-import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import {
   createReminder,
@@ -36,11 +36,11 @@ const TaskReminderForm = ({ taskId }) => {
           }),
         ).unwrap();
 
-        toast.success("Reminder created successfully!");
+        notify.success("Reminder created successfully!");
         form.resetFields();
         setOpen(false);
       } catch (error) {
-        toast.error(
+        notify.error(
           error?.message || "Failed to create reminder. Please try again.",
         );
       }

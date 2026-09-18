@@ -1,9 +1,9 @@
+import notify from "../utils/notify";
 // components/UpdateClientStatus.jsx - ENHANCED VERSION
 import { useState, useEffect } from "react";
 import { Modal, Button, Form, Checkbox, Alert, Space } from "antd";
 import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
-import { toast } from "react-toastify";
 import PropTypes from "prop-types";
 import useModal from "../hooks/useModal";
 import { useDataFetch } from "../hooks/useDataFetch";
@@ -33,17 +33,17 @@ const UpdateClientStatus = ({ clientId, clientData }) => {
       );
 
       if (result && !result.error) {
-        toast.success(
+        notify.success(
           `Client account ${values.isActive ? "activated" : "deactivated"} successfully`
         );
         dispatch(getUsers());
         handleCancel();
       } else {
-        toast.error(result?.error || "Failed to update status");
+        notify.error(result?.error || "Failed to update status");
       }
     } catch (err) {
       console.error("Update error:", err);
-      toast.error("An error occurred while updating");
+      notify.error("An error occurred while updating");
     }
   };
 

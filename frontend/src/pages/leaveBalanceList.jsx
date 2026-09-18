@@ -14,6 +14,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import SearchBar from "../components/SearchBar";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import notify from "../utils/notify";
 import avatar from "../assets/avatar.png";
 import CreateLeaveBalanceForm from "../components/CreateLeaveBalanceForm";
 
@@ -85,9 +86,9 @@ const LeaveBalanceList = () => {
     try {
       await dispatch(deleteData(`leaves/balances/${id}`)).unwrap();
       await fetchLeaveBalance();
-      toast.success("Leave balance deleted successfully");
+      notify.success("Leave balance deleted successfully");
     } catch (error) {
-      toast.error("Failed to delete leave balance");
+      notify.error("Failed to delete leave balance");
     }
   };
 

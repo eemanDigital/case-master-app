@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import React, { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -45,7 +46,6 @@ import {
 } from "../redux/features/task/taskSlice";
 
 import { formatDate } from "../utils/formatDate";
-import { toast } from "react-toastify";
 
 const { Text, Title, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -127,7 +127,7 @@ const TaskReviewModal = ({
       const data = await response.json();
 
       if (data.status === "success") {
-        toast.success("Response updated successfully");
+        notify.success("Response updated successfully");
         setIsEditing(false);
         setEditingResponse(null);
         onReviewComplete && onReviewComplete();
@@ -136,7 +136,7 @@ const TaskReviewModal = ({
       }
     } catch (error) {
       console.error("Error updating response:", error);
-      toast.error(error.message || "Failed to update response");
+      notify.error(error.message || "Failed to update response");
     } finally {
       setIsSubmitting(false);
     }

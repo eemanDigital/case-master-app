@@ -1,5 +1,5 @@
+import notify from "../../../utils/notify";
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { toast } from "react-toastify";
 import notesService from "./notesService";
 
 const initialState = {
@@ -32,7 +32,7 @@ export const fetchNotes = createAsyncThunk(
       return await notesService.getNotes(params);
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Failed to fetch notes";
-      toast.error(message);
+      notify.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -45,7 +45,7 @@ export const fetchNote = createAsyncThunk(
       return await notesService.getNote(id);
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Failed to fetch note";
-      toast.error(message);
+      notify.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -56,11 +56,11 @@ export const createNote = createAsyncThunk(
   async (noteData, thunkAPI) => {
     try {
       const response = await notesService.createNote(noteData);
-      toast.success("Note created successfully");
+      notify.success("Note created successfully");
       return response;
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Failed to create note";
-      toast.error(message);
+      notify.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -71,11 +71,11 @@ export const updateNote = createAsyncThunk(
   async ({ id, noteData }, thunkAPI) => {
     try {
       const response = await notesService.updateNote(id, noteData);
-      toast.success("Note updated successfully");
+      notify.success("Note updated successfully");
       return response;
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Failed to update note";
-      toast.error(message);
+      notify.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -86,11 +86,11 @@ export const deleteNote = createAsyncThunk(
   async ({ id, hard = false }, thunkAPI) => {
     try {
       await notesService.deleteNote(id, hard);
-      toast.success(hard ? "Note permanently deleted" : "Note moved to trash");
+      notify.success(hard ? "Note permanently deleted" : "Note moved to trash");
       return id;
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Failed to delete note";
-      toast.error(message);
+      notify.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -101,11 +101,11 @@ export const restoreNote = createAsyncThunk(
   async (id, thunkAPI) => {
     try {
       const response = await notesService.restoreNote(id);
-      toast.success("Note restored successfully");
+      notify.success("Note restored successfully");
       return response;
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Failed to restore note";
-      toast.error(message);
+      notify.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -116,11 +116,11 @@ export const togglePin = createAsyncThunk(
   async (id, thunkAPI) => {
     try {
       const response = await notesService.togglePin(id);
-      toast.success(response.data.note.isPinned ? "Note pinned" : "Note unpinned");
+      notify.success(response.data.note.isPinned ? "Note pinned" : "Note unpinned");
       return response;
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Failed to pin note";
-      toast.error(message);
+      notify.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -131,11 +131,11 @@ export const toggleFavorite = createAsyncThunk(
   async (id, thunkAPI) => {
     try {
       const response = await notesService.toggleFavorite(id);
-      toast.success(response.data.note.isFavorite ? "Added to favorites" : "Removed from favorites");
+      notify.success(response.data.note.isFavorite ? "Added to favorites" : "Removed from favorites");
       return response;
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Failed to favorite note";
-      toast.error(message);
+      notify.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -148,7 +148,7 @@ export const fetchTrashNotes = createAsyncThunk(
       return await notesService.getTrashNotes(params);
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Failed to fetch trash notes";
-      toast.error(message);
+      notify.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }

@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import {
@@ -32,7 +33,6 @@ import {
 import { formatDate } from "../utils/formatDate";
 import { useDispatch, useSelector } from "react-redux";
 import { deleteData } from "../redux/features/delete/deleteSlice";
-import { toast } from "react-toastify";
 import useFileManager from "../hooks/useFileManager";
 import { RESET } from "../redux/features/delete/deleteSlice";
 
@@ -68,7 +68,7 @@ const TaskResponse = ({
   // Handle toast notifications
   useEffect(() => {
     if (isSuccess) {
-      toast.success("Response deleted successfully");
+      notify.success("Response deleted successfully");
 
       if (onResponseUpdate) {
         onResponseUpdate();
@@ -78,7 +78,7 @@ const TaskResponse = ({
     }
 
     if (isError) {
-      toast.error(message || "Failed to delete response");
+      notify.error(message || "Failed to delete response");
       dispatch(RESET());
     }
   }, [isSuccess, isError, dispatch]);
@@ -114,7 +114,7 @@ const TaskResponse = ({
       await dispatch(deleteData(`tasks/${taskId}/responses/${responseId}`));
     } catch (error) {
       console.error("Error deleting response:", error);
-      toast.error("Failed to delete response");
+      notify.error("Failed to delete response");
     }
   };
 
@@ -124,10 +124,10 @@ const TaskResponse = ({
 
     try {
       await downloadFile(file);
-      toast.success(`Downloading ${file.fileName}...`);
+      notify.success(`Downloading ${file.fileName}...`);
     } catch (error) {
       console.error("Download failed:", error);
-      toast.error(`Failed to download ${file.fileName}`);
+      notify.error(`Failed to download ${file.fileName}`);
     }
   };
 
@@ -138,7 +138,7 @@ const TaskResponse = ({
     try {
       const success = await deleteFile(file);
       if (success) {
-        toast.success(`${file.fileName} deleted successfully`);
+        notify.success(`${file.fileName} deleted successfully`);
 
         // Optionally refresh the response data if needed
         if (onResponseUpdate) {
@@ -147,7 +147,7 @@ const TaskResponse = ({
       }
     } catch (error) {
       console.error("Delete failed:", error);
-      toast.error(`Failed to delete ${file.fileName}`);
+      notify.error(`Failed to delete ${file.fileName}`);
     }
   };
 

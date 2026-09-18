@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import { useCallback, useEffect } from "react";
 import { useDataFetch } from "../hooks/useDataFetch";
 import {
@@ -14,7 +15,6 @@ import {
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import useModal from "../hooks/useModal";
 import { useDispatch, useSelector } from "react-redux";
-import { toast } from "react-toastify";
 import { getUsers } from "../redux/features/auth/authSlice";
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import dayjs from "dayjs";
@@ -38,12 +38,12 @@ const EventForm = () => {
     (result) => {
       if (result?.error) {
         // Handle Error here
-        toast.error(
+        notify.error(
           result?.error?.message || "Failed to create event. Please try again."
         );
       } else {
         // Handle Success here
-        toast.success("Event created successfully!");
+        notify.success("Event created successfully!");
         form.resetFields();
         handleCancel(); // Close the modal
       }
@@ -122,14 +122,14 @@ const EventForm = () => {
             await dispatch(sendAutomatedCustomEmail(emailData));
           } catch (emailError) {
             console.error("Email sending failed:", emailError);
-            toast.warning(
+            notify.warning(
               "Event created successfully, but failed to send email notifications."
             );
           }
         }
       } catch (err) {
         console.error(err);
-        toast.error("An unexpected error occurred. Please try again.");
+        notify.error("An unexpected error occurred. Please try again.");
       }
     },
     [dataFetcher, handleSubmission, user, users, dispatch]
@@ -140,7 +140,7 @@ const EventForm = () => {
     try {
       values = await form.validateFields();
     } catch (errorInfo) {
-      toast.error("Please fill in all required fields correctly.");
+      notify.error("Please fill in all required fields correctly.");
       return;
     }
     await handleSubmit(values);
@@ -149,14 +149,14 @@ const EventForm = () => {
   // Show success message when email is sent
   useEffect(() => {
     if (emailSent) {
-      toast.success(msg);
+      notify.success(msg);
     }
   }, [emailSent, msg]);
 
   // Show error message when dataFetch error occurs
   useEffect(() => {
     if (error) {
-      toast.error(error?.message || "An error occurred. Please try again.");
+      notify.error(error?.message || "An error occurred. Please try again.");
     }
   }, [error]);
 

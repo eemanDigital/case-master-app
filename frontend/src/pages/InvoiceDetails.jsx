@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 // export default InvoiceDetails;
 import { useEffect, useState, lazy, Suspense } from "react";
 import { Link, useParams } from "react-router-dom";
@@ -45,7 +46,6 @@ import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import { useDownloadPdfHandler } from "../hooks/useDownloadPdfHandler";
 const CreatePaymentForm = lazy(() => import("./CreatePaymentForm"));
 import { useSelector } from "react-redux";
-import { toast } from "react-toastify";
 
 const { Title, Text } = Typography;
 const downloadURL = import.meta.env.VITE_BASE_URL;
@@ -91,18 +91,18 @@ const InvoiceDetails = () => {
     try {
       const result = await dataFetcher(`invoices/${id}`, "PATCH", { status: newStatus });
       if (result?.error) {
-        toast.error("Failed to update status: " + result.error);
+        notify.error("Failed to update status: " + result.error);
       } else {
-        toast.success(`Invoice marked as ${newStatus}`);
+        notify.success(`Invoice marked as ${newStatus}`);
         refreshInvoiceData();
       }
     } catch (err) {
-      toast.error("Failed to update status");
+      notify.error("Failed to update status");
     }
   };
 
   const handleDownloadBillOfCharges = () => {
-    toast.info("Generating bill of charges PDF...", { autoClose: 2000 });
+    notify.info("Generating bill of charges PDF...", { autoClose: 2000 });
     window.open(`${downloadURL}/invoices/bill-of-charges/${id}`, "_blank");
   };
 
@@ -178,7 +178,7 @@ const InvoiceDetails = () => {
       icon: <FilePdfOutlined />,
       label: "Download Invoice PDF",
       onClick: () => {
-        toast.info("Generating invoice PDF...", { autoClose: 2000 });
+        notify.info("Generating invoice PDF...", { autoClose: 2000 });
         handleDownloadPdf(
           null,
           `${downloadURL}/invoices/pdf/${invoice?._id}`,
@@ -191,7 +191,7 @@ const InvoiceDetails = () => {
       icon: <FileExcelOutlined />,
       label: "Download Bill of Charges",
       onClick: () => {
-        toast.info("Generating bill of charges PDF...", { autoClose: 2000 });
+        notify.info("Generating bill of charges PDF...", { autoClose: 2000 });
         handleDownloadBillOfCharges();
       },
     },

@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import { useState, useEffect } from "react";
 import {
   Form,
@@ -20,7 +21,6 @@ import useHandleSubmit from "../hooks/useHandleSubmit";
 import createMaxLengthRule from "../utils/createMaxLengthRule";
 import GoBackButton from "../components/GoBackButton";
 import { useDataFetch } from "../hooks/useDataFetch";
-import { toast } from "react-toastify";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import LoadingSpinner from "../components/LoadingSpinner";
 import {
@@ -118,7 +118,7 @@ const DocumentRecordForm = () => {
     undefined,
     undefined,
     () => {
-      toast.success(
+      notify.success(
         isEditMode
           ? "Document updated successfully"
           : "Document record created successfully",

@@ -1,10 +1,10 @@
+import notify from "../utils/notify";
 import { useEffect, useState } from "react";
 import { Table, Space, Button, Popconfirm, Modal } from "antd";
 import { DeleteOutlined } from "@ant-design/icons";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { Link } from "react-router-dom";
 import { deleteData } from "../redux/features/delete/deleteSlice";
-import { toast } from "react-toastify";
 import { useDispatch } from "react-redux";
 import { MdEventAvailable } from "react-icons/md";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
@@ -26,7 +26,7 @@ const EventList = () => {
       await dispatch(deleteData(`events/${id}`));
       await fetchData("events", "events");
     } catch (error) {
-      toast.error("Failed to delete task");
+      notify.error("Failed to delete task");
     }
   };
 

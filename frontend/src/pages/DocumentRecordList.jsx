@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -46,7 +47,6 @@ import {
 import { useDispatch } from "react-redux";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { useEffect, useState, useRef } from "react";
-import { toast } from "react-toastify";
 import {
   deleteData,
   postData,
@@ -278,13 +278,13 @@ const DocumentRecordList = () => {
         ? `documentRecord/${id}?permanent=true`
         : `documentRecord/${id}`;
       await dispatch(deleteData(endpoint));
-      toast.success(
+      notify.success(
         permanent ? "Document permanently deleted" : "Document moved to trash",
       );
       fetchDocumentRecords();
       fetchStats();
     } catch (error) {
-      toast.error("Failed to delete document");
+      notify.error("Failed to delete document");
     }
   };
 
@@ -293,11 +293,11 @@ const DocumentRecordList = () => {
       await dispatch(
         patchData({ endpoint: `documentRecord/${id}/restore`, data: {} }),
       );
-      toast.success("Document restored successfully");
+      notify.success("Document restored successfully");
       fetchDocumentRecords();
       fetchStats();
     } catch (error) {
-      toast.error("Failed to restore document");
+      notify.error("Failed to restore document");
     }
   };
 
@@ -313,14 +313,14 @@ const DocumentRecordList = () => {
           data: { documentIds: selectedRowKeys, status },
         }),
       );
-      toast.success(
+      notify.success(
         `${selectedRowKeys.length} document(s) updated to "${status}"`,
       );
       setSelectedRowKeys([]);
       fetchDocumentRecords();
       fetchStats();
     } catch (error) {
-      toast.error("Failed to update documents");
+      notify.error("Failed to update documents");
     }
   };
 
@@ -336,12 +336,12 @@ const DocumentRecordList = () => {
           data: { documentIds: selectedRowKeys },
         }),
       );
-      toast.success(`${selectedRowKeys.length} document(s) moved to trash`);
+      notify.success(`${selectedRowKeys.length} document(s) moved to trash`);
       setSelectedRowKeys([]);
       fetchDocumentRecords();
       fetchStats();
     } catch (error) {
-      toast.error("Failed to delete documents");
+      notify.error("Failed to delete documents");
     }
   };
 
@@ -362,7 +362,7 @@ const DocumentRecordList = () => {
         a.href = url;
         a.download = `document-records-${new Date().toISOString().split("T")[0]}.csv`;
         a.click();
-        toast.success("Export completed");
+        notify.success("Export completed");
       } else {
         const result = await response.json();
         const blob = new Blob([JSON.stringify(result.data, null, 2)], {
@@ -373,10 +373,10 @@ const DocumentRecordList = () => {
         a.href = url;
         a.download = `document-records-${new Date().toISOString().split("T")[0]}.json`;
         a.click();
-        toast.success("Export completed");
+        notify.success("Export completed");
       }
     } catch (error) {
-      toast.error("Export failed");
+      notify.error("Export failed");
     }
   };
 
@@ -388,11 +388,11 @@ const DocumentRecordList = () => {
           data: { status: newStatus },
         }),
       );
-      toast.success(`Status updated to "${newStatus}"`);
+      notify.success(`Status updated to "${newStatus}"`);
       fetchDocumentRecords();
       fetchStats();
     } catch (error) {
-      toast.error("Failed to update status");
+      notify.error("Failed to update status");
     }
   };
 

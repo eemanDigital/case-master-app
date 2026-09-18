@@ -1,3 +1,4 @@
+import notify from "../utils/notify";
 import { useState } from "react";
 import { Button, Modal } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
@@ -5,7 +6,6 @@ import useModal from "../hooks/useModal";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDispatch } from "react-redux";
 import { getUser } from "../redux/features/auth/authSlice";
-import { toast } from "react-toastify";
 import avatar from "../assets/avatar.png";
 
 const ProfilePictureUpload = () => {
@@ -35,7 +35,7 @@ const ProfilePictureUpload = () => {
 
     // check empty form upload
     if (formData.photo === null) {
-      return toast.error("Please upload a photo");
+      return notify.error("Please upload a photo");
     }
 
     // check image type
@@ -49,15 +49,15 @@ const ProfilePictureUpload = () => {
       await dataFetcher("users/updateUser", "patch", payload);
       dispatch(getUser());
     } else {
-      return toast.error("Image type is not acceptable");
+      return notify.error("Image type is not acceptable");
     }
 
     if (data?.data?.message === "success") {
-      return toast.success("Image Uploaded Successfully");
+      return notify.success("Image Uploaded Successfully");
     }
 
     if (error) {
-      return toast.error(error);
+      return notify.error(error);
     }
   };
 
