@@ -221,7 +221,7 @@ router.patch(
   uploadFirmSignature,
 );
 
-// Upgrade/Manage (Uses granular adminDetails checks)
+// Upgrade/Manage (Restricted to admins: isAdmin)
 router.patch("/upgradeUser/:id", canManageUsers, upgradeUser);
 router.patch("/soft-delete/:id", canManageUsers, softDeleteUser);
 router.patch("/restore/:id", canManageUsers, restoreUser);

@@ -43,7 +43,7 @@ matterRouter.use(auditMiddleware);
 // BULK & REPORTING ROUTES (Specific routes first)
 // ============================================
 
-// canManageCases uses the updated granular adminDetails check
+// canManageCases = restrictToAdmin (isAdmin: admin or super-admin)
 matterRouter.patch(
   "/bulk-update",
   canManageCases,
