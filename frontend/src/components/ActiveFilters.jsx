@@ -12,7 +12,7 @@ const ActiveFilters = ({ filters, onFilterRemove, onClearAll }) => {
       search: `Search: ${value}`,
       role: `Role: ${value}`,
       isActive: `Status: ${value === "true" ? "Active" : "Inactive"}`,
-      isLawyer: `Lawyer: ${value === "true" ? "Yes" : "No"}`,
+      adminLevel: `Admin: ${value}`,
       position: `Position: ${value}`,
       gender: `Gender: ${value}`,
       status: `Status: ${value}`,

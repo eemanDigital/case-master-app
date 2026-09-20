@@ -58,13 +58,15 @@ const StatusBadge = ({ isActive }) =>
   );
 
 const ROLE_COLORS = {
-  "super-admin": "volcano",
-  admin: "orange",
-  hr: "magenta",
   lawyer: "geekblue",
+  paralegal: "cyan",
   secretary: "cyan",
+  accountant: "green",
+  hr: "magenta",
+  receptionist: "lime",
+  it: "blue",
+  other: "default",
   client: "blue",
-  user: "default",
 };
 
 const getRoleColor = (role) => ROLE_COLORS[role] || "default";
@@ -432,7 +434,7 @@ const UserManagement = ({
           key: "practiceArea",
           width: 140,
           render: (_, record) =>
-            record.isLawyer ? (
+            record.role === "lawyer" ? (
               <Tag color="purple">{record.practiceArea || "Lawyer"}</Tag>
             ) : (
               <span className="text-gray-300 text-xs">N/A</span>

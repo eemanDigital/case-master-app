@@ -134,10 +134,10 @@ const useUsersCount = (data) => {
     const clients = users.filter((u) => u.role === "client");
     const staffMembers = users.filter((u) => u.role !== "client");
 
-    // Role specific counts
-    const lawyers = users.filter((u) => u.isLawyer === true);
+    // Role specific counts (new model: lawyer is a professional role)
+    const lawyers = users.filter((u) => u.role === "lawyer");
     const admins = users.filter(
-      (u) => u.role === "admin" || u.role === "super-admin"
+      (u) => u.adminLevel === "admin" || u.adminLevel === "super-admin"
     );
 
     const roleBreakdown = users.reduce((acc, user) => {
@@ -155,7 +155,7 @@ const useUsersCount = (data) => {
       totalActiveUsers: users.filter((u) => u.isActive).length,
       inactiveUsersCount: users.filter((u) => !u.isActive).length,
       verifiedUsersCount: users.filter((u) => u.isVerified).length,
-      superAdmin: roleBreakdown["super-admin"] || 0,
+      superAdmin: users.filter((u) => u.adminLevel === "super-admin").length,
       hr: roleBreakdown.hr || 0,
       secretary: roleBreakdown.secretary || 0,
       deletedCount: 0,

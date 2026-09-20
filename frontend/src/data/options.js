@@ -90,9 +90,9 @@ export const systemAccessLevelOptions = [
 ];
 
 export const adminLevelOptions = [
-  { value: "system", label: "System Level" },
-  { value: "firm", label: "Firm Level" },
-  { value: "department", label: "Department Level" },
+  { value: "none", label: "No Admin Privileges" },
+  { value: "admin", label: "Administrator" },
+  { value: "super-admin", label: "Super Administrator" },
 ];
 
 // Court names options
@@ -255,12 +255,14 @@ export const staffDepartmentOptions = [
 ];
 export const roleOptions = [
   { value: "client", label: "Client" },
-  { value: "staff", label: "Staff" },
   { value: "lawyer", label: "Lawyer" },
+  { value: "paralegal", label: "Paralegal" },
   { value: "secretary", label: "Secretary" },
+  { value: "accountant", label: "Accountant" },
   { value: "hr", label: "HR" },
-  { value: "admin", label: "Administrator" },
-  { value: "super-admin", label: "Super Administrator" },
+  { value: "receptionist", label: "Receptionist" },
+  { value: "it", label: "IT" },
+  { value: "other", label: "Other" },
 ];
 export const userTypeOptions = [
   {
@@ -271,17 +273,7 @@ export const userTypeOptions = [
   {
     value: "staff",
     label: "Staff",
-    description: "Non-lawyer employees of the firm",
-  },
-  {
-    value: "lawyer",
-    label: "Lawyer",
-    description: "Legal practitioners in the firm",
-  },
-  {
-    value: "admin",
-    label: "Administrator",
-    description: "System or firm administrators",
+    description: "Members of the firm (lawyers, paralegals, support staff)",
   },
 ];
 
@@ -303,12 +295,14 @@ export const positions = [
 
 export const roles = [
   { value: "", label: "Select user's role", disabled: true },
-  { value: "user", label: "User" },
-  { value: "admin", label: "Admin" },
+  { value: "lawyer", label: "Lawyer" },
+  { value: "paralegal", label: "Paralegal" },
   { value: "secretary", label: "Secretary" },
+  { value: "accountant", label: "Accountant" },
   { value: "hr", label: "HR" },
-  { value: "super-admin", label: "Super Admin" },
-  { value: "client", label: "Client" },
+  { value: "receptionist", label: "Receptionist" },
+  { value: "it", label: "IT" },
+  { value: "other", label: "Other" },
 ];
 
 export const gender = [

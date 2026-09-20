@@ -38,7 +38,7 @@ const EditUserProfile = ({ userData }) => {
   const navigate = useNavigate();
 
   const currentUserData = userData || user?.data || user;
-  const isLawyer = currentUserData?.isLawyer || currentUserData?.userType === "lawyer";
+  const isLawyer = currentUserData?.role === "lawyer";
   const isClient = currentUserData?.userType === "client";
   const isStaff = currentUserData?.userType === "staff";
 

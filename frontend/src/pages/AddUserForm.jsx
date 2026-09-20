@@ -188,11 +188,8 @@ const AddUserForm = () => {
             preferredContactMethod: "email",
             employmentType: "full-time",
             workSchedule: "9-5",
-            role: "staff",
-            hasAdminPrivileges: false,
-            hasLawyerPrivileges: false,
-            hasHrPrivileges: false,
-            additionalRoles: [],
+            role: "lawyer",
+            adminLevel: "none",
           }}
           preserve={true}
           scrollToFirstError

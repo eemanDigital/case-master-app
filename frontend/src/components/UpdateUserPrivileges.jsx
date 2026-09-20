@@ -1,17 +1,28 @@
 import notify from "../utils/notify";
-// components/UpdateUserPrivileges.jsx - NEW COMPONENT
+// components/UpdateUserPrivileges.jsx - NEW USER MODEL
+// Sets the professional role and administrative level for a user.
 import { useEffect } from "react";
-import { Modal, Button, Form, Checkbox, Alert, Card, Space } from "antd";
+import {
+  Modal,
+  Button,
+  Form,
+  Select,
+  Alert,
+  Card,
+  Space,
+  Tag,
+} from "antd";
 import {
   CrownOutlined,
   SafetyCertificateOutlined,
-  TeamOutlined,
+  IdcardOutlined,
 } from "@ant-design/icons";
 import { useDispatch } from "react-redux";
 import PropTypes from "prop-types";
 import useModal from "../hooks/useModal";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { getUsers } from "../redux/features/auth/authSlice";
+import { roleOptions, adminLevelOptions } from "../data/options";
 
 const UpdateUserPrivileges = ({ userId, userData }) => {
   const [form] = Form.useForm();
@@ -22,38 +33,17 @@ const UpdateUserPrivileges = ({ userId, userData }) => {
   useEffect(() => {
     if (userData && open) {
       form.setFieldsValue({
-        hasLawyerPrivileges: userData.isLawyer || false,
-        hasAdminPrivileges:
-          userData.additionalRoles?.includes("admin") || false,
-        hasHrPrivileges: userData.additionalRoles?.includes("hr") || false,
-        canManageUsers: userData.adminDetails?.canManageUsers || false,
-        canManageCases: userData.adminDetails?.canManageCases || false,
-        canManageBilling: userData.adminDetails?.canManageBilling || false,
-        canViewReports: userData.adminDetails?.canViewReports || false,
+        role: userData.role || userData.userType,
+        adminLevel: userData.adminLevel || "none",
       });
     }
   }, [userData, form, open]);
 
   const handleSubmit = async (values) => {
     try {
-      const additionalRoles = [];
-      if (values.hasLawyerPrivileges) additionalRoles.push("lawyer");
-      if (values.hasAdminPrivileges) additionalRoles.push("admin");
-      if (values.hasHrPrivileges) additionalRoles.push("hr");
-
       const updateData = {
-        additionalRoles,
-        isLawyer: values.hasLawyerPrivileges,
-        adminDetails: values.hasAdminPrivileges
-          ? {
-              adminLevel: "firm",
-              canManageUsers: values.canManageUsers,
-              canManageCases: values.canManageCases,
-              canManageBilling: values.canManageBilling,
-              canViewReports: values.canViewReports,
-              systemAccessLevel: "restricted",
-            }
-          : undefined,
+        role: values.role,
+        adminLevel: values.adminLevel,
       };
 
       const result = await dataFetcher(
@@ -107,7 +97,8 @@ const UpdateUserPrivileges = ({ userId, userData }) => {
                   {userData?.lastName}
                 </p>
                 <p>
-                  <strong>Primary Role:</strong> {userData?.userType}
+                  <strong>User Type:</strong>{" "}
+                  <Tag>{userData?.userType}</Tag>
                 </p>
               </div>
             }
@@ -116,116 +107,39 @@ const UpdateUserPrivileges = ({ userId, userData }) => {
             className="mb-6"
           />
 
-          {/* Lawyer Privileges */}
-          {userData?.userType !== "lawyer" && (
-            <Card className="mb-4 bg-purple-50 border-purple-200">
-              <Form.Item name="hasLawyerPrivileges" valuePropName="checked">
-                <Checkbox>
-                  <Space>
-                    <SafetyCertificateOutlined className="text-purple-600 text-lg" />
-                    <div>
-                      <span className="font-semibold text-base">
-                        Grant Lawyer Privileges
-                      </span>
-                      <p className="text-sm text-gray-600 mt-1">
-                        User can handle cases, appear in court, and access
-                        legal documents
-                      </p>
-                    </div>
-                  </Space>
-                </Checkbox>
-              </Form.Item>
-            </Card>
-          )}
+          <Card className="mb-4 bg-purple-50 border-purple-200">
+            <Form.Item
+              label="Professional Role"
+              name="role"
+              rules={[{ required: true, message: "Please select a role" }]}
+              extra="Determines day-to-day functions (case handling, documents, court appearances, etc.)"
+            >
+              <Select
+                size="large"
+                options={roleOptions.filter((r) => r.value !== "client")}
+                placeholder="Select role"
+                suffixIcon={<IdcardOutlined />}
+              />
+            </Form.Item>
+          </Card>
 
-          {/* Admin Privileges */}
-          {userData?.userType !== "admin" &&
-            userData?.userType !== "super-admin" && (
-              <Card className="mb-4 bg-orange-50 border-orange-200">
-                <Form.Item name="hasAdminPrivileges" valuePropName="checked">
-                  <Checkbox>
-                    <Space>
-                      <CrownOutlined className="text-orange-600 text-lg" />
-                      <div>
-                        <span className="font-semibold text-base">
-                          Grant Administrative Privileges
-                        </span>
-                        <p className="text-sm text-gray-600 mt-1">
-                          User can manage users, access settings, and view
-                          reports
-                        </p>
-                      </div>
-                    </Space>
-                  </Checkbox>
-                </Form.Item>
-
-                {/* Admin Permissions */}
-                <Form.Item
-                  noStyle
-                  shouldUpdate={(prev, curr) =>
-                    prev.hasAdminPrivileges !== curr.hasAdminPrivileges
-                  }
-                >
-                  {({ getFieldValue }) =>
-                    getFieldValue("hasAdminPrivileges") && (
-                      <div className="ml-8 mt-4 space-y-2 border-l-2 border-orange-300 pl-4">
-                        <p className="text-sm font-semibold text-gray-700 mb-3">
-                          Admin Permissions:
-                        </p>
-                        <Form.Item
-                          name="canManageUsers"
-                          valuePropName="checked"
-                          className="mb-2"
-                        >
-                          <Checkbox>Can Manage Users</Checkbox>
-                        </Form.Item>
-                        <Form.Item
-                          name="canManageCases"
-                          valuePropName="checked"
-                          className="mb-2"
-                        >
-                          <Checkbox>Can Manage Cases</Checkbox>
-                        </Form.Item>
-                        <Form.Item
-                          name="canManageBilling"
-                          valuePropName="checked"
-                          className="mb-2"
-                        >
-                          <Checkbox>Can Manage Billing</Checkbox>
-                        </Form.Item>
-                        <Form.Item
-                          name="canViewReports"
-                          valuePropName="checked"
-                        >
-                          <Checkbox>Can View Reports</Checkbox>
-                        </Form.Item>
-                      </div>
-                    )
-                  }
-                </Form.Item>
-              </Card>
-            )}
-
-          {/* HR Privileges */}
-          {userData?.userType === "staff" && (
-            <Card className="mb-4 bg-blue-50 border-blue-200">
-              <Form.Item name="hasHrPrivileges" valuePropName="checked">
-                <Checkbox>
-                  <Space>
-                    <TeamOutlined className="text-blue-600 text-lg" />
-                    <div>
-                      <span className="font-semibold text-base">
-                        Grant HR Privileges
-                      </span>
-                      <p className="text-sm text-gray-600 mt-1">
-                        User can manage employee records and recruitment
-                      </p>
-                    </div>
-                  </Space>
-                </Checkbox>
-              </Form.Item>
-            </Card>
-          )}
+          <Card className="mb-4 bg-orange-50 border-orange-200">
+            <Form.Item
+              label="Administrative Level"
+              name="adminLevel"
+              rules={[
+                { required: true, message: "Please select an admin level" },
+              ]}
+              extra="Administrators can manage users, settings, and reports. Super administrators additionally manage firm-wide configuration."
+            >
+              <Select
+                size="large"
+                options={adminLevelOptions}
+                placeholder="Select admin level"
+                suffixIcon={<SafetyCertificateOutlined />}
+              />
+            </Form.Item>
+          </Card>
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t">
@@ -255,9 +169,7 @@ UpdateUserPrivileges.propTypes = {
     lastName: PropTypes.string,
     userType: PropTypes.string,
     role: PropTypes.string,
-    isLawyer: PropTypes.bool,
-    additionalRoles: PropTypes.arrayOf(PropTypes.string),
-    adminDetails: PropTypes.object,
+    adminLevel: PropTypes.string,
   }).isRequired,
 };
 

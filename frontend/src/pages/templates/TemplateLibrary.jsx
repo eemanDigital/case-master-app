@@ -113,16 +113,8 @@ const TemplateLibrary = () => {
   const [createModal, setCreateModal] = useState(false);
 
   const canCreateTemplate =
-    user?.data?.role === "admin" ||
-    user?.data?.role === "super-admin" ||
-    user?.data?.role === "lawyer" ||
-    user?.data?.userType === "admin" ||
-    user?.data?.userType === "super-admin" ||
-    user?.data?.userType === "lawyer" ||
-    user?.data?.additionalRoles?.includes("admin") ||
-    user?.data?.additionalRoles?.includes("super-admin") ||
-    user?.data?.additionalRoles?.includes("lawyer") ||
-    user?.data?.isLawyer === true;
+    ["admin", "super-admin"].includes(user?.data?.adminLevel) ||
+    user?.data?.role === "lawyer";
 
   useEffect(() => {
     fetchTemplates();

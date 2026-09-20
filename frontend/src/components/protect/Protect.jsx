@@ -42,8 +42,8 @@ export const ShowAdminRoute = ({ children }) => {
   const user = useSelector(selectUser);
 
   if (
-    (isLoggedIn && user?.data?.role === "admin") ||
-    user?.data?.role === "super-admin"
+    isLoggedIn &&
+    ["admin", "super-admin"].includes(user?.data?.adminLevel)
   ) {
     return <>{children}</>;
   }
@@ -76,9 +76,8 @@ export const ShowAdminComponent = ({ children }) => {
   const user = useSelector(selectUser);
 
   if (
-    (isLoggedIn && user?.data?.additionalRoles.includes("super-admin")) ||
-    user?.data?.role === "super-admin" ||
-    user?.data?.role === "admin"
+    isLoggedIn &&
+    ["admin", "super-admin"].includes(user?.data?.adminLevel)
   ) {
     return <>{children}</>;
   }
@@ -89,7 +88,7 @@ export const ShowStaff = ({ children }) => {
   const isLoggedIn = useSelector(selectIsLoggedIn);
   const user = useSelector(selectUser);
 
-  if (isLoggedIn && user?.data?.role !== "client") {
+  if (isLoggedIn && user?.data?.userType !== "client") {
     return <>{children}</>;
   }
   return null;

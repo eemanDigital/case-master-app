@@ -89,10 +89,10 @@ const StaffDetails = () => {
       return staffData.allRoles;
     }
 
-    // Fallback to manual calculation
+    // Fallback to manual calculation (new model: single role + adminLevel)
     const roles = [staffData.role];
-    if (staffData.additionalRoles && staffData.additionalRoles.length > 0) {
-      roles.push(...staffData.additionalRoles);
+    if (staffData.adminLevel && staffData.adminLevel !== "none") {
+      roles.push(staffData.adminLevel);
     }
     return [...new Set(roles.filter(Boolean))];
   };
@@ -104,24 +104,17 @@ const StaffDetails = () => {
     const capabilities = [];
 
     // Lawyer capabilities
-    if (
-      staffData.isLawyer ||
-      staffData.role === "lawyer" ||
-      staffData.userType === "lawyer"
-    ) {
+    if (staffData.role === "lawyer") {
       capabilities.push("Lawyer");
     }
 
-    // Admin capabilities
-    if (staffData.adminDetails) {
-      if (staffData.adminDetails.canManageUsers)
-        capabilities.push("User Management");
-      if (staffData.adminDetails.canManageCases)
-        capabilities.push("Case Management");
-      if (staffData.adminDetails.canManageBilling)
-        capabilities.push("Billing Management");
-      if (staffData.adminDetails.canViewReports)
-        capabilities.push("Report Access");
+    // Admin capabilities (new model: adminLevel drives authority)
+    const adminLevel = staffData.adminLevel;
+    if (adminLevel === "admin" || adminLevel === "super-admin") {
+      capabilities.push("User Management");
+      capabilities.push("Case Management");
+      capabilities.push("Billing Management");
+      capabilities.push("Report Access");
     }
 
     // Department-based capabilities

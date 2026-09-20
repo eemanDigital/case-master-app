@@ -38,9 +38,9 @@ const InvoiceList = () => {
 
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const isSuperOrAdmin =
-    user?.data?.additionalRoles?.includes("super-admin") ||
-    user?.data?.role === "super-admin";
+  const isSuperOrAdmin = ["admin", "super-admin"].includes(
+    user?.data?.adminLevel
+  );
 
   useRedirectLogoutUser("/users/login");
 

@@ -85,26 +85,25 @@ const MatterForm = memo(
 
       return staffOptions
         .filter((user) => {
-          const isLawyer = user.userType === "lawyer" || user.isLawyer === true;
+          const isLawyer = user.role === "lawyer";
           const isAdmin =
-            user.userType === "admin" || user.userType === "super-admin";
+            user.adminLevel === "admin" || user.adminLevel === "super-admin";
           const hasAccountOfficerRole =
-            (user.additionalRoles && user.additionalRoles.includes("admin")) ||
-            (user.position &&
-              (user.position.toLowerCase().includes("account") ||
-                user.position.toLowerCase().includes("officer") ||
-                user.position.toLowerCase().includes("partner") ||
-                user.position.toLowerCase().includes("associate") ||
-                user.position.toLowerCase().includes("principal")));
+            user.position &&
+            (user.position.toLowerCase().includes("account") ||
+              user.position.toLowerCase().includes("officer") ||
+              user.position.toLowerCase().includes("partner") ||
+              user.position.toLowerCase().includes("associate") ||
+              user.position.toLowerCase().includes("principal"));
 
           return isLawyer || isAdmin || hasAccountOfficerRole;
         })
         .map((user) => ({
           ...user,
           displayText:
-            user.userType === "lawyer" || user.isLawyer
+            user.role === "lawyer"
               ? `${user.label} (Lawyer)`
-              : user.userType === "admin" || user.userType === "super-admin"
+              : user.adminLevel === "admin" || user.adminLevel === "super-admin"
                 ? `${user.label} (Admin)`
                 : user.userType === "staff"
                   ? `${user.label} (Staff${user.position ? ` - ${user.position}` : ""})`

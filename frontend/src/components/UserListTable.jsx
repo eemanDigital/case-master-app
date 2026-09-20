@@ -29,13 +29,15 @@ const UserListTable = ({
 }) => {
   const getRoleColor = (role) => {
     const colors = {
-      "super-admin": "volcano",
-      admin: "orange",
-      hr: "magenta",
       lawyer: "geekblue",
+      paralegal: "cyan",
       secretary: "cyan",
+      accountant: "green",
+      hr: "magenta",
+      receptionist: "lime",
+      it: "blue",
+      other: "default",
       client: "blue",
-      user: "default",
     };
     return colors[role] || "default";
   };
@@ -173,7 +175,7 @@ const UserListTable = ({
             key="isLawyer"
             width={140}
             render={(_, record) => {
-              if (record.isLawyer) {
+              if (record.role === "lawyer") {
                 return (
                   <Tag color="purple" className="mr-0">
                     {record.practiceArea || "Lawyer"}

@@ -28,8 +28,8 @@ export const useStaffList = () => {
     params.append("page", pagination.current);
     params.append("limit", pagination.limit);
 
-    // ✅ Filter for staff roles (all non-client users)
-    params.append("role", "staff,super-admin,admin,hr,secretary,lawyer");
+    // ✅ Filter for staff (all non-client users)
+    params.append("userType", "staff");
 
     // Add other filters
     Object.keys(filters).forEach((key) => {

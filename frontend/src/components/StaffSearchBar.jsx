@@ -112,13 +112,14 @@ const StaffSearchBar = ({
                     <Form.Item label="Role" name="role">
                       <Select placeholder="Select role" allowClear>
                         {[
-                          "super-admin",
-                          "admin",
-                          "hr",
-                          "secretary",
                           "lawyer",
-                          "client",
-                          "user",
+                          "paralegal",
+                          "secretary",
+                          "accountant",
+                          "hr",
+                          "receptionist",
+                          "it",
+                          "other",
                         ].map((role) => (
                           <Option key={role} value={role}>
                             {role
@@ -153,12 +154,12 @@ const StaffSearchBar = ({
                       </Select>
                     </Form.Item>
                   </Col>
-                  {/* Is Lawyer */}
+                  {/* Admin Level */}
                   <Col xs={24} md={8}>
-                    <Form.Item label="Is Lawyer" name="isLawyer">
-                      <Select placeholder="Select lawyer status" allowClear>
-                        <Option value="true">Yes</Option>
-                        <Option value="false">No</Option>
+                    <Form.Item label="Admin Level" name="adminLevel">
+                      <Select placeholder="Select admin level" allowClear>
+                        <Option value="admin">Administrator</Option>
+                        <Option value="super-admin">Super Administrator</Option>
                       </Select>
                     </Form.Item>
                   </Col>

@@ -1,5 +1,10 @@
 import { useSelector } from "react-redux";
 
+// Permission hook built on the new authorization model.
+//  - userType: "client" | "staff"
+//  - role: professional function ("client", "lawyer", "paralegal", "secretary",
+//    "accountant", "hr", "receptionist", "it", "other")
+//  - adminLevel: "none" | "admin" | "super-admin"
 export const useAdminHook = () => {
   const { user } = useSelector((state) => state.auth);
 
@@ -7,43 +12,23 @@ export const useAdminHook = () => {
   const userData = user?.data || user || {};
   const primaryRole = userData?.role || "";
   const userType = userData?.userType || "";
-  const additionalRoles = userData?.additionalRoles || [];
-  const isLawyerFlag = userData?.isLawyer || false;
+  const adminLevel = userData?.adminLevel || "none";
 
-  // Get all effective roles (primary + additional)
-  const getAllRoles = () => {
-    const roles = [primaryRole];
-    if (additionalRoles && additionalRoles.length > 0) {
-      roles.push(...additionalRoles);
-    }
-    return [...new Set(roles.filter(Boolean))];
-  };
-
-  const allRoles = getAllRoles();
+  // There is exactly one role per user. A role-less/staff fallback is "other".
+  const allRoles = [primaryRole || (userType === "staff" ? "other" : "")].filter(
+    Boolean
+  );
 
   // Check if user has specific role/privilege
   const hasRole = (role) => {
     if (!role) return false;
 
-    // Super-admin has all roles
-    if (primaryRole === "super-admin" || userType === "super-admin") {
-      return true;
-    }
+    // Admin levels imply the admin/super-admin "privileges"
+    if (role === "super-admin") return adminLevel === "super-admin";
+    if (role === "admin") return adminLevel === "admin" || adminLevel === "super-admin";
 
-    // Check primary role
-    if (primaryRole === role) return true;
-
-    // Check additional roles
-    if (additionalRoles && additionalRoles.includes(role)) {
-      return true;
-    }
-
-    // Special case for lawyer (check isLawyer flag)
-    if (role === "lawyer" && isLawyerFlag) {
-      return true;
-    }
-
-    return false;
+    // Otherwise check the single professional role
+    return primaryRole === role;
   };
 
   // Check if user has any of the specified roles
@@ -58,25 +43,18 @@ export const useAdminHook = () => {
     return rolesArray.every((role) => hasRole(role));
   };
 
-  // Individual role checks (updated with new model)
-  const isAdmin = hasRole("admin");
-  const isSuperAdmin = hasRole("super-admin");
-  const isSuperOrAdmin = hasAnyRole(["super-admin", "admin"]);
-  const isAdminOrHr = hasAnyRole(["super-admin", "admin", "hr"]);
-  const isStaff = hasAnyRole([
-    "staff",
-    "admin",
-    "hr",
-    "secretary",
-    "super-admin",
-    "lawyer",
-  ]);
-  const isLawyer = hasRole("lawyer") || isLawyerFlag;
-  const isSecretary = hasRole("secretary");
-  const isHr = hasRole("hr");
+  // Individual role checks
+  const isAdmin = adminLevel === "admin" || adminLevel === "super-admin";
+  const isSuperAdmin = adminLevel === "super-admin";
+  const isSuperOrAdmin = isAdmin;
+  const isAdminOrHr = isAdmin || primaryRole === "hr";
+  const isStaff = userType === "staff" || isAdmin;
+  const isLawyer = primaryRole === "lawyer";
+  const isSecretary = primaryRole === "secretary";
+  const isHr = primaryRole === "hr";
 
   const isClient = userType === "client" || primaryRole === "client";
-  const isUser = primaryRole === "user" || userType === "user"; // For backward compatibility
+  const isUser = false; // "user" is not a valid role in the new model
 
   // For verified user
   const isVerified = userData?.isVerified === true;
@@ -87,15 +65,12 @@ export const useAdminHook = () => {
   // Get lawyer practice areas
   const practiceAreas = userData?.lawyerDetails?.practiceAreas || [];
 
-  // Check if user can manage specific modules
-  const canManageUsers =
-    userData?.adminDetails?.canManageUsers || isSuperOrAdmin;
-  const canManageCases =
-    userData?.adminDetails?.canManageCases || isSuperOrAdmin || isLawyer;
-  const canManageBilling =
-    userData?.adminDetails?.canManageBilling || isSuperOrAdmin || isHr;
-  const canViewReports =
-    userData?.adminDetails?.canViewReports || isSuperOrAdmin;
+  // Module access is implied by admin level (admins manage the firm),
+  // with case management also open to lawyers and billing to HR.
+  const canManageUsers = isSuperOrAdmin;
+  const canManageCases = isSuperOrAdmin || isLawyer;
+  const canManageBilling = isSuperOrAdmin || isHr;
+  const canViewReports = isSuperOrAdmin;
 
   // Check department (for staff)
   const department = userData?.staffDetails?.department || "";
@@ -105,7 +80,7 @@ export const useAdminHook = () => {
     userData,
     userType,
     primaryRole,
-    additionalRoles,
+    adminLevel,
     allRoles,
 
     // Position and department
@@ -136,13 +111,6 @@ export const useAdminHook = () => {
     canManageCases,
     canManageBilling,
     canViewReports,
-
-    // // For backward compatibility with existing code
-    // isAdminOrHr, // Same as before
-    // isSuperOrAdmin, // Same as before
-    // isStaff, // Same as before
-    // isClient, // Same as before
-    // isVerified, // Same as before
   };
 };
 
@@ -152,10 +120,7 @@ export const useLawyerHook = () => {
   const userData = user?.data || user || {};
 
   return {
-    isLawyer:
-      userData?.isLawyer ||
-      userData?.role === "lawyer" ||
-      userData?.userType === "lawyer",
+    isLawyer: userData?.role === "lawyer",
     practiceAreas: userData?.lawyerDetails?.practiceAreas || [],
     barNumber: userData?.lawyerDetails?.barNumber,
     barAssociation: userData?.lawyerDetails?.barAssociation,

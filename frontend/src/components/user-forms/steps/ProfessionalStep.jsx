@@ -1,40 +1,43 @@
-// components/user-forms/steps/ProfessionalStep.jsx
-import { Tabs } from "antd";
+// components/user-forms/steps/ProfessionalStep.jsx - NEW USER MODEL
+// Shows the section matching the selected user type and professional role.
+import { Form } from "antd";
+import { Alert } from "antd";
 import PropTypes from "prop-types";
 import ClientFormSection from "../sections/ClientFormSection";
 import StaffFormSection from "../sections/StaffFormSection";
 import LawyerFormSection from "../sections/LawyerFormSection";
-import AdminFormSection from "../sections/AdminFormSection";
-
-const { TabPane } = Tabs;
 
 const ProfessionalStep = ({ selectedUserType }) => {
+  const form = Form.useFormInstance();
+  const role = Form.useWatch("role", form);
+
+  const isClient = selectedUserType === "client";
+  const isLawyerRole = !isClient && role === "lawyer";
+
   return (
     <div className="professional-step">
-      <Tabs activeKey={selectedUserType} className="user-type-tabs">
-        <TabPane tab="Client Details" key="client">
-          <ClientFormSection />
-        </TabPane>
-
-        <TabPane tab="Staff Details" key="staff">
+      {isClient ? (
+        <ClientFormSection />
+      ) : isLawyerRole ? (
+        <LawyerFormSection />
+      ) : (
+        <>
+          <Alert
+            message="Staff Details"
+            description="Provide the employment information for this staff member."
+            type="info"
+            showIcon
+            className="mb-4"
+          />
           <StaffFormSection />
-        </TabPane>
-
-        <TabPane tab="Lawyer Details" key="lawyer">
-          <LawyerFormSection />
-        </TabPane>
-
-        <TabPane tab="Admin Details" key="admin">
-          <AdminFormSection />
-        </TabPane>
-      </Tabs>
+        </>
+      )}
     </div>
   );
 };
 
 ProfessionalStep.propTypes = {
-  selectedUserType: PropTypes.oneOf(["client", "staff", "lawyer", "admin"])
-    .isRequired,
+  selectedUserType: PropTypes.oneOf(["client", "staff"]).isRequired,
 };
 
 export default ProfessionalStep;

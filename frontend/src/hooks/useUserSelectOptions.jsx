@@ -57,8 +57,7 @@ const useUserSelectOptions = (options = {}) => {
     } else if (type === "by-role" && role) {
       p.append("role", role);
     } else if (type === "lawyers" || lawyerOnly) {
-      p.append("userType", "lawyer");
-      if (lawyerOnly) p.append("isLawyer", "true");
+      p.append("role", "lawyer");
     } else {
       p.append("type", type);
     }
@@ -189,7 +188,7 @@ const useUserSelectOptions = (options = {}) => {
   const filterLawyersByPracticeArea = useCallback(
     (practiceArea) =>
       allUsersList
-        .filter((u) => u.userType === "lawyer" || u.isLawyer === true)
+        .filter((u) => u.role === "lawyer")
         .filter((u) => u.lawyerPracticeAreas?.includes(practiceArea)),
     [allUsersList],
   );
@@ -199,7 +198,9 @@ const useUserSelectOptions = (options = {}) => {
     (userId) => {
       const user = getUserById(userId);
       if (!user) return [];
-      return [...new Set([user.role, ...(user.additionalRoles || [])])];
+      // New model: single role + adminLevel (additionalRoles no longer exists)
+      const roles = [user.role, ...(user.adminLevel && user.adminLevel !== "none" ? [user.adminLevel] : [])];
+      return [...new Set(roles.filter(Boolean))];
     },
     [getUserById],
   );
@@ -208,12 +209,11 @@ const useUserSelectOptions = (options = {}) => {
     (userId, privilege) => {
       const user = getUserById(userId);
       if (!user) return false;
-      if (user.role === "super-admin" || user.userType === "super-admin")
-        return true;
-      if (user.role === privilege) return true;
-      if (user.additionalRoles?.includes(privilege)) return true;
-      if (privilege === "lawyer" && user.isLawyer === true) return true;
-      return false;
+      if (user.adminLevel === "super-admin") return privilege !== "client";
+      if (user.adminLevel === "admin")
+        return privilege !== "client" && privilege !== "super-admin";
+      if (privilege === "lawyer") return user.role === "lawyer";
+      return user.role === privilege;
     },
     [getUserById],
   );
@@ -228,7 +228,7 @@ const useUserSelectOptions = (options = {}) => {
 
   const practiceAreas = useMemo(() => {
     const lawyers = allUsersList.filter(
-      (u) => u.userType === "lawyer" || u.isLawyer,
+      (u) => u.role === "lawyer",
     );
     const areas = lawyers.flatMap((l) => l.lawyerPracticeAreas || []);
     return [...new Set(areas)];

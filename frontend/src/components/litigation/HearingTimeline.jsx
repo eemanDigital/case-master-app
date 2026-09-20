@@ -401,7 +401,9 @@ const HearingTimeline = ({
   const allUsers = useSelector(selectUsers);
   const usersLoading = useSelector((state) => state.auth?.loading ?? false);
   const currentUser = useSelector(selectUser);
-  const isAdmin = currentUser?.userType === "admin" || currentUser?.role === "admin" || currentUser?.isAdmin === true;
+  const isAdmin = ["admin", "super-admin"].includes(
+    currentUser?.data?.adminLevel ?? currentUser?.adminLevel
+  );
 
   const hearings = matterHearings.length > 0 ? matterHearings : propsHearings;
 

@@ -67,15 +67,16 @@ const Profile = () => {
   const userData = user?.data || user;
   const isClient =
     userData?.role === "client" || userData?.userType === "client";
-  const isLawyer = userData?.isLawyer || userData?.userType === "lawyer";
+  const isLawyer = userData?.role === "lawyer";
 
   // Get effective roles
   const getEffectiveRoles = () => {
-    const roles = [userData?.role];
-    if (userData?.additionalRoles && userData.additionalRoles.length > 0) {
-      roles.push(...userData.additionalRoles);
+    const roles = [];
+    if (userData?.role) roles.push(userData.role);
+    if (userData?.role === "lawyer" || userData?.userType === "staff") {
+      // no-op: single-role model
     }
-    return [...new Set(roles)].filter(Boolean);
+    return [...new Set(roles.filter(Boolean))];
   };
 
   const effectiveRoles = getEffectiveRoles();
@@ -544,7 +545,7 @@ const Profile = () => {
         )}
 
         {/* Admin Details */}
-        {userData?.adminDetails && (
+        {userData?.adminLevel && userData?.adminLevel !== "none" && (
           <div className="bg-orange-50 p-3 sm:p-4 rounded-lg mt-4">
             <Space className="mb-3">
               <CrownOutlined className="text-orange-600 text-lg" />
@@ -553,27 +554,11 @@ const Profile = () => {
               </Text>
             </Space>
 
-            <div className="flex flex-wrap gap-2">
-              {userData.adminDetails.canManageUsers && (
-                <Tag color="orange" className="text-xs">
-                  Manage Users
-                </Tag>
-              )}
-              {userData.adminDetails.canManageCases && (
-                <Tag color="orange" className="text-xs">
-                  Manage Cases
-                </Tag>
-              )}
-              {userData.adminDetails.canManageBilling && (
-                <Tag color="orange" className="text-xs">
-                  Manage Billing
-                </Tag>
-              )}
-              {userData.adminDetails.canViewReports && (
-                <Tag color="orange" className="text-xs">
-                  View Reports
-                </Tag>
-              )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Text strong className="text-xs sm:text-sm">
+                Administrative Level:
+              </Text>
+              <Tag color="volcano">{userData?.adminLevel}</Tag>
             </div>
           </div>
         )}
@@ -588,7 +573,7 @@ const Profile = () => {
         <ContactInformation />
 
         {/* Firm Branding - Show for admin only */}
-        {(userData?.role === "admin" || userData?.role === "super-admin") && (
+        {["admin", "super-admin"].includes(userData?.adminLevel) && (
           <Card className="mb-4 sm:mb-6 shadow-md">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
@@ -601,9 +586,9 @@ const Profile = () => {
         )}
 
         {/* Info - Show Subscription for admin/HR */}
-        {(userData?.role === "admin" ||
-          userData?.role === "super-admin" ||
-          userData?.role === "hr") && (
+        {userData?.userType === "staff" &&
+          (["admin", "super-admin"].includes(userData?.adminLevel) ||
+            ["lawyer", "hr"].includes(userData?.role)) && (
           <SubscriptionInfoCard
             firmData={userData?.firmId}
             showUpgradeButton={true}
