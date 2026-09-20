@@ -226,7 +226,7 @@ class GenericPaginationService {
           ]),
 
           // Lawyers count
-          this.model.countDocuments({ ...statsFilter, isLawyer: true }),
+          this.model.countDocuments({ ...statsFilter, role: "lawyer" }),
 
           // Verified users
           this.model.countDocuments({ ...statsFilter, isVerified: true }),

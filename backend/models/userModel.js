@@ -1,4 +1,4 @@
-// models/userModel.js - COMPLETE WITH MULTI-PRIVILEGE SUPPORT
+// models/userModel.js
 const crypto = require("crypto");
 const mongoose = require("mongoose");
 const validator = require("validator");
@@ -14,7 +14,22 @@ const encryptedField = {
   select: false,
 };
 
-const ROLES = ["client", "staff", "lawyer", "secretary", "hr", "admin", "super-admin"];
+// Professional roles a staff member can have. "client" is only ever assigned
+// to client accounts and signals that the account has no professional role.
+const ROLES = [
+  "client",
+  "lawyer",
+  "paralegal",
+  "secretary",
+  "accountant",
+  "hr",
+  "receptionist",
+  "it",
+  "other",
+];
+
+// Administrative authority levels, ordered from lowest to highest.
+const ADMIN_LEVELS = ["none", "admin", "super-admin"];
 
 const userSchema = new mongoose.Schema(
   {
@@ -105,41 +120,35 @@ const userSchema = new mongoose.Schema(
     // ========================
     // USER TYPE & ROLE SYSTEM
     // ========================
+    // userType: the broad account category.
     userType: {
       type: String,
       enum: {
-        values: ["client", "staff", "lawyer", "admin", "super-admin"],
+        values: ["client", "staff"],
         message: "{VALUE} is not a valid user type",
       },
       default: "staff",
       required: true,
     },
 
+    // role: what the person does professionally. Independent of authority.
     role: {
       type: String,
       enum: {
         values: ROLES,
         message: "{VALUE} is not a valid role",
       },
-      default: function () {
-        if (this.userType === "client") return "client";
-        if (this.userType === "lawyer") return "lawyer";
-        if (this.userType === "admin") return "admin";
-        if (this.userType === "super-admin") return "super-admin";
-        return "staff";
-      },
+      default: "lawyer",
     },
 
-    // ✅ Multiple roles/privileges support
-    additionalRoles: {
-      type: [String],
-      enum: ROLES,
-      default: [],
-      set: function (roles) {
-        if (!roles) return [];
-        const uniqueRoles = [...new Set(roles)];
-        return uniqueRoles.filter((r) => r !== this.role);
+    // adminLevel: the ONLY field that determines administrative authority.
+    adminLevel: {
+      type: String,
+      enum: {
+        values: ADMIN_LEVELS,
+        message: "{VALUE} is not a valid admin level",
       },
+      default: "none",
     },
 
     // ✅ NEW: Position field (moved from nested objects)
@@ -161,12 +170,6 @@ const userSchema = new mongoose.Schema(
         "Client",
         "Other",
       ],
-    },
-
-    // ✅ NEW: Lawyer flag (for easy querying)
-    isLawyer: {
-      type: Boolean,
-      default: false,
     },
 
     // ========================
@@ -325,44 +328,6 @@ const userSchema = new mongoose.Schema(
         type: Number,
         default: 50,
         min: 1,
-      },
-    },
-
-    // ========================
-    // ADMIN SPECIFIC FIELDS
-    // ========================
-    adminDetails: {
-      adminLevel: {
-        type: String,
-        enum: ["system", "firm", "department"],
-        default: "firm",
-      },
-      permissions: [
-        {
-          module: String,
-          actions: [String],
-        },
-      ],
-      canManageUsers: {
-        type: Boolean,
-        default: false,
-      },
-      canManageCases: {
-        type: Boolean,
-        default: false,
-      },
-      canManageBilling: {
-        type: Boolean,
-        default: false,
-      },
-      canViewReports: {
-        type: Boolean,
-        default: false,
-      },
-      systemAccessLevel: {
-        type: String,
-        enum: ["full", "restricted", "view-only"],
-        default: "restricted",
       },
     },
 
@@ -600,8 +565,7 @@ userSchema.index({ firmId: 1, role: 1 });
 userSchema.index({ firmId: 1, status: 1 });
 userSchema.index({ firmId: 1, isActive: 1 });
 userSchema.index({ firmId: 1, isDeleted: 1 });
-userSchema.index({ firmId: 1, isLawyer: 1 }); // ✅ NEW
-userSchema.index({ firmId: 1, additionalRoles: 1 }); // ✅ NEW
+userSchema.index({ firmId: 1, adminLevel: 1 });
 
 userSchema.index({ "lawyerDetails.practiceAreas": 1 });
 userSchema.index({ "lawyerDetails.isPartner": 1 });
@@ -635,20 +599,9 @@ userSchema.virtual("displayName").get(function () {
   return this.fullName;
 });
 
-// ✅ NEW: Virtual for all effective roles
-userSchema.virtual("allRoles").get(function () {
-  const roles = [this.role];
-  if (this.additionalRoles && this.additionalRoles.length > 0) {
-    roles.push(...this.additionalRoles);
-  }
-  return [...new Set(roles)];
-});
-
-/**
- * ===============================
- * INSTANCE METHODS
- * ===============================
- */
+// ========================
+// INSTANCE METHODS
+// ========================
 userSchema.methods.correctPassword = async function (
   candidatePassword,
   userPassword,
@@ -691,55 +644,32 @@ userSchema.methods.getUserTypeLabel = function () {
   const labels = {
     client: "Client",
     staff: "Staff",
-    lawyer: "Lawyer",
-    admin: "Administrator",
-    "super-admin": "Super Administrator",
   };
   return labels[this.userType] || this.userType;
 };
 
-// ✅ NEW: Check if user has specific privilege
-userSchema.methods.hasPrivilege = function (privilege) {
-  // Super admin has all privileges
-  if (this.role === "super-admin" || this.userType === "super-admin")
-    return true;
-
-  // Check primary role
-  if (this.role === privilege) return true;
-
-  // Check additional roles
-  if (this.additionalRoles && this.additionalRoles.includes(privilege)) {
-    return true;
-  }
-
-  // Check if lawyer privilege
-  if (privilege === "lawyer" && this.isLawyer === true) {
-    return true;
-  }
-
-  return false;
+// True for "admin" and "super-admin", false for "none".
+userSchema.methods.isAdmin = function () {
+  return ADMIN_LEVELS.indexOf(this.adminLevel) >= ADMIN_LEVELS.indexOf("admin");
 };
 
-// ✅ NEW: Get all effective roles
-userSchema.methods.getEffectiveRoles = function () {
-  const roles = [this.role];
-  if (this.additionalRoles && this.additionalRoles.length > 0) {
-    roles.push(...this.additionalRoles);
-  }
-  return [...new Set(roles)];
+// True only for "super-admin".
+userSchema.methods.isSuperAdmin = function () {
+  return this.adminLevel === "super-admin";
 };
 
-// ✅ NEW: Check if user can perform action
-userSchema.methods.can = function (permission) {
-  if (this.userType === "super-admin") return true;
+// Whether the user has at least the given admin level ("none"/"admin"/"super-admin").
+// A super-admin satisfies an "admin" check.
+userSchema.methods.hasAdminLevel = function (level) {
+  const index = ADMIN_LEVELS.indexOf(level);
+  if (index === -1) return false;
+  return ADMIN_LEVELS.indexOf(this.adminLevel) >= index;
+};
 
-  if (this.hasPrivilege("admin") && this.adminDetails) {
-    return this.adminDetails.permissions.some((p) =>
-      p.actions.includes(permission),
-    );
-  }
-
-  return false;
+// A user is a lawyer simply when their professional role is "lawyer".
+// This is derived from `role` — it is never stored separately.
+userSchema.methods.isLawyer = function () {
+  return this.role === "lawyer";
 };
 
 /**
@@ -748,26 +678,6 @@ userSchema.methods.can = function (permission) {
  * ===============================
  */
 userSchema.pre("save", async function (next) {
-  // Auto-set isLawyer flag
-  if (this.userType === "lawyer" || this.role === "lawyer") {
-    this.isLawyer = true;
-  } else if (this.additionalRoles && this.additionalRoles.includes("lawyer")) {
-    this.isLawyer = true;
-  }
-
-  // Auto-set role based on userType if new
-  if (this.isNew) {
-    if (this.userType === "lawyer") {
-      this.role = "lawyer";
-    } else if (this.userType === "client") {
-      this.role = "client";
-    } else if (this.userType === "admin") {
-      this.role = this.role || "admin";
-    } else if (this.userType === "staff") {
-      this.role = this.role || "staff";
-    }
-  }
-
   // Hash password if modified
   if (!this.isModified("password")) return next();
 
@@ -800,11 +710,11 @@ userSchema.pre("save", async function (next) {
  * ===============================
  */
 
-// ✅ UPDATED: Get all lawyers (including those with lawyer privileges)
+// Get all lawyers (users whose professional role is lawyer)
 userSchema.statics.getLawyers = function (firmId, options = {}) {
   const query = {
     firmId,
-    isLawyer: true, // Use isLawyer flag instead of just userType
+    role: "lawyer",
     isActive: true,
     isDeleted: { $ne: true },
   };
@@ -832,20 +742,6 @@ userSchema.statics.getClients = function (firmId, options = {}) {
   return this.find(query);
 };
 
-// ✅ NEW: Get users by privilege (including additional roles)
-userSchema.statics.getUsersByPrivilege = function (firmId, privilege) {
-  return this.find({
-    firmId,
-    $or: [
-      { role: privilege },
-      { additionalRoles: privilege },
-      ...(privilege === "lawyer" ? [{ isLawyer: true }] : []),
-    ],
-    isActive: true,
-    isDeleted: { $ne: true },
-  });
-};
-
 // Count users by type
 userSchema.statics.countByType = async function (firmId) {
   return this.aggregate([
@@ -855,5 +751,8 @@ userSchema.statics.countByType = async function (firmId) {
 };
 
 const User = mongoose.model("User", userSchema);
+
+User.ROLES = ROLES;
+User.ADMIN_LEVELS = ADMIN_LEVELS;
 
 module.exports = User;

@@ -18,7 +18,7 @@ router.use(protect);
 // ============================================
 const restrictToSeniorPositions = (req, res, next) => {
   // Super admin always passes
-  if (req.user.role === "super-admin" || req.user.userType === "super-admin") {
+  if (req.user.isSuperAdmin()) {
     return next();
   }
 

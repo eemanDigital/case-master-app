@@ -12,6 +12,17 @@ const { auditMiddleware } = require("../middleware/auditMiddleware");
 
 const matterRouter = express.Router();
 
+const STAFF_ROLES = [
+  "lawyer",
+  "paralegal",
+  "secretary",
+  "accountant",
+  "hr",
+  "receptionist",
+  "it",
+  "other",
+];
+
 // ============================================
 // MIDDLEWARE
 // ============================================
@@ -66,7 +77,7 @@ matterRouter.post(
 
 matterRouter.post(
   "/search",
-  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", ...STAFF_ROLES),
   matterController.searchMatters,
 );
 
@@ -79,13 +90,13 @@ matterRouter.get("/my-matters", matterController.getMyMatters);
 matterRouter.get("/my-matters-summary", matterController.getMyMattersSummary);
 matterRouter.get(
   "/with-officers",
-  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", ...STAFF_ROLES),
   matterController.getAllMattersWithOfficers,
 );
 
 matterRouter.get(
   "/",
-  restrictTo("super-admin", "admin", "lawyer", "hr", "staff", "client"),
+  restrictTo("super-admin", "admin", ...STAFF_ROLES, "client"),
   matterController.getAllMatters,
 );
 
@@ -103,31 +114,31 @@ matterRouter.post(
 
 matterRouter.get(
   "/recent-activity",
-  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", ...STAFF_ROLES),
   matterController.getRecentActivity,
 );
 
 matterRouter.get(
   "/pending",
-  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", ...STAFF_ROLES),
   matterController.getPendingMatters,
 );
 
 matterRouter.get(
   "/urgent",
-  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", ...STAFF_ROLES),
   matterController.getUrgentMatters,
 );
 
 matterRouter.get(
   "/type/:matterType",
-  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", ...STAFF_ROLES),
   matterController.getMattersByType,
 );
 
 matterRouter.get(
   "/status/:status",
-  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", ...STAFF_ROLES),
   matterController.getMattersByStatus,
 );
 
@@ -144,18 +155,11 @@ matterRouter.get(
 matterRouter.get(
   "/confidential",
   checkPermission((user) => {
-    // Check if the user has a relevant role AND the confidential toggle in their specific details
-    const roles = [user.role, ...(user.additionalRoles || [])];
-    const hasRole = roles.some((r) =>
-      ["super-admin", "admin", "lawyer", "hr"].includes(r),
+    return (
+      (user.isAdmin() || user.role === "lawyer" || user.role === "hr") &&
+      (user.lawyerDetails?.canViewConfidential ||
+        user.staffDetails?.canViewConfidential)
     );
-
-    const canView =
-      user.adminDetails?.canViewConfidential ||
-      user.lawyerDetails?.canViewConfidential ||
-      user.hrDetails?.canViewConfidential;
-
-    return hasRole && canView;
   }),
   (req, res, next) => {
     req.query.isConfidential = true;
@@ -166,12 +170,8 @@ matterRouter.get(
 matterRouter.get(
   "/financial-overview",
   checkPermission((user) => {
-    // Check for specific finance roles or high-level types
-    const roles = [user.role, ...(user.additionalRoles || [])];
-    if (user.isLawyer) roles.push("lawyer");
-
-    return roles.some((r) =>
-      ["admin", "lawyer", "super-admin", "finance", "accounting"].includes(r),
+    return (
+      user.isAdmin() || user.role === "lawyer" || user.role === "accountant"
     );
   }),
   (req, res, next) => {
@@ -220,7 +220,7 @@ matterRouter.get(
 
 matterRouter.post(
   "/:id/activity",
-  restrictTo("super-admin", "admin", "lawyer", "hr", "staff"),
+  restrictTo("super-admin", "admin", "lawyer", "hr", ...STAFF_ROLES),
   matterController.checkMatterAccess,
   matterController.addActivityLog,
 );
@@ -228,11 +228,11 @@ matterRouter.post(
 matterRouter.patch(
   "/:id/billing",
   checkPermission((user) => {
-    const roles = [user.role, ...(user.additionalRoles || [])];
-    if (roles.includes("super-admin", "admin") || roles.includes("finance"))
-      return true;
-    if (user.isLawyer && user.lawyerDetails?.canManageBilling) return true;
-    return false;
+    return (
+      user.isAdmin() ||
+      user.role === "accountant" ||
+      (user.role === "lawyer" && user.lawyerDetails?.canManageBilling)
+    );
   }),
   matterController.checkMatterAccess,
   (req, res) => {

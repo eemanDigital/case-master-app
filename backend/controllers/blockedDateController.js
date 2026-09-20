@@ -15,38 +15,22 @@ const buildFirmQuery = (req, additionalFilters = {}) => {
 };
 
 /**
- * Get all effective roles for a user.
- * Combines primary role + additionalRoles + isLawyer flag.
- * Mirrors the same logic used in authController.
- */
-const getEffectiveRoles = (user) => {
-  const roles = [user.role];
-  if (user.additionalRoles && user.additionalRoles.length > 0) {
-    roles.push(...user.additionalRoles);
-  }
-  if (user.isLawyer) {
-    roles.push("lawyer");
-  }
-  return [...new Set(roles)];
-};
-
-/**
- * Check if user has ANY of the specified roles (primary or additional).
+ * Check if user has ANY of the specified roles.
+ * "admin" and "super-admin" map to admin authority; all others match role.
  */
 const hasAnyRole = (user, ...roles) => {
-  if (user.role === "super-admin" || user.userType === "super-admin")
-    return true;
-  const effectiveRoles = getEffectiveRoles(user);
-  return roles.some((r) => effectiveRoles.includes(r));
+  return roles.some((role) => {
+    if (role === "admin") return user.isAdmin();
+    if (role === "super-admin") return user.isSuperAdmin();
+    return user.role === role;
+  });
 };
 
 /**
  * Check if user holds a senior position.
- * "Principal" and "Partner" variants are POSITIONS in the userModel, not roles.
  */
 const hasSeniorPosition = (user) => {
-  if (user.role === "super-admin" || user.userType === "super-admin")
-    return true;
+  if (user.isSuperAdmin()) return true;
 
   const seniorPositions = [
     "Managing Partner",

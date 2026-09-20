@@ -581,7 +581,7 @@ exports.bulkPermanentDelete = catchAsync(async (req, res) => {
     });
   }
 
-  if (!req.user.isAdmin) {
+  if (!req.user.isAdmin()) {
     return res.status(403).json({
       status: "fail",
       message: "Only administrators can permanently delete documents",
@@ -680,7 +680,7 @@ exports.restoreDocumentRecord = catchAsync(async (req, res) => {
 exports.deleteDocumentRecord = catchAsync(async (req, res) => {
   const { permanent } = req.query;
 
-  if (permanent === "true" && !req.user.isAdmin) {
+  if (permanent === "true" && !req.user.isAdmin()) {
     return res.status(403).json({
       status: "fail",
       message: "Only administrators can permanently delete documents",

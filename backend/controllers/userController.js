@@ -157,11 +157,6 @@ exports.getUsers = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Handle isLawyer filtering
-  if (req.query.isLawyer !== undefined && req.query.isLawyer !== null) {
-    customFilter.isLawyer = req.query.isLawyer === "true";
-  }
-
   // Handle deleted items filter
   if (req.query.includeDeleted === "true") {
     delete customFilter.isDeleted;
@@ -287,7 +282,7 @@ exports.getUsersByUserType = catchAsync(async (req, res, next) => {
   const { userType } = req.params;
 
   // Validate userType
-  const validUserTypes = ["client", "staff", "lawyer", "admin", "super-admin"];
+  const validUserTypes = ["client", "staff"];
   if (!validUserTypes.includes(userType)) {
     return next(
       new AppError(
@@ -332,7 +327,7 @@ exports.getUsersByUserType = catchAsync(async (req, res, next) => {
 exports.getAllLawyers = catchAsync(async (req, res, next) => {
   const customFilter = {
     firmId: req.firmId,
-    userType: "lawyer",
+    role: "lawyer",
     isDeleted: { $ne: true },
   };
 
@@ -409,7 +404,7 @@ exports.getStaffByStatus = catchAsync(async (req, res, next) => {
 
   const customFilter = {
     firmId: req.firmId,
-    userType: { $in: ["staff", "lawyer", "admin", "super-admin"] }, // All non-client types
+    userType: "staff", // All non-client accounts
     isActive: isActive,
     isDeleted: { $ne: true },
   };
@@ -645,28 +640,28 @@ exports.getStatusStatistics = catchAsync(async (req, res, next) => {
       // Active lawyers
       User.countDocuments({
         firmId: req.firmId,
-        userType: "lawyer",
+        role: "lawyer",
         isActive: true,
         isDeleted: { $ne: true },
       }),
       // Inactive lawyers
       User.countDocuments({
         firmId: req.firmId,
-        userType: "lawyer",
+        role: "lawyer",
         isActive: false,
         isDeleted: { $ne: true },
       }),
-      // Active admins (including super-admin)
+      // Active admins (admin or super-admin)
       User.countDocuments({
         firmId: req.firmId,
-        userType: { $in: ["admin", "super-admin"] },
+        adminLevel: { $in: ["admin", "super-admin"] },
         isActive: true,
         isDeleted: { $ne: true },
       }),
       // Inactive admins
       User.countDocuments({
         firmId: req.firmId,
-        userType: { $in: ["admin", "super-admin"] },
+        adminLevel: { $in: ["admin", "super-admin"] },
         isActive: false,
         isDeleted: { $ne: true },
       }),
@@ -817,7 +812,7 @@ exports.getUserStatistics = catchAsync(async (req, res, next) => {
 exports.getStaffStatistics = catchAsync(async (req, res, next) => {
   const customFilter = {
     firmId: req.firmId,
-    userType: { $in: ["staff", "lawyer", "admin", "super-admin"] },
+    userType: "staff",
     isDeleted: { $ne: true },
   };
 
@@ -921,8 +916,7 @@ exports.getSingleUser = catchAsync(async (req, res, next) => {
 
   // Hide sensitive information based on user role
   const safeData = { ...data };
-  if (req.user.role !== "super-admin" && req.user.role !== "admin") {
-    delete safeData.adminDetails;
+  if (!req.user.isAdmin()) {
     delete safeData.lawyerDetails?.hourlyRate;
     delete safeData.lawyerDetails?.retainerFee;
   }
@@ -967,7 +961,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
   // Never take photo from body — multipart/JSON parsing can corrupt it to {}
   delete filteredBody.photo;
 
-  // Add type-specific fields based on userType
+  // Add type-specific fields based on userType and role
   const user = await User.findById(req.user.id);
   if (user) {
     switch (user.userType) {
@@ -977,21 +971,17 @@ exports.updateUser = catchAsync(async (req, res, next) => {
         }
         break;
       case "staff":
+      default:
+        if (user.role === "lawyer") {
+          if (req.body.lawyerDetails) {
+            filteredBody.lawyerDetails = req.body.lawyerDetails;
+          }
+          if (req.body.professionalInfo) {
+            filteredBody.professionalInfo = req.body.professionalInfo;
+          }
+        }
         if (req.body.staffDetails) {
           filteredBody.staffDetails = req.body.staffDetails;
-        }
-        break;
-      case "lawyer":
-        if (req.body.lawyerDetails) {
-          filteredBody.lawyerDetails = req.body.lawyerDetails;
-        }
-        if (req.body.professionalInfo) {
-          filteredBody.professionalInfo = req.body.professionalInfo;
-        }
-        break;
-      case "admin":
-        if (req.body.adminDetails) {
-          filteredBody.adminDetails = req.body.adminDetails;
         }
         break;
     }
@@ -1027,14 +1017,7 @@ exports.updateUser = catchAsync(async (req, res, next) => {
 // controllers/userController.js - UPDATE upgradeUser function
 exports.upgradeUser = catchAsync(async (req, res, next) => {
   const { id } = req.params;
-  const {
-    userType,
-    role,
-    position,
-    isActive,
-    additionalRoles,
-    ...otherFields
-  } = req.body;
+  const { userType, role, position, isActive, adminLevel } = req.body;
 
   console.log("🔄 Upgrade User Request:", {
     userId: id,
@@ -1054,27 +1037,31 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
     return next(new AppError("Cannot update a deleted user account", 400));
   }
 
-  if (req.user.role === "admin" && user.role === "super-admin") {
-    return next(new AppError("Admins cannot update super-admin accounts", 403));
-  }
-
-  // Update userType and role
+  // Update userType
   if (userType && userType !== user.userType) {
+    if (!["client", "staff"].includes(userType)) {
+      return next(
+        new AppError("userType must be either 'client' or 'staff'", 400),
+      );
+    }
     user.userType = userType;
     if (userType === "client") {
       user.role = "client";
       user.position = null;
-    } else if (userType === "lawyer") {
-      user.role = "lawyer";
-      user.isLawyer = true;
-    } else if (userType === "admin") {
-      user.role = role || "admin";
-    } else if (userType === "staff") {
-      user.role = role || "staff";
+      user.adminLevel = "none";
     }
   }
 
-  if (role && user.userType !== "client") {
+  // Update professional role
+  if (role && role !== user.role) {
+    if (!User.ROLES.includes(role)) {
+      return next(new AppError(`Invalid role: ${role}`, 400));
+    }
+    if (user.userType === "client") {
+      return next(
+        new AppError("Clients cannot be assigned a professional role", 400),
+      );
+    }
     user.role = role;
   }
 
@@ -1086,16 +1073,44 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
     user.isActive = isActive;
   }
 
-  // ✅ Handle additional roles
-  if (additionalRoles !== undefined) {
-    user.additionalRoles = Array.isArray(additionalRoles)
-      ? additionalRoles
-      : [];
-  }
-
-  // ✅ Handle isLawyer flag
-  if (req.body.isLawyer !== undefined) {
-    user.isLawyer = req.body.isLawyer;
+  // Admin level changes follow strict authority rules:
+  //  - only a super-admin may grant or revoke super-admin
+  //  - admins may grant/revoke up to "admin"
+  //  - nobody can change their own admin level here
+  if (adminLevel !== undefined && adminLevel !== user.adminLevel) {
+    if (!User.ADMIN_LEVELS.includes(adminLevel)) {
+      return next(new AppError(`Invalid adminLevel: ${adminLevel}`, 400));
+    }
+    if (user._id.equals(req.user._id)) {
+      return next(
+        new AppError("You cannot change your own admin level", 403),
+      );
+    }
+    if (user.userType === "client" && adminLevel !== "none") {
+      return next(
+        new AppError("Clients cannot hold admin privileges", 403),
+      );
+    }
+    if (adminLevel === "super-admin" && !req.user.isSuperAdmin()) {
+      return next(
+        new AppError(
+          "Only a super administrator can grant super-admin privileges",
+          403,
+        ),
+      );
+    }
+    if (user.adminLevel === "super-admin" && !req.user.isSuperAdmin()) {
+      return next(
+        new AppError(
+          "Only a super administrator can modify super-admin privileges",
+          403,
+        ),
+      );
+    }
+    if (adminLevel !== "none" && !req.user.isAdmin()) {
+      return next(new AppError("Insufficient admin privileges", 403));
+    }
+    user.adminLevel = adminLevel;
   }
 
   // Update type-specific details
@@ -1107,17 +1122,8 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
     user.staffDetails = { ...user.staffDetails, ...req.body.staffDetails };
   }
 
-  if (req.body.lawyerDetails && (user.userType === "lawyer" || user.isLawyer)) {
+  if (req.body.lawyerDetails && user.role === "lawyer") {
     user.lawyerDetails = { ...user.lawyerDetails, ...req.body.lawyerDetails };
-  }
-
-  if (
-    req.body.adminDetails &&
-    (user.userType === "admin" ||
-      user.userType === "super-admin" ||
-      user.additionalRoles?.includes("admin"))
-  ) {
-    user.adminDetails = { ...user.adminDetails, ...req.body.adminDetails };
   }
 
   if (req.body.professionalInfo) {
@@ -1133,8 +1139,7 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
     id: user._id,
     userType: user.userType,
     role: user.role,
-    additionalRoles: user.additionalRoles,
-    isLawyer: user.isLawyer,
+    adminLevel: user.adminLevel,
   });
 
   res.status(200).json({
@@ -1146,10 +1151,11 @@ exports.upgradeUser = catchAsync(async (req, res, next) => {
         userType: user.userType,
         role: user.role,
         position: user.position,
+        adminLevel: user.adminLevel,
         isActive: user.isActive,
-        additionalRoles: user.additionalRoles,
-        isLawyer: user.isLawyer,
-        effectiveRoles: user.getEffectiveRoles(),
+        isAdmin: user.isAdmin(),
+        isSuperAdmin: user.isSuperAdmin(),
+        isLawyer: user.isLawyer(),
       },
     },
   });
@@ -1716,10 +1722,10 @@ exports.getUserSelectOptions = catchAsync(async (req, res, next) => {
         filter.userType = "client";
         break;
       case "lawyers":
-        filter.userType = "lawyer";
+        filter.role = "lawyer";
         break;
       case "admins":
-        filter.userType = { $in: ["admin", "super-admin"] };
+        filter.adminLevel = { $in: ["admin", "super-admin"] };
         break;
       case "hr":
         filter.role = "hr";
@@ -1728,14 +1734,14 @@ exports.getUserSelectOptions = catchAsync(async (req, res, next) => {
         // No additional filter
         break;
       default:
-        filter.userType = { $in: ["staff", "lawyer", "admin", "super-admin"] };
+        filter.userType = "staff";
     }
   }
 
   // Fetch only necessary fields
   const users = await User.find(filter)
     .select(
-      "firstName lastName middleName email role userType position isLawyer practiceArea isActive lawyerDetails.practiceAreas",
+      "firstName lastName middleName email role userType adminLevel position practiceArea isActive lawyerDetails.practiceAreas",
     )
     .sort({ firstName: 1 })
     .lean();
@@ -1752,7 +1758,7 @@ exports.getUserSelectOptions = catchAsync(async (req, res, next) => {
 
     // Add user type indicator for clarity
     if (user.userType === "client") displayName += " (Client)";
-    if (user.userType === "lawyer") displayName += " (Lawyer)";
+    if (user.role === "lawyer") displayName += " (Lawyer)";
 
     return {
       value: user._id,
@@ -1760,8 +1766,9 @@ exports.getUserSelectOptions = catchAsync(async (req, res, next) => {
       email: user.email,
       role: user.role,
       userType: user.userType,
+      adminLevel: user.adminLevel,
       isActive: user.isActive,
-      isLawyer: user.isLawyer,
+      isLawyer: user.role === "lawyer",
       position: user.position,
       practiceArea: user.practiceArea,
       lawyerPracticeAreas: user.lawyerDetails?.practiceAreas || [],
@@ -1794,7 +1801,7 @@ exports.getAllSelectOptions = catchAsync(async (req, res, next) => {
   // Fetch all users once
   const allUsers = await User.find(baseFilter)
     .select(
-      "firstName lastName middleName email role userType position isLawyer practiceArea isActive lawyerDetails.practiceAreas",
+      "firstName lastName middleName email role userType adminLevel position practiceArea isActive lawyerDetails.practiceAreas",
     )
     .sort({ firstName: 1 })
     .lean();
@@ -1813,8 +1820,9 @@ exports.getAllSelectOptions = catchAsync(async (req, res, next) => {
       email: user.email,
       role: user.role,
       userType: user.userType,
+      adminLevel: user.adminLevel,
       isActive: user.isActive,
-      isLawyer: user.isLawyer,
+      isLawyer: user.role === "lawyer",
       position: user.position,
       practiceArea: user.practiceArea,
       lawyerPracticeAreas: user.lawyerDetails?.practiceAreas || [],
@@ -1825,9 +1833,9 @@ exports.getAllSelectOptions = catchAsync(async (req, res, next) => {
   const options = {
     clients: allUsers.filter((u) => u.userType === "client").map(formatUser),
     staff: allUsers.filter((u) => u.userType === "staff").map(formatUser),
-    lawyers: allUsers.filter((u) => u.userType === "lawyer").map(formatUser),
+    lawyers: allUsers.filter((u) => u.role === "lawyer").map(formatUser),
     admins: allUsers
-      .filter((u) => u.userType === "admin" || u.userType === "super-admin")
+      .filter((u) => u.adminLevel === "admin" || u.adminLevel === "super-admin")
       .map(formatUser),
     all: allUsers.map(formatUser),
   };

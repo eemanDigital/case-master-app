@@ -88,10 +88,7 @@ exports.getLeaveApplication = catchAsync(async (req, res, next) => {
   // Authorization check: only employee, admin, hr, or super-admin can view
   const isOwner =
     leaveApplication.employee._id.toString() === req.user._id.toString();
-  const isAdmin =
-    req.user.role === "admin" ||
-    req.user.role === "hr" ||
-    req.user.role === "super-admin";
+  const isAdmin = req.user.isAdmin() || req.user.role === "hr";
 
   if (!isOwner && !isAdmin) {
     return next(
@@ -125,7 +122,7 @@ exports.getLeaveApplications = catchAsync(async (req, res, next) => {
   const filter = {};
 
   // Non-admin users can only see their own applications
-  if (!["super-admin", "admin", "hr"].includes(req.user.role)) {
+  if (!req.user.isAdmin() && req.user.role !== "hr") {
     filter.employee = req.user._id; // Regular employees see only theirs
   } else if (employeeId) {
     filter.employee = employeeId; // Admins/HR can filter by employee
@@ -280,7 +277,7 @@ exports.cancelLeaveApplication = catchAsync(async (req, res, next) => {
   // Only employee or admin can cancel
   if (
     leaveApplication.employee._id.toString() !== req.user._id.toString() &&
-    !["super-admin", "admin", "hr"].includes(req.user.role)
+    !req.user.isAdmin() && req.user.role !== "hr"
   ) {
     return next(
       new AppError("You do not have permission to cancel this application", 403)

@@ -9,24 +9,12 @@ const catchAsync = require("../utils/catchAsync");
 const getAllUserRoles = (user) => {
   const roles = new Set();
 
-  // Add primary role
   if (user.role) {
     roles.add(user.role);
   }
 
-  // Add userType as role for compatibility
   if (user.userType) {
     roles.add(user.userType);
-  }
-
-  // Add additional roles
-  if (user.additionalRoles && user.additionalRoles.length > 0) {
-    user.additionalRoles.forEach((role) => roles.add(role));
-  }
-
-  // Add isLawyer flag as "lawyer" role
-  if (user.isLawyer === true) {
-    roles.add("lawyer");
   }
 
   return Array.from(roles);
@@ -34,29 +22,12 @@ const getAllUserRoles = (user) => {
 
 /**
  * ===============================
- * CHECK IF USER HAS SUPER ADMIN OR ADMIN PRIVILEGE
- * This is the most important check - super-admin/admin in any role
+ * CHECK IF USER IS ADMIN OR SUPER-ADMIN
  * ===============================
  */
-const hasSuperOrAdminPrivilege = (user) => {
+const isAdminUser = (user) => {
   if (!user) return false;
-
-  // Check primary role
-  if (user.role === "super-admin" || user.userType === "super-admin") {
-    return true;
-  }
-
-  // Check additional roles for super-admin/admin
-  if (user.additionalRoles && user.additionalRoles.length > 0) {
-    if (
-      user.additionalRoles.includes("super-admin") ||
-      user.additionalRoles.includes("admin")
-    ) {
-      return true;
-    }
-  }
-
-  return false;
+  return typeof user.isAdmin === "function" && user.isAdmin();
 };
 
 /**
@@ -69,14 +40,17 @@ const hasAnyRole = (user, requiredRoles) => {
     return false;
   }
 
-  // First check: Super admin or admin in ANY role has access to everything
-  if (hasSuperOrAdminPrivilege(user)) {
+  // First check: Admin or super-admin in ANY role has access to everything
+  if (isAdminUser(user)) {
     return true;
   }
 
   const userRoles = getAllUserRoles(user);
 
-  return requiredRoles.some((requiredRole) => userRoles.includes(requiredRole));
+  return requiredRoles.some(
+    (requiredRole) =>
+      user.role === requiredRole || userRoles.includes(requiredRole),
+  );
 };
 
 /**
@@ -89,8 +63,8 @@ const hasAllRoles = (user, requiredRoles) => {
     return true;
   }
 
-  // Super admin or admin in ANY role has all privileges
-  if (hasSuperOrAdminPrivilege(user)) {
+  // Admin or super-admin in ANY role has all privileges
+  if (isAdminUser(user)) {
     return true;
   }
 
@@ -109,33 +83,35 @@ const hasAllRoles = (user, requiredRoles) => {
 const getUserPrivilegeLevel = (user) => {
   if (!user) return 0;
 
-  const userRoles = getAllUserRoles(user);
+  if (typeof user.isSuperAdmin === "function" && user.isSuperAdmin()) {
+    return 100;
+  }
+
+  if (isAdminUser(user)) {
+    return 90;
+  }
 
   // Define privilege hierarchy
   const privilegeLevels = {
-    "super-admin": 100,
-    admin: 90,
     lawyer: 80,
+    paralegal: 75,
     hr: 70,
+    accountant: 65,
     secretary: 60,
+    receptionist: 55,
+    it: 55,
+    other: 50,
     staff: 50,
     client: 10,
   };
 
-  let highestLevel = 0;
-  userRoles.forEach((role) => {
-    const level = privilegeLevels[role] || 0;
-    if (level > highestLevel) {
-      highestLevel = level;
-    }
-  });
-
-  return highestLevel;
+  const level = privilegeLevels[user.role] || privilegeLevels[user.userType] || 0;
+  return level;
 };
 
 /**
  * ===============================
- * RESTRICT TO ROLES (UPDATED WITH ADDITIONAL ROLES)
+ * RESTRICT TO ROLES
  * ===============================
  */
 exports.restrictTo = (...roles) => {
@@ -156,7 +132,7 @@ exports.restrictTo = (...roles) => {
 
 /**
  * ===============================
- * RESTRICT TO USER TYPES (UPDATED)
+ * RESTRICT TO USER TYPES
  * ===============================
  */
 exports.restrictToUserTypes = (...userTypes) => {
@@ -165,8 +141,8 @@ exports.restrictToUserTypes = (...userTypes) => {
       return next(new AppError("Authentication required", 401));
     }
 
-    // Super admin or admin in ANY role can access any user type
-    if (hasSuperOrAdminPrivilege(req.user)) {
+    // Admin or super-admin in ANY role can access any user type
+    if (isAdminUser(req.user)) {
       return next();
     }
 
@@ -226,8 +202,7 @@ exports.requireAllPrivileges = (...privileges) => {
 
 /**
  * ===============================
- * CHECK ADMIN PERMISSION WITH ADDITIONAL ROLES
- * IMPORTANT: Super-admin or admin in ANY role can manage everything
+ * CHECK ADMIN PERMISSION
  * ===============================
  */
 exports.canManageUsers = (req, res, next) => {
@@ -235,25 +210,13 @@ exports.canManageUsers = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Super admin or admin in ANY role can always manage users
-  if (hasSuperOrAdminPrivilege(req.user)) {
+  // Admin or super-admin in ANY role can always manage users
+  if (isAdminUser(req.user)) {
     return next();
   }
 
-  const userRoles = getAllUserRoles(req.user);
-
-  // Check if user has admin role with canManageUsers permission
-  if (userRoles.includes("admin")) {
-    if (
-      req.user.adminDetails &&
-      req.user.adminDetails.canManageUsers === true
-    ) {
-      return next();
-    }
-  }
-
   // HR role can also manage users (non-admin users)
-  if (userRoles.includes("hr")) {
+  if (req.user.role === "hr") {
     return next();
   }
 
@@ -265,26 +228,14 @@ exports.canManageCases = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Super admin or admin in ANY role can always manage cases
-  if (hasSuperOrAdminPrivilege(req.user)) {
+  // Admin or super-admin in ANY role can always manage cases
+  if (isAdminUser(req.user)) {
     return next();
   }
-
-  const userRoles = getAllUserRoles(req.user);
 
   // Lawyers can manage cases
-  if (userRoles.includes("lawyer")) {
+  if (typeof req.user.isLawyer === "function" && req.user.isLawyer()) {
     return next();
-  }
-
-  // Admins with canManageCases permission
-  if (userRoles.includes("admin")) {
-    if (
-      req.user.adminDetails &&
-      req.user.adminDetails.canManageCases === true
-    ) {
-      return next();
-    }
   }
 
   return next(new AppError("You do not have permission to manage cases", 403));
@@ -295,29 +246,13 @@ exports.canManageBilling = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Super admin or admin in ANY role can always manage billing
-  if (hasSuperOrAdminPrivilege(req.user)) {
+  // Admin or super-admin in ANY role can always manage billing
+  if (isAdminUser(req.user)) {
     return next();
   }
 
-  const userRoles = getAllUserRoles(req.user);
-
-  // Admins with canManageBilling permission
-  if (userRoles.includes("admin")) {
-    if (
-      req.user.adminDetails &&
-      req.user.adminDetails.canManageBilling === true
-    ) {
-      return next();
-    }
-  }
-
-  // Special: Lawyers with billing permission in additional roles
-  if (
-    userRoles.includes("lawyer") &&
-    req.user.additionalRoles &&
-    req.user.additionalRoles.includes("billing-manager")
-  ) {
+  // Accountants can manage billing
+  if (req.user.role === "accountant") {
     return next();
   }
 
@@ -331,30 +266,18 @@ exports.canViewReports = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Super admin or admin in ANY role can always view reports
-  if (hasSuperOrAdminPrivilege(req.user)) {
+  // Admin or super-admin in ANY role can always view reports
+  if (isAdminUser(req.user)) {
     return next();
   }
 
-  const userRoles = getAllUserRoles(req.user);
-
-  // Admins with canViewReports permission
-  if (userRoles.includes("admin")) {
-    if (
-      req.user.adminDetails &&
-      req.user.adminDetails.canViewReports === true
-    ) {
-      return next();
-    }
-  }
-
   // Lawyers can view reports related to their cases
-  if (userRoles.includes("lawyer")) {
+  if (typeof req.user.isLawyer === "function" && req.user.isLawyer()) {
     return next();
   }
 
   // HR can view staff reports
-  if (userRoles.includes("hr")) {
+  if (req.user.role === "hr") {
     return next();
   }
 
@@ -373,14 +296,12 @@ exports.isLawyer = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Super admin or admin in ANY role can perform lawyer actions
-  if (hasSuperOrAdminPrivilege(req.user)) {
+  // Admin or super-admin in ANY role can perform lawyer actions
+  if (isAdminUser(req.user)) {
     return next();
   }
 
-  const userRoles = getAllUserRoles(req.user);
-
-  if (userRoles.includes("lawyer")) {
+  if (typeof req.user.isLawyer === "function" && req.user.isLawyer()) {
     return next();
   }
 
@@ -393,14 +314,12 @@ exports.isHR = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Super admin or admin in ANY role can perform HR actions
-  if (hasSuperOrAdminPrivilege(req.user)) {
+  // Admin or super-admin in ANY role can perform HR actions
+  if (isAdminUser(req.user)) {
     return next();
   }
 
-  const userRoles = getAllUserRoles(req.user);
-
-  if (userRoles.includes("hr")) {
+  if (req.user.role === "hr") {
     return next();
   }
 
@@ -413,14 +332,12 @@ exports.isSecretary = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Super admin or admin in ANY role can perform secretary actions
-  if (hasSuperOrAdminPrivilege(req.user)) {
+  // Admin or super-admin in ANY role can perform secretary actions
+  if (isAdminUser(req.user)) {
     return next();
   }
 
-  const userRoles = getAllUserRoles(req.user);
-
-  if (userRoles.includes("secretary")) {
+  if (req.user.role === "secretary") {
     return next();
   }
 
@@ -438,8 +355,8 @@ exports.checkPermission = (permissionChecker) => {
       return next(new AppError("Authentication required", 401));
     }
 
-    // Super admin or admin in ANY role bypasses all checks
-    if (hasSuperOrAdminPrivilege(req.user)) {
+    // Admin or super-admin in ANY role bypasses all checks
+    if (isAdminUser(req.user)) {
       return next();
     }
 
@@ -450,7 +367,7 @@ exports.checkPermission = (permissionChecker) => {
     const enhancedUser = {
       ...(req.user.toObject ? req.user.toObject() : req.user),
       allRoles: userRoles,
-      isSuperOrAdmin: hasSuperOrAdminPrivilege(req.user),
+      isAdmin: isAdminUser(req.user),
       privilegeLevel: getUserPrivilegeLevel(req.user),
     };
 
@@ -477,30 +394,18 @@ exports.canAccessCases = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Super admin or admin in ANY role can always access cases
-  if (hasSuperOrAdminPrivilege(req.user)) {
+  // Admin or super-admin in ANY role can always access cases
+  if (isAdminUser(req.user)) {
     return next();
   }
-
-  const userRoles = getAllUserRoles(req.user);
 
   // Lawyers can access cases
-  if (userRoles.includes("lawyer")) {
+  if (typeof req.user.isLawyer === "function" && req.user.isLawyer()) {
     return next();
-  }
-
-  // Admins with canManageCases permission
-  if (userRoles.includes("admin")) {
-    if (
-      req.user.adminDetails &&
-      req.user.adminDetails.canManageCases === true
-    ) {
-      return next();
-    }
   }
 
   // Secretaries can access cases for document management
-  if (userRoles.includes("secretary")) {
+  if (req.user.role === "secretary") {
     return next();
   }
 
@@ -513,35 +418,23 @@ exports.canAccessClients = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Super admin or admin in ANY role can always access clients
-  if (hasSuperOrAdminPrivilege(req.user)) {
+  // Admin or super-admin in ANY role can always access clients
+  if (isAdminUser(req.user)) {
     return next();
   }
-
-  const userRoles = getAllUserRoles(req.user);
 
   // Lawyers can access clients
-  if (userRoles.includes("lawyer")) {
+  if (typeof req.user.isLawyer === "function" && req.user.isLawyer()) {
     return next();
-  }
-
-  // Admins with user management permission
-  if (userRoles.includes("admin")) {
-    if (
-      req.user.adminDetails &&
-      req.user.adminDetails.canManageUsers === true
-    ) {
-      return next();
-    }
   }
 
   // Secretaries can access clients for scheduling
-  if (userRoles.includes("secretary")) {
+  if (req.user.role === "secretary") {
     return next();
   }
 
   // HR can access client information for reporting
-  if (userRoles.includes("hr")) {
+  if (req.user.role === "hr") {
     return next();
   }
 
@@ -556,25 +449,18 @@ exports.canManageDocuments = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Super admin or admin in ANY role can always manage documents
-  if (hasSuperOrAdminPrivilege(req.user)) {
+  // Admin or super-admin in ANY role can always manage documents
+  if (isAdminUser(req.user)) {
     return next();
   }
-
-  const userRoles = getAllUserRoles(req.user);
 
   // Lawyers can manage documents
-  if (userRoles.includes("lawyer")) {
-    return next();
-  }
-
-  // Admins can manage documents
-  if (userRoles.includes("admin")) {
+  if (typeof req.user.isLawyer === "function" && req.user.isLawyer()) {
     return next();
   }
 
   // Secretaries can manage documents
-  if (userRoles.includes("secretary")) {
+  if (req.user.role === "secretary") {
     return next();
   }
 
@@ -589,8 +475,8 @@ exports.canManageSettings = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Only super-admin or admin in ANY role can manage system settings
-  if (hasSuperOrAdminPrivilege(req.user)) {
+  // Only admin or super-admin can manage system settings
+  if (isAdminUser(req.user)) {
     return next();
   }
 
@@ -605,18 +491,13 @@ exports.canViewAuditLogs = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Super admin or admin in ANY role can view audit logs
-  if (hasSuperOrAdminPrivilege(req.user)) {
+  // Admin or super-admin in ANY role can view audit logs
+  if (isAdminUser(req.user)) {
     return next();
   }
 
-  // HR with audit permission can view logs
-  const userRoles = getAllUserRoles(req.user);
-  if (
-    userRoles.includes("hr") &&
-    req.user.additionalRoles &&
-    req.user.additionalRoles.includes("auditor")
-  ) {
+  // HR can view logs
+  if (req.user.role === "hr") {
     return next();
   }
 
@@ -649,32 +530,28 @@ exports.hasPermissionLevel = (minLevel) => {
       return next(new AppError("Authentication required", 401));
     }
 
-    // Super admin or admin in ANY role automatically has highest level
-    if (hasSuperOrAdminPrivilege(req.user)) {
+    // Admin or super-admin in ANY role automatically has highest level
+    if (isAdminUser(req.user)) {
       return next();
     }
 
     // Define permission levels
     const permissionLevels = {
+      lawyer: 80,
+      paralegal: 75,
+      hr: 70,
+      accountant: 65,
+      secretary: 60,
+      receptionist: 55,
+      it: 55,
+      other: 50,
+      staff: 50,
       client: 10,
-      staff: 20,
-      secretary: 30,
-      hr: 40,
-      lawyer: 50,
-      admin: 90,
-      "super-admin": 100,
     };
 
-    const userRoles = getAllUserRoles(req.user);
-
-    // Get the highest permission level from user's roles
-    let userLevel = 0;
-    userRoles.forEach((role) => {
-      const level = permissionLevels[role] || 0;
-      if (level > userLevel) {
-        userLevel = level;
-      }
-    });
+    // Get the highest permission level from the user's role
+    const userLevel =
+      permissionLevels[req.user.role] || permissionLevels[req.user.userType] || 0;
 
     // Check if user meets minimum level
     if (userLevel >= minLevel) {
@@ -702,8 +579,8 @@ exports.canManageUser = (targetUserField = "params.id") => {
       return next(new AppError("Authentication required", 401));
     }
 
-    // Super admin or admin in ANY role can manage any user
-    if (hasSuperOrAdminPrivilege(req.user)) {
+    // Admin or super-admin in ANY role can manage any user
+    if (isAdminUser(req.user)) {
       return next();
     }
 
@@ -752,11 +629,8 @@ exports.isFirmMember = (req, res, next) => {
     return next(new AppError("Authentication required", 401));
   }
 
-  // Super admin or admin in ANY role can access across firms (if multi-tenant)
-  if (
-    hasSuperOrAdminPrivilege(req.user) &&
-    process.env.MULTI_TENANT === "true"
-  ) {
+  // Admin or super-admin can access across firms (if multi-tenant)
+  if (isAdminUser(req.user) && process.env.MULTI_TENANT === "true") {
     return next();
   }
 

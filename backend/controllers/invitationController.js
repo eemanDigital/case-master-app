@@ -266,11 +266,15 @@ const getWelcomeEmailHTML = ({
 // Role label helper
 const getRoleLabel = (role) => {
   const roleLabels = {
-    admin: "Administrator",
-    lawyer: "Lawyer",
-    staff: "Staff",
     client: "Client",
-    "super-admin": "Super Admin",
+    lawyer: "Lawyer",
+    paralegal: "Paralegal",
+    secretary: "Secretary",
+    accountant: "Accountant",
+    hr: "HR",
+    receptionist: "Receptionist",
+    it: "IT",
+    other: "Other",
   };
   return roleLabels[role] || role;
 };
@@ -343,6 +347,11 @@ exports.generateInvitation = catchAsync(async (req, res, next) => {
     expiresInDays,
   } = req.body;
 
+  const validRoles = ["client", "lawyer", "paralegal", "secretary", "accountant", "hr", "receptionist", "it", "other"];
+  if (role && !validRoles.includes(role)) {
+    return next(new AppError("Invalid role. Inviteable roles: " + validRoles.join(", "), 400));
+  }
+
   const existingInvitation = await Invitation.findOne({
     email: email.toLowerCase(),
     firmId: req.firmId,
@@ -365,7 +374,7 @@ exports.generateInvitation = catchAsync(async (req, res, next) => {
     email: email.toLowerCase(),
     firstName,
     lastName,
-    role: role || "staff",
+    role: role || "lawyer",
     invitedBy: req.user.id,
     token,
     plan: plan || "FREE",
@@ -760,6 +769,7 @@ exports.acceptInvitation = catchAsync(async (req, res, next) => {
     if (fullAddress) existingUser.address = fullAddress;
     existingUser.role = invitation.role;
     existingUser.userType = isClient ? "client" : "staff";
+    existingUser.adminLevel = "none";
     existingUser.isVerified = true;
     if (!existingUser.userAgent) existingUser.userAgent = [];
     if (!existingUser.userAgent.includes(currentDevice)) {
@@ -815,6 +825,7 @@ exports.acceptInvitation = catchAsync(async (req, res, next) => {
     password,
     passwordConfirm,
     role: invitation.role,
+    adminLevel: "none",
     userType: isClient ? "client" : "staff",
     isVerified: true,
     userAgent: [currentDevice],

@@ -119,10 +119,10 @@ const modelConfigs = {
     filterableFields: [
       "role",
       "isActive",
-      "isLawyer",
       "position",
       "gender",
       "practiceArea",
+      "adminLevel",
       "includeDeleted",
       "onlyDeleted",
       "firmId", // ✅ Added

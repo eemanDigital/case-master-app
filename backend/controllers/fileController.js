@@ -648,7 +648,7 @@ exports.deleteFile = async (req, res, next) => {
     // Check ownership or admin privileges
     if (
       file.uploadedBy.toString() !== req.user._id.toString() &&
-      !["admin", "super-admin"].includes(req.user.role)
+      !req.user.isAdmin()
     ) {
       return next(
         new AppError("You do not have permission to delete this file", 403),
@@ -694,7 +694,7 @@ exports.permanentlyDeleteFile = async (req, res, next) => {
     }
 
     // Only admins can permanently delete
-    if (!["admin", "super-admin"].includes(req.user.role)) {
+    if (!req.user.isAdmin()) {
       return next(
         new AppError(
           "You do not have permission to permanently delete files",
@@ -1055,7 +1055,7 @@ exports.bulkDeleteFiles = async (req, res, next) => {
     const unauthorizedFiles = files.filter(
       (file) =>
         file.uploadedBy.toString() !== req.user._id.toString() &&
-        !["admin", "super-admin"].includes(req.user.role),
+        !req.user.isAdmin(),
     );
 
     if (unauthorizedFiles.length > 0) {
@@ -1189,7 +1189,7 @@ exports.updateFile = async (req, res, next) => {
 exports.getFirmFiles = async (req, res, next) => {
   try {
     // Only admins can view all firm files
-    if (!["admin", "super-admin"].includes(req.user.role)) {
+    if (!req.user.isAdmin()) {
       return next(
         new AppError("You do not have permission to view all firm files", 403),
       );

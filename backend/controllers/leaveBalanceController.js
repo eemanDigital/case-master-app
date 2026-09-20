@@ -6,8 +6,8 @@ const AppError = require("../utils/appError");
 /**
  * Helper to check if user has privileged access
  */
-const isPrivilegedUser = (role) =>
-  ["admin", "super-admin", "hr"].includes(role);
+const isPrivilegedUser = (user) =>
+  user.isAdmin() || user.role === "hr";
 
 /**
  * Create leave balance for employee
@@ -16,7 +16,7 @@ exports.createLeaveBalance = catchAsync(async (req, res, next) => {
   const { employee, year, ...balances } = req.body;
 
   // Optional: Ensure only HR/Admin can create balances
-  if (!isPrivilegedUser(req.user.role)) {
+  if (!isPrivilegedUser(req.user)) {
     return next(
       new AppError("You are not authorized to create leave balances.", 403)
     );
@@ -61,7 +61,7 @@ exports.getLeaveBalance = catchAsync(async (req, res, next) => {
 
   // --- ACCESS CONTROL LOGIC START ---
   const isOwner = req.user._id.toString() === employeeId;
-  const hasAccess = isPrivilegedUser(req.user.role);
+  const hasAccess = isPrivilegedUser(req.user);
 
   if (!isOwner && !hasAccess) {
     return next(
@@ -100,7 +100,7 @@ exports.getLeaveBalance = catchAsync(async (req, res, next) => {
  */
 exports.getLeaveBalances = catchAsync(async (req, res, next) => {
   // --- ACCESS CONTROL LOGIC START ---
-  if (!isPrivilegedUser(req.user.role)) {
+  if (!isPrivilegedUser(req.user)) {
     return next(
       new AppError("You are not authorized to view all leave balances.", 403)
     );
@@ -133,7 +133,7 @@ exports.getLeaveBalances = catchAsync(async (req, res, next) => {
  */
 exports.updateLeaveBalance = catchAsync(async (req, res, next) => {
   // --- ACCESS CONTROL LOGIC START ---
-  if (!isPrivilegedUser(req.user.role)) {
+  if (!isPrivilegedUser(req.user)) {
     return next(
       new AppError("You are not authorized to update leave balances.", 403)
     );
@@ -203,7 +203,7 @@ exports.getLeaveBalanceSummary = catchAsync(async (req, res, next) => {
     employeeId = req.user._id;
   } else {
     const isOwner = req.user._id.toString() === employeeId.toString();
-    const hasAccess = isPrivilegedUser(req.user.role);
+    const hasAccess = isPrivilegedUser(req.user);
 
     if (!isOwner && !hasAccess) {
       return next(new AppError("Permission denied", 403));

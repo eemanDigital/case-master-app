@@ -170,8 +170,9 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
       email: email.toLowerCase(),
       password,
       passwordConfirm,
-      userType: "super-admin",
-      role: "super-admin",
+      userType: "staff",
+      role: req.body.role || "lawyer",
+      adminLevel: "super-admin",
       position: "Managing Partner",
       address: address || "Not provided",
       phone: phone || "+234",
@@ -180,14 +181,6 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
       isActive: isInvitedUser, // Platform invited users are active immediately
       status: isInvitedUser ? "active" : "pending",
       userAgent,
-      adminDetails: {
-        adminLevel: "firm",
-        canManageUsers: true,
-        canManageCases: true,
-        canManageBilling: true,
-        canViewReports: true,
-        systemAccessLevel: "full",
-      },
     };
 
     const newUser = await User.create(userData);
@@ -412,6 +405,12 @@ exports.register = catchAsync(async (req, res, next) => {
     return next(new AppError("Please provide all required fields", 400));
   }
 
+  if (!["client", "staff"].includes(userType)) {
+    return next(
+      new AppError("userType must be either 'client' or 'staff'", 400),
+    );
+  }
+
   if (password.length < 8) {
     return next(new AppError("Password must be at least 8 characters", 400));
   }
@@ -434,6 +433,36 @@ exports.register = catchAsync(async (req, res, next) => {
     );
   }
 
+  // Security: only a super-admin may create or grant super-admin authority.
+  const requestedSuperAdmin = req.body.adminLevel === "super-admin";
+  if (requestedSuperAdmin && !req.user.isSuperAdmin()) {
+    return next(
+      new AppError(
+        "Only a super administrator can assign super-admin privileges",
+        403,
+      ),
+    );
+  }
+
+  // role and adminLevel are explicit and independent. Clients are always
+  // role "client" with no administrative authority.
+  const role = userType === "client" ? "client" : req.body.role || "lawyer";
+  if (!User.ROLES.includes(role)) {
+    return next(
+      new AppError(`Invalid role. Must be one of: ${User.ROLES.join(", ")}`, 400),
+    );
+  }
+
+  const adminLevel = userType === "client" ? "none" : req.body.adminLevel || "none";
+  if (!User.ADMIN_LEVELS.includes(adminLevel)) {
+    return next(
+      new AppError(
+        `Invalid adminLevel. Must be one of: ${User.ADMIN_LEVELS.join(", ")}`,
+        400,
+      ),
+    );
+  }
+
   // Get user agent
   const ua = parser(req.headers["user-agent"]);
   const userAgent = [ua.ua];
@@ -452,17 +481,17 @@ exports.register = catchAsync(async (req, res, next) => {
     passwordConfirm: req.body.passwordConfirm,
     photo: filename,
     address: req.body.address,
-    userType: req.body.userType,
     phone: req.body.phone || "+234",
     gender: req.body.gender,
     dateOfBirth: req.body.dateOfBirth,
     position: req.body.position,
+    userType,
+    role,
+    adminLevel,
     isVerified: true,
     isActive: req.body.isActive ?? true,
     userAgent,
     createdBy: req.user._id,
-    additionalRoles: req.body.additionalRoles || [],
-    isLawyer: req.body.isLawyer || req.body.userType === "lawyer" || false,
   };
 
   // ✅ CRITICAL FIX: Handle professionalInfo - accept direct object OR build from fields
@@ -494,161 +523,34 @@ exports.register = catchAsync(async (req, res, next) => {
     }
   }
 
-  // Handle primary role based on userType
-  switch (userType) {
-    case "client":
-      userData.role = "client";
-
-      // ✅ Accept nested object OR build from fields
-      if (
-        req.body.clientDetails &&
-        typeof req.body.clientDetails === "object"
-      ) {
-        userData.clientDetails = req.body.clientDetails;
-      } else {
-        userData.clientDetails = {
-          company: req.body.company,
-          industry: req.body.industry,
-          clientCategory: req.body.clientCategory || "individual",
-          preferredContactMethod: req.body.preferredContactMethod || "email",
-          billingAddress: req.body.billingAddress,
-          referralSource: req.body.referralSource,
-        };
-      }
-
-      userData.staffDetails = undefined;
-      userData.lawyerDetails = undefined;
-      userData.adminDetails = undefined;
-      break;
-
-    case "staff":
-      userData.role = req.body.role || "staff";
-
-      // ✅ Accept nested object OR build from fields
-      if (req.body.staffDetails && typeof req.body.staffDetails === "object") {
-        userData.staffDetails = req.body.staffDetails;
-      } else {
-        userData.staffDetails = {
-          department: req.body.department,
-          designation: req.body.designation,
-          employmentType: req.body.employmentType || "full-time",
-          workSchedule: req.body.workSchedule || "9-5",
-          skills: req.body.skills,
-        };
-      }
-
-      userData.clientDetails = undefined;
-
-      if (req.body.hasHrPrivileges) {
-        if (!userData.additionalRoles.includes("hr")) {
-          userData.additionalRoles.push("hr");
-        }
-      }
-
-      if (!req.body.hasLawyerPrivileges) {
-        userData.lawyerDetails = undefined;
-      }
-      if (!req.body.hasAdminPrivileges) {
-        userData.adminDetails = undefined;
-      }
-      break;
-
-    case "lawyer":
-      userData.role = "lawyer";
-      userData.isLawyer = true;
-
-      // ✅ CRITICAL FIX: Accept nested lawyerDetails object OR build from fields
-      if (
-        req.body.lawyerDetails &&
-        typeof req.body.lawyerDetails === "object"
-      ) {
-        console.log("✅ Using nested lawyerDetails object from frontend");
-        userData.lawyerDetails = req.body.lawyerDetails;
-      } else {
-        console.log("⚠️ Building lawyerDetails from individual fields");
-        userData.lawyerDetails = {
-          barNumber: req.body.barNumber,
-          barAssociation: req.body.barAssociation,
-          yearOfCall: req.body.yearOfCall,
-          practiceAreas: req.body.practiceAreas || [],
-          hourlyRate: req.body.hourlyRate || 0,
-          specialization: req.body.specialization,
-          lawSchool: {
-            name: req.body.lawSchoolAttended,
-            graduationYear: req.body.lawSchoolGraduationYear,
-            degree: req.body.lawSchoolDegree,
-          },
-          undergraduateSchool: {
-            name: req.body.universityAttended,
-            graduationYear: req.body.universityGraduationYear,
-            degree: req.body.universityDegree,
-          },
-          isPartner: req.body.isPartner || false,
-          partnershipPercentage: req.body.partnershipPercentage,
-        };
-      }
-
-      userData.clientDetails = undefined;
-      userData.staffDetails = undefined;
-
-      if (!req.body.hasAdminPrivileges) {
-        userData.adminDetails = undefined;
-      }
-      break;
-
-    case "admin":
-      userData.role = "admin";
-
-      // ✅ Accept nested object OR build from fields
-      if (req.body.adminDetails && typeof req.body.adminDetails === "object") {
-        userData.adminDetails = req.body.adminDetails;
-      } else {
-        userData.adminDetails = {
-          adminLevel: req.body.adminLevel || "firm",
-          canManageUsers: req.body.canManageUsers || false,
-          canManageCases: req.body.canManageCases || false,
-          canManageBilling: req.body.canManageBilling || false,
-          canViewReports: req.body.canViewReports || false,
-          systemAccessLevel: req.body.systemAccessLevel || "restricted",
-        };
-      }
-
-      userData.clientDetails = undefined;
-
-      if (!req.body.hasLawyerPrivileges) {
-        userData.lawyerDetails = undefined;
-      }
-      break;
-
-    case "super-admin":
-      userData.role = "super-admin";
-      userData.adminDetails = {
-        adminLevel: "firm",
-        canManageUsers: true,
-        canManageCases: true,
-        canManageBilling: true,
-        canViewReports: true,
-        systemAccessLevel: "full",
+  // Handle role-specific details based on userType and role
+  if (userType === "client") {
+    // Accept nested clientDetails object OR build from fields
+    if (
+      req.body.clientDetails &&
+      typeof req.body.clientDetails === "object"
+    ) {
+      userData.clientDetails = req.body.clientDetails;
+    } else {
+      userData.clientDetails = {
+        company: req.body.company,
+        industry: req.body.industry,
+        clientCategory: req.body.clientCategory || "individual",
+        preferredContactMethod: req.body.preferredContactMethod || "email",
+        billingAddress: req.body.billingAddress,
+        referralSource: req.body.referralSource,
       };
-      userData.clientDetails = undefined;
-      userData.staffDetails = undefined;
-      userData.lawyerDetails = undefined;
-      break;
-  }
-
-  // ✅ Handle additional privileges (multi-role support)
-
-  // If has lawyer privileges but is not primary lawyer
-  if (req.body.hasLawyerPrivileges && userType !== "lawyer") {
-    userData.isLawyer = true;
-    if (!userData.additionalRoles.includes("lawyer")) {
-      userData.additionalRoles.push("lawyer");
     }
-
-    // ✅ Accept nested object OR build from fields
-    if (req.body.lawyerDetails && typeof req.body.lawyerDetails === "object") {
+  } else if (role === "lawyer") {
+    // Accept nested lawyerDetails object OR build from fields
+    if (
+      req.body.lawyerDetails &&
+      typeof req.body.lawyerDetails === "object"
+    ) {
+      console.log("✅ Using nested lawyerDetails object from frontend");
       userData.lawyerDetails = req.body.lawyerDetails;
     } else {
+      console.log("⚠️ Building lawyerDetails from individual fields");
       userData.lawyerDetails = {
         barNumber: req.body.barNumber,
         barAssociation: req.body.barAssociation,
@@ -666,30 +568,21 @@ exports.register = catchAsync(async (req, res, next) => {
           graduationYear: req.body.universityGraduationYear,
           degree: req.body.universityDegree,
         },
+        isPartner: req.body.isPartner || false,
+        partnershipPercentage: req.body.partnershipPercentage,
       };
     }
-  }
-
-  // If has admin privileges but is not primary admin
-  if (
-    req.body.hasAdminPrivileges &&
-    !["admin", "super-admin"].includes(userType)
-  ) {
-    if (!userData.additionalRoles.includes("admin")) {
-      userData.additionalRoles.push("admin");
-    }
-
-    // ✅ Accept nested object OR build from fields
-    if (req.body.adminDetails && typeof req.body.adminDetails === "object") {
-      userData.adminDetails = req.body.adminDetails;
+  } else {
+    // All other staff roles carry staffDetails
+    if (req.body.staffDetails && typeof req.body.staffDetails === "object") {
+      userData.staffDetails = req.body.staffDetails;
     } else {
-      userData.adminDetails = {
-        adminLevel: "firm",
-        canManageUsers: req.body.canManageUsers || false,
-        canManageCases: req.body.canManageCases || false,
-        canManageBilling: req.body.canManageBilling || false,
-        canViewReports: req.body.canViewReports || false,
-        systemAccessLevel: req.body.systemAccessLevel || "restricted",
+      userData.staffDetails = {
+        department: req.body.department,
+        designation: req.body.designation,
+        employmentType: req.body.employmentType || "full-time",
+        workSchedule: req.body.workSchedule || "9-5",
+        skills: req.body.skills,
       };
     }
   }
@@ -697,7 +590,7 @@ exports.register = catchAsync(async (req, res, next) => {
   console.log("📦 Final userData before create:", {
     userType: userData.userType,
     role: userData.role,
-    additionalRoles: userData.additionalRoles,
+    adminLevel: userData.adminLevel,
     hasLawyerDetails: !!userData.lawyerDetails,
     lawyerDetails: userData.lawyerDetails,
     hasProfessionalInfo: !!userData.professionalInfo,
@@ -747,7 +640,7 @@ exports.register = catchAsync(async (req, res, next) => {
     const reply_to = "noreply@LawMaster.ng";
     const template = "verifyEmail";
 
-    const roles = newUser.getEffectiveRoles();
+    const roles = [newUser.role];
     const context = {
       name: newUser.firstName,
       firmName: req.firm?.name || "Your Firm",
@@ -773,9 +666,10 @@ exports.register = catchAsync(async (req, res, next) => {
         email: newUser.email,
         userType: newUser.userType,
         role: newUser.role,
-        additionalRoles: newUser.additionalRoles,
-        isLawyer: newUser.isLawyer,
-        effectiveRoles: newUser.getEffectiveRoles(),
+        adminLevel: newUser.adminLevel,
+        isAdmin: newUser.isAdmin(),
+        isSuperAdmin: newUser.isSuperAdmin(),
+        isLawyer: newUser.isLawyer(),
         lawyerDetails: newUser.lawyerDetails,
         professionalInfo: newUser.professionalInfo,
       },
@@ -1146,41 +1040,22 @@ exports.protect = catchAsync(async (req, res, next) => {
 });
 
 /**
- * Helper to consolidate all user roles into a single array
- * This includes the primary role, additional roles, and lawyer status
- */
-const getEffectiveRoles = (user) => {
-  const roles = [user.role];
-  if (user.additionalRoles && user.additionalRoles.length > 0) {
-    roles.push(...user.additionalRoles);
-  }
-  if (user.isLawyer) {
-    roles.push("lawyer");
-  }
-  return [...new Set(roles)]; // Remove duplicates
-};
-
-/**
  * ===============================
  * 1. RESTRICT TO ROLES (OR)
  * Access if user has ANY of the specified roles
  * ===============================
+ * "admin" and "super-admin" map to administrative authority:
+ *   - "admin" matches any user where user.isAdmin() (admin or super-admin)
+ *   - "super-admin" matches any user where user.isSuperAdmin()
+ * Every other entry must equal the user's professional role.
  */
 exports.restrictTo = (...roles) => {
   return (req, res, next) => {
-    // 1) Super admin bypass
-    if (
-      req.user.role === "super-admin" ||
-      req.user.userType === "super-admin"
-    ) {
-      return next();
-    }
-
-    // 2) Get all effective roles
-    const userRoles = getEffectiveRoles(req.user);
-
-    // 3) Check if user has ANY of the required roles
-    const hasAccess = roles.some((role) => userRoles.includes(role));
+    const hasAccess = roles.some((role) => {
+      if (role === "admin") return req.user.isAdmin();
+      if (role === "super-admin") return req.user.isSuperAdmin();
+      return req.user.role === role;
+    });
 
     if (!hasAccess) {
       return res.status(200).json({
@@ -1199,108 +1074,33 @@ exports.restrictTo = (...roles) => {
 
 /**
  * ===============================
- * 2. REQUIRE ALL PRIVILEGES (AND)
- * Access only if user possesses ALL specified roles/privileges
+ * 2. ADMIN-ONLY GUARDS
  * ===============================
  */
-exports.requireAllPrivileges = (...privileges) => {
-  return (req, res, next) => {
-    if (
-      req.user.role === "super-admin" ||
-      req.user.userType === "super-admin"
-    ) {
-      return next();
-    }
 
-    const userRoles = getEffectiveRoles(req.user);
-    const hasAll = privileges.every((priv) => userRoles.includes(priv));
-
-    if (!hasAll) {
-      return next(
-        new AppError(
-          "This action requires all of the following privileges: " +
-            privileges.join(", "),
-          403,
-        ),
-      );
-    }
-
-    next();
-  };
+// Access for any user with administrative authority (admin or super-admin)
+exports.restrictToAdmin = (req, res, next) => {
+  if (req.user.isAdmin()) return next();
+  return next(new AppError("Insufficient admin privileges", 403));
 };
+
+// Access for super-admins only
+exports.restrictToSuperAdmin = (req, res, next) => {
+  if (req.user.isSuperAdmin()) return next();
+  return next(new AppError("Insufficient admin privileges", 403));
+};
+
+// Backwards-compatible naming: legacy admin capabilities now just mean "is admin".
+exports.canManageUsers = exports.restrictToAdmin;
+exports.canManageCases = exports.restrictToAdmin;
+exports.canManageBilling = exports.restrictToAdmin;
+exports.canViewReports = exports.restrictToAdmin;
+// Legacy "full system access" now means super-admin only.
+exports.hasFullSystemAccess = exports.restrictToSuperAdmin;
 
 /**
  * ===============================
- * 3. RESTRICT BY USER TYPE
- * Checks the base identity (e.g., Staff vs Client)
- * ===============================
- */
-exports.restrictToUserTypes = (...userTypes) => {
-  return (req, res, next) => {
-    if (req.user.userType === "super-admin") return next();
-
-    if (!userTypes.includes(req.user.userType)) {
-      return next(
-        new AppError(`Access restricted to: ${userTypes.join(", ")}`, 403),
-      );
-    }
-    next();
-  };
-};
-
-/**
- * ===============================
- * 4. ADMIN-SPECIFIC PERMISSIONS
- * (Granular checks inside the Admin role)
- * ===============================
- */
-const checkAdminCapability = (capability) => {
-  return (req, res, next) => {
-    // 1. Super-admin in ANY role (primary or additional) bypasses all checks
-    if (req.user.role === "super-admin") return next();
-
-    // Check additional roles for super-admin
-    if (
-      req.user.additionalRoles &&
-      req.user.additionalRoles.includes("super-admin")
-    ) {
-      return next(); // Super-admin in additional roles has full access
-    }
-
-    // 2. Admin with specific capability check
-    const isAdmin =
-      req.user.role === "admin" ||
-      (req.user.additionalRoles && req.user.additionalRoles.includes("admin"));
-
-    if (isAdmin) {
-      // Admin in additional roles might not have adminDetails
-      // So we need to check if they have it, and if so, check capability
-      if (!req.user.adminDetails) {
-        // Admin in additional roles without adminDetails gets default access
-        // Or you can decide to deny access
-        return next(); // or return error based on your requirements
-      }
-
-      if (req.user.adminDetails[capability] === true) {
-        return next();
-      }
-    }
-
-    return next(
-      new AppError(`Insufficient administrative privilege: ${capability}`, 403),
-    );
-  };
-};
-
-exports.canManageUsers = checkAdminCapability("canManageUsers");
-exports.canManageCases = checkAdminCapability("canManageCases");
-exports.canManageBilling = checkAdminCapability("canManageBilling");
-exports.canViewReports = checkAdminCapability("canViewReports");
-exports.hasFullSystemAccess = checkAdminCapability("systemAccessLevel");
-
-/**
- * ===============================
- * 5. VERIFICATION CHECK
+ * 3. VERIFICATION CHECK
  * ===============================
  */
 exports.isVerified = (req, res, next) => {
@@ -1320,10 +1120,7 @@ exports.isVerified = (req, res, next) => {
 exports.checkPermission = (permissionChecker) => {
   return (req, res, next) => {
     // 1) Super admin bypass
-    if (
-      req.user.role === "super-admin" ||
-      req.user.userType === "super-admin"
-    ) {
+    if (req.user.isSuperAdmin()) {
       return next();
     }
 
@@ -1825,9 +1622,10 @@ exports.updateCurrentUser = catchAsync(async (req, res, next) => {
   // 1) Filter out unwanted fields that are not allowed to be updated
   const filteredBody = { ...req.body };
 
-  // Remove fields that should not be updated
+  // Remove fields that should not be updated by the user themselves
   delete filteredBody.role;
   delete filteredBody.userType;
+  delete filteredBody.adminLevel;
   delete filteredBody.isVerified;
   delete filteredBody.isActive;
   delete filteredBody.isDeleted;

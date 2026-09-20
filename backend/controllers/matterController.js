@@ -1105,10 +1105,8 @@ exports.bulkAssignOfficer = catchAsync(async (req, res, next) => {
     _id: officerId,
     firmId: req.firmId,
     $or: [
-      { userType: "lawyer" },
-      { userType: "admin" },
-      { additionalRoles: "admin" },
-      { additionalRoles: "super-admin" },
+      { role: "lawyer" },
+      { adminLevel: { $in: ["admin", "super-admin"] } },
     ],
   });
 
@@ -1962,12 +1960,7 @@ exports.checkMatterAccess = catchAsync(async (req, res, next) => {
   const isAssignedOfficer = matter.accountOfficer.some(
     (officerId) => officerId.toString() === req.user._id.toString(),
   );
-  const isAdmin =
-    req.user.userType === "admin" ||
-    req.user.additionalRoles?.includes("admin") ||
-    req.user.additionalRoles?.includes("super-admin") ||
-    req.user.role === "admin" ||
-    req.user.role === "super-admin";
+  const isAdmin = req.user.isAdmin();
 
   if (!isAssignedOfficer && !isAdmin) {
     return next(
@@ -2192,7 +2185,7 @@ exports.deleteMatterDocument = catchAsync(async (req, res, next) => {
 
   // Check permission
   const isOwner = file.uploadedBy?.toString() === req.user.id.toString();
-  const isAdmin = ["admin", "super-admin"].includes(req.user.role);
+  const isAdmin = req.user.isAdmin();
   
   if (!isOwner && !isAdmin) {
     return next(new AppError("Not authorized to delete this document", 403));

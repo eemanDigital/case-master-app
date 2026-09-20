@@ -105,7 +105,7 @@ router.post(
 // ============================================
 // COMMUNICATION & STATS
 // ============================================
-// restrictTo now checks primary role + additionalRoles automatically
+// restrictTo: "admin"/"super-admin" map to admin authority; other entries match role
 router.post(
   "/sendAutomatedEmail",
   restrictTo("admin", "hr"),
@@ -238,10 +238,7 @@ router.delete("/delete/:id", restrictTo("super-admin"), deleteUser);
 router.get(
   "/audit-logs",
   checkPermission((user) => {
-    return (
-      user.role === "super-admin" ||
-      (user.adminDetails && user.adminDetails.canViewReports)
-    );
+    return user.isAdmin();
   }),
   (req, res) => res.json({ message: "Audit logs" }),
 );

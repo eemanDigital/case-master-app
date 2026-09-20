@@ -148,7 +148,8 @@ exports.getFirmById = catchAsync(async (req, res, next) => {
 
   const superAdmin = await User.findOne({
     firmId: firm._id,
-    userType: "super-admin",
+    userType: "staff",
+    adminLevel: "super-admin",
   }).select("firstName lastName email status isActive");
 
   res.status(200).json({
@@ -170,7 +171,7 @@ exports.createFirm = catchAsync(async (req, res, next) => {
     phone,
     address,
     gender,
-    userType = "super-admin",
+    userType,
   } = req.body;
 
   if (!firmName || !email || !firstName || !lastName) {
@@ -230,7 +231,7 @@ exports.createFirm = catchAsync(async (req, res, next) => {
     },
   });
 
-  const role = userType === "super-admin" ? "super-admin" : userType;
+  const role = req.body.role || "lawyer";
 
   let userData = {
     firmId: firm._id,
@@ -239,7 +240,7 @@ exports.createFirm = catchAsync(async (req, res, next) => {
     email: email.toLowerCase(),
     password: tempPassword,
     passwordConfirm: tempPassword,
-    userType,
+    userType: "staff",
     role,
     address: address || "Platform created account",
     phone: phone || "+234",
@@ -250,19 +251,9 @@ exports.createFirm = catchAsync(async (req, res, next) => {
     userAgent: ["platform-created"],
   };
 
-  if (userType === "super-admin" || userType === "admin") {
-    userData.position = "Managing Partner";
-    userData.adminDetails = {
-      adminLevel: "firm",
-      canManageUsers: true,
-      canManageCases: true,
-      canManageBilling: true,
-      canViewReports: true,
-      systemAccessLevel: "full",
-    };
-  } else if (userType === "lawyer") {
-    userData.lawyerDetails = { barNumber: "N/A", specialization: "General" };
-  }
+  userData.position = "Managing Partner";
+  userData.adminLevel = "super-admin";
+  userData.lawyerDetails = { barNumber: "N/A", specialization: "General" };
 
   const user = await User.create(userData);
 
@@ -329,7 +320,8 @@ exports.approveFirm = catchAsync(async (req, res, next) => {
 
   const superAdmin = await User.findOne({
     firmId: firm._id,
-    userType: "super-admin",
+    userType: "staff",
+    adminLevel: "super-admin",
   });
 
   if (superAdmin) {
@@ -672,7 +664,7 @@ exports.inviteNewFirm = catchAsync(async (req, res, next) => {
     email: contactEmail.toLowerCase(),
     firstName: contactName,
     lastName: "",
-    role: "super-admin",
+    role: "lawyer",
     invitedBy: null, // Platform admin - special case
     token,
     plan: targetPlan,
@@ -789,7 +781,8 @@ exports.getPendingFirms = catchAsync(async (req, res) => {
     firms.map(async (firm) => {
       const superAdmin = await User.findOne({
         firmId: firm._id,
-        userType: "super-admin",
+        userType: "staff",
+        adminLevel: "super-admin",
       }).select("firstName lastName email");
       return {
         ...firm.toObject(),
