@@ -138,52 +138,108 @@ class GenericPdfGenerator {
 
   // ── Header ────────────────────────────────────────────────────────────────
 
-  /** Full navy header — call ONCE on the first page only. */
+  /**
+   * Full branded header — call ONCE on the first page only.
+   *
+   * Supported options (all optional except firmName):
+   *   firmName, headerTitle, matterNumber, subtitle (matter title),
+   *   firmContact (address · phone · email · RC), documentLabel
+   */
   addHeader() {
-    const { headerTitle = "Matter Report", matterNumber = "" } = this.options;
+    const {
+      headerTitle = "Matter Report",
+      matterNumber = "",
+      firmName = "Law Firm",
+      firmContact = "",
+      subtitle = "",
+    } = this.options;
 
-    this.doc.rect(0, 0, this.doc.page.width, 78).fill(COLORS.navy);
+    const pageW = this.doc.page.width;
+    const headerH = 92;
+    const rightX = 360;
+    const rightW = pageW - rightX - this.leftMargin;
 
+    // Navy band + gold base rule
+    this.doc.rect(0, 0, pageW, headerH).fill(COLORS.navy);
+    this.doc.rect(0, headerH, pageW, 3).fill(COLORS.gold);
+
+    // ── Left: firm identity ──────────────────────────────────────────────
     this.doc
       .fillColor(COLORS.white)
-      .fontSize(SIZES.h1)
+      .fontSize(SIZES.h1 + 3)
       .font(FONTS.bold)
-      .text(this.options.firmName || "Law Firm", this.leftMargin, 14, {
-        width: 300,
-      });
+      .text(firmName, this.leftMargin, 16, { width: 300, ellipsis: true });
 
-    this.doc.rect(this.leftMargin, 36, 60, 1.5).fill(COLORS.gold);
+    this.doc.rect(this.leftMargin, 40, 54, 2).fill(COLORS.gold);
 
     this.doc
       .fontSize(SIZES.micro)
       .fillColor(COLORS.gold)
       .font(FONTS.bold)
-      .text(headerTitle.toUpperCase(), this.leftMargin, 41, { width: 300 });
+      .text(String(headerTitle).toUpperCase(), this.leftMargin, 48, {
+        width: 300,
+      });
 
-    const rightX = 400;
+    if (firmContact) {
+      this.doc
+        .fontSize(SIZES.micro)
+        .fillColor(COLORS.navyLight)
+        .font(FONTS.regular)
+        .text(firmContact, this.leftMargin, 62, { width: 300, ellipsis: true });
+    }
+
+    // ── Right: matter reference block ────────────────────────────────────
     if (matterNumber) {
       this.doc
         .fontSize(SIZES.micro)
         .fillColor(COLORS.navyLight)
         .font(FONTS.regular)
-        .text("MATTER NO.", rightX, 16, { width: 155, align: "right" });
+        .text("MATTER NO.", rightX, 16, { width: rightW, align: "right" });
       this.doc
-        .fontSize(SIZES.body)
+        .fontSize(SIZES.h3)
         .fillColor(COLORS.white)
         .font(FONTS.bold)
-        .text(matterNumber, rightX, 28, { width: 155, align: "right" });
+        .text(matterNumber, rightX, 27, { width: rightW, align: "right" });
     }
 
     this.doc
       .fontSize(SIZES.micro)
       .fillColor(COLORS.navyLight)
       .font(FONTS.regular)
-      .text(formatDateTime(new Date()), rightX, matterNumber ? 42 : 28, {
-        width: 155,
+      .text("GENERATED", rightX, matterNumber ? 48 : 27, {
+        width: rightW,
+        align: "right",
+      });
+    this.doc
+      .fontSize(SIZES.small)
+      .fillColor(COLORS.white)
+      .font(FONTS.regular)
+      .text(formatDateTime(new Date()), rightX, matterNumber ? 57 : 38, {
+        width: rightW,
         align: "right",
       });
 
-    this.y = 90;
+    this.y = headerH + 18;
+
+    // ── Optional matter title banner ─────────────────────────────────────
+    if (subtitle) {
+      const textW = this.pageWidth - 26;
+      const h =
+        this.doc.heightOfString(subtitle, {
+          width: textW,
+          fontSize: SIZES.h3,
+        }) + 18;
+
+      this.doc.rect(this.leftMargin, this.y, this.pageWidth, h).fill(COLORS.navyUltraLight);
+      this.doc.rect(this.leftMargin, this.y, 3, h).fill(COLORS.gold);
+      this.doc
+        .fontSize(SIZES.h3)
+        .font(FONTS.bold)
+        .fillColor(COLORS.navy)
+        .text(subtitle, this.leftMargin + 13, this.y + 8, { width: textW });
+
+      this.y += h + 14;
+    }
     // ← NOT setting isCurrentPageDirty — first field draw will do that.
   }
 
@@ -542,6 +598,248 @@ class GenericPdfGenerator {
 
       this.isCurrentPageDirty = true;
     });
+  }
+
+  /**
+   * Row of summary "cards" (e.g. Deal Value · Type · Closing date).
+   * cards: [{ label, value, accent?, color? }]
+   */
+  addKpiCards(cards = []) {
+    if (!cards.length) return;
+    const gap = 10;
+    const n = cards.length;
+    const cardW = (this.pageWidth - gap * (n - 1)) / n;
+    const cardH = 54;
+
+    this.checkY(cardH + this.spacing.lg);
+    const startY = this.y;
+
+    cards.forEach((c, i) => {
+      const x = this.leftMargin + i * (cardW + gap);
+      this.doc.roundedRect(x, startY, cardW, cardH, 3).fill(COLORS.gray50);
+      this.doc.rect(x, startY, 3, cardH).fill(c.accent || COLORS.gold);
+
+      this.doc
+        .fontSize(SIZES.micro)
+        .font(FONTS.bold)
+        .fillColor(COLORS.textMuted)
+        .text(String(c.label || "").toUpperCase(), x + 11, startY + 9, {
+          width: cardW - 18,
+          ellipsis: true,
+        });
+
+      this.doc
+        .fontSize(SIZES.h3 + 1)
+        .font(FONTS.bold)
+        .fillColor(c.color || COLORS.navy)
+        .text(String(c.value ?? "—"), x + 11, startY + 23, {
+          width: cardW - 18,
+          lineGap: 1,
+        });
+    });
+
+    this.isCurrentPageDirty = true;
+    this.y = startY + cardH + this.spacing.lg;
+  }
+
+  /**
+   * Multi-column definition grid. items: [{ label, value, bold?, color? }]
+   */
+  addKeyValueGrid(items = [], options = {}) {
+    const cols = options.cols || 2;
+    const gap = 16;
+    const colW = (this.pageWidth - gap * (cols - 1)) / cols;
+    const labelSize = SIZES.small;
+    const valueSize = SIZES.body;
+
+    for (let idx = 0; idx < items.length; idx += cols) {
+      const rowItems = items.slice(idx, idx + cols);
+
+      let rowH = 0;
+      rowItems.forEach((it) => {
+        const lh = this.doc.heightOfString(String(it.label || ""), {
+          width: colW,
+          fontSize: labelSize,
+        });
+        const vh = this.doc.heightOfString(String(it.value ?? "—"), {
+          width: colW,
+          fontSize: valueSize,
+        });
+        rowH = Math.max(rowH, lh + 2 + vh);
+      });
+      rowH += 10;
+
+      this.checkY(rowH + this.spacing.sm);
+      const startY = this.y;
+
+      rowItems.forEach((it, c) => {
+        const x = this.leftMargin + c * (colW + gap);
+        this.doc
+          .fontSize(labelSize)
+          .font(FONTS.regular)
+          .fillColor(COLORS.textMuted)
+          .text(String(it.label || ""), x, startY, { width: colW });
+        const lh = this.doc.heightOfString(String(it.label || ""), {
+          width: colW,
+          fontSize: labelSize,
+        });
+        this.doc
+          .fontSize(valueSize)
+          .font(it.bold ? FONTS.bold : FONTS.regular)
+          .fillColor(it.color || COLORS.textPrimary)
+          .text(String(it.value ?? "—"), x, startY + lh + 2, {
+            width: colW,
+            lineGap: 1,
+          });
+      });
+
+      this.isCurrentPageDirty = true;
+      this.y = startY + rowH;
+      drawHRule(this.doc, this.leftMargin, this.y, this.pageWidth, COLORS.gray100, 0.5);
+      this.y += this.spacing.sm;
+    }
+  }
+
+  /**
+   * Generic data table with wrapping rows, zebra striping, optional status
+   * badges and automatic page breaks with a repeated header.
+   *
+   * options: { widths:number[], aligns:("left"|"right"|"center")[],
+   *            statusColumns:number[], fontSize?, emptyText? }
+   */
+  addDataTable(headers = [], rows = [], options = {}) {
+    const {
+      widths,
+      aligns = [],
+      statusColumns = [],
+      fontSize = SIZES.small,
+      emptyText = "No records",
+    } = options;
+
+    const n = headers.length;
+    if (!n) return;
+
+    const weights =
+      widths && widths.length === n ? widths : new Array(n).fill(1);
+    const totalWeight = weights.reduce((a, b) => a + b, 0);
+    const colW = weights.map((w) => (w / totalWeight) * this.pageWidth);
+    const padX = 6;
+    const headerH = 20;
+
+    const drawHeader = () => {
+      this.doc
+        .rect(this.leftMargin, this.y, this.pageWidth, headerH)
+        .fill(COLORS.navy);
+      let x = this.leftMargin;
+      headers.forEach((h, i) => {
+        this.doc
+          .fillColor(COLORS.white)
+          .fontSize(fontSize)
+          .font(FONTS.bold)
+          .text(String(h), x + padX, this.y + 6, {
+            width: colW[i] - padX * 2,
+            align: aligns[i] || "left",
+          });
+        x += colW[i];
+      });
+      this.y += headerH;
+    };
+
+    this.checkY(headerH + 24);
+    drawHeader();
+
+    if (!rows.length) {
+      this.doc
+        .fontSize(fontSize)
+        .font(FONTS.regular)
+        .fillColor(COLORS.textMuted)
+        .text(emptyText, this.leftMargin + padX, this.y + 6, {
+          width: this.pageWidth - padX * 2,
+        });
+      this.isCurrentPageDirty = true;
+      this.y += 22 + this.spacing.lg;
+      return;
+    }
+
+    rows.forEach((row, idx) => {
+      const cellHeights = row.map((cell, i) =>
+        this.doc.heightOfString(String(cell ?? "—"), {
+          width: colW[i] - padX * 2,
+          fontSize,
+        }),
+      );
+      const rowH = Math.max(...cellHeights, 12) + 8;
+
+      if (this.y + rowH > this.bottomGuard) {
+        this.isCurrentPageDirty = false;
+        this.addPageBreak();
+        drawHeader();
+      }
+
+      if (idx % 2 === 1) {
+        this.doc
+          .rect(this.leftMargin, this.y, this.pageWidth, rowH)
+          .fill(COLORS.gray50);
+      }
+
+      let x = this.leftMargin;
+      row.forEach((cell, i) => {
+        const cellY = this.y + 4;
+        if (statusColumns.includes(i)) {
+          drawStatusBadge(this.doc, cell, x + padX, cellY);
+        } else {
+          this.doc
+            .fillColor(COLORS.textPrimary)
+            .fontSize(fontSize)
+            .font(FONTS.regular)
+            .text(String(cell ?? "—"), x + padX, cellY, {
+              width: colW[i] - padX * 2,
+              align: aligns[i] || "left",
+              lineGap: 1,
+            });
+        }
+        x += colW[i];
+      });
+
+      this.y += rowH;
+      drawHRule(this.doc, this.leftMargin, this.y, this.pageWidth, COLORS.gray200, 0.4);
+    });
+
+    this.isCurrentPageDirty = true;
+    this.y += this.spacing.lg;
+  }
+
+  /** Small tinted callout box (notes, disclaimers, key facts). */
+  addNote(text, options = {}) {
+    if (!text) return;
+    const { type = "info" } = options;
+    const palette = {
+      info: { bg: COLORS.infoLight, bar: COLORS.info },
+      warning: { bg: COLORS.warningLight, bar: COLORS.warning },
+      success: { bg: COLORS.successLight, bar: COLORS.success },
+      gold: { bg: COLORS.goldLight, bar: COLORS.gold },
+    }[type] || { bg: COLORS.infoLight, bar: COLORS.info };
+
+    const innerW = this.pageWidth - 26;
+    const textH = this.doc.heightOfString(text, {
+      width: innerW,
+      fontSize: SIZES.small,
+    });
+    const boxH = textH + 16;
+
+    this.checkY(boxH + this.spacing.md);
+    const startY = this.y;
+
+    this.doc.rect(this.leftMargin, startY, this.pageWidth, boxH).fill(palette.bg);
+    this.doc.rect(this.leftMargin, startY, 3, boxH).fill(palette.bar);
+    this.doc
+      .fontSize(SIZES.small)
+      .font(FONTS.regular)
+      .fillColor(COLORS.textSecondary)
+      .text(text, this.leftMargin + 13, startY + 8, { width: innerW, lineGap: 1 });
+
+    this.isCurrentPageDirty = true;
+    this.y = startY + boxH + this.spacing.lg;
   }
 
   // ── Footer ────────────────────────────────────────────────────────────────

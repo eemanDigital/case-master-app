@@ -7,7 +7,7 @@ const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const QueryBuilder = require("../utils/queryBuilder");
-const { GenericPdfGenerator, getStatusColor, formatCurrency, formatDate } = require("../utils/generateGenericPdf");
+const { GenericPdfGenerator, getStatusColor, formatCurrency, formatDate, COLORS } = require("../utils/generateGenericPdf");
 const path = require("path");
 
 // Initialize pagination services
@@ -1669,6 +1669,112 @@ const buildFirmQuery = (req, additionalFilters = {}) => {
  * @route   GET /api/corporate-matters/:matterId/report
  * @access  Private
  */
+// ── Report label maps & small formatters ────────────────────────────────────
+
+const TX_TYPE_LABELS = {
+  merger_acquisition: "Merger & Acquisition",
+  company_incorporation: "Company Incorporation",
+  joint_venture: "Joint Venture",
+  shareholder_agreement: "Shareholder Agreement",
+  corporate_governance: "Corporate Governance",
+  securities_offering: "Securities Offering",
+  private_equity: "Private Equity",
+  venture_capital: "Venture Capital",
+  debt_financing: "Debt Financing",
+  restructuring: "Restructuring",
+  insolvency: "Insolvency",
+  corporate_compliance: "Corporate Compliance",
+  board_advisory: "Board Advisory",
+  share_purchase: "Share Purchase",
+  asset_purchase: "Asset Purchase",
+  divestiture: "Divestiture",
+  partnership_formation: "Partnership Formation",
+  franchise_agreement: "Franchise Agreement",
+  distribution_agreement: "Distribution Agreement",
+  licensing: "Licensing",
+  other: "Other",
+};
+
+const COMPANY_TYPE_LABELS = {
+  private_limited: "Private Limited Company",
+  public_limited: "Public Limited Company",
+  unlimited: "Unlimited Company",
+  partnership: "Partnership",
+  sole_proprietorship: "Sole Proprietorship",
+  incorporated_trustees: "Incorporated Trustees",
+  business_name: "Business Name",
+  foreign_company: "Foreign Company",
+};
+
+const ENTITY_TYPE_LABELS = {
+  company: "Company",
+  individual: "Individual",
+  partnership: "Partnership",
+  trust: "Trust",
+  government: "Government",
+};
+
+const titleCase = (value) =>
+  String(value || "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+const labelOf = (map, value) =>
+  !value ? "—" : map[value] || titleCase(value);
+
+const fmtDate = (date) => (date ? formatDate(date) : "—");
+
+const fmtMoney = (obj, fallbackCurrency = "NGN") =>
+  obj && obj.amount != null
+    ? formatCurrency(obj.amount, obj.currency || fallbackCurrency)
+    : "—";
+
+const clientName = (client) =>
+  [client?.firstName, client?.lastName].filter(Boolean).join(" ") ||
+  client?.companyName ||
+  "—";
+
+const personName = (user) =>
+  [user?.firstName, user?.lastName].filter(Boolean).join(" ") || "—";
+
+const statusAccent = (status) => {
+  const s = String(status || "").toLowerCase();
+  if (["completed", "won", "settled", "closed"].includes(s)) return COLORS.success;
+  if (["active", "pending", "on-hold"].includes(s)) return COLORS.info;
+  if (["lost", "withdrawn", "archived"].includes(s)) return COLORS.danger;
+  return COLORS.navyMid;
+};
+
+const buildFirmContact = (firm) => {
+  const c = firm?.contact || {};
+  const parts = [];
+  if (c.address) {
+    const seen = new Set();
+    const addr = [c.address.street, c.address.city, c.address.state]
+      .filter(Boolean)
+      .filter((part) => {
+        const key = String(part).trim().toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .join(", ");
+    if (addr) parts.push(addr);
+  }
+  if (c.phone) parts.push(c.phone);
+  if (c.email) parts.push(c.email);
+  if (c.rcNumber) {
+    const rc = String(c.rcNumber).trim();
+    parts.push(/^rc/i.test(rc) ? rc : `RC ${rc}`);
+  }
+  return parts.join("   ·   ");
+};
+
+/**
+ * @desc    Generate corporate matter report PDF
+ * @route   GET /api/corporate-matters/:matterId/report
+ * @access  Private
+ */
 exports.generateCorporateReportPdf = catchAsync(async (req, res, next) => {
   const firmId = req.firmId;
   const { matterId } = req.params;
@@ -1686,69 +1792,341 @@ exports.generateCorporateReportPdf = catchAsync(async (req, res, next) => {
     return next(new AppError("No corporate matter found with that ID", 404));
   }
 
-  const corporateDetails = await CorporateDetail.findOne({ matterId, firmId });
+  const d = (await CorporateDetail.findOne({ matterId, firmId })) || {};
   const firm = await Firm.findById(firmId);
 
   const pdf = new GenericPdfGenerator({
     title: "Corporate Matter Report",
+    headerTitle: "Corporate Matter Report",
     firmName: firm?.name || "Law Firm",
     matterNumber: matter?.matterNumber || "",
+    subtitle: matter?.title || "",
+    firmContact: buildFirmContact(firm),
   });
 
-  pdf.init(res, path.resolve(__dirname, `../output/${matter.matterNumber}_corporate_report_${Date.now()}.pdf`));
+  pdf.init(
+    res,
+    path.resolve(
+      __dirname,
+      `../output/${matter.matterNumber}_corporate_report_${Date.now()}.pdf`,
+    ),
+  );
+  pdf.addHeader();
 
-  // Firm Information
-  pdf.addSection("Firm Information");
-  pdf.addField("Firm Name", firm?.name);
-  pdf.addField("Email", firm?.email);
-  pdf.addField("Phone", firm?.phone);
-  pdf.addField("Address", firm?.address);
+  const officers = (matter.accountOfficer || []).map(personName).join(", ") || "—";
+  const pendingApprovals = (d.regulatoryApprovals || []).filter(
+    (a) => a.status === "pending",
+  ).length;
+  const totalShares = (d.shareholders || []).reduce(
+    (sum, sh) => sum + (sh.numberOfShares || 0),
+    0,
+  );
 
-  // Matter Information
-  pdf.addSection("Matter Information");
-  pdf.addField("Matter Number", matter?.matterNumber);
-  pdf.addField("Title", matter?.title);
-  pdf.addStatusField("Status", matter?.status);
-  pdf.addStatusField("Priority", matter?.priority);
-  pdf.addField("Date Opened", formatDate(matter?.dateOpened));
-  pdf.addField("Client", matter?.client ? `${matter.client.firstName} ${matter.client.lastName}` : null);
-  if (matter?.client?.companyName) pdf.addField("Company", matter.client.companyName);
-  if (matter?.client?.email) pdf.addField("Client Email", matter.client.email);
+  // ── Matter overview ──────────────────────────────────────────────────────
+  pdf.addSection("Matter Overview");
+  pdf.addKpiCards([
+    { label: "Deal Value", value: fmtMoney(d.dealValue), accent: COLORS.gold },
+    {
+      label: "Transaction Type",
+      value: labelOf(TX_TYPE_LABELS, d.transactionType),
+      accent: COLORS.navyMid,
+    },
+    {
+      label: "Expected Closing",
+      value: fmtDate(d.expectedClosingDate),
+      accent: COLORS.info,
+    },
+    {
+      label: "Status",
+      value: titleCase(matter.status),
+      accent: statusAccent(matter.status),
+    },
+  ]);
 
-  // Corporate Details
-  if (corporateDetails) {
-    pdf.addSection("Corporate Information");
-    pdf.addField("Company Name", corporateDetails.companyName);
-    pdf.addField("CAC Number", corporateDetails.cacRegNumber);
-    pdf.addField("Company Type", corporateDetails.companyType);
-    pdf.addField("Industry", corporateDetails.industry);
+  pdf.addKeyValueGrid(
+    [
+      { label: "Matter Number", value: matter.matterNumber, bold: true },
+      { label: "Priority", value: titleCase(matter.priority) },
+      { label: "Date Opened", value: fmtDate(matter.dateOpened) },
+      { label: "Expected Closure", value: fmtDate(matter.expectedClosureDate) },
+      { label: "Actual Closure", value: fmtDate(matter.actualClosureDate) },
+      { label: "Billing Type", value: titleCase(matter.billingType) },
+      {
+        label: "Estimated Value",
+        value:
+          matter.estimatedValue != null
+            ? formatCurrency(matter.estimatedValue, matter.currency || "NGN")
+            : "—",
+      },
+      {
+        label: "Pending Approvals",
+        value: String(pendingApprovals),
+        color: pendingApprovals ? COLORS.warning : COLORS.textPrimary,
+      },
+    ],
+    { cols: 2 },
+  );
 
-    if (corporateDetails.registeredAddress) {
-      pdf.addSubSection("Registered Address");
-      pdf.addField("Address", corporateDetails.registeredAddress);
-      pdf.addField("State", corporateDetails.state);
-    }
+  // ── Client & team ────────────────────────────────────────────────────────
+  pdf.addSection("Client & Legal Team");
+  pdf.addKeyValueGrid(
+    [
+      { label: "Client", value: clientName(matter.client), bold: true },
+      { label: "Client Company", value: matter.client?.companyName || "—" },
+      { label: "Client Email", value: matter.client?.email || "—" },
+      { label: "Client Phone", value: matter.client?.phone || "—" },
+      { label: "Account Officer(s)", value: officers },
+      { label: "Reference", value: matter.officeFileNo || "—" },
+    ],
+    { cols: 2 },
+  );
 
-    if (corporateDetails.shareholders?.length > 0) {
-      pdf.addSection("Shareholders");
-      corporateDetails.shareholders.forEach(sh => {
-        pdf.addField(sh.name, `${sh.percentage || 0}% ownership`);
-      });
-    }
+  // ── Transaction summary ──────────────────────────────────────────────────
+  pdf.addSection("Transaction Summary");
+  pdf.addKeyValueGrid(
+    [
+      {
+        label: "Transaction Type",
+        value: labelOf(TX_TYPE_LABELS, d.transactionType),
+        bold: true,
+      },
+      { label: "Other Type", value: d.otherTransactionType || "—" },
+      { label: "Deal Value", value: fmtMoney(d.dealValue), bold: true },
+      {
+        label: "Payment Structure",
+        value: labelOf(
+          {
+            lump_sum: "Lump Sum",
+            installments: "Installments",
+            milestone_based: "Milestone Based",
+            other: "Other",
+          },
+          d.paymentStructure,
+        ),
+      },
+    ],
+    { cols: 2 },
+  );
+  if (d.paymentTerms) pdf.addLongTextField("Payment Terms", d.paymentTerms);
 
-    if (corporateDetails.directors?.length > 0) {
-      pdf.addSection("Directors");
-      corporateDetails.directors.forEach(dir => {
-        pdf.addField(dir.name, dir.designation || "Director");
-      });
-    }
+  // ── Parties ──────────────────────────────────────────────────────────────
+  pdf.addSection("Parties");
+  pdf.addDataTable(
+    ["Name", "Entity Type", "Role", "Registration No.", "Jurisdiction"],
+    (d.parties || []).map((p) => [
+      p.name || "—",
+      labelOf(ENTITY_TYPE_LABELS, p.entityType),
+      p.role || "—",
+      p.registrationNumber || "—",
+      p.jurisdiction || "—",
+    ]),
+    { widths: [2.4, 1.1, 1.4, 1.4, 1.5] },
+  );
 
-    if (corporateDetails.secretary) {
-      pdf.addSection("Company Secretary");
-      pdf.addField("Name", corporateDetails.secretary.name);
-      if (corporateDetails.secretary.contact) pdf.addField("Contact", corporateDetails.secretary.contact);
-    }
+  // ── Company information ──────────────────────────────────────────────────
+  pdf.addSection("Company Information");
+  pdf.addKeyValueGrid(
+    [
+      { label: "Company Name", value: d.companyName || "—", bold: true },
+      { label: "Registration Number", value: d.registrationNumber || "—" },
+      { label: "Company Type", value: labelOf(COMPANY_TYPE_LABELS, d.companyType) },
+      { label: "Registration Date", value: fmtDate(d.registrationDate) },
+      { label: "Incorporation Jurisdiction", value: d.incorporationJurisdiction || "—" },
+      { label: "Shareholders", value: String((d.shareholders || []).length) },
+      {
+        label: "Authorized Share Capital",
+        value: fmtMoney(d.authorizedShareCapital),
+      },
+      { label: "Paid-Up Capital", value: fmtMoney(d.paidUpCapital) },
+    ],
+    { cols: 2 },
+  );
+
+  // ── Shareholders ─────────────────────────────────────────────────────────
+  pdf.addSection("Shareholders");
+  pdf.addDataTable(
+    ["Shareholder", "Shares", "Class", "Ownership"],
+    (d.shareholders || []).map((sh) => {
+      const pct =
+        sh.percentageOwnership != null
+          ? sh.percentageOwnership
+          : totalShares > 0
+            ? ((sh.numberOfShares || 0) / totalShares) * 100
+            : 0;
+      return [
+        sh.name || "—",
+        (sh.numberOfShares || 0).toLocaleString("en-NG"),
+        sh.shareClass || "Ordinary",
+        `${Number(pct).toFixed(2)}%`,
+      ];
+    }),
+    { widths: [3, 1.4, 1.2, 1.2], aligns: ["left", "right", "left", "right"] },
+  );
+
+  // ── Directors ────────────────────────────────────────────────────────────
+  pdf.addSection("Directors & Management");
+  pdf.addDataTable(
+    ["Name", "Position", "Appointment Date"],
+    (d.directors || []).map((dir) => [
+      dir.name || "—",
+      dir.position || "Director",
+      fmtDate(dir.appointmentDate),
+    ]),
+    { widths: [3, 2, 1.6] },
+  );
+
+  // ── Key milestones ───────────────────────────────────────────────────────
+  if ((d.milestones || []).length) {
+    pdf.addSection("Key Milestones");
+    pdf.addTimeline(
+      d.milestones.map((m) => ({
+        title: m.title || "Milestone",
+        date: m.completedDate || m.dueDate,
+        status: m.status,
+        description:
+          m.notes ||
+          (m.status === "completed"
+            ? "Completed"
+            : m.dueDate
+              ? `Due ${formatDate(m.dueDate)}`
+              : ""),
+      })),
+    );
   }
+
+  // ── Due diligence ────────────────────────────────────────────────────────
+  pdf.addSection("Due Diligence");
+  pdf.addKeyValueGrid(
+    [
+      { label: "Required", value: d.dueDiligence?.isRequired ? "Yes" : "No" },
+      { label: "Status", value: titleCase(d.dueDiligence?.status) },
+      { label: "Start Date", value: fmtDate(d.dueDiligence?.startDate) },
+      { label: "Completion Date", value: fmtDate(d.dueDiligence?.completionDate) },
+    ],
+    { cols: 2 },
+  );
+  if (d.dueDiligence?.scope) pdf.addLongTextField("Scope", d.dueDiligence.scope);
+  if (d.dueDiligence?.findings) pdf.addLongTextField("Findings", d.dueDiligence.findings);
+
+  // ── Regulatory approvals ─────────────────────────────────────────────────
+  pdf.addSection("Regulatory Approvals");
+  pdf.addDataTable(
+    ["Authority", "Approval Type", "Applied", "Approved", "Status", "Reference"],
+    (d.regulatoryApprovals || []).map((a) => [
+      a.authority || "—",
+      a.approvalType || "—",
+      fmtDate(a.applicationDate),
+      fmtDate(a.approvalDate),
+      a.status || "pending",
+      a.referenceNumber || "—",
+    ]),
+    {
+      widths: [1, 2, 1.1, 1.1, 1, 1.6],
+      statusColumns: [4],
+    },
+  );
+
+  // ── Compliance requirements ──────────────────────────────────────────────
+  if ((d.complianceRequirements || []).length) {
+    pdf.addSection("Compliance Requirements");
+    pdf.addDataTable(
+      ["Requirement", "Due Date", "Status"],
+      d.complianceRequirements.map((c) => [
+        c.requirement || "—",
+        fmtDate(c.dueDate),
+        c.status || "pending",
+      ]),
+      { widths: [4, 1.4, 1.2], statusColumns: [2] },
+    );
+  }
+
+  // ── Key agreements ───────────────────────────────────────────────────────
+  pdf.addSection("Key Agreements & Documents");
+  pdf.addDataTable(
+    ["Agreement", "Executed", "Effective", "Expiry", "Status"],
+    (d.keyAgreements || []).map((a) => [
+      a.agreementType || "—",
+      fmtDate(a.executionDate),
+      fmtDate(a.effectiveDate),
+      fmtDate(a.expiryDate),
+      a.status || "draft",
+    ]),
+    { widths: [2.6, 1.1, 1.1, 1.1, 1.1], statusColumns: [4] },
+  );
+
+  // ── Governance ───────────────────────────────────────────────────────────
+  pdf.addSection("Governance");
+  pdf.addKeyValueGrid(
+    [
+      { label: "Board Size", value: d.governanceStructure?.boardSize ?? "—" },
+      {
+        label: "Board Meeting Frequency",
+        value: d.governanceStructure?.boardMeetingFrequency || "—",
+      },
+      {
+        label: "Voting Structure",
+        value: d.governanceStructure?.votingStructure || "—",
+      },
+      {
+        label: "Special Rights",
+        value: d.governanceStructure?.specialRights || "—",
+      },
+    ],
+    { cols: 2 },
+  );
+
+  // ── Legal opinions ───────────────────────────────────────────────────────
+  if ((d.legalOpinions || []).length) {
+    pdf.addSection("Legal Opinions");
+    pdf.addDataTable(
+      ["Opinion Type", "Issued", "Summary"],
+      d.legalOpinions.map((o) => [
+        o.opinionType || "—",
+        fmtDate(o.issuedDate),
+        o.summary || "—",
+      ]),
+      { widths: [1.6, 1, 4] },
+    );
+  }
+
+  // ── Post-completion obligations ──────────────────────────────────────────
+  if ((d.postCompletionObligations || []).length) {
+    pdf.addSection("Post-Completion Obligations");
+    pdf.addDataTable(
+      ["Obligation", "Due Date", "Status"],
+      d.postCompletionObligations.map((o) => [
+        o.obligation || "—",
+        fmtDate(o.dueDate),
+        o.status || "pending",
+      ]),
+      { widths: [4, 1.4, 1.2], statusColumns: [2] },
+    );
+  }
+
+  // ── Risks & issues ───────────────────────────────────────────────────────
+  if ((d.identifiedRisks || []).length) {
+    pdf.addSection("Risks & Issues");
+    pdf.addDataTable(
+      ["Risk", "Severity", "Mitigation", "Status"],
+      d.identifiedRisks.map((r) => [
+        r.risk || "—",
+        titleCase(r.severity),
+        r.mitigation || "—",
+        r.status || "open",
+      ]),
+      { widths: [2.6, 1, 3, 1], statusColumns: [3] },
+    );
+  }
+
+  // ── Closing note ─────────────────────────────────────────────────────────
+  pdf.addNote(
+    `This report was generated from ${firm?.name || "the firm's"} matter management system on ${formatDate(
+      new Date(),
+    )}. It reflects the information recorded against matter ${
+      matter.matterNumber
+    } at the time of generation and is confidential to the firm and its client.`,
+    { type: "gold" },
+  );
 
   await pdf.generate();
 });

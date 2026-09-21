@@ -6,7 +6,6 @@ import { ArrowLeftOutlined } from "@ant-design/icons";
 import PropertyForm from "../../components/property/PropertyForm";
 import LoadingScreen from "../../components/common/LoadingScreen";
 import PageHeader from "../../components/common/PageHeader";
-import MatterContextCard from "../../components/common/MatterContextCard";
 import {
   createPropertyDetails,
   selectActionLoading,
@@ -60,7 +59,6 @@ const CreateProperty = () => {
       />
 
       <div className="max-w-6xl mx-auto p-6">
-        <MatterContextCard matter={currentMatter} />
         <PropertyForm
           onSubmit={handleSubmit}
           loading={loading}
