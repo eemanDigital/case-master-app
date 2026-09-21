@@ -1,4 +1,5 @@
 // controllers/eventController.js
+const mongoose = require("mongoose");
 const Event = require("../models/eventModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
@@ -20,6 +21,10 @@ exports.getAllEvents = catchAsync(async (req, res, next) => {
  * Get a single event (tenant-safe)
  */
 exports.getEventById = catchAsync(async (req, res, next) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return next(new AppError("No event found with that ID", 404));
+  }
+
   const event = await Event.findOne({
     _id: req.params.id,
     firmId: req.firmId,

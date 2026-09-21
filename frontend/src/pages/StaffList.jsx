@@ -22,13 +22,12 @@ import {
   CrownOutlined,
   CheckCircleOutlined,
   EyeOutlined,
-  FilterOutlined,
   DeleteOutlined,
 } from "@ant-design/icons";
 import { useUserList } from "../hooks/useUserList";
 import { useAdminHook } from "../hooks/useAdminHook";
 import { useSelector } from "react-redux";
-import ButtonWithIcon from "../components/ButtonWithIcon";
+
 import StaffSearchBar from "../components/StaffSearchBar";
 import UserListTable from "../components/UserListTable";
 import ActiveFilters from "../components/ActiveFilters";

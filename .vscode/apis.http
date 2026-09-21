@@ -1,0 +1,210 @@
+//test apis
+
+    ### ─────────────────────────────────────────────────────────────
+###  AUTH — LOGIN / 2FA / USER
+###  Requires REST Client extension (humao.rest-client)
+### ─────────────────────────────────────────────────────────────
+
+@baseUrl = http://localhost:3000/api/v1
+@email = asinmilukman@gmail.com
+@password = Test1234@
+@wrongPassword = WrongPass123
+@code = 854888
+
+### Health check — confirm the server is up
+GET {{baseUrl}}/health
+Accept: application/json
+
+### ─────────────────────────────────────────────────────────────
+### 1. LOGIN — happy path (known device)
+###    Expect 200, sets `token` cookie / returns user payload
+### ─────────────────────────────────────────────────────────────
+# @name loginSuccess
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Capture the token from the login response (if returned as JSON `token`)
+@authToken = {{loginSuccess.response.body.token}}
+
+### ─────────────────────────────────────────────────────────────
+### 2. LOGIN — wrong password (expect 400)
+### ─────────────────────────────────────────────────────────────
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{wrongPassword}}"
+}
+
+### ─────────────────────────────────────────────────────────────
+### 3. LOGIN — missing fields (expect 400)
+### ─────────────────────────────────────────────────────────────
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+  "email": "",
+  "password": ""
+}
+
+### ─────────────────────────────────────────────────────────────
+### 4. LOGIN — unknown email (expect 400/401)
+### ─────────────────────────────────────────────────────────────
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+
+{
+  "email": "nobody@nowhere.com",
+  "password": "{{password}}"
+}
+
+### ─────────────────────────────────────────────────────────────
+### 5. LOGIN — NEW DEVICE (2FA path)
+###    Expect 400 with { twoFactor: true, message: "New device detected" }
+###    The backend should also email a code.
+### ─────────────────────────────────────────────────────────────
+# @name loginNewDevice
+POST {{baseUrl}}/users/login
+Content-Type: application/json
+User-Agent: RESTClient-NewDevice-Test/1.0
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### ─────────────────────────────────────────────────────────────
+### 6. LOGIN WITH CODE — 2FA verification
+###    Expect 200 + token. Code must match what was emailed.
+### ─────────────────────────────────────────────────────────────
+# @name loginWithCode
+POST {{baseUrl}}/users/loginWithCode/asinmilukman@gmail.com
+Content-Type: application/json
+
+{
+  
+  "loginCode": "{{code}}"
+}
+
+@twoFactorToken = {{loginWithCode.response.body.token}}
+
+### ─────────────────────────────────────────────────────────────
+### 7. LOGIN WITH CODE — wrong code (expect 400)
+### ─────────────────────────────────────────────────────────────
+POST {{baseUrl}}/users/loginWithCode
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "code": "000000"
+}
+
+### ─────────────────────────────────────────────────────────────
+### 8. LOGIN WITH CODE — expired code (expect 400/410)
+### ─────────────────────────────────────────────────────────────
+POST {{baseUrl}}/users/loginWithCode
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "code": "999999"
+}
+
+### ─────────────────────────────────────────────────────────────
+### 9. GET USER — after login (expect 200 with user object)
+###    Cookie-based auth: REST Client stores cookies per host.
+### ─────────────────────────────────────────────────────────────
+GET {{baseUrl}}/users/getUser
+Accept: application/json
+
+### 9b. GET USER — bearer token variant (if you use headers)
+GET {{baseUrl}}/users/getUser
+Accept: application/json
+Authorization: Bearer {{authToken}}
+
+### 9c. GET USER — unauthenticated (expect 401)
+GET {{baseUrl}}/users/getUser
+Accept: application/json
+# No cookie / no token — should fail
+
+### ─────────────────────────────────────────────────────────────
+### 10. GOOGLE LOGIN — exchange Google ID token for a session
+###     Replace the idToken with a real one from the Google flow.
+### ─────────────────────────────────────────────────────────────
+# @name googleLogin
+POST {{baseUrl}}/users/googleLogin
+Content-Type: application/json
+
+{
+  "idToken": "PASTE_REAL_GOOGLE_ID_TOKEN_HERE"
+}
+
+### ─────────────────────────────────────────────────────────────
+### 11. LOGOUT (expect 200, clears cookie)
+### ─────────────────────────────────────────────────────────────
+POST {{baseUrl}}/users/logout
+Content-Type: application/json
+
+### 11b. Verify logout — getUser should now 401
+GET {{baseUrl}}/users/getUser
+Accept: application/json
+
+### ─────────────────────────────────────────────────────────────
+### 12. FORGOT / RESET PASSWORD
+### ─────────────────────────────────────────────────────────────
+# @name forgotPassword
+POST {{baseUrl}}/users/forgotPassword
+Content-Type: application/json
+
+{
+  "email": "{{email}}"
+}
+
+### Reset password using the emailed token (adjust route/field names)
+# @name resetPassword
+POST {{baseUrl}}/users/resetPassword/PASTE_RESET_TOKEN_HERE
+Content-Type: application/json
+
+{
+  "password": "NewPassw0rd!",
+  "confirmPassword": "NewPassw0rd!"
+}
+
+### ─────────────────────────────────────────────────────────────
+### 13. CHANGE PASSWORD (authenticated)
+### ─────────────────────────────────────────────────────────────
+PUT {{baseUrl}}/users/changePassword
+Content-Type: application/json
+Authorization: Bearer {{authToken}}
+
+{
+  "oldPassword": "{{password}}",
+  "password": "NewPassw0rd!",
+  "confirmPassword": "NewPassw0rd!"
+}
+
+### ─────────────────────────────────────────────────────────────
+### 14. REGISTER (for fresh test accounts)
+### ─────────────────────────────────────────────────────────────
+# @name register
+POST {{baseUrl}}/users/register
+Content-Type: application/json
+
+{
+  "name": "Test User",
+  "email": "newuser+{{$timestamp}}@example.com",
+  "password": "Passw0rd!",
+  "confirmPassword": "Passw0rd!"
+}
+
+### ─────────────────────────────────────────────────────────────
+### 15. REFRESH TOKEN (if you have it)
+### ─────────────────────────────────────────────────────────────
+POST {{baseUrl}}/users/refreshToken
+Content-Type: application/json

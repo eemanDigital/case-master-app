@@ -1,3 +1,22 @@
 {
   "editor.formatOnSave": true
+},
+{
+  "rest-client.environmentVariables": {
+    "$shared": {
+      "baseUrl": "http://localhost:5000/api",
+      "email": "test@example.com",
+      "password": "Passw0rd!",
+      "wrongPassword": "WrongPass123"
+    },
+    "dev": {
+      "baseUrl": "http://localhost:5000/api"
+    },
+    "staging": {
+      "baseUrl": "https://staging.yourdomain.com/api"
+    },
+    "prod": {
+      "baseUrl": "https://yourdomain.com/api"
+    }
+  }
 }

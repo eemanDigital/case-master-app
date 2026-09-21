@@ -39,6 +39,19 @@ const EVENT_TYPE_LABELS = {
   task: "Task",
 };
 
+// ─── Resolve a display string for locations ───────────────────────────────────
+// Calendar events store `location` as a string, but injected hearing events
+// store it as an object ({ type, courtName, courtRoom, address }).
+const resolveLocation = (loc) => {
+  if (typeof loc === "string") return loc;
+  if (loc && typeof loc === "object") {
+    return [loc.courtName, loc.courtRoom, loc.address]
+      .filter(Boolean)
+      .join(", ");
+  }
+  return "";
+};
+
 // ─── Normalise an event into a consistent shape ───────────────────────────────
 // The API returns mixed shapes — this function always produces:
 //   { _id, title, start, end, eventType, status, location, tags }
@@ -77,7 +90,7 @@ const normaliseEvent = (event) => {
     end: rawEnd,
     eventType: typeof event.eventType === "string" ? event.eventType : "",
     status: typeof event.status === "string" ? event.status : "",
-    location: typeof event.location === "string" ? event.location : "",
+    location: resolveLocation(event.location),
     tags: Array.isArray(event.tags) ? event.tags : [],
     // Keep original for getEventColor which may inspect other fields
     _raw: event,
@@ -161,9 +174,36 @@ const formatStart = (dateStr) => {
 };
 
 // ─── Auto-synced hearing check ────────────────────────────────────────────────
-const isAutoSynced = (event) =>
-  (event.eventType === "hearing" || event.eventType === "mention") &&
-  event.tags.includes("auto-synced");
+// Matches persisted auto-synced events (tag) as well as hearing events injected
+// live from LitigationDetail (identified by customFields.source or the synthetic
+// `hearing-<litigationDetailId>-<hearingId>` id).
+const isAutoSynced = (event) => {
+  if (event.tags.includes("auto-synced")) return true;
+  const raw = event._raw ?? event;
+  return (
+    raw?.customFields?.source === "litigation_detail" ||
+    (typeof event._id === "string" && event._id.startsWith("hearing-"))
+  );
+};
+
+// ─── Resolve the navigation target for an event ───────────────────────────────
+// Injected hearing events are synthetic objects that do not exist in the legacy
+// Event model, so /dashboard/events/:id/details would 404/500. Send them to the
+// source litigation matter instead (same convention as EventDetailsModal).
+// Manually-created calendar events have no standalone detail page yet, so they
+// open the calendar where their details are shown in a modal.
+const getEventLink = (event) => {
+  const raw = event._raw ?? event;
+  const isInjectedHearing =
+    typeof event._id === "string" && event._id.startsWith("hearing-");
+  const isLitigation = raw?.customFields?.source === "litigation_detail";
+  const matterId = raw?.matter?._id ?? raw?.matter ?? null;
+
+  if ((isInjectedHearing || isLitigation) && matterId) {
+    return `/dashboard/matters/litigation/${matterId}`;
+  }
+  return "/dashboard/calendar";
+};
 
 // ─── Event card ───────────────────────────────────────────────────────────────
 const EventCard = ({ event, now }) => {
@@ -171,6 +211,7 @@ const EventCard = ({ event, now }) => {
   const color = getEventColor(event._raw ?? event);
   const status = getStatusConfig(event.start, event.end, now);
   const synced = isAutoSynced(event);
+  const to = getEventLink(event);
   const typeLabel = EVENT_TYPE_LABELS[event.eventType] ?? "";
 
   return (
@@ -197,7 +238,7 @@ const EventCard = ({ event, now }) => {
               />
             )}
             <Link
-              to={`/dashboard/events/${event._id}/details`}
+              to={to}
               className="text-sm font-semibold text-gray-800 hover:text-blue-600 truncate block leading-snug"
               title={event.title}
               onClick={(e) => e.stopPropagation()}>

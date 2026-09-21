@@ -204,6 +204,8 @@ const PropertyDetails = () => {
   const totalPayments = paymentSchedule?.length || 0;
   const paidPayments =
     paymentSchedule?.filter((p) => p.status === "paid")?.length || 0;
+  const paymentProgress =
+    totalPayments > 0 ? Math.round((paidPayments / totalPayments) * 100) : 0;
   const pendingConditions =
     conditions?.filter((c) => c.status === "pending")?.length || 0;
   const overdueConditions =
@@ -439,18 +441,12 @@ const PropertyDetails = () => {
               <Card>
                 <Statistic
                   title="Payment Progress"
-                  value={
-                    totalPayments > 0 ? (paidPayments / totalPayments) * 100 : 0
-                  }
+                  value={paymentProgress}
                   suffix="%"
                   prefix={
                     <Progress
                       type="circle"
-                      percent={
-                        totalPayments > 0
-                          ? (paidPayments / totalPayments) * 100
-                          : 0
-                      }
+                      percent={paymentProgress}
                       size={20}
                       showInfo={false}
                     />
