@@ -1,9 +1,13 @@
 # Current objective
-Unify the frontend matter-list screens so every list page (`/dashboard/matters*`) looks
-and behaves like one professional product. Replacement of the backend report work is
-COMPLETE (see below).
+Improve the invoice / billing section UI/UX so creating and editing an invoice is
+clear and understandable — especially making **Fixed Fee** billing obvious and
+distinguishable from Hourly and the other billing methods, giving the user a live
+totals preview, and making it easy to open the created invoice and edit it. This is
+the replacement for the previous matter-list unification objective (DONE — see
+"Frontend unification work" below).
 
-STATUS (frontend, as of this session): **DONE** — see "Frontend unification work" section.
+STATUS: the form refactor (create + edit) is DONE, build + eslint verified — see
+"Invoice billing UI/UX work" section.
 
 # Repo (CRITICAL — the only one that matters)
 Verified real root: `C:\Users\user\Desktop\case-master-app` (proved via node -e that
@@ -104,6 +108,67 @@ row-actions) and one interaction pattern: **click the matter title / row to open
   inside the deps array of a `useEffect` defined before it throws TDZ
   (`Cannot access 'loadStats' before initialization`) — keep the `useCallback` above the
   effect, and add the whole `pagination` object to deps to satisfy exhaustive-deps.
+
+# Invoice billing UI/UX work (current objective — DONE)
+Shared kit + both forms refactored so billing methods are visible, explained, and
+mutually exclusive, totals preview live, and post-save navigation opens the invoice.
+
+- **Kit**: `frontend/src/components/invoices/ui/invoiceBillingKit.jsx`
+  - `BILLING_METHODS` (hourly / fixed_fee / item / retainer / contingency) each with
+    icon, color, plain-English description, and the ONLY input fields they use.
+    `fixed_fee` is flagged `highlight: true` (gold "billed at a single flat rate" callout)
+    so it reads differently from hourly.
+  - `ServiceBillingCard` — per-service card: description + `BillingMethodPicker`
+    (colored tiles) + description text + conditional fields ONLY for the active method
+    + category + date, plus a live per-service "Amount ₦" in the card header and a
+    delete affordance.
+  - `ExpenseCard` — shared expenses card (description, ₦ amount, category, receipt,
+    Reimbursable switch with tooltip, date).
+  - `InvoiceSummary` — live totals using `Form.useWatch([], form)` (empty path = whole
+    form — verified in rc-field-form source) mirroring the backend formulas exactly:
+    `computeServiceAmount` (matches `invoiceModel.pre("save")`) and
+    `computeInvoiceTotals` (services+expenses, discount only on currentCharges, tax on
+    discounted, + previousBalance).
+  - Shared `nairaFormatter`/`nairaParser`/`formatNaira`, `SERVICE_CATEGORY_OPTIONS`,
+    `EXPENSE_CATEGORY_OPTIONS`, `BILLING_METHOD_SELECT_OPTIONS`.
+  - File header disables `react/prop-types` + `react-refresh/only-export-components`
+    (same convention as the matter kit).
+- **`frontend/src/components/CreateInvoiceForm.jsx`** (rewritten):
+  - Form `initialValues` now seeds ONE service row (defaults to "hourly") + one expense
+    row, so the form is not empty on load (previously it started with zero rows until
+    you hit "+ Add").
+  - Client field moved first; specific per-field validation messages + tooltips;
+    `linkType`/`publishOnSave`/`discountType` read via `Form.useWatch` (no more
+    useState duplication).
+  - "How will this service be billed?" tiles replace the flat dropdown; helper text on
+    the section explains Fixed Fee vs Hourly.
+  - **Discount & Tax** is now conditional: choosing "Percentage (%)" shows a `%` input
+    (`addonAfter="%"`), "Fixed Amount (₦)" shows a ₦ input, "No Discount" shows a
+    disabled placeholder — previously the amount was always formatted as ₦ even for
+    percentages.
+  - **Publishing** is now an explicit `Segmented` "Save as Draft / Save & Publish"
+    (replacing the ambiguous switch); explanatory text under it.
+  - Dead `formData`/`invoiceInitialValue` state removed; expense/service numeric values
+    normalized (""/null → 0, quantity → 1) before submit.
+  - **Post-save navigation** → `/dashboard/billings/invoices/{createdId}/details`
+    (from `data.data._id`; falls back to list). Details page already has "Edit Invoice".
+- **`frontend/src/pages/UpdateInvoice.jsx`** (rewritten):
+  - Same `ServiceBillingCard` + `ExpenseCard` + conditional discount + `InvoiceSummary`.
+  - **Fixed a latent bug**: `const { ..., data } = useInitialDataFetcher(...)` never had
+    `data` (that hook returns only `{formData, loading}`), so after a successful PATCH
+    the render-time `if (data) return navigate("invoices")` NEVER fired and the form just
+    stayed put. Now `data` comes from `useHandleSubmit` and an effect navigates to
+    `/dashboard/billings/invoices/{id}/details` on `data.success`.
+  - Non-editable status alert (`paid`/`cancelled`/`void` → warning Alert + disabled
+    Update button); backend also blocks those in `updateInvoice`.
+- **Unchanged intentionally**: `InvoiceList.jsx` / `InvoiceDetails.jsx` (their existing
+  Edit links are correct under React Router v6 route-relative `..` semantics); the
+  retainer `BillingForm.jsx`; the backend.
+- **Verification**: `npm run build` passes; `npx eslint` clean on all three files.
+  Gotchas while building: duplicate `const newExpense` from a mis-merged edit (SyntaxError —
+  fixed by removing the dup); keep per-service field names identical to the schema
+  (`hourly`→`hours`+`rate`, `fixed_fee`→`fixedAmount`, `item`→`quantity`+`unitPrice`,
+  `retainer`/`contingency`→`fixedAmount`) so `invoiceModel.pre("save")` computes as before.
 
 # Known prior-art / gotchas
 - esbuild `node_modules/.bin/esbuild` is NOT installed (Windows) — use `node --check`.

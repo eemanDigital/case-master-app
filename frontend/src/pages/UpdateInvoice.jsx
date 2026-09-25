@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { DeleteOutlined } from "@ant-design/icons";
+import { useEffect } from "react";
 import {
+  Alert,
   Button,
   Input,
   Form,
@@ -13,7 +13,6 @@ import {
   DatePicker,
   Row,
   Col,
-  Switch,
   Spin,
 } from "antd";
 import { invoiceOptions } from "../data/options";
@@ -23,19 +22,65 @@ import useInitialDataFetcher from "../hooks/useInitialDataFetcher";
 import useHandleSubmit from "../hooks/useHandleSubmit";
 import GoBackButton from "../components/GoBackButton";
 import useClientSelectOptions from "../hooks/useClientSelectOptions";
+import {
+  InvoiceSummary,
+  ServiceBillingCard,
+  ExpenseCard,
+  nairaFormatter,
+  nairaParser,
+} from "../components/invoices/ui/invoiceBillingKit";
 
 const { TextArea } = Input;
+const { Text } = Typography;
+
+const newService = () => ({
+  description: "",
+  billingMethod: "hourly",
+  hours: "",
+  rate: null,
+  fixedAmount: null,
+  quantity: 1,
+  unitPrice: null,
+  date: null,
+  category: "other",
+});
+
+const newExpense = () => ({
+  description: "",
+  amount: 0,
+  date: null,
+  category: "other",
+  receiptNumber: "",
+  isReimbursable: true,
+});
+
+const NON_EDITABLE_STATUSES = ["paid", "cancelled", "void"];
 
 const UpdateInvoice = () => {
-  const [linkType, setLinkType] = useState("matter");
-  const { mattersOptions, loading: mattersLoading } = useMattersSelectOptions({ status: "active", limit: 100 });
+  const { mattersOptions, loading: mattersLoading } = useMattersSelectOptions({
+    status: "active",
+    limit: 100,
+  });
   const { clientOptions, loading: clientsLoading } = useClientSelectOptions();
   const { id } = useParams();
   const navigate = useNavigate();
-  const { formData, loading: invoiceLoading, data } = useInitialDataFetcher("invoices", id);
-  const { form, onSubmit, loading: loadingState } = useHandleSubmit(`invoices/${id}`, "patch");
+  const { formData, loading: invoiceLoading } = useInitialDataFetcher("invoices", id);
+  const { form, onSubmit, loading: loadingState, data } = useHandleSubmit(
+    `invoices/${id}`,
+    "patch",
+  );
 
-  const allDataLoaded = !invoiceLoading && !mattersLoading && !clientsLoading && formData;
+  const allDataLoaded =
+    !invoiceLoading && !mattersLoading && !clientsLoading && formData;
+
+  const linkType = Form.useWatch("linkType", form) || "matter";
+  const discountType = Form.useWatch("discountType", form) || "none";
+
+  useEffect(() => {
+    if (data?.success) {
+      navigate(`/dashboard/billings/invoices/${id}/details`);
+    }
+  }, [data, id, navigate]);
 
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
@@ -44,17 +89,24 @@ const UpdateInvoice = () => {
     if (allDataLoaded) {
       const hasMatter = !!formData?.matter;
       const hasOtherActivity = !!formData?.otherActivity;
-      setLinkType(hasOtherActivity && !hasMatter ? "other" : "matter");
 
-      const servicesWithDates = formData?.services?.map((service) => ({
-        ...service,
-        date: service.date && dayjs(service.date).isValid() ? dayjs(service.date) : null,
-      })) || [];
+      const servicesWithDates =
+        formData?.services?.map((service) => ({
+          ...service,
+          date:
+            service.date && dayjs(service.date).isValid()
+              ? dayjs(service.date)
+              : null,
+        })) || [];
 
-      const expensesWithDates = formData?.expenses?.map((expense) => ({
-        ...expense,
-        date: expense.date && dayjs(expense.date).isValid() ? dayjs(expense.date) : null,
-      })) || [];
+      const expensesWithDates =
+        formData?.expenses?.map((expense) => ({
+          ...expense,
+          date:
+            expense.date && dayjs(expense.date).isValid()
+              ? dayjs(expense.date)
+              : null,
+        })) || [];
 
       form.setFieldsValue({
         linkType: hasOtherActivity && !hasMatter ? "other" : "matter",
@@ -63,8 +115,14 @@ const UpdateInvoice = () => {
         client: formData?.client,
         title: formData?.title,
         description: formData?.description,
-        billingPeriodStart: formData?.billingPeriodStart && dayjs(formData.billingPeriodStart).isValid() ? dayjs(formData.billingPeriodStart) : null,
-        billingPeriodEnd: formData?.billingPeriodEnd && dayjs(formData.billingPeriodEnd).isValid() ? dayjs(formData.billingPeriodEnd) : null,
+        billingPeriodStart:
+          formData?.billingPeriodStart && dayjs(formData.billingPeriodStart).isValid()
+            ? dayjs(formData.billingPeriodStart)
+            : null,
+        billingPeriodEnd:
+          formData?.billingPeriodEnd && dayjs(formData.billingPeriodEnd).isValid()
+            ? dayjs(formData.billingPeriodEnd)
+            : null,
         services: servicesWithDates,
         expenses: expensesWithDates,
         discountType: formData?.discountType || "none",
@@ -73,17 +131,19 @@ const UpdateInvoice = () => {
         taxRate: formData?.taxRate,
         previousBalance: formData?.previousBalance,
         status: formData?.status,
-        dueDate: formData?.dueDate && dayjs(formData.dueDate).isValid() ? dayjs(formData.dueDate) : null,
+        dueDate:
+          formData?.dueDate && dayjs(formData.dueDate).isValid()
+            ? dayjs(formData.dueDate)
+            : null,
         paymentTerms: formData?.paymentTerms,
-        issueDate: formData?.issueDate && dayjs(formData.issueDate).isValid() ? dayjs(formData.issueDate) : null,
+        issueDate:
+          formData?.issueDate && dayjs(formData.issueDate).isValid()
+            ? dayjs(formData.issueDate)
+            : null,
         notes: formData?.notes,
       });
     }
   }, [allDataLoaded, formData, form]);
-
-  if (data) {
-    return navigate("invoices");
-  }
 
   if (invoiceLoading || mattersLoading || clientsLoading) {
     return (
@@ -93,6 +153,8 @@ const UpdateInvoice = () => {
     );
   }
 
+  const isLocked = NON_EDITABLE_STATUSES.includes(formData?.status);
+
   return (
     <>
       <GoBackButton />
@@ -100,6 +162,16 @@ const UpdateInvoice = () => {
         <Divider orientation="left" orientationMargin="0">
           <Typography.Title level={4}>Update Invoice</Typography.Title>
         </Divider>
+
+        {isLocked && (
+          <Alert
+            type="warning"
+            showIcon
+            className="mb-4"
+            message={`This invoice is ${formData?.status?.replace("_", " ")} and can no longer be edited.`}
+            description="Changes are blocked. Record payments or close it out from the invoice details page instead."
+          />
+        )}
 
         <Card>
           <Row gutter={[16, 16]}>
@@ -121,10 +193,10 @@ const UpdateInvoice = () => {
             <Col xs={24} md={12}>
               <Form.Item
                 name="linkType"
-                label="Link To">
+                label="Link To"
+                tooltip="Link the invoice to a matter, or bill a standalone activity">
                 <Select
                   onChange={(value) => {
-                    setLinkType(value);
                     if (value === "matter") {
                       form.setFieldsValue({ otherActivity: "" });
                     } else {
@@ -151,17 +223,22 @@ const UpdateInvoice = () => {
               </Col>
             ) : (
               <Col xs={24} md={12}>
-                <Form.Item name="otherActivity" label="Other Activity">
+                <Form.Item
+                  name="otherActivity"
+                  label="Other Activity"
+                  rules={[
+                    { required: true, message: "Please enter the activity or service name" },
+                  ]}>
                   <Input placeholder="e.g., Contract Review, Legal Advisory" />
                 </Form.Item>
               </Col>
             )}
 
-            <Col xs={24}>
+            <Col xs={24} md={12}>
               <Form.Item
                 name="title"
                 label="Invoice Title"
-                rules={[{ required: true, message: "Please enter invoice title" }]}>
+                rules={[{ required: true, message: "Please enter an invoice title" }]}>
                 <Input placeholder="e.g., Legal Consultation & Court Representation" />
               </Form.Item>
             </Col>
@@ -194,110 +271,31 @@ const UpdateInvoice = () => {
         <Divider orientation="left" orientationMargin="0">
           <Typography.Title level={4}>Services Rendered</Typography.Title>
         </Divider>
+        <Typography.Paragraph type="secondary" className="mb-3">
+          Choose how each service is billed.{" "}
+          <Text strong>Fixed Fee</Text> uses a single flat price, while{" "}
+          <Text strong>Hourly</Text> bills by time — each method shows only the
+          fields it needs.
+        </Typography.Paragraph>
         <Form.List name="services">
           {(fields, { add, remove }) => (
             <>
               {fields.map((field) => (
-                <Card
-                  size="small"
-                  title={`Service ${field.name + 1}`}
+                <ServiceBillingCard
                   key={field.key}
-                  extra={<DeleteOutlined className="text-red-700" onClick={() => remove(field.name)} />}>
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        label="Service Description"
-                        name={[field.name, "description"]}
-                        rules={[{ required: true, message: "Service description is required" }]}>
-                        <Input placeholder="e.g., Court Appearance, Document Preparation" />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        label="Billing Method"
-                        name={[field.name, "billingMethod"]}
-                        rules={[{ required: true, message: "Billing method is required" }]}>
-                        <Select
-                          options={[
-                            { value: "hourly", label: "Hourly" },
-                            { value: "fixed_fee", label: "Fixed Fee" },
-                            { value: "contingency", label: "Contingency" },
-                            { value: "retainer", label: "Retainer" },
-                            { value: "item", label: "Item-based" },
-                          ]}
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24} md={8}>
-                      <Form.Item label="Hours" name={[field.name, "hours"]}>
-                        <InputNumber className="w-full" min={0} />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <Form.Item label="Rate (₦)" name={[field.name, "rate"]}>
-                        <InputNumber
-                          className="w-full"
-                          min={0}
-                          formatter={(value) => `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                          parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <Form.Item label="Fixed Amount (₦)" name={[field.name, "fixedAmount"]}>
-                        <InputNumber
-                          className="w-full"
-                          min={0}
-                          formatter={(value) => `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                          parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24} md={8}>
-                      <Form.Item label="Quantity" name={[field.name, "quantity"]}>
-                        <InputNumber className="w-full" min={1} />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <Form.Item label="Unit Price (₦)" name={[field.name, "unitPrice"]}>
-                        <InputNumber
-                          className="w-full"
-                          min={0}
-                          formatter={(value) => `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                          parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <Form.Item label="Category" name={[field.name, "category"]}>
-                        <Select
-                          options={[
-                            { value: "consultation", label: "Consultation" },
-                            { value: "court_appearance", label: "Court Appearance" },
-                            { value: "document_preparation", label: "Document Preparation" },
-                            { value: "research", label: "Research" },
-                            { value: "negotiation", label: "Negotiation" },
-                            { value: "filing", label: "Filing" },
-                            { value: "other", label: "Other" },
-                          ]}
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24} md={12}>
-                      <Form.Item label="Date of Service" name={[field.name, "date"]}>
-                        <DatePicker style={{ width: "100%" }} />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                </Card>
+                  form={form}
+                  field={field}
+                  title={`Service ${field.name + 1}`}
+                  required
+                  onRemove={() => remove(field.name)}
+                />
               ))}
-              <Button className="m-3" onClick={() => add()} type="dashed">+ Add More Services</Button>
+              <Button
+                className="mt-3"
+                type="dashed"
+                onClick={() => add(newService())}>
+                + Add Service
+              </Button>
             </>
           )}
         </Form.List>
@@ -305,76 +303,27 @@ const UpdateInvoice = () => {
         <Divider orientation="left" orientationMargin="0">
           <Typography.Title level={4}>Expenses</Typography.Title>
         </Divider>
+        <Typography.Paragraph type="secondary" className="mb-3">
+          Out-of-pocket costs — mark an expense as{" "}
+          <Text strong>Reimbursable</Text> to add it to the client&apos;s total.
+        </Typography.Paragraph>
         <Form.List name="expenses">
           {(fields, { add, remove }) => (
             <div>
               {fields.map((field) => (
-                <Card
-                  size="small"
-                  title={`Expense ${field.name + 1}`}
+                <ExpenseCard
                   key={field.key}
-                  extra={<DeleteOutlined className="text-red-700" onClick={() => remove(field.name)} />}>
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        label="Expense Description"
-                        name={[field.name, "description"]}
-                        rules={[{ required: true, message: "Expense description is required" }]}>
-                        <Input placeholder="e.g., Court Filing Fees, Process Server" />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={12}>
-                      <Form.Item
-                        label="Amount (₦)"
-                        name={[field.name, "amount"]}
-                        rules={[{ required: true, message: "Expense amount is required" }]}>
-                        <InputNumber
-                          className="w-full"
-                          min={0}
-                          formatter={(value) => `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                          parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24} md={8}>
-                      <Form.Item label="Category" name={[field.name, "category"]}>
-                        <Select
-                          options={[
-                            { value: "court_fees", label: "Court Fees" },
-                            { value: "filing_fees", label: "Filing Fees" },
-                            { value: "travel", label: "Travel" },
-                            { value: "accommodation", label: "Accommodation" },
-                            { value: "expert_witness", label: "Expert Witness" },
-                            { value: "process_server", label: "Process Server" },
-                            { value: "printing", label: "Printing" },
-                            { value: "other", label: "Other" },
-                          ]}
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <Form.Item label="Receipt Number" name={[field.name, "receiptNumber"]}>
-                        <Input placeholder="e.g., CT-2024-001" />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={8}>
-                      <Form.Item label="Reimbursable" name={[field.name, "isReimbursable"]} valuePropName="checked">
-                        <Switch checkedChildren="Yes" unCheckedChildren="No" />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                  <Row gutter={[16, 16]}>
-                    <Col xs={24} md={12}>
-                      <Form.Item label="Date" name={[field.name, "date"]}>
-                        <DatePicker style={{ width: "100%" }} />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-                </Card>
+                  field={field}
+                  title={`Expense ${field.name + 1}`}
+                  onRemove={() => remove(field.name)}
+                />
               ))}
-              <Button className="m-3" onClick={() => add()} type="dashed">+ Add Expenses</Button>
+              <Button
+                className="mt-3"
+                type="dashed"
+                onClick={() => add(newExpense())}>
+                + Add Expense
+              </Button>
             </div>
           )}
         </Form.List>
@@ -386,23 +335,48 @@ const UpdateInvoice = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24} md={8}>
               <Form.Item name="discountType" label="Discount Type">
-                <Select options={[
-                  { value: "none", label: "No Discount" },
-                  { value: "percentage", label: "Percentage" },
-                  { value: "fixed", label: "Fixed Amount" },
-                ]} />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={8}>
-              <Form.Item name="discount" label="Discount Amount">
-                <InputNumber
-                  className="w-full"
-                  min={0}
-                  formatter={(value) => `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                  parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
+                <Select
+                  options={[
+                    { value: "none", label: "No Discount" },
+                    { value: "percentage", label: "Percentage (%)" },
+                    { value: "fixed", label: "Fixed Amount (₦)" },
+                  ]}
                 />
               </Form.Item>
             </Col>
+            {discountType === "percentage" ? (
+              <Col xs={24} md={8}>
+                <Form.Item label="Discount Rate (%)" name="discount">
+                  <InputNumber
+                    className="w-full"
+                    min={0}
+                    max={100}
+                    addonAfter="%"
+                  />
+                </Form.Item>
+              </Col>
+            ) : discountType === "fixed" ? (
+              <Col xs={24} md={8}>
+                <Form.Item label="Discount Amount (₦)" name="discount">
+                  <InputNumber
+                    className="w-full"
+                    min={0}
+                    formatter={nairaFormatter}
+                    parser={nairaParser}
+                  />
+                </Form.Item>
+              </Col>
+            ) : (
+              <Col xs={24} md={8}>
+                <Form.Item label="Discount Amount">
+                  <InputNumber
+                    className="w-full"
+                    disabled
+                    placeholder="Select a discount type first"
+                  />
+                </Form.Item>
+              </Col>
+            )}
             <Col xs={24} md={8}>
               <Form.Item name="discountReason" label="Discount Reason">
                 <Input placeholder="e.g., Professional courtesy" />
@@ -412,7 +386,12 @@ const UpdateInvoice = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24} md={12}>
               <Form.Item name="taxRate" label="Tax Rate (%)">
-                <InputNumber className="w-full" min={0} max={100} />
+                <InputNumber
+                  className="w-full"
+                  min={0}
+                  max={100}
+                  addonAfter="%"
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -428,8 +407,8 @@ const UpdateInvoice = () => {
                 <InputNumber
                   className="w-full"
                   min={0}
-                  formatter={(value) => `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-                  parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
+                  formatter={nairaFormatter}
+                  parser={nairaParser}
                 />
               </Form.Item>
             </Col>
@@ -456,7 +435,7 @@ const UpdateInvoice = () => {
               <Form.Item
                 name="dueDate"
                 label="Due Date"
-                rules={[{ required: true, message: "Due date is required" }]}>
+                rules={[{ required: true, message: "Please select a due date" }]}>
                 <DatePicker className="w-full" />
               </Form.Item>
             </Col>
@@ -482,6 +461,11 @@ const UpdateInvoice = () => {
           </Row>
         </Card>
 
+        <Divider orientation="left" orientationMargin="0">
+          <Typography.Title level={4}>Invoice Summary</Typography.Title>
+        </Divider>
+        <InvoiceSummary form={form} />
+
         <Divider />
         <Form.Item>
           <Button
@@ -490,7 +474,8 @@ const UpdateInvoice = () => {
             className="blue-btn"
             htmlType="submit"
             size="large"
-            type="primary">
+            type="primary"
+            disabled={isLocked}>
             Update Invoice
           </Button>
         </Form.Item>

@@ -1,13 +1,28 @@
 /* eslint-disable react/prop-types, react-refresh/only-export-components */
-import { DeleteOutlined } from "@ant-design/icons";
 import {
   CalendarOutlined,
+  CalculatorOutlined,
   ClockCircleOutlined,
+  DeleteOutlined,
   DollarOutlined,
   FileTextOutlined,
   TagOutlined,
 } from "@ant-design/icons";
-import { Col, DatePicker, Form, InputNumber, Row, Select, Space, Tag, Typography } from "antd";
+import {
+  Card,
+  Col,
+  DatePicker,
+  Descriptions,
+  Form,
+  Input,
+  InputNumber,
+  Row,
+  Select,
+  Space,
+  Switch,
+  Tag,
+  Typography,
+} from "antd";
 
 const { Text } = Typography;
 
@@ -192,7 +207,7 @@ export const BillingMethodPicker = ({ value, onChange }) => (
   </div>
 );
 
-export const ServiceBillingCard = ({ form, field, title, required }) => {
+export const ServiceBillingCard = ({ form, field, title, required, onRemove }) => {
   const services = Form.useWatch("services", form) || [];
   const service = services?.[field.name];
   const method = service?.billingMethod || "hourly";
@@ -221,6 +236,9 @@ export const ServiceBillingCard = ({ form, field, title, required }) => {
         <Space size={8}>
           <Text className="text-sm text-gray-500">Amount</Text>
           <Text strong className="text-green-600">{formatNaira(amount)}</Text>
+          {typeof onRemove === "function" && (
+            <DeleteOutlined className="text-red-700 ml-2" onClick={onRemove} />
+          )}
         </Space>
       }>
       <Row gutter={[16, 16]}>
@@ -259,7 +277,7 @@ export const ServiceBillingCard = ({ form, field, title, required }) => {
           <Row gutter={[16, 16]}>
             {methodInfo.fields.map((cfg) => (
               <Col xs={24} md={12} key={cfg.key}>
-                <Form.Item label={cfg.label} name={[field.name, cfg.key]} style={{ marginBottom: 0 }}>
+                <Form.Item label={cfg.label} name={[field.name, cfg.key]}>
                   {renderInput(cfg)}
                 </Form.Item>
               </Col>
@@ -268,12 +286,12 @@ export const ServiceBillingCard = ({ form, field, title, required }) => {
         </Col>
 
         <Col xs={24} md={12}>
-          <Form.Item label="Category" name={[field.name, "category"]} style={{ marginBottom: 0 }}>
+          <Form.Item label="Category" name={[field.name, "category"]}>
             <Select options={SERVICE_CATEGORY_OPTIONS} />
           </Form.Item>
         </Col>
         <Col xs={24} md={12}>
-          <Form.Item label="Date of Service" name={[field.name, "date"]} style={{ marginBottom: 0 }}>
+          <Form.Item label="Date of Service" name={[field.name, "date"]}>
             <DatePicker className="w-full" />
           </Form.Item>
         </Col>
@@ -281,6 +299,117 @@ export const ServiceBillingCard = ({ form, field, title, required }) => {
     </Card>
   );
 };
+
+export const InvoiceSummary = ({ form }) => {
+  const values = Form.useWatch([], form) || {};
+  const totals = computeInvoiceTotals(values);
+  const discountLabel =
+    totals.discountAmount > 0
+      ? `Discount (${values.discountType === "percentage" ? `${values.discount}%` : "fixed"})`
+      : "Discount";
+
+  const rows = [
+    { label: "Services", value: totals.servicesTotal, color: "text-gray-900" },
+    { label: "Expenses", value: totals.expensesTotal, color: "text-gray-900" },
+    { label: "Subtotal", value: totals.subtotal, color: "text-blue-600" },
+    totals.discountAmount > 0
+      ? { label: discountLabel, value: -totals.discountAmount, color: "text-orange-600" }
+      : null,
+    { label: `Tax (${values.taxRate || 0}%)`, value: totals.taxAmount, color: "text-gray-900" },
+  ].filter(Boolean);
+
+  return (
+    <Card
+      size="small"
+      className="bg-gray-50"
+      title={
+        <Space>
+          <CalculatorOutlined className="text-blue-600" />
+          <Text strong>Live Summary</Text>
+        </Space>
+      }>
+      <Descriptions column={1} size="small" labelStyle={{ color: "#6b7280" }}>
+        {rows.map((r) => (
+          <Descriptions.Item key={r.label} label={r.label}>
+            <Text strong className={r.color}>
+              {formatNaira(r.value)}
+            </Text>
+          </Descriptions.Item>
+        ))}
+        <Descriptions.Item label="Previous Balance">
+          <Text strong className="text-gray-900">{formatNaira(totals.previousBalance)}</Text>
+        </Descriptions.Item>
+        <Descriptions.Item label="Grand Total">
+          <Text strong className="text-green-600 text-base">{formatNaira(totals.total)}</Text>
+        </Descriptions.Item>
+      </Descriptions>
+    </Card>
+  );
+};
+
+export const ExpenseCard = ({ field, title, onRemove }) => (
+  <Card
+    size="small"
+    title={title}
+    extra={
+      <DeleteOutlined
+        className="text-red-700"
+        onClick={() => onRemove?.()}
+      />
+    }>
+    <Row gutter={[16, 16]}>
+      <Col xs={24} md={12}>
+        <Form.Item
+          label="Expense Description"
+          name={[field.name, "description"]}
+          rules={[{ required: true, message: "Expense description is required" }]}>
+          <Input placeholder="e.g., Court Filing Fees, Process Server" />
+        </Form.Item>
+      </Col>
+      <Col xs={24} md={12}>
+        <Form.Item
+          label="Amount (₦)"
+          name={[field.name, "amount"]}
+          rules={[{ required: true, message: "Expense amount is required" }]}>
+          <InputNumber
+            className="w-full"
+            min={0}
+            formatter={nairaFormatter}
+            parser={nairaParser}
+          />
+        </Form.Item>
+      </Col>
+    </Row>
+    <Row gutter={[16, 16]}>
+      <Col xs={24} md={8}>
+        <Form.Item label="Category" name={[field.name, "category"]}>
+          <Select options={EXPENSE_CATEGORY_OPTIONS} />
+        </Form.Item>
+      </Col>
+      <Col xs={24} md={8}>
+        <Form.Item label="Receipt Number" name={[field.name, "receiptNumber"]}>
+          <Input placeholder="e.g., CT-2024-001" />
+        </Form.Item>
+      </Col>
+      <Col xs={24} md={8}>
+        <Form.Item
+          label="Reimbursable"
+          name={[field.name, "isReimbursable"]}
+          valuePropName="checked"
+          tooltip="Include this amount in the client's total bill">
+          <Switch checkedChildren="Yes" unCheckedChildren="No" />
+        </Form.Item>
+      </Col>
+    </Row>
+    <Row gutter={[16, 16]}>
+      <Col xs={24} md={12}>
+        <Form.Item label="Date" name={[field.name, "date"]}>
+          <DatePicker className="w-full" />
+        </Form.Item>
+      </Col>
+    </Row>
+  </Card>
+);
 
 export const ServiceDeleteButton = ({ onRemove }) => (
   <DeleteOutlined className="text-red-700" onClick={onRemove} />

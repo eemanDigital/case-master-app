@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { DeleteOutlined } from "@ant-design/icons";
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Button,
@@ -13,23 +12,49 @@ import {
   DatePicker,
   Row,
   Col,
-  Switch,
+  Segmented,
   Space,
 } from "antd";
 
 import useMattersSelectOptions from "../hooks/useMattersSelectOptions";
-import { invoiceInitialValue } from "../utils/initialValues";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import useHandleSubmit from "../hooks/useHandleSubmit";
 import GoBackButton from "./GoBackButton";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
+import {
+  InvoiceSummary,
+  ServiceBillingCard,
+  ExpenseCard,
+  nairaFormatter,
+  nairaParser,
+} from "./invoices/ui/invoiceBillingKit";
+
 const { TextArea } = Input;
+const { Text } = Typography;
+
+const newService = () => ({
+  description: "",
+  billingMethod: "hourly",
+  hours: "",
+  rate: null,
+  fixedAmount: null,
+  quantity: 1,
+  unitPrice: null,
+  date: null,
+  category: "other",
+});
+
+const newExpense = () => ({
+  description: "",
+  amount: 0,
+  date: null,
+  category: "other",
+  receiptNumber: "",
+  isReimbursable: true,
+});
 
 const CreateInvoiceForm = () => {
   const { fetchData } = useDataGetterHook();
-  const [formData, setFormData] = useState(invoiceInitialValue);
-  const [publishOnSave, setPublishOnSave] = useState(false);
-  const [linkType, setLinkType] = useState("matter"); // matter, other
   const { mattersOptions, loading: mattersLoading } = useMattersSelectOptions({
     status: "active",
     limit: 100,
@@ -41,13 +66,22 @@ const CreateInvoiceForm = () => {
 
   const { form, onSubmit, loading, data } = useHandleSubmit("invoices", "post");
 
+  const linkType = Form.useWatch("linkType", form) || "matter";
+  const publishOnSave = Form.useWatch("publishOnSave", form) === "publish";
+  const discountType = Form.useWatch("discountType", form) || "none";
+
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
 
   useEffect(() => {
     if (data?.message === "success") {
       fetchData("invoices");
-      navigate("/dashboard/billings/?type=invoice");
+      const createdId = data?.data?._id;
+      if (createdId) {
+        navigate(`/dashboard/billings/invoices/${createdId}/details`);
+      } else {
+        navigate("/dashboard/billings/?type=invoice");
+      }
     }
   }, [data, navigate, fetchData]);
 
@@ -70,6 +104,11 @@ const CreateInvoiceForm = () => {
           : undefined,
         services: values.services?.map((s) => ({
           ...s,
+          hours: s.hours || 0,
+          rate: s.rate || 0,
+          fixedAmount: s.fixedAmount || 0,
+          quantity: s.quantity || 1,
+          unitPrice: s.unitPrice || 0,
           date: s.date ? s.date.toISOString() : undefined,
         })),
         expenses: values.expenses?.map((e) => ({
@@ -84,25 +123,60 @@ const CreateInvoiceForm = () => {
     }
   };
 
-  const requiredRule = [{ required: true, message: "This field is required" }];
+  const discountSelectOptions = [
+    { value: "none", label: "No Discount" },
+    { value: "percentage", label: "Percentage (%)" },
+    { value: "fixed", label: "Fixed Amount (₦)" },
+  ];
 
   return (
     <>
       <GoBackButton />
-      <Form layout="vertical" form={form} name="invoice form">
+      <Form
+        layout="vertical"
+        form={form}
+        name="invoice form"
+        initialValues={{
+          linkType: "matter",
+          services: [newService()],
+          expenses: [newExpense()],
+          discountType: "none",
+          discount: 0,
+          taxRate: 0,
+          previousBalance: 0,
+          paymentTerms: "Net 30 days",
+          publishOnSave: "draft",
+        }}>
         <Divider orientation="left" orientationMargin="0">
-          <Typography.Title level={4}>Invoice Form</Typography.Title>
+          <Typography.Title level={4}>Create Invoice</Typography.Title>
         </Divider>
+
         <Card>
           <Row gutter={[16, 16]}>
             <Col xs={24} md={12}>
               <Form.Item
+                name="client"
+                label="Client"
+                rules={[{ required: true, message: "Please select a client" }]}
+                tooltip="This is who will be billed">
+                <Select
+                  placeholder="Select client"
+                  showSearch
+                  filterOption={filterOption}
+                  options={clientOptions}
+                  allowClear
+                  loading={clientsLoading}
+                />
+              </Form.Item>
+            </Col>
+
+            <Col xs={24} md={12}>
+              <Form.Item
                 label="Link To"
                 name="linkType"
-                initialValue="matter">
+                tooltip="Link the invoice to a matter, or bill a standalone activity">
                 <Select
                   onChange={(value) => {
-                    setLinkType(value);
                     if (value === "matter") {
                       form.setFieldsValue({ otherActivity: "" });
                     } else {
@@ -114,13 +188,13 @@ const CreateInvoiceForm = () => {
                 </Select>
               </Form.Item>
             </Col>
-            
+
             {linkType === "matter" ? (
               <Col xs={24} md={12}>
                 <Form.Item
                   label="Select Matter"
                   name="matter"
-                  tooltip="Select a matter to link this invoice to">
+                  tooltip="Optional — pick the matter this work belongs to">
                   <Select
                     placeholder="Select matter (optional)"
                     showSearch
@@ -136,35 +210,21 @@ const CreateInvoiceForm = () => {
                 <Form.Item
                   label="Other Activity Name"
                   name="otherActivity"
-                  rules={[{ required: true, message: "Please enter activity name" }]}
-                  tooltip="Enter a custom activity name">
-                  <Input placeholder="e.g., Contract Review, Legal Advisory, etc." />
+                  rules={[
+                    { required: true, message: "Please enter the activity or service name" },
+                  ]}
+                  tooltip="Name the standalone work being billed (e.g., Contract Review)">
+                  <Input placeholder="e.g., Contract Review, Legal Advisory" />
                 </Form.Item>
               </Col>
             )}
-            
-            <Col xs={24} md={12}>
-              <Form.Item
-                name="client"
-                label="Client"
-                rules={requiredRule}
-                initialValue={formData?.client}>
-                <Select
-                  placeholder="Select client"
-                  showSearch
-                  filterOption={filterOption}
-                  options={clientOptions}
-                  allowClear
-                  loading={clientsLoading}
-                />
-              </Form.Item>
-            </Col>
+
             <Col xs={24} md={12}>
               <Form.Item
                 label="Invoice Title"
                 name="title"
-                rules={requiredRule}
-                initialValue={formData?.title}>
+                rules={[{ required: true, message: "Please enter an invoice title" }]}
+                tooltip="A short label clients will recognise on this invoice">
                 <Input placeholder="e.g., Legal Consultation & Court Representation" />
               </Form.Item>
             </Col>
@@ -172,7 +232,7 @@ const CreateInvoiceForm = () => {
               <Form.Item
                 label="Description"
                 name="description"
-                initialValue={formData?.description}>
+                tooltip="Optional summary of the work covered by this invoice">
                 <TextArea
                   rows={3}
                   placeholder="Detailed description of services rendered..."
@@ -192,7 +252,7 @@ const CreateInvoiceForm = () => {
               <Form.Item
                 label="Billing Period Start"
                 name="billingPeriodStart"
-                tooltip="Start date for retainer or hourly billing period">
+                tooltip="When this billing period begins">
                 <DatePicker className="w-full" />
               </Form.Item>
             </Col>
@@ -200,9 +260,15 @@ const CreateInvoiceForm = () => {
               <Form.Item
                 label="Billing Period End"
                 name="billingPeriodEnd"
-                tooltip="End date for retainer or hourly billing period">
+                tooltip="When this billing period ends">
                 <DatePicker className="w-full" />
               </Form.Item>
+            </Col>
+            <Col xs={24}>
+              <Text type="secondary" style={{ fontSize: "12px" }}>
+                The window of work this invoice covers — used for hourly and
+                retainer billing.
+              </Text>
             </Col>
           </Row>
         </Card>
@@ -210,184 +276,31 @@ const CreateInvoiceForm = () => {
         <Divider orientation="left" orientationMargin="0">
           <Typography.Title level={4}>Services Rendered</Typography.Title>
         </Divider>
+        <Typography.Paragraph type="secondary" className="mb-3">
+          Add each service on this invoice and choose how it is billed. Choose{" "}
+          <Text strong>Fixed Fee</Text> for a single flat price, or{" "}
+          <Text strong>Hourly</Text> to bill by time — each method only shows the
+          fields it needs.
+        </Typography.Paragraph>
         <div>
           <Form.List name="services">
             {(fields, { add, remove }) => (
               <div>
                 {fields.map((field) => (
-                  <Card
-                    size="small"
-                    title={`Service ${field.name + 1}`}
+                  <ServiceBillingCard
                     key={field.key}
-                    extra={
-                      <DeleteOutlined
-                        className="text-red-700"
-                        onClick={() => remove(field.name)}
-                      />
-                    }>
-                    <Row gutter={[16, 16]}>
-                      {/* Service Description */}
-                      <Col xs={24} md={12}>
-                        <Form.Item
-                          label="Service Description"
-                          rules={requiredRule}
-                          name={[field.name, "description"]} // Changed from "serviceDescriptions"
-                          initialValue={formData.services.description}>
-                          <Input placeholder="e.g., Court Appearance, Document Preparation" />
-                        </Form.Item>
-                      </Col>
-
-                      {/* Billing Method */}
-                      <Col xs={24} md={12}>
-                        <Form.Item
-                          label="Billing Method"
-                          name={[field.name, "billingMethod"]}
-                          rules={requiredRule}
-                          initialValue="hourly">
-                          <Select
-                            options={[
-                              { value: "hourly", label: "Hourly" },
-                              { value: "fixed_fee", label: "Fixed Fee" },
-                              { value: "contingency", label: "Contingency" },
-                              { value: "retainer", label: "Retainer" },
-                              { value: "item", label: "Item-based" },
-                            ]}
-                          />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Row gutter={[16, 16]}>
-                      {/* Hours of Work (for hourly billing) */}
-                      <Col xs={24} md={8}>
-                        <Form.Item
-                          label="Hours"
-                          name={[field.name, "hours"]}
-                          dependencies={[
-                            ["services", field.name, "billingMethod"],
-                          ]}
-                          initialValue={formData.services.hours}>
-                          <InputNumber className="w-full" min={0} />
-                        </Form.Item>
-                      </Col>
-
-                      {/* Rate (for hourly billing) */}
-                      <Col xs={24} md={8}>
-                        <Form.Item
-                          label="Rate (₦)"
-                          name={[field.name, "rate"]}
-                          dependencies={[
-                            ["services", field.name, "billingMethod"],
-                          ]}
-                          initialValue={formData.services.rate}>
-                          <InputNumber
-                            className="w-full"
-                            min={0}
-                            formatter={(value) =>
-                              `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                            }
-                            parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                          />
-                        </Form.Item>
-                      </Col>
-
-                      {/* Fixed Amount (for fixed_fee/retainer billing) */}
-                      <Col xs={24} md={8}>
-                        <Form.Item
-                          label="Fixed Amount (₦)"
-                          name={[field.name, "fixedAmount"]}
-                          dependencies={[
-                            ["services", field.name, "billingMethod"],
-                          ]}
-                          initialValue={formData.services.fixedAmount}>
-                          <InputNumber
-                            className="w-full"
-                            min={0}
-                            formatter={(value) =>
-                              `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                            }
-                            parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                          />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Row gutter={[16, 16]}>
-                      {/* Quantity (for item-based billing) */}
-                      <Col xs={24} md={8}>
-                        <Form.Item
-                          label="Quantity"
-                          name={[field.name, "quantity"]}
-                          dependencies={[
-                            ["services", field.name, "billingMethod"],
-                          ]}
-                          initialValue={1}>
-                          <InputNumber className="w-full" min={1} />
-                        </Form.Item>
-                      </Col>
-
-                      {/* Unit Price (for item-based billing) */}
-                      <Col xs={24} md={8}>
-                        <Form.Item
-                          label="Unit Price (₦)"
-                          name={[field.name, "unitPrice"]}
-                          dependencies={[
-                            ["services", field.name, "billingMethod"],
-                          ]}
-                          initialValue={formData.services.unitPrice}>
-                          <InputNumber
-                            className="w-full"
-                            min={0}
-                            formatter={(value) =>
-                              `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                            }
-                            parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                          />
-                        </Form.Item>
-                      </Col>
-
-                      {/* Category */}
-                      <Col xs={24} md={8}>
-                        <Form.Item
-                          label="Category"
-                          name={[field.name, "category"]}
-                          initialValue="other">
-                          <Select
-                            options={[
-                              { value: "consultation", label: "Consultation" },
-                              {
-                                value: "court_appearance",
-                                label: "Court Appearance",
-                              },
-                              {
-                                value: "document_preparation",
-                                label: "Document Preparation",
-                              },
-                              { value: "research", label: "Research" },
-                              { value: "negotiation", label: "Negotiation" },
-                              { value: "filing", label: "Filing" },
-                              { value: "other", label: "Other" },
-                            ]}
-                          />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-
-                    <Row gutter={[16, 16]}>
-                      {/* Date of Service */}
-                      <Col xs={24} md={12}>
-                        <Form.Item
-                          label="Date of Service"
-                          name={[field.name, "date"]}
-                          initialValue={formData.services.date}>
-                          <DatePicker style={{ width: "100%" }} />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                  </Card>
+                    form={form}
+                    field={field}
+                    title={`Service ${field.name + 1}`}
+                    required
+                    onRemove={() => remove(field.name)}
+                  />
                 ))}
-                <Button className="m-3" onClick={() => add()}>
-                  + Add More Services
+                <Button
+                  className="mt-3"
+                  type="dashed"
+                  onClick={() => add(newService())}>
+                  + Add Service
                 </Button>
               </div>
             )}
@@ -397,116 +310,27 @@ const CreateInvoiceForm = () => {
         <Divider orientation="left" orientationMargin="0">
           <Typography.Title level={4}>Expenses</Typography.Title>
         </Divider>
-
-        {/* Expenses field */}
+        <Typography.Paragraph type="secondary" className="mb-3">
+          Out-of-pocket costs — mark an expense as{" "}
+          <Text strong>Reimbursable</Text> to add it to the client&apos;s total.
+        </Typography.Paragraph>
         <div>
           <Form.List name="expenses">
             {(fields, { add, remove }) => (
               <div>
                 {fields.map((field) => (
-                  <Card
-                    size="small"
-                    title={`Expense ${field.name + 1}`}
+                  <ExpenseCard
                     key={field.key}
-                    extra={
-                      <DeleteOutlined
-                        className="text-red-700"
-                        onClick={() => {
-                          remove(field.name);
-                        }}
-                      />
-                    }>
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} md={12}>
-                        <Form.Item
-                          label="Expense Description"
-                          name={[field.name, "description"]}
-                          rules={requiredRule}
-                          initialValue={formData.expenses.description}>
-                          <Input placeholder="e.g., Court Filing Fees, Process Server" />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} md={12}>
-                        <Form.Item
-                          label="Amount (₦)"
-                          name={[field.name, "amount"]}
-                          rules={requiredRule}
-                          initialValue={formData.expenses.amount}>
-                          <InputNumber
-                            className="w-full"
-                            min={0}
-                            formatter={(value) =>
-                              `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                            }
-                            parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                          />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} md={8}>
-                        <Form.Item
-                          label="Category"
-                          name={[field.name, "category"]}
-                          initialValue="other">
-                          <Select
-                            options={[
-                              { value: "court_fees", label: "Court Fees" },
-                              { value: "filing_fees", label: "Filing Fees" },
-                              { value: "travel", label: "Travel" },
-                              {
-                                value: "accommodation",
-                                label: "Accommodation",
-                              },
-                              {
-                                value: "expert_witness",
-                                label: "Expert Witness",
-                              },
-                              {
-                                value: "process_server",
-                                label: "Process Server",
-                              },
-                              { value: "printing", label: "Printing" },
-                              { value: "other", label: "Other" },
-                            ]}
-                          />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} md={8}>
-                        <Form.Item
-                          label="Receipt Number"
-                          name={[field.name, "receiptNumber"]}
-                          initialValue={formData.expenses.receiptNumber}>
-                          <Input placeholder="e.g., CT-2024-001" />
-                        </Form.Item>
-                      </Col>
-                      <Col xs={24} md={8}>
-                        <Form.Item
-                          label="Reimbursable"
-                          name={[field.name, "isReimbursable"]}
-                          valuePropName="checked"
-                          initialValue={true}>
-                          <Switch
-                            checkedChildren="Yes"
-                            unCheckedChildren="No"
-                          />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                    <Row gutter={[16, 16]}>
-                      <Col xs={24} md={12}>
-                        <Form.Item
-                          label="Date"
-                          name={[field.name, "date"]}
-                          initialValue={formData.expenses.date}>
-                          <DatePicker style={{ width: "100%" }} />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                  </Card>
+                    field={field}
+                    title={`Expense ${field.name + 1}`}
+                    onRemove={() => remove(field.name)}
+                  />
                 ))}
-                <Button className="m-3" onClick={() => add()}>
-                  + Add Expenses
+                <Button
+                  className="mt-3"
+                  type="dashed"
+                  onClick={() => add(newExpense())}>
+                  + Add Expense
                 </Button>
               </div>
             )}
@@ -523,45 +347,64 @@ const CreateInvoiceForm = () => {
               <Form.Item
                 label="Discount Type"
                 name="discountType"
-                initialValue="none">
-                <Select
-                  options={[
-                    { value: "none", label: "No Discount" },
-                    { value: "percentage", label: "Percentage" },
-                    { value: "fixed", label: "Fixed Amount" },
-                  ]}
-                />
+                tooltip="Apply a discount as a rate or as a fixed amount">
+                <Select options={discountSelectOptions} />
               </Form.Item>
             </Col>
-            <Col xs={24} md={8}>
-              <Form.Item
-                label="Discount Amount"
-                name="discount"
-                dependencies={["discountType"]}
-                initialValue={0}>
-                <InputNumber
-                  className="w-full"
-                  min={0}
-                  formatter={(value) =>
-                    `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                  }
-                  parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
-                />
-              </Form.Item>
-            </Col>
+            {discountType === "percentage" ? (
+              <Col xs={24} md={8}>
+                <Form.Item label="Discount Rate (%)" name="discount">
+                  <InputNumber
+                    className="w-full"
+                    min={0}
+                    max={100}
+                    addonAfter="%"
+                    placeholder="e.g., 10"
+                  />
+                </Form.Item>
+              </Col>
+            ) : discountType === "fixed" ? (
+              <Col xs={24} md={8}>
+                <Form.Item label="Discount Amount (₦)" name="discount">
+                  <InputNumber
+                    className="w-full"
+                    min={0}
+                    formatter={nairaFormatter}
+                    parser={nairaParser}
+                    placeholder="e.g., 50,000"
+                  />
+                </Form.Item>
+              </Col>
+            ) : (
+              <Col xs={24} md={8}>
+                <Form.Item label="Discount Amount">
+                  <InputNumber
+                    className="w-full"
+                    disabled
+                    placeholder="Select a discount type first"
+                  />
+                </Form.Item>
+              </Col>
+            )}
             <Col xs={24} md={8}>
               <Form.Item
                 label="Discount Reason"
                 name="discountReason"
-                initialValue={formData?.discountReason}>
+                tooltip="Visible to the client — e.g., professional courtesy">
                 <Input placeholder="e.g., Professional courtesy" />
               </Form.Item>
             </Col>
           </Row>
           <Row gutter={[16, 16]}>
             <Col xs={24} md={12}>
-              <Form.Item label="Tax Rate (%)" name="taxRate" initialValue={0}>
-                <InputNumber className="w-full" min={0} max={100} />
+              <Form.Item label="Tax Rate (%)" name="taxRate">
+                <InputNumber
+                  className="w-full"
+                  min={0}
+                  max={100}
+                  addonAfter="%"
+                  placeholder="e.g., 7.5"
+                />
               </Form.Item>
             </Col>
           </Row>
@@ -577,15 +420,13 @@ const CreateInvoiceForm = () => {
               <Form.Item
                 label="Previous Balance (₦)"
                 name="previousBalance"
-                initialValue={0}
-                tooltip="Any outstanding balance from previous invoices">
+                tooltip="Any outstanding balance carried over from earlier invoices">
                 <InputNumber
                   className="w-full"
                   min={0}
-                  formatter={(value) =>
-                    `₦ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                  }
-                  parser={(value) => value.replace(/₦\s?|(,*)/g, "")}
+                  formatter={nairaFormatter}
+                  parser={nairaParser}
+                  placeholder="0"
                 />
               </Form.Item>
             </Col>
@@ -600,10 +441,10 @@ const CreateInvoiceForm = () => {
           <Row gutter={[16, 16]}>
             <Col xs={24} md={12}>
               <Form.Item
-                rules={requiredRule}
+                rules={[{ required: true, message: "Please select a due date" }]}
                 label="Due Date"
                 name="dueDate"
-                initialValue={formData?.dueDate}>
+                tooltip="When payment is expected from the client">
                 <DatePicker className="w-full" />
               </Form.Item>
             </Col>
@@ -611,7 +452,7 @@ const CreateInvoiceForm = () => {
               <Form.Item
                 label="Payment Terms"
                 name="paymentTerms"
-                initialValue="Net 30 days">
+                tooltip="How long the client has to pay, shown on the invoice">
                 <Input placeholder="e.g., Net 30 days, Due upon receipt" />
               </Form.Item>
             </Col>
@@ -621,7 +462,7 @@ const CreateInvoiceForm = () => {
               <Form.Item
                 name="notes"
                 label="Notes"
-                initialValue={formData?.notes}>
+                tooltip="Visible to the client at the bottom of the invoice">
                 <TextArea
                   rows={3}
                   placeholder="Additional notes for the client..."
@@ -631,38 +472,39 @@ const CreateInvoiceForm = () => {
           </Row>
         </Card>
 
+        <Divider orientation="left" orientationMargin="0">
+          <Typography.Title level={4}>Invoice Summary</Typography.Title>
+        </Divider>
+        <InvoiceSummary form={form} />
+        <Text type="secondary" style={{ fontSize: "12px", display: "block", marginTop: 8 }}>
+          Totals update automatically as you type. If a service has no amount
+          yet, it won&apos;t be counted.
+        </Text>
+
         <Divider />
 
         {/* Publish Option */}
         <Card className="bg-blue-50 border-blue-200">
-          <Row gutter={[16, 16]}>
-            <Col xs={24}>
-              <Space direction="vertical" size="small">
-                <Typography.Text strong>Invoice Publishing</Typography.Text>
-                <Form.Item
-                  name="publishOnSave"
-                  valuePropName="checked"
-                  initialValue={false}
-                  style={{ marginBottom: 0 }}>
-                  <Switch
-                    checked={publishOnSave}
-                    onChange={setPublishOnSave}
-                    checkedChildren="Publish Now"
-                    unCheckedChildren="Save as Draft"
-                  />
-                </Form.Item>
-                <Typography.Text type="secondary" style={{ fontSize: "12px" }}>
-                  {publishOnSave
-                    ? "Invoice will be marked as 'sent' and ready to send to client"
-                    : "Invoice will be saved as 'draft' and can be edited later"}
-                </Typography.Text>
-              </Space>
-            </Col>
-          </Row>
+          <Space direction="vertical" size="small" style={{ width: "100%" }}>
+            <Text strong>Publishing</Text>
+            <Form.Item name="publishOnSave" style={{ marginBottom: 0 }}>
+              <Segmented
+                options={[
+                  { label: "Save as Draft", value: "draft" },
+                  { label: "Save & Publish", value: "publish" },
+                ]}
+              />
+            </Form.Item>
+            <Text type="secondary" style={{ fontSize: "12px" }}>
+              {publishOnSave
+                ? "Invoice will be marked as 'sent' — ready to share with your client."
+                : "Invoice is saved as a 'draft' — you can still edit it before publishing."}
+            </Text>
+          </Space>
         </Card>
 
         <Divider />
-        <Form.Item>
+        <Form.Item style={{ marginBottom: 8 }}>
           <Button
             className="blue-btn"
             onClick={handleFormSubmit}
@@ -672,6 +514,10 @@ const CreateInvoiceForm = () => {
             {publishOnSave ? "Save & Publish Invoice" : "Save as Draft"}
           </Button>
         </Form.Item>
+        <Text type="secondary" style={{ fontSize: "12px" }}>
+          After saving, you&apos;ll be taken to the new invoice where you can
+          review, download and edit it.
+        </Text>
       </Form>
     </>
   );
