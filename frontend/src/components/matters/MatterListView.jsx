@@ -1,7 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
-  Row,
-  Col,
   Card,
   Button,
   Space,
@@ -21,9 +19,7 @@ import {
 } from "antd";
 import {
   PlusOutlined,
-  EyeOutlined,
-  EditOutlined,
-  DeleteOutlined,
+  FolderOpenOutlined,
   UserOutlined,
   TeamOutlined,
   CalendarOutlined,
@@ -38,11 +34,15 @@ import dayjs from "dayjs";
 import MatterCard from "./MatterCard";
 import MatterFilters from "./MatterFilters";
 import BulkActionsBar from "./BulkActionsBar";
+import {
+  MatterPageHeader,
+  MatterRowActions,
+  buildRowMenu,
+} from "./ui/matterListKit";
 
 import {
   MATTER_CONFIG,
   getStatusColor,
-  formatCurrency,
 } from "../../config/matterConfig";
 import {
   getMatters,
@@ -564,45 +564,17 @@ const MatterListView = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 120,
+      width: 56,
       fixed: screens.xs ? "right" : false,
       render: (_, record) => (
-        <Space size="small">
-          <Tooltip title="View">
-            <Button
-              type="text"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/dashboard/matters/${record._id}`);
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="Edit">
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/dashboard/matters/${record._id}/edit`);
-              }}
-            />
-          </Tooltip>
-          <Tooltip title="Delete">
-            <Button
-              type="text"
-              danger
-              size="small"
-              icon={<DeleteOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteMatter(record._id);
-              }}
-            />
-          </Tooltip>
-        </Space>
+        <MatterRowActions
+          menuItems={buildRowMenu({
+            record,
+            onView: (r) => navigate(`/dashboard/matters/${r._id}`),
+            onEdit: (r) => navigate(`/dashboard/matters/${r._id}/edit`),
+            onDelete: (r) => handleDeleteMatter(r._id),
+          })}
+        />
       ),
     },
   ];
@@ -627,53 +599,42 @@ const MatterListView = () => {
   return (
     <div
       className={`min-h-screen p-4 md:p-6 ${isDarkMode ? "dark bg-gray-900" : "bg-gray-50"}`}>
-      <div className="mb-6 md:mb-8">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <Title
-              level={screens.xs ? 3 : 2}
-              className={`mb-1 md:mb-2 ${isDarkMode ? "text-gray-100" : "text-gray-800"}`}>
-              Legal Matters
-            </Title>
-            <Text
-              type="secondary"
-              className={isDarkMode ? "text-gray-400" : "text-gray-600"}>
-              Manage and track all legal matters in your practice
-            </Text>
-          </div>
+      <MatterPageHeader
+        icon={<FolderOpenOutlined />}
+        title="Legal Matters"
+        subtitle="Manage and track all legal matters in your practice"
+        count={totalMatters}
+        actions={
+          <>
+            <MobileFilterButton />
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Space wrap className="flex-wrap">
-              <MobileFilterButton />
+            <Button.Group>
+              <Tooltip title="Grid View">
+                <Button
+                  type={viewMode === "grid" ? "primary" : "default"}
+                  icon={<AppstoreOutlined />}
+                  onClick={() => setViewMode("grid")}
+                />
+              </Tooltip>
+              <Tooltip title="List View">
+                <Button
+                  type={viewMode === "list" ? "primary" : "default"}
+                  icon={<UnorderedListOutlined />}
+                  onClick={() => setViewMode("list")}
+                />
+              </Tooltip>
+            </Button.Group>
 
-              <Button.Group>
-                <Tooltip title="Grid View">
-                  <Button
-                    type={viewMode === "grid" ? "primary" : "default"}
-                    icon={<AppstoreOutlined />}
-                    onClick={() => setViewMode("grid")}
-                  />
-                </Tooltip>
-                <Tooltip title="List View">
-                  <Button
-                    type={viewMode === "list" ? "primary" : "default"}
-                    icon={<UnorderedListOutlined />}
-                    onClick={() => setViewMode("list")}
-                  />
-                </Tooltip>
-              </Button.Group>
-
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => navigate("/dashboard/matters/create")}
-                size={screens.xs ? "middle" : "large"}>
-                {screens.xs ? "New" : "New Matter"}
-              </Button>
-            </Space>
-          </div>
-        </div>
-      </div>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => navigate("/dashboard/matters/create")}
+              size={screens.xs ? "middle" : "large"}>
+              {screens.xs ? "New" : "New Matter"}
+            </Button>
+          </>
+        }
+      />
 
       <DashBoardDataCount
         matterStats={matterStats}

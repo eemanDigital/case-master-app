@@ -1,11 +1,9 @@
 # Current objective
-Bring OTHER matter report PDF generators to the "corporate standard" (the branded,
-multi-section, KPI-cards + key/value grids + data tables + headers style used by the
-verified `corporateController.js` corporate report).
+Unify the frontend matter-list screens so every list page (`/dashboard/matters*`) looks
+and behaves like one professional product. Replacement of the backend report work is
+COMPLETE (see below).
 
-STATUS: **ALL DONE** — litigation, property, general, retainer, and advisory report
-generators have been spliced, syntax-checked, and smoke-verified (real PDFs rendered
-with fixture data, text-extracted and confirmed to match the corporate standard).
+STATUS (frontend, as of this session): **DONE** — see "Frontend unification work" section.
 
 # Repo (CRITICAL — the only one that matters)
 Verified real root: `C:\Users\user\Desktop\case-master-app` (proved via node -e that
@@ -72,6 +70,40 @@ edits under the real root count.**
   `catchAsync` (backend/utils/catchAsync.js) does NOT return the fn promise — a harness
   that calls the exported controller directly must NOT `await` it expecting res.body to
   be set synchronously; verify by checking the written file instead.
+
+# Frontend unification work (current objective — DONE)
+Built a shared matter-list UI kit and refactored every routed list screen onto it, so
+all matter pages now share one visual language (slate-50 page bg, white `MatterPageHeader`
+bar with icon chip + title + count badge, uniform stat cards, one white table card, kebab
+row-actions) and one interaction pattern: **click the matter title / row to open details**
+(no more hunting for an eye icon).
+
+- **Kit**: `frontend/src/components/matters/ui/matterListKit.jsx`
+  (`MatterPageHeader`, `MatterStatCards`, `MatterToolbar`, `MatterTableCard`,
+  `MatterRowActions`, `buildRowMenu`, `MatterNumberTag`, `ClientCell`, `OfficersCell`,
+  `StatusPill`, `PriorityPill`, `MoneyText`, `DateCell`, `DetailPill`).
+  Top of file disables `react/prop-types` + `react-refresh/only-export-components`
+  deliberately (kit = composed page primitives).
+- **Refactored onto the kit** (all previously divergent / gradient-heavy / eye-icon-led):
+  - `frontend/src/pages/corporate/CorporateList.jsx` (also fixed pre-existing missing
+    `clearError` import; corporate has no edit route, so kebab = View Details only)
+  - `frontend/src/pages/property/PropertyList.jsx` (kebab = View + Edit → edit route)
+  - `frontend/src/pages/retainer/RetainerList.jsx` (kept card view, expiring sidebar,
+    sortable columns, row selection, Segmented filter — restyled off gradients)
+  - `frontend/src/pages/general/GeneralList.jsx` (kept Dashboard/Table toggle + the
+    DistributionChart/ComplianceCard/RecentMatters widgets; general StatCard gradients
+    removed, stats now kit cards; "Setup" button for matters missing a generalDetail)
+- **Aligned**: `frontend/src/components/matters/MatterListView.jsx` (All Matters hub —
+  header → `MatterPageHeader`, table actions → kebab; grid/rows already row-click via
+  `navigate`), `frontend/src/components/litigation/LitigationTable.jsx` (dropped the
+  separate eye-icon button, actions now kebab-only, row SINGLE-click navigates; guard
+  ignores clicks on buttons/links/dropdown/checkbox). Advisory list table already used
+  title-link + kebab + row-click, so left untouched.
+- **Verification**: `npm run build` (vite) passes; eslint clean on every touched file.
+  Gotcha hit during dev-server testing: referencing a `useCallback`-defined `loadStats`
+  inside the deps array of a `useEffect` defined before it throws TDZ
+  (`Cannot access 'loadStats' before initialization`) — keep the `useCallback` above the
+  effect, and add the whole `pagination` object to deps to satisfy exhaustive-deps.
 
 # Known prior-art / gotchas
 - esbuild `node_modules/.bin/esbuild` is NOT installed (Windows) — use `node --check`.

@@ -1,5 +1,5 @@
 // components/litigation/LitigationTable.jsx
-import { Table, Button, Space, Dropdown, Tag, Tooltip, Avatar } from "antd";
+import { Table, Button, Dropdown, Tag, Tooltip, Avatar } from "antd";
 import {
   EyeOutlined,
   EditOutlined,
@@ -301,30 +301,19 @@ const LitigationTable = ({
       title: "Actions",
       key: "actions",
       fixed: "right",
-      width: 80,
+      width: 56,
       render: (_, record) => (
-        <Space size={4}>
-          <Tooltip title="View Details">
-            <Button
-              type="text"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => onView(record)}
-              className="text-gray-600 hover:text-indigo-600"
-            />
-          </Tooltip>
-          <Dropdown
-            menu={{ items: getActionItems(record) }}
-            trigger={["click"]}
-            placement="bottomRight">
-            <Button
-              type="text"
-              size="small"
-              icon={<MoreOutlined />}
-              className="text-gray-600 hover:text-gray-900"
-            />
-          </Dropdown>
-        </Space>
+        <Dropdown
+          menu={{ items: getActionItems(record) }}
+          trigger={["click"]}
+          placement="bottomRight">
+          <Button
+            type="text"
+            size="small"
+            icon={<MoreOutlined />}
+            className="text-gray-400 hover:text-gray-700"
+          />
+        </Dropdown>
       ),
     },
   ];
@@ -347,7 +336,13 @@ const LitigationTable = ({
         }`
       }
       onRow={(record) => ({
-        onDoubleClick: () => onView(record),
+        onClick: (e) => {
+          if (
+            e.target.closest("button, a, .ant-dropdown-trigger, .ant-dropdown, .ant-checkbox-wrapper")
+          )
+            return;
+          onView(record);
+        },
       })}
     />
   );
