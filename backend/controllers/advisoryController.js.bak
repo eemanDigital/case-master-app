@@ -1723,18 +1723,9 @@ exports.deleteRiskItem = catchAsync(async (req, res, next) => {
  * @route   GET /api/advisory-matters/:matterId/report
  * @access  Private
  */
-// SPLICED INTO advisoryController.js by _splice.js.
-// Contract: this body must END with the function's closing `}` (no `);`).
-// The `);` that closes the catchAsync wrapper comes from the splicer.
-// SPLICED INTO advisoryController.js by _splice.js.
-// Contract: this body must END with the function's closing `}` (no `);`).
-// The `);` that closes the catchAsync wrapper comes from the splicer.
 exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
   const firmId = req.firmId;
   const { matterId } = req.params;
-
-  const Firm = require("../models/firmModel");
-  const { COLORS, formatCurrency } = require("../utils/generateGenericPdf");
 
   const matter = await Matter.findOne({
     _id: matterId,
@@ -1749,320 +1740,305 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
     return next(new AppError("No advisory matter found with that ID", 404));
   }
 
-  const d = (await AdvisoryDetail.findOne({ matterId, firmId })) || {};
+  const advisoryDetails = await AdvisoryDetail.findOne({ matterId, firmId });
   const firm = await Firm.findById(firmId);
 
   const pdf = new GenericPdfGenerator({
     title: "Advisory Matter Report",
-    headerTitle: "Advisory Matter Report",
     firmName: firm?.name || "Law Firm",
     matterNumber: matter?.matterNumber || "",
-    subtitle: matter?.title || "",
-    firmContact: buildFirmContact(firm),
   });
 
-  pdf.init(
-    res,
-    path.resolve(
-      __dirname,
-      `../output/${matter.matterNumber}_advisory_report_${Date.now()}.pdf`,
-    ),
-  );
+  pdf.init(res, path.resolve(__dirname, `../output/${matter.matterNumber}_advisory_report_${Date.now()}.pdf`));
+
+  // Add Header
   pdf.addHeader();
 
-  // ── Helpers (self-contained per this report) ──────────────────────────────
-  const h = (v) => (v == null || String(v).trim() === "" ? "—" : v);
-  const titleCase = (v) =>
-    String(v || "")
-      .replace(/[_-]+/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
-  const labelOf = (map, v) => (v == null || v === "" ? "—" : map[v] || titleCase(v));
-  const fmtDate = (v) => (v ? formatDate(v) : "—");
-  const money = (m) => {
-    if (m == null) return "—";
-    if (typeof m === "object" && m.amount != null)
-      return formatCurrency(m.amount, m.currency || "NGN");
-    if (typeof m === "number") return formatCurrency(m, "NGN");
-    return "—";
-  };
-  const listOf = (arr) => (arr || []).filter(Boolean).join(", ") || "—";
-  const personName = (u) =>
-    [u?.firstName, u?.lastName].filter(Boolean).join(" ") || u?.email || "—";
-  const clientName = (c) =>
-    c?.companyName ||
-    [c?.firstName, c?.lastName].filter(Boolean).join(" ") ||
-    c?.email ||
-    "—";
-  const statusAccent = (s) => {
-    const x = String(s || "").toLowerCase();
-    if (["delivered", "approved", "implemented", "answered", "compliant"].includes(x)) return COLORS.success;
-    if (["active", "pending", "in-progress", "researching", "on-hold"].includes(x)) return COLORS.info;
-    if (["rejected", "non-compliant", "critical", "overdue"].includes(x)) return COLORS.danger;
-    if (["partially-compliant", "partially-won", "medium"].includes(x)) return COLORS.warning;
-    return COLORS.navyMid;
-  };
-  function buildFirmContact(firm) {
-    const c = firm?.contact || {};
-    const parts = [];
-    if (c.address) {
-      const seen = new Set();
-      const addr = [c.address.street, c.address.city, c.address.state]
-        .filter(Boolean)
-        .filter((part) => {
-          const k = String(part).trim().toLowerCase();
-          if (seen.has(k)) return false;
-          seen.add(k);
-          return true;
-        })
-        .join(", ");
-      if (addr) parts.push(addr);
+  // Matter Information
+  pdf.addSection("Matter Information");
+  pdf.addTwoColumnField("Matter Number", matter?.matterNumber, "Status", matter?.status);
+  pdf.addTwoColumnField("Title", matter?.title, "Priority", matter?.priority);
+  pdf.addTwoColumnField("Date Opened", formatDate(matter?.dateOpened), "Client", matter?.client ? `${matter.client.firstName} ${matter.client.lastName}` : null);
+  if (matter?.client?.companyName) pdf.addTwoColumnField("Company", matter.client.companyName, "Account Officer", matter?.accountOfficer ? `${matter.accountOfficer.firstName} ${matter.accountOfficer.lastName}` : null);
+  if (matter?.client?.email) pdf.addTwoColumnField("Client Email", matter.client.email, "Client Phone", matter?.client?.phone || null);
+
+  // Advisory Details
+  if (advisoryDetails) {
+    // Advisory Type & Industry
+    pdf.addSection("Advisory Overview");
+    pdf.addTwoColumnField("Advisory Type", advisoryDetails.advisoryType?.replace(/_/g, " ").toUpperCase(), "Industry", advisoryDetails.industry || "N/A");
+    pdf.addTwoColumnField("Project Status", advisoryDetails.projectStatus, "Request Date", formatDate(advisoryDetails.requestDate));
+    pdf.addTwoColumnField("Target Delivery", formatDate(advisoryDetails.targetDeliveryDate), "Actual Delivery", formatDate(advisoryDetails.actualDeliveryDate));
+
+    // Scope & Request
+    if (advisoryDetails.requestDescription) {
+      pdf.addSubSection("Request Description");
+      pdf.addLongTextField("", advisoryDetails.requestDescription);
     }
-    if (c.phone) parts.push(c.phone);
-    if (c.email) parts.push(c.email);
-    if (c.rcNumber) {
-      const rc = String(c.rcNumber).trim();
-      parts.push(/^rc/i.test(rc) ? rc : `RC ${rc}`);
+
+    if (advisoryDetails.scope) {
+      pdf.addSubSection("Scope");
+      pdf.addLongTextField("", advisoryDetails.scope);
     }
-    return parts.join("   ·   ");
+
+    // Jurisdiction & Laws
+    if (advisoryDetails.jurisdiction?.length > 0 || advisoryDetails.applicableLaws?.length > 0 || advisoryDetails.regulatoryBodies?.length > 0) {
+      pdf.addSection("Jurisdiction & Regulatory");
+      if (advisoryDetails.jurisdiction?.length > 0) {
+        pdf.addField("Jurisdiction", advisoryDetails.jurisdiction.join(", "));
+      }
+      if (advisoryDetails.applicableLaws?.length > 0) {
+        pdf.addField("Applicable Laws", advisoryDetails.applicableLaws.join(", "));
+      }
+      if (advisoryDetails.regulatoryBodies?.length > 0) {
+        pdf.addField("Regulatory Bodies", advisoryDetails.regulatoryBodies.join(", "));
+      }
+    }
+
+    // Research Questions
+    if (advisoryDetails.researchQuestions?.length > 0) {
+      pdf.addSection("Research Questions");
+      const answeredCount = advisoryDetails.researchQuestions.filter(q => q.answer).length;
+      pdf.addField("Progress", `${answeredCount}/${advisoryDetails.researchQuestions.length} answered`);
+
+      advisoryDetails.researchQuestions.forEach((q, idx) => {
+        pdf.checkY(60);
+        const startY = pdf.y;
+        
+        // Question number badge
+        pdf.doc.roundedRect(pdf.leftMargin, startY, 24, 16, 3).fill(COLORS.navy);
+        pdf.doc.fillColor(COLORS.white).fontSize(9).font("Helvetica-Bold").text(`Q${idx + 1}`, pdf.leftMargin + 5, startY + 3);
+        
+        // Question text
+        pdf.doc.fontSize(9).font("Helvetica").fillColor(q.answer ? COLORS.textPrimary : COLORS.textMuted)
+          .text(q.question || "N/A", pdf.leftMargin + 30, startY + 2, { width: pdf.pageWidth - 60 });
+        
+        pdf.y = startY + 18;
+
+        if (q.answer) {
+          // Answer label
+          pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica").text("Answer:", pdf.leftMargin + 30, pdf.y);
+          pdf.y += 12;
+          
+          // Answer text
+          pdf.doc.fontSize(9).fillColor(COLORS.textPrimary).font("Helvetica")
+            .text(q.answer, pdf.leftMargin + 30, pdf.y, { width: pdf.pageWidth - 60, height: 80 });
+          const answerH = pdf.doc.heightOfString(q.answer, { width: pdf.pageWidth - 60 });
+          pdf.y += Math.max(answerH, 20) + 10;
+        } else {
+          pdf.y += 10;
+        }
+        
+        // Status badge
+        drawStatusBadge(pdf.doc, q.status, pdf.leftMargin + pdf.pageWidth - 60, startY);
+      });
+    }
+
+    // Key Findings
+    if (advisoryDetails.keyFindings?.length > 0) {
+      pdf.addSection("Key Findings");
+      advisoryDetails.keyFindings.forEach((finding, idx) => {
+        pdf.checkY(50);
+        const startY = pdf.y;
+        
+        // Finding number
+        pdf.doc.roundedRect(pdf.leftMargin, startY, 24, 16, 3).fill(COLORS.gold);
+        pdf.doc.fillColor(COLORS.white).fontSize(9).font("Helvetica-Bold").text(`${idx + 1}`, pdf.leftMargin + 7, startY + 3);
+        
+        // Finding text
+        pdf.doc.fontSize(10).fillColor(COLORS.textPrimary).font("Helvetica-Bold")
+          .text(finding.finding || "N/A", pdf.leftMargin + 30, startY + 2, { width: pdf.pageWidth - 90 });
+        
+        const findingH = pdf.doc.heightOfString(finding.finding || "", { width: pdf.pageWidth - 90 });
+        pdf.y = startY + Math.max(findingH, 16) + 8;
+
+        if (finding.source) {
+          pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica").text("Source: ", pdf.leftMargin + 30, pdf.y, { continued: true });
+          pdf.doc.fillColor(COLORS.navy).font("Helvetica").text(finding.source, pdf.leftMargin + 30 + pdf.doc.widthOfString("Source: ", { fontSize: 8 }), pdf.y, { width: pdf.pageWidth - 90 });
+          pdf.y += 14;
+        }
+        if (finding.relevance) {
+          pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica").text("Relevance: ", pdf.leftMargin + 30, pdf.y, { continued: true });
+          pdf.doc.fillColor(COLORS.gold).font("Helvetica").text(finding.relevance, pdf.leftMargin + 30 + pdf.doc.widthOfString("Relevance: ", { fontSize: 8 }), pdf.y, { width: pdf.pageWidth - 90 });
+          pdf.y += 14;
+        }
+        
+        pdf.y += 5;
+      });
+    }
+
+    // Legal Precedents
+    if (advisoryDetails.legalPrecedents?.length > 0) {
+      pdf.addSection("Legal Precedents");
+      advisoryDetails.legalPrecedents.forEach((precedent, idx) => {
+        pdf.checkY(60);
+        const startY = pdf.y;
+        
+        // Case name
+        pdf.doc.fontSize(10).fillColor(COLORS.navy).font("Helvetica-Bold")
+          .text(`${idx + 1}. ${precedent.caseName || "N/A"}`, pdf.leftMargin, startY, { width: pdf.pageWidth });
+        pdf.y = startY + 16;
+
+        if (precedent.citation) {
+          pdf.doc.fontSize(9).fillColor(COLORS.textMuted).font("Helvetica-Oblique")
+            .text(precedent.citation, pdf.leftMargin + 15, pdf.y, { width: pdf.pageWidth - 15 });
+          pdf.y += 14;
+        }
+        if (precedent.summary) {
+          pdf.doc.fontSize(9).fillColor(COLORS.textSecondary).font("Helvetica")
+            .text(precedent.summary.substring(0, 200) + (precedent.summary.length > 200 ? "..." : ""), pdf.leftMargin + 15, pdf.y, { width: pdf.pageWidth - 15 });
+          const summaryH = pdf.doc.heightOfString(precedent.summary.substring(0, 200), { width: pdf.pageWidth - 15 });
+          pdf.y += Math.max(summaryH, 16) + 8;
+        }
+        if (precedent.relevance) {
+          pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica").text("Relevance: ", pdf.leftMargin + 15, pdf.y, { continued: true });
+          pdf.doc.fillColor(COLORS.navyMid).font("Helvetica").text(precedent.relevance, pdf.leftMargin + 15 + pdf.doc.widthOfString("Relevance: ", { fontSize: 8 }), pdf.y);
+          pdf.y += 14;
+        }
+        
+        pdf.y += 8;
+      });
+    }
+
+    // Risk Assessment
+    if (advisoryDetails.riskAssessment) {
+      pdf.addSection("Risk Assessment");
+      
+      if (advisoryDetails.riskAssessment.overallRisk) {
+        pdf.addTwoColumnField("Overall Risk", advisoryDetails.riskAssessment.overallRisk?.toUpperCase(), "", null);
+      }
+
+      if (advisoryDetails.riskAssessment.risks?.length > 0) {
+        pdf.addSubSection("Identified Risks");
+        advisoryDetails.riskAssessment.risks.forEach((risk, idx) => {
+          pdf.checkY(45);
+          const startY = pdf.y;
+          
+          // Risk description
+          pdf.doc.fontSize(9).fillColor(COLORS.textPrimary).font("Helvetica")
+            .text(`${idx + 1}. ${risk.risk || "N/A"}`, pdf.leftMargin, startY, { width: pdf.pageWidth - 120 });
+          
+          const riskH = pdf.doc.heightOfString(risk.risk || "", { width: pdf.pageWidth - 120 });
+          pdf.y = startY + Math.max(riskH, 14) + 4;
+
+          // Likelihood and Impact badges
+          if (risk.likelihood) drawStatusBadge(pdf.doc, risk.likelihood, pdf.leftMargin, pdf.y);
+          if (risk.impact) drawStatusBadge(pdf.doc, risk.impact, pdf.leftMargin + 60, pdf.y);
+          
+          pdf.y += 16;
+
+          if (risk.mitigation) {
+            pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica").text("Mitigation: ", pdf.leftMargin, pdf.y, { continued: true });
+            pdf.doc.fillColor(COLORS.textSecondary).font("Helvetica")
+              .text(risk.mitigation, pdf.leftMargin + pdf.doc.widthOfString("Mitigation: ", { fontSize: 8 }), pdf.y, { width: pdf.pageWidth - 30 });
+            pdf.y += 14;
+          }
+          
+          pdf.y += 5;
+        });
+      }
+    }
+
+    // Opinion
+    if (advisoryDetails.opinion && (advisoryDetails.opinion.summary || advisoryDetails.opinion.conclusion)) {
+      pdf.addSection("Legal Opinion");
+      if (advisoryDetails.opinion.summary) {
+        pdf.addSubSection("Summary");
+        pdf.addLongTextField("", advisoryDetails.opinion.summary);
+      }
+      if (advisoryDetails.opinion.conclusion) {
+        pdf.addSubSection("Conclusion");
+        pdf.addLongTextField("", advisoryDetails.opinion.conclusion);
+      }
+      if (advisoryDetails.opinion.confidence) {
+        pdf.addTwoColumnField("Confidence Level", advisoryDetails.opinion.confidence?.toUpperCase(), "", null);
+      }
+    }
+
+    // Recommendations
+    if (advisoryDetails.recommendations?.length > 0) {
+      pdf.addSection("Recommendations");
+      advisoryDetails.recommendations.forEach((rec, idx) => {
+        pdf.checkY(40);
+        const startY = pdf.y;
+        
+        pdf.doc.fontSize(9).fillColor(COLORS.textPrimary).font("Helvetica-Bold")
+          .text(`${idx + 1}. ${rec.recommendation || "N/A"}`, pdf.leftMargin, startY, { width: pdf.pageWidth - 100 });
+        
+        const recH = pdf.doc.heightOfString(rec.recommendation || "", { width: pdf.pageWidth - 100 });
+        pdf.y = startY + Math.max(recH, 14) + 4;
+
+        if (rec.priority) {
+          drawStatusBadge(pdf.doc, rec.priority, pdf.leftMargin, pdf.y);
+        }
+        if (rec.implementationStatus) {
+          drawStatusBadge(pdf.doc, rec.implementationStatus, pdf.leftMargin + 60, pdf.y);
+        }
+        
+        pdf.y += 18;
+      });
+    }
+
+    // Deliverables
+    if (advisoryDetails.deliverables?.length > 0) {
+      pdf.addSection("Deliverables");
+      const completedCount = advisoryDetails.deliverables.filter(d => d.status === "delivered" || d.status === "approved").length;
+      pdf.addField("Progress", `${completedCount}/${advisoryDetails.deliverables.length} completed`);
+
+      advisoryDetails.deliverables.forEach((del, idx) => {
+        pdf.checkY(35);
+        const startY = pdf.y;
+        
+        pdf.doc.fontSize(9).fillColor(COLORS.textPrimary).font("Helvetica-Bold")
+          .text(`${idx + 1}. ${del.title || "N/A"}`, pdf.leftMargin, startY, { width: pdf.pageWidth - 150 });
+        
+        const titleH = pdf.doc.heightOfString(del.title || "", { width: pdf.pageWidth - 150 });
+        pdf.y = startY + Math.max(titleH, 14) + 4;
+
+        drawStatusBadge(pdf.doc, del.status, pdf.leftMargin, pdf.y);
+        if (del.dueDate) {
+          pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica")
+            .text(`Due: ${formatDate(del.dueDate)}`, pdf.leftMargin + 70, pdf.y + 2);
+        }
+        
+        pdf.y += 18;
+      });
+    }
+
+    // Compliance Checklist
+    if (advisoryDetails.complianceChecklist?.length > 0) {
+      pdf.addSection("Compliance Checklist");
+      const compliantCount = advisoryDetails.complianceChecklist.filter(c => c.status === "compliant").length;
+      pdf.addField("Status", `${compliantCount}/${advisoryDetails.complianceChecklist.length} compliant`);
+
+      advisoryDetails.complianceChecklist.forEach((item, idx) => {
+        pdf.checkY(35);
+        const startY = pdf.y;
+        
+        pdf.doc.fontSize(9).fillColor(COLORS.textPrimary).font("Helvetica")
+          .text(`${idx + 1}. ${item.requirement || "N/A"}`, pdf.leftMargin, startY, { width: pdf.pageWidth - 100 });
+        
+        const reqH = pdf.doc.heightOfString(item.requirement || "", { width: pdf.pageWidth - 100 });
+        pdf.y = startY + Math.max(reqH, 14) + 4;
+
+        drawStatusBadge(pdf.doc, item.status, pdf.leftMargin, pdf.y);
+        if (item.dueDate) {
+          pdf.doc.fontSize(8).fillColor(COLORS.textMuted).font("Helvetica")
+            .text(`Due: ${formatDate(item.dueDate)}`, pdf.leftMargin + 90, pdf.y + 2);
+        }
+        
+        pdf.y += 18;
+      });
+    }
+
+    // Research Notes
+    if (advisoryDetails.researchNotes) {
+      pdf.addSection("Research Notes");
+      pdf.addLongTextField("", advisoryDetails.researchNotes);
+    }
   }
-
-  // ── Label maps (from advisoryDetailModel enums) ────────────────────────────
-  const ADVISORY_TYPE_LABELS = {
-    legal_opinion: "Legal Opinion",
-    regulatory_compliance: "Regulatory Compliance",
-    due_diligence: "Due Diligence",
-    contract_review: "Contract Review",
-    policy_development: "Policy Development",
-    legal_research: "Legal Research",
-    risk_assessment: "Risk Assessment",
-    litigation_risk_analysis: "Litigation Risk Analysis",
-    regulatory_strategy: "Regulatory Strategy",
-    transaction_advisory: "Transaction Advisory",
-    other: "Other",
-  };
-  const DELIVERABLE_TYPE_LABELS = {
-    "legal-opinion": "Legal Opinion",
-    memo: "Memo",
-    report: "Report",
-    presentation: "Presentation",
-    other: "Other",
-  };
-
-  const deliverables = d.deliverables || [];
-  const deliveredCount = deliverables.filter(
-    (x) => x.status === "delivered" || x.status === "approved",
-  ).length;
-  const risk = d.riskAssessment?.overallRisk || "";
-  const riskLabel =
-    risk === "critical" ? "Critical" : risk === "high" ? "High" : risk === "medium" ? "Medium" : risk === "low" ? "Low" : "—";
-
-  // ── Matter overview (KPI cards) ───────────────────────────────────────────
-  pdf.addSection("Matter Overview");
-  pdf.addKpiCards([
-    {
-      label: "Advisory Type",
-      value: labelOf(ADVISORY_TYPE_LABELS, d.advisoryType),
-      accent: COLORS.navyMid,
-    },
-    {
-      label: "Overall Risk",
-      value: riskLabel,
-      accent: statusAccent(risk),
-    },
-    {
-      label: "Deliverables",
-      value: deliverables.length ? `${deliveredCount}/${deliverables.length}` : "—",
-      accent: COLORS.info,
-    },
-    { label: "Status", value: titleCase(matter.status), accent: statusAccent(matter.status) },
-  ]);
-
-  pdf.addKeyValueGrid(
-    [
-      { label: "Matter Number", value: matter.matterNumber, bold: true },
-      { label: "Status", value: titleCase(matter.status), bold: true },
-      { label: "Priority", value: titleCase(matter.priority) },
-      { label: "Date Opened", value: fmtDate(matter.dateOpened) },
-      { label: "Expected Closure", value: fmtDate(matter.expectedClosureDate) },
-      { label: "Billing Type", value: titleCase(matter.billingType) },
-      { label: "Client", value: clientName(matter.client), bold: true },
-      { label: "Reference", value: matter.officeFileNo || "—" },
-    ],
-    { cols: 2 },
-  );
-
-  // ── Client & team ─────────────────────────────────────────────────────────
-  pdf.addSection("Client & Legal Team");
-  pdf.addKeyValueGrid(
-    [
-      { label: "Client", value: clientName(matter.client), bold: true },
-      { label: "Client Company", value: matter.client?.companyName || "—" },
-      { label: "Client Email", value: matter.client?.email || "—" },
-      { label: "Client Phone", value: matter.client?.phone || "—" },
-      { label: "Account Officer(s)", value: (matter.accountOfficer || []).map(personName).join(", ") || "—" },
-      { label: "Reference", value: matter.officeFileNo || "—" },
-    ],
-    { cols: 2 },
-  );
-
-  // ── Advisory overview ─────────────────────────────────────────────────────
-  pdf.addSection("Advisory Overview");
-  pdf.addKeyValueGrid(
-    [
-      { label: "Advisory Type", value: labelOf(ADVISORY_TYPE_LABELS, d.advisoryType), bold: true },
-      { label: "Other Type", value: h(d.otherAdvisoryType) },
-      { label: "Request Date", value: fmtDate(d.requestDate) },
-      { label: "Target Delivery", value: fmtDate(d.targetDeliveryDate) },
-      { label: "Actual Delivery", value: fmtDate(d.actualDeliveryDate) },
-      { label: "Confidence", value: titleCase(d.opinion?.confidence) },
-      { label: "Jurisdiction(s)", value: listOf(d.jurisdiction) },
-      { label: "Regulatory Body(s)", value: listOf(d.regulatoryBodies) },
-      { label: "Applicable Laws", value: listOf(d.applicableLaws) },
-    ],
-    { cols: 2 },
-  );
-
-  // ── Request & scope ───────────────────────────────────────────────────────
-  if (d.requestDescription) pdf.addLongTextField("Request Description", d.requestDescription);
-  if (d.scope) pdf.addLongTextField("Scope of Engagement", d.scope);
-  if (d.researchNotes) pdf.addLongTextField("Research Notes", d.researchNotes);
-
-  // ── Research questions ────────────────────────────────────────────────────
-  if ((d.researchQuestions || []).length) {
-    pdf.addSection("Research Questions");
-    pdf.addDataTable(
-      ["Question", "Answer", "Status"],
-      (d.researchQuestions || []).map((q) => [
-        h(q.question),
-        h(q.answer),
-        titleCase(q.status || "pending"),
-      ]),
-      { widths: [2.8, 2.8, 1.2], statusColumns: [2] },
-    );
-  }
-
-  // ── Key findings ──────────────────────────────────────────────────────────
-  if ((d.keyFindings || []).length) {
-    pdf.addSection("Key Findings");
-    pdf.addDataTable(
-      ["Finding", "Source", "Relevance"],
-      (d.keyFindings || []).map((f) => [
-        h(f.finding),
-        h(f.source),
-        h(f.relevance),
-      ]),
-      { widths: [3.2, 1.6, 2] },
-    );
-  }
-
-  // ── Legal precedents ──────────────────────────────────────────────────────
-  if ((d.legalPrecedents || []).length) {
-    pdf.addSection("Legal Precedents");
-    pdf.addDataTable(
-      ["Case", "Citation", "Relevance"],
-      (d.legalPrecedents || []).map((p) => [
-        h(p.caseName),
-        h(p.citation),
-        h(p.relevance),
-      ]),
-      { widths: [2.2, 1.8, 2.8] },
-    );
-  }
-
-  // ── Opinion & recommendations ─────────────────────────────────────────────
-  if (d.opinion?.summary || d.opinion?.conclusion) {
-    pdf.addSection("Opinion & Recommendations");
-    pdf.addKeyValueGrid(
-      [
-        { label: "Overall Opinion", value: d.opinion?.summary ? "Provided" : "—", bold: true },
-        { label: "Conclusion", value: d.opinion?.conclusion ? "Provided" : "—" },
-        { label: "Confidence Level", value: titleCase(d.opinion?.confidence) },
-      ],
-      { cols: 2 },
-    );
-    if (d.opinion?.summary) pdf.addLongTextField("Opinion Summary", d.opinion.summary);
-    if (d.opinion?.conclusion) pdf.addLongTextField("Conclusion", d.opinion.conclusion);
-  }
-
-  if ((d.recommendations || []).length) {
-    pdf.addSection("Recommendations");
-    pdf.addDataTable(
-      ["Recommendation", "Priority", "Status"],
-      (d.recommendations || []).map((r) => [
-        h(r.recommendation),
-        titleCase(r.priority || "medium"),
-        titleCase(r.implementationStatus || "pending"),
-      ]),
-      { widths: [4, 1.1, 1.4], statusColumns: [1, 2] },
-    );
-  }
-
-  // ── Deliverables ──────────────────────────────────────────────────────────
-  if (deliverables.length) {
-    pdf.addSection("Deliverables");
-    pdf.addDataTable(
-      ["Deliverable", "Type", "Due", "Delivered", "Status"],
-      deliverables.map((del) => [
-        h(del.title),
-        labelOf(DELIVERABLE_TYPE_LABELS, del.type),
-        fmtDate(del.dueDate),
-        fmtDate(del.deliveryDate),
-        titleCase(del.status || "pending"),
-      ]),
-      { widths: [2, 1.6, 1, 1, 1.2], statusColumns: [4] },
-    );
-  }
-
-  // ── Compliance checklist ──────────────────────────────────────────────────
-  if ((d.complianceChecklist || []).length) {
-    pdf.addSection("Compliance Checklist");
-    pdf.addDataTable(
-      ["Requirement", "Status", "Due", "Notes"],
-      (d.complianceChecklist || []).map((c) => [
-        h(c.requirement),
-        titleCase(c.status || "not-applicable"),
-        fmtDate(c.dueDate),
-        h(c.notes),
-      ]),
-      { widths: [3, 1.3, 1, 1.6], statusColumns: [1] },
-    );
-  }
-
-  // ── Risk assessment ───────────────────────────────────────────────────────
-  const risks = d.riskAssessment?.risks || [];
-  pdf.addSection("Risk Assessment");
-  pdf.addKeyValueGrid(
-    [
-      { label: "Overall Risk", value: riskLabel, bold: true, color: statusAccent(risk) },
-      { label: "Risks Identified", value: String(risks.length) },
-    ],
-    { cols: 2 },
-  );
-  if (risks.length) {
-    pdf.addDataTable(
-      ["Risk", "Likelihood", "Impact", "Mitigation"],
-      risks.map((r) => [
-        h(r.risk),
-        titleCase(r.likelihood || "medium"),
-        titleCase(r.impact || "medium"),
-        h(r.mitigation),
-      ]),
-      { widths: [2.6, 1, 1, 2.4], statusColumns: [] },
-    );
-  }
-
-  // ── Closing note ──────────────────────────────────────────────────────────
-  pdf.addNote(
-    `This report was generated from ${firm?.name || "the firm's"} matter management system on ${formatDate(
-      new Date(),
-    )}. It reflects the information recorded against matter ${
-      matter.matterNumber
-    } at the time of generation and is confidential to the firm and its client.`,
-    { type: "gold" },
-  );
 
   await pdf.generate();
-}
-);
+});
 
 module.exports = exports;
