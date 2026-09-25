@@ -131,6 +131,13 @@ mutually exclusive, totals preview live, and post-save navigation opens the invo
     discounted, + previousBalance).
   - Shared `nairaFormatter`/`nairaParser`/`formatNaira`, `SERVICE_CATEGORY_OPTIONS`,
     `EXPENSE_CATEGORY_OPTIONS`, `BILLING_METHOD_SELECT_OPTIONS`.
+  - Shared client-scoping helpers `matterClientId(matter)` + `filterMattersByClient(options,
+    clientId)` — used to narrow the "Select Matter" dropdown to only the SELECTED client's
+    matters. Rationale: matter list responses populate `client` with `{_id, firstName,
+    lastName, email, phone}` (see `backend/config/modelConfigs.js` `Matter.defaultPopulate`),
+    so each `mattersOptions[i].matter.client` carries the owner; filtering is done client-side
+    (instant, no global-Redux side effects). `matterClientId` accepts either the populated
+    object or a raw id string/ref.
   - File header disables `react/prop-types` + `react-refresh/only-export-components`
     (same convention as the matter kit).
 - **`frontend/src/components/CreateInvoiceForm.jsx`** (rewritten):
@@ -151,9 +158,31 @@ mutually exclusive, totals preview live, and post-save navigation opens the invo
   - Dead `formData`/`invoiceInitialValue` state removed; expense/service numeric values
     normalized (""/null → 0, quantity → 1) before submit.
   - **Post-save navigation** → `/dashboard/billings/invoices/{createdId}/details`
-    (from `data.data._id`; falls back to list). Details page already has "Edit Invoice".
+    (from `data._id`; falls back to list). Details page already has "Edit Invoice".
+  - **Root cause of "Save & Publish does nothing"**: `useHandleSubmit`'s `onSubmit`
+    is declared with NO parameters (`useHandleSubmit.jsx:25`) — it re-validates and
+    posts the RAW form store, IGNORING any transformed payload passed to it. So the
+    create form's `finalValues` (which set `status:"sent"`/`issueDate` for publish)
+    were silently discarded and invoices always saved as `draft`. `CreateInvoiceForm`
+    no longer uses the hook for submission: it builds its own `useDataFetch()` and
+    posts `finalValues` directly (then `notify`, `fetchData("invoices")`,
+    `form.resetFields()`, navigate). `UpdateInvoice` still relies on the hook (its
+    `status` is a real form field, so that path submits correctly).
+  - Regression test: `frontend/src/tests/segmentedPublish.regression.test.jsx`
+    (isolated `Segmented`-in-`Form.Item` driven by `Form.useWatch`) — proves the
+    toggle writes to the form store. NOTE: vitest.config.js has no react plugin, so
+    test JSX needs `import React` (classic runtime); the file-level
+    `eslint-disable no-unused-vars` silences the resulting unused-import warning.
+  - **Client-scoped matter picker** (create): watch `client` via `Form.useWatch
+    ("client", form)`; matter Select is `disabled` until a client is picked, then shows
+    ONLY that client's active matters (`filterMattersByClient`) with a live count hint and
+    a "No active matters for this client" empty state; changing/clearing the client clears
+    a previously selected `matter` so the link can never point at another client's matter.
 - **`frontend/src/pages/UpdateInvoice.jsx`** (rewritten):
-  - Same `ServiceBillingCard` + `ExpenseCard` + conditional discount + `InvoiceSummary`.
+  - Same `ServiceBillingCard` + `ExpenseCard` + conditional discount + `InvoiceSummary`
+    + **client-scoped matter picker** (identical `filterMattersByClient` behavior; the
+    preset client from `setFieldsValue` does NOT trigger the Select onChange, so a
+    pre-existing matter link survives initial load).
   - **Fixed a latent bug**: `const { ..., data } = useInitialDataFetcher(...)` never had
     `data` (that hook returns only `{formData, loading}`), so after a successful PATCH
     the render-time `if (data) return navigate("invoices")` NEVER fired and the form just
@@ -164,6 +193,12 @@ mutually exclusive, totals preview live, and post-save navigation opens the invo
 - **Unchanged intentionally**: `InvoiceList.jsx` / `InvoiceDetails.jsx` (their existing
   Edit links are correct under React Router v6 route-relative `..` semantics); the
   retainer `BillingForm.jsx`; the backend.
+- **`InvoiceDetails.jsx` cleanup**: duplicate "Payment History" card removed (the
+  SECOND one, without the per-row "Receipt" download button, was deleted — the first,
+  with receipt download, is kept; its unused `(payment, index)` map param dropped).
+  Also fixed a stray `/>` after `</Suspense>` inside the Record Payment `Modal`
+  (line ~318 — invalid JSX that eslint's parser rejected) and removed never-used
+  `MoreOutlined`/`DocumentArrowDownIcon` imports.
 - **Verification**: `npm run build` passes; `npx eslint` clean on all three files.
   Gotchas while building: duplicate `const newExpense` from a mis-merged edit (SyntaxError —
   fixed by removing the dup); keep per-service field names identical to the schema

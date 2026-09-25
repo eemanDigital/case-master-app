@@ -1,5 +1,5 @@
 // pages/StaffList.jsx
-import React, { memo, useMemo, useCallback } from "react";
+import { memo, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import {
   Pagination,
@@ -45,9 +45,7 @@ const StaffList = memo(() => {
     currentPage,
     itemsPerPage,
     totalRecords,
-    totalPages,
     loading,
-    paginationData,
     statistics,
     handleFiltersChange,
     resetFilters,

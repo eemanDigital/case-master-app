@@ -1,6 +1,6 @@
-import React from "react";
+/* eslint-disable react/prop-types -- shared UI component; props documented in JSDoc below */
 import { Space, Table, Button, Modal, Tooltip, Tag, Typography } from "antd";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   DeleteOutlined,
   SafetyCertificateOutlined,
@@ -27,6 +27,7 @@ const UserListTable = ({
   userType = "user",
   basePath = "/dashboard/staff",
 }) => {
+  const navigate = useNavigate();
   const getRoleColor = (role) => {
     const colors = {
       lawyer: "geekblue",
@@ -52,7 +53,10 @@ const UserListTable = ({
     });
   };
 
-  console.log(dataSource, "UserListTable dataSource");
+  const handleRowClick = (event, record) => {
+    if (event.target.closest("a,button,input,select,textarea")) return;
+    navigate(`${basePath}/${record._id}/details`);
+  };
 
   return (
     <div className="overflow-x-auto font-medium font-poppins">
@@ -61,7 +65,11 @@ const UserListTable = ({
         scroll={{ x: 1200 }}
         loading={loading}
         pagination={false}
-        rowKey="_id">
+        rowKey="_id"
+        onRow={(record) => ({
+          onClick: (event) => handleRowClick(event, record),
+          className: "cursor-pointer",
+        })}>
         <ColumnGroup
           title={`${
             userType.charAt(0).toUpperCase() + userType.slice(1)

@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   Alert,
   Button,
@@ -26,6 +26,7 @@ import {
   InvoiceSummary,
   ServiceBillingCard,
   ExpenseCard,
+  filterMattersByClient,
   nairaFormatter,
   nairaParser,
 } from "../components/invoices/ui/invoiceBillingKit";
@@ -74,7 +75,13 @@ const UpdateInvoice = () => {
     !invoiceLoading && !mattersLoading && !clientsLoading && formData;
 
   const linkType = Form.useWatch("linkType", form) || "matter";
+  const selectedClient = Form.useWatch("client", form);
   const discountType = Form.useWatch("discountType", form) || "none";
+
+  const filteredMatterOptions = useMemo(
+    () => filterMattersByClient(mattersOptions, selectedClient),
+    [mattersOptions, selectedClient],
+  );
 
   useEffect(() => {
     if (data?.success) {
@@ -186,6 +193,8 @@ const UpdateInvoice = () => {
                   filterOption={filterOption}
                   options={clientOptions}
                   allowClear
+                  loading={clientsLoading}
+                  onChange={() => form.setFieldsValue({ matter: undefined })}
                 />
               </Form.Item>
             </Col>
@@ -213,13 +222,26 @@ const UpdateInvoice = () => {
               <Col xs={24} md={12}>
                 <Form.Item name="matter" label="Matter">
                   <Select
-                    placeholder="Select matter"
+                    placeholder={
+                      selectedClient ? "Select matter" : "Select a client first"
+                    }
                     showSearch
                     filterOption={filterOption}
-                    options={mattersOptions}
+                    options={filteredMatterOptions}
                     allowClear
+                    disabled={!selectedClient}
+                    notFoundContent={
+                      selectedClient ? "No active matters for this client" : undefined
+                    }
                   />
                 </Form.Item>
+                {selectedClient && (
+                  <Text type="secondary" style={{ fontSize: "12px" }}>
+                    {filteredMatterOptions.length > 0
+                      ? `Showing ${filteredMatterOptions.length} active matter(s) for this client.`
+                      : "This client has no active matters — edit as Other Activity instead."}
+                  </Text>
+                )}
               </Col>
             ) : (
               <Col xs={24} md={12}>

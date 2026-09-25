@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Button,
@@ -18,16 +18,18 @@ import {
 
 import useMattersSelectOptions from "../hooks/useMattersSelectOptions";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
-import useHandleSubmit from "../hooks/useHandleSubmit";
+import notify from "../utils/notify";
 import GoBackButton from "./GoBackButton";
 import useUserSelectOptions from "../hooks/useUserSelectOptions";
 import {
   InvoiceSummary,
   ServiceBillingCard,
   ExpenseCard,
+  filterMattersByClient,
   nairaFormatter,
   nairaParser,
 } from "./invoices/ui/invoiceBillingKit";
+import { useDataFetch } from "../hooks/useDataFetch";
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -64,26 +66,21 @@ const CreateInvoiceForm = () => {
   });
   const navigate = useNavigate();
 
-  const { form, onSubmit, loading, data } = useHandleSubmit("invoices", "post");
+  const [form] = Form.useForm();
+  const { dataFetcher, loading: submitting } = useDataFetch();
 
   const linkType = Form.useWatch("linkType", form) || "matter";
+  const selectedClient = Form.useWatch("client", form);
   const publishOnSave = Form.useWatch("publishOnSave", form) === "publish";
   const discountType = Form.useWatch("discountType", form) || "none";
 
+  const filteredMatterOptions = useMemo(
+    () => filterMattersByClient(mattersOptions, selectedClient),
+    [mattersOptions, selectedClient],
+  );
+
   const filterOption = (input, option) =>
     (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
-
-  useEffect(() => {
-    if (data?.message === "success") {
-      fetchData("invoices");
-      const createdId = data?.data?._id;
-      if (createdId) {
-        navigate(`/dashboard/billings/invoices/${createdId}/details`);
-      } else {
-        navigate("/dashboard/billings/?type=invoice");
-      }
-    }
-  }, [data, navigate, fetchData]);
 
   const handleFormSubmit = async () => {
     try {
@@ -117,7 +114,24 @@ const CreateInvoiceForm = () => {
         })),
       };
 
-      await onSubmit(finalValues);
+      const response = await dataFetcher("invoices", "post", finalValues);
+
+      if (response?.error) {
+        notify.error(response.error);
+        return;
+      }
+
+      notify.success("Invoice created successfully");
+      fetchData("invoices");
+      form.resetFields();
+
+      const createdId =
+        response?.data?.data?._id ?? response?.data?._id ?? null;
+      if (createdId) {
+        navigate(`/dashboard/billings/invoices/${createdId}/details`);
+      } else {
+        navigate("/dashboard/billings/?type=invoice");
+      }
     } catch (error) {
       console.error("Form validation failed:", error);
     }
@@ -166,6 +180,7 @@ const CreateInvoiceForm = () => {
                   options={clientOptions}
                   allowClear
                   loading={clientsLoading}
+                  onChange={() => form.setFieldsValue({ matter: undefined })}
                 />
               </Form.Item>
             </Col>
@@ -196,14 +211,29 @@ const CreateInvoiceForm = () => {
                   name="matter"
                   tooltip="Optional — pick the matter this work belongs to">
                   <Select
-                    placeholder="Select matter (optional)"
+                    placeholder={
+                      selectedClient
+                        ? "Select matter (optional)"
+                        : "Select a client first"
+                    }
                     showSearch
                     filterOption={filterOption}
-                    options={mattersOptions}
+                    options={filteredMatterOptions}
                     allowClear
                     loading={mattersLoading}
+                    disabled={!selectedClient}
+                    notFoundContent={
+                      selectedClient ? "No active matters for this client" : undefined
+                    }
                   />
                 </Form.Item>
+                {selectedClient && (
+                  <Text type="secondary" style={{ fontSize: "12px" }}>
+                    {filteredMatterOptions.length > 0
+                      ? `Showing ${filteredMatterOptions.length} active matter(s) for this client.`
+                      : "This client has no active matters — save as Other Activity instead."}
+                  </Text>
+                )}
               </Col>
             ) : (
               <Col xs={24} md={12}>
@@ -508,7 +538,7 @@ const CreateInvoiceForm = () => {
           <Button
             className="blue-btn"
             onClick={handleFormSubmit}
-            loading={loading}
+            loading={submitting}
             htmlType="submit"
             size="large">
             {publishOnSave ? "Save & Publish Invoice" : "Save as Draft"}

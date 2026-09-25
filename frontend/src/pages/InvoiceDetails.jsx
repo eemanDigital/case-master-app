@@ -28,10 +28,8 @@ import {
   CheckCircleOutlined,
   FilePdfOutlined,
   FileExcelOutlined,
-  MoreOutlined,
 } from "@ant-design/icons";
 import {
-  DocumentArrowDownIcon,
   CurrencyDollarIcon,
   ClockIcon,
   BuildingLibraryIcon,
@@ -315,7 +313,6 @@ const InvoiceDetails = () => {
                   onCancel={() => setPaymentModalVisible(false)}
                 />
               </Suspense>
-              />
             </Modal>
           </div>
         </div>
@@ -480,7 +477,7 @@ const InvoiceDetails = () => {
 
                 <Timeline
                   mode="left"
-                  items={invoice.payments.map((payment, index) => ({
+                  items={invoice.payments.map((payment) => ({
                     color:
                       payment.status === "completed"
                         ? "green"
@@ -576,123 +573,6 @@ const InvoiceDetails = () => {
                               Receipt
                             </Button>
                           </Col>
-                        </Row>
-                      </Card>
-                    ),
-                  }))}
-                />
-              </Card>
-            )}
-
-            {/* Payment History Section */}
-            {invoice?.payments && invoice.payments.length > 0 && (
-              <Card className="border-0 rounded-2xl shadow-sm">
-                <div className="flex items-center gap-3 mb-6">
-                  <DollarOutlined className="text-green-600" />
-                  <Title level={3} className="m-0 text-gray-900">
-                    Payment History ({invoice.payments.length})
-                  </Title>
-                </div>
-
-                <Timeline
-                  mode="left"
-                  items={invoice.payments.map((payment, index) => ({
-                    color:
-                      payment.status === "completed"
-                        ? "green"
-                        : payment.status === "pending"
-                          ? "orange"
-                          : "red",
-                    dot:
-                      payment.status === "completed" ? (
-                        <CheckCircleOutlined style={{ fontSize: "16px" }} />
-                      ) : (
-                        <ClockIcon className="w-4 h-4" />
-                      ),
-                    children: (
-                      <Card
-                        className="border border-gray-200 rounded-lg hover:shadow-md transition-shadow"
-                        size="small">
-                        <Row gutter={[16, 16]}>
-                          <Col xs={24} sm={12} md={6}>
-                            <div className="space-y-1">
-                              <Text className="text-sm text-gray-600">
-                                Amount
-                              </Text>
-                              <Text
-                                strong
-                                className={`block text-lg ${
-                                  payment.status === "completed"
-                                    ? "text-green-600"
-                                    : payment.status === "pending"
-                                      ? "text-orange-600"
-                                      : "text-red-600"
-                                }`}>
-                                {formatCurrency(payment.amount)}
-                              </Text>
-                            </div>
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <div className="space-y-1">
-                              <Text className="text-sm text-gray-600">
-                                Date
-                              </Text>
-                              <Text strong className="text-gray-900 block">
-                                {formatDate(payment.paymentDate)}
-                              </Text>
-                            </div>
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <div className="space-y-1">
-                              <Text className="text-sm text-gray-600">
-                                Method
-                              </Text>
-                              <Tag color="blue">
-                                {getPaymentMethodLabel(payment.method)}
-                              </Tag>
-                            </div>
-                          </Col>
-                          <Col xs={24} sm={12} md={6}>
-                            <div className="space-y-1">
-                              <Text className="text-sm text-gray-600">
-                                Status
-                              </Text>
-                              <Tag
-                                color={
-                                  payment.status === "completed"
-                                    ? "green"
-                                    : payment.status === "pending"
-                                      ? "orange"
-                                      : "red"
-                                }>
-                                {payment.status?.toUpperCase()}
-                              </Tag>
-                            </div>
-                          </Col>
-                          {payment.reference && (
-                            <Col xs={24} sm={12} md={6}>
-                              <div className="space-y-1">
-                                <Text className="text-sm text-gray-600">
-                                  Reference
-                                </Text>
-                                <Text strong className="text-gray-900 block">
-                                  {payment.reference}
-                                </Text>
-                              </div>
-                            </Col>
-                          )}
-                          {payment.notes && (
-                            <Col xs={24}>
-                              <div className="space-y-1">
-                                <Text className="text-sm text-gray-600">
-                                  Notes
-                                </Text>
-                                <Text className="text-gray-900 block">
-                                  {payment.notes}
-                                </Text>
-                              </div>
-                            </Col>
-                          )}
                         </Row>
                       </Card>
                     ),

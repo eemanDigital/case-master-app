@@ -133,6 +133,21 @@ export const computeServiceAmount = (service) => {
   }
 };
 
+export const matterClientId = (matter) => {
+  const client = matter?.client;
+  return client?._id ?? client ?? null;
+};
+
+export const filterMattersByClient = (options, clientId) => {
+  if (!clientId) {
+    return options || [];
+  }
+  return (options || []).filter((option) => {
+    const id = matterClientId(option?.matter);
+    return id && String(id) === String(clientId);
+  });
+};
+
 export const computeInvoiceTotals = (values = {}) => {
   const servicesTotal = (values.services || []).reduce(
     (sum, s) => sum + computeServiceAmount(s),
