@@ -23,6 +23,8 @@ import {
   Timeline,
   message,
   Alert,
+  Form,
+  Select,
 } from "antd";
 import {
   CalendarOutlined,
@@ -45,6 +47,7 @@ import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 import isTomorrow from "dayjs/plugin/isTomorrow";
 import axios from "axios";
+import { useDataFetch } from "../../hooks/useDataFetch";
 
 dayjs.extend(isToday);
 dayjs.extend(isTomorrow);
@@ -52,6 +55,14 @@ dayjs.extend(isTomorrow);
 const baseURL = import.meta.env.VITE_BASE_URL || "http://localhost:5000";
 
 const { Text, Title, Paragraph } = Typography;
+
+// Same shape the staff support form (components/ContactForm.jsx) posts to
+// POST /contacts — these land in the firm's Support Tickets queue.
+const messageCategoryOptions = [
+  { value: "support", label: "General Support" },
+  { value: "billing", label: "Billing Question" },
+  { value: "other", label: "Other" },
+];
 
 const MatterStatusTag = ({ status }) => {
   const statusConfig = {
@@ -244,7 +255,15 @@ const MatterCard = ({ matter, onClick }) => {
 
 const ClientMatterDashboard = () => {
   const { user } = useSelector((state) => state.auth);
+  const { dataFetcher } = useDataFetch();
   const clientId = user?.data?._id;
+
+  // Populated by GET /users/getUser → firmId select includes contact.email
+  // and contact.phone, so both contact actions have a real target.
+  const firm = user?.data?.firmId || {};
+  const firmName = firm?.name || "your legal team";
+  const firmEmail = firm?.contact?.email || "";
+  const firmPhone = firm?.contact?.phone || "";
 
   const [loading, setLoading] = useState(true);
   const [matters, setMatters] = useState([]);
@@ -257,6 +276,9 @@ const ClientMatterDashboard = () => {
   const [taskDetailsVisible, setTaskDetailsVisible] = useState(false);
   const [taskResponse, setTaskResponse] = useState("");
   const [submittingResponse, setSubmittingResponse] = useState(false);
+  const [messageModalVisible, setMessageModalVisible] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
+  const [messageForm] = Form.useForm();
 
   const fetchData = useCallback(async () => {
     if (!clientId) return;
@@ -365,6 +387,110 @@ const ClientMatterDashboard = () => {
 
   const handleViewAllMatters = () => setActiveTab("matters");
   const handleViewInvoices = () => setActiveTab("billing");
+
+  // "Email us" — hands off to the visitor's own mail client.
+  const handleEmailUs = () => {
+    if (!firmEmail) {
+      message.warning(
+        `No email address is on file for ${firmName}. Please use "Send Message" instead.`,
+      );
+      return;
+    }
+    const subject = encodeURIComponent(
+      `Enquiry from ${user?.data?.firstName || "a client"}`,
+    );
+    const body = encodeURIComponent(
+      `Hello ${firmName},\n\n\n\n---\nSent from the client portal by ${
+        user?.data?.firstName || ""
+      } ${user?.data?.lastName || ""} (${user?.data?.email || ""}).`,
+    );
+    window.location.href = `mailto:${firmEmail}?subject=${subject}&body=${body}`;
+  };
+
+  // "Call us" — hands off to the device dialler. Strip formatting so the
+  // tel: URI stays valid.
+  const handleCallUs = () => {
+    if (!firmPhone) {
+      message.warning(
+        `No phone number is on file for ${firmName}. Please use "Send Message" instead.`,
+      );
+      return;
+    }
+    window.location.href = `tel:${firmPhone.replace(/[^\d+]/g, "")}`;
+  };
+
+  // "Contact legal team" on a specific matter — emails that matter's account
+  // officer, with the matter reference carried into the subject.
+  const handleContactLegalTeam = () => {
+    const matter = selectedMatter;
+    const officer = matter?.accountOfficer?.[0];
+    const recipient = officer?.email || firmEmail;
+
+    if (!recipient) {
+      message.warning("No contact email is available for this matter.");
+      return;
+    }
+
+    const officerName = officer
+      ? `${officer.firstName || ""} ${officer.lastName || ""}`.trim()
+      : firmName;
+    const reference = matter?.matterNumber || "your matter";
+
+    const subject = encodeURIComponent(
+      `Enquiry regarding ${reference}`,
+    );
+    const body = encodeURIComponent(
+      `Hello ${officerName},\n\n\n\n---\nSent from the client portal by ${
+        user?.data?.firstName || ""
+      } ${user?.data?.lastName || ""} regarding ${reference}.`,
+    );
+    window.location.href = `mailto:${recipient}?subject=${subject}&body=${body}`;
+  };
+
+  // "Send message" — files a real support ticket via POST /contacts, which
+  // lands in the firm's Support Tickets queue for staff to action.
+  const handleSendMessage = async () => {
+    let values;
+    try {
+      values = await messageForm.validateFields();
+    } catch {
+      return; // validation errors are already surfaced on the fields
+    }
+
+    setSendingMessage(true);
+    try {
+      // NOTE: dataFetcher does not reject on failure — it resolves to
+      // { error: message }. Checking the return value is what stops us showing
+      // a false "sent" confirmation.
+      const result = await dataFetcher("contacts", "post", {
+        name: `${user?.data?.firstName || ""} ${
+          user?.data?.lastName || ""
+        }`.trim(),
+        email: user?.data?.email,
+        category: values.category,
+        subject: values.subject,
+        message: values.message,
+      });
+
+      if (result?.error) {
+        message.error(result.error);
+        return;
+      }
+
+      message.success(
+        "Message sent. Your legal team will get back to you shortly.",
+      );
+      setMessageModalVisible(false);
+      messageForm.resetFields();
+    } catch (error) {
+      message.error(
+        error?.response?.data?.message ||
+          "Could not send your message. Please try again.",
+      );
+    } finally {
+      setSendingMessage(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -959,7 +1085,11 @@ const ClientMatterDashboard = () => {
           <Button key="close" onClick={() => setMatterDetailsVisible(false)}>
             Close
           </Button>,
-          <Button key="contact" type="primary" icon={<MailOutlined />}>
+          <Button
+            key="contact"
+            type="primary"
+            icon={<MailOutlined />}
+            onClick={handleContactLegalTeam}>
             Contact Legal Team
           </Button>,
         ]}
@@ -1042,15 +1172,106 @@ const ClientMatterDashboard = () => {
               </p>
             </div>
           </div>
-          <Space>
-            <Button icon={<MailOutlined />}>Email Us</Button>
-            <Button icon={<PhoneOutlined />}>Call</Button>
-            <Button type="primary" icon={<SendOutlined />}>
+          <Space wrap>
+            <Button icon={<MailOutlined />} onClick={handleEmailUs}>
+              Email Us
+            </Button>
+            <Button icon={<PhoneOutlined />} onClick={handleCallUs}>
+              Call
+            </Button>
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              onClick={() => setMessageModalVisible(true)}>
               Send Message
             </Button>
           </Space>
         </div>
+
+        {(firmEmail || firmPhone) && (
+          <div className="mt-4 pt-4 border-t border-blue-200 flex flex-col sm:flex-row gap-x-6 gap-y-1 text-sm text-gray-600">
+            {firmEmail && (
+              <span className="flex items-center gap-2">
+                <MailOutlined className="text-blue-500" />
+                <a
+                  href={`mailto:${firmEmail}`}
+                  className="hover:underline break-all">
+                  {firmEmail}
+                </a>
+              </span>
+            )}
+            {firmPhone && (
+              <span className="flex items-center gap-2">
+                <PhoneOutlined className="text-blue-500" />
+                <a
+                  href={`tel:${firmPhone.replace(/[^\d+]/g, "")}`}
+                  className="hover:underline">
+                  {firmPhone}
+                </a>
+              </span>
+            )}
+          </div>
+        )}
       </Card>
+
+      {/* Send Message — files a support ticket for the firm */}
+      <Modal
+        title={
+          <Space>
+            <SendOutlined />
+            <span>Send a message to {firmName}</span>
+          </Space>
+        }
+        open={messageModalVisible}
+        onCancel={() => setMessageModalVisible(false)}
+        footer={[
+          <Button key="cancel" onClick={() => setMessageModalVisible(false)}>
+            Cancel
+          </Button>,
+          <Button
+            key="send"
+            type="primary"
+            icon={<SendOutlined />}
+            loading={sendingMessage}
+            onClick={handleSendMessage}>
+            Send Message
+          </Button>,
+        ]}
+        width={560}>
+        <Form
+          form={messageForm}
+          layout="vertical"
+          initialValues={{ category: "support" }}>
+          <Form.Item
+            label="What is this about?"
+            name="category"
+            rules={[{ required: true, message: "Please pick a topic" }]}>
+            <Select options={messageCategoryOptions} />
+          </Form.Item>
+          <Form.Item
+            label="Subject"
+            name="subject"
+            rules={[{ required: true, message: "Please add a subject" }]}>
+            <Input placeholder="Brief summary of your enquiry" maxLength={150} />
+          </Form.Item>
+          <Form.Item
+            label="Message"
+            name="message"
+            rules={[{ required: true, message: "Please write your message" }]}>
+            <Input.TextArea
+              rows={5}
+              placeholder="Tell us what you need help with..."
+              maxLength={2000}
+              showCount
+            />
+          </Form.Item>
+          <Text type="secondary" className="text-xs">
+            Your message goes straight to {firmName}
+            {firmEmail ? ` (${firmEmail})` : ""} and is tracked in their
+            support queue.
+          </Text>
+        </Form>
+      </Modal>
     </div>
   );
 };

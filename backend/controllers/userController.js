@@ -870,7 +870,10 @@ exports.getUser = catchAsync(async (req, res, next) => {
     })
     .populate({
       path: "firmId",
-      select: "name address contact.email settings subscription limits usage",
+      // contact.phone is included so the client portal's "Call us" action has
+      // a number to dial, alongside contact.email for "Email us".
+      select:
+        "name address contact.email contact.phone settings subscription limits usage",
     })
     .lean();
 
