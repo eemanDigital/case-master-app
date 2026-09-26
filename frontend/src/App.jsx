@@ -587,7 +587,9 @@ const router = createBrowserRouter(
             path="staff/add"
             element={
               <Suspense fallback={<PageLoader />}>
-                <AddUserForm />
+                <ProtectedStaffRoute>
+                  <AddUserForm />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -595,7 +597,9 @@ const router = createBrowserRouter(
             path="staff/:id/details"
             element={
               <Suspense fallback={<PageLoader />}>
-                <StaffDetails />
+                <ProtectedStaffRoute>
+                  <StaffDetails />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -631,11 +635,14 @@ const router = createBrowserRouter(
           />
 
           {/* Leave Management */}
+          {/* Leave is a staff benefit — clients have no leave balance. */}
           <Route
             path="leave-application"
             element={
               <Suspense fallback={<PageLoader />}>
-                <LeaveAppForm />
+                <ProtectedStaffRoute>
+                  <LeaveAppForm />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -653,7 +660,9 @@ const router = createBrowserRouter(
             path="staff/leave-application/:id/details"
             element={
               <Suspense fallback={<PageLoader />}>
-                <LeaveApplicationDetails />
+                <ProtectedStaffRoute>
+                  <LeaveApplicationDetails />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -693,7 +702,9 @@ const router = createBrowserRouter(
             path="matters/:id"
             element={
               <Suspense fallback={<PageLoader />}>
-                <MatterDetails />
+                <ProtectedStaffRoute>
+                  <MatterDetails />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -732,7 +743,9 @@ const router = createBrowserRouter(
               path=":matterId"
               element={
                 <Suspense fallback={<PageLoader />}>
-                  <LitigationDetails />
+                  <ProtectedStaffRoute>
+                    <LitigationDetails />
+                  </ProtectedStaffRoute>
                 </Suspense>
               }
             />
@@ -774,7 +787,9 @@ const router = createBrowserRouter(
               path=":matterId"
               element={
                 <Suspense fallback={<PageLoader />}>
-                  <CorporateMatterDetails />
+                  <ProtectedStaffRoute>
+                    <CorporateMatterDetails />
+                  </ProtectedStaffRoute>
                 </Suspense>
               }
             />
@@ -826,7 +841,9 @@ const router = createBrowserRouter(
               path=":matterId/details"
               element={
                 <Suspense fallback={<PageLoader />}>
-                  <PropertyDetails />
+                  <ProtectedStaffRoute>
+                    <PropertyDetails />
+                  </ProtectedStaffRoute>
                 </Suspense>
               }
             />
@@ -964,14 +981,14 @@ const router = createBrowserRouter(
             />
           </Route>
 
-          {/* Calendar Management */}
+          {/* Calendar Management — firm-wide (all chambers, blocked dates) */}
           <Route
             path="calendar"
             element={
               <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
+                <ProtectedStaffRoute>
                   <CalendarPage />
-                </ShowOnlyVerifiedUser>
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -979,9 +996,9 @@ const router = createBrowserRouter(
             path="calendar/dashboard"
             element={
               <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
+                <ProtectedStaffRoute>
                   <CalendarDashboard />
-                </ShowOnlyVerifiedUser>
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -989,21 +1006,21 @@ const router = createBrowserRouter(
             path="calendar/blocked-dates"
             element={
               <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
+                <ProtectedStaffRoute>
                   <BlockedDatesPage />
-                </ShowOnlyVerifiedUser>
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
 
-          {/* Tasks Management */}
+          {/* Tasks Management — firm-wide task desk */}
           <Route
             path="tasks"
             element={
               <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
+                <ProtectedStaffRoute>
                   <TaskList />
-                </ShowOnlyVerifiedUser>
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1011,7 +1028,9 @@ const router = createBrowserRouter(
             path="tasks/add-task"
             element={
               <Suspense fallback={<PageLoader />}>
-                <CreateTaskForm />
+                <ProtectedStaffRoute>
+                  <CreateTaskForm />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1019,7 +1038,9 @@ const router = createBrowserRouter(
             path="tasks/:id/details"
             element={
               <Suspense fallback={<PageLoader />}>
-                <TaskDetails />
+                <ProtectedStaffRoute>
+                  <TaskDetails />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1027,19 +1048,22 @@ const router = createBrowserRouter(
             path="tasks/:id/edit"
             element={
               <Suspense fallback={<PageLoader />}>
-                <EditTaskForm />
+                <ProtectedStaffRoute>
+                  <EditTaskForm />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
 
-          {/* Clients Management */}
+          {/* Clients Management — the client directory is staff-only; a client
+              must not be able to enumerate the firm's other clients. */}
           <Route
             path="clients"
             element={
               <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
+                <ProtectedStaffRoute>
                   <UserManagement defaultUserType="clients" />
-                </ShowOnlyVerifiedUser>
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1055,7 +1079,9 @@ const router = createBrowserRouter(
             path="clients/:id/details"
             element={
               <Suspense fallback={<PageLoader />}>
-                <ClientDetails />
+                <ProtectedStaffRoute>
+                  <ClientDetails />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1075,7 +1101,9 @@ const router = createBrowserRouter(
             path="billings/invoices/add-invoices"
             element={
               <Suspense fallback={<PageLoader />}>
-                <CreateInvoiceForm />
+                <ProtectedStaffRoute>
+                  <CreateInvoiceForm />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1083,7 +1111,9 @@ const router = createBrowserRouter(
             path="billings/invoices/:id/details"
             element={
               <Suspense fallback={<PageLoader />}>
-                <InvoiceDetails />
+                <ShowOnlyVerifiedUser>
+                  <InvoiceDetails />
+                </ShowOnlyVerifiedUser>
               </Suspense>
             }
           />
@@ -1091,7 +1121,9 @@ const router = createBrowserRouter(
             path="billings/invoices/:id/update"
             element={
               <Suspense fallback={<PageLoader />}>
-                <UpdateInvoice />
+                <ProtectedStaffRoute>
+                  <UpdateInvoice />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1099,12 +1131,14 @@ const router = createBrowserRouter(
             path="billings/payments/client/:clientId/matter/:matterId"
             element={
               <Suspense fallback={<PageLoader />}>
-                <PaymentMadeOnMatter />
+                <ProtectedStaffRoute>
+                  <PaymentMadeOnMatter />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
 
-          {/* Documents Management */}
+          {/* Documents Management — internal firm vault */}
           <Route
             path="documents"
             element={
@@ -1121,7 +1155,9 @@ const router = createBrowserRouter(
             path="record-documents/:id?"
             element={
               <Suspense fallback={<PageLoader />}>
-                <DocumentRecordForm />
+                <ProtectedStaffRoute>
+                  <DocumentRecordForm />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1129,7 +1165,9 @@ const router = createBrowserRouter(
             path="record-document-list"
             element={
               <Suspense fallback={<PageLoader />}>
-                <DocumentRecordList />
+                <ProtectedStaffRoute>
+                  <DocumentRecordList />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1137,17 +1175,21 @@ const router = createBrowserRouter(
             path="record-document-list/:id/details"
             element={
               <Suspense fallback={<PageLoader />}>
-                <DocumentRecordDetails />
+                <ProtectedStaffRoute>
+                  <DocumentRecordDetails />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
 
-          {/* Notes Management */}
+          {/* Notes Management — internal case notes */}
           <Route
             path="add-notes"
             element={
               <Suspense fallback={<PageLoader />}>
-                <NoteForm />
+                <ProtectedStaffRoute>
+                  <NoteForm />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1155,7 +1197,9 @@ const router = createBrowserRouter(
             path="notes"
             element={
               <Suspense fallback={<PageLoader />}>
-                <NoteList />
+                <ProtectedStaffRoute>
+                  <NoteList />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1163,7 +1207,9 @@ const router = createBrowserRouter(
             path="note/:id"
             element={
               <Suspense fallback={<PageLoader />}>
-                <NoteDetail />
+                <ProtectedStaffRoute>
+                  <NoteDetail />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1171,7 +1217,9 @@ const router = createBrowserRouter(
             path="update-note/:id"
             element={
               <Suspense fallback={<PageLoader />}>
-                <UpdateNote />
+                <ProtectedStaffRoute>
+                  <UpdateNote />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1181,7 +1229,9 @@ const router = createBrowserRouter(
             path="events/:id/details"
             element={
               <Suspense fallback={<PageLoader />}>
-                <EventDetail />
+                <ProtectedStaffRoute>
+                  <EventDetail />
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1251,14 +1301,14 @@ const router = createBrowserRouter(
             }
           />
 
-          {/* Templates Library */}
+          {/* Templates Library — staff prepare documents on a client's behalf */}
           <Route
             path="templates"
             element={
               <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
+                <ProtectedStaffRoute>
                   <TemplateLibrary />
-                </ShowOnlyVerifiedUser>
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />
@@ -1266,9 +1316,9 @@ const router = createBrowserRouter(
             path="templates/generated"
             element={
               <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
+                <ProtectedStaffRoute>
                   <GeneratedDocumentsList />
-                </ShowOnlyVerifiedUser>
+                </ProtectedStaffRoute>
               </Suspense>
             }
           />

@@ -1,3 +1,4 @@
+/* eslint-disable react/prop-types */
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSelector } from "react-redux";
 import {
@@ -262,17 +263,16 @@ const ClientMatterDashboard = () => {
 
     setLoading(true);
     try {
+      // `clientUserId` is what narrows /tasks to this client's own assignments
+      // and their matters. Without it the endpoint returns every task in the
+      // firm. Matters and invoices are force-scoped server-side for clients.
       const [mattersRes, invoicesRes, tasksRes] = await Promise.all([
         axios.get(`${baseURL}/matters?client=${clientId}&limit=50`),
         axios.get(`${baseURL}/invoices?clientId=${clientId}&limit=20`),
-        axios.get(`${baseURL}/tasks?limit=50`),
+        axios.get(
+          `${baseURL}/tasks?clientUserId=${clientId}&limit=50`,
+        ),
       ]);
-
-      console.log("=== CLIENT DASHBOARD DATA ===");
-      console.log("Matters:", mattersRes?.data?.data?.length || 0);
-      console.log("Invoices:", invoicesRes?.data?.data || 0);
-      console.log("Tasks:", tasksRes?.data?.data?.length || 0);
-      console.log("Tasks full response:", tasksRes?.data);
 
       setMatters(mattersRes?.data?.data || mattersRes?.data || []);
       setInvoices(invoicesRes?.data?.data || invoicesRes?.data || []);
@@ -378,54 +378,21 @@ const ClientMatterDashboard = () => {
     <div className="client-dashboard min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 p-4 md:p-6">
       {/* Dashboard Header */}
       <div className="dashboard-header mb-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                <HomeOutlined className="text-white text-xl" />
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900 m-0">
-                  Client Portal
-                </h1>
-                <p className="text-gray-600 m-0 text-sm">
-                  Welcome back,{" "}
-                  <span className="font-semibold text-blue-600">
-                    {user?.data?.firstName}
-                  </span>
-                </p>
-              </div>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+            <HomeOutlined className="text-white text-xl" />
           </div>
-
-          <Space size="middle" className="flex-wrap">
-            <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100">
-              <Text type="secondary" className="block text-xs">
-                Active Matters
-              </Text>
-              <Text strong className="text-lg text-blue-600">
-                {processedData.activeMatters.length}
-              </Text>
-            </div>
-            <div className="bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100">
-              <Text type="secondary" className="block text-xs">
-                Pending Invoices
-              </Text>
-              <Text strong className="text-lg text-orange-500">
-                {processedData.pendingInvoices.length}
-              </Text>
-            </div>
-            {processedData.overdueInvoices.length > 0 && (
-              <div className="bg-red-50 px-4 py-2 rounded-lg shadow-sm border border-red-100">
-                <Text type="secondary" className="block text-xs">
-                  Overdue
-                </Text>
-                <Text strong className="text-lg text-red-600">
-                  {processedData.overdueInvoices.length}
-                </Text>
-              </div>
-            )}
-          </Space>
+          <div>
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 m-0">
+              Client Portal
+            </h1>
+            <p className="text-gray-600 m-0 text-sm">
+              Welcome back,{" "}
+              <span className="font-semibold text-blue-600">
+                {user?.data?.firstName}
+              </span>
+            </p>
+          </div>
         </div>
       </div>
 

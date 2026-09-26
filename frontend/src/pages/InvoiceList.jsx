@@ -19,6 +19,7 @@ import SearchBar from "../components/SearchBar";
 import { deleteData } from "../redux/features/delete/deleteSlice";
 import PageErrorAlert from "../components/PageErrorAlert";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
+import { useAdminHook } from "../hooks/useAdminHook";
 const PaymentDashboard = lazy(() => import("../components/PaymentDashboard"));
 
 const downloadURL = import.meta.env.VITE_BASE_URL;
@@ -38,6 +39,7 @@ const InvoiceList = () => {
 
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
+  const { isClient } = useAdminHook();
   const isSuperOrAdmin = ["admin", "super-admin"].includes(
     user?.data?.adminLevel
   );
@@ -153,14 +155,20 @@ const InvoiceList = () => {
         <span className="font-semibold text-blue-600">{invoiceNumber}</span>
       ),
     },
-    {
-      title: "Client",
-      dataIndex: "client",
-      key: "client",
-      render: (client) =>
-        client ? `${client.firstName} ${client.lastName || ""}` : "N/A",
-      responsive: ["md"],
-    },
+    // A client only ever sees their own invoices, so this column is always
+    // their own name — dead weight on their copy of the table.
+    ...(isClient
+      ? []
+      : [
+          {
+            title: "Client",
+            dataIndex: "client",
+            key: "client",
+            render: (client) =>
+              client ? `${client.firstName} ${client.lastName || ""}` : "N/A",
+            responsive: ["md"],
+          },
+        ]),
     {
       title: "Matter/Other",
       key: "matterOther",
@@ -283,8 +291,10 @@ const InvoiceList = () => {
           </Tag>
         );
       },
+      // Drafts are excluded from a client's results server-side, so offering
+      // the filter would only ever hand them a 403.
       filters: [
-        { text: "Draft", value: "draft" },
+        ...(isClient ? [] : [{ text: "Draft", value: "draft" }]),
         { text: "Sent", value: "sent" },
         { text: "Partially Paid", value: "partially_paid" },
         { text: "Paid", value: "paid" },
@@ -374,7 +384,9 @@ const InvoiceList = () => {
             <div>
               <h1 className="text-3xl font-bold text-gray-800">Invoices</h1>
               <p className="text-gray-600 mt-1">
-                Manage and track all invoices
+                {isClient
+                  ? "Your invoices and what you owe"
+                  : "Manage and track all invoices"}
               </p>
             </div>
 
@@ -393,9 +405,16 @@ const InvoiceList = () => {
             </div>
           </div>
 
-          <Suspense fallback={<LoadingSpinner />}>
-            <PaymentDashboard />
-          </Suspense>
+          {/* Firm billing/payment analytics — total outstanding, total
+              collected, collection rate and revenue charts. This is the
+              staff billing console, not client information, so it is hidden
+              from clients (whose own totals already live on their portal
+              dashboard). */}
+          {!isClient && (
+            <Suspense fallback={<LoadingSpinner />}>
+              <PaymentDashboard />
+            </Suspense>
+          )}
 
           <div className="bg-white rounded-lg shadow-sm border">
             <Table

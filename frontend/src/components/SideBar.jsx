@@ -47,7 +47,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDarkMode } = useTheme();
-  const { isSuperOrAdmin, isAdminOrHr } = useAdminHook();
+  const { isSuperOrAdmin, isAdminOrHr, isClient } = useAdminHook();
   const { user } = useSelector((state) => state.auth);
   const firmData = user?.data?.firmId || user?.firmId || {};
   const firmName = firmData?.name || "LawMaster";
@@ -178,61 +178,67 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
       label: "Dashboard",
       path: "/dashboard",
     },
-    {
-      key: "matters",
-      icon: <FileTextOutlined />,
-      label: "Matters",
-      children: [
-        {
-          key: "all-matters",
-          icon: <ReconciliationOutlined />,
-          label: "All Matters",
-          path: "/dashboard/matters",
-        },
-        {
-          key: "officer-workload",
-          icon: <TeamOutlined />,
-          label: "Officer Workload",
-          path: "/dashboard/matters",
-        },
-        {
-          key: "litigation",
-          icon: <AuditOutlined />,
-          label: "Litigation",
-          path: "/dashboard/matters/litigation",
-        },
-        {
-          key: "corporate",
-          icon: <BankOutlined />,
-          label: "Corporate Practice",
-          path: "/dashboard/matters/corporate",
-        },
-        {
-          key: "retainership",
-          icon: <SolutionOutlined />,
-          label: "Retainership",
-          path: "/dashboard/matters/retainers",
-        },
-        {
-          key: "property",
-          icon: <GlobalOutlined />,
-          label: "Property Practice",
-          path: "/dashboard/matters/property",
-        },
-        {
-          key: "advisory",
-          icon: <ProfileOutlined />,
-          label: "Advisory",
-          path: "/dashboard/matters/advisory",
-        },
-        {
-          key: "general",
-          icon: <FileTextOutlined />,
-          label: "General Practice",
-          path: "/dashboard/matters/general",
-        },
-      ],
-    },
+    // Matters is a staff-only module. Clients manage their own matters from
+    // the client portal dashboard, which is scoped to their own records.
+    ...(isClient
+      ? []
+      : [
+          {
+            key: "matters",
+            icon: <FileTextOutlined />,
+            label: "Matters",
+            children: [
+              {
+                key: "all-matters",
+                icon: <ReconciliationOutlined />,
+                label: "All Matters",
+                path: "/dashboard/matters",
+              },
+              {
+                key: "officer-workload",
+                icon: <TeamOutlined />,
+                label: "Officer Workload",
+                path: "/dashboard/matters",
+              },
+              {
+                key: "litigation",
+                icon: <AuditOutlined />,
+                label: "Litigation",
+                path: "/dashboard/matters/litigation",
+              },
+              {
+                key: "corporate",
+                icon: <BankOutlined />,
+                label: "Corporate Practice",
+                path: "/dashboard/matters/corporate",
+              },
+              {
+                key: "retainership",
+                icon: <SolutionOutlined />,
+                label: "Retainership",
+                path: "/dashboard/matters/retainers",
+              },
+              {
+                key: "property",
+                icon: <GlobalOutlined />,
+                label: "Property Practice",
+                path: "/dashboard/matters/property",
+              },
+              {
+                key: "advisory",
+                icon: <ProfileOutlined />,
+                label: "Advisory",
+                path: "/dashboard/matters/advisory",
+              },
+              {
+                key: "general",
+                icon: <FileTextOutlined />,
+                label: "General Practice",
+                path: "/dashboard/matters/general",
+              },
+            ],
+          },
+        ]),
     // {
     //   key: "cases",
     //   icon: <BankOutlined />,
@@ -245,160 +251,191 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
     //   label: "Reports",
     //   path: "/dashboard/case-reports",
     // },
-    {
-      key: "staff",
-      icon: <TeamOutlined />,
-      label: "Staff",
-      children: [
-        {
-          key: "staff-directory",
-          label: "Directory",
-          path: "/dashboard/staff",
-        },
-        // {
-        //   key: "staff-status",
-        //   label: "Status",
-        //   path: "/dashboard/staff-status",
-        // },
-        ...(isAdminOrHr
-          ? [
+    // Staff directory + HR leave tools are internal to the firm.
+    ...(isClient
+      ? []
+      : [
+          {
+            key: "staff",
+            icon: <TeamOutlined />,
+            label: "Staff",
+            children: [
               {
-                key: "leave",
-                label: "Leave",
-                children: [
-                  {
-                    key: "leave-applications",
-                    label: "Applications",
-                    path: "/dashboard/staff/leave-application",
-                  },
-                  {
-                    key: "leave-balance",
-                    label: "Balance",
-                    path: "/dashboard/staff/leave-balance",
-                  },
-                ],
+                key: "staff-directory",
+                label: "Directory",
+                path: "/dashboard/staff",
               },
-            ]
-          : []),
-      ],
-    },
+              // {
+              //   key: "staff-status",
+              //   label: "Status",
+              //   path: "/dashboard/staff-status",
+              // },
+              ...(isAdminOrHr
+                ? [
+                    {
+                      key: "leave",
+                      label: "Leave",
+                      children: [
+                        {
+                          key: "leave-applications",
+                          label: "Applications",
+                          path: "/dashboard/staff/leave-application",
+                        },
+                        {
+                          key: "leave-balance",
+                          label: "Balance",
+                          path: "/dashboard/staff/leave-balance",
+                        },
+                      ],
+                    },
+                  ]
+                : []),
+            ],
+          },
+        ]),
     // {
     //   key: "cause-list",
     //   icon: <CalendarOutlined />,
     //   label: "Cause List",
     //   path: "/dashboard/cause-list",
     // },
-    {
-      key: "tasks",
-      icon: <CheckSquareOutlined />,
-      label: "Tasks",
-      path: "/dashboard/tasks",
-    },
-    {
-      key: "calendar",
-      icon: <CalendarOutlined />,
-      label: "Calendar",
-      children: [
-        {
-          key: "calendar-main",
-          label: "View Calendar",
-          path: "/dashboard/calendar",
-        },
-        {
-          key: "calendar-dashboard",
-          label: "Dashboard",
-          path: "/dashboard/calendar/dashboard",
-        },
-        {
-          key: "blocked-dates",
-          label: "Blocked Dates",
-          path: "/dashboard/calendar/blocked-dates",
-        },
-        // {
-        //   key: "deleted-events",
-        //   label: "Deleted Events",
-        //   path: "/dashboard/calendar/deleted",
-        // },
-      ],
-    },
+    // Task desk is a staff module; clients respond to tasks from the portal.
+    ...(isClient
+      ? []
+      : [
+          {
+            key: "tasks",
+            icon: <CheckSquareOutlined />,
+            label: "Tasks",
+            path: "/dashboard/tasks",
+          },
+        ]),
+    // The calendar is firm-wide (blocked dates, all chambers' events).
+    ...(isClient
+      ? []
+      : [
+          {
+            key: "calendar",
+            icon: <CalendarOutlined />,
+            label: "Calendar",
+            children: [
+              {
+                key: "calendar-main",
+                label: "View Calendar",
+                path: "/dashboard/calendar",
+              },
+              {
+                key: "calendar-dashboard",
+                label: "Dashboard",
+                path: "/dashboard/calendar/dashboard",
+              },
+              {
+                key: "blocked-dates",
+                label: "Blocked Dates",
+                path: "/dashboard/calendar/blocked-dates",
+              },
+              // {
+              //   key: "deleted-events",
+              //   label: "Deleted Events",
+              //   path: "/dashboard/calendar/deleted",
+              // },
+            ],
+          },
+        ]),
     // {
     //   key: "clients",
     //   icon: <UserOutlined />,
     //   label: "Clients",
     //   path: "/dashboard/clients",
     // },
-    {
-      key: "documents",
-      icon: <FileOutlined />,
-      label: "Documents",
-      path: "/dashboard/documents",
-    },
-    {
-      key: "templates",
-      icon: <FileProtectOutlined />,
-      label: "Templates",
-      children: [
-        {
-          key: "templates-library",
-          label: "Template Library",
-          path: "/dashboard/templates",
-        },
-        {
-          key: "generated-documents",
-          label: "Generated Documents",
-          path: "/dashboard/templates/generated",
-        },
-      ],
-    },
+    // Document vault holds internal firm files.
+    ...(isClient
+      ? []
+      : [
+          {
+            key: "documents",
+            icon: <FileOutlined />,
+            label: "Documents",
+            path: "/dashboard/documents",
+          },
+        ]),
+    // Document templates are prepared by staff on a client's behalf.
+    ...(isClient
+      ? []
+      : [
+          {
+            key: "templates",
+            icon: <FileProtectOutlined />,
+            label: "Templates",
+            children: [
+              {
+                key: "templates-library",
+                label: "Template Library",
+                path: "/dashboard/templates",
+              },
+              {
+                key: "generated-documents",
+                label: "Generated Documents",
+                path: "/dashboard/templates/generated",
+              },
+            ],
+          },
+        ]),
     {
       key: "billings",
       icon: <DollarOutlined />,
       label: "Billing",
       path: "/dashboard/billings",
     },
-    {
-      key: "premium",
-      icon: <CrownOutlined />,
-      label: "Premium Suite",
-      children: [
-        {
-          key: "deadline-manager",
-          icon: <ClockCircleOutlined />,
-          label: "Deadline Manager",
-          path: "/dashboard/premium/deadlines",
-        },
-        {
-          key: "deadline-report",
-          icon: <AuditOutlined />,
-          label: "Performance Report",
-          path: "/dashboard/premium/deadlines/performance",
-        },
-        {
-          key: "compliance-tracker",
-          icon: <SafetyCertificateOutlined />,
-          label: "CAC Compliance",
-          path: "/dashboard/cac-compliance",
-        },
-        {
-          key: "watchdog",
-          icon: <RobotOutlined />,
-          label: "CAC Status Watchdog",
-          path: "/dashboard/premium/watchdog",
-        },
-        {
-          key: "automation-builder",
-          icon: <ThunderboltOutlined />,
-          label: "Automation Builder",
-          path: "/dashboard/premium/automations",
-        },
-        {
-          key: "fee-protector",
-          icon: <FileProtectOutlined />,
-          label: "Fee Protector",
-          path: "/dashboard/premium/fee-protector",
-        },
-      ],
-    },
+    // Premium suite modules (CAC, watchdog, automations, fee protector) are
+    // firm operations tooling — meaningless to an external client.
+    ...(isClient
+      ? []
+      : [
+          {
+            key: "premium",
+            icon: <CrownOutlined />,
+            label: "Premium Suite",
+            children: [
+              {
+                key: "deadline-manager",
+                icon: <ClockCircleOutlined />,
+                label: "Deadline Manager",
+                path: "/dashboard/premium/deadlines",
+              },
+              {
+                key: "deadline-report",
+                icon: <AuditOutlined />,
+                label: "Performance Report",
+                path: "/dashboard/premium/deadlines/performance",
+              },
+              {
+                key: "compliance-tracker",
+                icon: <SafetyCertificateOutlined />,
+                label: "CAC Compliance",
+                path: "/dashboard/cac-compliance",
+              },
+              {
+                key: "watchdog",
+                icon: <RobotOutlined />,
+                label: "CAC Status Watchdog",
+                path: "/dashboard/premium/watchdog",
+              },
+              {
+                key: "automation-builder",
+                icon: <ThunderboltOutlined />,
+                label: "Automation Builder",
+                path: "/dashboard/premium/automations",
+              },
+              {
+                key: "fee-protector",
+                icon: <FileProtectOutlined />,
+                label: "Fee Protector",
+                path: "/dashboard/premium/fee-protector",
+              },
+            ],
+          },
+        ]),
     {
       key: "settings",
       icon: <SettingOutlined />,

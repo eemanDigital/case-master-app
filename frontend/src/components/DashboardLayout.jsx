@@ -51,7 +51,7 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isDarkMode, toggleTheme } = useTheme();
-  const { userData, isAdminOrHr } = useAdminHook();
+  const { userData, isAdminOrHr, isClient } = useAdminHook();
 
   const taskState = useSelector((state) => state.task);
   const matterState = useSelector((state) => state.matter);
@@ -71,12 +71,25 @@ const DashboardLayout = () => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
+    // These three lists are firm-wide. A client has no business pulling them
+    // (it would also leak other clients' matter/task titles into the
+    // notification bell), and the client portal loads its own scoped data.
+    if (isClient) return;
+
     dispatch(fetchTasks({ limit: 5, sort: "-createdAt" }));
     dispatch(getMatters({ limit: 5, sort: "-createdAt" }));
     dispatch(getAllEvents({}));
-  }, [dispatch]);
+  }, [dispatch, isClient]);
 
   useEffect(() => {
+    // A client never loads the firm-wide feeds above, so there is nothing to
+    // derive notifications from — settle the loader instead of spinning.
+    if (isClient) {
+      setNotifications([]);
+      setLoadingNotifications(false);
+      return;
+    }
+
     const tasks = taskState?.entities ? Object.values(taskState.entities) : [];
     const matters = matterState?.matters || [];
     const events = calendarState?.events?.data || [];
@@ -136,9 +149,39 @@ const DashboardLayout = () => {
       setNotifications(notificationItems.slice(0, 6));
       setLoadingNotifications(false);
     }
-  }, [taskState, matterState, calendarState]);
+  }, [taskState, matterState, calendarState, isClient]);
 
-  const menuItemsForSearch = [
+  // Clients only get the destinations their portal actually exposes. Offering
+  // a client "All Matters" / "Clients" / "Audit Logs" search hit would send
+  // them to a page they cannot open.
+  const clientSearchItems = [
+    {
+      key: "dashboard",
+      label: "Dashboard",
+      path: "/dashboard",
+      icon: "FileText",
+    },
+    {
+      key: "billings",
+      label: "Billing",
+      path: "/dashboard/billings",
+      icon: "Dollar",
+    },
+    {
+      key: "support",
+      label: "Support",
+      path: "/dashboard/contact-dev",
+      icon: "QuestionCircle",
+    },
+    {
+      key: "profile",
+      label: "My Profile",
+      path: "/dashboard/profile",
+      icon: "User",
+    },
+  ];
+
+  const staffSearchItems = [
     {
       key: "all-matters",
       label: "All Matters",
@@ -295,6 +338,8 @@ const DashboardLayout = () => {
     },
   ];
 
+  const menuItemsForSearch = isClient ? clientSearchItems : staffSearchItems;
+
   const handleSearch = (value) => {
     setSearchValue(value);
     if (!value) {
@@ -373,12 +418,17 @@ const DashboardLayout = () => {
       label: "My Profile",
       onClick: () => navigate("/dashboard/profile"),
     },
-    {
-      key: "settings",
-      icon: <SettingOutlined />,
-      label: "Settings",
-      onClick: () => navigate("/dashboard/settings"),
-    },
+    // Firm settings are staff-only, so don't offer them to a client.
+    ...(isClient
+      ? []
+      : [
+          {
+            key: "settings",
+            icon: <SettingOutlined />,
+            label: "Settings",
+            onClick: () => navigate("/dashboard/settings"),
+          },
+        ]),
     {
       key: "help",
       icon: <QuestionCircleOutlined />,
