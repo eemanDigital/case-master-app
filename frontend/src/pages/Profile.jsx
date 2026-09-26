@@ -22,9 +22,6 @@ import {
   TeamOutlined,
   CrownOutlined,
   IdcardOutlined,
-  EditOutlined,
-  LockOutlined,
-  CameraOutlined,
 } from "@ant-design/icons";
 import { formatDate, formatYear } from "../utils/formatDate";
 import ProfilePictureUpload from "../components/ProfilePictureUpload";
@@ -45,8 +42,6 @@ const Profile = () => {
   const { user, isError, isLoading, message } = useSelector(
     (state) => state.auth,
   );
-
-  console.log(user);
 
   if (isLoading) {
     return (
@@ -578,7 +573,7 @@ const Profile = () => {
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div>
                 <Title level={5} className="!mb-1">Firm Branding</Title>
-                <Text type="secondary">Upload your firm's logo, stamp, and signature for documents</Text>
+                <Text type="secondary">Upload your firm&apos;s logo, stamp, and signature for documents</Text>
               </div>
               <FirmBrandingUpload />
             </div>
@@ -598,7 +593,9 @@ const Profile = () => {
         <ProfessionalInformation />
 
         {/* Leave Summary - Only for non-clients */}
-        {!isClient && <LeaveSummaryCard id={userData?._id} />}
+        {!isClient && (
+          <LeaveSummaryCard id={userData?._id} showApplyButton />
+        )}
       </div>
     </div>
   );

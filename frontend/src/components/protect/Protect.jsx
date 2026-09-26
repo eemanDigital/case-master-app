@@ -62,6 +62,38 @@ ShowAdminRoute.propTypes = {
   children: PropTypes.node.isRequired,
 };
 
+// allow access to HR, admin and super-admin (leave approvals & balances);
+// to be used for routes
+export const ShowHRAdminRoute = ({ children }) => {
+  const isLoggedIn = useSelector(selectIsLoggedIn);
+  const user = useSelector(selectUser);
+
+  const role = user?.data?.role;
+  const adminLevel = user?.data?.adminLevel;
+
+  if (
+    isLoggedIn &&
+    (role === "hr" ||
+      adminLevel === "admin" ||
+      adminLevel === "super-admin")
+  ) {
+    return <>{children}</>;
+  }
+  return (
+    <Alert
+      message="Access Denied"
+      description="Only HR and administrators can view this page."
+      type="error"
+      showIcon
+    />
+  );
+};
+
+// Prop types for ShowHRAdminRoute
+ShowHRAdminRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+};
+
 export const BillingAndPaymentsRoute = ({ element }) => {
   return <ShowAdminRoute>{element}</ShowAdminRoute>;
 };

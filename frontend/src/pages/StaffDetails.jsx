@@ -1,11 +1,9 @@
 // pages/StaffDetails.jsx - COMPLETE MOBILE-FIRST REFACTOR WITH UPDATED USER MODEL SUPPORT
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
   Card,
-  Row,
-  Col,
   Typography,
   Avatar,
   Tag,
@@ -22,7 +20,6 @@ import {
   HomeOutlined,
   BookOutlined,
   CalendarOutlined,
-  BankOutlined,
   TeamOutlined,
   IdcardOutlined,
   SafetyCertificateOutlined,
@@ -31,8 +28,6 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   InfoCircleOutlined,
-  SolutionOutlined,
-  SettingOutlined,
 } from "@ant-design/icons";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useAdminHook, useLawyerHook } from "../hooks/useAdminHook";
@@ -57,10 +52,6 @@ const StaffDetails = () => {
     isSuperOrAdmin,
     userData: currentUserData,
     hasRole,
-    canManageUsers,
-    canViewReports,
-    isAdmin,
-    isLawyer: isCurrentUserLawyer,
   } = useAdminHook();
 
   const { isLawyer: currentUserIsLawyer } = useLawyerHook();
@@ -75,6 +66,7 @@ const StaffDetails = () => {
     if (id) {
       dataFetcher(`users/${id}`, "GET");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const isCurrentUser = loggedInUserId === id;
@@ -821,7 +813,7 @@ const StaffDetails = () => {
           {canViewFullDetails ? (
             <>
               {renderUserTypeSpecificInfo()}
-              <LeaveBalanceDisplay userId={id} />
+              <LeaveBalanceDisplay userId={id} canApply={isCurrentUser} />
             </>
           ) : canViewProfessionalInfo ? (
             <>

@@ -2,7 +2,7 @@ import PropTypes from "prop-types";
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Menu, Typography, Badge, message } from "antd";
+import { Menu, Typography, message } from "antd";
 import {
   DashboardOutlined,
   FileTextOutlined,
@@ -47,7 +47,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDarkMode } = useTheme();
-  const { isSuperOrAdmin } = useAdminHook();
+  const { isSuperOrAdmin, isAdminOrHr } = useAdminHook();
   const { user } = useSelector((state) => state.auth);
   const firmData = user?.data?.firmId || user?.firmId || {};
   const firmName = firmData?.name || "LawMaster";
@@ -260,22 +260,26 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
         //   label: "Status",
         //   path: "/dashboard/staff-status",
         // },
-        {
-          key: "leave",
-          label: "Leave",
-          children: [
-            {
-              key: "leave-applications",
-              label: "Applications",
-              path: "/dashboard/staff/leave-application",
-            },
-            {
-              key: "leave-balance",
-              label: "Balance",
-              path: "/dashboard/staff/leave-balance",
-            },
-          ],
-        },
+        ...(isAdminOrHr
+          ? [
+              {
+                key: "leave",
+                label: "Leave",
+                children: [
+                  {
+                    key: "leave-applications",
+                    label: "Applications",
+                    path: "/dashboard/staff/leave-application",
+                  },
+                  {
+                    key: "leave-balance",
+                    label: "Balance",
+                    path: "/dashboard/staff/leave-balance",
+                  },
+                ],
+              },
+            ]
+          : []),
       ],
     },
     // {
@@ -612,7 +616,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
           getPopupContainer={(node) => node.parentNode}
         />
 
-        <style jsx global>{`
+<style>{`
           /* Light Mode Menu Styles */
           .ant-menu-light .ant-menu-item {
             border-radius: 8px;
@@ -798,7 +802,7 @@ const SideBar = ({ isMobile, closeDrawer, collapsed }) => {
         )}
       </div>
 
-      <style jsx global>{`
+      <style>{`
         @keyframes pulse {
           0%,
           100% {

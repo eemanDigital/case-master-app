@@ -7,7 +7,6 @@ import {
   Badge,
   Avatar,
   Dropdown,
-  theme,
   Tooltip,
   Typography,
   Input,
@@ -28,20 +27,8 @@ import {
   FullscreenOutlined,
   FullscreenExitOutlined,
   FileTextOutlined,
-  TeamOutlined,
   CalendarOutlined,
   CheckSquareOutlined,
-  FileOutlined,
-  DollarOutlined,
-  AuditOutlined,
-  ReconciliationOutlined,
-  HomeOutlined,
-  FileDoneOutlined,
-  RiseOutlined,
-  WarningOutlined,
-  ClockCircleOutlined,
-  BankOutlined,
-  MessageOutlined,
 } from "@ant-design/icons";
 import { lazy, Suspense } from "react";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser.jsx";
@@ -57,7 +44,6 @@ import { getAllEvents } from "../redux/features/calender/calenderSlice";
 
 const { Header, Content } = Layout;
 const { Text } = Typography;
-const { Option } = AutoComplete;
 
 const DashboardLayout = () => {
   useRedirectLogoutUser("/users/login");
@@ -65,7 +51,7 @@ const DashboardLayout = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isDarkMode, toggleTheme } = useTheme();
-  const { userData } = useAdminHook();
+  const { userData, isAdminOrHr } = useAdminHook();
 
   const taskState = useSelector((state) => state.task);
   const matterState = useSelector((state) => state.matter);
@@ -213,18 +199,22 @@ const DashboardLayout = () => {
       path: "/dashboard/staff-status",
       icon: "Team",
     },
-    {
-      key: "leave-applications",
-      label: "Leave Applications",
-      path: "/dashboard/staff/leave-application",
-      icon: "Team",
-    },
-    {
-      key: "leave-balance",
-      label: "Leave Balance",
-      path: "/dashboard/staff/leave-balance",
-      icon: "Team",
-    },
+    ...(isAdminOrHr
+      ? [
+          {
+            key: "leave-applications",
+            label: "Leave Applications",
+            path: "/dashboard/staff/leave-application",
+            icon: "Team",
+          },
+          {
+            key: "leave-balance",
+            label: "Leave Balance",
+            path: "/dashboard/staff/leave-balance",
+            icon: "Team",
+          },
+        ]
+      : []),
     {
       key: "tasks",
       label: "Tasks",
@@ -547,10 +537,6 @@ const DashboardLayout = () => {
           },
         ]
       : notificationDropdownItems;
-
-  const {
-    token: { colorBgContainer },
-  } = theme.useToken();
 
   const sidebarWidth = collapsed ? 80 : 256;
 

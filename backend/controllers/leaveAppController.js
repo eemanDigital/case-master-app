@@ -2,13 +2,39 @@ const LeaveApplication = require("../models/leaveApplicationModel");
 const leaveService = require("../services/leaveService");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
+const User = require("../models/userModel");
 
 /**
  * Create new leave application
  */
 exports.createLeaveApplication = catchAsync(async (req, res, next) => {
-  const { startDate, endDate, typeOfLeave, reason, applyTo } = req.body;
+  const { startDate, endDate, typeOfLeave, reason, applyTo, applyToId } =
+    req.body;
   const employeeId = req.user._id;
+
+  // Validate that the approving authority is an active HR/admin/super-admin
+  // of this firm before any application referencing them is stored.
+  if (applyToId) {
+    const approver = await User.findOne({
+      _id: applyToId,
+      firmId: req.firmId,
+      isDeleted: { $ne: true },
+    });
+
+    const isAuthorizedApprover =
+      approver &&
+      approver.isActive !== false &&
+      (approver.role === "hr" || approver.isAdmin());
+
+    if (!isAuthorizedApprover) {
+      return next(
+        new AppError(
+          "Selected approving authority is not an active HR or administrator for this firm",
+          400
+        )
+      );
+    }
+  }
 
   // Validate dates
   const start = new Date(startDate);

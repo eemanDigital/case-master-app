@@ -10,10 +10,11 @@ import {
   PlusCircleOutlined,
   ClockCircleOutlined,
   FieldTimeOutlined,
-  CalendarCheckOutlined,
+  ScheduleOutlined,
 } from "@ant-design/icons";
 import { useDataFetch } from "../hooks/useDataFetch";
 import PageErrorAlert from "./PageErrorAlert";
+import LeaveAppForm from "../pages/LeaveAppForm";
 
 const { Text } = Typography;
 
@@ -65,7 +66,7 @@ const LEAVE_CATEGORIES = [
   },
 ];
 
-const LeaveBalanceDisplay = ({ userId }) => {
+const LeaveBalanceDisplay = ({ userId, canApply = false }) => {
   const { data, loading, error, dataFetcher } = useDataFetch();
 
   useEffect(() => {
@@ -106,18 +107,23 @@ const LeaveBalanceDisplay = ({ userId }) => {
 
   return (
     <Card bordered={false} className="rounded-2xl shadow-sm">
-      <div className="flex items-center gap-3 mb-5">
-        <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 text-lg">
-          <CalendarCheckOutlined />
+      <div className="flex items-center justify-between gap-3 mb-5">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center flex-shrink-0 text-lg">
+            <ScheduleOutlined />
+          </div>
+          <div className="min-w-0">
+            <Text strong className="!text-lg !text-slate-800 block leading-tight">
+              Leave Balance
+            </Text>
+            <Text type="secondary" className="!text-xs sm:!text-sm block">
+              Entitlements by type shown in days
+            </Text>
+          </div>
         </div>
-        <div className="min-w-0">
-          <Text strong className="!text-lg !text-slate-800 block leading-tight">
-            Leave Balance
-          </Text>
-          <Text type="secondary" className="!text-xs sm:!text-sm block">
-            Entitlements by type shown in days
-          </Text>
-        </div>
+        {canApply && balanceData && (
+          <LeaveAppForm buttonClassName="blue-btn whitespace-nowrap shadow-sm" />
+        )}
       </div>
 
       {/* Total Available Leave — summary banner */}
@@ -198,6 +204,7 @@ const LeaveBalanceDisplay = ({ userId }) => {
 
 LeaveBalanceDisplay.propTypes = {
   userId: PropTypes.string.isRequired,
+  canApply: PropTypes.bool,
 };
 
 export default LeaveBalanceDisplay;

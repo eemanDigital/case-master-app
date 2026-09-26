@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
 import { Card, Row, Col, Statistic, Progress, Tag, Spin, Alert } from "antd";
 import {
   CalendarOutlined,
@@ -7,9 +8,10 @@ import {
   TrophyOutlined,
 } from "@ant-design/icons";
 import { useDataFetch } from "../hooks/useDataFetch";
+import LeaveAppForm from "../pages/LeaveAppForm";
 // import { useSelector } from "react-redux";
 
-const LeaveSummaryCard = ({ id }) => {
+const LeaveSummaryCard = ({ id, showApplyButton = false }) => {
   // const { user } = useSelector((state) => state.auth);
   const { dataFetcher } = useDataFetch();
   const [summary, setSummary] = useState(null);
@@ -18,6 +20,7 @@ const LeaveSummaryCard = ({ id }) => {
 
   useEffect(() => {
     fetchSummary();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const fetchSummary = async () => {
@@ -75,7 +78,19 @@ const LeaveSummaryCard = ({ id }) => {
   };
 
   return (
-    <Card title="My Leave Summary" className="shadow-sm">
+    <Card
+      title="My Leave Summary"
+      extra={
+        showApplyButton && (
+          <LeaveAppForm
+            buttonText="Apply for Leave"
+            buttonClassName="blue-btn whitespace-nowrap shadow-sm"
+            buttonSize="small"
+            onSuccess={fetchSummary}
+          />
+        )
+      }
+      className="shadow-sm">
       <Row gutter={[16, 16]}>
         <Col xs={24} sm={12} md={6}>
           <Card className="text-center bg-blue-50 border-blue-200">
@@ -174,6 +189,12 @@ const LeaveSummaryCard = ({ id }) => {
       </Row>
     </Card>
   );
+};
+
+// Some props are optional; keep propTypes in sync.
+LeaveSummaryCard.propTypes = {
+  id: PropTypes.string,
+  showApplyButton: PropTypes.bool,
 };
 
 export default LeaveSummaryCard;

@@ -205,6 +205,68 @@ mutually exclusive, totals preview live, and post-save navigation opens the invo
   (`hourly`→`hours`+`rate`, `fixed_fee`→`fixedAmount`, `item`→`quantity`+`unitPrice`,
   `retainer`/`contingency`→`fixedAmount`) so `invoiceModel.pre("save")` computes as before.
 
+# Staff/client directory + leave balance polish (this session)
+- **Row-click navigation** on `UserListTable.jsx`: whole table row is now clickable and
+  navigates to `/dashboard/{staff|clients}/:id/details` (the Name column was already a
+  link). Clicks on `a,button,input,select,textarea` are ignored, so the delete button
+  and name link still behave. Note: `prop-types` NOT installed → UserListTable carries a
+  top-of-file `eslint-disable react/prop-types` (repo convention). Also removed pre-existing
+  lint cruft in `ClientLists.jsx`/`StaffList.jsx` (unused `React`, `ButtonWithIcon`,
+  `totalPages`, `paginationData`).
+- **`LeaveBalanceDisplay.jsx` redesigned** (shown inside `StaffDetails`, staff
+  `/staff/:id/details`) from colorful `border-l-4` Statistic cards to the app's mature
+  language: rounded-2xl white card, indigo icon-chip header, an indigo→slate gradient
+  "Total Available Leave" summary banner with gold "Year" tag, 6 neutral per-type tiles
+  (uppercase label + tinted icon chip + value + muted "days"), and a slate-50 footer
+  strip for Year / Last Updated / Created. Data contract unchanged
+  (`GET leaves/balances/:userId`); loading now shows a `Skeleton` grid instead of a
+  full-page spinner. Icons verified against installed `@ant-design/icons` (e.g.
+  `CalendarCheckOutlined` does NOT exist here → used `ScheduleOutlined`).
+- Lint clean on all touched files; `npm run build` passes.
+
+# Leave management access + approving authority (this session)
+Per user spec: "only HR or Super-admin should see approve leaves; remove the leave app
+list page and balance for others; in the user profile add an Apply-for-Leave button for
+whoever has leave balance; the approving authority should be HR / super-admin."
+- **New route guard** `ShowHRAdminRoute` in `frontend/src/components/protect/Protect.jsx`
+  (hr role OR adminLevel admin/super-admin; "Access Denied" Alert otherwise). Wrapped the
+  two management routes in `App.jsx`: `staff/leave-application` (LeaveApplicationList) and
+  `staff/leave-balance` (LeaveBalanceList). The standalone `leave-application` route
+  (renders LeaveAppForm) and the details route are unchanged (self-service/details).
+- **Sidebar + search**: `SideBar.jsx` now only renders the Staff → Leave submenu
+  (Applications/Balance) when `isAdminOrHr`; `DashboardLayout.jsx` search entries for
+  Leave Applications/Balance are likewise conditionally included. `LeaveNotification`
+  was already hr/admin-gated.
+- **Approving authority fix (root cause)**: `LeaveAppForm.jsx` used
+  `useUserSelectOptions()` defaulting to `type="staff"` (userType staff/lawyer/admin/
+  super-admin — empty under the new role+adminLevel model), and emails were sent to the
+  raw `_id`. Now it uses `useUserSelectOptions({ fetchAll: true })` and builds
+  `approvingAuthorityOptions = [...admins, ...hr]` deduped by `value` (admins includes
+  super-admins; labels include `- Position`). `applyTo` stores the authority display
+  label (the model's String field is literally "Authority name"); new `applyToId` field
+  holds the user `_id`; notification `send_to` now uses the selected approver's `email`.
+- **Backend enforcement** (`backend/controllers/leaveAppController.js`): on create,
+  `applyToId` (if provided) must resolve to an ACTIVE, non-deleted user of the SAME firm
+  who is `role === "hr"` or `isAdmin()`; otherwise 400 "Selected approving authority is
+  not an active HR or administrator for this firm". Approve/reject and balance writes
+  were already `restrictTo("super-admin","admin","hr")`, and `restrictTo` maps admin→
+  `user.isAdmin()` / super-admin→`isSuperAdmin()` / else `role===`.
+- **Profile Apply button**: `LeaveBalanceDisplay.jsx` gained a `canApply` prop; when true
+  AND a balance exists it renders `<LeaveAppForm />` in its header. `StaffDetails.jsx`
+  passes `canApply={isCurrentUser}` so only the logged-in user can apply for their own
+  leave (LeaveAppForm submits as `user.data._id`). LeaveAppForm trigger button is now
+  prop-driven (`buttonText`/`buttonClassName`/`buttonSize`) + PropTypes.
+- Note: regular staff can no longer see a "My Applications" list (per spec). Follow-up if
+  wanted later: a self-service "My leave" list inside the profile.
+- **Profile.jsx Apply button (follow-up)**: the *own-profile* page at `/dashboard/profile`
+  uses `LeaveSummaryCard`, not `LeaveBalanceDisplay`, so the earlier `canApply` wiring on
+  `StaffDetails` never surfaced here. Fixed inside `LeaveSummaryCard.jsx`: new
+  `showApplyButton` prop renders `<LeaveAppForm />` in the Card `extra` whenever a summary
+  (i.e. a leave balance) exists, with `onSuccess={fetchSummary}` to refresh the counts.
+  `Profile.jsx` passes `showApplyButton` (card is already non-client-gated). Also removed
+  leftover debris in Profile.jsx: `console.log(user)`, unused icons, unescaped apostrophe.
+- Lint clean on all touched files + `npm run build` passes; `node --check` on backend.
+
 # Known prior-art / gotchas
 - esbuild `node_modules/.bin/esbuild` is NOT installed (Windows) — use `node --check`.
 - `generate()` in generateGenericPdf.js streams the buffer to `res.end(pdfBuffer)` after

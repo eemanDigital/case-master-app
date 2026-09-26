@@ -1,5 +1,6 @@
 import notify from "../utils/notify";
-import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
+import { useState, useEffect, useMemo } from "react";
 import {
   Modal,
   Form,
@@ -20,7 +21,12 @@ import dayjs from "dayjs";
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
 
-const LeaveAppForm = ({ onSuccess }) => {
+const LeaveAppForm = ({
+  onSuccess,
+  buttonText = "Apply for Leave",
+  buttonClassName = "blue-btn my-4",
+  buttonSize,
+}) => {
   const leaveTypes = [
     { label: "Annual Leave", value: "annual" },
     { label: "Casual Leave", value: "casual" },
@@ -33,19 +39,36 @@ const LeaveAppForm = ({ onSuccess }) => {
 
   const { user } = useSelector((state) => state.auth);
   const { loading, error: dataError, dataFetcher } = useDataFetch();
-  const { adminOptions } = useUserSelectOptions();
+  const {
+    admins: adminOptions,
+    hr: hrOptions,
+    loading: authoritiesLoading,
+  } = useUserSelectOptions({ fetchAll: true });
   const [visible, setVisible] = useState(false);
   const [leaveBalance, setLeaveBalance] = useState(null);
   const [selectedLeaveType, setSelectedLeaveType] = useState(null);
   const [calculatedDays, setCalculatedDays] = useState(0);
+  const [selectedApprover, setSelectedApprover] = useState(null);
   const dispatch = useDispatch();
   const [form] = Form.useForm();
+
+  // Only HR and administrators (incl. super-admins) can approve leave,
+  // so the approving authority dropdown lists exactly those firm users.
+  const approvingAuthorityOptions = useMemo(() => {
+    const seen = new Set();
+    return [...(adminOptions || []), ...(hrOptions || [])].filter((option) => {
+      if (seen.has(option.value)) return false;
+      seen.add(option.value);
+      return true;
+    });
+  }, [adminOptions, hrOptions]);
 
   // Fetch employee leave balance when modal opens
   useEffect(() => {
     if (visible && user?.data?._id) {
       fetchLeaveBalance();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible]);
 
   const fetchLeaveBalance = async () => {
@@ -77,6 +100,7 @@ const LeaveAppForm = ({ onSuccess }) => {
     form.resetFields();
     setSelectedLeaveType(null);
     setCalculatedDays(0);
+    setSelectedApprover(null);
   };
 
   // Calculate leave days when dates change
@@ -117,7 +141,8 @@ const LeaveAppForm = ({ onSuccess }) => {
         endDate: dateRange[1].format("YYYY-MM-DD"),
         typeOfLeave,
         reason,
-        applyTo,
+        applyTo: selectedApprover?.label || applyTo,
+        applyToId: selectedApprover?.value || null,
       };
 
       // Submit leave application
@@ -133,7 +158,7 @@ const LeaveAppForm = ({ onSuccess }) => {
         // Prepare email data
         const emailData = {
           subject: "New Leave Application - A.T. Lukman & Co.",
-          send_to: applyTo,
+          send_to: selectedApprover?.email || applyTo,
           reply_to: "noreply@atlukman.com",
           template: "leaveApplication",
           url: "dashboard/staff",
@@ -154,6 +179,7 @@ const LeaveAppForm = ({ onSuccess }) => {
         setVisible(false);
         setSelectedLeaveType(null);
         setCalculatedDays(0);
+        setSelectedApprover(null);
 
         // Callback to refresh parent component
         if (onSuccess) onSuccess();
@@ -180,10 +206,11 @@ const LeaveAppForm = ({ onSuccess }) => {
     <>
       <Button
         type="primary"
-        className="blue-btn my-4"
+        className={buttonClassName}
+        size={buttonSize}
         icon={<FileTextOutlined />}
         onClick={showModal}>
-        Apply for Leave
+        {buttonText}
       </Button>
 
       <Modal
@@ -338,13 +365,24 @@ const LeaveAppForm = ({ onSuccess }) => {
               },
             ]}>
             <Select
-              placeholder="Select approving authority"
-              options={adminOptions}
+              placeholder={
+                authoritiesLoading
+                  ? "Loading approving authorities..."
+                  : "Select approving authority"
+              }
+              options={approvingAuthorityOptions}
               allowClear
               showSearch
+              loading={authoritiesLoading}
+              notFoundContent={
+                authoritiesLoading
+                  ? "Loading approving authorities..."
+                  : "No HR or administrator found for this firm"
+              }
               filterOption={(input, option) =>
                 option.label.toLowerCase().includes(input.toLowerCase())
               }
+              onChange={(_, option) => setSelectedApprover(option || null)}
             />
           </Form.Item>
 
@@ -376,6 +414,13 @@ const LeaveAppForm = ({ onSuccess }) => {
       </Modal>
     </>
   );
+};
+
+LeaveAppForm.propTypes = {
+  onSuccess: PropTypes.func,
+  buttonText: PropTypes.string,
+  buttonClassName: PropTypes.string,
+  buttonSize: PropTypes.oneOf(["small", "middle", "large", "default"]),
 };
 
 export default LeaveAppForm;

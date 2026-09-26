@@ -406,8 +406,13 @@ firmSchema.methods.canCreateMatter = async function () {
   // Count active (non-terminal) matters for this firm
   const Matter = require("../models/matterModel");
   const terminalStatuses = [
-    "completed", "closed", "archived", "settled",
-    "withdrawn", "won", "lost",
+    "completed",
+    "closed",
+    "archived",
+    "settled",
+    "withdrawn",
+    "won",
+    "lost",
   ];
 
   const activeCount = await Matter.countDocuments({
@@ -435,8 +440,13 @@ firmSchema.methods.hasStorageAvailable = function (fileSizeGB) {
 firmSchema.methods.syncMatterCount = async function () {
   const Matter = require("../models/matterModel");
   const terminalStatuses = [
-    "completed", "closed", "archived", "settled",
-    "withdrawn", "won", "lost",
+    "completed",
+    "closed",
+    "archived",
+    "settled",
+    "withdrawn",
+    "won",
+    "lost",
   ];
 
   const activeCount = await Matter.countDocuments({
@@ -499,12 +509,7 @@ firmSchema.methods.getPlanDetails = function () {
     FREE: {
       name: "Free",
       price: 0,
-      features: [
-        "1 user",
-        "3 active matters",
-        "5GB storage",
-        "Basic features",
-      ],
+      features: ["1 user", "3 active matters", "5GB storage", "Basic features"],
     },
     BASIC: {
       name: "Basic",

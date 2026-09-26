@@ -1,4 +1,5 @@
 import { lazy, Suspense, useEffect, useRef, useMemo, useState } from "react";
+import PropTypes from "prop-types";
 import {
   createBrowserRouter,
   createRoutesFromElements,
@@ -27,6 +28,7 @@ import NotificationHost from "./components/NotificationHost.jsx";
 import {
   ShowOnlyVerifiedUser,
   ShowStaff,
+  ShowHRAdminRoute,
 } from "./components/protect/Protect.jsx";
 
 // ============================================
@@ -160,7 +162,6 @@ const EditTaskForm = lazy(() => import("./pages/EditTaskForm.jsx"));
 
 // Clients Management
 
-const AddClientForm = lazy(() => import("./components/AddClientForm.jsx"));
 const ClientDetails = lazy(() => import("./pages/ClientDetails.jsx"));
 
 // Billing Management
@@ -228,9 +229,6 @@ const PerformanceReportPage = lazy(
 );
 
 // Premium Features - Compliance
-const ComplianceTrackerPage = lazy(
-  () => import("./pages/compliance/ComplianceTrackerPage.jsx"),
-);
 
 // CAC Compliance Module
 const CACDashboard = lazy(
@@ -387,6 +385,10 @@ const ProtectedStaffRoute = ({ children }) => (
     <ProtectedRoute isStaffRoute={true}>{children}</ProtectedRoute>
   </ShowOnlyVerifiedUser>
 );
+
+ProtectedStaffRoute.propTypes = {
+  children: PropTypes.node.isRequired,
+};
 
 // ============================================
 // AUTH ROUTE HANDLER
@@ -641,9 +643,9 @@ const router = createBrowserRouter(
             path="staff/leave-application"
             element={
               <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
+                <ShowHRAdminRoute>
                   <LeaveApplicationList />
-                </ShowOnlyVerifiedUser>
+                </ShowHRAdminRoute>
               </Suspense>
             }
           />
@@ -659,9 +661,9 @@ const router = createBrowserRouter(
             path="staff/leave-balance"
             element={
               <Suspense fallback={<PageLoader />}>
-                <ShowOnlyVerifiedUser>
+                <ShowHRAdminRoute>
                   <LeaveBalanceList />
-                </ShowOnlyVerifiedUser>
+                </ShowHRAdminRoute>
               </Suspense>
             }
           />
