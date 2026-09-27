@@ -1,12 +1,9 @@
-import React from "react";
 import { Card, Typography, Divider, Row, Col, Table } from "antd";
 import { Link } from "react-router-dom";
 import { 
-  SafetyCertificateOutlined, 
   LockOutlined,
   DatabaseOutlined,
   TeamOutlined,
-  GlobalOutlined,
   MailOutlined,
   PhoneOutlined,
   EnvironmentOutlined,
@@ -59,46 +56,29 @@ const PrivacyPolicy = () => {
             </div>
             <Title level={1} className="!mb-2">Privacy Policy</Title>
             <Text type="secondary" className="text-lg">
-              Nigeria Data Protection Regulation (NDPR) Compliant
+              How LawMaster handles personal data
             </Text>
             <div className="mt-4">
-              <Text type="secondary">Last Updated: March 2026</Text>
+              <Text type="secondary">Last Updated: September 2026</Text>
             </div>
           </div>
 
           <Divider />
 
-          {/* NDPR Compliance Badge */}
-          <div className="bg-gradient-to-r from-green-500 to-emerald-600 rounded-xl p-6 mb-10 text-white">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-3">
-                <SafetyCertificateOutlined className="text-3xl" />
-                <div>
-                  <Text strong className="text-white text-lg">NDPR Compliant</Text>
-                  <br />
-                  <Text className="text-white/80">Registered with Nigeria Data Protection Bureau</Text>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <CheckCircleOutlined />
-                <span>Data stored in Nigeria</span>
-              </div>
-            </div>
-          </div>
-
           <div className="prose max-w-none">
             <Title level={4}>1. Introduction</Title>
             <Paragraph>
-              LawMaster ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy 
+              LawMaster (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;) is committed to protecting your privacy. This Privacy Policy 
               explains how we collect, use, disclose, and safeguard your information when you use our legal 
               practice management software in Nigeria.
             </Paragraph>
             <Paragraph>
-              This policy complies with the Nigeria Data Protection Regulation (NDPR) 2019 and other applicable 
-              Nigerian laws.
+              This notice is intended to explain our data practices. It is not a certification of compliance. Our
+              processing and the rights available to you depend on applicable data-protection law and, for law-firm
+              client and matter records, the instructions and responsibilities agreed with your law firm.
             </Paragraph>
 
-            <Title level={4}>2. Data Controller Information</Title>
+            <Title level={4}>2. Data Protection Roles</Title>
             <Card className="bg-gray-50 border-0 mb-6">
               <Row gutter={[16, 16]}>
                 <Col xs={24} sm={12}>
@@ -107,9 +87,9 @@ const PrivacyPolicy = () => {
                       <TeamOutlined className="text-blue-600" />
                     </div>
                     <div>
-                      <Text strong>Data Controller</Text>
+                      <Text strong>Law firm customer</Text>
                       <br />
-                      <Text>LawMaster Technologies Ltd</Text>
+                      <Text>Usually determines how client and matter records are used</Text>
                     </div>
                   </div>
                 </Col>
@@ -119,9 +99,9 @@ const PrivacyPolicy = () => {
                       <DatabaseOutlined className="text-blue-600" />
                     </div>
                     <div>
-                      <Text strong>Registration</Text>
+                      <Text strong>LawMaster</Text>
                       <br />
-                      <Text>RC 1234567 (Nigeria)</Text>
+                      <Text>Provides and operates the software; roles depend on the data and service agreement</Text>
                     </div>
                   </div>
                 </Col>
@@ -160,46 +140,33 @@ const PrivacyPolicy = () => {
 
             <Title level={4}>5. Data Storage and Security</Title>
             <Paragraph>
-              <Text strong>5.1 Storage Location:</Text> All personal data is stored on secure servers located 
-              within Nigeria, complying with data localization requirements.
-              <br /><br />
-              <Text strong>5.2 Security Measures:</Text> We implement the following security measures:
+              We use technical and organizational measures intended to protect information. The safeguards and
+              storage locations depend on the service providers and deployment configured for the account. File
+              objects uploaded through the standard S3 file service request provider-side AES-256 encryption;
+              this does not establish that every data store or file flow uses the same encryption. We do not make
+              a blanket claim of a particular transport-encryption version, independent security certification,
+              or completed penetration testing through this notice.
             </Paragraph>
             <ul className="list-disc pl-6 space-y-2">
-              <li>AES-256 encryption for data at rest</li>
-              <li>TLS 1.3 encryption for data in transit</li>
-              <li>Role-based access controls (RBAC)</li>
-              <li>Multi-factor authentication</li>
-              <li>Regular security audits and penetration testing</li>
-              <li>Employee data protection training</li>
+              <li>Authentication and role-based access controls are provided within the application.</li>
+              <li>Some file-download links are time-limited; public document-sharing features may be accessible to anyone with the link.</li>
+              <li>Customers should avoid uploading sensitive records until their deployment, access controls, and storage configuration have been reviewed.</li>
             </ul>
 
             <Title level={4}>6. Data Retention</Title>
             <Paragraph>
-              We retain your personal data only for as long as necessary to fulfill the purposes outlined 
-              in this policy:
+              We do not state fixed retention periods here. Retention depends on the type of information, the
+              customer’s instructions and agreement, applicable legal obligations, and operational backup
+              processes. Law firms should manage matter-record retention and deletion according to their
+              professional and legal obligations. Contact us or your law firm to ask about a specific record.
             </Paragraph>
-            <Table
-              dataSource={[
-                { dataType: "Account Data", retention: "Duration of account + 6 years (legal requirement)", legalBasis: "Tax & legal compliance" },
-                { dataType: "Transaction Records", retention: "7 years", legalBasis: "Tax & legal compliance" },
-                { dataType: "Marketing Data", retention: "Until consent withdrawn", legalBasis: "Consent" },
-                { dataType: "Technical Logs", retention: "1 year", legalBasis: "Legitimate interest" },
-              ]}
-              columns={[
-                { title: "Data Type", dataIndex: "dataType", key: "dataType", render: (text) => <Text strong>{text}</Text> },
-                { title: "Retention Period", dataIndex: "retention", key: "retention" },
-                { title: "Legal Basis", dataIndex: "legalBasis", key: "legalBasis" },
-              ]}
-              pagination={false}
-              rowKey="dataType"
-              size="small"
-              className="mb-6"
-            />
 
-            <Title level={4}>7. Your Rights Under NDPR</Title>
+            <Title level={4}>7. Privacy Requests</Title>
             <Paragraph>
-              Under the Nigeria Data Protection Regulation, you have the following rights:
+              Applicable data-protection laws may provide rights such as access, correction, deletion, portability,
+              objection, or withdrawal of consent, subject to legal limits. For client or matter information held
+              by a law firm, contact that firm first. For account information or questions about LawMaster’s
+              processing, contact us using the details below.
             </Paragraph>
             <Row gutter={[16, 16]} className="mb-6">
               {rights.map((item) => (
@@ -228,25 +195,30 @@ const PrivacyPolicy = () => {
               <li><Text strong>Professional Advisors:</Text> Lawyers, accountants, and auditors</li>
             </ul>
             <Paragraph className="mt-4">
-              We do NOT sell your personal data to third parties.
+              The service providers and data recipients used for a particular deployment should be confirmed
+              with the law firm or account administrator.
             </Paragraph>
 
             <Title level={4}>9. Cookies and Tracking Technologies</Title>
             <Paragraph>
-              We use cookies and similar tracking technologies to enhance your experience. You can control 
-              cookies through your browser settings. For details, see our Cookie Policy.
+              The current consent control stores your selected preferences in browser local storage. Its
+              analytics and marketing options record preferences only; they do not themselves enable tracking
+              integrations. If the deployed service adds optional tracking technologies, their providers and
+              purposes should be disclosed before they are used. See the <Link to="/cookie-policy">Cookie Policy</Link>.
             </Paragraph>
 
             <Title level={4}>10. International Data Transfers</Title>
             <Paragraph>
-              Your data is primarily stored and processed in Nigeria. If we transfer data outside Nigeria, 
-              we ensure adequate protections are in place in compliance with NDPR.
+              We do not guarantee Nigeria-only storage or processing. Depending on the deployment and provider
+              configuration, information may be stored or processed outside Nigeria. Customers should confirm
+              the regions, subprocessors, and transfer safeguards applicable to their deployment before
+              entering personal or confidential matter data.
             </Paragraph>
 
             <Title level={4}>11. Changes to This Policy</Title>
             <Paragraph>
               We may update this Privacy Policy from time to time. We will notify you of any material 
-              changes by posting the new policy on this page and updating the "Last Updated" date.
+              changes by posting the new policy on this page and updating the &quot;Last Updated&quot; date.
             </Paragraph>
 
             <Title level={4}>12. Contact Us</Title>
@@ -278,19 +250,9 @@ const PrivacyPolicy = () => {
                 <div className="flex items-center gap-3">
                   <EnvironmentOutlined className="text-blue-600 text-xl" />
                   <div>
-                    <Text strong>Data Protection Officer</Text>
+                    <Text strong>Privacy contact</Text>
                     <br />
-                    <Text>Lagos, Nigeria</Text>
-                  </div>
-                </div>
-              </Col>
-              <Col xs={24} sm={12}>
-                <div className="flex items-center gap-3">
-                  <GlobalOutlined className="text-blue-600 text-xl" />
-                  <div>
-                    <Text strong>Nigeria Data Protection Bureau</Text>
-                    <br />
-                    <Text>complaints@ndpb.gov.ng</Text>
+                    <Text>privacy@lawmaster.ng</Text>
                   </div>
                 </div>
               </Col>
@@ -319,7 +281,7 @@ const PrivacyPolicy = () => {
       <footer className="bg-white border-t border-gray-100 py-8 mt-12">
         <div className="max-w-5xl mx-auto px-4 text-center">
           <Text type="secondary">
-            © 2026 LawMaster. All rights reserved. NDPR Compliant.
+            © 2026 LawMaster. All rights reserved.
           </Text>
         </div>
       </footer>

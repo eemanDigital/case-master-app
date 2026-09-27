@@ -37,7 +37,7 @@ export const features = [
   {
     ico: "🔍",
     title: "Audit & Compliance",
-    desc: "Every action logged with full timestamps. GDPR & NDPR compliant with one-click compliance report export.",
+    desc: "Record activity and export audit reports to support your firm's internal reviews. Audit logs do not by themselves establish regulatory compliance.",
   },
 ];
 

@@ -259,12 +259,10 @@ const FeeProtectorPage = lazy(
   () => import("./pages/feeProtector/FeeProtectorPage.jsx"),
 );
 
-// Cookie Consent
-import CookieConsent from "./components/CookieConsent";
-
 // Public Pages
 const PublicPreviewPage = lazy(() => import("./pages/public/PublicPreviewPage"));
 const PublicDownloadPage = lazy(() => import("./pages/public/PublicDownloadPage"));
+const CookiePolicy = lazy(() => import("./pages/CookiePolicy.jsx"));
 
 // ============================================
 // AXIOS CONFIGURATION
@@ -457,7 +455,7 @@ const router = createBrowserRouter(
           path="cookie-policy"
           element={
             <Suspense fallback={<PageLoader />}>
-              <CookieConsent />
+              <CookiePolicy />
             </Suspense>
           }
         />

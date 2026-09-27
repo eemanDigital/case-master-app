@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Button, Checkbox, Modal } from "antd";
 import { SettingOutlined } from "@ant-design/icons";
 
@@ -31,7 +31,9 @@ const CookieConsent = () => {
       if (savedPrefs) {
         try {
           setPreferences(JSON.parse(savedPrefs));
-        } catch (_) {}
+        } catch {
+          localStorage.removeItem(COOKIE_PREFERENCE_KEY);
+        }
       }
     }
   }, []);
@@ -114,11 +116,11 @@ const CookieConsent = () => {
                   We value your privacy
                 </h3>
                 <p className="text-sm text-gray-600">
-                  We use cookies to enhance your browsing experience, serve
-                  personalized content, and analyze our traffic. By clicking
-                  "Accept All", you consent to our use of cookies.{" "}
-                  <a href="/privacy-policy" className="text-blue-600 underline">
-                    Read More
+                  This control stores your preferences in this browser. Optional
+                  analytics and marketing selections are saved as preferences
+                  only and do not currently enable tracking integrations.{" "}
+                  <a href="/cookie-policy" className="text-blue-600 underline">
+                    Cookie Policy
                   </a>
                 </p>
               </div>
@@ -179,13 +181,13 @@ const CookieConsent = () => {
             {
               key: "analytics",
               label: "Analytics Cookies",
-              desc: "Help us understand how visitors interact",
+              desc: "Preference only; no tracking integration is enabled",
               disabled: false,
             },
             {
               key: "marketing",
               label: "Marketing Cookies",
-              desc: "Used to deliver relevant advertisements",
+              desc: "Preference only; no advertising integration is enabled",
               disabled: false,
             },
           ].map(({ key, label, desc, disabled }) => (
@@ -214,9 +216,9 @@ const CookieConsent = () => {
 
           <div className="text-sm text-gray-500 pt-2">
             <p>
-              For more information about how we use cookies, please read our{" "}
-              <a href="/privacy-policy" className="text-blue-600 underline">
-                Privacy Policy
+              For more information about browser storage and these preferences, read our{" "}
+              <a href="/cookie-policy" className="text-blue-600 underline">
+                Cookie Policy
               </a>
               .
             </p>
