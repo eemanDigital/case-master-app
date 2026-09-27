@@ -1,11 +1,11 @@
 // components/user-forms/steps/ProfessionalStep.jsx - NEW USER MODEL
 // Shows the section matching the selected user type and professional role.
-import { Form } from "antd";
-import { Alert } from "antd";
+import { Form, Select, Alert } from "antd";
 import PropTypes from "prop-types";
 import ClientFormSection from "../sections/ClientFormSection";
 import StaffFormSection from "../sections/StaffFormSection";
 import LawyerFormSection from "../sections/LawyerFormSection";
+import { roles } from "../../../data/options";
 
 const ProfessionalStep = ({ selectedUserType }) => {
   const form = Form.useFormInstance();
@@ -16,6 +16,30 @@ const ProfessionalStep = ({ selectedUserType }) => {
 
   return (
     <div className="professional-step">
+      {/* The role selector decides which section below is rendered, so it must
+          stay mounted outside of those sections. Registering `role` inside a
+          branch unmounts the very field being watched and re-renders forever. */}
+      <Form.Item
+        name="role"
+        label="Professional Role"
+        rules={
+          isClient
+            ? []
+            : [{ required: true, message: "Please select a role" }]
+        }
+      >
+        <Select
+          size="large"
+          options={
+            isClient
+              ? [{ value: "client", label: "Client" }]
+              : roles.filter((r) => r.value && r.value !== "client")
+          }
+          placeholder="Select role"
+          disabled={isClient}
+        />
+      </Form.Item>
+
       {isClient ? (
         <ClientFormSection />
       ) : isLawyerRole ? (

@@ -24,25 +24,6 @@ const StaffFormSection = () => {
           </Form.Item>
         </Col>
         <Col xs={24} md={12}>
-          <Form.Item
-            name="role"
-            label="Role"
-            rules={[{ required: true, message: "Please select role" }]}>
-            <Select
-              options={[
-                { value: "staff", label: "Staff" },
-                { value: "hr", label: "HR" },
-                { value: "secretary", label: "Secretary" },
-              ]}
-              placeholder="Select role"
-              size="large"
-            />
-          </Form.Item>
-        </Col>
-      </Row>
-
-      <Row gutter={[16, 16]}>
-        <Col xs={24} md={12}>
           <Form.Item name="department" label="Department">
             <Select
               options={staffDepartmentOptions}
@@ -50,14 +31,14 @@ const StaffFormSection = () => {
             />
           </Form.Item>
         </Col>
+      </Row>
+
+      <Row gutter={[16, 16]}>
         <Col xs={24} md={12}>
           <Form.Item name="designation" label="Designation">
             <Input placeholder="Job designation/title" />
           </Form.Item>
         </Col>
-      </Row>
-
-      <Row gutter={[16, 16]}>
         <Col xs={24} md={12}>
           <Form.Item
             name="employmentType"
@@ -66,11 +47,11 @@ const StaffFormSection = () => {
             <Select options={employmentTypeOptions} />
           </Form.Item>
         </Col>
+      </Row>
+
+      <Row gutter={[16, 16]}>
         <Col xs={24} md={12}>
-          <Form.Item
-            name="workSchedule"
-            label="Work Schedule"
-            initialValue="9-5">
+          <Form.Item name="workSchedule" label="Work Schedule" initialValue="9-5">
             <Select options={workScheduleOptions} />
           </Form.Item>
         </Col>

@@ -41,8 +41,8 @@ const AddUserForm = () => {
       0: ["userType"],
       1: ["firstName", "lastName", "email", "phone", "address", "gender"],
       2: ["password", "passwordConfirm"],
-      3: [], // Professional step - conditional fields
-      4: [], // Privileges step - optional
+      3: ["role", "position"],
+      4: ["role", "adminLevel"],
     }),
     []
   );
@@ -118,7 +118,12 @@ const AddUserForm = () => {
   const handleUserTypeSelect = useCallback(
     (userType) => {
       setSelectedUserType(userType);
-      form.setFieldsValue({ userType });
+      if (userType === "client") {
+        form.setFieldsValue({ userType, role: "client" });
+      } else {
+        form.resetFields(["role"]);
+        form.setFieldsValue({ userType });
+      }
     },
     [form]
   );
@@ -186,9 +191,6 @@ const AddUserForm = () => {
             isActive: true,
             clientCategory: "individual",
             preferredContactMethod: "email",
-            employmentType: "full-time",
-            workSchedule: "9-5",
-            role: "lawyer",
             adminLevel: "none",
           }}
           preserve={true}

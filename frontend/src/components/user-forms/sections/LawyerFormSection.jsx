@@ -63,7 +63,7 @@ const LawyerFormSection = () => {
           </Form.Item>
         </Col>
         <Col xs={24} md={12}>
-          <Form.Item name="position" label="Position" initialValue="Associate">
+          <Form.Item name="position" label="Position">
             <Select
               options={positionOptions.filter((p) =>
                 [
