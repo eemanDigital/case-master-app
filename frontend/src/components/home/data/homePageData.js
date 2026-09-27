@@ -232,5 +232,11 @@ export const navLinks = [
 export const footerLinks = {
   product: ["Features", "Pricing", "Security", "Changelog", "API Docs"],
   company: ["About", "Blog", "Careers", "Press", "Contact"],
-  legal: ["Privacy Policy", "Terms of Service", "Cookie Policy", "NDPR Compliance", "DPA"],
+  legal: [
+    "Privacy Policy",
+    "Terms of Service",
+    "Cookie Policy",
+    "NDPR Compliance",
+    "DPA",
+  ],
 };

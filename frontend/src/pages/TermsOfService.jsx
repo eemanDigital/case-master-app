@@ -46,10 +46,10 @@ const TermsOfService = () => {
           <div className="prose max-w-none">
             <Title level={4}>1. Acceptance of Terms</Title>
             <Paragraph>
-              By accessing and using LawMaster (&quot;the Service&quot;), you accept and
-              agree to be bound by the terms and provision of this agreement. If
-              you do not agree to abide by these terms, please do not use this
-              service.
+              By accessing and using LawMaster (&quot;the Service&quot;), you
+              accept and agree to be bound by the terms and provision of this
+              agreement. If you do not agree to abide by these terms, please do
+              not use this service.
             </Paragraph>
 
             <Title level={4}>2. Description of Service</Title>
@@ -105,8 +105,8 @@ const TermsOfService = () => {
               the law firm.
               <br />
               <Text strong>6.2</Text> We use security measures intended to
-              protect data. Specific safeguards depend on the infrastructure
-              and service configuration; see the Privacy Policy for details.
+              protect data. Specific safeguards depend on the infrastructure and
+              service configuration; see the Privacy Policy for details.
               <br />
               <Text strong>6.3</Text> Customers are responsible for assessing
               the Service against their legal and professional obligations.
@@ -223,9 +223,7 @@ const TermsOfService = () => {
       {/* Footer */}
       <footer className="bg-white border-t border-gray-100 py-8 mt-12">
         <div className="max-w-5xl mx-auto px-4 text-center">
-          <Text type="secondary">
-            © 2026 LawMaster. All rights reserved.
-          </Text>
+          <Text type="secondary">© 2026 LawMaster. All rights reserved.</Text>
         </div>
       </footer>
     </div>

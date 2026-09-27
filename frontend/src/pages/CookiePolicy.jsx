@@ -23,8 +23,9 @@ const CookiePolicy = () => (
 
         <Title level={4}>Browser storage used for preferences</Title>
         <Paragraph>
-          LawMaster&apos;s consent control stores your choice in this browser&apos;s
-          local storage under <Text code>lawmaster_cookie_consent</Text> and
+          LawMaster&apos;s consent control stores your choice in this
+          browser&apos;s local storage under{" "}
+          <Text code>lawmaster_cookie_consent</Text> and
           <Text code> lawmaster_cookie_preferences</Text>. This lets the
           application remember your selection. These entries are browser
           storage, not cookies, and are not sent to LawMaster by the consent

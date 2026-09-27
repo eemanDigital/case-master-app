@@ -216,7 +216,8 @@ const CookieConsent = () => {
 
           <div className="text-sm text-gray-500 pt-2">
             <p>
-              For more information about browser storage and these preferences, read our{" "}
+              For more information about browser storage and these preferences,
+              read our{" "}
               <a href="/cookie-policy" className="text-blue-600 underline">
                 Cookie Policy
               </a>

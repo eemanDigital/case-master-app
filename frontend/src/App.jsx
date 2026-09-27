@@ -260,8 +260,12 @@ const FeeProtectorPage = lazy(
 );
 
 // Public Pages
-const PublicPreviewPage = lazy(() => import("./pages/public/PublicPreviewPage"));
-const PublicDownloadPage = lazy(() => import("./pages/public/PublicDownloadPage"));
+const PublicPreviewPage = lazy(
+  () => import("./pages/public/PublicPreviewPage"),
+);
+const PublicDownloadPage = lazy(
+  () => import("./pages/public/PublicDownloadPage"),
+);
 const CookiePolicy = lazy(() => import("./pages/CookiePolicy.jsx"));
 
 // ============================================
@@ -1243,8 +1247,7 @@ const router = createBrowserRouter(
                   <Settings />
                 </ProtectedStaffRoute>
               </Suspense>
-            }
-          >
+            }>
             <Route
               path="audit-logs"
               element={
