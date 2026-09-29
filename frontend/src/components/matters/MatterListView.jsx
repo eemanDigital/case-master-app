@@ -34,6 +34,7 @@ import dayjs from "dayjs";
 import MatterCard from "./MatterCard";
 import MatterFilters from "./MatterFilters";
 import BulkActionsBar from "./BulkActionsBar";
+import AssignOfficerModal from "./AssignOfficerModal";
 import {
   MatterPageHeader,
   MatterRowActions,
@@ -53,6 +54,7 @@ import {
   bulkUpdateMatters,
   bulkDeleteMatters,
   bulkAssignOfficer,
+  assignMatterOfficer,
   bulkExportMatters,
   selectMatter,
   deselectMatter,
@@ -90,6 +92,8 @@ const MatterListView = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  // Matter whose account officers are being edited, or null when closed.
+  const [assignTarget, setAssignTarget] = useState(null);
 
   useEffect(() => {
     dispatch(getMatters());
@@ -175,12 +179,30 @@ const MatterListView = () => {
   );
 
   const handleBulkAssign = useCallback(
-    async (matterIds, officerId) => {
+    async (matterIds, officerIds, mode = "add") => {
       try {
-        await dispatch(bulkAssignOfficer({ matterIds, officerId })).unwrap();
-        message.success(`Officer assigned to ${matterIds.length} matters`);
+        await dispatch(
+          bulkAssignOfficer({ matterIds, officerIds, mode }),
+        ).unwrap();
       } catch (error) {
         message.error(error.message || "Failed to assign officer");
+        throw error;
+      }
+    },
+    [dispatch],
+  );
+
+  // Assign / reassign / unassign officers on one matter.
+  const handleAssignOfficer = useCallback(
+    async (matterId, officerIds, mode) => {
+      try {
+        await dispatch(
+          assignMatterOfficer({ matterId, officerIds, mode }),
+        ).unwrap();
+        setAssignTarget(null);
+      } catch (error) {
+        message.error(error.message || "Failed to update account officers");
+        throw error;
       }
     },
     [dispatch],
@@ -573,6 +595,14 @@ const MatterListView = () => {
             onView: (r) => navigate(`/dashboard/matters/${r._id}`),
             onEdit: (r) => navigate(`/dashboard/matters/${r._id}/edit`),
             onDelete: (r) => handleDeleteMatter(r._id),
+            extraItems: [
+              {
+                key: "assign-officer",
+                label: "Assign Account Officer",
+                icon: <TeamOutlined />,
+                onClick: () => setAssignTarget(record),
+              },
+            ],
           })}
         />
       ),
@@ -752,13 +782,14 @@ const MatterListView = () => {
             </div>
 
             {viewMode === "grid" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {paginatedMatters?.map((matter) => (
                   <MatterCard
                     key={matter._id}
                     matter={matter}
                     onDelete={() => handleDeleteMatter(matter._id)}
                     onSelect={handleSelectMatter}
+                    onAssign={() => setAssignTarget(matter)}
                     selected={selectedMatters.includes(matter._id)}
                     compact={!screens.lg}
                   />
@@ -854,6 +885,17 @@ const MatterListView = () => {
           </>
         )}
       </Card>
+
+      <AssignOfficerModal
+        open={Boolean(assignTarget)}
+        matterCount={1}
+        currentOfficers={assignTarget?.accountOfficer || []}
+        loading={bulkLoading}
+        onCancel={() => setAssignTarget(null)}
+        onSubmit={(officerIds, mode) =>
+          handleAssignOfficer(assignTarget._id, officerIds, mode)
+        }
+      />
     </div>
   );
 };

@@ -1,79 +1,126 @@
-import React, { memo, useMemo } from "react";
+import { memo, useCallback, useMemo, useRef } from "react";
+import PropTypes from "prop-types";
+import { Avatar, Button, Card, Checkbox, Dropdown, Tooltip } from "antd";
 import {
-  Card,
-  Avatar,
-  Button,
-  Dropdown,
-  Tooltip,
-  Tag,
-  Typography,
-  Badge,
-  Progress,
-  Checkbox,
-} from "antd";
-import {
-  MoreOutlined,
-  EyeOutlined,
-  EditOutlined,
+  AppstoreOutlined,
+  ArrowDownOutlined,
+  ArrowUpOutlined,
+  BankOutlined,
+  BulbOutlined,
   DeleteOutlined,
-  UserOutlined,
-  CalendarOutlined,
-  DollarOutlined,
-  ClockCircleOutlined,
-  TeamOutlined,
+  EditOutlined,
+  ExclamationCircleOutlined,
+  EyeOutlined,
   FileTextOutlined,
-  StarOutlined,
-  RiseOutlined,
-  FallOutlined,
-  RightOutlined,
+  HomeOutlined,
+  LockOutlined,
+  MinusOutlined,
+  MoreOutlined,
+  SafetyCertificateOutlined,
+  TeamOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
-import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "../../providers/ThemeProvider";
 
-dayjs.extend(relativeTime);
-dayjs.extend(isSameOrBefore);
-dayjs.extend(isSameOrAfter);
-
-const { Text, Title } = Typography;
-
-const getStatusConfig = (status) => {
-  const configs = {
-    active: { color: "#10b981", bg: "#d1fae5", label: "Active", dot: "success" },
-    pending: { color: "#f59e0b", bg: "#fef3c7", label: "Pending", dot: "warning" },
-    "on-hold": { color: "#6366f1", bg: "#e0e7ff", label: "On Hold", dot: "processing" },
-    completed: { color: "#3b82f6", bg: "#dbeafe", label: "Completed", dot: "success" },
-    closed: { color: "#64748b", bg: "#f1f5f9", label: "Closed", dot: "default" },
-    archived: { color: "#94a3b8", bg: "#f8fafc", label: "Archived", dot: "default" },
-    settled: { color: "#8b5cf6", bg: "#ede9fe", label: "Settled", dot: "success" },
-    withdrawn: { color: "#ec4899", bg: "#fce7f3", label: "Withdrawn", dot: "default" },
-    won: { color: "#22c55e", bg: "#dcfce7", label: "Won", dot: "success" },
-    lost: { color: "#ef4444", bg: "#fee2e2", label: "Lost", dot: "error" },
-  };
-  return configs[status] || { color: "#64748b", bg: "#f1f5f9", label: status, dot: "default" };
+// Maps mirror the backend enums in backend/models/matterModel.js.
+// matterType: litigation | corporate | advisory | retainer | property | general
+// priority:   low | medium | high | urgent
+// status:     active | pending | on-hold | completed | closed | archived
+//             | settled | withdrawn | won | lost
+const MATTER_TYPES = {
+  litigation: { label: "Litigation", Icon: FileTextOutlined },
+  corporate: { label: "Corporate", Icon: BankOutlined },
+  advisory: { label: "Advisory", Icon: BulbOutlined },
+  retainer: { label: "Retainer", Icon: SafetyCertificateOutlined },
+  property: { label: "Property", Icon: HomeOutlined },
+  general: { label: "General", Icon: AppstoreOutlined },
 };
 
-const getPriorityConfig = (priority) => {
-  const configs = {
-    high: { color: "#ef4444", label: "High", icon: "🔴" },
-    medium: { color: "#f59e0b", label: "Medium", icon: "🟡" },
-    low: { color: "#22c55e", label: "Low", icon: "🟢" },
-  };
-  return configs[priority] || { color: "#64748b", label: priority, icon: "⚪" };
+const PRIORITIES = {
+  urgent: { label: "Urgent", Icon: ExclamationCircleOutlined, color: "#dc2626" },
+  high: { label: "High", Icon: ArrowUpOutlined, color: "#ea580c" },
+  medium: { label: "Medium", Icon: MinusOutlined, color: "#64748b" },
+  low: { label: "Low", Icon: ArrowDownOutlined, color: "#94a3b8" },
 };
 
-const getMatterTypeConfig = (type) => {
-  const configs = {
-    litigation: { icon: "⚖️", color: "#6366f1", label: "Litigation" },
-    advisory: { icon: "💡", color: "#8b5cf6", label: "Advisory" },
-    transactional: { icon: "📝", color: "#10b981", label: "Transactional" },
-    compliance: { icon: "✅", color: "#f59e0b", label: "Compliance" },
-    regulatory: { icon: "📋", color: "#3b82f6", label: "Regulatory" },
-  };
-  return configs[type] || { icon: "📁", color: "#64748b", label: type };
+const STATUSES = {
+  active: { label: "Active", color: "#0f766e" },
+  pending: { label: "Pending", color: "#b45309" },
+  "on-hold": { label: "On Hold", color: "#6d28d9" },
+  completed: { label: "Completed", color: "#1d4ed8" },
+  closed: { label: "Closed", color: "#475569" },
+  archived: { label: "Archived", color: "#64748b" },
+  settled: { label: "Settled", color: "#15803d" },
+  withdrawn: { label: "Withdrawn", color: "#be185d" },
+  won: { label: "Won", color: "#15803d" },
+  lost: { label: "Lost", color: "#b91c1c" },
+};
+
+// Statuses that are finished should not show an alarming red aging bar.
+const CLOSED_STATUSES = new Set([
+  "completed",
+  "closed",
+  "archived",
+  "settled",
+  "withdrawn",
+  "won",
+  "lost",
+]);
+
+const FALLBACK_TYPE = MATTER_TYPES.general;
+const FALLBACK_PRIORITY = PRIORITIES.medium;
+
+const CURRENCY_SYMBOLS = { NGN: "₦", USD: "$", GBP: "£", EUR: "€" };
+
+// Compact money keeps the figure on one line: ₦2.5M instead of ₦2,500,000.00
+const formatCompactMoney = (value, currency = "NGN") => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return null;
+  const symbol = CURRENCY_SYMBOLS[currency] || `${currency} `;
+  const abs = Math.abs(amount);
+  const unit = [{ limit: 1e9, suffix: "B" }, { limit: 1e6, suffix: "M" }, { limit: 1e3, suffix: "K" }]
+    .find((u) => abs >= u.limit);
+  if (!unit) {
+    return `${symbol}${amount.toLocaleString("en-NG", { maximumFractionDigits: 0 })}`;
+  }
+  const scaled = amount / unit.limit;
+  const digits = Math.abs(scaled) < 10 ? 1 : 0;
+  return `${symbol}${scaled.toLocaleString("en-NG", { maximumFractionDigits: digits })}${unit.suffix}`;
+};
+
+const titleCase = (value) =>
+  String(value || "")
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+
+// Any click landing on one of these should not navigate the card.
+const INTERACTIVE_SELECTOR =
+  "button, a, input, label, .ant-checkbox-wrapper, .ant-dropdown-trigger, [contenteditable='true']";
+
+// Fixed-width small caps label — the visual grammar of a printed docket.
+const FieldLabel = ({ children }) => (
+  <span className="block text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400 leading-none">
+    {children}
+  </span>
+);
+
+FieldLabel.propTypes = { children: PropTypes.node };
+
+// Label over value. min-w-0 is what actually stops the value wrapping.
+const Field = ({ label, value, valueClassName = "text-slate-700", title, align = "left" }) => (
+  <div className={`min-w-0 ${align === "right" ? "text-right" : ""}`} title={title}>
+    <FieldLabel>{label}</FieldLabel>
+    <div className={`text-xs font-medium mt-1 truncate ${valueClassName}`}>{value}</div>
+  </div>
+);
+
+Field.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.node,
+  valueClassName: PropTypes.string,
+  title: PropTypes.string,
+  align: PropTypes.oneOf(["left", "right"]),
 };
 
 const MatterCard = memo(
@@ -82,42 +129,111 @@ const MatterCard = memo(
     onView,
     onEdit,
     onDelete,
+    onAssign,
     onSelect,
-    selected,
+    selected = false,
     className = "",
     compact = false,
   }) => {
     const navigate = useNavigate();
-    const { isDarkMode } = useTheme();
+    const rootRef = useRef(null);
 
-    const statusConfig = useMemo(() => getStatusConfig(matter.status), [matter.status]);
-    const priorityConfig = useMemo(() => getPriorityConfig(matter.priority), [matter.priority]);
-    const typeConfig = useMemo(() => getMatterTypeConfig(matter.matterType), [matter.matterType]);
+    const typeConfig = MATTER_TYPES[matter.matterType] || FALLBACK_TYPE;
+    const priorityConfig = PRIORITIES[matter.priority] || FALLBACK_PRIORITY;
+    const statusConfig = STATUSES[matter.status] || {
+      label: titleCase(matter.status) || "Unknown",
+      color: "#475569",
+    };
+    const TypeIcon = typeConfig.Icon;
+    const PriorityIcon = priorityConfig.Icon;
 
-    const daysDifference = useMemo(() => {
+    const client = matter.client || null;
+    const officers = Array.isArray(matter.accountOfficer) ? matter.accountOfficer : [];
+
+    const clientName = useMemo(() => {
+      if (!client) return null;
+      return (
+        client.companyName ||
+        client.clientDetails?.company ||
+        `${client.firstName || ""} ${client.lastName || ""}`.trim() ||
+        null
+      );
+    }, [client]);
+
+    const clientInitials = useMemo(() => {
+      if (!client) return null;
+      return `${client.firstName?.[0] || ""}${client.lastName?.[0] || ""}`.toUpperCase() || null;
+    }, [client]);
+
+    const money = useMemo(
+      () => formatCompactMoney(matter.estimatedValue, matter.currency || "NGN"),
+      [matter.estimatedValue, matter.currency],
+    );
+
+    // Compare at day granularity so a matter due today reads 0, not -1.
+    const daysToClose = useMemo(() => {
       if (!matter.expectedClosureDate) return null;
-      const diff = dayjs(matter.expectedClosureDate).diff(dayjs(), "day");
-      return diff;
+      const due = dayjs(matter.expectedClosureDate);
+      if (!due.isValid()) return null;
+      return due.startOf("day").diff(dayjs().startOf("day"), "day");
     }, [matter.expectedClosureDate]);
 
-    const isOverdue = daysDifference !== null && daysDifference < 0;
-    const isDueSoon = daysDifference !== null && daysDifference >= 0 && daysDifference <= 7;
+    // The aging spine: how much of the opened -> expected-closure window has
+    // elapsed. Null means there is no target date, so the spine reads as solid.
+    const aging = useMemo(() => {
+      const opened = matter.dateOpened ? dayjs(matter.dateOpened) : null;
+      if (!opened?.isValid()) return null;
+      const target = matter.expectedClosureDate ? dayjs(matter.expectedClosureDate) : null;
+      if (!target?.isValid()) return null;
+      const span = target.startOf("day").diff(opened.startOf("day"), "day");
+      if (span <= 0) return 100;
+      const elapsed = dayjs().startOf("day").diff(opened.startOf("day"), "day");
+      return Math.min(100, Math.max(3, Math.round((elapsed / span) * 100)));
+    }, [matter.dateOpened, matter.expectedClosureDate]);
+
+    const spineColor = useMemo(() => {
+      if (CLOSED_STATUSES.has(matter.status)) return "#cbd5e1";
+      if (daysToClose !== null && daysToClose < 0) return "#dc2626";
+      if (daysToClose !== null && daysToClose <= 7) return "#d97706";
+      return statusConfig.color;
+    }, [matter.status, daysToClose, statusConfig.color]);
+
+    const due = useMemo(() => {
+      if (daysToClose === null) return null;
+      const date = dayjs(matter.expectedClosureDate).format("D MMM");
+      if (daysToClose < 0) {
+        return { value: date, hint: `${Math.abs(daysToClose)}d overdue`, color: "text-red-600" };
+      }
+      if (daysToClose === 0) {
+        return { value: date, hint: "due today", color: "text-red-600" };
+      }
+      if (daysToClose <= 7) {
+        return { value: date, hint: `in ${daysToClose}d`, color: "text-amber-600" };
+      }
+      return { value: date, hint: `in ${daysToClose}d`, color: "text-slate-700" };
+    }, [daysToClose, matter.expectedClosureDate]);
+
+    const openDetail = useCallback(() => {
+      if (onView?.(matter)) return;
+      navigate(`/dashboard/matters/${matter._id}`);
+    }, [matter, onView, navigate]);
+
+    const openEdit = useCallback(() => {
+      if (onEdit?.(matter)) return;
+      navigate(`/dashboard/matters/${matter._id}/edit`);
+    }, [matter, onEdit, navigate]);
 
     const menuItems = useMemo(
       () => [
-        {
-          key: "view",
-          label: "View Details",
-          icon: <EyeOutlined />,
-          onClick: () => onView?.(matter) || navigate(`/dashboard/matters/${matter._id}`),
-        },
-        {
-          key: "edit",
-          label: "Edit Matter",
-          icon: <EditOutlined />,
-          onClick: () => onEdit?.(matter) || navigate(`/dashboard/matters/${matter._id}/edit`),
-        },
+        { key: "view", label: "View Details", icon: <EyeOutlined />, onClick: openDetail },
+        { key: "edit", label: "Edit Matter", icon: <EditOutlined />, onClick: openEdit },
         { type: "divider" },
+        {
+          key: "assign-officer",
+          label: "Assign Account Officer",
+          icon: <TeamOutlined />,
+          onClick: () => onAssign?.(matter),
+        },
         {
           key: "delete",
           label: "Delete Matter",
@@ -126,378 +242,219 @@ const MatterCard = memo(
           onClick: () => onDelete?.(matter),
         },
       ],
-      [matter, onView, onEdit, onDelete, navigate],
+      [matter, onAssign, onDelete, openDetail, openEdit],
     );
 
-    const handleCardClick = (e) => {
-      if (
-        !e.target.closest(".action-button") &&
-        !e.target.closest(".avatar-group") &&
-        !e.target.closest(".ant-checkbox-wrapper")
-      ) {
-        navigate(`/dashboard/matters/${matter._id}`);
-      }
-    };
+    const handleCardClick = useCallback(
+      (event) => {
+        const hit = event.target.closest?.(INTERACTIVE_SELECTOR);
+        if (hit && hit !== rootRef.current) return;
+        openDetail();
+      },
+      [openDetail],
+    );
 
-    const handleCheckboxChange = (e) => {
-      e.stopPropagation();
-      onSelect?.(matter._id);
-    };
+    const handleCardKeyDown = useCallback(
+      (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        openDetail();
+      },
+      [openDetail],
+    );
 
-    // Premium Card Styles
-    const cardStyles = {
-      borderRadius: "16px",
-      border: selected 
-        ? `2px solid ${typeConfig.color}` 
-        : `1px solid ${isDarkMode ? "#374151" : "#e5e7eb"}`,
-      background: isDarkMode 
-        ? "linear-gradient(145deg, #1f2937 0%, #111827 100%)"
-        : "linear-gradient(145deg, #ffffff 0%, #f9fafb 100%)",
-      boxShadow: selected
-        ? `0 8px 30px ${typeConfig.color}30`
-        : isDarkMode
-          ? "0 4px 20px rgba(0, 0, 0, 0.3)"
-          : "0 4px 20px rgba(0, 0, 0, 0.08)",
-      transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-    };
+    const handleSelect = useCallback(
+      (event) => {
+        event.stopPropagation();
+        onSelect?.(matter._id);
+      },
+      [matter._id, onSelect],
+    );
 
-    if (compact) {
-      return (
-        <Card
-          className={`
-            matter-card-compact cursor-pointer group
-            hover:shadow-lg hover:-translate-y-1
-            ${selected ? "ring-2 ring-offset-2" : ""}
-            ${isDarkMode ? "dark-card" : "bg-white"}
-            ${className}
-          `}
-          bodyStyle={{ padding: "14px" }}
-          onClick={handleCardClick}
-          style={cardStyles}>
-          <div className="flex items-start gap-3">
-            <Checkbox
-              checked={selected}
-              onChange={handleCheckboxChange}
-              onClick={(e) => e.stopPropagation()}
-              className="mt-0.5"
-            />
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <div 
-                  className="w-2 h-2 rounded-full"
-                  style={{ backgroundColor: statusConfig.color }}
-                />
-                <Text className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                  {matter.matterNumber}
-                </Text>
-                {matter.priority === "high" && (
-                  <Badge status="error" />
-                )}
-              </div>
-              
-              <h4 className="font-semibold text-sm text-gray-900 dark:text-white mb-2 line-clamp-1">
-                {matter.title}
-              </h4>
-              
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Avatar
-                    size="small"
-                    src={matter.client?.photo}
-                    icon={<UserOutlined />}
-                    className="bg-gradient-to-br from-blue-400 to-blue-600">
-                    {matter.client?.firstName?.[0]}
-                  </Avatar>
-                  <Text className="text-xs text-gray-600 dark:text-gray-400 truncate">
-                    {matter.client?.firstName} {matter.client?.lastName}
-                  </Text>
-                </div>
-                
-                <div className="flex items-center gap-1">
-                  <Button
-                    type="text"
-                    size="small"
-                    icon={<EyeOutlined />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/dashboard/matters/${matter._id}`);
-                    }}
-                    className="action-button opacity-0 group-hover:opacity-100 transition-opacity"
-                  />
-                  <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomRight">
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<MoreOutlined />}
-                      onClick={(e) => e.stopPropagation()}
-                      className="action-button"
-                    />
-                  </Dropdown>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Card>
-      );
-    }
+    const openedLabel = matter.dateOpened ? dayjs(matter.dateOpened).format("D MMM YYYY") : "—";
 
     return (
       <Card
-        className={`
-          matter-card-full cursor-pointer group
-          hover:shadow-xl hover:-translate-y-2
-          ${selected ? "ring-2 ring-offset-2" : ""}
-          ${isDarkMode ? "dark-card" : "bg-white"}
-          ${className}
-        `}
-        bodyStyle={{ padding: "20px", height: "100%" }}
+        ref={rootRef}
+        role="button"
+        tabIndex={0}
+        aria-label={`${matter.title || "Matter"} ${matter.matterNumber || ""}`.trim()}
         onClick={handleCardClick}
-        style={cardStyles}>
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <Checkbox
-              checked={selected}
-              onChange={handleCheckboxChange}
-              onClick={(e) => e.stopPropagation()}
-            />
-            <div 
-              className="w-10 h-10 rounded-xl flex items-center justify-center text-lg"
-              style={{ 
-                background: `linear-gradient(135deg, ${typeConfig.color}20 0%, ${typeConfig.color}40 100%)`,
-                color: typeConfig.color
-              }}
-            >
-              {typeConfig.icon}
+        onKeyDown={handleCardKeyDown}
+        bordered={false}
+        styles={{ body: { padding: 0, height: "100%" } }}
+        className={`group matter-card relative overflow-hidden h-full cursor-pointer
+          bg-white border border-slate-200 rounded-[10px]
+          transition-colors duration-150
+          hover:border-slate-300 hover:bg-slate-50/70
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-1
+          ${selected ? "!border-indigo-400 !bg-indigo-50/50" : ""}
+          ${className}`}>
+        {/* Aging spine — elapsed share of the opened → expected closure window */}
+        <span aria-hidden className="absolute left-0 top-0 h-full w-[3px] bg-slate-100" />
+        <span
+          aria-hidden
+          className={`absolute left-0 top-0 w-[3px] ${
+            aging === null ? "h-full" : "transition-[height] duration-300"
+          }`}
+          style={{
+            backgroundColor: spineColor,
+            ...(aging === null ? null : { height: `${aging}%` }),
+          }}
+        />
+
+        <div className="h-full flex flex-col pl-5 pr-3.5 py-3.5">
+          {/* File tab */}
+          <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Checkbox
+                checked={selected}
+                onChange={handleSelect}
+                onClick={(event) => event.stopPropagation()}
+                aria-label={`Select ${matter.title || "matter"}`}
+                className={`!mr-0 shrink-0 transition-opacity
+                  ${selected ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-within:opacity-100"}`}
+              />
+              <span
+                className="font-mono text-[10px] font-medium tracking-[0.1em] text-slate-500 truncate"
+                title={matter.matterNumber}>
+                {matter.matterNumber || "—"}
+              </span>
             </div>
-            <div>
-              <Text className="text-xs font-mono text-gray-500 dark:text-gray-400 block">
-                {matter.matterNumber}
-              </Text>
-              <Text className="text-xs text-gray-400 capitalize">
+            <div className="flex items-center gap-1.5 shrink-0">
+              <span className="text-[9px] font-semibold uppercase tracking-[0.14em] text-slate-400">
                 {typeConfig.label}
-              </Text>
+              </span>
+              <TypeIcon className="text-[11px] text-slate-400" />
             </div>
           </div>
-          
-          <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomRight">
-            <Button
-              type="text"
-              icon={<MoreOutlined />}
-              onClick={(e) => e.stopPropagation()}
-              className="action-button opacity-0 group-hover:opacity-100 transition-opacity"
-            />
-          </Dropdown>
-        </div>
 
-        {/* Title & Description */}
-        <div className="mb-4">
-          <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2 line-clamp-2 leading-tight">
-            {matter.title}
+          {/* Stamp row — a filled label, not another outline pill */}
+          <div className="flex items-center gap-2 mt-3 flex-nowrap overflow-hidden">
+            <span
+              className="inline-flex items-center h-[18px] px-1.5 text-[9px] font-bold uppercase tracking-[0.1em] text-white rounded-[3px] shrink-0"
+              style={{ backgroundColor: statusConfig.color }}>
+              {statusConfig.label}
+            </span>
+            <span
+              className="inline-flex items-center gap-1 text-[11px] font-medium shrink-0"
+              style={{ color: priorityConfig.color }}>
+              <PriorityIcon className="text-[9px]" />
+              {priorityConfig.label}
+            </span>
+            {matter.isConfidential && (
+              <Tooltip title="Confidential matter">
+                <LockOutlined className="text-[10px] text-amber-600 shrink-0" />
+              </Tooltip>
+            )}
+
+            <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomRight">
+              <Button
+                type="text"
+                size="small"
+                icon={<MoreOutlined />}
+                onClick={(event) => event.stopPropagation()}
+                aria-label={`Actions for ${matter.title || "matter"}`}
+                className="!w-6 !h-6 !min-w-0 ml-auto shrink-0 text-slate-300 hover:!text-slate-700"
+              />
+            </Dropdown>
+          </div>
+
+          {/* Title carries the card */}
+          <h3
+            className="mt-2 text-[15px] font-semibold leading-[1.35] text-slate-900 line-clamp-2 break-words"
+            title={matter.title}>
+            {matter.title || "Untitled matter"}
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-            {matter.description || "No description provided"}
-          </p>
-        </div>
 
-        {/* Status & Priority Tags */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <Tag 
-            color={statusConfig.bg}
-            style={{ 
-              color: statusConfig.color, 
-              border: 'none',
-              fontWeight: 600,
-              fontSize: '11px',
-              padding: '2px 10px',
-              borderRadius: '20px'
-            }}
-          >
-            <Badge status={statusConfig.dot} />
-            {statusConfig.label}
-          </Tag>
-          
-          <Tag
-            style={{ 
-              background: `${priorityConfig.color}15`,
-              color: priorityConfig.color,
-              border: 'none',
-              fontWeight: 600,
-              fontSize: '11px',
-              padding: '2px 10px',
-              borderRadius: '20px'
-            }}
-          >
-            {priorityConfig.icon} {priorityConfig.label}
-          </Tag>
-
-          {matter.isConfidential && (
-            <Tag color="warning" className="text-xs">
-              🔒 Confidential
-            </Tag>
+          {matter.natureOfMatter && !compact && (
+            <p className="mt-1 text-[11px] text-slate-400 truncate" title={titleCase(matter.natureOfMatter)}>
+              {titleCase(matter.natureOfMatter)}
+            </p>
           )}
-        </div>
 
-        {/* Client Info */}
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 dark:bg-gray-800/50 mb-4">
-          <Avatar
-            size={40}
-            src={matter.client?.photo}
-            icon={<UserOutlined />}
-            className="bg-gradient-to-br from-indigo-400 to-indigo-600 ring-2 ring-white dark:ring-gray-700">
-            {matter.client?.firstName?.[0]}
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <Text strong className="text-sm block truncate dark:text-white">
-              {matter.client?.firstName} {matter.client?.lastName}
-            </Text>
-            {matter.client?.companyName && (
-              <Text className="text-xs text-gray-500 dark:text-gray-400 truncate block">
-                {matter.client.companyName}
-              </Text>
+          {/* Client and value sit on the baseline of the card */}
+          <div className="mt-auto pt-3 flex items-center gap-2">
+            {clientName ? (
+              <>
+                <Avatar
+                  size={22}
+                  src={client?.photo || undefined}
+                  className="shrink-0 bg-slate-200 text-slate-600 text-[10px] font-bold">
+                  {clientInitials || <UserOutlined />}
+                </Avatar>
+                <span
+                  className="text-xs text-slate-600 truncate min-w-0 flex-1"
+                  title={clientName}>
+                  {clientName}
+                </span>
+              </>
+            ) : (
+              <span className="text-xs text-slate-300 truncate min-w-0 flex-1">No client</span>
+            )}
+            {money && (
+              <span
+                className="text-xs font-semibold text-slate-900 tabular-nums shrink-0"
+                title={`Estimated value ${money}`}>
+                {money}
+              </span>
             )}
           </div>
-        </div>
 
-        {/* Team Members */}
-        {matter.accountOfficer && matter.accountOfficer.length > 0 && (
-          <div className="mb-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2 block">
-              <TeamOutlined className="mr-1" />
-              Team ({matter.accountOfficer.length})
-            </Text>
-            <Avatar.Group
-              maxCount={4}
-              size={32}
-              className="avatar-group"
-            >
-              {matter.accountOfficer.map((officer, idx) => (
-                <Tooltip
-                  key={officer._id || idx}
-                  title={`${officer.firstName} ${officer.lastName}`}
-                >
-                  <Avatar
-                    src={officer.photo}
-                    style={{
-                      border: isDarkMode ? "2px solid #1f2937" : "2px solid white",
-                    }}
-                    className="ring-2 ring-offset-1 ring-blue-500"
-                  >
-                    {officer.firstName?.[0]}
-                  </Avatar>
-                </Tooltip>
-              ))}
-            </Avatar.Group>
-          </div>
-        )}
+          {/* Docket fields */}
+          {!compact && (
+            <div className="mt-3 pt-2.5 border-t border-slate-100 grid grid-cols-[auto_auto_1fr] gap-x-4 items-end">
+              {due ? (
+                <Field
+                  label="Due"
+                  value={due.value}
+                  valueClassName={due.color}
+                  title={`Expected closure ${dayjs(matter.expectedClosureDate).format("D MMMM YYYY")} — ${due.hint}`}
+                />
+              ) : (
+                <Field label="Due" value="—" valueClassName="text-slate-300" />
+              )}
 
-        {/* Timeline & Stats */}
-        <div className="mt-auto pt-4 border-t border-gray-100 dark:border-gray-700">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Date Opened */}
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center">
-                <CalendarOutlined className="text-blue-500 text-sm" />
-              </div>
-              <div>
-                <Text className="text-xs text-gray-500 dark:text-gray-400 block">Opened</Text>
-                <Text strong className="text-xs dark:text-white">
-                  {dayjs(matter.dateOpened).format("MMM DD, YYYY")}
-                </Text>
+              <Field label="Opened" value={openedLabel} title={`Opened ${openedLabel}`} />
+
+              <div className="min-w-0 flex justify-end">
+                {officers.length > 0 ? (
+                  <div className="text-right">
+                    <FieldLabel>Team</FieldLabel>
+                    <Avatar.Group
+                      maxCount={3}
+                      size={20}
+                      className="mt-0.5 justify-end"
+                      maxStyle={{ backgroundColor: "#e2e8f0", color: "#475569", fontSize: 9 }}>
+                      {officers.map((officer, index) => (
+                        <Tooltip
+                          key={officer?._id || index}
+                          title={
+                            officer?.firstName
+                              ? `${officer.firstName} ${officer.lastName || ""}`.trim()
+                              : "Account officer"
+                          }>
+                          <Avatar
+                            size={20}
+                            src={officer?.photo || undefined}
+                            className="bg-slate-200 text-slate-600 text-[9px] font-semibold cursor-pointer">
+                            {officer?.firstName
+                              ? `${officer.firstName[0]}${officer.lastName?.[0] || ""}`
+                              : <UserOutlined />}
+                          </Avatar>
+                        </Tooltip>
+                      ))}
+                    </Avatar.Group>
+                  </div>
+                ) : (
+                  <div className="text-right">
+                    <FieldLabel>Team</FieldLabel>
+                    <div className="text-xs text-slate-300 mt-1">Unassigned</div>
+                  </div>
+                )}
               </div>
             </div>
-
-            {/* Due Date */}
-            {matter.expectedClosureDate && (
-              <div className="flex items-center gap-2">
-                <div 
-                  className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{ 
-                    background: isOverdue 
-                      ? '#fee2e2' 
-                      : isDueSoon 
-                        ? '#fef3c7' 
-                        : isDarkMode ? '#1f2937' : '#f1f5f9'
-                  }}
-                >
-                  <ClockCircleOutlined 
-                    className="text-sm"
-                    style={{ 
-                      color: isOverdue 
-                        ? '#ef4444' 
-                        : isDueSoon 
-                          ? '#f59e0b' 
-                          : isDarkMode ? '#9ca3af' : '#64748b'
-                    }}
-                  />
-                </div>
-                <div>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 block">
-                    {isOverdue ? "Overdue" : "Due"}
-                  </Text>
-                  <Text 
-                    strong 
-                    className="text-xs"
-                    style={{ 
-                      color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : undefined
-                    }}
-                  >
-                    {isOverdue 
-                      ? `${Math.abs(daysDifference)}d ago` 
-                      : dayjs(matter.expectedClosureDate).format("MMM DD")
-                    }
-                  </Text>
-                </div>
-              </div>
-            )}
-
-            {/* Estimated Value */}
-            {matter.estimatedValue && (
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-green-50 dark:bg-green-900/30 flex items-center justify-center">
-                  <DollarOutlined className="text-green-500 text-sm" />
-                </div>
-                <div>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 block">Value</Text>
-                  <Text strong className="text-xs text-green-600 dark:text-green-400">
-                    ₦{matter.estimatedValue.toLocaleString()}
-                  </Text>
-                </div>
-              </div>
-            )}
-
-            {/* Category */}
-            <div className="flex items-center gap-2">
-              <div 
-                className="w-8 h-8 rounded-lg flex items-center justify-center"
-                style={{ background: isDarkMode ? '#1f2937' : '#f1f5f9' }}
-              >
-                <FileTextOutlined className="text-gray-500 text-sm" />
-              </div>
-              <div>
-                <Text className="text-xs text-gray-500 dark:text-gray-400 block">Category</Text>
-                <Text strong className="text-xs dark:text-white truncate">
-                  {matter.category || "N/A"}
-                </Text>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* View Details Button */}
-        <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-          <Button 
-            type="link" 
-            className="w-full h-10 text-blue-600 dark:text-blue-400 font-semibold flex items-center justify-center gap-2 p-0 hover:text-blue-700"
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/dashboard/matters/${matter._id}`);
-            }}
-          >
-            View Full Details
-            <RightOutlined className="text-xs" />
-          </Button>
+          )}
         </div>
       </Card>
     );
@@ -505,5 +462,41 @@ const MatterCard = memo(
 );
 
 MatterCard.displayName = "MatterCard";
+
+const personShape = PropTypes.shape({
+  _id: PropTypes.string,
+  firstName: PropTypes.string,
+  lastName: PropTypes.string,
+  photo: PropTypes.string,
+  companyName: PropTypes.string,
+  clientDetails: PropTypes.shape({ company: PropTypes.string }),
+});
+
+MatterCard.propTypes = {
+  matter: PropTypes.shape({
+    _id: PropTypes.string.isRequired,
+    matterNumber: PropTypes.string,
+    title: PropTypes.string,
+    matterType: PropTypes.oneOf(Object.keys(MATTER_TYPES)),
+    status: PropTypes.oneOf(Object.keys(STATUSES)),
+    priority: PropTypes.oneOf(Object.keys(PRIORITIES)),
+    natureOfMatter: PropTypes.string,
+    dateOpened: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
+    expectedClosureDate: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)]),
+    estimatedValue: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
+    currency: PropTypes.string,
+    isConfidential: PropTypes.bool,
+    client: personShape,
+    accountOfficer: PropTypes.arrayOf(personShape),
+  }).isRequired,
+  onView: PropTypes.func,
+  onEdit: PropTypes.func,
+  onAssign: PropTypes.func,
+  onDelete: PropTypes.func,
+  onSelect: PropTypes.func,
+  selected: PropTypes.bool,
+  className: PropTypes.string,
+  compact: PropTypes.bool,
+};
 
 export default MatterCard;

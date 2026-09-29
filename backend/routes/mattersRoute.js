@@ -212,6 +212,14 @@ matterRouter.patch(
   matterController.restoreMatter,
 );
 
+// Assign / reassign / unassign account officers on a single matter.
+matterRouter.patch(
+  "/:id/assign-officer",
+  canManageCases,
+  matterController.checkMatterAccess,
+  matterController.assignMatterOfficer,
+);
+
 matterRouter.get(
   "/:id/timeline",
   matterController.checkMatterAccess,

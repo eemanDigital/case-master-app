@@ -1,7 +1,8 @@
 import { notification } from "antd";
 
 /**
- * Universal file download handler that works with both AWS S3 URLs and API endpoints
+ * Universal file download handler that works with Cloudflare R2,
+ * AWS S3 pre-signed URLs and API endpoints
  */
 export async function handleGeneralDownload(
   event,
@@ -30,8 +31,13 @@ export async function handleGeneralDownload(
       throw new Error("Invalid download data provided");
     }
 
-    // If it's an AWS S3 URL, handle it directly
-    if (downloadUrl.includes("amazonaws.com") || downloadUrl.includes("s3.")) {
+    // If it's a Cloudflare R2 / AWS S3 URL, handle it directly
+    if (
+      downloadUrl.includes("r2.cloudflarestorage.com") ||
+      downloadUrl.includes("r2.dev") ||
+      downloadUrl.includes("amazonaws.com") ||
+      downloadUrl.includes("s3.")
+    ) {
       await downloadFromS3(downloadUrl, downloadFileName);
     } else if (downloadUrl.startsWith("http")) {
       // Direct HTTP URL
@@ -51,11 +57,11 @@ export async function handleGeneralDownload(
 }
 
 /**
- * Download file directly from AWS S3 URL
+ * Download file directly from Cloudflare R2 / AWS S3 URL
  */
 async function downloadFromS3(s3Url, fileName) {
   try {
-    // For S3 URLs, we can use a direct download approach
+    // For R2/S3 URLs, we can use a direct download approach
     const link = document.createElement("a");
     link.href = s3Url;
     link.target = "_blank";
@@ -75,7 +81,7 @@ async function downloadFromS3(s3Url, fileName) {
       description: `Downloading ${fileName || "file"}...`,
     });
   } catch (error) {
-    throw new Error(`S3 download failed: ${error.message}`);
+    throw new Error(`Cloud storage download failed: ${error.message}`);
   }
 }
 

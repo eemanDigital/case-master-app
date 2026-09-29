@@ -216,12 +216,12 @@ const PrivacyPolicy = () => {
               We use technical and organizational measures intended to protect
               information. The safeguards and storage locations depend on the
               service providers and deployment configured for the account. File
-              objects uploaded through the standard S3 file service request
-              provider-side AES-256 encryption; this does not establish that
-              every data store or file flow uses the same encryption. We do not
-              make a blanket claim of a particular transport-encryption version,
-              independent security certification, or completed penetration
-              testing through this notice.
+              objects uploaded through the Cloudflare R2 object storage
+              service are encrypted at rest; this does not establish that
+              every data store or file flow uses the same encryption. We do
+              not make a blanket claim of a particular transport-encryption
+              version, independent security certification, or completed
+              penetration testing through this notice.
             </Paragraph>
             <ul className="list-disc pl-6 space-y-2">
               <li>

@@ -20,22 +20,26 @@ const fileSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    // AWS S3 specific fields
-    s3Key: {
+    // Cloudflare R2 (S3-compatible) specific fields
+    objectKey: {
       type: String,
-      required: [true, "S3 key is required"],
+      required: [true, "Object key is required"],
     },
-    s3Bucket: {
+    bucket: {
       type: String,
-      required: [true, "S3 bucket name is required"],
+      required: [true, "Bucket name is required"],
     },
-    s3Region: {
+    storageProvider: {
       type: String,
-      default: "us-east-1",
+      default: "cloudflare-r2",
     },
     fileUrl: {
       type: String,
       required: [true, "File URL is required"],
+    },
+    presignedUrl: {
+      type: String,
+      default: null,
     },
     uploadedBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -280,7 +284,7 @@ fileSchema.statics.getEntityFiles = async function (
 fileSchema.statics.cleanupOrphanedFiles = async function () {
   const User = mongoose.model("User");
   const allFiles = await this.find({ isDeleted: false }).select(
-    "uploadedBy s3Key",
+    "uploadedBy objectKey",
   );
   const orphanedFiles = [];
 

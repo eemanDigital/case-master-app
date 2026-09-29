@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import PropTypes from "prop-types";
 import {
   Space,
   Button,
@@ -24,7 +25,7 @@ import {
   FilePdfOutlined,
   FileExcelOutlined,
 } from "@ant-design/icons";
-import UserSelect from "../UserSelect";
+import AssignOfficerModal from "./AssignOfficerModal";
 
 const { Text } = Typography;
 
@@ -43,7 +44,6 @@ const BulkActionsBar = ({
   const [showAssignModal, setShowAssignModal] = useState(false);
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showPriorityModal, setShowPriorityModal] = useState(false);
-  const [selectedOfficer, setSelectedOfficer] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState(null);
   const [selectedPriority, setSelectedPriority] = useState(null);
 
@@ -91,27 +91,16 @@ const BulkActionsBar = ({
     },
   ];
 
-  const handleAssignOfficer = () => {
-    if (!selectedOfficer) {
-      message.warning("Please select an account officer");
-      return;
+  // Delegated to AssignOfficerModal so bulk and single assignment behave
+  // identically. The error toast is raised by the caller/slice.
+  const handleAssignOfficer = async (officerIds, mode) => {
+    try {
+      await onBulkAssign(selectedItems, officerIds, mode);
+    } catch {
+      /* handled upstream */
+    } finally {
+      setShowAssignModal(false);
     }
-
-    Modal.confirm({
-      title: `Assign Officer to ${selectedCount} Matters?`,
-      content: `Officer will be assigned to ${selectedCount} selected matters.`,
-      okText: "Assign",
-      cancelText: "Cancel",
-      onOk: async () => {
-        try {
-          await onBulkAssign(selectedItems, selectedOfficer);
-          setSelectedOfficer(null);
-          setShowAssignModal(false);
-        } catch (error) {
-          message.error("Failed to assign officer");
-        }
-      },
-    });
   };
 
   const handleChangeStatus = () => {
@@ -295,44 +284,13 @@ const BulkActionsBar = ({
         </div>
       </div>
 
-      <Modal
-        title="Assign Account Officer"
+      <AssignOfficerModal
         open={showAssignModal}
-        onCancel={() => {
-          setShowAssignModal(false);
-          setSelectedOfficer(null);
-        }}
-        footer={[
-          <Button key="cancel" onClick={() => setShowAssignModal(false)}>
-            Cancel
-          </Button>,
-          <Button
-            key="assign"
-            type="primary"
-            onClick={handleAssignOfficer}
-            loading={loading}>
-            Assign Officer
-          </Button>,
-        ]}>
-        <div className="space-y-4">
-          <Text>
-            Assign an account officer to {selectedCount} selected matter
-            {selectedCount > 1 ? "s" : ""}.
-          </Text>
-          <div>
-            <Text strong className="block mb-2">
-              Select Account Officer
-            </Text>
-            <UserSelect
-              placeholder="Select account officer"
-              excludeUserTypes={["client"]}
-              onChange={setSelectedOfficer}
-              value={selectedOfficer}
-              style={{ width: "100%" }}
-            />
-          </div>
-        </div>
-      </Modal>
+        matterCount={selectedCount}
+        loading={loading}
+        onCancel={() => setShowAssignModal(false)}
+        onSubmit={handleAssignOfficer}
+      />
 
       <Modal
         title="Change Status"
@@ -416,6 +374,20 @@ const BulkActionsBar = ({
 };
 
 export default BulkActionsBar;
+
+BulkActionsBar.propTypes = {
+  selectedCount: PropTypes.number,
+  selectedItems: PropTypes.array,
+  onBulkDelete: PropTypes.func,
+  // (matterIds, officerIds, mode) => Promise
+  onBulkAssign: PropTypes.func,
+  onBulkChangeStatus: PropTypes.func,
+  onClearSelection: PropTypes.func,
+  onBulkExport: PropTypes.func,
+  onBulkChangePriority: PropTypes.func,
+  loading: PropTypes.bool,
+  className: PropTypes.string,
+};
 
 // Usage Examples:
 // 1. Get all users (no filters):

@@ -1085,82 +1085,238 @@ exports.bulkUpdateMatters = catchAsync(async (req, res, next) => {
 // ============================================
 
 /**
+ * Validate that the given user ids are assignable account officers:
+ * they must exist, belong to the requesting firm, and hold a role that
+ * may own matters (lawyer or an administrator).
+ *
+ * @returns {Promise<Array>} the resolved officer documents
+ */
+const resolveAssignableOfficers = async (firmId, officerIds) => {
+  const ids = [...new Set((officerIds || []).filter(Boolean).map(String))];
+
+  if (ids.length === 0) return [];
+
+  const officers = await User.find({
+    _id: { $in: ids },
+    firmId,
+    $or: [
+      { role: "lawyer" },
+      { adminLevel: { $in: ["admin", "super-admin"] } },
+    ],
+  }).select("firstName lastName email photo");
+
+  if (officers.length !== ids.length) {
+    throw new AppError(
+      "One or more officers are invalid or not authorized to own matters",
+      400,
+    );
+  }
+
+  return officers;
+};
+
+/**
+ * Work out the next accountOfficer list for a matter.
+ *  - replace: exactly the officers passed in (reassignment)
+ *  - add:     current officers plus the ones passed in
+ *  - remove:  current officers minus the ones passed in
+ */
+const nextAccountOfficers = (currentIds, officerIds, mode) => {
+  const current = [...new Set((currentIds || []).map(String))];
+  const incoming = [...new Set((officerIds || []).filter(Boolean).map(String))];
+
+  if (mode === "add") {
+    return [...new Set([...current, ...incoming])];
+  }
+  if (mode === "remove") {
+    const drop = new Set(incoming);
+    return current.filter((id) => !drop.has(id));
+  }
+  return incoming;
+};
+
+const ASSIGN_MODES = ["replace", "add", "remove"];
+
+/**
+ * @desc    Assign / reassign / unassign account officers on one matter
+ * @route   PATCH /api/matters/:id/assign-officer
+ * @access  Private (Admin only)
+ */
+exports.assignMatterOfficer = catchAsync(async (req, res, next) => {
+  const { id } = req.params;
+  const { officerIds, mode = "replace" } = req.body;
+
+  if (!ASSIGN_MODES.includes(mode)) {
+    return next(
+      new AppError(`mode must be one of: ${ASSIGN_MODES.join(", ")}`, 400),
+    );
+  }
+
+  const matter = await Matter.findOne(buildFirmQuery(req, { _id: id }));
+
+  if (!matter) {
+    return next(new AppError("Matter not found", 404));
+  }
+
+  const requested = Array.isArray(officerIds)
+    ? officerIds
+    : officerIds
+      ? [officerIds]
+      : [];
+
+  if (requested.length === 0) {
+    return next(new AppError("Please provide at least one officer ID", 400));
+  }
+
+  // Only the officers we are actually adding need the role/firm check.
+  const officers =
+    mode === "remove" ? [] : await resolveAssignableOfficers(req.firmId, requested);
+
+  // In remove mode we work from the raw ids — they only have to match
+  // officers already on the matter, not pass the assignable-role check.
+  const idsToApply =
+    mode === "remove" ? requested : officers.map((o) => o._id);
+
+  const accountOfficer = nextAccountOfficers(
+    matter.accountOfficer,
+    idsToApply,
+    mode,
+  );
+
+  const updatedMatter = await Matter.findOneAndUpdate(
+    buildFirmQuery(req, { _id: id }),
+    {
+      $set: {
+        accountOfficer,
+        lastModifiedBy: req.user._id,
+        lastActivityDate: Date.now(),
+      },
+    },
+    { new: true, runValidators: true },
+  )
+    .populate("accountOfficer", "firstName lastName email photo role")
+    .populate("client", "firstName lastName email phone companyName");
+
+  res.status(200).json({
+    status: "success",
+    data: {
+      matter: updatedMatter,
+      mode,
+      removedIds:
+        mode === "remove"
+          ? requested
+          : requested.filter(
+              (officerId) =>
+                !accountOfficer.map(String).includes(String(officerId)),
+            ),
+    },
+  });
+});
+
+/**
  * @desc    Bulk assign account officer to multiple matters
  * @route   POST /api/matters/bulk-assign-officer
- * @access  Private (Admin/Lawyer only)
+ * @access  Private (Admin only)
+ *
+ * `mode` controls the semantics:
+ *  - "add"    (default, backwards compatible) appends the officer
+ *  - "replace" swaps the whole team for the officer, enabling reassignment
  */
 exports.bulkAssignOfficer = catchAsync(async (req, res, next) => {
-  const { matterIds, officerId } = req.body;
+  const { matterIds, officerIds, officerId, mode = "add" } = req.body;
 
   if (!matterIds || !Array.isArray(matterIds) || matterIds.length === 0) {
     return next(new AppError("Please provide matter IDs", 400));
   }
 
-  if (!officerId) {
+  if (!ASSIGN_MODES.includes(mode)) {
+    return next(
+      new AppError(`mode must be one of: ${ASSIGN_MODES.join(", ")}`, 400),
+    );
+  }
+
+  // Accept the original single `officerId` field as well as `officerIds`.
+  const requested = officerIds
+    ? Array.isArray(officerIds)
+      ? officerIds
+      : [officerIds]
+    : officerId
+      ? [officerId]
+      : [];
+
+  if (requested.length === 0) {
     return next(new AppError("Please provide officer ID", 400));
   }
 
-  // Verify officer exists and belongs to the same firm
-  const officer = await User.findOne({
-    _id: officerId,
-    firmId: req.firmId,
-    $or: [
-      { role: "lawyer" },
-      { adminLevel: { $in: ["admin", "super-admin"] } },
-    ],
-  });
+  const officers =
+    mode === "remove" ? [] : await resolveAssignableOfficers(req.firmId, requested);
 
-  if (!officer) {
-    return next(
-      new AppError("Officer not found or not authorized for this role", 404),
-    );
-  }
+  // In remove mode we work from the raw ids — they only have to match
+  // officers already on the matter, not pass the assignable-role check.
+  const officerIdsToApply =
+    mode === "remove" ? requested : officers.map((o) => o._id);
 
-  // const session = await Matter.startSession();
-  // session.startTransaction();
+  // "replace"/"remove" need the current list per matter, so read first.
+  const matters =
+    mode === "add"
+      ? []
+      : await Matter.find(buildFirmQuery(req, { _id: { $in: matterIds } })).select(
+          "_id accountOfficer",
+        );
 
   try {
-    // Update matters with new officer
-    const result = await Matter.updateMany(
-      {
-        _id: { $in: matterIds },
-        firmId: req.firmId,
-      },
-      {
-        $addToSet: { accountOfficer: officerId },
-        lastModifiedBy: req.user._id,
-        lastActivityDate: Date.now(),
-        $push: {
-          activityLog: {
-            action: "assigned_officer",
-            user: req.user._id,
-            officer: officerId,
-            timestamp: Date.now(),
-            details: `Assigned to ${officer.firstName} ${officer.lastName}`,
-          },
+    if (mode === "add") {
+      await Matter.updateMany(
+        { _id: { $in: matterIds }, firmId: req.firmId },
+        {
+          $addToSet: { accountOfficer: { $each: officerIdsToApply } },
+          lastModifiedBy: req.user._id,
+          lastActivityDate: Date.now(),
         },
-      },
-      // { session },
-    );
+      );
+    } else {
+      await Promise.all(
+        matters.map((matter) =>
+          Matter.updateOne(
+            { _id: matter._id, firmId: req.firmId },
+            {
+              $set: {
+                accountOfficer: nextAccountOfficers(
+                  matter.accountOfficer,
+                  officerIdsToApply,
+                  mode,
+                ),
+                lastModifiedBy: req.user._id,
+                lastActivityDate: Date.now(),
+              },
+            },
+          ),
+        ),
+      );
+    }
 
-    // await session.commitTransaction();
-    // session.endSession();
+    // Return the matters so the client can reconcile its list without a refetch.
+    const updatedMatters = await Matter.find(
+      buildFirmQuery(req, { _id: { $in: matterIds } }),
+    )
+      .populate("accountOfficer", "firstName lastName email photo role")
+      .populate("client", "firstName lastName email phone companyName");
 
     res.status(200).json({
       status: "success",
       data: {
-        matchedCount: result.matchedCount,
-        modifiedCount: result.modifiedCount,
-        officer: {
-          id: officer._id,
-          name: `${officer.firstName} ${officer.lastName}`,
-          email: officer.email,
-        },
+        matchedCount: updatedMatters.length,
+        modifiedCount: updatedMatters.length,
+        mode,
+        officers: officers.map((o) => ({
+          id: o._id,
+          name: `${o.firstName} ${o.lastName}`.trim(),
+          email: o.email,
+        })),
+        matters: updatedMatters,
       },
     });
   } catch (error) {
-    await session.abortTransaction();
-    // session.endSession();
     return next(error);
   }
 });
@@ -2034,7 +2190,7 @@ exports.logBulkOperation = catchAsync(async (req, res, next) => {
 // ============================================
 
 const File = require("../models/fileModel");
-const s3Service = require("../services/s3Service");
+const r2Service = require("../services/r2Service");
 const path = require("path");
 
 /**
@@ -2074,7 +2230,7 @@ exports.uploadMatterDocuments = catchAsync(async (req, res, next) => {
   const uploadedFiles = [];
 
   for (const file of req.files) {
-    const uploadResult = await s3Service.uploadFile(
+    const uploadResult = await r2Service.uploadFile(
       file.buffer,
       file.originalname,
       file.mimetype,
@@ -2097,9 +2253,9 @@ exports.uploadMatterDocuments = catchAsync(async (req, res, next) => {
       firmId: req.firmId,
       fileName: file.originalname,
       originalName: file.originalname,
-      s3Key: uploadResult.s3Key,
-      s3Bucket: uploadResult.bucket,
-      s3Region: uploadResult.region,
+      objectKey: uploadResult.objectKey,
+      bucket: uploadResult.bucket,
+      storageProvider: uploadResult.storageProvider,
       fileUrl: uploadResult.fileUrl,
       presignedUrl: uploadResult.presignedUrl,
       uploadedBy: req.user.id,

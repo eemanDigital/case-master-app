@@ -2,7 +2,7 @@ const Task = require("../models/taskModel");
 const File = require("../models/fileModel");
 const AppError = require("../utils/appError");
 const catchAsync = require("../utils/catchAsync");
-const s3Service = require("../services/s3Service");
+const r2Service = require("../services/r2Service");
 const path = require("path");
 
 /**
@@ -798,8 +798,8 @@ exports.uploadReferenceDocuments = catchAsync(async (req, res, next) => {
 
   // Process each file
   for (const file of req.files) {
-    // Upload to S3 with pre-signed URL generation
-    const uploadResult = await s3Service.uploadFile(
+    // Upload to R2 with pre-signed URL generation
+    const uploadResult = await r2Service.uploadFile(
       file.buffer,
       file.originalname,
       file.mimetype,
@@ -823,9 +823,9 @@ exports.uploadReferenceDocuments = catchAsync(async (req, res, next) => {
       firmId: req.firmId,
       fileName: file.originalname,
       originalName: file.originalname,
-      s3Key: uploadResult.s3Key,
-      s3Bucket: uploadResult.bucket,
-      s3Region: uploadResult.region,
+      objectKey: uploadResult.objectKey,
+      bucket: uploadResult.bucket,
+      storageProvider: uploadResult.storageProvider,
       fileUrl: uploadResult.fileUrl,
       presignedUrl: uploadResult.presignedUrl,
       uploadedBy: req.user.id,
@@ -917,8 +917,8 @@ exports.uploadResponseDocuments = catchAsync(async (req, res, next) => {
   const uploadedFiles = [];
 
   for (const file of req.files) {
-    // Upload to S3 with pre-signed URL generation
-    const uploadResult = await s3Service.uploadFile(
+    // Upload to R2 with pre-signed URL generation
+    const uploadResult = await r2Service.uploadFile(
       file.buffer,
       file.originalname,
       file.mimetype,
@@ -943,9 +943,9 @@ exports.uploadResponseDocuments = catchAsync(async (req, res, next) => {
       firmId: req.firmId,
       fileName: file.originalname,
       originalName: file.originalname,
-      s3Key: uploadResult.s3Key,
-      s3Bucket: uploadResult.bucket,
-      s3Region: uploadResult.region,
+      objectKey: uploadResult.objectKey,
+      bucket: uploadResult.bucket,
+      storageProvider: uploadResult.storageProvider,
       fileUrl: uploadResult.fileUrl,
       presignedUrl: uploadResult.presignedUrl,
       uploadedBy: req.user.id,
@@ -1048,7 +1048,7 @@ exports.refreshFileDownloadUrl = catchAsync(async (req, res, next) => {
   }
 
   try {
-    const newPresignedUrl = await s3Service.getPresignedUrl(file.s3Key, 3600);
+    const newPresignedUrl = await r2Service.getPresignedUrl(file.objectKey, 3600);
     file.presignedUrl = newPresignedUrl;
     await file.save();
 

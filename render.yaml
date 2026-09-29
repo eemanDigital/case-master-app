@@ -22,3 +22,14 @@ services:
       # Get free API key at https://browserless.io
       - key: BROWSERLESS_API_KEY
         sync: false
+      # Cloudflare R2 file storage (S3-compatible)
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_BUCKET_NAME
+        sync: false
+      - key: R2_PUBLIC_URL
+        sync: false

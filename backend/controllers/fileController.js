@@ -4,7 +4,7 @@ const path = require("path");
 const mongoose = require("mongoose");
 const File = require("../models/fileModel");
 const Firm = require("../models/firmModel");
-const s3Service = require("../services/s3Service");
+const r2Service = require("../services/r2Service");
 const AppError = require("../utils/appError");
 
 // Configure multer to use memory storage
@@ -197,8 +197,8 @@ exports.uploadFile = async (req, res, next) => {
     // Validate and sanitize entityId
     const validEntityId = validateEntityId(entityId);
 
-    // Upload to S3
-    const uploadResult = await s3Service.uploadFile(
+    // Upload to R2
+    const uploadResult = await r2Service.uploadFile(
       req.file.buffer,
       req.file.originalname,
       req.file.mimetype,
@@ -223,9 +223,9 @@ exports.uploadFile = async (req, res, next) => {
       firmId: req.firmId,
       fileName: req.file.originalname,
       originalName: req.file.originalname,
-      s3Key: uploadResult.s3Key,
-      s3Bucket: uploadResult.bucket,
-      s3Region: uploadResult.region,
+      objectKey: uploadResult.objectKey,
+      bucket: uploadResult.bucket,
+      storageProvider: uploadResult.storageProvider,
       fileUrl: uploadResult.fileUrl,
       presignedUrl: uploadResult.presignedUrl,
       uploadedBy: req.user._id,
@@ -305,8 +305,8 @@ exports.uploadMultipleFiles = async (req, res, next) => {
 
     const uploadPromises = req.files.map(async (file, index) => {
       try {
-        // Upload to S3
-        const uploadResult = await s3Service.uploadFile(
+        // Upload to R2
+        const uploadResult = await r2Service.uploadFile(
           file.buffer,
           file.originalname,
           file.mimetype,
@@ -327,9 +327,9 @@ exports.uploadMultipleFiles = async (req, res, next) => {
           firmId: req.firmId,
           fileName: file.originalname,
           originalName: file.originalname,
-          s3Key: uploadResult.s3Key,
-          s3Bucket: uploadResult.bucket,
-          s3Region: uploadResult.region,
+          objectKey: uploadResult.objectKey,
+          bucket: uploadResult.bucket,
+          storageProvider: uploadResult.storageProvider,
           fileUrl: uploadResult.fileUrl,
           presignedUrl: uploadResult.presignedUrl,
           uploadedBy: req.user._id,
@@ -404,7 +404,7 @@ exports.getFileDownloadUrl = async (req, res, next) => {
     }
 
     // Generate presigned URL (valid for 1 hour)
-    const downloadUrl = await s3Service.getPresignedUrl(file.s3Key, 3600);
+    const downloadUrl = await r2Service.getPresignedUrl(file.objectKey, 3600);
 
     // Update presigned URL in database
     file.presignedUrl = downloadUrl;
@@ -450,7 +450,7 @@ exports.getFilePreviewUrl = async (req, res, next) => {
     }
 
     // Generate presigned URL valid for 5 hours (Office Viewer needs longer expiration)
-    const previewUrl = await s3Service.getPresignedUrl(file.s3Key, 18000);
+    const previewUrl = await r2Service.getPresignedUrl(file.objectKey, 18000);
 
     res.status(200).json({
       status: "success",
@@ -485,7 +485,7 @@ exports.getFileDownloadUrl = async (req, res, next) => {
     }
 
     // Generate presigned URL valid for 1 hour (3600 seconds)
-    const downloadUrl = await s3Service.getPresignedUrl(file.s3Key, 3600);
+    const downloadUrl = await r2Service.getPresignedUrl(file.objectKey, 3600);
 
     res.status(200).json({
       status: "success",
@@ -664,9 +664,9 @@ exports.deleteFile = async (req, res, next) => {
     // Update firm storage usage (decrease)
     await updateFirmStorage(req.firmId, -fileSize);
 
-    // Note: We're not deleting from S3 to allow recovery if needed
-    // If you want to delete from S3, uncomment the line below
-    // await s3Service.deleteFile(file.s3Key);
+    // Note: We're not deleting from R2 to allow recovery if needed
+    // If you want to delete from R2, uncomment the line below
+    // await r2Service.deleteFile(file.objectKey);
 
     res.status(200).json({
       status: "success",
@@ -706,8 +706,8 @@ exports.permanentlyDeleteFile = async (req, res, next) => {
     // Store file size before deletion
     const fileSize = file.fileSize;
 
-    // Delete from S3
-    await s3Service.deleteFile(file.s3Key);
+    // Delete from R2
+    await r2Service.deleteFile(file.objectKey);
 
     // Delete from database
     await File.findOneAndDelete({ _id: req.params.id, firmId: req.firmId });
@@ -836,7 +836,7 @@ exports.uploadTaskReferenceDocuments = async (req, res, next) => {
     }
 
     const uploadPromises = req.files.map(async (file) => {
-      const uploadResult = await s3Service.uploadFile(
+      const uploadResult = await r2Service.uploadFile(
         file.buffer,
         file.originalname,
         file.mimetype,
@@ -859,9 +859,9 @@ exports.uploadTaskReferenceDocuments = async (req, res, next) => {
         firmId: req.firmId,
         fileName: file.originalname,
         originalName: file.originalname,
-        s3Key: uploadResult.s3Key,
-        s3Bucket: uploadResult.bucket,
-        s3Region: uploadResult.region,
+        objectKey: uploadResult.objectKey,
+        bucket: uploadResult.bucket,
+        storageProvider: uploadResult.storageProvider,
         fileUrl: uploadResult.fileUrl,
         presignedUrl: uploadResult.presignedUrl,
         uploadedBy: req.user._id,
@@ -951,7 +951,7 @@ exports.uploadTaskResponseDocuments = async (req, res, next) => {
     }
 
     const uploadPromises = req.files.map(async (file) => {
-      const uploadResult = await s3Service.uploadFile(
+      const uploadResult = await r2Service.uploadFile(
         file.buffer,
         file.originalname,
         file.mimetype,
@@ -975,9 +975,9 @@ exports.uploadTaskResponseDocuments = async (req, res, next) => {
         firmId: req.firmId,
         fileName: file.originalname,
         originalName: file.originalname,
-        s3Key: uploadResult.s3Key,
-        s3Bucket: uploadResult.bucket,
-        s3Region: uploadResult.region,
+        objectKey: uploadResult.objectKey,
+        bucket: uploadResult.bucket,
+        storageProvider: uploadResult.storageProvider,
         fileUrl: uploadResult.fileUrl,
         presignedUrl: uploadResult.presignedUrl,
         uploadedBy: req.user._id,

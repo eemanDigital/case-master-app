@@ -80,9 +80,22 @@ export const bulkDeleteMatters = createAsyncThunk(
 
 export const bulkAssignOfficer = createAsyncThunk(
   "matter/bulkAssignOfficer",
-  async ({ matterIds, officerId }, { rejectWithValue }) => {
+  async ({ matterIds, officerIds, mode = "add" }, { rejectWithValue }) => {
     try {
-      return await matterService.bulkAssignOfficer(matterIds, officerId);
+      return await matterService.bulkAssignOfficer(matterIds, officerIds, mode);
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to assign officer",
+      );
+    }
+  },
+);
+
+export const assignMatterOfficer = createAsyncThunk(
+  "matter/assignOfficer",
+  async ({ matterId, officerIds, mode = "replace" }, { rejectWithValue }) => {
+    try {
+      return await matterService.assignMatterOfficer({ matterId, officerIds, mode });
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to assign officer",
@@ -251,6 +264,29 @@ const safeInt = (val) => {
   return isFinite(n) ? Math.round(n) : 0;
 };
 
+/**
+ * Merge a server-returned matter into the cached list and the open matter.
+ * Returns true when the matter was found in the list.
+ */
+const applyUpdatedMatter = (state, matter) => {
+  if (!matter?._id) return false;
+  const idx = state.matters.findIndex((m) => m._id === matter._id);
+  if (idx !== -1) state.matters[idx] = { ...state.matters[idx], ...matter };
+  if (state.currentMatter?._id === matter._id) {
+    state.currentMatter = { ...state.currentMatter, ...matter };
+  }
+  return idx !== -1;
+};
+
+/** Server responses wrap matters in `data.matters`; never assume an array. */
+const extractMatters = (payload) => {
+  const data = payload?.data;
+  if (Array.isArray(data?.matters)) return data.matters;
+  if (Array.isArray(data)) return data;
+  if (data?.matter?._id) return [data.matter];
+  return [];
+};
+
 // ============================================
 // SLICE
 // ============================================
@@ -385,13 +421,8 @@ const matterSlice = createSlice({
       .addCase(bulkUpdateMatters.fulfilled, (state, action) => {
         state.bulkLoading = false;
         state.isSuccess = true;
-        const updated =
-          action.payload.data?.matters || action.payload.data || [];
-        updated.forEach((m) => {
-          const idx = state.matters.findIndex((x) => x._id === m._id);
-          if (idx !== -1) state.matters[idx] = m;
-          if (state.currentMatter?._id === m._id) state.currentMatter = m;
-        });
+        const updated = extractMatters(action.payload);
+        updated.forEach((m) => applyUpdatedMatter(state, m));
         if (action.payload.data?.clearSelection) state.selectedMatters = [];
         state.message = `Successfully updated ${updated.length} matters`;
         message.success(state.message);
@@ -441,16 +472,38 @@ const matterSlice = createSlice({
       .addCase(bulkAssignOfficer.fulfilled, (state, action) => {
         state.bulkLoading = false;
         state.isSuccess = true;
-        const updated =
-          action.payload.data?.matters || action.payload.data || [];
+        const updated = extractMatters(action.payload);
+        let applied = 0;
         updated.forEach((m) => {
-          const idx = state.matters.findIndex((x) => x._id === m._id);
-          if (idx !== -1) state.matters[idx] = m;
+          if (applyUpdatedMatter(state, m)) applied += 1;
         });
-        state.message = `Successfully assigned officer to ${updated.length} matters`;
+        const count = applied || action.meta.arg?.matterIds?.length || 0;
+        state.message = `Successfully updated officers on ${count} matter${
+          count === 1 ? "" : "s"
+        }`;
         message.success(state.message);
       })
       .addCase(bulkAssignOfficer.rejected, (state, action) => {
+        state.bulkLoading = false;
+        state.isError = true;
+        state.bulkError = action.payload || "Failed to assign officer";
+        message.error(state.bulkError);
+      })
+
+      // ── Assign Officer (single matter) ────────────
+      .addCase(assignMatterOfficer.pending, (state) => {
+        state.bulkLoading = true;
+        state.bulkError = null;
+      })
+      .addCase(assignMatterOfficer.fulfilled, (state, action) => {
+        state.bulkLoading = false;
+        state.isSuccess = true;
+        const updated = extractMatters(action.payload);
+        updated.forEach((m) => applyUpdatedMatter(state, m));
+        state.message = "Account officer updated";
+        message.success(state.message);
+      })
+      .addCase(assignMatterOfficer.rejected, (state, action) => {
         state.bulkLoading = false;
         state.isError = true;
         state.bulkError = action.payload || "Failed to assign officer";

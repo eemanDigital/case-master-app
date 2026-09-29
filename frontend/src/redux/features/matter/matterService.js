@@ -32,6 +32,11 @@ const matterService = {
 
   restoreMatter: (matterId) => apiService.patch(`/matters/${matterId}/restore`),
 
+  // Assign / reassign / unassign account officers on a single matter.
+  // mode: "replace" (default) | "add" | "remove"
+  assignMatterOfficer: ({ matterId, officerIds, mode = "replace" }) =>
+    apiService.patch(`/matters/${matterId}/assign-officer`, { officerIds, mode }),
+
   // ======================
   // DELETE
   // ======================
@@ -54,8 +59,8 @@ const matterService = {
   bulkDeleteMatters: (matterIds) =>
     apiService.delete("/matters/bulk-delete", { data: { matterIds } }),
 
-  bulkAssignOfficer: (matterIds, officerId) =>
-    apiService.post("/matters/bulk-assign-officer", { matterIds, officerId }),
+  bulkAssignOfficer: (matterIds, officerIds, mode = "add") =>
+    apiService.post("/matters/bulk-assign-officer", { matterIds, officerIds, mode }),
 
   // bulkExportMatters uses apiService.download but needs POST, so we call
   // the underlying axios instance directly via apiService.download with a

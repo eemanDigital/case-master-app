@@ -10,37 +10,46 @@ const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const crypto = require("crypto");
 const path = require("path");
 
-// Initialize S3 Client
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION || "us-east-1",
+// Cloudflare R2 uses an S3-compatible API, so the AWS SDK v3 is used
+// with an R2 endpoint override.
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
+const R2_ENDPOINT =
+  process.env.R2_ENDPOINT ||
+  (R2_ACCOUNT_ID ? `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : "");
+
+// Initialize R2 Client
+const r2Client = new S3Client({
+  region: process.env.R2_REGION || "auto",
+  endpoint: R2_ENDPOINT,
+  forcePathStyle: true,
   credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    accessKeyId: process.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
   },
 });
 
-class S3Service {
+class R2Service {
   constructor() {
-    this.bucket = process.env.AWS_S3_BUCKET_NAME;
-    this.region = process.env.AWS_REGION || "us-east-1";
+    this.bucket = process.env.R2_BUCKET_NAME;
+    this.storageProvider = "cloudflare-r2";
   }
 
   /**
-   * Generate unique S3 key for file with firm-based folder structure
+   * Generate a unique object key for the file using firm-based folder structure
    * @param {string} originalName - Original filename
    * @param {string} category - File category
    * @param {string} entityType - Entity type (Case, Task, etc)
    * @param {string} firmId - Firm ID for folder isolation
-   * @returns {string} - S3 key
+   * @returns {string} - R2 object key
    */
-  generateS3Key(
+  generateObjectKey(
     originalName,
     category = "general",
     entityType = "general",
     firmId
   ) {
     if (!firmId) {
-      throw new Error("firmId is required for S3 key generation");
+      throw new Error("firmId is required for object key generation");
     }
 
     const timestamp = Date.now();
@@ -54,7 +63,7 @@ class S3Service {
   }
 
   /**
-   * Upload file to S3 with firm-based folder isolation
+   * Upload file to Cloudflare R2 with firm-based folder isolation
    * @param {Buffer} fileBuffer - File buffer
    * @param {string} originalName - Original filename
    * @param {string} mimeType - MIME type
@@ -68,7 +77,7 @@ class S3Service {
         throw new Error("firmId is required for file upload");
       }
 
-      const s3Key = this.generateS3Key(
+      const objectKey = this.generateObjectKey(
         originalName,
         metadata.category,
         metadata.entityType,
@@ -77,7 +86,7 @@ class S3Service {
 
       const command = new PutObjectCommand({
         Bucket: this.bucket,
-        Key: s3Key,
+        Key: objectKey,
         Body: fileBuffer,
         ContentType: mimeType,
         Metadata: {
@@ -88,45 +97,47 @@ class S3Service {
           firmId: metadata.firmId.toString(),
           category: metadata.category || "",
         },
-        // Optional: Set server-side encryption
-        ServerSideEncryption: "AES256",
+        // Note: R2 encrypts objects at rest by default (AES-256);
+        // the x-amz-server-side-encryption header is not supported.
       });
 
-      await s3Client.send(command);
+      await r2Client.send(command);
 
       // Generate presigned URL immediately for download
-      const presignedUrl = await this.getPresignedUrl(s3Key, 3600);
+      const presignedUrl = await this.getPresignedUrl(objectKey, 3600);
 
-      // Generate file URL
-      const fileUrl = `https://${this.bucket}.s3.${this.region}.amazonaws.com/${s3Key}`;
+      // Generate file URL (public custom domain if configured, otherwise the R2 endpoint)
+      const fileUrl = process.env.R2_PUBLIC_URL
+        ? `${process.env.R2_PUBLIC_URL.replace(/\/+$/, "")}/${objectKey}`
+        : `${R2_ENDPOINT}/${this.bucket}/${objectKey}`;
 
       return {
-        s3Key,
+        objectKey,
         fileUrl,
         presignedUrl,
         bucket: this.bucket,
-        region: this.region,
+        storageProvider: this.storageProvider,
       };
     } catch (error) {
-      console.error("Error uploading to S3:", error);
+      console.error("Error uploading to Cloudflare R2:", error);
       throw new Error(`Failed to upload file: ${error.message}`);
     }
   }
 
   /**
    * Get presigned URL for secure file download
-   * @param {string} s3Key - S3 key
+   * @param {string} objectKey - R2 object key
    * @param {number} expiresIn - URL expiration in seconds (default: 1 hour)
    * @returns {Promise<string>} - Presigned URL
    */
-  async getPresignedUrl(s3Key, expiresIn = 3600) {
+  async getPresignedUrl(objectKey, expiresIn = 3600) {
     try {
       const command = new GetObjectCommand({
         Bucket: this.bucket,
-        Key: s3Key,
+        Key: objectKey,
       });
 
-      const url = await getSignedUrl(s3Client, command, { expiresIn });
+      const url = await getSignedUrl(r2Client, command, { expiresIn });
       return url;
     } catch (error) {
       console.error("Error generating presigned URL:", error);
@@ -135,37 +146,37 @@ class S3Service {
   }
 
   /**
-   * Delete file from S3
-   * @param {string} s3Key - S3 key
+   * Delete file from Cloudflare R2
+   * @param {string} objectKey - R2 object key
    * @returns {Promise<void>}
    */
-  async deleteFile(s3Key) {
+  async deleteFile(objectKey) {
     try {
       const command = new DeleteObjectCommand({
         Bucket: this.bucket,
-        Key: s3Key,
+        Key: objectKey,
       });
 
-      await s3Client.send(command);
+      await r2Client.send(command);
     } catch (error) {
-      console.error("Error deleting from S3:", error);
+      console.error("Error deleting from Cloudflare R2:", error);
       throw new Error(`Failed to delete file: ${error.message}`);
     }
   }
 
   /**
-   * Check if file exists in S3
-   * @param {string} s3Key - S3 key
+   * Check if file exists in Cloudflare R2
+   * @param {string} objectKey - R2 object key
    * @returns {Promise<boolean>}
    */
-  async fileExists(s3Key) {
+  async fileExists(objectKey) {
     try {
       const command = new HeadObjectCommand({
         Bucket: this.bucket,
-        Key: s3Key,
+        Key: objectKey,
       });
 
-      await s3Client.send(command);
+      await r2Client.send(command);
       return true;
     } catch (error) {
       if (error.name === "NotFound") {
@@ -176,18 +187,18 @@ class S3Service {
   }
 
   /**
-   * Get file metadata from S3
-   * @param {string} s3Key - S3 key
+   * Get file metadata from Cloudflare R2
+   * @param {string} objectKey - R2 object key
    * @returns {Promise<Object>}
    */
-  async getFileMetadata(s3Key) {
+  async getFileMetadata(objectKey) {
     try {
       const command = new HeadObjectCommand({
         Bucket: this.bucket,
-        Key: s3Key,
+        Key: objectKey,
       });
 
-      const response = await s3Client.send(command);
+      const response = await r2Client.send(command);
       return {
         contentType: response.ContentType,
         contentLength: response.ContentLength,
@@ -216,7 +227,7 @@ class S3Service {
         Prefix: firmPrefix,
       });
 
-      const response = await s3Client.send(command);
+      const response = await r2Client.send(command);
       return response.Contents || [];
     } catch (error) {
       console.error("Error listing firm files:", error);
@@ -226,7 +237,7 @@ class S3Service {
 
   /**
    * List files in a specific folder/prefix
-   * @param {string} prefix - S3 prefix (folder path)
+   * @param {string} prefix - R2 prefix (folder path)
    * @returns {Promise<Array>}
    */
   async listFiles(prefix = "") {
@@ -236,7 +247,7 @@ class S3Service {
         Prefix: prefix,
       });
 
-      const response = await s3Client.send(command);
+      const response = await r2Client.send(command);
       return response.Contents || [];
     } catch (error) {
       console.error("Error listing files:", error);
@@ -245,9 +256,9 @@ class S3Service {
   }
 
   /**
-   * Copy file within S3 (useful for backups or moving between categories)
-   * @param {string} sourceKey - Source S3 key
-   * @param {string} destinationKey - Destination S3 key
+   * Copy file within Cloudflare R2 (useful for backups or moving between categories)
+   * @param {string} sourceKey - Source R2 object key
+   * @param {string} destinationKey - Destination R2 object key
    * @returns {Promise<void>}
    */
   async copyFile(sourceKey, destinationKey) {
@@ -259,7 +270,7 @@ class S3Service {
         Key: destinationKey,
       });
 
-      await s3Client.send(command);
+      await r2Client.send(command);
     } catch (error) {
       console.error("Error copying file:", error);
       throw new Error(`Failed to copy file: ${error.message}`);
@@ -268,14 +279,14 @@ class S3Service {
 
   /**
    * Generate multiple presigned URLs
-   * @param {Array<string>} s3Keys - Array of S3 keys
+   * @param {Array<string>} objectKeys - Array of R2 object keys
    * @param {number} expiresIn - URL expiration in seconds
    * @returns {Promise<Array<Object>>}
    */
-  async getMultiplePresignedUrls(s3Keys, expiresIn = 3600) {
+  async getMultiplePresignedUrls(objectKeys, expiresIn = 3600) {
     try {
-      const urlPromises = s3Keys.map(async (key) => ({
-        s3Key: key,
+      const urlPromises = objectKeys.map(async (key) => ({
+        objectKey: key,
         url: await this.getPresignedUrl(key, expiresIn),
       }));
 
@@ -346,7 +357,7 @@ class S3Service {
 
   /**
    * Move file from one firm to another (for mergers/transfers)
-   * @param {string} sourceKey - Source S3 key
+   * @param {string} sourceKey - Source R2 object key
    * @param {string} targetFirmId - Target firm ID
    * @param {string} category - File category
    * @param {string} entityType - Entity type
@@ -361,7 +372,7 @@ class S3Service {
   ) {
     try {
       // Generate new key for target firm
-      const newKey = this.generateS3Key(
+      const newKey = this.generateObjectKey(
         originalName,
         category,
         entityType,
@@ -415,4 +426,4 @@ class S3Service {
   }
 }
 
-module.exports = new S3Service();
+module.exports = new R2Service();
