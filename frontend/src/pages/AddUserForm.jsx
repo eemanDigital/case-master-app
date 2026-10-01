@@ -1,8 +1,8 @@
 // pages/AddUserForm.jsx - COMPLETE FIX
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Form, Button, Card, Steps, Alert, Space, Tag } from "antd";
 import { UserOutlined, TeamOutlined } from "@ant-design/icons";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { register, sendVerificationMail } from "../redux/features/auth/authSlice";
 import { userTypeOptions } from "../data/options";
@@ -26,48 +26,114 @@ const STEP_CONFIG = [
   { key: "privileges", title: "Privileges", icon: <UserOutlined /> },
 ];
 
+// Fields that only make sense for one user type. Switching type clears the
+// other type's values so nothing stale is submitted.
+const CLIENT_ONLY_FIELDS = [
+  "clientCategory",
+  "company",
+  "industry",
+  "taxId",
+  "clientSince",
+  "preferredContactMethod",
+  "billingAddress",
+  "referralSource",
+  "clientNotes",
+];
+
+const STAFF_ONLY_FIELDS = [
+  "position",
+  "department",
+  "designation",
+  "employmentType",
+  "workSchedule",
+  "skills",
+  "barNumber",
+  "barAssociation",
+  "yearOfCall",
+  "practiceAreas",
+  "hourlyRate",
+  "specialization",
+  "lawSchoolAttended",
+  "lawSchoolGraduationYear",
+  "lawSchoolDegree",
+  "universityAttended",
+  "universityGraduationYear",
+  "universityDegree",
+  "isPartner",
+  "partnershipPercentage",
+  "bio",
+];
+
+// Client accounts have no professional role or admin authority to grant, so
+// those two steps are retitled and the last step is skipped for them.
+const CLIENT_STEP_TITLES = {
+  userType: "User Type",
+  basic: "Contact Info",
+  account: "Account",
+  professional: "Client Details",
+  privileges: "Review",
+};
+
 const AddUserForm = () => {
   const [form] = Form.useForm();
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isLoading, error } = useSelector((state) => state.auth);
 
-  const [currentStep, setCurrentStep] = useState(0);
-  const [selectedUserType, setSelectedUserType] = useState("staff");
+  // The User Management page preselects the type when linking here (adding a
+  // client sends { userType: "client" }), so the wizard opens on the right path.
+  const presetUserType =
+    location.state?.userType === "client" ? "client" : "staff";
 
-  // Step field validation map
+  const [currentStep, setCurrentStep] = useState(
+    presetUserType === "client" ? 1 : 0
+  );
+  const [selectedUserType, setSelectedUserType] = useState(presetUserType);
+
+  // Apply the preset once the form instance exists.
+  useEffect(() => {
+    form.setFieldsValue({
+      userType: presetUserType,
+      role: presetUserType === "client" ? "client" : undefined,
+      adminLevel: "none",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Step field validation map. Step 1 and step 3 differ per user type: clients
+  // have no `position`, no required surname/address and no gender requirement.
   const STEP_FIELDS = useMemo(
     () => ({
       0: ["userType"],
-      1: ["firstName", "lastName", "email", "phone", "address", "gender"],
+      1:
+        selectedUserType === "client"
+          ? ["firstName", "email", "phone"]
+          : ["firstName", "lastName", "email", "phone", "address", "gender"],
       2: ["password", "passwordConfirm"],
-      3: ["role", "position"],
+      3:
+        selectedUserType === "client"
+          ? ["clientCategory"]
+          : ["role", "position"],
       4: ["role", "adminLevel"],
     }),
-    []
+    [selectedUserType]
   );
 
-  // ✅ Handle form submission - Get ALL form values
+  // Handle form submission - collect ALL steps, not just the visible one.
   const handleSubmit = useCallback(
-    async (values) => {
+    async () => {
       try {
-        // ✅ CRITICAL: Get ALL form values, not just current step
         const allFormValues = form.getFieldsValue(true);
-        
-        console.log("🔍 All Form Values:", allFormValues); // Debug log
 
         if (allFormValues.phone) {
           allFormValues.phone = formatPhoneNumber(allFormValues.phone);
         }
 
         const userData = prepareUserData(allFormValues);
-        
-        console.log("📦 Prepared User Data:", userData); // Debug log
-
         const result = await dispatch(register(userData));
 
         if (result.error) {
-          console.error("❌ Registration Error:", result.error);
           return;
         }
 
@@ -76,9 +142,21 @@ const AddUserForm = () => {
         // Only reset form on success
         form.resetFields();
 
-        navigate("/dashboard/staff", {
+        const isClient = allFormValues.userType === "client";
+        const name =
+          allFormValues.company ||
+          [allFormValues.firstName, allFormValues.lastName]
+            .filter(Boolean)
+            .join(" ") ||
+          "client";
+
+        navigate(isClient ? "/dashboard/clients" : "/dashboard/staff", {
           state: {
-            message: `Successfully added ${allFormValues.userType}: ${allFormValues.firstName} ${allFormValues.lastName}`,
+            message: `${name} has been added as a ${
+              isClient
+                ? allFormValues.clientCategory || "individual"
+                : "staff"
+            } ${isClient ? "client" : "member"}.`,
             userType: allFormValues.userType,
           },
         });
@@ -90,26 +168,30 @@ const AddUserForm = () => {
   );
 
   // Navigation handlers
-  const handleNext = useCallback((e) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    const stepFields = STEP_FIELDS[currentStep];
+  const handleNext = useCallback(
+    (e) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      const stepFields = STEP_FIELDS[currentStep];
 
-    if (stepFields && stepFields.length > 0) {
-      form
-        .validateFields(stepFields)
-        .then(() => {
-          setCurrentStep((prev) => prev + 1);
-        })
-        .catch((errorInfo) => {
-          console.log("Validation errors:", errorInfo);
-        });
-    } else {
-      setCurrentStep((prev) => prev + 1);
-    }
-  }, [currentStep, form, STEP_FIELDS]);
+      if (stepFields && stepFields.length > 0) {
+        form
+          .validateFields(stepFields)
+          .then(() => {
+            setCurrentStep((prev) => prev + 1);
+          })
+          .catch(({ errorFields }) => {
+            // Surface the first problem so the user knows why it blocked.
+            console.warn("Step validation failed:", errorFields);
+          });
+      } else {
+        setCurrentStep((prev) => prev + 1);
+      }
+    },
+    [currentStep, form, STEP_FIELDS]
+  );
 
   const handlePrevious = useCallback(() => {
     setCurrentStep((prev) => Math.max(0, prev - 1));
@@ -119,14 +201,22 @@ const AddUserForm = () => {
     (userType) => {
       setSelectedUserType(userType);
       if (userType === "client") {
-        form.setFieldsValue({ userType, role: "client" });
+        form.resetFields(STAFF_ONLY_FIELDS);
+        form.setFieldsValue({
+          userType,
+          role: "client",
+          adminLevel: "none",
+          clientCategory: "individual",
+        });
       } else {
-        form.resetFields(["role"]);
-        form.setFieldsValue({ userType });
+        form.resetFields(["role", ...CLIENT_ONLY_FIELDS]);
+        form.setFieldsValue({ userType, adminLevel: "none" });
       }
     },
     [form]
   );
+
+  const isClient = selectedUserType === "client";
 
   // Render current step content
   const renderStepContent = useMemo(() => {
@@ -140,7 +230,7 @@ const AddUserForm = () => {
           />
         );
       case 1:
-        return <BasicInfoStep />;
+        return <BasicInfoStep selectedUserType={selectedUserType} />;
       case 2:
         return <AccountStep />;
       case 3:
@@ -157,11 +247,17 @@ const AddUserForm = () => {
       <Card>
         <div className="text-center mb-8">
           <h2 className="text-2xl font-bold mb-2">
-            <TeamOutlined className="mr-3" />
-            Add New User
+            {isClient ? (
+              <UserOutlined className="mr-3" />
+            ) : (
+              <TeamOutlined className="mr-3" />
+            )}
+            {isClient ? "Add New Client" : "Add New User"}
           </h2>
           <p className="text-gray-500">
-            Register a new user with appropriate role and permissions
+            {isClient
+              ? "Register a client account — an individual or an organisation"
+              : "Register a new user with appropriate role and permissions"}
           </p>
         </div>
 
@@ -178,7 +274,15 @@ const AddUserForm = () => {
 
         <Steps current={currentStep} className="mb-8">
           {STEP_CONFIG.map((step) => (
-            <Step key={step.key} title={step.title} icon={step.icon} />
+            <Step
+              key={step.key}
+              title={
+                isClient
+                  ? CLIENT_STEP_TITLES[step.key]
+                  : step.title
+              }
+              icon={step.icon}
+            />
           ))}
         </Steps>
 
@@ -187,13 +291,13 @@ const AddUserForm = () => {
           onFinish={handleSubmit}
           layout="vertical"
           initialValues={{
-            userType: "staff",
+            userType: presetUserType,
             isActive: true,
             clientCategory: "individual",
             preferredContactMethod: "email",
             adminLevel: "none",
           }}
-          preserve={true}
+          preserve
           scrollToFirstError
         >
           {/* ✅ Hidden fields to preserve userType selection */}
@@ -214,10 +318,10 @@ const AddUserForm = () => {
               </Button>
 
               {currentStep < STEP_CONFIG.length - 1 ? (
-                <Button 
-                  type="primary" 
-                  htmlType="button" 
-                  onClick={(e) => handleNext(e)} 
+                <Button
+                  type="primary"
+                  htmlType="button"
+                  onClick={(e) => handleNext(e)}
                   onMouseDown={(e) => e.preventDefault()}
                   size="large"
                 >
@@ -229,10 +333,13 @@ const AddUserForm = () => {
                   htmlType="submit"
                   size="large"
                   loading={isLoading}
+                  icon={isClient ? <UserOutlined /> : <TeamOutlined />}
                 >
                   {isLoading
-                    ? "Adding User..."
-                    : `Add ${selectedUserType.charAt(0).toUpperCase() + selectedUserType.slice(1)}`}
+                    ? "Creating Account..."
+                    : isClient
+                      ? "Create Client Account"
+                      : "Add Staff Member"}
                 </Button>
               )}
             </Space>
@@ -248,6 +355,9 @@ const AddUserForm = () => {
             </strong>
           </Tag>
         </div>
+        <p className="mt-2 text-center text-xs text-gray-400">
+          A verification email is sent to the new account once it is created.
+        </p>
       </Card>
     </div>
   );

@@ -9,7 +9,13 @@ import {
 import PropTypes from "prop-types";
 import { genderOptions } from "../../../data/options";
 
-const BasicInfoStep = () => {
+const BasicInfoStep = ({ selectedUserType }) => {
+  // The model only enforces lastName and address for staff; client accounts may
+  // legitimately have neither (an individual with no surname on file, an
+  // organisation billed to a company address). Keep them optional here so the
+  // form never blocks on a field the API does not require.
+  const isClient = selectedUserType === "client";
+
   return (
     <div className="space-y-6">
       <Row gutter={[16, 16]}>
@@ -29,9 +35,14 @@ const BasicInfoStep = () => {
             name="lastName"
             label="Last Name"
             rules={[
-              { required: true, message: "Last name is required" },
-              { min: 2, message: "Minimum 2 characters" },
-            ]}>
+              {
+                validator: (_, value) =>
+                  !value || value.length >= 2
+                    ? Promise.resolve()
+                    : Promise.reject(new Error("Minimum 2 characters")),
+              },
+            ]}
+            extra={isClient ? "Optional" : undefined}>
             <Input placeholder="Doe" prefix={<UserOutlined />} size="large" />
           </Form.Item>
         </Col>
@@ -84,11 +95,22 @@ const BasicInfoStep = () => {
 
       <Form.Item
         name="address"
-        label="Address"
+        label="Contact Address"
         rules={[
-          { required: true, message: "Address is required" },
-          { min: 10, message: "Please provide complete address" },
-        ]}>
+          {
+            validator: (_, value) => {
+              if (isClient && !value) return Promise.resolve();
+              if (!value) return Promise.reject(new Error("Address is required"));
+              if (value.length < 10) {
+                return Promise.reject(
+                  new Error("Please provide complete address")
+                );
+              }
+              return Promise.resolve();
+            },
+          },
+        ]}
+        extra={isClient ? "Optional for clients" : undefined}>
         <Input.TextArea
           placeholder="No. 2, Maitama Close, Abuja"
           prefix={<HomeOutlined />}
@@ -102,7 +124,11 @@ const BasicInfoStep = () => {
           <Form.Item
             name="gender"
             label="Gender"
-            rules={[{ required: true, message: "Please select gender" }]}>
+            rules={
+              isClient
+                ? []
+                : [{ required: true, message: "Please select gender" }]
+            }>
             <Select
               options={genderOptions}
               placeholder="Select gender"
@@ -123,6 +149,14 @@ const BasicInfoStep = () => {
       </Row>
     </div>
   );
+};
+
+BasicInfoStep.propTypes = {
+  selectedUserType: PropTypes.oneOf(["client", "staff", "all"]),
+};
+
+BasicInfoStep.defaultProps = {
+  selectedUserType: "staff",
 };
 
 export default BasicInfoStep;

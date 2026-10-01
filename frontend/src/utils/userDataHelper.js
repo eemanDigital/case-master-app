@@ -39,13 +39,33 @@ export const prepareUserData = (values) => {
   }
 
   if (isClient) {
+    // A client is either a person or an organisation. Organisation-only fields
+    // are sent exclusively for corporate / government / NGO accounts so an
+    // individual client never carries company data.
+    const category = values.clientCategory || "individual";
+    const isOrganisation =
+      category === "corporate" || category === "government" || category === "ngo";
+
     baseData.clientDetails = {
-      company: values.company,
-      industry: values.industry,
-      clientCategory: values.clientCategory,
-      preferredContactMethod: values.preferredContactMethod,
+      clientCategory: category,
+      preferredContactMethod: values.preferredContactMethod || "email",
       billingAddress: values.billingAddress || values.address,
       referralSource: values.referralSource,
+      clientNotes: values.clientNotes,
+      ...(values.clientSince
+        ? {
+            clientSince: values.clientSince.format
+              ? values.clientSince.format("YYYY-MM-DD")
+              : values.clientSince,
+          }
+        : {}),
+      ...(isOrganisation
+        ? {
+            company: values.company,
+            industry: values.industry,
+            taxId: values.taxId,
+          }
+        : {}),
     };
     console.log("✅ Added client details");
   } else if (role === "lawyer") {

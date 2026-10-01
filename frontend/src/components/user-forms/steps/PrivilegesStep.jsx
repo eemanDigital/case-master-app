@@ -1,15 +1,115 @@
 // components/user-forms/steps/PrivilegesStep.jsx - NEW USER MODEL
-// Assigns the professional role and administrative level.
-import { Form, Select, Alert, Divider, Space, Card, Tag } from "antd";
+// Assigns the professional role and administrative level for staff. Clients
+// have neither, so they get a read-only review of what will be created.
+import { Form, Select, Alert, Divider, Space, Card, Tag, Descriptions } from "antd";
 import {
   CrownOutlined,
   SafetyCertificateOutlined,
+  CheckCircleOutlined,
 } from "@ant-design/icons";
 import PropTypes from "prop-types";
 import { roleOptions, adminLevelOptions } from "../../../data/options";
 
+const CATEGORY_LABELS = {
+  individual: "Individual",
+  corporate: "Corporate",
+  government: "Government",
+  ngo: "NGO / Non-Profit",
+};
+
 const PrivilegesStep = ({ selectedUserType }) => {
   const isClient = selectedUserType === "client";
+
+  if (isClient) {
+    return (
+      <div className="space-y-6">
+        <Alert
+          message="Review Client Account"
+          description="Client accounts carry no firm role and no administrative privileges. Confirm the details below before creating the account."
+          type="success"
+          showIcon
+        />
+
+        <Card title="What will be created" size="small">
+          <Form.Item noStyle shouldUpdate>
+            {({ getFieldValue }) => {
+              const category = getFieldValue("clientCategory");
+              const company = getFieldValue("company");
+              const [firstName, lastName] = [
+                getFieldValue("firstName"),
+                getFieldValue("lastName"),
+              ];
+              const label =
+                company ||
+                [firstName, lastName].filter(Boolean).join(" ") ||
+                "New client";
+
+              return (
+                <Descriptions
+                  column={{ xs: 1, sm: 2 }}
+                  size="small"
+                  items={[
+                    {
+                      key: "name",
+                      label: "Client",
+                      children: label,
+                    },
+                    {
+                      key: "type",
+                      label: "Client Type",
+                      children: (
+                        <Tag color="blue">
+                          {CATEGORY_LABELS[category] || "Individual"}
+                        </Tag>
+                      ),
+                    },
+                    {
+                      key: "email",
+                      label: "Email",
+                      children: getFieldValue("email") || "—",
+                    },
+                    {
+                      key: "phone",
+                      label: "Phone",
+                      children: getFieldValue("phone") || "—",
+                    },
+                    {
+                      key: "role",
+                      label: "Role",
+                      children: <Tag>client</Tag>,
+                    },
+                    {
+                      key: "admin",
+                      label: "Admin Level",
+                      children: <Tag color="default">none</Tag>,
+                    },
+                    ...(getFieldValue("industry")
+                      ? [
+                          {
+                            key: "industry",
+                            label: "Industry",
+                            children: getFieldValue("industry"),
+                          },
+                        ]
+                      : []),
+                    ...(getFieldValue("taxId")
+                      ? [
+                          {
+                            key: "tax",
+                            label: "Tax ID",
+                            children: getFieldValue("taxId"),
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
+              );
+            }}
+          </Form.Item>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -34,21 +134,15 @@ const PrivilegesStep = ({ selectedUserType }) => {
         >
           <Select
             size="large"
-            options={
-              isClient
-                ? [{ value: "client", label: "Client" }]
-                : roleOptions.filter((r) => r.value !== "client")
-            }
+            options={roleOptions.filter((r) => r.value !== "client")}
             placeholder="Select role"
-            disabled={isClient}
             suffixIcon={<SafetyCertificateOutlined />}
           />
         </Form.Item>
 
         <p className="text-gray-500 text-xs mt-2">
-          {isClient
-            ? "Client accounts automatically use the 'client' role."
-            : "The role determines day-to-day functions such as case handling, documents, and billing access."}
+          The role determines day-to-day functions such as case handling,
+          documents, and billing access.
         </p>
       </Card>
 
@@ -69,7 +163,6 @@ const PrivilegesStep = ({ selectedUserType }) => {
                 size="large"
                 options={adminLevelOptions}
                 placeholder="Select admin level"
-                disabled={isClient}
               />
             </Form.Item>
             <p className="text-sm text-gray-600 ml-6">
@@ -102,6 +195,13 @@ const PrivilegesStep = ({ selectedUserType }) => {
                   {getFieldValue("adminLevel") || "none"}
                 </Tag>
               </p>
+              {!getFieldValue("adminLevel") ||
+              getFieldValue("adminLevel") === "none" ? (
+                <p className="flex items-center gap-1 text-xs text-gray-500">
+                  <CheckCircleOutlined className="text-green-500" />
+                  This account will have no access to firm administration.
+                </p>
+              ) : null}
             </div>
           )}
         </Form.Item>

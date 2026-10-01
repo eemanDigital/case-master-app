@@ -34,6 +34,7 @@ import {
   SafetyCertificateOutlined,
   RollbackOutlined,
   ExclamationCircleOutlined,
+  BankOutlined,
 } from "@ant-design/icons";
 import { Link, useLocation } from "react-router-dom";
 import dayjs from "dayjs";
@@ -70,6 +71,13 @@ const ROLE_COLORS = {
 };
 
 const getRoleColor = (role) => ROLE_COLORS[role] || "default";
+
+const CATEGORY_COLORS = {
+  individual: "blue",
+  corporate: "geekblue",
+  government: "cyan",
+  ngo: "green",
+};
 
 // ─── Statistics panel ────────────────────────────────────────────────────────
 
@@ -419,6 +427,29 @@ const UserManagement = ({
             </Tag>
           ),
         },
+        activeTab === "clients" && {
+          title: "Client Type",
+          key: "clientCategory",
+          width: 150,
+          render: (_, record) => {
+            const category = record.clientDetails?.clientCategory;
+            const company = record.clientDetails?.company;
+            return (
+              <div className="flex flex-col">
+                <Tag
+                  color={CATEGORY_COLORS[category] || "default"}
+                  className="w-fit capitalize rounded-md">
+                  {category || "individual"}
+                </Tag>
+                {company && (
+                  <span className="text-xs text-gray-500 truncate max-w-[140px]">
+                    {company}
+                  </span>
+                )}
+              </div>
+            );
+          },
+        },
         activeTab === "staff" && {
           title: "Position",
           key: "position",
@@ -673,9 +704,19 @@ const UserManagement = ({
                 loading={loading}>
                 Refresh
               </Button>
-              <Link to="/dashboard/staff/add">
-                <Button type="primary" icon={<UserOutlined />}>
-                  Add User
+              <Link
+                to="/dashboard/staff/add"
+                state={{ userType: activeTab === "clients" ? "client" : "staff" }}>
+                <Button
+                  type="primary"
+                  icon={
+                    activeTab === "clients" ? (
+                      <BankOutlined />
+                    ) : (
+                      <UserOutlined />
+                    )
+                  }>
+                  {activeTab === "clients" ? "Add Client" : "Add User"}
                 </Button>
               </Link>
             </Col>

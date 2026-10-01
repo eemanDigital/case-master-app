@@ -14,6 +14,19 @@ const ProfessionalStep = ({ selectedUserType }) => {
   const isClient = selectedUserType === "client";
   const isLawyerRole = !isClient && role === "lawyer";
 
+  // Clients have no selectable role — it is derived from userType. The field is
+  // still registered (hidden) so the value survives and is submitted.
+  if (isClient) {
+    return (
+      <div className="professional-step">
+        <Form.Item name="role" hidden>
+          <input type="hidden" />
+        </Form.Item>
+        <ClientFormSection />
+      </div>
+    );
+  }
+
   return (
     <div className="professional-step">
       {/* The role selector decides which section below is rendered, so it must
@@ -22,27 +35,16 @@ const ProfessionalStep = ({ selectedUserType }) => {
       <Form.Item
         name="role"
         label="Professional Role"
-        rules={
-          isClient
-            ? []
-            : [{ required: true, message: "Please select a role" }]
-        }
+        rules={[{ required: true, message: "Please select a role" }]}
       >
         <Select
           size="large"
-          options={
-            isClient
-              ? [{ value: "client", label: "Client" }]
-              : roles.filter((r) => r.value && r.value !== "client")
-          }
+          options={roles.filter((r) => r.value && r.value !== "client")}
           placeholder="Select role"
-          disabled={isClient}
         />
       </Form.Item>
 
-      {isClient ? (
-        <ClientFormSection />
-      ) : isLawyerRole ? (
+      {isLawyerRole ? (
         <LawyerFormSection />
       ) : (
         <>
