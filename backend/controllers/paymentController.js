@@ -336,11 +336,38 @@ exports.updatePayment = catchAsync(async (req, res, next) => {
     await invoice.save();
   }
 
-  const updatedPayment = await Payment.findByIdAndUpdate(
-    req.params.paymentId,
-    req.body,
-    { new: true, runValidators: true },
-  )
+  // Never spread req.body into the update. Ownership columns (firmId, invoice,
+// client, case) must not be rewritable: passing the whole body let a caller
+// move a payment to a different firm or re-point it at another client's
+// invoice, which then flowed into the invoice.amountPaid arithmetic above.
+const allowedFields = [
+  "amount",
+  "paymentMethod",
+  "paymentReference",
+  "transactionId",
+  "status",
+  "paymentDate",
+  "notes",
+  "receipt",
+  "chequeNumber",
+  "chequeDate",
+  "bankName",
+  "accountName",
+  "accountNumber",
+  "processedBy",
+  "processedAt",
+];
+
+const updatePayload = {};
+for (const field of allowedFields) {
+  if (req.body[field] !== undefined) updatePayload[field] = req.body[field];
+}
+
+const updatedPayment = await Payment.findByIdAndUpdate(
+  req.params.paymentId,
+  updatePayload,
+  { new: true, runValidators: true },
+)
     .populate("invoice", "invoiceNumber title total")
     .populate("client", "firstName lastName")
     .populate("case", "firstParty secondParty suitNo");

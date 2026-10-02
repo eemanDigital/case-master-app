@@ -137,6 +137,23 @@ webhookSchema.methods.toJSON = function () {
 webhookSchema.methods.trigger = async function (event, payload) {
   const WebhookDelivery = mongoose.model("WebhookDelivery");
 
+  // Re-validate immediately before dispatch. Doing this only at creation time
+  // is not enough: DNS can be changed after the webhook is stored, so a
+  // previously-safe hostname can be re-pointed at an internal address
+  // (DNS rebinding). See utils/webhookUrlValidator.js.
+  const { parseWebhookUrl, assertWebhookUrlIsPublic, sanitizeWebhookHeaders } =
+    require("../utils/webhookUrlValidator");
+
+  const parsed = parseWebhookUrl(this.url);
+  if (!parsed.ok) {
+    throw new Error(parsed.error);
+  }
+
+  const isPublic = await assertWebhookUrlIsPublic(parsed.url);
+  if (!isPublic.ok) {
+    throw new Error(isPublic.error);
+  }
+
   const delivery = new WebhookDelivery({
     webhookId: this._id,
     firmId: this.firmId,
@@ -146,6 +163,7 @@ webhookSchema.methods.trigger = async function (event, payload) {
   });
 
   const signature = this.generateSignature(payload);
+  const safeHeaders = sanitizeWebhookHeaders(this.headers);
 
   try {
     const response = await fetch(this.url, {
@@ -155,10 +173,13 @@ webhookSchema.methods.trigger = async function (event, payload) {
         "X-Webhook-Signature": signature,
         "X-Webhook-Event": event,
         "X-Webhook-Id": this._id.toString(),
-        ...Object.fromEntries(this.headers || new Map()),
+        ...safeHeaders,
       },
       body: JSON.stringify(payload),
       signal: AbortSignal.timeout(30000),
+      // Do not follow redirects: an open redirect to an internal address would
+      // bypass the address checks performed above.
+      redirect: "manual",
     });
 
     const responseBody = await response.text();

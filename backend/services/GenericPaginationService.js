@@ -131,11 +131,31 @@ class GenericPaginationService {
       let query = this.model.find(finalFilter);
 
       if (select) {
-        query = query.select(select);
+        // `select` is attacker-controlled. Mongoose's `select: false` on
+        // password/verificationToken only protects a plain `.find()`, not an
+        // explicit `+field` projection, so `?select=+password` would otherwise
+        // return secrets. Only plain inclusions are accepted; every leading "+"
+        // (re-inclusion of a hidden field) is stripped.
+        const safeSelect = String(select)
+          .split(",")
+          .map((f) => f.trim())
+          .filter((f) => f && !f.startsWith("+"))
+          .join(" ");
+
+        if (safeSelect) query = query.select(safeSelect);
       }
 
-      // Handle population
-      const populateOptions = QueryBuilder.buildPopulate(populate);
+      // Handle population.
+      // `populate` comes straight from req.query, so it is attacker-controlled.
+      // Only paths the model configuration declares are honoured; anything else
+      // is dropped and we fall back to the server-chosen default set.
+      const allowedPopulate = this.config.defaultPopulate.map((p) =>
+        typeof p === "string" ? p : p.path,
+      );
+      const populateOptions = QueryBuilder.buildPopulate(
+        populate,
+        allowedPopulate,
+      );
       if (populateOptions && populateOptions.length > 0) {
         query = query.populate(populateOptions);
       } else if (this.config.defaultPopulate.length > 0) {
@@ -402,7 +422,13 @@ class GenericPaginationService {
       const sanitizedPage = Math.max(1, parseInt(page));
 
       const sortOptions = QueryBuilder.buildSort(sort, this.config.defaultSort);
-      const populateOptions = QueryBuilder.buildPopulate(populate);
+      const advancedAllowedPopulate = this.config.defaultPopulate.map((p) =>
+        typeof p === "string" ? p : p.path,
+      );
+      const populateOptions = QueryBuilder.buildPopulate(
+        populate,
+        advancedAllowedPopulate,
+      );
 
       let sanitizedCriteria = QueryBuilder.sanitizeCriteria(criteria);
 

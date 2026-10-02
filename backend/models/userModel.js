@@ -31,6 +31,20 @@ const ROLES = [
 // Administrative authority levels, ordered from lowest to highest.
 const ADMIN_LEVELS = ["none", "admin", "super-admin"];
 
+// Password policy, defined once so that the schema validator and the
+// controller-level checks used by resetPassword/changePassword can never drift
+// apart. The controllers need it because those flows cannot simply run a full
+// `document.validate()`: that would also re-validate unrelated legacy fields
+// and block a legitimate password change.
+const PASSWORD_POLICY_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+const PASSWORD_POLICY_MESSAGE =
+  "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character";
+
+const isStrongPassword = (value) =>
+  typeof value === "string" && PASSWORD_POLICY_REGEX.test(value);
+
 const userSchema = new mongoose.Schema(
   {
     firmId: {
@@ -389,16 +403,13 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       select: false,
-      required: [true, "Password is required"],
+      required: [1, "Password is required"],
       minLength: [8, "Password must have at least 8 characters"],
       validate: {
         validator: function (value) {
-          return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(
-            value,
-          );
+          return isStrongPassword(value);
         },
-        message:
-          "Password must be at least 8 characters long and include uppercase, lowercase, number, and special character",
+        message: PASSWORD_POLICY_MESSAGE,
       },
     },
 
@@ -703,6 +714,66 @@ userSchema.pre("save", async function (next) {
   }
   next();
 });
+
+/**
+ * ===============================
+ * PASSWORD VALIDATION (INSTANCE)
+ * ===============================
+ */
+/**
+ * Validate a pending password change without validating the whole document.
+ *
+ * Returns a ValidationError on failure, or null when the password is
+ * acceptable. Used by resetPassword and changePassword, which previously called
+ * `save({ validateBeforeSave: false })` — that skipped the password policy
+ * entirely, so those endpoints accepted a single-character password and
+ * ignored a mismatched confirmation.
+ */
+userSchema.methods.validatePassword = function validatePassword() {
+  const fail = (message) => {
+    const err = new mongoose.Error.ValidationError(this);
+    err.addError("password", new mongoose.Error.ValidatorError({
+      path: "password",
+      message,
+      type: "user defined",
+    }));
+    return err;
+  };
+
+  if (!this.password) {
+    return fail("Password is required");
+  }
+
+  if (typeof this.password !== "string" || this.password.length < 8) {
+    return fail("Password must have at least 8 characters");
+  }
+
+  if (!isStrongPassword(this.password)) {
+    return fail(PASSWORD_POLICY_MESSAGE);
+  }
+
+  if (!this.passwordConfirm) {
+    const err = new mongoose.Error.ValidationError(this);
+    err.addError("passwordConfirm", new mongoose.Error.ValidatorError({
+      path: "passwordConfirm",
+      message: "Please confirm your password",
+      type: "required",
+    }));
+    return err;
+  }
+
+  if (this.password !== this.passwordConfirm) {
+    const err = new mongoose.Error.ValidationError(this);
+    err.addError("passwordConfirm", new mongoose.Error.ValidatorError({
+      path: "passwordConfirm",
+      message: "Passwords do not match",
+      type: "user defined",
+    }));
+    return err;
+  }
+
+  return null;
+};
 
 /**
  * ===============================

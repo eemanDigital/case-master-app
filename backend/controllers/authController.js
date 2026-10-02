@@ -690,13 +690,32 @@ exports.login = catchAsync(async (req, res, next) => {
     return next(new AppError("Please provide email and password!", 400));
   }
 
-  // 2) Check if user exists and select password
-  const user = await User.findOne({ email: email.toLowerCase() }).select(
-    "+password",
-  );
-  if (!user) {
+  // 2) Resolve the user WITHIN the firm.
+  // Email is only unique per firm (see userModel compound index), so an
+  // unscoped `findOne({ email })` could return a different tenant's account
+  // and let anyone authenticate as them. `req.firm` is populated by the
+  // subdomain middleware from the request host.
+  const firmFilter = req.firm?._id ? { firmId: req.firm._id } : {};
+  const candidates = await User.find({
+    email: email.toLowerCase(),
+    ...firmFilter,
+  }).select("+password");
+
+  // Without firm context an email may legitimately match several firms.
+  // Refuse to guess rather than picking an arbitrary tenant's account.
+  if (candidates.length === 0) {
     return next(new AppError("Incorrect email or password", 401));
   }
+  if (candidates.length > 1) {
+    return next(
+      new AppError(
+        "This email is registered to more than one firm. Please sign in from your firm's sign-in page.",
+        401,
+      ),
+    );
+  }
+
+  const user = candidates[0];
 
   // 3) Disallow login for deleted accounts
   if (user.isDeleted === true) {
@@ -734,12 +753,13 @@ exports.login = catchAsync(async (req, res, next) => {
   // 6) ✅ DEVICE / 2FA CHECK — must come BEFORE the verification check.
   //    This ensures users on a new device always get the code flow,
   //    whether or not their email has been verified yet.
-  const currentUserAgent = parser(req.headers["user-agent"]).ua;
-  const isKnownDevice = user.userAgent.includes(currentUserAgent);
+  const currentUserAgent = parser(req.headers["user-agent"] || "").ua;
+  const isKnownDevice = (user.userAgent || []).includes(currentUserAgent);
 
   if (!isKnownDevice) {
-    const loginCode = Math.floor(100000 + Math.random() * 900000);
-    console.log("🔐 2FA Code:", loginCode);
+    // crypto.randomInt is required here: Math.random() is not a CSPRNG, so
+    // login codes were predictable from a handful of observed values.
+    const loginCode = crypto.randomInt(100000, 1000000);
 
     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());
 
@@ -813,21 +833,28 @@ exports.sendLoginCode = catchAsync(async (req, res, next) => {
     return next(new AppError("Email is required", 400));
   }
 
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const user = await User.findOne({
+    email: email.toLowerCase(),
+    ...(req.firm?._id ? { firmId: req.firm._id } : {}),
+  });
+
+  // Do not reveal whether the address is registered. Both branches report the
+  // same thing so this endpoint cannot be used to enumerate accounts.
   if (!user) {
-    return next(new AppError("No user found with this email address", 404));
+    return res.status(200).json({
+      status: "success",
+      message:
+        "If an account exists for that address, a verification code has been sent.",
+    });
   }
 
-  // Generate new code
-  const loginCode = Math.floor(100000 + Math.random() * 900000).toString();
-  console.log("🔐 New Login Code:", loginCode);
+  // Generate new code (CSPRNG, not Math.random)
+  const loginCode = crypto.randomInt(100000, 1000000).toString();
 
   const encryptedLoginCode = cryptr.encrypt(loginCode);
 
   // Delete any existing tokens
   await Token.deleteMany({ userId: user._id });
-
-  console.log(loginCode);
 
   // Save new token
   await new Token({
@@ -887,9 +914,17 @@ exports.loginWithCode = catchAsync(async (req, res, next) => {
     return next(new AppError("Please enter a valid 6-digit code", 400));
   }
 
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const user = await User.findOne({
+    email: email.toLowerCase(),
+    ...(req.firm?._id ? { firmId: req.firm._id } : {}),
+  });
+
+  // Uniform response for unknown vs known email: this is an unauthenticated
+  // endpoint, so distinguishing the two would allow account enumeration.
   if (!user) {
-    return next(new AppError("User not found", 404));
+    return next(
+      new AppError("Invalid verification code or email address", 400),
+    );
   }
 
   // Find valid token
@@ -1058,14 +1093,17 @@ exports.restrictTo = (...roles) => {
     });
 
     if (!hasAccess) {
-      return res.status(200).json({
-        status: "success",
-        message: "No records found",
-        data: [],
-        total: 0,
-        page: 1,
-        results: 0,
-      });
+      // This previously responded 200 "No records found", which turned every
+      // restrictTo() guard in the codebase into a silent no-op: the client saw
+      // an empty, successful-looking list instead of a permission error.
+      // A 403 is the correct response and is required so that authorization
+      // actually stops the request from reaching the controller.
+      return next(
+        new AppError(
+          "You do not have permission to perform this action",
+          403,
+        ),
+      );
     }
 
     next();
@@ -1175,9 +1213,20 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     return next(new AppError("Please provide your email address.", 400));
   }
 
-  const user = await User.findOne({ email: email.toLowerCase() });
+  const user = await User.findOne({
+    email: email.toLowerCase(),
+    ...(req.firm?._id ? { firmId: req.firm._id } : {}),
+  });
+
+  // Always respond identically whether or not the account exists. Returning
+  // 404 "There is no user with email address." let anyone enumerate which
+  // emails are registered (and, without firm context, which firms they are in).
   if (!user) {
-    return next(new AppError("There is no user with email address.", 404));
+    return res.status(200).json({
+      status: "success",
+      message:
+        "If an account with that email exists, a password reset link has been sent.",
+    });
   }
 
   // Check for user token and delete if found
@@ -1217,7 +1266,11 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
 
   try {
     await sendMail(subject, send_to, send_from, reply_to, template, context);
-    res.status(200).json({ message: "Reset Email Sent" });
+    res.status(200).json({
+      status: "success",
+      message:
+        "If an account with that email exists, a password reset link has been sent.",
+    });
   } catch (err) {
     return next(
       new AppError(
@@ -1260,7 +1313,16 @@ exports.resetPassword = catchAsync(async (req, res, next) => {
   user.passwordConfirm = password;
   user.passwordChangedAt = Date.now();
 
-  await user.save({ validateBeforeSave: false });
+  // Do NOT skip validation here. `validateBeforeSave: false` disabled the
+  // password-policy validator, so resetPassword accepted any password —
+  // including a 1-character one — and bypassed the confirm-password match.
+  const passwordError = await user.validatePassword();
+
+  if (passwordError) {
+    return next(new AppError(passwordError.message, 400));
+  }
+
+  await user.save();
 
   // Delete the used token
   await Token.deleteMany({ userId: user._id });
@@ -1294,7 +1356,15 @@ exports.changePassword = catchAsync(async (req, res, next) => {
   user.passwordConfirm = req.body.passwordConfirm;
   user.passwordChangedAt = Date.now();
 
-  await user.save({ validateBeforeSave: false });
+  // Same reason as resetPassword: validation must run so the password policy
+  // and the passwordConfirm match are enforced on this path too.
+  const passwordError = await user.validatePassword();
+
+  if (passwordError) {
+    return next(new AppError(passwordError.message, 400));
+  }
+
+  await user.save();
 
   res.status(200).json({
     message: "Password Changed Successfully",
@@ -1445,15 +1515,14 @@ exports.loginWithGoogle = catchAsync(async (req, res, next) => {
   }
 
   // Trigger 2FA for unknown user agent
-  const ua = parser(req.headers["user-agent"]);
+  const ua = parser(req.headers["user-agent"] || "");
   const currentUserAgent = ua.ua;
 
-  const allowedAgent = user.userAgent.includes(currentUserAgent);
+  const allowedAgent = (user.userAgent || []).includes(currentUserAgent);
 
   if (!allowedAgent) {
-    // Generate 6 digit code
-    const loginCode = Math.floor(100000 + Math.random() * 900000);
-    console.log(loginCode);
+    // Generate 6 digit code using a CSPRNG
+    const loginCode = crypto.randomInt(100000, 1000000);
 
     // Encrypt loginCode
     const encryptedLoginCode = cryptr.encrypt(loginCode.toString());

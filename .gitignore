@@ -1,0 +1,22 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+build/
+coverage/
+
+# Secrets — never commit real environment files
+config.env
+config.env.*
+!config.env.example
+
+# Uploaded user files
+backend/public/
+
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

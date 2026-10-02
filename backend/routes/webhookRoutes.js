@@ -4,6 +4,11 @@ const { protect, restrictTo } = require("../controllers/authController");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const crypto = require("crypto");
+const {
+  parseWebhookUrl,
+  assertWebhookUrlIsPublic,
+  sanitizeWebhookHeaders,
+} = require("../utils/webhookUrlValidator");
 
 const router = express.Router();
 
@@ -43,14 +48,26 @@ router.post("/", restrictTo("admin"), catchAsync(async (req, res, next) => {
     return next(new AppError("Name, URL, and at least one event are required", 400));
   }
 
+  // Reject internal/private destinations up front (SSRF). The endpoint performs
+  // the request server-side, and delivery bodies are returned to the caller.
+  const parsedUrl = parseWebhookUrl(url);
+  if (!parsedUrl.ok) {
+    return next(new AppError(parsedUrl.error, 400));
+  }
+
+  const isPublic = await assertWebhookUrlIsPublic(parsedUrl.url);
+  if (!isPublic.ok) {
+    return next(new AppError(isPublic.error, 400));
+  }
+
   const secret = crypto.randomBytes(32).toString("hex");
 
   const webhook = await Webhook.create({
     firmId,
     name,
-    url,
+    url: parsedUrl.url.toString(),
     events,
-    headers,
+    headers: sanitizeWebhookHeaders(headers),
     secret,
     createdBy: req.user.id,
   });
@@ -92,9 +109,19 @@ router.patch("/:id", restrictTo("admin"), catchAsync(async (req, res, next) => {
   }
 
   if (name) webhook.name = name;
-  if (url) webhook.url = url;
+  if (url) {
+    const parsedUrl = parseWebhookUrl(url);
+    if (!parsedUrl.ok) {
+      return next(new AppError(parsedUrl.error, 400));
+    }
+    const isPublic = await assertWebhookUrlIsPublic(parsedUrl.url);
+    if (!isPublic.ok) {
+      return next(new AppError(isPublic.error, 400));
+    }
+    webhook.url = parsedUrl.url.toString();
+  }
   if (events) webhook.events = events;
-  if (headers) webhook.headers = headers;
+  if (headers) webhook.headers = sanitizeWebhookHeaders(headers);
   if (typeof isActive === "boolean") webhook.isActive = isActive;
   if (retryPolicy) webhook.retryPolicy = retryPolicy;
 

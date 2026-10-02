@@ -266,17 +266,30 @@ const twoFactorLimiter = rateLimit({
   },
 });
 
-// 4. ✅ Development Mode - Disable Rate Limiting
-if (process.env.NODE_ENV === "development") {
-  console.log("⚠️  RATE LIMITING DISABLED IN DEVELOPMENT MODE");
+// 4. Rate limiting opt-out
+//
+// Rate limiting used to be skipped whenever NODE_ENV === "development". That is
+// dangerous, because config.env sets NODE_ENV=development — which silently
+// disabled brute-force protection on /login, /forgotpassword and the 2FA
+// endpoints on any deployment that shipped that config file. Rate limiting is
+// now on by default and can only be turned off with an explicit
+// DISABLE_RATE_LIMIT=true, so forgetting to set NODE_ENV=production can no
+// longer remove the protection.
+const rateLimitingDisabled =
+  String(process.env.DISABLE_RATE_LIMIT).toLowerCase() === "true";
+
+if (rateLimitingDisabled) {
+  console.warn(
+    "\x1b[41m%s\x1b[0m",
+    "⚠️  RATE LIMITING DISABLED BY DISABLE_RATE_LIMIT=true — do not run this in production",
+  );
 }
 
 // ==========================================
 // APPLY RATE LIMITERS TO ROUTES
 // ==========================================
 
-// ✅ Apply ONLY to unauthenticated routes in production
-if (process.env.NODE_ENV !== "development") {
+if (!rateLimitingDisabled) {
   // General API limiter (lenient, skips authenticated users)
   app.use("/api/v1/", generalApiLimiter);
 
