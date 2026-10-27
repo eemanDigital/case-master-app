@@ -1,12 +1,17 @@
 const PaginationServiceFactory = require("../services/PaginationServiceFactory");
 const modelConfigs = require("../config/modelConfigs");
 const Matter = require("../models/matterModel");
-const AdvisoryDetail = require("../models/advisorydetailModel");
+const AdvisoryDetail = require("../models/advisoryDetailModel");
 const Firm = require("../models/firmModel");
 const catchAsync = require("../utils/catchAsync");
 const AppError = require("../utils/appError");
 const mongoose = require("mongoose");
-const { GenericPdfGenerator, formatDate, COLORS, getStatusColors } = require("../utils/generateGenericPdf");
+const {
+  GenericPdfGenerator,
+  formatDate,
+  COLORS,
+  getStatusColors,
+} = require("../utils/generateGenericPdf");
 const PDFDocument = require("pdfkit");
 
 // Helper function to draw status badge in PDF
@@ -15,7 +20,11 @@ function drawStatusBadge(doc, status, x, y) {
   const label = String(status || "N/A").toUpperCase();
   const badgeW = doc.widthOfString(label, { fontSize: 8 }) + 12;
   doc.roundedRect(x, y, badgeW, 14, 2).fill(bg);
-  doc.fillColor(fg).fontSize(8).font("Helvetica-Bold").text(label, x + 6, y + 3);
+  doc
+    .fillColor(fg)
+    .fontSize(8)
+    .font("Helvetica-Bold")
+    .text(label, x + 6, y + 3);
 }
 const path = require("path");
 
@@ -319,7 +328,11 @@ exports.updateAdvisoryDetails = catchAsync(async (req, res, next) => {
     return arr.map((item) => {
       const processed = { ...item };
       // If _id starts with "temp_", remove it so MongoDB generates a new one
-      if (processed._id && typeof processed._id === "string" && processed._id.startsWith("temp_")) {
+      if (
+        processed._id &&
+        typeof processed._id === "string" &&
+        processed._id.startsWith("temp_")
+      ) {
         delete processed._id;
       }
       return processed;
@@ -337,7 +350,9 @@ exports.updateAdvisoryDetails = catchAsync(async (req, res, next) => {
       Object.keys(updateObj[key]).forEach((nestedKey) => {
         if (nestedKey === "risks") {
           // Process risks array - convert temp IDs
-          setFields[`riskAssessment.${nestedKey}`] = processArrayItems(updateObj[key][nestedKey]);
+          setFields[`riskAssessment.${nestedKey}`] = processArrayItems(
+            updateObj[key][nestedKey],
+          );
         } else {
           setFields[`riskAssessment.${nestedKey}`] = updateObj[key][nestedKey];
         }
@@ -365,7 +380,11 @@ exports.updateAdvisoryDetails = catchAsync(async (req, res, next) => {
     } else if (key === "legalPrecedents") {
       // Process and replace entire legal precedents array
       setFields[key] = processArrayItems(updateObj[key]);
-    } else if (key === "jurisdiction" || key === "applicableLaws" || key === "regulatoryBodies") {
+    } else if (
+      key === "jurisdiction" ||
+      key === "applicableLaws" ||
+      key === "regulatoryBodies"
+    ) {
       // Replace array fields
       setFields[key] = updateObj[key];
     } else {
@@ -1444,7 +1463,9 @@ exports.addComplianceItem = catchAsync(async (req, res, next) => {
   }
 
   const newItem =
-    advisoryDetail.complianceChecklist[advisoryDetail.complianceChecklist.length - 1];
+    advisoryDetail.complianceChecklist[
+      advisoryDetail.complianceChecklist.length - 1
+    ];
 
   res.status(200).json({
     status: "success",
@@ -1527,7 +1548,9 @@ exports.deleteComplianceItem = catchAsync(async (req, res, next) => {
   );
 
   if (!advisoryDetail) {
-    return next(new AppError("Advisory details or compliance item not found", 404));
+    return next(
+      new AppError("Advisory details or compliance item not found", 404),
+    );
   }
 
   res.status(200).json({
@@ -1619,7 +1642,9 @@ exports.addRiskItem = catchAsync(async (req, res, next) => {
   }
 
   const newRisk =
-    advisoryDetail.riskAssessment.risks[advisoryDetail.riskAssessment.risks.length - 1];
+    advisoryDetail.riskAssessment.risks[
+      advisoryDetail.riskAssessment.risks.length - 1
+    ];
 
   res.status(200).json({
     status: "success",
@@ -1776,7 +1801,8 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
     String(v || "")
       .replace(/[_-]+/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase());
-  const labelOf = (map, v) => (v == null || v === "" ? "—" : map[v] || titleCase(v));
+  const labelOf = (map, v) =>
+    v == null || v === "" ? "—" : map[v] || titleCase(v);
   const fmtDate = (v) => (v ? formatDate(v) : "—");
   const money = (m) => {
     if (m == null) return "—";
@@ -1795,10 +1821,24 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
     "—";
   const statusAccent = (s) => {
     const x = String(s || "").toLowerCase();
-    if (["delivered", "approved", "implemented", "answered", "compliant"].includes(x)) return COLORS.success;
-    if (["active", "pending", "in-progress", "researching", "on-hold"].includes(x)) return COLORS.info;
-    if (["rejected", "non-compliant", "critical", "overdue"].includes(x)) return COLORS.danger;
-    if (["partially-compliant", "partially-won", "medium"].includes(x)) return COLORS.warning;
+    if (
+      [
+        "delivered",
+        "approved",
+        "implemented",
+        "answered",
+        "compliant",
+      ].includes(x)
+    )
+      return COLORS.success;
+    if (
+      ["active", "pending", "in-progress", "researching", "on-hold"].includes(x)
+    )
+      return COLORS.info;
+    if (["rejected", "non-compliant", "critical", "overdue"].includes(x))
+      return COLORS.danger;
+    if (["partially-compliant", "partially-won", "medium"].includes(x))
+      return COLORS.warning;
     return COLORS.navyMid;
   };
   function buildFirmContact(firm) {
@@ -1854,7 +1894,15 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
   ).length;
   const risk = d.riskAssessment?.overallRisk || "";
   const riskLabel =
-    risk === "critical" ? "Critical" : risk === "high" ? "High" : risk === "medium" ? "Medium" : risk === "low" ? "Low" : "—";
+    risk === "critical"
+      ? "Critical"
+      : risk === "high"
+        ? "High"
+        : risk === "medium"
+          ? "Medium"
+          : risk === "low"
+            ? "Low"
+            : "—";
 
   // ── Matter overview (KPI cards) ───────────────────────────────────────────
   pdf.addSection("Matter Overview");
@@ -1871,10 +1919,16 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
     },
     {
       label: "Deliverables",
-      value: deliverables.length ? `${deliveredCount}/${deliverables.length}` : "—",
+      value: deliverables.length
+        ? `${deliveredCount}/${deliverables.length}`
+        : "—",
       accent: COLORS.info,
     },
-    { label: "Status", value: titleCase(matter.status), accent: statusAccent(matter.status) },
+    {
+      label: "Status",
+      value: titleCase(matter.status),
+      accent: statusAccent(matter.status),
+    },
   ]);
 
   pdf.addKeyValueGrid(
@@ -1899,7 +1953,10 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
       { label: "Client Company", value: matter.client?.companyName || "—" },
       { label: "Client Email", value: matter.client?.email || "—" },
       { label: "Client Phone", value: matter.client?.phone || "—" },
-      { label: "Account Officer(s)", value: (matter.accountOfficer || []).map(personName).join(", ") || "—" },
+      {
+        label: "Account Officer(s)",
+        value: (matter.accountOfficer || []).map(personName).join(", ") || "—",
+      },
       { label: "Reference", value: matter.officeFileNo || "—" },
     ],
     { cols: 2 },
@@ -1909,7 +1966,11 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
   pdf.addSection("Advisory Overview");
   pdf.addKeyValueGrid(
     [
-      { label: "Advisory Type", value: labelOf(ADVISORY_TYPE_LABELS, d.advisoryType), bold: true },
+      {
+        label: "Advisory Type",
+        value: labelOf(ADVISORY_TYPE_LABELS, d.advisoryType),
+        bold: true,
+      },
       { label: "Other Type", value: h(d.otherAdvisoryType) },
       { label: "Request Date", value: fmtDate(d.requestDate) },
       { label: "Target Delivery", value: fmtDate(d.targetDeliveryDate) },
@@ -1923,7 +1984,8 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
   );
 
   // ── Request & scope ───────────────────────────────────────────────────────
-  if (d.requestDescription) pdf.addLongTextField("Request Description", d.requestDescription);
+  if (d.requestDescription)
+    pdf.addLongTextField("Request Description", d.requestDescription);
   if (d.scope) pdf.addLongTextField("Scope of Engagement", d.scope);
   if (d.researchNotes) pdf.addLongTextField("Research Notes", d.researchNotes);
 
@@ -1974,14 +2036,23 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
     pdf.addSection("Opinion & Recommendations");
     pdf.addKeyValueGrid(
       [
-        { label: "Overall Opinion", value: d.opinion?.summary ? "Provided" : "—", bold: true },
-        { label: "Conclusion", value: d.opinion?.conclusion ? "Provided" : "—" },
+        {
+          label: "Overall Opinion",
+          value: d.opinion?.summary ? "Provided" : "—",
+          bold: true,
+        },
+        {
+          label: "Conclusion",
+          value: d.opinion?.conclusion ? "Provided" : "—",
+        },
         { label: "Confidence Level", value: titleCase(d.opinion?.confidence) },
       ],
       { cols: 2 },
     );
-    if (d.opinion?.summary) pdf.addLongTextField("Opinion Summary", d.opinion.summary);
-    if (d.opinion?.conclusion) pdf.addLongTextField("Conclusion", d.opinion.conclusion);
+    if (d.opinion?.summary)
+      pdf.addLongTextField("Opinion Summary", d.opinion.summary);
+    if (d.opinion?.conclusion)
+      pdf.addLongTextField("Conclusion", d.opinion.conclusion);
   }
 
   if ((d.recommendations || []).length) {
@@ -2033,7 +2104,12 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
   pdf.addSection("Risk Assessment");
   pdf.addKeyValueGrid(
     [
-      { label: "Overall Risk", value: riskLabel, bold: true, color: statusAccent(risk) },
+      {
+        label: "Overall Risk",
+        value: riskLabel,
+        bold: true,
+        color: statusAccent(risk),
+      },
       { label: "Risks Identified", value: String(risks.length) },
     ],
     { cols: 2 },
@@ -2062,7 +2138,6 @@ exports.generateAdvisoryReportPdf = catchAsync(async (req, res, next) => {
   );
 
   await pdf.generate();
-}
-);
+});
 
 module.exports = exports;
