@@ -26,6 +26,18 @@ const r2Client = new S3Client({
     accessKeyId: process.env.R2_ACCESS_KEY_ID,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
   },
+  requestHandler: {
+    // Ensure no extra headers interfere
+  },
+});
+
+console.log("[R2] Initializing with:", {
+  bucket: process.env.R2_BUCKET_NAME ? "[SET]" : "[MISSING]",
+  accountId: process.env.R2_ACCOUNT_ID ? "[SET]" : "[MISSING]",
+  accessKeyId: process.env.R2_ACCESS_KEY_ID ? "[SET]" : "[MISSING]",
+  secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ? "[SET]" : "[MISSING]",
+  endpoint: R2_ENDPOINT,
+  region: process.env.R2_REGION || "auto",
 });
 
 class R2Service {
@@ -76,6 +88,9 @@ class R2Service {
       if (!metadata.firmId) {
         throw new Error("firmId is required for file upload");
       }
+      if (!this.bucket) {
+        throw new Error("R2_BUCKET_NAME is not configured");
+      }
 
       const objectKey = this.generateObjectKey(
         originalName,
@@ -119,7 +134,12 @@ class R2Service {
         storageProvider: this.storageProvider,
       };
     } catch (error) {
-      console.error("Error uploading to Cloudflare R2:", error);
+      console.error("Error uploading to Cloudflare R2:", {
+        message: error.message,
+        name: error.name,
+        code: error.$metadata?.httpStatusCode,
+        requestId: error.$metadata?.requestId,
+      });
       throw new Error(`Failed to upload file: ${error.message}`);
     }
   }
