@@ -5,7 +5,7 @@ const Firm = require("../models/firmModel");
 const User = require("../models/userModel");
 const LitigationDetail = require("../models/litigationDetailModel");
 const CorporateDetail = require("../models/corporateDetailModel");
-const AdvisoryDetail = require("../models/advisorydetailModel");
+const AdvisoryDetail = require("../models/advisoryDetailModel");
 const PropertyDetail = require("../models/propertyDetailModel");
 const {
   RetainerDetail,
@@ -154,9 +154,14 @@ exports.createMatter = catchAsync(async (req, res, next) => {
       console.error("Failed to sync matter count:", syncErr.message);
     }
 
-    dispatch("matter.created", populatedMatter.toObject(), req.firmId).catch(err => {
-      console.error("Automation dispatch error (matter.created):", err.message);
-    });
+    dispatch("matter.created", populatedMatter.toObject(), req.firmId).catch(
+      (err) => {
+        console.error(
+          "Automation dispatch error (matter.created):",
+          err.message,
+        );
+      },
+    );
 
     res.status(201).json({
       status: "success",
@@ -1170,12 +1175,13 @@ exports.assignMatterOfficer = catchAsync(async (req, res, next) => {
 
   // Only the officers we are actually adding need the role/firm check.
   const officers =
-    mode === "remove" ? [] : await resolveAssignableOfficers(req.firmId, requested);
+    mode === "remove"
+      ? []
+      : await resolveAssignableOfficers(req.firmId, requested);
 
   // In remove mode we work from the raw ids — they only have to match
   // officers already on the matter, not pass the assignable-role check.
-  const idsToApply =
-    mode === "remove" ? requested : officers.map((o) => o._id);
+  const idsToApply = mode === "remove" ? requested : officers.map((o) => o._id);
 
   const accountOfficer = nextAccountOfficers(
     matter.accountOfficer,
@@ -1249,7 +1255,9 @@ exports.bulkAssignOfficer = catchAsync(async (req, res, next) => {
   }
 
   const officers =
-    mode === "remove" ? [] : await resolveAssignableOfficers(req.firmId, requested);
+    mode === "remove"
+      ? []
+      : await resolveAssignableOfficers(req.firmId, requested);
 
   // In remove mode we work from the raw ids — they only have to match
   // officers already on the matter, not pass the assignable-role check.
@@ -1260,9 +1268,9 @@ exports.bulkAssignOfficer = catchAsync(async (req, res, next) => {
   const matters =
     mode === "add"
       ? []
-      : await Matter.find(buildFirmQuery(req, { _id: { $in: matterIds } })).select(
-          "_id accountOfficer",
-        );
+      : await Matter.find(
+          buildFirmQuery(req, { _id: { $in: matterIds } }),
+        ).select("_id accountOfficer");
 
   try {
     if (mode === "add") {
@@ -2179,7 +2187,7 @@ exports.logBulkOperation = catchAsync(async (req, res, next) => {
   console.log(
     `[${new Date().toISOString()}] Bulk ${action} by user ${
       req.user._id
-    }: ${matterIds.length} matters`
+    }: ${matterIds.length} matters`,
   );
 
   next();
@@ -2198,11 +2206,11 @@ const path = require("path");
  */
 exports.uploadMatterDocuments = catchAsync(async (req, res, next) => {
   const matterId = req.params.id;
-  
+
   // Check if matter exists
   const Matter = require("../models/matterModel");
   const matter = await Matter.findOne({ _id: matterId, firmId: req.firmId });
-  
+
   if (!matter) {
     return next(new AppError("Matter not found", 404));
   }
@@ -2212,18 +2220,18 @@ exports.uploadMatterDocuments = catchAsync(async (req, res, next) => {
   }
 
   const { category, description } = req.body;
-  
+
   // Check storage limit
   const totalSize = req.files.reduce((sum, file) => sum + file.size, 0);
   const fileSizeGB = totalSize / (1024 * 1024 * 1024);
-  
+
   const firm = await Firm.findById(req.firmId);
   if (!firm.hasStorageAvailable(fileSizeGB)) {
     return next(
       new AppError(
         `Storage limit exceeded. You have ${(firm.limits.storageGB - firm.usage.storageUsedGB).toFixed(2)}GB available.`,
-        403
-      )
+        403,
+      ),
     );
   }
 
@@ -2246,7 +2254,7 @@ exports.uploadMatterDocuments = catchAsync(async (req, res, next) => {
           matterNumber: matter.matterNumber,
           uploadedBy: req.user.id.toString(),
         },
-      }
+      },
     );
 
     const fileRecord = await File.create({
@@ -2297,7 +2305,7 @@ exports.uploadMatterDocuments = catchAsync(async (req, res, next) => {
  */
 exports.getMatterDocuments = catchAsync(async (req, res, next) => {
   const matterId = req.params.id;
-  
+
   const files = await File.find({
     firmId: req.firmId,
     entityType: "Matter",
@@ -2327,7 +2335,7 @@ exports.getMatterDocuments = catchAsync(async (req, res, next) => {
  */
 exports.deleteMatterDocument = catchAsync(async (req, res, next) => {
   const { id, documentId } = req.params;
-  
+
   const file = await File.findOne({
     _id: documentId,
     firmId: req.firmId,
@@ -2342,7 +2350,7 @@ exports.deleteMatterDocument = catchAsync(async (req, res, next) => {
   // Check permission
   const isOwner = file.uploadedBy?.toString() === req.user.id.toString();
   const isAdmin = req.user.isAdmin();
-  
+
   if (!isOwner && !isAdmin) {
     return next(new AppError("Not authorized to delete this document", 403));
   }
