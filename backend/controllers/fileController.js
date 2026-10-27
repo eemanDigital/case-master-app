@@ -154,12 +154,12 @@ const checkStorageLimit = async (firmId, fileSizeBytes) => {
  */
 const updateFirmStorage = async (firmId, fileSizeBytes) => {
   const fileSizeGB = fileSizeBytes / (1024 * 1024 * 1024);
-  
+
   // Use atomic $inc operation
   await Firm.findByIdAndUpdate(firmId, {
     $inc: { "usage.storageUsedGB": fileSizeGB },
   });
-  
+
   // Clamp to 0 on deletion to avoid negative values
   if (fileSizeGB < 0) {
     await Firm.findByIdAndUpdate(firmId, [

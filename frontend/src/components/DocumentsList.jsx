@@ -1138,7 +1138,6 @@ const DocumentsList = ({
                       fetchFiles();
                       // Delay refresh to allow backend to complete storage update
                       setTimeout(() => refreshStorage(), 500);
-                      notify.success("Files uploaded successfully");
                     }}
                     onUploadError={(error) => {
                       // Check if it's a storage limit error
@@ -1336,7 +1335,7 @@ const DocumentsList = ({
                 buttonText="Upload Files"
                 onUploadSuccess={() => {
                   fetchFiles();
-                  notify.success("Files uploaded successfully");
+                  setTimeout(() => refreshStorage(), 500);
                 }}
               />
             )}
