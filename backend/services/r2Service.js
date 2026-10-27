@@ -26,9 +26,6 @@ const r2Client = new S3Client({
     accessKeyId: process.env.R2_ACCESS_KEY_ID,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
   },
-  requestHandler: {
-    // Ensure no extra headers interfere
-  },
 });
 
 console.log("[R2] Initializing with:", {
@@ -38,6 +35,7 @@ console.log("[R2] Initializing with:", {
   secretAccessKey: process.env.R2_SECRET_ACCESS_KEY ? "[SET]" : "[MISSING]",
   endpoint: R2_ENDPOINT,
   region: process.env.R2_REGION || "auto",
+  publicUrl: process.env.R2_PUBLIC_URL ? "[SET]" : "[NOT SET]",
 });
 
 class R2Service {
@@ -116,10 +114,23 @@ class R2Service {
         // the x-amz-server-side-encryption header is not supported.
       });
 
-      await r2Client.send(command);
+      const result = await r2Client.send(command);
+      console.log("[R2] Upload success:", { key: objectKey, etag: result.ETag });
 
       // Generate presigned URL immediately for download
-      const presignedUrl = await this.getPresignedUrl(objectKey, 3600);
+      let presignedUrl;
+      try {
+        presignedUrl = await this.getPresignedUrl(objectKey, 3600);
+      } catch (presignErr) {
+        console.error("R2 presign error:", {
+          message: presignErr.message,
+          name: presignErr.name,
+          code: presignErr.$metadata?.httpStatusCode,
+          requestId: presignErr.$metadata?.requestId,
+        });
+        // If presigning fails, still try to return a URL
+        presignedUrl = null;
+      }
 
       // Generate file URL (public custom domain if configured, otherwise the R2 endpoint)
       const fileUrl = process.env.R2_PUBLIC_URL
@@ -139,6 +150,7 @@ class R2Service {
         name: error.name,
         code: error.$metadata?.httpStatusCode,
         requestId: error.$metadata?.requestId,
+        stack: error.stack?.split("\n").slice(0, 3).join("\n"),
       });
       throw new Error(`Failed to upload file: ${error.message}`);
     }
