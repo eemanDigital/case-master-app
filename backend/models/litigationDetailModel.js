@@ -64,6 +64,10 @@ const hearingSchema = new mongoose.Schema(
     nextHearingDate: {
       type: Date,
     },
+    dateToBeCommunicated: {
+      type: Boolean,
+      default: false,
+    },
 
     hearingNoticeRequired: {
       type: Boolean,
@@ -90,6 +94,43 @@ const hearingSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    lateReport: {
+      type: Boolean,
+      default: false,
+    },
+    lateReason: {
+      type: String,
+      trim: true,
+    },
+    reportFiledAt: {
+      type: Date,
+    },
+    reportFiledBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    editReason: {
+      type: String,
+      trim: true,
+    },
+    auditTrail: [
+      {
+        action: {
+          type: String,
+          enum: ["filed", "edited", "late_filed"],
+        },
+        by: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "User",
+        },
+        at: {
+          type: Date,
+          default: Date.now,
+        },
+        reason: String,
+        diff: Object,
+      },
+    ],
   },
   { timestamps: true },
 );

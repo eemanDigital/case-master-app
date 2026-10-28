@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import PropTypes from "prop-types";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Modal, message, Space } from "antd";
+import { Form, Modal, message, Space } from "antd";
 import { PlusOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
 
 import TaskFormBase from "./tasks/TaskFormBase";
 import {
@@ -12,7 +12,7 @@ import {
 
 const TaskCreateModal = ({ open, onClose, onSuccess }) => {
   const dispatch = useDispatch();
-  const [form] = Modal.useForm();
+  const [form] = Form.useForm();
   const loading = useSelector(selectTaskActionLoading);
   const [selectedAssignees, setSelectedAssignees] = useState([]);
 
@@ -75,9 +75,18 @@ const TaskCreateModal = ({ open, onClose, onSuccess }) => {
         onSubmit={handleSubmit}
         loading={loading}
         submitText="Create Task"
+        onValuesChange={(_, values) =>
+          setSelectedAssignees(values.assignee || [])
+        }
       />
     </Modal>
   );
+};
+
+TaskCreateModal.propTypes = {
+  open: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func,
 };
 
 export default TaskCreateModal;

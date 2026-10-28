@@ -434,7 +434,7 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
     litigationMap[d.matterId] = d;
   });
 
-  // Extract all upcoming hearings using ONLY nextHearingDate
+  // Extract upcoming hearings from nextHearingDate or future hearing.date
   const upcomingHearings = [];
 
   matters.forEach((matter) => {
@@ -442,13 +442,13 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
     if (!litigation || !litigation.hearings) return;
 
     litigation.hearings.forEach((hearing) => {
-      // Skip if no nextHearingDate
-      if (!hearing.nextHearingDate) return;
+      const candidateDate = hearing.nextHearingDate || hearing.date;
+      if (!candidateDate) return;
 
-      const hearingDate = dayjs(hearing.nextHearingDate);
+      const hearingDate = dayjs(candidateDate);
 
-      // Skip if nextHearingDate is today or in the past
-      if (!hearingDate.isAfter(today, "day")) return;
+      // Include today and future hearings (exclude only past)
+      if (hearingDate.isBefore(today, "day")) return;
 
       // No upper date cap — include ALL future hearings
       upcomingHearings.push({
@@ -457,7 +457,7 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
         purpose: hearing.purpose,
         outcome: hearing.outcome,
         notes: hearing.notes,
-        nextHearingDate: hearing.nextHearingDate,
+        nextHearingDate: hearing.nextHearingDate || candidateDate,
         hearingNoticeServed: hearing.hearingNoticeServed,
         hearingNoticeRequired: hearing.hearingNoticeRequired,
         lawyerPresent: hearing.lawyerPresent,
@@ -493,13 +493,35 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
     });
   });
 
+  // Deduplicate by matterId keeping the earliest upcoming hearing
+  const deduped = [];
+  const seen = new Map();
+  for (const h of upcomingHearings) {
+    const key = h.matterId?.toString();
+    if (!key) {
+      deduped.push(h);
+      continue;
+    }
+    if (!seen.has(key)) {
+      seen.set(key, h);
+      deduped.push(h);
+    } else {
+      const existing = seen.get(key);
+      if (new Date(h.displayDate) < new Date(existing.displayDate)) {
+        const idx = deduped.findIndex((x) => x.matterId?.toString() === key);
+        if (idx >= 0) deduped[idx] = h;
+        seen.set(key, h);
+      }
+    }
+  }
+
   // Sort by nextHearingDate — earliest first
-  upcomingHearings.sort(
+  deduped.sort(
     (a, b) => new Date(a.displayDate) - new Date(b.displayDate),
   );
 
   // Apply limit
-  const limitedHearings = upcomingHearings.slice(0, parseInt(limit));
+  const limitedHearings = deduped.slice(0, parseInt(limit));
 
   // Stats - use dayjs consistently to avoid timezone issues
   const now = dayjs();
@@ -526,15 +548,15 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
     }).length,
     thisWeek: limitedHearings.filter((h) => {
       const d = dayjs(h.displayDate);
-      return d.isAfter(todayEnd) && d.isSameOrBefore(thisWeekEnd);
+      return d.isSameOrAfter(thisWeekStart) && d.isSameOrBefore(thisWeekEnd);
     }).length,
     nextWeek: limitedHearings.filter((h) => {
       const d = dayjs(h.displayDate);
-      return d.isAfter(thisWeekEnd) && d.isSameOrBefore(nextWeekEnd);
+      return d.isSameOrAfter(nextWeekStart) && d.isSameOrBefore(nextWeekEnd);
     }).length,
     thisMonth: limitedHearings.filter((h) => {
       const d = dayjs(h.displayDate);
-      return d.isAfter(thisWeekEnd) && d.isSameOrBefore(thisMonthEnd);
+      return d.isSameOrAfter(thisMonthStart) && d.isSameOrBefore(thisMonthEnd);
     }).length,
     pending: limitedHearings.filter((h) => !h.outcome).length,
     completed: limitedHearings.filter((h) => !!h.outcome).length,
@@ -795,14 +817,15 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   // BUSINESS RULES LOGIC
   // ════════════════════════════════════════════════════════════
 
+  const GRACE_PERIOD_HOURS = 48;
   const now = dayjs();
-  const hearingDate = dayjs(hearing.date).startOf("day");
-  const gracePeriodEnd = hearingDate.add(2, "day").endOf("day"); // 48hr grace
+  const hearingDateTime = dayjs(hearing.date);
+  const gracePeriodEnd = hearingDateTime.add(GRACE_PERIOD_HOURS, "hour"); // 48hr grace
 
-  const isBeforeHearing = now.isBefore(hearingDate);
+  const isBeforeHearing = now.isBefore(hearingDateTime);
   const isWithinGracePeriod =
-    now.isSameOrAfter(hearingDate) && now.isSameOrBefore(gracePeriodEnd);
-  const isAfterGracePeriod = now.isAfter(gracePeriodEnd);
+    now.isSameOrAfter(hearingDateTime) && now.isBefore(gracePeriodEnd);
+  const isAfterGracePeriod = now.isSameOrAfter(gracePeriodEnd);
 
   // Fields restricted to filing phase (on/after hearing date)
   const reportFields = ["outcome", "notes"];
@@ -810,11 +833,11 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     Object.prototype.hasOwnProperty.call(updateData, f),
   );
 
-  // RULE 1: Cannot file report BEFORE hearing date
+  // RULE 1: Cannot file report BEFORE hearing date/time
   if (hasReportFieldUpdate && isBeforeHearing) {
     return next(
       new AppError(
-        `Cannot file report until hearing date (${hearingDate.format("DD MMM YYYY")}). ` +
+        `Cannot file report until hearing date (${hearingDateTime.format("DD MMM YYYY HH:mm")}). ` +
           `You can update lawyer assignments and hearing notice flag.`,
         403,
       ),
@@ -825,7 +848,7 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   if (hasReportFieldUpdate && isAfterGracePeriod && !hearing.outcome) {
     return next(
       new AppError(
-        `Report filing window closed. The 48-hour grace period ended on ` +
+        `Report filing window closed. The ${GRACE_PERIOD_HOURS}-hour grace period ended on ` +
           `${gracePeriodEnd.format("DD MMM YYYY [at] HH:mm")}. ` +
           `Please contact an administrator to file a late report.`,
         403,
@@ -837,23 +860,26 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   if (
     hasReportFieldUpdate &&
     hearing.outcome &&
-    !isWithinGracePeriod &&
-    !isBeforeHearing
+    isAfterGracePeriod
   ) {
     return next(
       new AppError(
-        `Report editing window closed. Reports can only be edited within 48 hours of the hearing date. ` +
+        `Report editing window closed. Reports can only be edited within ${GRACE_PERIOD_HOURS} hours of the hearing date/time. ` +
           `Grace period ended: ${gracePeriodEnd.format("DD MMM YYYY [at] HH:mm")}`,
         403,
       ),
     );
   }
 
-  // RULE 3: Adjourned outcome requires next hearing date
-  if (updateData.outcome === "adjourned" && !updateData.nextHearingDate) {
+  // RULE 3: Adjourned outcome requires next hearing date or date to be communicated
+  if (
+    updateData.outcome === "adjourned" &&
+    !updateData.nextHearingDate &&
+    !updateData.dateToBeCommunicated
+  ) {
     return next(
       new AppError(
-        'Next hearing date is required when outcome is "Adjourned"',
+        'Next hearing date is required when outcome is "Adjourned" or mark as TBC',
         400,
       ),
     );
@@ -862,13 +888,13 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   // RULE 4: Validate next hearing date is in future
   if (updateData.nextHearingDate) {
     const nextDate = dayjs(updateData.nextHearingDate);
-    if (nextDate.isBefore(now)) {
+    if (nextDate.isBefore(now, "day")) {
       return next(new AppError("Next hearing date must be in the future", 400));
     }
   }
 
   // RULE 5: Cannot remove outcome once filed (unless in grace)
-  if (hearing.outcome && updateData.outcome === null) {
+  if (hearing.outcome && (updateData.outcome === null || updateData.outcome === "")) {
     if (!isWithinGracePeriod) {
       return next(
         new AppError(
@@ -1723,13 +1749,13 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
     if (!litigation || !litigation.hearings) return;
 
     litigation.hearings.forEach((hearing) => {
-      // ONLY use nextHearingDate for upcoming hearings
-      if (!hearing.nextHearingDate) return;
+      const candidateDate = hearing.nextHearingDate || hearing.date;
+      if (!candidateDate) return;
 
-      const hearingDate = dayjs(hearing.nextHearingDate);
+      const hearingDate = dayjs(candidateDate);
 
-      // Skip if nextHearingDate is in the past
-      if (!hearingDate.isAfter(today, "day")) return;
+      // Skip only if hearing date is before today
+      if (hearingDate.isBefore(today, "day")) return;
 
       const isInRange =
         !hearingDate.isBefore(startDate, "day") &&
@@ -1760,19 +1786,43 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
     });
   });
 
-  hearings.sort((a, b) => new Date(a.hearingDate) - new Date(b.hearingDate));
+  // Deduplicate by matter
+  const dedupedPdf = [];
+  const seenPdf = new Map();
+  for (const h of hearings) {
+    const key = h.matterNumber || h.suitNo;
+    if (!key) {
+      dedupedPdf.push(h);
+      continue;
+    }
+    if (!seenPdf.has(key)) {
+      seenPdf.set(key, h);
+      dedupedPdf.push(h);
+    } else {
+      const existing = seenPdf.get(key);
+      if (new Date(h.hearingDate) < new Date(existing.hearingDate)) {
+        const idx = dedupedPdf.findIndex(
+          (x) => (x.matterNumber || x.suitNo) === key,
+        );
+        if (idx >= 0) dedupedPdf[idx] = h;
+        seenPdf.set(key, h);
+      }
+    }
+  }
+
+  dedupedPdf.sort((a, b) => new Date(a.hearingDate) - new Date(b.hearingDate));
 
   const Firm = require("../models/firmModel");
   const firm = await Firm.findById(firmId);
 
   await generateCauseListPdf(
     {
-      hearings,
+      hearings: dedupedPdf,
       firm,
       periodName,
       startDate: startDate.format("MMMM D, YYYY"),
       endDate: endDate.format("MMMM D, YYYY"),
-      totalHearings: hearings.length,
+      totalHearings: dedupedPdf.length,
     },
     res,
     path.resolve(

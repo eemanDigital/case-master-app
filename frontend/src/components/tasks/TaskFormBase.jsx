@@ -1,36 +1,33 @@
-import React, { useEffect, useCallback, useState, useMemo } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import PropTypes from "prop-types";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
+  Button,
+  Col,
+  Collapse,
+  DatePicker,
+  Divider,
   Form,
   Input,
+  InputNumber,
+  Row,
   Select,
-  DatePicker,
-  Typography,
   Space,
   Tag,
-  InputNumber,
-  Card,
-  Row,
-  Col,
-  Steps,
-  Button,
-  Divider,
-  Tabs,
-  Alert,
+  Typography,
 } from "antd";
 import {
-  FileTextOutlined,
-  CalendarOutlined,
-  UserOutlined,
-  SettingOutlined,
   BankOutlined,
-  TagOutlined,
+  CalendarOutlined,
   ClockCircleOutlined,
-  LinkOutlined,
+  FileTextOutlined,
+  SettingOutlined,
+  TagOutlined,
+  UserOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 
-import { taskPriorityOptions, taskCategoryOptions } from "../../data/options";
+import { taskCategoryOptions, taskPriorityOptions } from "../../data/options";
 import useMattersSelectOptions from "../../hooks/useMattersSelectOptions";
 import useUserSelectOptions from "../../hooks/useUserSelectOptions";
 
@@ -38,31 +35,23 @@ const { TextArea } = Input;
 const { Text } = Typography;
 
 const MATTER_TYPE_OPTIONS = [
-  { value: "litigation", label: "Litigation", icon: "⚖️" },
-  { value: "corporate", label: "Corporate", icon: "🏢" },
-  { value: "property", label: "Property", icon: "🏠" },
-  { value: "advisory", label: "Advisory", icon: "💼" },
-  { value: "retainer", label: "Retainer", icon: "📋" },
-  { value: "general", label: "General", icon: "📁" },
-  { value: "other", label: "Other", icon: "📦" },
+  { value: "litigation", label: "Litigation" },
+  { value: "corporate", label: "Corporate" },
+  { value: "property", label: "Property" },
+  { value: "advisory", label: "Advisory" },
+  { value: "retainer", label: "Retainer" },
+  { value: "general", label: "General" },
+  { value: "other", label: "Other" },
 ];
 
-const MATTER_TYPE_COLORS = {
-  litigation: "red",
-  corporate: "blue",
-  property: "green",
-  advisory: "purple",
-  retainer: "orange",
-  general: "default",
-  other: "default",
-};
-
-// ─── Static option for Steps ──────────────────────────────────────────────────
-const STEPS = [
-  { title: "Basic Info", icon: <FileTextOutlined /> },
-  { title: "Matter", icon: <BankOutlined /> },
-  { title: "Schedule", icon: <CalendarOutlined /> },
-  { title: "Advanced", icon: <SettingOutlined /> },
+const TASK_STATUS_OPTIONS = [
+  { value: "pending", label: "Pending" },
+  { value: "in-progress", label: "In Progress" },
+  { value: "under-review", label: "Under Review" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+  { value: "rejected", label: "Rejected" },
+  { value: "overdue", label: "Overdue" },
 ];
 
 const TaskFormBase = ({
@@ -70,27 +59,22 @@ const TaskFormBase = ({
   initialValues,
   isEdit = false,
   onSubmit,
+  onValuesChange,
+  footerContent,
   loading = false,
   submitText,
 }) => {
-  // ─── User options ────────────────────────────────────────────────────────
-  // FIX: use fetchAll so we get ALL users (staff + clients) in one call.
-  // The hook now normalises every entry to { value, label, role, ... }
-  // which is exactly what <Select options={} /> expects.
   const {
-    allUsers: userOptions, // ✅ flat normalised array
+    allUsers: userOptions,
     loading: userLoading,
     error: userError,
     refresh: refreshUsers,
-  } = useUserSelectOptions({
-    fetchAll: true, // fetch staff + clients + lawyers in one shot
-    autoFetch: true,
-  });
+  } = useUserSelectOptions({ fetchAll: true, autoFetch: true });
 
-  // ─── Matter options ──────────────────────────────────────────────────────
   const {
     matters,
-    loading: matterSearchLoading,
+    loading: matterLoading,
+    error: matterError,
     fetchMatters,
     getLitigationDetails,
   } = useMattersSelectOptions({
@@ -99,13 +83,11 @@ const TaskFormBase = ({
     autoFetch: false,
   });
 
-  const [selectedMatterType, setSelectedMatterType] = useState(null);
   const [litigationLoading, setLitigationLoading] = useState(false);
   const [litigationOptions, setLitigationOptions] = useState([]);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [activeTab, setActiveTab] = useState("0");
+  const matterId = Form.useWatch("matter", form);
+  const matterType = Form.useWatch("matterType", form);
 
-  // ─── Initialise form values ──────────────────────────────────────────────
   useEffect(() => {
     if (initialValues && form) {
       form.setFieldsValue({
@@ -119,551 +101,87 @@ const TaskFormBase = ({
   }, [initialValues, form]);
 
   useEffect(() => {
-    if (initialValues?.matterType) {
-      setSelectedMatterType(initialValues.matterType);
-    }
-  }, [initialValues?.matterType]); // only re-run when matterType changes
+    let active = true;
 
-  // ─── Matter handlers ─────────────────────────────────────────────────────
+    if (!matterId || matterType !== "litigation") {
+      setLitigationOptions([]);
+      setLitigationLoading(false);
+      return undefined;
+    }
+
+    setLitigationLoading(true);
+    getLitigationDetails(matterId)
+      .then((details) => {
+        if (!active) return;
+        setLitigationOptions(
+          details
+            ? [
+                {
+                  value: details._id,
+                  label: `${details.suitNo || "Case details"}${
+                    details.courtName ? ` · ${details.courtName}` : ""
+                  }`,
+                  subtitle: details.nextHearingDate
+                    ? `Next hearing: ${dayjs(details.nextHearingDate).format("MMM D, YYYY")}`
+                    : "",
+                },
+              ]
+            : [],
+        );
+      })
+      .finally(() => {
+        if (active) setLitigationLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [matterId, matterType, getLitigationDetails]);
+
   const handleMatterSearch = useCallback(
     (searchText) => {
-      if (searchText && searchText.length > 2) {
-        fetchMatters(searchText);
-      }
+      if (searchText.length >= 2) fetchMatters(searchText);
     },
     [fetchMatters],
   );
 
   const handleMatterChange = useCallback(
-    async (matterId) => {
-      if (!matterId) {
-        setSelectedMatterType(null);
-        form.setFieldsValue({
-          matterType: undefined,
-          litigationDetailId: undefined,
-        });
-        setLitigationOptions([]);
-        return;
-      }
-
-      const selectedMatter = matters.find((m) => m._id === matterId);
-      if (!selectedMatter) return;
-
-      setSelectedMatterType(selectedMatter.matterType);
-      form.setFieldsValue({ matterType: selectedMatter.matterType });
-
-      if (selectedMatter.matterType === "litigation") {
-        setLitigationLoading(true);
-        try {
-          const details = await getLitigationDetails(matterId);
-          if (details) {
-            setLitigationOptions([
-              {
-                _id: details._id,
-                value: details._id,
-                label: `${details.suitNo || "N/A"} - ${details.courtName || "Unknown Court"}`,
-                subtitle: `Next Hearing: ${
-                  details.nextHearingDate
-                    ? dayjs(details.nextHearingDate).format("MMM D, YYYY")
-                    : "Not set"
-                }`,
-              },
-            ]);
-          } else {
-            setLitigationOptions([]);
-          }
-        } catch (error) {
-          console.error("Error fetching litigation details:", error);
-          setLitigationOptions([]);
-        } finally {
-          setLitigationLoading(false);
-        }
-      } else {
-        form.setFieldsValue({ litigationDetailId: undefined });
-        setLitigationOptions([]);
-      }
+    (selectedMatterId) => {
+      const selectedMatter = matters.find(
+        (matter) => matter._id === selectedMatterId,
+      );
+      form.setFieldsValue({
+        matterType: selectedMatter?.matterType,
+        litigationDetailId: undefined,
+      });
     },
-    [matters, form, getLitigationDetails],
+    [form, matters],
   );
 
-  const handleMatterTypeChange = useCallback(
-    (value) => {
-      setSelectedMatterType(value);
-      if (value !== "litigation") {
-        form.setFieldsValue({ litigationDetailId: undefined });
-        setLitigationOptions([]);
-      }
-    },
-    [form],
+  const userSelectOptions = useMemo(
+    () =>
+      userOptions.map((option) => ({
+        ...option,
+        roleLabel: option.role === "client" ? "Client" : "Staff",
+      })),
+    [userOptions],
   );
 
-  // ─── Step / tab sync ─────────────────────────────────────────────────────
-  const handleStepChange = useCallback((step) => {
-    setCurrentStep(step);
-    setActiveTab(String(step));
-  }, []);
-
-  const handleTabChange = useCallback((key) => {
-    setActiveTab(key);
-    setCurrentStep(parseInt(key));
-  }, []);
-
-  // ─── Matter option render ────────────────────────────────────────────────
-  const matterOptionRender = useCallback(
-    (matter) => (
-      <div className="py-1">
-        <div className="font-medium flex items-center gap-2">
-          <span>{matter.title || matter.label}</span>
-          <Tag
-            color={MATTER_TYPE_COLORS[matter.matterType] || "default"}
-            className="text-xs">
-            {matter.matterType}
-          </Tag>
-        </div>
-        <div className="text-xs text-gray-500">
-          {matter.clientName || "No client"} • {matter.matterNumber || "No ref"}
-        </div>
-      </div>
-    ),
-    [],
+  const matterSelectOptions = useMemo(
+    () =>
+      matters.map((matter) => ({
+        value: matter._id,
+        label: matter.label,
+        matter,
+      })),
+    [matters],
   );
 
-  // ─── User option render ──────────────────────────────────────────────────
-  // Memoised to avoid re-creating on every render
-  const userOptionRender = useCallback(
-    (option) => (
-      <Space>
-        <Tag
-          color={option.data?.role === "client" ? "green" : "blue"}
-          className="text-xs">
-          {option.data?.role === "client" ? "Client" : "Staff"}
-        </Tag>
-        <span>{option.label}</span>
-      </Space>
-    ),
-    [],
-  );
-
-  // ─── Tabs definition ─────────────────────────────────────────────────────
-  // Moved inside the component but memoised so it only rebuilds when
-  // its dependencies change (not on every render).
-  const tabItems = useMemo(
-    () => [
-      {
-        key: "0",
-        label: (
-          <span>
-            <FileTextOutlined /> Basic Info
-          </span>
-        ),
-        children: (
-          <div className="space-y-4 pt-4">
-            <Row gutter={[16, 0]}>
-              <Col xs={24} lg={16}>
-                <Form.Item
-                  name="title"
-                  label="Task Title"
-                  rules={[
-                    { required: true, message: "Please enter task title" },
-                    { max: 200, message: "Title cannot exceed 200 characters" },
-                  ]}>
-                  <Input
-                    placeholder="Enter a clear, descriptive task title"
-                    maxLength={200}
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} lg={8}>
-                <Form.Item
-                  name="category"
-                  label="Category"
-                  rules={[
-                    { required: true, message: "Please select category" },
-                  ]}>
-                  <Select
-                    placeholder="Select category"
-                    options={taskCategoryOptions}
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Form.Item name="description" label="Description">
-              <TextArea
-                rows={3}
-                placeholder="Brief description of the task (optional)"
-                maxLength={2000}
-                showCount
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="instruction"
-              label="Instructions"
-              rules={[
-                { required: true, message: "Please provide instructions" },
-                {
-                  max: 5000,
-                  message: "Instructions cannot exceed 5000 characters",
-                },
-              ]}>
-              <TextArea
-                rows={6}
-                placeholder="Detailed instructions for completing this task..."
-                maxLength={5000}
-                showCount
-              />
-            </Form.Item>
-
-            <Row gutter={[16, 0]}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="taskPriority"
-                  label="Priority"
-                  rules={[{ required: true, message: "Select priority" }]}
-                  initialValue="medium">
-                  <Select size="large">
-                    {taskPriorityOptions.map((opt) => (
-                      <Select.Option key={opt.value} value={opt.value}>
-                        <Tag color={opt.color}>{opt.label}</Tag>
-                      </Select.Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="estimatedEffort"
-                  label="Estimated Effort (hours)">
-                  <InputNumber
-                    min={0}
-                    max={500}
-                    placeholder="e.g., 4"
-                    className="w-full"
-                    addonAfter="hrs"
-                    size="large"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-          </div>
-        ),
-      },
-      {
-        key: "1",
-        label: (
-          <span>
-            <BankOutlined /> Matter
-          </span>
-        ),
-        children: (
-          <div className="space-y-4 pt-4">
-            <Card
-              size="small"
-              className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100">
-              <Space direction="vertical" className="w-full" size="middle">
-                <div>
-                  <Text strong className="block mb-2">
-                    Search Matter
-                  </Text>
-                  <Form.Item name="matter" className="!mb-0">
-                    <Select
-                      showSearch
-                      placeholder="Search by title, number, or client..."
-                      loading={matterSearchLoading}
-                      onSearch={handleMatterSearch}
-                      onChange={handleMatterChange}
-                      filterOption={false}
-                      allowClear
-                      size="large"
-                      className="w-full"
-                      notFoundContent={
-                        matterSearchLoading
-                          ? "Searching..."
-                          : "No matters found"
-                      }
-                      optionLabelProp="label">
-                      {matters.map((matter) => (
-                        <Select.Option
-                          key={matter._id}
-                          value={matter._id}
-                          label={matter.title || matter.matterNumber}>
-                          {matterOptionRender(matter)}
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </div>
-
-                <div>
-                  <Text strong className="block mb-2">
-                    Matter Type
-                  </Text>
-                  <Form.Item name="matterType" className="!mb-0">
-                    <Select
-                      placeholder="Select matter type"
-                      allowClear
-                      onChange={handleMatterTypeChange}
-                      size="large"
-                      className="w-full">
-                      {MATTER_TYPE_OPTIONS.map((opt) => (
-                        <Select.Option key={opt.value} value={opt.value}>
-                          <Space>
-                            <span>{opt.icon}</span>
-                            <span>{opt.label}</span>
-                          </Space>
-                        </Select.Option>
-                      ))}
-                    </Select>
-                  </Form.Item>
-                </div>
-
-                {selectedMatterType === "litigation" && (
-                  <div>
-                    <Text strong className="block mb-2">
-                      Litigation Details
-                    </Text>
-                    <Form.Item name="litigationDetailId" className="!mb-0">
-                      <Select
-                        placeholder="Select case details..."
-                        loading={litigationLoading}
-                        allowClear
-                        size="large"
-                        className="w-full"
-                        notFoundContent="No litigation details found">
-                        {litigationOptions.map((detail) => (
-                          <Select.Option
-                            key={detail._id}
-                            value={detail._id}
-                            label={detail.label}>
-                            <div className="py-1">
-                              <div className="font-medium flex items-center gap-2">
-                                <BankOutlined className="text-purple-500" />
-                                {detail.label}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                {detail.subtitle}
-                              </div>
-                            </div>
-                          </Select.Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                  </div>
-                )}
-
-                <div>
-                  <Text strong className="block mb-2">
-                    Custom Case Reference
-                  </Text>
-                  <Form.Item name="customCaseReference" className="!mb-0">
-                    <Input
-                      placeholder="Enter external case reference (optional)"
-                      size="large"
-                    />
-                  </Form.Item>
-                </div>
-              </Space>
-            </Card>
-          </div>
-        ),
-      },
-      {
-        key: "2",
-        label: (
-          <span>
-            <CalendarOutlined /> Schedule
-          </span>
-        ),
-        children: (
-          <div className="space-y-4 pt-4">
-            <Row gutter={[16, 0]}>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="startDate"
-                  label={
-                    <Space>
-                      <CalendarOutlined />
-                      <span>Start Date</span>
-                    </Space>
-                  }>
-                  <DatePicker
-                    showTime={{ format: "HH:mm" }}
-                    format="YYYY-MM-DD HH:mm"
-                    className="w-full"
-                    size="large"
-                    placeholder="Select start date (optional)"
-                  />
-                </Form.Item>
-              </Col>
-              <Col xs={24} sm={12}>
-                <Form.Item
-                  name="dueDate"
-                  label={
-                    <Space>
-                      <ClockCircleOutlined />
-                      <span>Due Date</span>
-                    </Space>
-                  }
-                  rules={[
-                    { required: true, message: "Please select due date" },
-                  ]}>
-                  <DatePicker
-                    showTime={{ format: "HH:mm" }}
-                    format="YYYY-MM-DD HH:mm"
-                    className="w-full"
-                    size="large"
-                    placeholder="Select due date"
-                  />
-                </Form.Item>
-              </Col>
-            </Row>
-
-            <Card size="small" className="bg-gray-50">
-              {/* ✅ FIX: Show error state so users know if loading failed */}
-              {userError && (
-                <Alert
-                  message="Could not load team members"
-                  description={
-                    <span>
-                      {userError}{" "}
-                      <Button type="link" size="small" onClick={refreshUsers}>
-                        Retry
-                      </Button>
-                    </span>
-                  }
-                  type="error"
-                  showIcon
-                  className="mb-3"
-                />
-              )}
-
-              <Form.Item
-                name="assignee"
-                label={
-                  <Space>
-                    <UserOutlined />
-                    <span>Assign Team Members</span>
-                  </Space>
-                }
-                rules={[
-                  {
-                    required: !isEdit,
-                    message: "Please select at least one assignee",
-                  },
-                ]}>
-                {/* ✅ FIX: Pass `options` prop with the normalised array.
-                    Previously the raw `data` from the hook may not have had
-                    `value` / `label` keys, so the dropdown appeared empty.  */}
-                <Select
-                  mode="multiple"
-                  placeholder={
-                    userLoading
-                      ? "Loading team members…"
-                      : "Select team members to assign"
-                  }
-                  options={userOptions} // ✅ flat normalised array
-                  loading={userLoading}
-                  disabled={userLoading && !userOptions.length}
-                  allowClear
-                  showSearch
-                  filterOption={(input, option) =>
-                    (option?.label ?? "")
-                      .toLowerCase()
-                      .includes(input.toLowerCase())
-                  }
-                  size="large"
-                  className="w-full"
-                  optionRender={userOptionRender}
-                  notFoundContent={
-                    userLoading
-                      ? "Loading…"
-                      : userError
-                        ? "Failed to load users"
-                        : "No users found"
-                  }
-                />
-              </Form.Item>
-            </Card>
-          </div>
-        ),
-      },
-      {
-        key: "3",
-        label: (
-          <span>
-            <SettingOutlined /> Advanced
-          </span>
-        ),
-        children: (
-          <div className="space-y-4 pt-4">
-            <Form.Item
-              name="tags"
-              label={
-                <Space>
-                  <TagOutlined />
-                  <span>Tags</span>
-                </Space>
-              }>
-              <Select
-                mode="tags"
-                placeholder="Add tags (press Enter)"
-                className="w-full"
-                tokenSeparators={[","]}
-                size="large"
-              />
-            </Form.Item>
-
-            <Form.Item name="status" label="Status" initialValue="pending">
-              <Select size="large" className="w-full">
-                <Select.Option value="pending">Pending</Select.Option>
-                <Select.Option value="in-progress">In Progress</Select.Option>
-                <Select.Option value="completed">Completed</Select.Option>
-                <Select.Option value="cancelled">Cancelled</Select.Option>
-              </Select>
-            </Form.Item>
-
-            <Alert
-              message="Linking Tasks"
-              description="To link this task to other tasks, save the task first, then open it from the task list and use the Dependencies section to add linked tasks."
-              type="info"
-              showIcon
-              className="mt-4"
-            />
-          </div>
-        ),
-      },
-    ],
-    // Only rebuild tabs when the values that affect their content change
-    [
-      taskCategoryOptions,
-      taskPriorityOptions,
-      matters,
-      matterSearchLoading,
-      handleMatterSearch,
-      handleMatterChange,
-      handleMatterTypeChange,
-      matterOptionRender,
-      selectedMatterType,
-      litigationLoading,
-      litigationOptions,
-      userOptions,
-      userLoading,
-      userError,
-      userOptionRender,
-      refreshUsers,
-      isEdit,
-    ],
-  );
-
-  // ─── Guard ────────────────────────────────────────────────────────────────
   if (!form) {
     return (
       <Alert
         message="Configuration Error"
-        description="Form instance is required. Pass the form prop from the parent component."
+        description="A form instance is required. Pass the form prop from the parent component."
         type="error"
         showIcon
       />
@@ -671,47 +189,418 @@ const TaskFormBase = ({
   }
 
   return (
-    <div className="task-form-base">
-      <Steps
-        current={currentStep}
-        size="small"
-        items={STEPS}
-        className="mb-6"
-        onChange={handleStepChange}
+    <Form
+      form={form}
+      layout="vertical"
+      initialValues={{
+        taskPriority: "medium",
+        category: "other",
+        status: "pending",
+        ...initialValues,
+      }}
+      onFinish={onSubmit}
+      onValuesChange={onValuesChange}
+      size="middle"
+      className="task-form-base">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+        <div>
+          <Text strong className="flex items-center gap-2 text-base">
+            <FileTextOutlined className="text-blue-600" />
+            Task details
+          </Text>
+          <Text type="secondary" className="text-xs">
+            Add the essentials now; link a matter or add tags if needed.
+          </Text>
+        </div>
+        <Text type="secondary" className="text-xs">
+          <span className="text-red-500">*</span> Required
+        </Text>
+      </div>
+
+      <Row gutter={[12, 0]}>
+        <Col xs={24} md={16}>
+          <Form.Item
+            name="title"
+            label="Task title"
+            rules={[
+              { required: true, message: "Enter a task title" },
+              { max: 200, message: "Title cannot exceed 200 characters" },
+            ]}>
+            <Input
+              placeholder="e.g. Prepare the first draft of the agreement"
+              maxLength={200}
+              showCount
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} md={8}>
+          <Form.Item
+            name="category"
+            label="Category"
+            rules={[{ required: true, message: "Choose a category" }]}>
+            <Select
+              placeholder="Choose a category"
+              options={taskCategoryOptions}
+            />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      <Form.Item
+        name="instruction"
+        label="Instructions"
+        rules={[
+          { required: true, message: "Add instructions for this task" },
+          { max: 5000, message: "Instructions cannot exceed 5000 characters" },
+        ]}>
+        <TextArea
+          rows={3}
+          placeholder="Describe the work to be done and any important context..."
+          maxLength={5000}
+          showCount
+        />
+      </Form.Item>
+
+      <Form.Item name="description" label="Short description (optional)">
+        <TextArea
+          rows={2}
+          placeholder="A brief summary to help the team scan the task"
+          maxLength={2000}
+          showCount
+        />
+      </Form.Item>
+
+      <Divider className="my-3" />
+
+      <Text strong className="mb-3 block">
+        Schedule and assignment
+      </Text>
+      <Row gutter={[12, 0]}>
+        <Col xs={24} sm={12} lg={6}>
+          <Form.Item
+            name="taskPriority"
+            label="Priority"
+            rules={[{ required: true, message: "Choose a priority" }]}>
+            <Select
+              options={taskPriorityOptions.map(({ value, label, color }) => ({
+                value,
+                label: color ? <Tag color={color}>{label}</Tag> : label,
+              }))}
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Form.Item name="estimatedEffort" label="Effort (hours)">
+            <InputNumber
+              min={0}
+              max={500}
+              placeholder="Optional"
+              className="w-full"
+              addonAfter="hrs"
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Form.Item name="startDate" label="Start date">
+            <DatePicker
+              showTime={{ format: "HH:mm" }}
+              format="MMM D, YYYY HH:mm"
+              className="w-full"
+              placeholder="Optional"
+              suffixIcon={<CalendarOutlined />}
+            />
+          </Form.Item>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Form.Item
+            name="dueDate"
+            label="Due date"
+            dependencies={["startDate"]}
+            rules={[
+              { required: true, message: "Choose a due date" },
+              {
+                validator: (_, value) => {
+                  if (!value || isEdit || value.isAfter(dayjs())) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error("Due date must be in the future"),
+                  );
+                },
+              },
+              {
+                validator: (_, value) => {
+                  const startDate = form.getFieldValue("startDate");
+                  if (!value || !startDate || !value.isBefore(startDate)) {
+                    return Promise.resolve();
+                  }
+                  return Promise.reject(
+                    new Error("Due date must be on or after the start date"),
+                  );
+                },
+              },
+            ]}>
+            <DatePicker
+              showTime={{ format: "HH:mm" }}
+              format="MMM D, YYYY HH:mm"
+              className="w-full"
+              placeholder="Select due date"
+              suffixIcon={<ClockCircleOutlined />}
+            />
+          </Form.Item>
+        </Col>
+      </Row>
+
+      {userError && (
+        <Alert
+          message="Could not load team members"
+          description={
+            <span>
+              {userError}{" "}
+              <Button type="link" size="small" onClick={refreshUsers}>
+                Retry
+              </Button>
+            </span>
+          }
+          type="error"
+          showIcon
+          className="mb-3"
+        />
+      )}
+      <Form.Item
+        name="assignee"
+        label={
+          <Space size={6}>
+            <UserOutlined />
+            <span>Assign team members</span>
+          </Space>
+        }
+        rules={[
+          {
+            required: !isEdit,
+            message: "Select at least one team member",
+          },
+        ]}>
+        <Select
+          mode="multiple"
+          placeholder={
+            userLoading ? "Loading team members..." : "Search and select people"
+          }
+          options={userSelectOptions}
+          loading={userLoading}
+          disabled={userLoading && !userSelectOptions.length}
+          allowClear
+          showSearch
+          filterOption={(input, option) =>
+            (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
+          }
+          optionRender={({ data }) => (
+            <Space>
+              <Tag color={data.role === "client" ? "green" : "blue"}>
+                {data.roleLabel}
+              </Tag>
+              <span>{data.label}</span>
+            </Space>
+          )}
+          notFoundContent={
+            userLoading
+              ? "Loading team members..."
+              : userError
+                ? "Could not load team members"
+                : "No team members found"
+          }
+        />
+      </Form.Item>
+
+      <Collapse
+        ghost
+        className="mt-1"
+        items={[
+          {
+            key: "matter",
+            label: (
+              <Space>
+                <BankOutlined />
+                <span>Link a matter or case</span>
+                <Text type="secondary" className="text-xs">
+                  Optional
+                </Text>
+              </Space>
+            ),
+            children: (
+              <>
+                {matterError && (
+                  <Alert
+                    message="Could not load matters"
+                    description={matterError}
+                    type="error"
+                    showIcon
+                    className="mb-3"
+                  />
+                )}
+                <Row gutter={[12, 0]}>
+                  <Col xs={24} md={12}>
+                    <Form.Item name="matter" label="Matter">
+                      <Select
+                        showSearch
+                        allowClear
+                        filterOption={false}
+                        onSearch={handleMatterSearch}
+                        onChange={handleMatterChange}
+                        loading={matterLoading}
+                        placeholder="Search by matter name or reference"
+                        options={matterSelectOptions}
+                        optionRender={({ data }) => (
+                          <div>
+                            <div className="font-medium">{data.label}</div>
+                            <Text type="secondary" className="text-xs">
+                              {data.matter.matterNumber || "No reference"}
+                              {data.matter.matterType
+                                ? ` · ${data.matter.matterType}`
+                                : ""}
+                            </Text>
+                          </div>
+                        )}
+                        notFoundContent={
+                          matterLoading
+                            ? "Searching matters..."
+                            : "No matters found"
+                        }
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item name="matterType" label="Matter type">
+                      <Select
+                        allowClear
+                        placeholder="Select a type"
+                        options={MATTER_TYPE_OPTIONS}
+                      />
+                    </Form.Item>
+                  </Col>
+                  {matterType === "litigation" && (
+                    <Col span={24}>
+                      <Form.Item
+                        name="litigationDetailId"
+                        label="Litigation details">
+                        <Select
+                          allowClear
+                          loading={litigationLoading}
+                          placeholder="Select case details"
+                          options={litigationOptions}
+                          optionRender={({ data }) => (
+                            <div>
+                              <div>{data.label}</div>
+                              {data.subtitle && (
+                                <Text type="secondary" className="text-xs">
+                                  {data.subtitle}
+                                </Text>
+                              )}
+                            </div>
+                          )}
+                          notFoundContent={
+                            litigationLoading
+                              ? "Loading case details..."
+                              : "No case details found"
+                          }
+                        />
+                      </Form.Item>
+                    </Col>
+                  )}
+                  <Col span={24}>
+                    <Form.Item
+                      name="customCaseReference"
+                      label="External case reference">
+                      <Input
+                        maxLength={100}
+                        placeholder="Optional reference from another system"
+                      />
+                    </Form.Item>
+                  </Col>
+                </Row>
+              </>
+            ),
+          },
+          {
+            key: "advanced",
+            label: (
+              <Space>
+                <SettingOutlined />
+                <span>Additional options</span>
+                <Text type="secondary" className="text-xs">
+                  Tags and status
+                </Text>
+              </Space>
+            ),
+            children: (
+              <>
+                <Row gutter={[12, 0]}>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      name="tags"
+                      label={
+                        <Space size={6}>
+                          <TagOutlined />
+                          <span>Tags</span>
+                        </Space>
+                      }>
+                      <Select
+                        mode="tags"
+                        tokenSeparators={[","]}
+                        placeholder="Add tags and press Enter"
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item name="status" label="Status">
+                      <Select options={TASK_STATUS_OPTIONS} />
+                    </Form.Item>
+                  </Col>
+                </Row>
+                <Text type="secondary" className="text-xs">
+                  <BankOutlined className="mr-1" />
+                  Task dependencies can be added after the task is created.
+                </Text>
+              </>
+            ),
+          },
+        ]}
       />
 
-      <Form
-        form={form}
-        layout="vertical"
-        initialValues={{
-          taskPriority: "medium",
-          category: "other",
-          status: "pending",
-          ...initialValues,
-        }}
-        onFinish={onSubmit}
-        size="large">
-        <Tabs
-          activeKey={activeTab}
-          onChange={handleTabChange}
-          items={tabItems}
-          className="mb-4"
-        />
-
-        <Divider />
-
-        <div className="flex justify-end gap-3">
-          <Button
-            type="primary"
-            htmlType="submit"
-            loading={loading}
-            size="large">
-            {submitText || (isEdit ? "Save Changes" : "Create Task")}
-          </Button>
-        </div>
-      </Form>
-    </div>
+      <Divider className="my-3" />
+      {footerContent}
+      <div className="flex justify-end">
+        <Button type="primary" htmlType="submit" loading={loading} size="large">
+          {submitText || (isEdit ? "Save changes" : "Create task")}
+        </Button>
+      </div>
+    </Form>
   );
+};
+
+TaskFormBase.propTypes = {
+  form: PropTypes.shape({
+    setFieldsValue: PropTypes.func.isRequired,
+    getFieldValue: PropTypes.func.isRequired,
+  }).isRequired,
+  initialValues: PropTypes.shape({
+    startDate: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.instanceOf(Date),
+      PropTypes.object,
+    ]),
+    dueDate: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.instanceOf(Date),
+      PropTypes.object,
+    ]),
+  }),
+  isEdit: PropTypes.bool,
+  onSubmit: PropTypes.func,
+  onValuesChange: PropTypes.func,
+  footerContent: PropTypes.node,
+  loading: PropTypes.bool,
+  submitText: PropTypes.string,
 };
 
 export default TaskFormBase;

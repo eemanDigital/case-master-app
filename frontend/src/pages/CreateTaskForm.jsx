@@ -1,7 +1,6 @@
 import notify from "../utils/notify";
 import { useCallback, useEffect, useState } from "react";
 import useModal from "../hooks/useModal";
-import { Form } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createTask,
@@ -11,17 +10,13 @@ import {
 import { sendAutomatedCustomEmail } from "../redux/features/emails/emailSlice";
 import { getUsers, selectUsers } from "../redux/features/auth/authSlice";
 import { formatDate } from "../utils/formatDate";
-import { Modal, Typography, Space, Alert, Checkbox, Divider } from "antd";
-import {
-  PlusOutlined,
-  MailOutlined,
-  InfoCircleOutlined,
-} from "@ant-design/icons";
+import { Checkbox, Form, Modal, Space, Typography } from "antd";
+import { MailOutlined, PlusOutlined } from "@ant-design/icons";
 
 import ButtonWithIcon from "../components/ButtonWithIcon";
 import TaskFormBase from "../components/tasks/TaskFormBase";
 
-const { Title, Text } = Typography;
+const { Text, Title } = Typography;
 
 const CreateTaskForm = () => {
   const dispatch = useDispatch();
@@ -29,11 +24,10 @@ const CreateTaskForm = () => {
   const allUsers = useSelector(selectUsers);
   const loading = useSelector(selectTaskActionLoading);
 
-  const { open, confirmLoading, showModal, handleCancel } = useModal();
+  const { open, showModal, handleCancel } = useModal();
   const [form] = Form.useForm();
   const [selectedAssignees, setSelectedAssignees] = useState([]);
   const [sendEmailNotification, setSendEmailNotification] = useState(false);
-  const [formValues, setFormValues] = useState(null);
 
   // Fetch users when modal opens
   useEffect(() => {
@@ -48,24 +42,17 @@ const CreateTaskForm = () => {
       form.resetFields();
       setSelectedAssignees([]);
       setSendEmailNotification(false);
-      setFormValues(null);
     }
   }, [open, form]);
 
-  // Track form values changes
-  const handleFormValuesChange = useCallback((changedValues, allValues) => {
-    setFormValues(allValues);
-    // Track assignee changes from the form
-    if (changedValues.assignee) {
-      setSelectedAssignees(changedValues.assignee || []);
-    }
+  const handleFormValuesChange = useCallback((_, allValues) => {
+    setSelectedAssignees(allValues.assignee || []);
   }, []);
 
   const resetFormAndState = useCallback(() => {
     form.resetFields();
     setSelectedAssignees([]);
     setSendEmailNotification(false);
-    setFormValues(null);
   }, [form]);
 
   const handleSubmit = useCallback(
@@ -234,13 +221,16 @@ const CreateTaskForm = () => {
     handleCancel();
   };
 
-  const getUserDisplayName = (userId) => {
-    const userObj = allUsers?.data?.find((u) => u._id === userId);
-    return userObj
-      ? `${userObj.firstName || ""} ${userObj.lastName || ""}`.trim() ||
-          "Unknown User"
-      : "Unknown User";
-  };
+  const getUserDisplayName = useCallback(
+    (userId) => {
+      const userObj = allUsers?.data?.find((u) => u._id === userId);
+      return userObj
+        ? `${userObj.firstName || ""} ${userObj.lastName || ""}`.trim() ||
+            "Unknown User"
+        : "Unknown User";
+    },
+    [allUsers],
+  );
 
   // Get assignee names for display
   const getAssigneeNames = useCallback(() => {
@@ -250,7 +240,7 @@ const CreateTaskForm = () => {
       .map((id) => getUserDisplayName(id))
       .filter((name) => name !== "Unknown User")
       .join(", ");
-  }, [selectedAssignees, allUsers]);
+  }, [selectedAssignees, getUserDisplayName]);
 
   return (
     <>
@@ -264,7 +254,7 @@ const CreateTaskForm = () => {
         width="90%"
         style={{
           top: 20,
-          maxWidth: "1000px",
+          maxWidth: "760px",
         }}
         title={
           <Title level={4} className="m-0 flex items-center gap-2">
@@ -274,44 +264,10 @@ const CreateTaskForm = () => {
         }
         open={open}
         onCancel={handleModalCancel}
-        confirmLoading={confirmLoading}
         className="modal-container"
         footer={null}
         destroyOnClose
         maskClosable={false}>
-        {/* Assignee Alert */}
-        {selectedAssignees?.length > 0 && (
-          <Alert
-            message={
-              <Space direction="vertical" size="small" className="w-full">
-                <Space>
-                  <InfoCircleOutlined />
-                  <Text strong>
-                    Assigned to {selectedAssignees.length} user(s):
-                  </Text>
-                </Space>
-                <div className="text-sm">
-                  {selectedAssignees.slice(0, 3).map((id) => (
-                    <Tag key={id} className="mr-1 mb-1">
-                      {getUserDisplayName(id)}
-                    </Tag>
-                  ))}
-                  {selectedAssignees.length > 3 && (
-                    <Tag className="mr-1 mb-1">
-                      +{selectedAssignees.length - 3} more
-                    </Tag>
-                  )}
-                </div>
-              </Space>
-            }
-            type="info"
-            showIcon
-            icon={<UserOutlined />}
-            className="mb-4"
-          />
-        )}
-
-        {/* Main Form */}
         <TaskFormBase
           form={form}
           isEdit={false}
@@ -319,40 +275,39 @@ const CreateTaskForm = () => {
           loading={loading}
           submitText="Create Task"
           onValuesChange={handleFormValuesChange}
+          footerContent={
+            selectedAssignees.length > 0 && (
+              <div className="mb-3 rounded-lg bg-slate-50 px-3 py-2">
+                <Checkbox
+                  checked={sendEmailNotification}
+                  onChange={(event) =>
+                    setSendEmailNotification(event.target.checked)
+                  }
+                  className="text-sm">
+                  <Space size={8}>
+                    <MailOutlined
+                      className={
+                        sendEmailNotification ? "text-blue-500" : ""
+                      }
+                    />
+                    <span>Email task collaborators</span>
+                  </Space>
+                </Checkbox>
+                {sendEmailNotification && (
+                  <Text
+                    type="secondary"
+                    className="ml-6 mt-1 block text-xs"
+                    ellipsis>
+                    Recipients: {getAssigneeNames()}
+                  </Text>
+                )}
+              </div>
+            )
+          }
         />
-
-        {/* Email Notification Option */}
-        {selectedAssignees?.length > 0 && (
-          <>
-            <Divider className="my-4" />
-            <div className="flex justify-between items-center">
-              <Checkbox
-                checked={sendEmailNotification}
-                onChange={(e) => setSendEmailNotification(e.target.checked)}
-                className="text-sm">
-                <Space>
-                  <MailOutlined
-                    className={sendEmailNotification ? "text-blue-500" : ""}
-                  />
-                  <span>Send email notification to assigned users</span>
-                </Space>
-              </Checkbox>
-
-              {sendEmailNotification && (
-                <Text type="secondary" className="text-xs">
-                  Recipients: {getAssigneeNames()}
-                </Text>
-              )}
-            </div>
-          </>
-        )}
       </Modal>
     </>
   );
 };
-
-// Import missing components
-import { Tag } from "antd";
-import { UserOutlined } from "@ant-design/icons";
 
 export default CreateTaskForm;
