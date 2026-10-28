@@ -7,6 +7,7 @@ const dayjs = require("dayjs");
 const isSameOrAfter = require("dayjs/plugin/isSameOrAfter");
 const isSameOrBefore = require("dayjs/plugin/isSameOrBefore");
 const AppError = require("../utils/appError");
+const { getHearingPhaseInfo } = require("../utils/hearingPhase");
 const PaginationServiceFactory = require("../services/PaginationServiceFactory");
 const path = require("path");
 const {
@@ -28,6 +29,51 @@ dayjs.extend(isSameOrBefore);
 const matterService = PaginationServiceFactory.createService(Matter);
 const litigationService =
   PaginationServiceFactory.createService(LitigationDetail);
+
+const hasOwn = (value, key) =>
+  Object.prototype.hasOwnProperty.call(value, key);
+
+const sameHearingValue = (current, incoming, field) => {
+  if (current == null || incoming == null) {
+    return current == null && incoming == null;
+  }
+
+  if (field === "date" || field === "nextHearingDate") {
+    const currentTime = new Date(current).getTime();
+    const incomingTime = new Date(incoming).getTime();
+    return Number.isFinite(currentTime) && currentTime === incomingTime;
+  }
+
+  if (Array.isArray(current) && Array.isArray(incoming)) {
+    const currentIds = current.map(String).sort();
+    const incomingIds = incoming.map(String).sort();
+    return (
+      currentIds.length === incomingIds.length &&
+      currentIds.every((id, index) => id === incomingIds[index])
+    );
+  }
+
+  return String(current) === String(incoming);
+};
+
+const isPrivilegedHearingUser = (user) =>
+  Boolean(
+    user?.isSuperAdmin?.() ||
+      user?.isAdmin?.() ||
+      user?.hasAdminLevel?.("admin") ||
+      ["super_admin", "superadmin", "super-admin", "admin"].includes(
+        user?.adminLevel,
+      ) ||
+      [
+        "firm_admin",
+        "managing_partner",
+        "head_of_litigation",
+        "admin",
+        "super_admin",
+        "superadmin",
+        "super-admin",
+      ].includes(user?.role),
+  );
 
 // ============================================
 // HEARING DATE BLOCK CHECKER
@@ -584,7 +630,27 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
 
 exports.addHearing = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
-  const hearingData = req.body;
+  const hearingData = { ...req.body };
+  const allowedFields = new Set([
+    "date",
+    "purpose",
+    "nextHearingDate",
+    "dateToBeCommunicated",
+    "hearingNoticeRequired",
+    "lawyerPresent",
+  ]);
+  const invalidFields = Object.keys(hearingData).filter(
+    (field) => !allowedFields.has(field),
+  );
+
+  if (invalidFields.length > 0) {
+    return next(
+      new AppError(
+        `Unsupported hearing fields: ${invalidFields.join(", ")}`,
+        400,
+      ),
+    );
+  }
 
   const matter = await Matter.findOne({
     _id: matterId,
@@ -597,8 +663,20 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     return next(new AppError("Litigation matter not found", 404));
   }
 
-  if (!hearingData.date) {
-    return next(new AppError("Hearing date is required", 400));
+  if (
+    !hearingData.date ||
+    !Number.isFinite(new Date(hearingData.date).getTime())
+  ) {
+    return next(new AppError("A valid hearing date is required", 400));
+  }
+
+  if (hearingData.nextHearingDate) {
+    const nextDate = dayjs(hearingData.nextHearingDate);
+    if (!nextDate.isValid() || !nextDate.isAfter(dayjs())) {
+      return next(
+        new AppError("Next hearing date must be in the future", 400),
+      );
+    }
   }
 
   // ─── Blocked date check ───────────────────────────────────────────────────
@@ -640,7 +718,7 @@ exports.addHearing = catchAsync(async (req, res, next) => {
 
   const hearingWithUser = {
     ...hearingData,
-    preparedBy: hearingData.preparedBy || req.user.id,
+    preparedBy: req.user.id,
   };
 
   litigationDetail.hearings.push(hearingWithUser);
@@ -802,7 +880,7 @@ exports.getMatterHearings = catchAsync(async (req, res, next) => {
 
 exports.updateHearing = catchAsync(async (req, res, next) => {
   const { matterId, hearingId } = req.params;
-  const updateData = req.body;
+  const updateData = { ...req.body };
 
   const matter = await Matter.findOne({
     _id: matterId,
@@ -829,44 +907,137 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     return next(new AppError("Hearing not found", 404));
   }
 
+  const allowedFields = new Set([
+    "date",
+    "purpose",
+    "outcome",
+    "nextHearingDate",
+    "dateToBeCommunicated",
+    "hearingNoticeRequired",
+    "hearingNoticeServed",
+    "lawyerPresent",
+    "notes",
+    "lateReason",
+    "editReason",
+    "reason",
+  ]);
+  const invalidFields = Object.keys(updateData).filter(
+    (field) => !allowedFields.has(field),
+  );
+
+  if (invalidFields.length > 0) {
+    return next(
+      new AppError(
+        `Unsupported hearing fields: ${invalidFields.join(", ")}`,
+        400,
+      ),
+    );
+  }
+
+  if (updateData.dateToBeCommunicated === true) {
+    if (updateData.nextHearingDate) {
+      return next(
+        new AppError(
+          "A next hearing date cannot be set while the date is marked TBC.",
+          400,
+        ),
+      );
+    }
+    updateData.nextHearingDate = null;
+  }
+
   // ════════════════════════════════════════════════════════════
   // BUSINESS RULES LOGIC
   // ════════════════════════════════════════════════════════════
 
-  const GRACE_PERIOD_HOURS = 48;
   const now = dayjs();
   const hearingDateTime = dayjs(hearing.date);
-  const gracePeriodEnd = hearingDateTime.add(GRACE_PERIOD_HOURS, "hour"); // 48hr grace
-
-  const isBeforeHearing = now.isBefore(hearingDateTime);
-  const isWithinGracePeriod =
-    now.isSameOrAfter(hearingDateTime) && now.isBefore(gracePeriodEnd);
-  const isAfterGracePeriod = now.isSameOrAfter(gracePeriodEnd);
-
-  // Privileged roles: super-admin/admin can authorize late filings/edits
-  const user = req.user;
-  const isPrivileged =
-    user?.isSuperAdmin?.() ||
-    user?.isAdmin?.() ||
-    user?.hasAdminLevel?.("admin") ||
-    ["super_admin", "superadmin", "super-admin"].includes(user?.adminLevel) ||
-    ["firm_admin", "managing_partner", "head_of_litigation", "admin"].includes(user?.role);
-
-  // Fields restricted to filing phase (on/after hearing date)
-  const reportFields = ["outcome", "notes"];
-  const hasReportFieldUpdate = reportFields.some((f) =>
-    Object.prototype.hasOwnProperty.call(updateData, f),
+  const phaseInfo = getHearingPhaseInfo(
+    hearing.date,
+    !!hearing.outcome,
+    hearing.nextHearingDate,
+    now.toDate(),
   );
+  const {
+    isBeforeHearing,
+    isWithinGracePeriod,
+    isAfterGracePeriod,
+  } = phaseInfo;
+
+  const user = req.user;
+  const isPrivileged = isPrivilegedHearingUser(user);
+
+  const reportFields = ["outcome", "notes"];
+  const changedFields = Object.keys(updateData).filter(
+    (field) =>
+      !["lateReason", "editReason", "reason"].includes(field) &&
+      !sameHearingValue(hearing[field], updateData[field], field),
+  );
+  const changedReportFields = reportFields.filter((field) =>
+    changedFields.includes(field),
+  );
+  const hasReportFieldUpdate = changedReportFields.length > 0;
 
   const isFirstTimeFiling = hasReportFieldUpdate && !hearing.outcome;
   const isEditingExistingReport = hasReportFieldUpdate && !!hearing.outcome;
+  const { canAssignLawyers } = phaseInfo;
+
+  if (changedFields.includes("date")) {
+    return next(
+      new AppError("The original hearing date cannot be changed.", 400),
+    );
+  }
+
+  const lockedNonReportFields = [
+    "purpose",
+    "hearingNoticeRequired",
+    "hearingNoticeServed",
+    "nextHearingDate",
+    "dateToBeCommunicated",
+  ];
+  if (
+    isAfterGracePeriod &&
+    !isPrivileged &&
+    changedFields.some((field) => lockedNonReportFields.includes(field))
+  ) {
+    return next(
+      new AppError(
+        "This hearing is locked. Only an Admin/Managing Partner can change its details.",
+        403,
+      ),
+    );
+  }
+
+  if (changedFields.includes("lawyerPresent") && !canAssignLawyers) {
+    return next(
+      new AppError(
+        "Lawyer assignment is only available for an upcoming hearing session.",
+        403,
+      ),
+    );
+  }
 
   // RULE 1: Cannot file report BEFORE hearing date/time
-  if (isFirstTimeFiling && isBeforeHearing) {
+  if (hasReportFieldUpdate && isBeforeHearing) {
     return next(
       new AppError(
         `Cannot file report until after the hearing (${hearingDateTime.format("DD MMM YYYY HH:mm")}). You can update lawyer assignments and hearing notice flag.`,
         403,
+      ),
+    );
+  }
+
+  if (
+    isFirstTimeFiling &&
+    (typeof updateData.outcome !== "string" ||
+      !updateData.outcome.trim() ||
+      typeof updateData.notes !== "string" ||
+      !updateData.notes.trim())
+  ) {
+    return next(
+      new AppError(
+        "An outcome and court notes are required to file a report.",
+        400,
       ),
     );
   }
@@ -881,18 +1052,15 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
         ),
       );
     }
-    if (!updateData.lateReason?.trim() && !updateData.reason?.trim()) {
+    if (
+      !(typeof updateData.lateReason === "string" && updateData.lateReason.trim()) &&
+      !(typeof updateData.reason === "string" && updateData.reason.trim())
+    ) {
       return next(
         new AppError("A justification is required to log a late report.", 400),
       );
     }
-    updateData.lateReport = true;
-    updateData.reportFiledAt = new Date();
-    updateData.reportFiledBy = user._id;
     updateData.lateReason = updateData.lateReason || updateData.reason;
-    if (!updateData.auditTrail && !hearing.auditTrail) {
-      updateData.auditTrail = [];
-    }
   }
 
   // RULE 2B: Editing existing report
@@ -906,7 +1074,10 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
       );
     }
     if (isAfterGracePeriod && isPrivileged) {
-      if (!updateData.editReason?.trim() && !updateData.reason?.trim()) {
+      if (
+        !(typeof updateData.editReason === "string" && updateData.editReason.trim()) &&
+        !(typeof updateData.reason === "string" && updateData.reason.trim())
+      ) {
         return next(
           new AppError("A reason is required to edit a past report.", 400),
         );
@@ -915,11 +1086,24 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     }
   }
 
+  const effectiveOutcome = hasOwn(updateData, "outcome")
+    ? updateData.outcome
+    : hearing.outcome;
+  const effectiveDateToBeCommunicated = hasOwn(
+    updateData,
+    "dateToBeCommunicated",
+  )
+    ? Boolean(updateData.dateToBeCommunicated)
+    : Boolean(hearing.dateToBeCommunicated);
+  const effectiveNextHearingDate = hasOwn(updateData, "nextHearingDate")
+    ? updateData.nextHearingDate
+    : hearing.nextHearingDate;
+
   // RULE 3: Adjourned outcome requires next hearing date or date to be communicated
   if (
-    updateData.outcome === "adjourned" &&
-    !updateData.nextHearingDate &&
-    !updateData.dateToBeCommunicated
+    effectiveOutcome === "adjourned" &&
+    !effectiveNextHearingDate &&
+    !effectiveDateToBeCommunicated
   ) {
     return next(
       new AppError(
@@ -930,15 +1114,22 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   }
 
   // RULE 4: Validate next hearing date is in future
-  if (updateData.nextHearingDate) {
-    const nextDate = dayjs(updateData.nextHearingDate);
-    if (nextDate.isBefore(now, "day")) {
+  if (
+    changedFields.includes("nextHearingDate") &&
+    effectiveNextHearingDate
+  ) {
+    const nextDate = dayjs(effectiveNextHearingDate);
+    if (!nextDate.isValid() || !nextDate.isAfter(now)) {
       return next(new AppError("Next hearing date must be in the future", 400));
     }
   }
 
   // RULE 5: Cannot remove outcome once filed (unless in grace)
-  if (hearing.outcome && (updateData.outcome === null || updateData.outcome === "")) {
+  if (
+    hearing.outcome &&
+    hasOwn(updateData, "outcome") &&
+    (updateData.outcome === null || updateData.outcome === "")
+  ) {
     if (!isWithinGracePeriod) {
       return next(
         new AppError(
@@ -954,8 +1145,8 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   // Checks the new date(s) — not the existing stored dates — so we don't
   // re-validate historical hearing dates that are already saved.
   const datesToCheck = {};
-  if (updateData.date) datesToCheck.date = updateData.date;
-  if (updateData.nextHearingDate)
+  if (changedFields.includes("date")) datesToCheck.date = updateData.date;
+  if (changedFields.includes("nextHearingDate") && updateData.nextHearingDate)
     datesToCheck.nextHearingDate = updateData.nextHearingDate;
 
   let hearingBlockWarning = null;
@@ -982,43 +1173,34 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   // PROCEED WITH UPDATE
   // ════════════════════════════════════════════════════════════
 
-  const auditEntry = null;
-  if (isFirstTimeFiling && isAfterGracePeriod && isPrivileged) {
-    const entry = {
-      action: "late_filed",
-      by: user._id,
-      at: new Date(),
-      reason: updateData.lateReason || updateData.reason,
-    };
+  if (hasReportFieldUpdate) {
+    const reportDiff = Object.fromEntries(
+      changedReportFields.map((field) => [
+        field,
+        {
+          from: hearing[field] ?? null,
+          to: updateData[field] ?? null,
+        },
+      ]),
+    );
+    const action = isFirstTimeFiling
+      ? isAfterGracePeriod
+        ? "late_filed"
+        : "filed"
+      : "edited";
+    const reason =
+      updateData.lateReason || updateData.editReason || updateData.reason || null;
+
     if (!Array.isArray(hearing.auditTrail)) {
       hearing.auditTrail = [];
     }
-    hearing.auditTrail.push(entry);
-    delete updateData.auditTrail;
-  } else if (isEditingExistingReport && isAfterGracePeriod && isPrivileged) {
-    const entry = {
-      action: "edited",
+    hearing.auditTrail.push({
+      action,
       by: user._id,
       at: new Date(),
-      reason: updateData.editReason || updateData.reason,
-    };
-    if (!Array.isArray(hearing.auditTrail)) {
-      hearing.auditTrail = [];
-    }
-    hearing.auditTrail.push(entry);
-    delete updateData.auditTrail;
-  } else if (isFirstTimeFiling && isWithinGracePeriod && hasReportFieldUpdate) {
-    const entry = {
-      action: "filed",
-      by: user._id,
-      at: new Date(),
-      reason: updateData.reason || null,
-    };
-    if (!Array.isArray(hearing.auditTrail)) {
-      hearing.auditTrail = [];
-    }
-    hearing.auditTrail.push(entry);
-    delete updateData.auditTrail;
+      reason,
+      diff: reportDiff,
+    });
   }
 
   Object.keys(updateData).forEach((key) => {
@@ -1028,11 +1210,14 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     hearing[key] = updateData[key];
   });
 
-  if (isFirstTimeFiling && isAfterGracePeriod && isPrivileged) {
-    hearing.lateReport = true;
+  if (isFirstTimeFiling) {
+    hearing.lateReport = isAfterGracePeriod;
     hearing.reportFiledAt = new Date();
     hearing.reportFiledBy = user._id;
-    hearing.lateReason = updateData.lateReason || updateData.reason || hearing.lateReason;
+    if (isAfterGracePeriod) {
+      hearing.lateReason =
+        updateData.lateReason || updateData.reason || hearing.lateReason;
+    }
   }
 
   if (isEditingExistingReport && isAfterGracePeriod && isPrivileged) {
@@ -1072,7 +1257,7 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
 });
 
 // ============================================
-// DELETE HEARING (WITH CALENDAR SYNC)
+// DELETE HEARING
 // ============================================
 
 exports.deleteHearing = catchAsync(async (req, res, next) => {
@@ -1093,6 +1278,15 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
     return next(new AppError("Hearing not found", 404));
   }
 
+  if (hearing.outcome) {
+    return next(
+      new AppError(
+        "A hearing with a filed report cannot be deleted. Contact an Admin/Managing Partner if it must be removed.",
+        403,
+      ),
+    );
+  }
+
   // Delete the hearing
   litigationDetail.hearings.pull({ _id: hearingId });
 
@@ -1104,8 +1298,13 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
       .map((h) => new Date(h.nextHearingDate))
       .sort((a, b) => a - b);
 
+    const futureHearingDates = litigationDetail.hearings
+      .filter((h) => new Date(h.date) > now)
+      .map((h) => new Date(h.date))
+      .sort((a, b) => a - b);
+
     litigationDetail.nextHearingDate =
-      futureNextHearingDates.length > 0 ? futureNextHearingDates[0] : null;
+      futureNextHearingDates[0] ?? futureHearingDates[0] ?? null;
   } else {
     litigationDetail.nextHearingDate = null;
   }
@@ -1119,9 +1318,7 @@ exports.deleteHearing = catchAsync(async (req, res, next) => {
 
   res.status(200).json({
     status: "success",
-    message:
-      "Hearing deleted" +
-      (calendarResult.success ? " and calendar event removed" : ""),
+    message: "Hearing deleted",
     data: { litigationDetail },
   });
 });

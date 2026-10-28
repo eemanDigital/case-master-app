@@ -30,6 +30,7 @@ import {
 import dayjs from "dayjs";
 import { formatDate, formatName } from "../../utils/formatters";
 import useTextShorten from "../../hooks/useTextShorten";
+import { GRACE_PERIOD_HOURS } from "../../utils/hearingPhase";
 
 // ─── STATUS CONFIG ──────────────────────────────────────────────────────────
 
@@ -84,7 +85,6 @@ const GracePeriodIndicator = React.memo(({ phaseInfo }) => {
 
   if (!isWithinGracePeriod || phase === "schedule") return null;
 
-  const GRACE_PERIOD_HOURS = 48;
   const hoursConsumed = GRACE_PERIOD_HOURS - hoursRemaining;
   const progressPercent = Math.max(
     0,

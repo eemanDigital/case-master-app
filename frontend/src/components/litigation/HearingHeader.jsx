@@ -9,7 +9,7 @@ import {
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { formatDate, formatName } from "../../utils/formatters";
-import { getPhaseInfo } from "./HearingTimeline"; // re-uses the exported utility
+import { getPhaseInfo } from "../../utils/hearingPhase";
 
 // ─── HEARING HEADER ─────────────────────────────────────────────────────────
 //

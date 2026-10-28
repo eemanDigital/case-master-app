@@ -37,9 +37,6 @@ import {
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
-import relativeTime from "dayjs/plugin/relativeTime";
-import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 
 import {
   addHearing,
@@ -56,115 +53,15 @@ import HearingTimelineItem from "./HearingTimelineItems";
 import HearingHeader from "./HearingHeader";
 import { SendHearingReportModal } from "../emails";
 import useUserSelectOptions from "../../hooks/useUserSelectOptions";
+import {
+  getPhaseInfo,
+  GRACE_PERIOD_HOURS,
+} from "../../utils/hearingPhase";
 
-dayjs.extend(relativeTime);
-dayjs.extend(isSameOrAfter);
-dayjs.extend(isSameOrBefore);
+export { getPhaseInfo, GRACE_PERIOD_HOURS };
 
 const { TextArea } = Input;
 const { confirm } = Modal;
-
-// ─── CONSTANTS ──────────────────────────────────────────────────────────────
-
-export const GRACE_PERIOD_HOURS = 48;
-
-// ─── PHASE UTILITY ──────────────────────────────────────────────────────────
-//
-// DATA MODEL (from your MongoDB document):
-//   hearing.date            = Date the hearing WAS HELD (actual court date, past/present)
-//   hearing.nextHearingDate = Date the matter comes up NEXT (future session date)
-//   hearing.outcome         = What happened at hearing.date (null = report not filed yet)
-//   hearing.lawyerPresent   = Lawyers for this/next session
-//
-// PHASE RULES:
-//   "schedule" → hearing.date is future. Assign lawyers, set nextHearingDate.
-//                Cannot file outcome (hearing not held yet).
-//   "report"   → hearing.date is past, within 48h grace, no outcome filed yet.
-//   "edit"     → hearing.date is past, within 48h grace, outcome already exists.
-//   "locked"   → grace period expired. Read-only.
-//
-// LAWYER ASSIGNMENT (KEY FIX):
-//   Old logic: canAssignLawyers = hearing.date is future
-//   Problem:   For your data, hearing.date = March 28 (past),
-//              nextHearingDate = April 29 (future). Old logic blocked assignment.
-//   Fixed:     canAssignLawyers = hearing.date is future
-//                                 OR nextHearingDate is future
-//              This lets lawyers be assigned for the upcoming April 29 session
-//              even though the March 28 hearing date has already passed.
-//
-// NEXT HEARING DATE EDITABILITY (KEY FIX):
-//   Old logic: only editable in "schedule" phase
-//   Problem:   "Adjourned" outcome requires setting nextHearingDate AFTER
-//              the hearing (during "report" phase). Restricting to schedule-only
-//              made it impossible to correctly record adjournments.
-//   Fixed:     nextHearingDate editable in all phases except "locked".
-
-export const getPhaseInfo = (
-  hearingDate,
-  hasOutcome,
-  nextHearingDate = null,
-) => {
-  const now = dayjs();
-  const hearing = dayjs(hearingDate);
-  const gracePeriodEnd = hearing.add(GRACE_PERIOD_HOURS, "hour");
-
-  const isBeforeHearing = now.isBefore(hearing);
-  const isWithinGracePeriod =
-    now.isSameOrAfter(hearing) && now.isBefore(gracePeriodEnd);
-  const isAfterGracePeriod = now.isSameOrAfter(gracePeriodEnd);
-
-  const hoursRemaining = isWithinGracePeriod
-    ? Math.max(0, gracePeriodEnd.diff(now, "hour"))
-    : 0;
-  const minutesRemaining = isWithinGracePeriod
-    ? Math.max(0, gracePeriodEnd.diff(now, "minute") % 60)
-    : 0;
-
-  let phase;
-  if (isBeforeHearing) {
-    phase = "schedule";
-  } else if (isWithinGracePeriod) {
-    phase = hasOutcome ? "edit" : "report";
-  } else {
-    phase = "locked";
-  }
-
-  let displayStatus;
-  if (hasOutcome) {
-    displayStatus = "completed";
-  } else if (hearing.isSame(now, "day")) {
-    displayStatus = "today";
-  } else if (isBeforeHearing) {
-    displayStatus = "upcoming";
-  } else if (isWithinGracePeriod) {
-    displayStatus = "pending";
-  } else {
-    displayStatus = "overdue";
-  }
-
-  // KEY FIX: Lawyer assignment allowed if hearing.date is future
-  // OR if nextHearingDate is in the future (need lawyers for next session).
-  const hasUpcomingNextSession =
-    !!nextHearingDate && dayjs(nextHearingDate).isAfter(now);
-
-  const canAssignLawyers = isBeforeHearing || hasUpcomingNextSession;
-
-  return {
-    phase,
-    displayStatus,
-    isBeforeHearing,
-    isWithinGracePeriod,
-    isAfterGracePeriod,
-    hoursRemaining,
-    minutesRemaining,
-    gracePeriodEnd,
-    hearingDate: hearing,
-    isUrgent: isWithinGracePeriod && hoursRemaining < 12,
-    isCritical: isWithinGracePeriod && hoursRemaining < 4,
-    canAssignLawyers,
-    hasUpcomingNextSession,
-  };
-};
 
 // ─── OPTIONS ────────────────────────────────────────────────────────────────
 
@@ -408,8 +305,12 @@ const HearingTimeline = ({
     (typeof userData?.isAdmin === "function" && userData?.isAdmin()) ||
     (typeof userData?.isSuperAdmin === "function" && userData?.isSuperAdmin()) ||
     ["admin", "super-admin", "super_admin", "superadmin"].includes(userData?.adminLevel) ||
-    ["admin", "super-admin"].includes(userData?.role);
-  const isPrivileged = isAdmin;
+    ["admin", "super-admin", "super_admin", "superadmin"].includes(userData?.role);
+  const isPrivileged =
+    isAdmin ||
+    ["firm_admin", "managing_partner", "head_of_litigation"].includes(
+      userData?.role,
+    );
 
   const hearings = matterHearings.length > 0 ? matterHearings : propsHearings;
 
@@ -562,7 +463,7 @@ const HearingTimeline = ({
         );
       }
 
-      if (modalPhase === "locked" && isAdmin) {
+      if (modalPhase === "locked" && isPrivileged) {
         if (isFirstTimeFiling && !(values.lateReason || values.reason)) {
           return message.error("A justification is required to log a late report.");
         }
@@ -606,7 +507,7 @@ const HearingTimeline = ({
           message.error(err?.response?.data?.message || err?.message || "Operation failed");
         }
       },
-      [dispatch, stableMatterId, editingHearing, form, modalPhase, isAdmin, isFirstTimeFiling, isEditingExistingReport],
+      [dispatch, stableMatterId, editingHearing, form, modalPhase, isPrivileged, isFirstTimeFiling, isEditingExistingReport],
     );
 
   const handleModalClose = useCallback(() => {
@@ -645,11 +546,10 @@ const HearingTimeline = ({
   const canEditReportFields = modalPhase === "schedule"
     ? false
     : modalPhase === "locked"
-      ? isAdmin
+      ? isPrivileged
       : true;
 
-  // KEY FIX: nextHearingDate ALWAYS editable
-  const canEditNextHearingDate = true;
+  const canEditNextHearingDate = !isModalLocked || isPrivileged;
 
   const [isMobile, setIsMobile] = useState(false);
 
@@ -883,7 +783,7 @@ const HearingTimeline = ({
                   options={PURPOSE_OPTIONS}
                   allowClear
                   size={isMobile ? "middle" : "large"}
-                  disabled={isModalLocked && !isAdmin}
+                  disabled={isModalLocked && !isPrivileged}
                 />
               </Form.Item>
 
@@ -950,7 +850,7 @@ const HearingTimeline = ({
               name="hearingNoticeRequired"
               valuePropName="checked"
               className="!mb-2">
-              <Checkbox disabled={isModalLocked && !isAdmin}>
+              <Checkbox disabled={isModalLocked && !isPrivileged}>
                 <span className="flex items-center gap-2 text-xs sm:text-sm">
                   <BellOutlined className="text-amber-500" />
                   <span className="font-medium">
@@ -976,7 +876,7 @@ const HearingTimeline = ({
                   <span className="flex items-center gap-1.5 flex-wrap">
                     <CalendarOutlined className="text-blue-400 text-xs" />
                     Next Hearing Date
-                                {(isAdmin || isPrivileged) && modalPhase === "locked" && (
+                                {isPrivileged && modalPhase === "locked" && (
                       <Tag
                         color="red"
                         className="!text-[10px] !px-1 !py-0 ml-1">
@@ -1001,7 +901,7 @@ const HearingTimeline = ({
                   className="rounded-lg"
                   size={isMobile ? "middle" : "large"}
                   disabled={!canEditNextHearingDate}
-                  status={modalPhase === "locked" && !isAdmin && !isPrivileged ? "error" : ""}
+                  status={modalPhase === "locked" && !isPrivileged ? "error" : ""}
                   disabledDate={(current) =>
                     current && current < dayjs().startOf("day")
                   }
@@ -1113,7 +1013,7 @@ const HearingTimeline = ({
                               <span className="flex items-center gap-1.5">
                                 <CalendarOutlined className="text-orange-400 text-xs" />
                                 Adjourned To
-                    {(isAdmin || isPrivileged) && modalPhase === "locked" && (
+                    {isPrivileged && modalPhase === "locked" && (
                                   <Tag
                                     color="red"
                                     className="!text-[10px] !px-1 !py-0 ml-1">
@@ -1148,7 +1048,7 @@ const HearingTimeline = ({
                   </>
                 )}
 
-                {(modalPhase === "locked") && (isAdmin || isPrivileged) && isFirstTimeFiling && (
+                {(modalPhase === "locked") && isPrivileged && isFirstTimeFiling && (
                   <Form.Item
                     label={
                       <span className="flex items-center gap-1.5">
@@ -1166,7 +1066,7 @@ const HearingTimeline = ({
                   </Form.Item>
                 )}
 
-                {(modalPhase === "locked") && (isAdmin || isPrivileged) && isEditingExistingReport && (
+                {(modalPhase === "locked") && isPrivileged && isEditingExistingReport && (
                   <Form.Item
                     label={
                       <span className="flex items-center gap-1.5">
@@ -1206,7 +1106,7 @@ const HearingTimeline = ({
                   placeholder={
                     canEditReportFields
                       ? "Detailed summary of what transpired in court…"
-                      : (isAdmin || isPrivileged)
+                      : isPrivileged
                         ? "You can update as authorized user (add justification above if required)"
                         : "Report window closed"
                   }
