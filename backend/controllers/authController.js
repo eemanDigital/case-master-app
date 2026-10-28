@@ -9,6 +9,7 @@ const catchAsync = require("../utils/catchAsync");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
 const Firm = require("../models/firmModel");
+const { validateEncryptionKey } = require("../utils/encryption");
 
 const { createSendToken, hashToken } = require("../utils/handleSendToken");
 const Token = require("../models/tokenModel");
@@ -95,6 +96,18 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
     );
   }
 
+  try {
+    validateEncryptionKey();
+  } catch (error) {
+    console.error("[registerFirm] Encryption configuration is invalid:", error);
+    return next(
+      new AppError(
+        "Firm registration is temporarily unavailable because server encryption is not configured. Please contact support.",
+        503,
+      ),
+    );
+  }
+
   // 3) Validate subdomain format (if provided)
   if (subdomain && !/^[a-z0-9-]+$/.test(subdomain)) {
     return next(
@@ -119,6 +132,8 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
     return next(new AppError("Email already exists", 400));
   }
 
+  let newFirm;
+  let newUser;
   try {
     // 6) Create Firm - with invited plan or FREE with PENDING_APPROVAL status
     const initialPlan = isInvitedUser ? invitedPlan : "FREE";
@@ -155,7 +170,7 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
       },
     };
 
-    const newFirm = await Firm.create(firmData);
+    newFirm = await Firm.create(firmData);
     const firmId = newFirm._id;
 
     // 7) Get user agent
@@ -183,7 +198,7 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
       userAgent,
     };
 
-    const newUser = await User.create(userData);
+    newUser = await User.create(userData);
 
     // 9) Send notification to platform admin
     try {
@@ -367,6 +382,17 @@ exports.registerFirm = catchAsync(async (req, res, next) => {
       },
     });
   } catch (error) {
+    if (newFirm && !newUser) {
+      try {
+        await Firm.deleteOne({ _id: newFirm._id });
+      } catch (cleanupError) {
+        console.error(
+          `[registerFirm] Failed to roll back firm ${newFirm._id} after registration failure:`,
+          cleanupError,
+        );
+      }
+    }
+
     if (error.code === 11000) {
       if (error.keyPattern?.email) {
         return next(new AppError("Email already exists", 400));

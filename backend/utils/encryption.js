@@ -39,6 +39,10 @@ const getKey = () => {
   return cachedKey;
 };
 
+const validateEncryptionKey = () => {
+  getKey();
+};
+
 const encrypt = (text) => {
   if (!text) return null;
 
@@ -138,6 +142,7 @@ const maskSensitiveData = (data, fields = []) => {
 module.exports = {
   encrypt,
   decrypt,
+  validateEncryptionKey,
   encryptField,
   decryptField,
   hashSensitive,
