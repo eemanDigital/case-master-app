@@ -6,7 +6,6 @@ import {
   Space,
   Divider,
   Avatar,
-  Badge,
   Progress,
   Modal,
   DatePicker,
@@ -38,47 +37,42 @@ const STATUS_CONFIG = {
   today: {
     color: "green",
     badgeProps: { status: "processing", text: "Today" },
-    cardClass:
-      "border-emerald-300 shadow-md shadow-emerald-100 bg-gradient-to-br from-emerald-50 to-white",
-    stripeClass: "bg-gradient-to-b from-emerald-400 to-emerald-600",
-    icon: <CalendarOutlined className="text-emerald-600 animate-pulse" />,
-    dotClass: "bg-emerald-50 border-2 border-emerald-500",
+    cardClass: "border-blue-200 bg-white shadow-sm hover:shadow-md",
+    stripeClass: "bg-blue-500",
+    icon: <CalendarOutlined className="text-blue-600" />,
+    dotClass: "bg-white border-2 border-blue-500",
   },
   upcoming: {
     color: "blue",
     badgeProps: { status: "default", text: "Upcoming" },
-    cardClass: "border-blue-200 bg-gradient-to-br from-blue-50 to-white",
-    stripeClass: "bg-gradient-to-b from-blue-400 to-blue-600",
-    icon: <CalendarOutlined className="text-blue-600" />,
-    dotClass: "bg-blue-50 border-2 border-blue-500",
+    cardClass: "border-slate-200 bg-white shadow-sm hover:shadow-md",
+    stripeClass: "bg-slate-400",
+    icon: <CalendarOutlined className="text-slate-500" />,
+    dotClass: "bg-white border-2 border-slate-400",
   },
   pending: {
     color: "orange",
     badgeProps: { status: "warning", text: "Report Pending" },
-    cardClass:
-      "border-amber-300 shadow-md shadow-amber-100 bg-gradient-to-br from-amber-50 to-white",
-    stripeClass: "bg-gradient-to-b from-amber-400 to-amber-600",
-    icon: (
-      <ExclamationCircleOutlined className="text-amber-600 animate-bounce" />
-    ),
-    dotClass: "bg-amber-50 border-2 border-amber-500",
+    cardClass: "border-amber-200 bg-white shadow-sm hover:shadow-md",
+    stripeClass: "bg-amber-500",
+    icon: <ExclamationCircleOutlined className="text-amber-600" />,
+    dotClass: "bg-white border-2 border-amber-500",
   },
   overdue: {
     color: "red",
     badgeProps: { status: "error", text: "Overdue" },
-    cardClass:
-      "border-red-300 shadow-md shadow-red-100 bg-gradient-to-br from-red-50 to-white",
-    stripeClass: "bg-gradient-to-b from-red-400 to-red-600",
-    icon: <WarningOutlined className="text-red-600 animate-pulse" />,
-    dotClass: "bg-red-50 border-2 border-red-500",
+    cardClass: "border-red-200 bg-white shadow-sm hover:shadow-md",
+    stripeClass: "bg-red-500",
+    icon: <WarningOutlined className="text-red-600" />,
+    dotClass: "bg-white border-2 border-red-500",
   },
   completed: {
     color: "default",
     badgeProps: { status: "success", text: "Completed" },
-    cardClass: "border-slate-200 bg-white",
-    stripeClass: "bg-gradient-to-b from-slate-300 to-slate-500",
-    icon: <CheckCircleOutlined className="text-emerald-500" />,
-    dotClass: "bg-slate-100 border-2 border-slate-400",
+    cardClass: "border-slate-200 bg-white shadow-sm hover:shadow-md",
+    stripeClass: "bg-emerald-500",
+    icon: <CheckCircleOutlined className="text-emerald-600" />,
+    dotClass: "bg-white border-2 border-emerald-500",
   },
 };
 
@@ -112,7 +106,7 @@ const GracePeriodIndicator = React.memo(({ phaseInfo }) => {
   const strokeColor = isCritical ? "#dc2626" : isUrgent ? "#f59e0b" : "#2563eb";
 
   return (
-    <div className={`p-3 rounded-lg border-2 mt-3 ${colorClass}`}>
+    <div className={`p-3 rounded-lg border mt-3 ${colorClass}`}>
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-1.5">
           {isCritical ? (
@@ -374,44 +368,50 @@ const HearingTimelineItem = React.memo(({
   if (isMobile) {
     return (
       <>
-        <div className="p-3 border-b border-slate-100">
-          <div className="flex items-center justify-between mb-2">
+        <div className="border-b border-slate-100 p-4 last:border-b-0">
+          <div className="mb-3 flex items-start justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${config.dotClass}`}>
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${config.dotClass}`}>
                 {config.icon}
               </div>
               <div>
-                <p className="text-xs font-bold text-slate-800">
+                <p className="text-sm font-semibold text-slate-800">
                   {formatDate(hearing.date, "DD MMM YYYY")}
                 </p>
-                <p className="text-[10px] text-slate-400">
-                  {dayjs(hearing.date).format("HH:mm")}
+                <p className="text-xs text-slate-500">
+                  {dayjs(hearing.date).format("HH:mm")} · Court date
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge {...config.badgeProps} className="text-[10px]" />
-              <Button
-                type="text"
-                size="small"
-                icon={<EditOutlined />}
-                onClick={handleEdit}
-                className="text-slate-500"
-              />
-              {canDelete && (
+            <div className="flex shrink-0 items-center gap-1">
+              <Tag color={config.color} className="!m-0 !rounded-full !px-2 !text-[10px]">
+                {config.badgeProps.text}
+              </Tag>
+              <Tooltip title={isLocked ? "View hearing" : "Edit hearing"}>
                 <Button
                   type="text"
                   size="small"
-                  danger
-                  icon={<DeleteOutlined />}
-                  onClick={handleDelete}
+                  icon={<EditOutlined />}
+                  onClick={handleEdit}
+                  className="text-slate-500"
                 />
+              </Tooltip>
+              {canDelete && (
+                <Tooltip title="Delete hearing">
+                  <Button
+                    type="text"
+                    size="small"
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={handleDelete}
+                  />
+                </Tooltip>
               )}
             </div>
           </div>
           
           {hearing.purpose && (
-            <p className="text-xs font-medium text-slate-600 capitalize mb-2">
+            <p className="mb-3 text-sm font-medium capitalize text-slate-700">
               {hearing.purpose.replace(/_/g, " ")}
             </p>
           )}
@@ -428,20 +428,20 @@ const HearingTimelineItem = React.memo(({
           </div>
           
           {hearing.notes && (
-            <div className="mt-2 p-2 bg-slate-50 rounded-lg border border-slate-200">
-              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Notes</p>
-              <p className="text-xs text-slate-600 leading-relaxed">
+            <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-slate-500">Notes</p>
+              <p className="text-xs leading-relaxed text-slate-600">
                 {shortenText(hearing.notes, 100, `mobile-notes-${hearing._id}`)}
               </p>
             </div>
           )}
           
           {(hearing.nextHearingDate || hearing.dateToBeCommunicated) && (
-            <div className="flex items-center justify-between bg-blue-50 rounded-lg p-2">
+            <div className="flex items-center justify-between rounded-lg border border-blue-100 bg-blue-50/70 p-3">
               <div className="flex items-center gap-2">
                 <CalendarOutlined className="text-blue-600 text-xs" />
                 <div>
-                  <p className="text-[10px] font-bold text-blue-800">Next</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-blue-700">Next hearing</p>
                   {hearing.dateToBeCommunicated ? (
                     <Tag color="orange" className="!text-[9px]">TBC</Tag>
                   ) : (
@@ -487,61 +487,61 @@ const HearingTimelineItem = React.memo(({
   // Desktop timeline view
   return (
     <>
-      <div className="flex gap-4 py-4 px-1">
+      <div className="flex gap-3 py-4 sm:gap-4 sm:py-5">
         {/* LEFT: Date + Status */}
-        <div className="flex flex-col items-end min-w-[130px] pt-1 shrink-0">
-          <p className="text-sm font-bold text-slate-800 leading-tight">
+        <div className="flex w-[88px] shrink-0 flex-col items-end pt-1 sm:w-[112px]">
+          <p className="text-right text-xs font-semibold leading-tight text-slate-800 sm:text-sm">
             {formatDate(hearing.date, "DD MMM YYYY")}
           </p>
-          <p className="text-xs text-slate-400 font-medium mt-0.5">
+          <p className="mt-1 text-xs font-medium text-slate-500">
             {dayjs(hearing.date).format("HH:mm")}
           </p>
           <div className="mt-2">
-            <Badge {...config.badgeProps} className="text-[10px] font-semibold" />
+            <Tag color={config.color} className="!m-0 !rounded-full !px-2 !text-[10px]">
+              {config.badgeProps.text}
+            </Tag>
           </div>
           {isAfterGracePeriod && !hearing.outcome && (
-            <Tag color="error" className="!text-[9px] !px-1.5 !py-0 !mt-1">
-              EXPIRED
+            <Tag color="error" className="!mt-1 !rounded-full !px-2 !text-[9px]">
+              Deadline passed
             </Tag>
           )}
         </div>
 
         {/* DOT */}
-        <div className="flex flex-col items-center pt-1.5 shrink-0">
+        <div className="flex shrink-0 flex-col items-center pt-1.5">
           <div
-            className={`w-8 h-8 rounded-full flex items-center justify-center ${config.dotClass}`}
-            style={{ fontSize: 14 }}>
+            className={`flex h-7 w-7 items-center justify-center rounded-full ${config.dotClass}`}
+            style={{ fontSize: 12 }}>
             {config.icon}
           </div>
-          <div className="w-px flex-1 bg-slate-200 mt-2" />
+          <div className="mt-2 w-px flex-1 bg-slate-200" />
         </div>
 
         {/* RIGHT: Card */}
-        <div className={`relative flex-1 rounded-2xl border-2 transition-all duration-200 mb-4 ${config.cardClass}`}>
-          <div className={`absolute left-0 top-0 bottom-0 w-1.5 rounded-l-2xl ${config.stripeClass}`} />
+        <div className={`relative mb-4 min-w-0 flex-1 rounded-xl border transition-shadow duration-200 ${config.cardClass}`}>
+          <div className={`absolute bottom-3 left-0 top-3 w-1 rounded-r-full ${config.stripeClass}`} />
 
-          <div className="p-4 ml-2">
+          <div className="p-3 pl-4 sm:p-4 sm:pl-5">
             {/* HEADER */}
-            <div className="flex items-start justify-between mb-3">
+            <div className="mb-3 flex items-start justify-between gap-3">
               <div className="flex-1 min-w-0">
-                {hearing.purpose && (
-                  <h5 className="text-sm font-bold text-slate-800 mb-2 leading-tight capitalize">
-                    {hearing.purpose.replace(/_/g, " ")}
-                  </h5>
-                )}
+                <h5 className="mb-2 text-sm font-semibold leading-tight capitalize text-slate-800 sm:text-base">
+                  {hearing.purpose?.replace(/_/g, " ") || "Court hearing"}
+                </h5>
                 <div className="flex flex-wrap gap-1.5">
                   {hearing.outcome && (
-                    <Tag color="green" className="!m-0 !rounded-full font-medium text-xs">
+                    <Tag color="green" className="!m-0 !rounded-full !px-2 !text-xs">
                       {hearing.outcome.replace(/_/g, " ")}
                     </Tag>
                   )}
                   {hearing.lawyerPresent?.length > 0 && (
-                    <Tag icon={<TeamOutlined />} color="blue" className="!m-0 !rounded-full text-xs">
+                    <Tag icon={<TeamOutlined />} color="blue" className="!m-0 !rounded-full !px-2 !text-xs">
                       {hearing.lawyerPresent.length} Lawyer{hearing.lawyerPresent.length > 1 ? "s" : ""}
                     </Tag>
                   )}
                   {hearing.hearingNoticeRequired && (
-                    <Tag icon={<BellOutlined />} color="orange" className="!m-0 !rounded-full text-xs">
+                    <Tag icon={<BellOutlined />} color="orange" className="!m-0 !rounded-full !px-2 !text-xs">
                       Hearing Notice Required
                     </Tag>
                   )}
@@ -549,7 +549,7 @@ const HearingTimelineItem = React.memo(({
               </div>
 
               {/* ACTION BUTTONS */}
-              <Space size={2} className="shrink-0 ml-2">
+              <Space size={2} className="shrink-0">
                 <Tooltip title={isLocked ? "View only" : "Edit hearing"}>
                   <Button
                     type="text"
@@ -576,20 +576,20 @@ const HearingTimelineItem = React.memo(({
 
             {/* OUTCOME SECTION */}
             {hearing.outcome && (
-              <div className="mb-3 p-3 bg-emerald-50 rounded-xl border border-emerald-200">
+              <div className="mb-3 rounded-lg border border-emerald-100 bg-emerald-50/60 p-3">
                 <div className="flex items-start gap-2.5">
                   <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
                     <CheckCircleOutlined className="text-emerald-600" style={{ fontSize: 13 }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest mb-1">Outcome</p>
-                    <p className="text-sm font-semibold text-slate-800 mb-1 capitalize">
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">Outcome</p>
+                    <p className="mb-1 text-sm font-semibold capitalize text-slate-800">
                       {hearing.outcome.replace(/_/g, " ")}
                     </p>
                     {hearing.notes && (
                       <>
                         <Divider className="!my-2 !border-emerald-200" />
-                        <p className="text-xs text-slate-600 leading-relaxed">
+                        <p className="text-xs leading-relaxed text-slate-600">
                           {shortenText(hearing.notes, 200, `desktop-notes-${hearing._id}`)}
                         </p>
                       </>
@@ -604,12 +604,12 @@ const HearingTimelineItem = React.memo(({
 
             {/* NEXT HEARING */}
             {(hearing.nextHearingDate || hearing.dateToBeCommunicated) && (
-              <div className="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="mt-3 rounded-lg border border-blue-100 bg-blue-50/60 p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <CalendarOutlined className="text-blue-600" style={{ fontSize: 13 }} />
                     <div>
-                      <p className="text-xs font-bold text-blue-800 leading-none mb-0.5">Next Hearing</p>
+                      <p className="mb-1 text-xs font-semibold leading-none text-blue-800">Next hearing</p>
                       {hearing.dateToBeCommunicated ? (
                         <Tag color="orange" className="!text-[10px]">Date to be communicated</Tag>
                       ) : (
@@ -641,16 +641,53 @@ const HearingTimelineItem = React.memo(({
               </div>
             )}
 
+            {/* LATE REPORT / AUDIT INFO */}
+            {hearing.lateReport && (
+              <div className="mt-3 rounded-lg border border-orange-100 bg-orange-50/60 p-3">
+                <div className="flex items-start gap-2">
+                  <WarningOutlined className="text-orange-600 mt-0.5 shrink-0" style={{ fontSize: 12 }} />
+                  <div className="flex-1">
+                    <p className="text-xs font-bold text-orange-800 mb-0.5">Late Report</p>
+                    {hearing.lateReason && (
+                      <p className="text-[11px] text-orange-700">Justification: {hearing.lateReason}</p>
+                    )}
+                    {hearing.reportFiledBy && (
+                      <p className="text-[10px] text-orange-600 mt-1">
+                        Filed by {hearing.reportFiledBy.firstName} {hearing.reportFiledBy.lastName}
+                        {hearing.reportFiledAt ? ` • ${formatDate(hearing.reportFiledAt, "DD MMM YYYY HH:mm")}` : ""}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {hearing.auditTrail && hearing.auditTrail.length > 0 && (
+              <div className="mt-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <p className="mb-2 text-xs font-semibold text-slate-700">Activity</p>
+                <div className="space-y-1">
+                  {hearing.auditTrail.slice(-3).map((entry, idx) => (
+                    <div key={idx} className="text-xs leading-relaxed text-slate-600">
+                      <span className="font-semibold capitalize">{entry.action?.replace("_", " ")}</span>
+                      {entry.by ? ` by ${entry.by.firstName} ${entry.by.lastName}` : ""}
+                      {entry.at ? ` • ${formatDate(entry.at, "DD MMM YYYY HH:mm")}` : ""}
+                      {entry.reason ? ` — ${entry.reason}` : ""}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* NO REPORT WARNING */}
             {!hearing.outcome && displayStatus !== "upcoming" && displayStatus !== "today" && (
-              <div className="mt-3 p-3 bg-amber-50 rounded-lg border-2 border-amber-300 flex items-start gap-2">
+              <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50/70 p-3">
                 <WarningOutlined className="text-amber-600 mt-0.5 shrink-0" style={{ fontSize: 12 }} />
                 <div>
                   <p className="text-xs font-bold text-amber-800 mb-0.5">
                     {isAfterGracePeriod ? "Report Not Filed" : "Report Pending"}
                   </p>
                   <p className="text-[11px] text-amber-700">
-                    {isAfterGracePeriod ? "Contact administrator" : "File before deadline"}
+                    {isAfterGracePeriod ? "Only Admin/Super Admin can log late report with justification" : "File before deadline"}
                   </p>
                 </div>
               </div>

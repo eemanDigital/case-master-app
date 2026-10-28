@@ -298,6 +298,14 @@ exports.getLitigationDetails = catchAsync(async (req, res, next) => {
       path: "hearings.lawyerPresent",
       select: "firstName lastName email photo",
     },
+    {
+      path: "hearings.reportFiledBy",
+      select: "firstName lastName email photo",
+    },
+    {
+      path: "hearings.auditTrail.by",
+      select: "firstName lastName email photo",
+    },
   ]);
 
   if (!litigationDetail) {
@@ -697,6 +705,14 @@ exports.getMatterHearings = catchAsync(async (req, res, next) => {
       path: "hearings.lawyerPresent",
       select: "firstName lastName email photo",
     })
+    .populate({
+      path: "hearings.reportFiledBy",
+      select: "firstName lastName email photo",
+    })
+    .populate({
+      path: "hearings.auditTrail.by",
+      select: "firstName lastName email photo",
+    })
     .lean();
 
   if (!litigationDetail) {
@@ -827,48 +843,76 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     now.isSameOrAfter(hearingDateTime) && now.isBefore(gracePeriodEnd);
   const isAfterGracePeriod = now.isSameOrAfter(gracePeriodEnd);
 
+  // Privileged roles: super-admin/admin can authorize late filings/edits
+  const user = req.user;
+  const isPrivileged =
+    user?.isSuperAdmin?.() ||
+    user?.isAdmin?.() ||
+    user?.hasAdminLevel?.("admin") ||
+    ["super_admin", "superadmin", "super-admin"].includes(user?.adminLevel) ||
+    ["firm_admin", "managing_partner", "head_of_litigation", "admin"].includes(user?.role);
+
   // Fields restricted to filing phase (on/after hearing date)
   const reportFields = ["outcome", "notes"];
   const hasReportFieldUpdate = reportFields.some((f) =>
     Object.prototype.hasOwnProperty.call(updateData, f),
   );
 
+  const isFirstTimeFiling = hasReportFieldUpdate && !hearing.outcome;
+  const isEditingExistingReport = hasReportFieldUpdate && !!hearing.outcome;
+
   // RULE 1: Cannot file report BEFORE hearing date/time
-  if (hasReportFieldUpdate && isBeforeHearing) {
+  if (isFirstTimeFiling && isBeforeHearing) {
     return next(
       new AppError(
-        `Cannot file report until hearing date (${hearingDateTime.format("DD MMM YYYY HH:mm")}). ` +
-          `You can update lawyer assignments and hearing notice flag.`,
+        `Cannot file report until after the hearing (${hearingDateTime.format("DD MMM YYYY HH:mm")}). You can update lawyer assignments and hearing notice flag.`,
         403,
       ),
     );
   }
 
-  // RULE 2: Report must be filed within grace period
-  if (hasReportFieldUpdate && isAfterGracePeriod && !hearing.outcome) {
-    return next(
-      new AppError(
-        `Report filing window closed. The ${GRACE_PERIOD_HOURS}-hour grace period ended on ` +
-          `${gracePeriodEnd.format("DD MMM YYYY [at] HH:mm")}. ` +
-          `Please contact an administrator to file a late report.`,
-        403,
-      ),
-    );
+  // RULE 2: First time filing AFTER grace -> restrict to privileged users + reason
+  if (isFirstTimeFiling && isAfterGracePeriod) {
+    if (!isPrivileged) {
+      return next(
+        new AppError(
+          "Report filing window has closed. Only Admin/Managing Partner can log a late report with justification.",
+          403,
+        ),
+      );
+    }
+    if (!updateData.lateReason?.trim() && !updateData.reason?.trim()) {
+      return next(
+        new AppError("A justification is required to log a late report.", 400),
+      );
+    }
+    updateData.lateReport = true;
+    updateData.reportFiledAt = new Date();
+    updateData.reportFiledBy = user._id;
+    updateData.lateReason = updateData.lateReason || updateData.reason;
+    if (!updateData.auditTrail && !hearing.auditTrail) {
+      updateData.auditTrail = [];
+    }
   }
 
-  // RULE 2B: Allow editing existing reports ONLY within grace period
-  if (
-    hasReportFieldUpdate &&
-    hearing.outcome &&
-    isAfterGracePeriod
-  ) {
-    return next(
-      new AppError(
-        `Report editing window closed. Reports can only be edited within ${GRACE_PERIOD_HOURS} hours of the hearing date/time. ` +
-          `Grace period ended: ${gracePeriodEnd.format("DD MMM YYYY [at] HH:mm")}`,
-        403,
-      ),
-    );
+  // RULE 2B: Editing existing report
+  if (isEditingExistingReport) {
+    if (isAfterGracePeriod && !isPrivileged) {
+      return next(
+        new AppError(
+          "This report can no longer be edited. Contact an Admin/Managing Partner to make changes.",
+          403,
+        ),
+      );
+    }
+    if (isAfterGracePeriod && isPrivileged) {
+      if (!updateData.editReason?.trim() && !updateData.reason?.trim()) {
+        return next(
+          new AppError("A reason is required to edit a past report.", 400),
+        );
+      }
+      updateData.editReason = updateData.editReason || updateData.reason;
+    }
   }
 
   // RULE 3: Adjourned outcome requires next hearing date or date to be communicated
@@ -938,9 +982,62 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   // PROCEED WITH UPDATE
   // ════════════════════════════════════════════════════════════
 
+  const auditEntry = null;
+  if (isFirstTimeFiling && isAfterGracePeriod && isPrivileged) {
+    const entry = {
+      action: "late_filed",
+      by: user._id,
+      at: new Date(),
+      reason: updateData.lateReason || updateData.reason,
+    };
+    if (!Array.isArray(hearing.auditTrail)) {
+      hearing.auditTrail = [];
+    }
+    hearing.auditTrail.push(entry);
+    delete updateData.auditTrail;
+  } else if (isEditingExistingReport && isAfterGracePeriod && isPrivileged) {
+    const entry = {
+      action: "edited",
+      by: user._id,
+      at: new Date(),
+      reason: updateData.editReason || updateData.reason,
+    };
+    if (!Array.isArray(hearing.auditTrail)) {
+      hearing.auditTrail = [];
+    }
+    hearing.auditTrail.push(entry);
+    delete updateData.auditTrail;
+  } else if (isFirstTimeFiling && isWithinGracePeriod && hasReportFieldUpdate) {
+    const entry = {
+      action: "filed",
+      by: user._id,
+      at: new Date(),
+      reason: updateData.reason || null,
+    };
+    if (!Array.isArray(hearing.auditTrail)) {
+      hearing.auditTrail = [];
+    }
+    hearing.auditTrail.push(entry);
+    delete updateData.auditTrail;
+  }
+
   Object.keys(updateData).forEach((key) => {
+    if (key === "lateReason" || key === "editReason" || key === "reason") {
+      return;
+    }
     hearing[key] = updateData[key];
   });
+
+  if (isFirstTimeFiling && isAfterGracePeriod && isPrivileged) {
+    hearing.lateReport = true;
+    hearing.reportFiledAt = new Date();
+    hearing.reportFiledBy = user._id;
+    hearing.lateReason = updateData.lateReason || updateData.reason || hearing.lateReason;
+  }
+
+  if (isEditingExistingReport && isAfterGracePeriod && isPrivileged) {
+    hearing.editReason = updateData.editReason || updateData.reason || hearing.editReason;
+  }
 
   // Sync matter-level nextHearingDate with hearing's nextHearingDate
   if (updateData.nextHearingDate) {
@@ -961,6 +1058,8 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
       path: "hearings.lawyerPresent",
       select: "firstName lastName email photo",
     },
+    { path: "hearings.reportFiledBy", select: "firstName lastName email photo" },
+    { path: "hearings.auditTrail.by", select: "firstName lastName email photo" },
   ]);
 
   res.status(200).json({

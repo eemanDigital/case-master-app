@@ -57,7 +57,7 @@ const useUserSelectOptions = (options = {}) => {
     } else if (type === "by-role" && role) {
       p.append("role", role);
     } else if (type === "lawyers" || lawyerOnly) {
-      p.append("role", "lawyer");
+      p.append("type", "lawyers");
     } else {
       p.append("type", type);
     }

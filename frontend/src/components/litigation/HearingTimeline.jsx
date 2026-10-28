@@ -51,10 +51,11 @@ import {
   selectMatterHearings,
 } from "../../redux/features/litigation/litigationSlice";
 import { getAllEvents } from "../../redux/features/calender/calenderSlice";
-import { getUsers, selectUsers, selectUser } from "../../redux/features/auth/authSlice";
+import { selectUser } from "../../redux/features/auth/authSlice";
 import HearingTimelineItem from "./HearingTimelineItems";
 import HearingHeader from "./HearingHeader";
 import { SendHearingReportModal } from "../emails";
+import useUserSelectOptions from "../../hooks/useUserSelectOptions";
 
 dayjs.extend(relativeTime);
 dayjs.extend(isSameOrAfter);
@@ -313,14 +314,16 @@ const PhaseBanner = React.memo(({ phaseInfo, hasOutcome }) => {
   if (phase === "locked") {
     return (
       <Alert
-        type="error"
+        type={hasOutcome ? "warning" : "error"}
         showIcon
         icon={<LockOutlined />}
-        className="mb-4 rounded-lg border-red-200"
+        className="mb-4 rounded-lg"
         message={
           <div className="flex items-center justify-between">
-            <span className="font-semibold text-sm">Report Window Closed</span>
-            <Tag color="red" className="!m-0">
+            <span className="font-semibold text-sm">
+              {hasOutcome ? "Report Locked" : "Report Overdue"}
+            </span>
+            <Tag color={hasOutcome ? "orange" : "red"} className="!m-0">
               Grace Period Expired
             </Tag>
           </div>
@@ -332,8 +335,8 @@ const PhaseBanner = React.memo(({ phaseInfo, hasOutcome }) => {
               <strong>{gracePeriodEnd.format("DD MMM YYYY [at] HH:mm")}</strong>
               .{" "}
               {hasOutcome
-                ? "Report is now read-only."
-                : "Contact an administrator to file a late report."}
+                ? "Existing report is read-only for most users. Admin/Managing Partner can edit with justification."
+                : "Report not filed yet. Only Admin/Super Admin can log a late report with justification."}
             </span>
             {canAssignLawyers && (
               <div className="text-xs text-blue-600 bg-blue-50 rounded p-2 flex items-center gap-1.5 mt-1">
@@ -375,13 +378,14 @@ FieldLockIndicator.displayName = "FieldLockIndicator";
 
 // ─── STAT CARD ──────────────────────────────────────────────────────────────
 
-const StatCard = React.memo(({ label, value, icon, colorClass, isMobile }) => (
-  <div
-    className={`flex flex-col items-center justify-center p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 transition-shadow hover:shadow-md ${colorClass}`}>
-    <div className={`mb-0.5 sm:mb-1 ${isMobile ? "text-sm" : "text-base"}`}>{icon}</div>
-    <div className={`font-black leading-none mb-0.5 sm:mb-1 ${isMobile ? "text-lg sm:text-xl" : "text-xl sm:text-2xl"}`}>{value}</div>
-    <div className={`font-bold uppercase tracking-wider opacity-70 ${isMobile ? "text-[8px] sm:text-[10px]" : "text-[10px]"}`}>
-      {label}
+const StatCard = React.memo(({ label, value, icon, colorClass }) => (
+  <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm sm:px-4">
+    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${colorClass}`}>
+      {icon}
+    </div>
+    <div className="min-w-0">
+      <p className="text-xl font-semibold leading-none text-slate-800">{value}</p>
+      <p className="mt-1 truncate text-xs font-medium text-slate-500">{label}</p>
     </div>
   </div>
 ));
@@ -398,12 +402,14 @@ const HearingTimeline = ({
   const dispatch = useDispatch();
   const loading = useSelector(selectActionLoading);
   const matterHearings = useSelector(selectMatterHearings);
-  const allUsers = useSelector(selectUsers);
-  const usersLoading = useSelector((state) => state.auth?.loading ?? false);
   const currentUser = useSelector(selectUser);
-  const isAdmin = ["admin", "super-admin"].includes(
-    currentUser?.data?.adminLevel ?? currentUser?.adminLevel
-  );
+  const userData = currentUser?.data || currentUser || {};
+  const isAdmin =
+    (typeof userData?.isAdmin === "function" && userData?.isAdmin()) ||
+    (typeof userData?.isSuperAdmin === "function" && userData?.isSuperAdmin()) ||
+    ["admin", "super-admin", "super_admin", "superadmin"].includes(userData?.adminLevel) ||
+    ["admin", "super-admin"].includes(userData?.role);
+  const isPrivileged = isAdmin;
 
   const hearings = matterHearings.length > 0 ? matterHearings : propsHearings;
 
@@ -414,27 +420,12 @@ const HearingTimeline = ({
   const [showSendReportModal, setShowSendReportModal] = useState(false);
   const [dateToBeCommunicated, setDateToBeCommunicated] = useState(false);
   const [form] = Form.useForm();
+  const { data: lawyersOptions, loading: usersLoading } = useUserSelectOptions({
+    type: "lawyers",
+    autoFetch: isModalVisible,
+  });
 
   const stableMatterId = useMemo(() => String(matterId || ""), [matterId]);
-
-  useEffect(() => {
-    if (isModalVisible && !allUsers?.data?.length) {
-      dispatch(getUsers());
-    }
-  }, [isModalVisible, dispatch, allUsers]);
-
-  const lawyersOptions = useMemo(() => {
-    if (!allUsers?.data) return [];
-    return allUsers.data
-      .filter((u) => u.userType === "lawyer" || u.isLawyer === true)
-      .map((u) => ({
-        value: u._id,
-        label:
-          `${u.firstName || ""} ${u.lastName || ""}`.trim() ||
-          u.email ||
-          "Unknown",
-      }));
-  }, [allUsers]);
 
   useEffect(() => {
     if (!stableMatterId) return;
@@ -554,6 +545,11 @@ const HearingTimeline = ({
     [dispatch, stableMatterId],
   );
 
+  const isFirstTimeFiling =
+    editingHearing && !editingHearing.outcome && modalPhase !== "schedule";
+  const isEditingExistingReport =
+    editingHearing && !!editingHearing.outcome && modalPhase !== "schedule";
+
   const handleSubmit = useCallback(
     async (values) => {
       if (
@@ -564,6 +560,15 @@ const HearingTimeline = ({
         return message.error(
           "Please provide an Adjourned Date or mark as TBC",
         );
+      }
+
+      if (modalPhase === "locked" && isAdmin) {
+        if (isFirstTimeFiling && !(values.lateReason || values.reason)) {
+          return message.error("A justification is required to log a late report.");
+        }
+        if (isEditingExistingReport && !(values.editReason || values.reason)) {
+          return message.error("A reason is required to edit a past report.");
+        }
       }
 
       const hearingData = {
@@ -596,13 +601,13 @@ const HearingTimeline = ({
         setEditingHearing(null);
         setSelectedOutcome(null);
         form.resetFields();
-      } catch (err) {
-        console.error("[HearingTimeline] Submit error:", err);
-        message.error(err?.message ?? "Operation failed");
-      }
-    },
-    [dispatch, stableMatterId, editingHearing, form],
-  );
+        } catch (err) {
+          console.error("[HearingTimeline] Submit error:", err);
+          message.error(err?.response?.data?.message || err?.message || "Operation failed");
+        }
+      },
+      [dispatch, stableMatterId, editingHearing, form, modalPhase, isAdmin, isFirstTimeFiling, isEditingExistingReport],
+    );
 
   const handleModalClose = useCallback(() => {
     setIsModalVisible(false);
@@ -623,7 +628,7 @@ const HearingTimeline = ({
             !!editingHearing.outcome,
             editingHearing.nextHearingDate,
           )
-        : null,
+        : getPhaseInfo(new Date(), false, null),
     [editingHearing],
   );
 
@@ -636,12 +641,14 @@ const HearingTimeline = ({
     ? (currentPhaseInfo?.canAssignLawyers ?? true)
     : true;
 
-  // Report fields: only editable after hearing date, within grace period
-  const canEditReportFields = !isSchedulePhase && (!isModalLocked || isAdmin);
+  // Report fields: only editable after hearing date
+  const canEditReportFields = modalPhase === "schedule"
+    ? false
+    : modalPhase === "locked"
+      ? isAdmin
+      : true;
 
-  // KEY FIX: nextHearingDate ALWAYS editable — court dates change frequently,
-  // even after the grace period expires. Lawyers must be able to update the
-  // next session date regardless of phase (schedule, report, edit, or locked).
+  // KEY FIX: nextHearingDate ALWAYS editable
   const canEditNextHearingDate = true;
 
   const [isMobile, setIsMobile] = useState(false);
@@ -659,31 +666,31 @@ const HearingTimeline = ({
         label: "Total",
         value: stats.total,
         icon: <HistoryOutlined />,
-        colorClass: "bg-slate-100 text-slate-700 border-slate-200",
+        colorClass: "bg-slate-100 text-slate-600",
       },
       {
         label: "Today",
         value: stats.today,
         icon: <ThunderboltOutlined />,
-        colorClass: "bg-emerald-50 text-emerald-700 border-emerald-200",
+        colorClass: "bg-blue-50 text-blue-700",
       },
       {
         label: "Upcoming",
         value: stats.upcoming,
         icon: <CalendarOutlined />,
-        colorClass: "bg-blue-50 text-blue-700 border-blue-200",
+        colorClass: "bg-indigo-50 text-indigo-700",
       },
       {
         label: "Pending",
         value: stats.pending,
         icon: <ExclamationCircleOutlined />,
-        colorClass: "bg-amber-50 text-amber-700 border-amber-200",
+        colorClass: "bg-amber-50 text-amber-700",
       },
       {
         label: "Done",
         value: stats.completed,
         icon: <CheckCircleOutlined />,
-        colorClass: "bg-purple-50 text-purple-700 border-purple-200",
+        colorClass: "bg-emerald-50 text-emerald-700",
       },
     ],
     [stats],
@@ -713,9 +720,9 @@ const HearingTimeline = ({
   return (
     <div className="space-y-3 sm:space-y-5">
       {/* ── STATS ──────────────────────────────────────────── */}
-      <div className={`grid gap-2 sm:gap-3 ${isMobile ? "grid-cols-3" : "grid-cols-5"}`}>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3 xl:grid-cols-5">
         {statCards.map((s) => (
-          <StatCard key={s.label} {...s} isMobile={isMobile} />
+          <StatCard key={s.label} {...s} />
         ))}
       </div>
 
@@ -730,59 +737,59 @@ const HearingTimeline = ({
       {/* ── TIMELINE ───────────────────────────────────────── */}
         <Card
           title={
-            <div className="flex items-center justify-between py-1">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md shadow-violet-200">
-                  <HistoryOutlined className="text-white text-sm sm:text-base" />
+            <div className="flex items-center justify-between gap-3 py-1">
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                  <HistoryOutlined />
                 </div>
                 <div>
-                  <h4 className={`font-bold text-slate-800 leading-none mb-0.5 ${isMobile ? "text-xs" : "text-sm"}`}>
-                    Hearings
+                  <h4 className="text-sm font-semibold leading-tight text-slate-800">
+                    Hearing history
                   </h4>
-                  <p className="text-slate-400 font-medium text-[10px] sm:text-xs">
-                    {hearings.length} recorded
+                  <p className="mt-0.5 text-xs font-normal text-slate-500">
+                    {hearings.length} {hearings.length === 1 ? "hearing" : "hearings"} recorded
                   </p>
                 </div>
               </div>
-              <Space>
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={handleAddHearing}
-                  className="bg-violet-600 hover:bg-violet-700 border-violet-600 font-semibold shadow"
-                  size={isMobile ? "small" : "middle"}>
-                  {isMobile ? "Add" : "Add Hearing"}
-                </Button>
-              </Space>
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={handleAddHearing}
+                className="shrink-0 bg-blue-700 font-medium hover:bg-blue-800"
+                size={isMobile ? "small" : "middle"}>
+                {isMobile ? "Add" : "Add hearing"}
+              </Button>
             </div>
           }
           bordered={false}
-          className="rounded-xl sm:rounded-2xl shadow-sm border border-slate-100">
+          className="rounded-2xl border border-slate-200 shadow-sm [&_.ant-card-head]:border-slate-100 [&_.ant-card-head]:px-4 sm:[&_.ant-card-head]:px-6 [&_.ant-card-body]:px-3 sm:[&_.ant-card-body]:px-6">
           {sortedHearingsWithPhase.length === 0 ? (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description={
-                <div className="py-6 sm:py-10 text-center">
-                  <p className="text-3xl sm:text-4xl mb-2 sm:mb-3">⚖️</p>
-                  <p className="text-slate-700 font-semibold text-xs sm:text-sm mb-1">
-                    No hearings recorded
+                <div className="py-8 text-center sm:py-12">
+                  <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                    <HistoryOutlined className="text-lg" />
+                  </div>
+                  <p className="mb-1 text-sm font-semibold text-slate-800">
+                    No hearing history yet
                   </p>
-                  <p className="text-slate-400 text-[10px] sm:text-xs mb-4 sm:mb-5">
-                    Start tracking court hearings
+                  <p className="mb-5 text-xs text-slate-500">
+                    Add a hearing to start a clear record of court activity.
                   </p>
                   <Button
                     type="primary"
                     icon={<PlusOutlined />}
                     onClick={handleAddHearing}
-                    className="bg-violet-600 hover:bg-violet-700 border-violet-600"
+                    className="bg-blue-700 hover:bg-blue-800"
                     size="small">
-                    Add First Hearing
+                    Add first hearing
                   </Button>
                 </div>
               }
             />
           ) : (
-            <div className="divide-y divide-slate-50 -mx-2 sm:mx-0">
+            <div className="divide-y divide-slate-100">
               {sortedHearingsWithPhase.map((hearing) => (
                 <HearingTimelineItem
                   key={hearing._id}
@@ -969,7 +976,7 @@ const HearingTimeline = ({
                   <span className="flex items-center gap-1.5 flex-wrap">
                     <CalendarOutlined className="text-blue-400 text-xs" />
                     Next Hearing Date
-                    {isAdmin && isModalLocked && (
+                                {(isAdmin || isPrivileged) && modalPhase === "locked" && (
                       <Tag
                         color="red"
                         className="!text-[10px] !px-1 !py-0 ml-1">
@@ -994,7 +1001,7 @@ const HearingTimeline = ({
                   className="rounded-lg"
                   size={isMobile ? "middle" : "large"}
                   disabled={!canEditNextHearingDate}
-                  status={isModalLocked && !isAdmin ? "error" : ""}
+                  status={modalPhase === "locked" && !isAdmin && !isPrivileged ? "error" : ""}
                   disabledDate={(current) =>
                     current && current < dayjs().startOf("day")
                   }
@@ -1106,7 +1113,7 @@ const HearingTimeline = ({
                               <span className="flex items-center gap-1.5">
                                 <CalendarOutlined className="text-orange-400 text-xs" />
                                 Adjourned To
-                                {isAdmin && isModalLocked && (
+                    {(isAdmin || isPrivileged) && modalPhase === "locked" && (
                                   <Tag
                                     color="red"
                                     className="!text-[10px] !px-1 !py-0 ml-1">
@@ -1141,6 +1148,42 @@ const HearingTimeline = ({
                   </>
                 )}
 
+                {(modalPhase === "locked") && (isAdmin || isPrivileged) && isFirstTimeFiling && (
+                  <Form.Item
+                    label={
+                      <span className="flex items-center gap-1.5">
+                        <WarningOutlined className="text-orange-500" />
+                        Justification for Late Report (Required)
+                      </span>
+                    }
+                    name="lateReason"
+                    rules={[{ required: true, message: "Please provide a justification" }]}>
+                    <TextArea
+                      rows={3}
+                      placeholder="Explain why the report is being filed late..."
+                      className="rounded-lg"
+                    />
+                  </Form.Item>
+                )}
+
+                {(modalPhase === "locked") && (isAdmin || isPrivileged) && isEditingExistingReport && (
+                  <Form.Item
+                    label={
+                      <span className="flex items-center gap-1.5">
+                        <EditOutlined className="text-orange-500" />
+                        Reason for Change (Required)
+                      </span>
+                    }
+                    name="editReason"
+                    rules={[{ required: true, message: "Please provide a reason for editing" }]}>
+                    <TextArea
+                      rows={3}
+                      placeholder="Explain the reason for correcting this past report..."
+                      className="rounded-lg"
+                    />
+                  </Form.Item>
+                )}
+
                 <Form.Item
                   name="notes"
                   label={
@@ -1154,15 +1197,21 @@ const HearingTimeline = ({
                   }
                   rules={[
                     {
-                      required: modalPhase === "report",
+                      required: modalPhase === "report" && canEditReportFields,
                       message: "Court notes are required",
                     },
                   ]}>
                   <TextArea
                     rows={5}
-                    placeholder="Detailed summary of what transpired in court…"
-                    className="rounded-lg"
-                    disabled={!canEditReportFields}
+                  placeholder={
+                    canEditReportFields
+                      ? "Detailed summary of what transpired in court…"
+                      : (isAdmin || isPrivileged)
+                        ? "You can update as authorized user (add justification above if required)"
+                        : "Report window closed"
+                  }
+                  className="rounded-lg"
+                  disabled={!canEditReportFields}
                     maxLength={10000}
                     showCount
                   />

@@ -1,7 +1,5 @@
-import React from "react";
 import { Card, Button, Avatar, Tooltip, Tag, Alert } from "antd";
 import {
-  ThunderboltOutlined,
   CalendarOutlined,
   TeamOutlined,
   WarningOutlined,
@@ -59,19 +57,19 @@ const HearingHeader = ({ nextHearing, onAssignLawyers }) => {
 
   return (
     <Card
-      className="mb-6 overflow-hidden bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200"
+      className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
       bodyStyle={{ padding: 0 }}>
-      <div className="p-5">
+      <div className="p-4 sm:p-5">
         {/* ── HEADER ROW ───────────────────────────────────────────── */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-              <ThunderboltOutlined className="text-white text-sm" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-700">
+              <CalendarOutlined />
             </div>
             <div>
-              <h4 className="text-sm font-black text-blue-900">Next Hearing</h4>
+              <h4 className="text-sm font-semibold text-slate-800">Next hearing</h4>
               {/* fromNow relative to the upcoming session, not the past hearing date */}
-              <p className="text-xs text-blue-600">
+              <p className="text-xs text-slate-500">
                 {nextSessionDay.fromNow()}
               </p>
             </div>
@@ -82,12 +80,11 @@ const HearingHeader = ({ nextHearing, onAssignLawyers }) => {
               type="primary"
               icon={<TeamOutlined />}
               onClick={handleAssign}
-              size="small"
-              className="bg-blue-600 hover:bg-blue-700 border-blue-600">
-              Assign Lawyers
+              className="w-full bg-blue-700 font-medium hover:bg-blue-800 sm:w-auto">
+              Assign lawyers
             </Button>
           ) : (
-            <Tag color="red" icon={<LockOutlined />} className="!text-xs">
+            <Tag color="default" icon={<LockOutlined />} className="!m-0 !w-fit !rounded-full !px-3 !py-1">
               Lawyer assignment locked
             </Tag>
           )}
@@ -102,7 +99,7 @@ const HearingHeader = ({ nextHearing, onAssignLawyers }) => {
             icon={
               isAfterGracePeriod ? <LockOutlined /> : <ClockCircleOutlined />
             }
-            className="mb-4 text-xs"
+            className="mb-4 rounded-lg text-xs"
             message={
               isAfterGracePeriod
                 ? `Report not filed — grace period expired (${gracePeriodEnd.format("DD MMM, HH:mm")})`
@@ -125,42 +122,42 @@ const HearingHeader = ({ nextHearing, onAssignLawyers }) => {
         )}
 
         {/* ── DATE + LAWYERS ────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           {/* Next session date — uses nextHearingDate */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white flex items-center justify-center shadow-sm">
-              <CalendarOutlined className="text-blue-600" />
+          <div className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-blue-700 shadow-sm">
+              <CalendarOutlined />
             </div>
             <div>
-              <p className="text-xs text-gray-500">Next Session</p>
-              <p className="text-base font-bold text-gray-900">
+              <p className="text-xs font-medium text-slate-500">Next court date</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900 sm:text-base">
                 {formatDate(nextSessionDate, "DD MMM YYYY")}
-                <span className="text-sm font-normal text-gray-500 ml-2">
+                <span className="ml-2 text-sm font-normal text-slate-500">
                   at {nextSessionDay.format("HH:mm")}
                 </span>
               </p>
               {/* Context: show when the last hearing was held */}
-              <p className="text-[11px] text-gray-400 mt-0.5">
+              <p className="mt-1 text-xs text-slate-500">
                 Last heard: {formatDate(nextHearing.date, "DD MMM YYYY")}
               </p>
             </div>
           </div>
 
           {/* Assigned lawyers */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs text-gray-500">
-                Assigned Lawyers ({nextHearing.lawyerPresent?.length || 0})
+          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-3">
+            <div className="mb-2 flex items-center justify-between gap-2">
+              <p className="text-xs font-medium text-slate-600">
+                Assigned lawyers
               </p>
               {nextHearing.lawyerPresent?.length > 0 ? (
                 <Tag
                   color="green"
                   icon={<CheckCircleOutlined />}
-                  className="!text-[10px]">
-                  Assigned
+                  className="!m-0 !rounded-full !text-[10px]">
+                  {nextHearing.lawyerPresent.length} assigned
                 </Tag>
               ) : (
-                <Tag color="orange" className="!text-[10px]">
+                <Tag color="orange" className="!m-0 !rounded-full !text-[10px]">
                   No lawyers
                 </Tag>
               )}
@@ -186,10 +183,10 @@ const HearingHeader = ({ nextHearing, onAssignLawyers }) => {
               </Avatar.Group>
             ) : (
               <div
-                className={`px-3 py-2 rounded-lg flex items-center gap-2 transition-colors ${
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors ${
                   canAssignLawyers
-                    ? "text-amber-600 bg-amber-50 hover:bg-amber-100 cursor-pointer"
-                    : "text-gray-400 bg-gray-50 cursor-default"
+                    ? "cursor-pointer border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                    : "cursor-default border-slate-200 bg-white text-slate-400"
                 }`}
                 onClick={canAssignLawyers ? handleAssign : undefined}>
                 <WarningOutlined style={{ fontSize: 12 }} />
@@ -205,9 +202,9 @@ const HearingHeader = ({ nextHearing, onAssignLawyers }) => {
 
         {/* ── PURPOSE ──────────────────────────────────────────────── */}
         {nextHearing.purpose && (
-          <div className="mt-4 p-3 bg-white/60 rounded-lg border border-blue-100">
-            <p className="text-xs text-gray-500 mb-1">Purpose</p>
-            <p className="text-sm font-medium text-gray-900 capitalize">
+          <div className="mt-3 border-t border-slate-100 pt-3">
+            <p className="mb-1 text-xs font-medium text-slate-500">Purpose</p>
+            <p className="text-sm font-medium capitalize text-slate-800">
               {nextHearing.purpose.replace(/_/g, " ")}
             </p>
           </div>
