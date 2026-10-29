@@ -91,6 +91,15 @@ const hearingSchema = new mongoose.Schema(
       trim: true,
       maxlength: [10000, "Notes must be less than 10000 characters"],
     },
+    historicalEntry: {
+      type: Boolean,
+      default: false,
+    },
+    historyEnteredAt: Date,
+    historyEnteredBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
     preparedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -128,7 +137,7 @@ const hearingSchema = new mongoose.Schema(
       {
         action: {
           type: String,
-          enum: ["filed", "edited", "late_filed"],
+          enum: ["filed", "edited", "late_filed", "historical_entry"],
         },
         by: {
           type: mongoose.Schema.Types.ObjectId,

@@ -405,6 +405,14 @@ const HearingTimelineItem = React.memo(({
           )}
           
           <div className="flex flex-wrap gap-1 mb-2">
+            {hearing.historicalEntry && (
+              <Tag color="purple" className="!text-[9px]">
+                Historical record
+                {hearing.historyEnteredAt
+                  ? ` · entered ${formatDate(hearing.historyEnteredAt, "DD MMM YYYY")}`
+                  : ""}
+              </Tag>
+            )}
             {hearing.outcome && (
               <Tag color="green" className="!text-[9px]">{hearing.outcome.replace(/_/g, " ")}</Tag>
             )}
@@ -489,6 +497,14 @@ const HearingTimelineItem = React.memo(({
               {config.badgeProps.text}
             </Tag>
           </div>
+          {hearing.historicalEntry && (
+            <Tag color="purple" className="!mt-1 !rounded-full !px-2 !text-[9px]">
+              Historical
+              {hearing.historyEnteredAt
+                ? ` · entered ${formatDate(hearing.historyEnteredAt, "DD MMM YYYY")}`
+                : " record"}
+            </Tag>
+          )}
           {isAfterGracePeriod && !hearing.outcome && (
             <Tag color="error" className="!mt-1 !rounded-full !px-2 !text-[9px]">
               Deadline passed
@@ -518,6 +534,14 @@ const HearingTimelineItem = React.memo(({
                   {hearing.purpose?.replace(/_/g, " ") || "Court hearing"}
                 </h5>
                 <div className="flex flex-wrap gap-1.5">
+                  {hearing.historicalEntry && (
+                    <Tag color="purple" className="!m-0 !rounded-full !px-2 !text-xs">
+                      Historical
+                      {hearing.historyEnteredAt
+                        ? ` · entered ${formatDate(hearing.historyEnteredAt, "DD MMM YYYY")}`
+                        : " record"}
+                    </Tag>
+                  )}
                   {hearing.outcome && (
                     <Tag color="green" className="!m-0 !rounded-full !px-2 !text-xs">
                       {hearing.outcome.replace(/_/g, " ")}

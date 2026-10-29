@@ -633,13 +633,17 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
 exports.addHearing = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const hearingData = { ...req.body };
+  const isHistoricalEntry = hearingData.historicalEntry === true;
   const allowedFields = new Set([
     "date",
     "purpose",
+    "outcome",
+    "notes",
     "nextHearingDate",
     "dateToBeCommunicated",
     "hearingNoticeRequired",
     "lawyerPresent",
+    "historicalEntry",
   ]);
   const invalidFields = Object.keys(hearingData).filter(
     (field) => !allowedFields.has(field),
@@ -649,6 +653,25 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         `Unsupported hearing fields: ${invalidFields.join(", ")}`,
+        400,
+      ),
+    );
+  }
+
+  if (
+    typeof hearingData.historicalEntry !== "undefined" &&
+    typeof hearingData.historicalEntry !== "boolean"
+  ) {
+    return next(new AppError("Historical entry flag must be a boolean.", 400));
+  }
+
+  if (
+    !isHistoricalEntry &&
+    (hasOwn(hearingData, "outcome") || hasOwn(hearingData, "notes"))
+  ) {
+    return next(
+      new AppError(
+        "Outcome and notes can only be recorded using historical entry.",
         400,
       ),
     );
@@ -672,6 +695,33 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     return next(new AppError("A valid hearing date is required", 400));
   }
 
+  if (
+    isHistoricalEntry &&
+    new Date(hearingData.date).getTime() >= Date.now()
+  ) {
+    return next(
+      new AppError(
+        "Historical hearing date must be in the past. Use Add hearing for today or future dates.",
+        400,
+      ),
+    );
+  }
+
+  if (
+    isHistoricalEntry &&
+    (typeof hearingData.outcome !== "string" ||
+      !hearingData.outcome.trim() ||
+      typeof hearingData.notes !== "string" ||
+      !hearingData.notes.trim())
+  ) {
+    return next(
+      new AppError(
+        "An outcome and court notes are required for a historical hearing.",
+        400,
+      ),
+    );
+  }
+
   if (hearingData.nextHearingDate) {
     const nextDate = dayjs(hearingData.nextHearingDate);
     if (!nextDate.isValid() || !nextDate.isAfter(dayjs())) {
@@ -686,14 +736,14 @@ exports.addHearing = catchAsync(async (req, res, next) => {
   // against firm-wide and user-specific blocked date rules.
   // Hard blocks (isBlocked: true) abort with 400.
   // Soft warnings (hasWarning: true) are forwarded in the response.
-  const blockCheck = await checkHearingDatesAgainstBlocks(
-    req.firmId,
-    req.user._id,
-    req.user.role,
-    hearingData,
-  );
-
-  console.log(blockCheck);
+  const blockCheck = isHistoricalEntry
+    ? { isBlocked: false, hasWarning: false, message: null }
+    : await checkHearingDatesAgainstBlocks(
+        req.firmId,
+        req.user._id,
+        req.user.role,
+        hearingData,
+      );
 
   if (blockCheck.isBlocked) {
     return next(new AppError(blockCheck.message, 400));
@@ -723,6 +773,21 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     preparedBy: req.user.id,
   };
 
+  if (isHistoricalEntry) {
+    hearingWithUser.historicalEntry = true;
+    hearingWithUser.historyEnteredAt = new Date();
+    hearingWithUser.historyEnteredBy = req.user.id;
+    hearingWithUser.lateReport = false;
+    hearingWithUser.auditTrail = [
+      {
+        action: "historical_entry",
+        by: req.user.id,
+        at: hearingWithUser.historyEnteredAt,
+        reason: "Historical hearing entered during matter onboarding",
+      },
+    ];
+  }
+
   litigationDetail.hearings.push(hearingWithUser);
 
   if (hearingData.nextHearingDate) {
@@ -738,6 +803,10 @@ exports.addHearing = catchAsync(async (req, res, next) => {
 
   await litigationDetail.populate([
     { path: "hearings.preparedBy", select: "firstName lastName email photo" },
+    {
+      path: "hearings.historyEnteredBy",
+      select: "firstName lastName email photo",
+    },
     {
       path: "hearings.lawyerPresent",
       select: "firstName lastName email photo",
@@ -779,6 +848,10 @@ exports.getMatterHearings = catchAsync(async (req, res, next) => {
   })
     .populate({
       path: "hearings.preparedBy",
+      select: "firstName lastName email photo",
+    })
+    .populate({
+      path: "hearings.historyEnteredBy",
       select: "firstName lastName email photo",
     })
     .populate({

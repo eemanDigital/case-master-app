@@ -192,7 +192,11 @@ export const addHearing = createAsyncThunk(
         matterId,
         hearingData,
       );
-      message.success("Hearing added successfully and synced to calendar");
+      message.success(
+        hearingData.historicalEntry
+          ? "Historical hearing recorded"
+          : "Hearing added successfully and synced to calendar",
+      );
       return response;
     } catch (error) {
       message.error(error.response?.data?.message || "Failed to add hearing");

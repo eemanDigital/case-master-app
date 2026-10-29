@@ -299,10 +299,11 @@ const HearingTimeline = ({
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingHearing, setEditingHearing] = useState(null);
+  const [isHistoricalEntry, setIsHistoricalEntry] = useState(false);
   const [selectedOutcome, setSelectedOutcome] = useState(null);
   const [modalPhase, setModalPhase] = useState("schedule");
   const [showSendReportModal, setShowSendReportModal] = useState(false);
-  const [dateToBeCommunicated, setDateToBeCommunicated] = useState(false);
+  const [, setDateToBeCommunicated] = useState(false);
   const [form] = Form.useForm();
   const { data: lawyersOptions, loading: usersLoading } = useUserSelectOptions({
     type: "lawyers",
@@ -361,14 +362,30 @@ const HearingTimeline = ({
 
   const handleAddHearing = useCallback(() => {
     setEditingHearing(null);
+    setIsHistoricalEntry(false);
     setSelectedOutcome(null);
     setModalPhase("schedule");
     form.resetFields();
     setIsModalVisible(true);
   }, [form]);
 
+  const handleAddHistoricalHearing = useCallback(() => {
+    setEditingHearing(null);
+    setIsHistoricalEntry(true);
+    setSelectedOutcome(null);
+    setModalPhase("historical");
+    form.resetFields();
+    form.setFieldsValue({
+      hearingNoticeRequired: false,
+      dateToBeCommunicated: false,
+    });
+    setDateToBeCommunicated(false);
+    setIsModalVisible(true);
+  }, [form]);
+
   const handleEditHearing = useCallback(
     (hearing) => {
+      setIsHistoricalEntry(false);
       // KEY FIX: Pass nextHearingDate so canAssignLawyers reflects reality
       const phaseInfo = getPhaseInfo(
         hearing.date,
@@ -458,6 +475,7 @@ const HearingTimeline = ({
       const hearingData = {
         ...values,
         date: values.date.toISOString(),
+        ...(isHistoricalEntry ? { historicalEntry: true } : {}),
         nextHearingDate:
           values.dateToBeCommunicated
             ? null
@@ -473,16 +491,15 @@ const HearingTimeline = ({
               hearingData,
             }),
           ).unwrap();
-          message.success("Hearing updated");
         } else {
           await dispatch(
             addHearing({ matterId: stableMatterId, hearingData }),
           ).unwrap();
-          message.success("Hearing added and synced to calendar");
         }
         dispatch(getAllEvents({}));
         setIsModalVisible(false);
         setEditingHearing(null);
+        setIsHistoricalEntry(false);
         setSelectedOutcome(null);
         form.resetFields();
         } catch (err) {
@@ -490,12 +507,13 @@ const HearingTimeline = ({
           message.error(err?.response?.data?.message || err?.message || "Operation failed");
         }
       },
-      [dispatch, stableMatterId, editingHearing, form, modalPhase, isPrivileged, isFirstTimeFiling, isEditingExistingReport],
+      [dispatch, stableMatterId, editingHearing, form, modalPhase, isPrivileged, isFirstTimeFiling, isEditingExistingReport, isHistoricalEntry],
     );
 
   const handleModalClose = useCallback(() => {
     setIsModalVisible(false);
     setEditingHearing(null);
+    setIsHistoricalEntry(false);
     setSelectedOutcome(null);
     setDateToBeCommunicated(false);
     form.resetFields();
@@ -526,7 +544,9 @@ const HearingTimeline = ({
     : true;
 
   // Report fields: only editable after hearing date
-  const canEditReportFields = modalPhase === "schedule"
+  const canEditReportFields = isHistoricalEntry
+    ? true
+    : modalPhase === "schedule"
     ? false
     : modalPhase === "locked"
       ? isPrivileged
@@ -634,14 +654,23 @@ const HearingTimeline = ({
                   </p>
                 </div>
               </div>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleAddHearing}
-                className="shrink-0 bg-blue-700 font-medium hover:bg-blue-800"
-                size={isMobile ? "small" : "middle"}>
-                {isMobile ? "Add" : "Add hearing"}
-              </Button>
+              <Space size={8}>
+                <Button
+                  icon={<HistoryOutlined />}
+                  onClick={handleAddHistoricalHearing}
+                  className="shrink-0"
+                  size={isMobile ? "small" : "middle"}>
+                  {isMobile ? "Past" : "Add past hearing"}
+                </Button>
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={handleAddHearing}
+                  className="shrink-0 bg-blue-700 font-medium hover:bg-blue-800"
+                  size={isMobile ? "small" : "middle"}>
+                  {isMobile ? "Add" : "Add hearing"}
+                </Button>
+              </Space>
             </div>
           }
           bordered={false}
@@ -667,6 +696,13 @@ const HearingTimeline = ({
                     className="bg-blue-700 hover:bg-blue-800"
                     size="small">
                     Add first hearing
+                  </Button>
+                  <Button
+                    icon={<HistoryOutlined />}
+                    onClick={handleAddHistoricalHearing}
+                    className="ml-2"
+                    size="small">
+                    Add past hearing
                   </Button>
                 </div>
               }
@@ -698,7 +734,11 @@ const HearingTimeline = ({
             </div>
             <div>
               <p className={`font-bold text-slate-800 leading-none mb-0.5 ${isMobile ? "text-xs" : "text-sm"}`}>
-                {editingHearing ? "Edit Hearing" : "Add New Hearing"}
+                {isHistoricalEntry
+                  ? "Add Historical Hearing"
+                  : editingHearing
+                    ? "Edit Hearing"
+                    : "Add New Hearing"}
               </p>
               {editingHearing && currentPhaseInfo && !isMobile && (
                 <p className="text-[11px] font-medium text-slate-400">
@@ -721,6 +761,15 @@ const HearingTimeline = ({
         width={isMobile ? "95vw" : 680}
         destroyOnClose
         className="hearing-modal">
+        {isHistoricalEntry && (
+          <Alert
+            type="info"
+            showIcon
+            className="mb-4"
+            message="Historical record"
+            description="Add a hearing that took place before this matter was entered into the app. It will be recorded as historical data, not a late report."
+          />
+        )}
         {editingHearing && currentPhaseInfo && (
           <PhaseBanner
             phaseInfo={currentPhaseInfo}
@@ -755,6 +804,11 @@ const HearingTimeline = ({
                   style={{ width: "100%" }}
                   format="DD/MM/YYYY HH:mm"
                   disabled={!!editingHearing}
+                  disabledDate={
+                    isHistoricalEntry
+                      ? (current) => current && current.isAfter(dayjs(), "day")
+                      : undefined
+                  }
                   className="rounded-lg"
                   size={isMobile ? "middle" : "large"}
                 />
@@ -894,7 +948,8 @@ const HearingTimeline = ({
           </div>
 
           {/* ── COURT REPORT ─────────────────────────────── */}
-          {(modalPhase === "report" ||
+          {(isHistoricalEntry ||
+            modalPhase === "report" ||
             modalPhase === "edit" ||
             modalPhase === "locked") && (
             <>
@@ -918,7 +973,11 @@ const HearingTimeline = ({
                       Outcome & Notes
                     </span>
                   </div>
-                  {isModalLocked ? (
+                  {isHistoricalEntry ? (
+                    <Tag color="purple" icon={<HistoryOutlined />}>
+                      Historical entry
+                    </Tag>
+                  ) : isModalLocked ? (
                     <Tag color="default" icon={<LockOutlined />}>
                       Read Only
                     </Tag>
@@ -942,7 +1001,7 @@ const HearingTimeline = ({
                   }
                   rules={[
                     {
-                      required: modalPhase === "report",
+                      required: modalPhase === "report" || isHistoricalEntry,
                       message: "Outcome is required when filing report",
                     },
                   ]}>
@@ -1080,7 +1139,9 @@ const HearingTimeline = ({
                   }
                   rules={[
                     {
-                      required: modalPhase === "report" && canEditReportFields,
+                      required:
+                        (modalPhase === "report" || isHistoricalEntry) &&
+                        canEditReportFields,
                       message: "Court notes are required",
                     },
                   ]}>
@@ -1127,14 +1188,18 @@ const HearingTimeline = ({
                 loading={loading}
                 size={isMobile ? "middle" : "large"}
                 icon={
-                  modalPhase === "report" ? (
+                  isHistoricalEntry ? (
+                    <HistoryOutlined />
+                  ) : modalPhase === "report" ? (
                     <FileTextOutlined />
                   ) : (
                     <CheckCircleOutlined />
                   )
                 }
-                className={`font-semibold ${modalPhase === "report" || modalPhase === "edit" ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-600" : "bg-violet-600 hover:bg-violet-700 border-violet-600"}`}>
-                {editingHearing
+                className={`font-semibold ${isHistoricalEntry || modalPhase === "report" || modalPhase === "edit" ? "bg-emerald-600 hover:bg-emerald-700 border-emerald-600" : "bg-violet-600 hover:bg-violet-700 border-violet-600"}`}>
+                {isHistoricalEntry
+                  ? "Save historical record"
+                  : editingHearing
                   ? modalPhase === "report"
                     ? "File"
                     : modalPhase === "edit"
