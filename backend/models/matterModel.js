@@ -1,5 +1,26 @@
 const mongoose = require("mongoose");
 
+const matterSequenceSchema = new mongoose.Schema(
+  {
+    _id: {
+      type: String,
+      required: true,
+    },
+    sequence: {
+      type: Number,
+      required: true,
+    },
+  },
+  {
+    collection: "matter_sequences",
+    versionKey: false,
+  },
+);
+
+const MatterSequence =
+  mongoose.models.MatterSequence ||
+  mongoose.model("MatterSequence", matterSequenceSchema);
+
 // Reusable sub-schemas
 const nameSchema = new mongoose.Schema(
   {
@@ -548,17 +569,70 @@ matterSchema.pre("save", function (next) {
   next();
 });
 
-// Generate matterNumber if not provided
-matterSchema.pre("save", async function (next) {
-  if (this.isNew && !this.matterNumber) {
-    const year = new Date().getFullYear();
-    const count = await this.constructor.countDocuments({
-      firmId: this.firmId,
-      matterNumber: new RegExp(`^MTR/${year}/`),
-    });
-    this.matterNumber = `MTR/${year}/${String(count + 1).padStart(4, "0")}`;
+// Generate matterNumber before required-field validation. The counter document
+// allocates numbers atomically per firm and Nigerian calendar year.
+matterSchema.pre("validate", async function () {
+  if (!this.isNew || this.matterNumber || !this.firmId) {
+    return;
   }
-  next();
+
+  const year = Number(
+    new Intl.DateTimeFormat("en-NG", {
+      timeZone: "Africa/Lagos",
+      year: "numeric",
+    }).format(new Date()),
+  );
+  const counterId = `${this.firmId}:${year}`;
+  let counter = await MatterSequence.findOneAndUpdate(
+    { _id: counterId },
+    { $inc: { sequence: 1 } },
+    { new: true },
+  );
+
+  if (!counter) {
+    const [latestMatter] = await this.constructor.aggregate([
+      {
+        $match: {
+          firmId: this.firmId,
+          matterNumber: { $regex: `^MTR/${year}/[0-9]+$` },
+        },
+      },
+      {
+        $project: {
+          sequence: {
+            $toInt: {
+              $arrayElemAt: [{ $split: ["$matterNumber", "/"] }, -1],
+            },
+          },
+        },
+      },
+      { $sort: { sequence: -1 } },
+      { $limit: 1 },
+    ]);
+
+    const nextSequence = (latestMatter?.sequence || 0) + 1;
+    try {
+      counter = await MatterSequence.create({
+        _id: counterId,
+        sequence: nextSequence,
+      });
+    } catch (error) {
+      if (error.code !== 11000) {
+        throw error;
+      }
+
+      counter = await MatterSequence.findOneAndUpdate(
+        { _id: counterId },
+        { $inc: { sequence: 1 } },
+        { new: true },
+      );
+      if (!counter) {
+        throw error;
+      }
+    }
+  }
+
+  this.matterNumber = `MTR/${year}/${String(counter.sequence).padStart(4, "0")}`;
 });
 
 // ============================================

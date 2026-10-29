@@ -229,14 +229,18 @@ const litigationDetailSchema = new mongoose.Schema(
     suitNo: {
       type: String,
       trim: true,
-      required: [true, "Suit number is required"],
+      required: function () {
+        return this.currentStage !== "pre-filing";
+      },
       minlength: [3, "Suit number must be at least 3 characters long"],
     },
 
     courtName: {
       type: String,
       trim: true,
-      required: [true, "Court name is required"],
+      required: function () {
+        return this.currentStage !== "pre-filing";
+      },
       enum: {
         values: [
           "supreme court",
@@ -262,13 +266,22 @@ const litigationDetailSchema = new mongoose.Schema(
       },
     },
 
-    otherCourt: String,
+    otherCourt: {
+      type: String,
+      required: function () {
+        return (
+          this.currentStage !== "pre-filing" && this.courtName === "others"
+        );
+      },
+    },
     courtNo: String,
     courtLocation: String,
     state: {
       type: String,
       trim: true,
-      required: [true, "State is required"],
+      required: function () {
+        return this.currentStage !== "pre-filing";
+      },
     },
     division: String,
     judge: [judgeSchema],
@@ -296,7 +309,9 @@ const litigationDetailSchema = new mongoose.Schema(
     modeOfCommencement: {
       type: String,
       trim: true,
-      required: [true, "Specify mode of commencement of the suit"],
+      required: function () {
+        return this.currentStage !== "pre-filing";
+      },
       enum: {
         values: [
           "writ of summons",
@@ -316,11 +331,20 @@ const litigationDetailSchema = new mongoose.Schema(
       },
     },
 
-    otherModeOfCommencement: String,
+    otherModeOfCommencement: {
+      type: String,
+      required: function () {
+        return (
+          this.currentStage !== "pre-filing" &&
+          this.modeOfCommencement === "other"
+        );
+      },
+    },
     filingDate: {
       type: Date,
-      required: [true, "Filing date is required"],
-      default: Date.now,
+      required: function () {
+        return this.currentStage !== "pre-filing";
+      },
     },
     serviceDate: Date,
     hearings: [hearingSchema],
@@ -377,6 +401,7 @@ const litigationDetailSchema = new mongoose.Schema(
     currentStage: {
       type: String,
       enum: [
+        "pre-filing",
         "pre-trial",
         "trial",
         "judgment",
@@ -385,7 +410,7 @@ const litigationDetailSchema = new mongoose.Schema(
         "settled",
         "closed",
       ],
-      default: "pre-trial",
+      default: "pre-filing",
     },
 
     isLandmark: { type: Boolean, default: false },

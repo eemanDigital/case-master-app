@@ -19,10 +19,9 @@ const ContactPersonsSection = memo(({ initialValue = [] }) => {
             <div>
               <h4 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
                 Contact Persons
-                <span className="text-red-500 text-sm font-normal">*</span>
               </h4>
               <p className="text-sm text-gray-500">
-                Add key contacts related to this matter (at least one required)
+                Add key contacts related to this matter, if applicable
               </p>
             </div>
             <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />}>
@@ -34,7 +33,7 @@ const ContactPersonsSection = memo(({ initialValue = [] }) => {
             <div className="text-center py-6 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
               <UserOutlined className="text-gray-400 text-2xl mb-2" />
               <p className="text-gray-500">No contact persons added</p>
-              <p className="text-sm text-gray-400">Click &quot;Add Contact&quot; to add at least one contact person</p>
+              <p className="text-sm text-gray-400">Add a contact when someone other than the client or assigned officers should be contacted.</p>
             </div>
           )}
 

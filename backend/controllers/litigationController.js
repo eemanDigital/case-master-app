@@ -372,15 +372,17 @@ exports.updateLitigationDetails = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const updateData = req.body;
 
-  const litigationDetail = await LitigationDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
-    updateData,
-    { new: true, runValidators: true },
-  );
+  const litigationDetail = await LitigationDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
 
   if (!litigationDetail) {
     return next(new AppError("Litigation details not found", 404));
   }
+
+  litigationDetail.set(updateData);
+  await litigationDetail.save();
 
   // Update matter last activity
   await Matter.findByIdAndUpdate(matterId, {

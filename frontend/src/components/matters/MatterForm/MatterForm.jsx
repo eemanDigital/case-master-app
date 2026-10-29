@@ -8,7 +8,6 @@ import {
   Card,
   Row,
   Col,
-  Divider,
   Switch,
   InputNumber,
   Alert,
@@ -28,6 +27,8 @@ import ContactPersonsSection from "./ContactPersonsSection";
 import MatterTypeSpecificForm from "./MatterTypeSpecificForm";
 import dayjs from "dayjs";
 import { transformArrayField } from "../../../utils/transformArrayField";
+import { DATE_FORMAT } from "../../../utils/litigationConstants";
+import PropTypes from "prop-types";
 
 const { TextArea } = Input;
 const { Title, Text } = Typography;
@@ -47,11 +48,12 @@ const MatterForm = memo(
     apiErrors = {},
     enableAutoSave = false,
     onAutoSave = null,
+    presetMatterType = null,
   }) => {
     const [form] = Form.useForm();
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedMatterType, setSelectedMatterType] = useState(
-      initialValues.matterType,
+      initialValues.matterType || presetMatterType,
     );
     const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
     const [autoSaveTimer, setAutoSaveTimer] = useState(null);
@@ -116,6 +118,7 @@ const MatterForm = memo(
       if (initialValues && Object.keys(initialValues).length > 0) {
         const formattedValues = {
           ...initialValues,
+          matterType: initialValues.matterType || presetMatterType,
           opposingParties: initialValues.opposingParties || [],
           objectives: initialValues.objectives || [],
           strengths: initialValues.strengths || [],
@@ -141,7 +144,7 @@ const MatterForm = memo(
           setSelectedMatterType(initialValues.matterType);
         }
       }
-    }, [initialValues, form]);
+    }, [initialValues, form, presetMatterType]);
 
     // Handle form submission with proper data transformation
     const handleFormSubmit = async () => {
@@ -164,7 +167,6 @@ const MatterForm = memo(
           "title",
           "description",
           "matterType",
-          "matterNumber",
           "natureOfMatter",
           "client",
           "accountOfficer",
@@ -188,7 +190,9 @@ const MatterForm = memo(
           title: allFormValues.title?.trim(),
           description: allFormValues.description?.trim(),
           matterType: allFormValues.matterType,
-          matterNumber: allFormValues.matterNumber?.trim(),
+          ...(allFormValues.matterNumber && {
+            matterNumber: allFormValues.matterNumber.trim(),
+          }),
           natureOfMatter: allFormValues.natureOfMatter,
           category: allFormValues.category || "n/a",
 
@@ -199,7 +203,6 @@ const MatterForm = memo(
               ? [allFormValues.accountOfficer]
               : [],
 
-          opposingParties: transformArrayField(allFormValues.opposingParties),
           objectives: transformArrayField(allFormValues.objectives),
           strengths: transformArrayField(allFormValues.strengths),
           weaknesses: transformArrayField(allFormValues.weaknesses),
@@ -288,7 +291,6 @@ const MatterForm = memo(
       error,
       placeholder,
       mode = "default",
-      fieldName,
     ) => {
       if (error) {
         return (
@@ -340,7 +342,6 @@ const MatterForm = memo(
               const fields = [
                 "title",
                 "matterType",
-                "matterNumber",
                 "description",
                 "client",
                 "accountOfficer",
@@ -460,19 +461,23 @@ const MatterForm = memo(
             )}
             <Card title="Basic Information" size="small">
               <Row gutter={[16, 16]}>
-                <Col xs={24} md={12}>
-                  <Form.Item
-                    name="matterNumber"
-                    label="Matter Number"
-                    rules={[
-                      { required: true, message: "Matter Number is required" },
-                    ]}>
-                    <Input
-                      placeholder="e.g., MR/CP/2003"
-                      onChange={() => setHasUnsavedChanges(true)}
+                {mode === "edit" && (
+                  <Col xs={24} md={12}>
+                    <Form.Item name="matterNumber" label="Matter Reference">
+                      <Input readOnly />
+                    </Form.Item>
+                  </Col>
+                )}
+
+                {mode === "create" && (
+                  <Col xs={24}>
+                    <Alert
+                      type="info"
+                      showIcon
+                      message="Matter reference is generated automatically when you save."
                     />
-                  </Form.Item>
-                </Col>
+                  </Col>
+                )}
 
                 <Col xs={24} md={12}>
                   <Form.Item
@@ -503,6 +508,7 @@ const MatterForm = memo(
                       placeholder="Select matter type"
                       options={MATTER_CONFIG.MATTER_TYPES}
                       onChange={handleMatterTypeChange}
+                      disabled={Boolean(presetMatterType)}
                       allowClear={false}
                     />
                   </Form.Item>
@@ -606,7 +612,6 @@ const MatterForm = memo(
                       clientsError,
                       "Select Client",
                       "default",
-                      "client",
                     )}
                   </Form.Item>
                 </Col>
@@ -632,7 +637,6 @@ const MatterForm = memo(
                       staffError,
                       "Select Account Officers",
                       "multiple",
-                      "accountOfficer",
                     )}
                   </Form.Item>
                   <div className="text-xs text-gray-500 mt-1">
@@ -642,15 +646,6 @@ const MatterForm = memo(
                 </Col>
               </Row>
 
-              <Divider orientation="left" plain>
-                Opposing Parties
-              </Divider>
-              <DynamicArraysSection
-                fieldName="opposingParties"
-                label="Opposing Parties"
-                placeholder="Enter opposing party name"
-                onArrayChange={() => setHasUnsavedChanges(true)}
-              />
             </Card>
           </div>
         ),
@@ -667,12 +662,6 @@ const MatterForm = memo(
                     fieldName="objectives"
                     label="Objectives"
                     placeholder="Enter objective"
-                    rules={[
-                      {
-                        required: true,
-                        message: "At least one objective is required",
-                      },
-                    ]}
                     onArrayChange={() => setHasUnsavedChanges(true)}
                   />
                 </Col>
@@ -716,23 +705,9 @@ const MatterForm = memo(
             </Card>
 
             <Card title="Contact Persons" size="small">
-              <Form.Item
-                name="contactPersons"
-                rules={[
-                  {
-                    required: true,
-                    message: "At least one contact person is required",
-                  },
-                  {
-                    type: "array",
-                    min: 1,
-                    message: "Please add at least one contact person",
-                  },
-                ]}>
-                <ContactPersonsSection
-                  onChange={() => setHasUnsavedChanges(true)}
-                />
-              </Form.Item>
+              <ContactPersonsSection
+                initialValue={initialValues.contactPersons || []}
+              />
             </Card>
 
             {selectedMatterType && (
@@ -799,6 +774,8 @@ const MatterForm = memo(
                   <Form.Item name="dateOpened" label="Date Opened">
                     <DatePicker
                       className="w-full"
+                      format={DATE_FORMAT}
+                      placeholder="DD/MM/YYYY"
                       onChange={() => setHasUnsavedChanges(true)}
                     />
                   </Form.Item>
@@ -810,6 +787,8 @@ const MatterForm = memo(
                     label="Expected Closure Date">
                     <DatePicker
                       className="w-full"
+                      format={DATE_FORMAT}
+                      placeholder="DD/MM/YYYY"
                       onChange={() => setHasUnsavedChanges(true)}
                     />
                   </Form.Item>
@@ -1030,5 +1009,21 @@ const MatterForm = memo(
 );
 
 MatterForm.displayName = "MatterForm";
+
+MatterForm.propTypes = {
+  initialValues: PropTypes.object,
+  onSubmit: PropTypes.func.isRequired,
+  loading: PropTypes.bool,
+  mode: PropTypes.oneOf(["create", "edit"]),
+  onCancel: PropTypes.func,
+  submitText: PropTypes.string,
+  disableSteps: PropTypes.bool,
+  formRef: PropTypes.object,
+  showCancelButton: PropTypes.bool,
+  apiErrors: PropTypes.object,
+  enableAutoSave: PropTypes.bool,
+  onAutoSave: PropTypes.func,
+  presetMatterType: PropTypes.string,
+};
 
 export default MatterForm;

@@ -90,6 +90,9 @@ const MatterContextCard = memo(({ matter }) => {
 MatterContextCard.displayName = "MatterContextCard";
 
 const CourtCard = memo(({ form, showOtherCourt, setShowOtherCourt }) => {
+  const currentStage = Form.useWatch("currentStage", form);
+  const isPreFiling = currentStage === "pre-filing";
+
   const handleCourtChange = useCallback((value) => {
     setShowOtherCourt(value === "others");
     if (value !== "others") {
@@ -99,16 +102,33 @@ const CourtCard = memo(({ form, showOtherCourt, setShowOtherCourt }) => {
 
   return (
     <Card title="Court & Case Information" className="mb-6">
+      {isPreFiling && (
+        <Alert
+          type="info"
+          showIcon
+          className="mb-4"
+          message="Pre-filing matter"
+          description="You can save the matter before a court assigns a suit number or filing date. Add the court details when the case is filed."
+        />
+      )}
       <Row gutter={16}>
         <Col xs={24} md={12}>
           <Form.Item
             name="suitNo"
-            label="Suit Number"
+            label="Suit / Charge Number"
+            extra="Enter the court-assigned number after filing; leave blank while pre-filing."
             rules={[
-              { required: true, message: "Suit number is required" },
-              { min: 3, message: "Suit number must be at least 3 characters" },
+              ...(isPreFiling
+                ? []
+                : [
+                    {
+                      required: true,
+                      message: "Suit or charge number is required after filing",
+                    },
+                  ]),
+              { min: 3, message: "Number must be at least 3 characters" },
             ]}>
-            <Input placeholder="e.g., SUIT/123/2024" />
+            <Input placeholder="Assigned by the court" />
           </Form.Item>
         </Col>
 
@@ -116,7 +136,11 @@ const CourtCard = memo(({ form, showOtherCourt, setShowOtherCourt }) => {
           <Form.Item
             name="courtName"
             label="Court Name"
-            rules={[{ required: true, message: "Court name is required" }]}>
+            rules={
+              isPreFiling
+                ? []
+                : [{ required: true, message: "Court name is required" }]
+            }>
             <Select placeholder="Select court" showSearch optionFilterProp="children" onChange={handleCourtChange}>
               {COURT_TYPES.map((court) => (
                 <Option key={court.value} value={court.value}>{court.label}</Option>
@@ -127,7 +151,15 @@ const CourtCard = memo(({ form, showOtherCourt, setShowOtherCourt }) => {
 
         {showOtherCourt && (
           <Col xs={24} md={12}>
-            <Form.Item name="otherCourt" label="Specify Other Court" rules={[{ required: true, message: "Please specify the court name" }]}>
+            <Form.Item
+              name="otherCourt"
+              label="Specify Other Court"
+              rules={[
+                {
+                  required: !isPreFiling,
+                  message: "Please specify the court name",
+                },
+              ]}>
               <Input placeholder="Enter court name" />
             </Form.Item>
           </Col>
@@ -140,13 +172,20 @@ const CourtCard = memo(({ form, showOtherCourt, setShowOtherCourt }) => {
         </Col>
 
         <Col xs={24} md={8}>
-          <Form.Item name="courtLocation" label="Court Location">
+          <Form.Item name="courtLocation" label="Court Location (City/Town)">
             <Input placeholder="e.g., Ikeja" />
           </Form.Item>
         </Col>
 
         <Col xs={24} md={8}>
-          <Form.Item name="state" label="State" rules={[{ required: true, message: "State is required" }]}>
+          <Form.Item
+            name="state"
+            label="State / FCT"
+            rules={
+              isPreFiling
+                ? []
+                : [{ required: true, message: "State or FCT is required" }]
+            }>
             <Select placeholder="Select state" showSearch optionFilterProp="children">
               {NIGERIAN_STATES.map((state) => (
                 <Option key={state.value} value={state.value}>{state.label}</Option>
@@ -156,8 +195,8 @@ const CourtCard = memo(({ form, showOtherCourt, setShowOtherCourt }) => {
         </Col>
 
         <Col xs={24} md={12}>
-          <Form.Item name="division" label="Division">
-            <Input placeholder="e.g., Lagos Division" />
+          <Form.Item name="division" label="Judicial Division">
+            <Input placeholder="Enter division, if known" />
           </Form.Item>
         </Col>
       </Row>
@@ -170,8 +209,8 @@ const CourtCard = memo(({ form, showOtherCourt, setShowOtherCourt }) => {
             {fields.map(({ key, name, ...restField }) => (
               <Row gutter={16} key={key} align="middle">
                 <Col xs={22} md={20}>
-                  <Form.Item {...restField} name={[name, "name"]} label={fields.length > 1 ? `Judge ${name + 1}` : "Judge Name"} rules={[{ required: true, message: "Judge name is required" }, { min: 2, message: "Name must be at least 2 characters" }, { max: 100, message: "Name must be less than 100 characters" }]}>
-                    <Input placeholder="Enter judge name" />
+                  <Form.Item {...restField} name={[name, "name"]} label={fields.length > 1 ? `Judge ${name + 1}` : "Judge (if assigned)"} rules={[{ min: 2, message: "Name must be at least 2 characters" }, { max: 100, message: "Name must be less than 100 characters" }]}>
+                    <Input placeholder="Enter judge name, if assigned" />
                   </Form.Item>
                 </Col>
                 <Col xs={2} md={4}>
@@ -194,6 +233,9 @@ const CourtCard = memo(({ form, showOtherCourt, setShowOtherCourt }) => {
 CourtCard.displayName = "CourtCard";
 
 const CaseCommencementCard = memo(({ form, showOtherMode, setShowOtherMode }) => {
+  const currentStage = Form.useWatch("currentStage", form);
+  const isPreFiling = currentStage === "pre-filing";
+
   const handleModeChange = useCallback((value) => {
     setShowOtherMode(value === "other");
     if (value !== "other") {
@@ -205,7 +247,19 @@ const CaseCommencementCard = memo(({ form, showOtherMode, setShowOtherMode }) =>
     <Card title="Case Commencement" className="mb-6">
       <Row gutter={16}>
         <Col xs={24} md={12}>
-          <Form.Item name="modeOfCommencement" label="Mode of Commencement" rules={[{ required: true, message: "Mode of commencement is required" }]}>
+          <Form.Item
+            name="modeOfCommencement"
+            label="Mode of Commencement"
+            rules={
+              isPreFiling
+                ? []
+                : [
+                    {
+                      required: true,
+                      message: "Mode of commencement is required after filing",
+                    },
+                  ]
+            }>
             <Select placeholder="Select mode of commencement" onChange={handleModeChange}>
               {COMMENCEMENT_MODES.map((mode) => (
                 <Option key={mode.value} value={mode.value}>{mode.label}</Option>
@@ -216,15 +270,30 @@ const CaseCommencementCard = memo(({ form, showOtherMode, setShowOtherMode }) =>
 
         {showOtherMode && (
           <Col xs={24} md={12}>
-            <Form.Item name="otherModeOfCommencement" label="Specify Other Mode" rules={[{ required: true, message: "Please specify the mode" }]}>
+            <Form.Item
+              name="otherModeOfCommencement"
+              label="Specify Other Mode"
+              rules={[
+                {
+                  required: !isPreFiling,
+                  message: "Please specify the mode",
+                },
+              ]}>
               <Input placeholder="Enter mode of commencement" />
             </Form.Item>
           </Col>
         )}
 
         <Col xs={24} md={8}>
-          <Form.Item name="filingDate" label="Filing Date" rules={[{ required: true, message: "Filing date is required" }]}>
-            <DatePicker style={{ width: "100%" }} format={DATE_FORMAT} placeholder="Select filing date" />
+          <Form.Item
+            name="filingDate"
+            label="Filing Date"
+            rules={
+              isPreFiling
+                ? []
+                : [{ required: true, message: "Filing date is required" }]
+            }>
+            <DatePicker style={{ width: "100%" }} format={DATE_FORMAT} placeholder="DD/MM/YYYY" />
           </Form.Item>
         </Col>
 
@@ -455,6 +524,11 @@ const LitigationForm = ({
   const [showOtherMode, setShowOtherMode] = useState(false);
 
   useEffect(() => {
+    setShowOtherCourt(initialValues?.courtName === "others");
+    setShowOtherMode(initialValues?.modeOfCommencement === "other");
+  }, [initialValues]);
+
+  useEffect(() => {
     return () => {
       form.resetFields();
     };
@@ -516,7 +590,13 @@ const LitigationForm = ({
   }, [form]);
 
   return (
-    <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={formattedInitialValues} scrollToFirstError className="litigation-form">
+    <Form
+      form={form}
+      layout="vertical"
+      onFinish={handleSubmit}
+      initialValues={{ currentStage: "pre-filing", ...formattedInitialValues }}
+      scrollToFirstError
+      className="litigation-form">
       {matterData && <MatterContextCard matter={matterData} />}
 
       <CourtCard form={form} showOtherCourt={showOtherCourt} setShowOtherCourt={setShowOtherCourt} />

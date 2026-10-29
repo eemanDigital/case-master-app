@@ -1,6 +1,7 @@
-import React, { memo } from "react";
+import { memo } from "react";
 import { Form, Input, Button, Space, Card } from "antd";
 import { PlusOutlined, DeleteOutlined } from "@ant-design/icons";
+import PropTypes from "prop-types";
 
 const DynamicArraysSection = memo(
   ({
@@ -28,7 +29,7 @@ const DynamicArraysSection = memo(
             </div>
 
             <div className="space-y-3">
-              {fields.map((field, index) => (
+              {fields.map((field) => (
                 <Card
                   key={field.key}
                   size="small"
@@ -37,7 +38,7 @@ const DynamicArraysSection = memo(
                   <Space.Compact className="w-full">
                     <Form.Item
                       {...field}
-                      name={[field.name, "name"]}
+                      name={field.name}
                       rules={rules}
                       noStyle>
                       <Input placeholder={placeholder} className="flex-grow" />
@@ -61,5 +62,13 @@ const DynamicArraysSection = memo(
 );
 
 DynamicArraysSection.displayName = "DynamicArraysSection";
+
+DynamicArraysSection.propTypes = {
+  fieldName: PropTypes.string.isRequired,
+  label: PropTypes.string.isRequired,
+  placeholder: PropTypes.string,
+  rules: PropTypes.array,
+  initialValue: PropTypes.array,
+};
 
 export default DynamicArraysSection;

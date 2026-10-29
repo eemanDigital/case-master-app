@@ -3,8 +3,8 @@ export const COURT_TYPES = [
   { value: "supreme court", label: "Supreme Court" },
   { value: "court of appeal", label: "Court of Appeal" },
   { value: "federal high court", label: "Federal High Court" },
-  { value: "high court", label: "High Court" },
-  { value: "national industrial court", label: "National Industrial Court" },
+  { value: "high court", label: "State High Court" },
+  { value: "national industrial court", label: "National Industrial Court of Nigeria" },
   { value: "sharia courts of appeal", label: "Sharia Courts of Appeal" },
   { value: "customary court of appeal", label: "Customary Court of Appeal" },
   { value: "magistrate court", label: "Magistrate Court" },
@@ -38,6 +38,7 @@ export const COMMENCEMENT_MODES = [
 
 // Case Stages - Exactly matching model enum
 export const CASE_STAGES = [
+  { value: "pre-filing", label: "Pre-Filing", color: "cyan" },
   { value: "pre-trial", label: "Pre-Trial", color: "blue" },
   { value: "trial", label: "Trial", color: "orange" },
   { value: "judgment", label: "Judgment", color: "purple" },
