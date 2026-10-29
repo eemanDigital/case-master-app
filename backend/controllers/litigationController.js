@@ -2749,13 +2749,15 @@ exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
   const addPartyProcesses = (processes) => {
     if (!processes?.length) return;
     pdf.addDataTable(
-      ["Process", "Filing Date", "Status"],
+      ["Process", "Filing Date", "Status", "Motion Outcome", "Decision Date"],
       processes.map((process) => [
         process.name || "—",
         fmtDate(process.filingDate),
         titleCase(process.status || "pending"),
+        process.motionOutcome ? titleCase(process.motionOutcome) : "—",
+        fmtDate(process.decisionDate),
       ]),
-      { widths: [2.4, 1.4, 1.2], statusColumns: [2] },
+      { widths: [1.7, 1, 0.9, 1, 1], statusColumns: [2, 3] },
     );
   };
 

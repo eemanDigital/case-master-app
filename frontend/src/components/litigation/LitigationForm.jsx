@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { Fragment, useState, useEffect, useMemo, useCallback, memo } from "react";
 import { Form, Input, Select, DatePicker, InputNumber, Button, Card, Row, Col, Divider, Descriptions, Tag, Space, Alert } from "antd";
 import {
   SaveOutlined,
@@ -17,6 +17,7 @@ import {
   DATE_FORMAT,
   MATTER_STATUS,
   PROCESS_STATUS,
+  MOTION_OUTCOMES,
 } from "../../utils/litigationConstants";
 
 const { Option } = Select;
@@ -26,12 +27,14 @@ const formatProcessesForForm = (processes = []) =>
   processes.map((process) => ({
     ...process,
     filingDate: process.filingDate ? dayjs(process.filingDate) : null,
+    decisionDate: process.decisionDate ? dayjs(process.decisionDate) : null,
   }));
 
 const formatProcessesForSubmit = (processes = []) =>
   processes.map((process) => ({
     ...process,
     filingDate: process.filingDate?.toISOString() || null,
+    decisionDate: process.decisionDate?.toISOString() || null,
   }));
 
 const formatPartyForForm = (party) => {
@@ -66,6 +69,54 @@ const formatPartyForSubmit = (party) => ({
   })),
   processesFiled: formatProcessesForSubmit(party.processesFiled),
 });
+
+const MotionDecisionFields = ({ processPath }) => {
+  const processName = Form.useWatch([...processPath, "name"]);
+  const motionOutcome = Form.useWatch([...processPath, "motionOutcome"]);
+  const isMotion = /motion/i.test(processName || "");
+
+  if (!isMotion) return null;
+
+  return (
+    <Row gutter={[12, 4]}>
+      <Col xs={24} md={12}>
+        <Form.Item
+          name={[...processPath, "motionOutcome"]}
+          label="Motion outcome"
+          preserve={false}>
+          <Select allowClear placeholder="Select outcome">
+            {MOTION_OUTCOMES.map((outcome) => (
+              <Option key={outcome.value} value={outcome.value}>
+                {outcome.label}
+              </Option>
+            ))}
+          </Select>
+        </Form.Item>
+      </Col>
+      {motionOutcome && (
+        <Col xs={24} md={12}>
+          <Form.Item
+            name={[...processPath, "decisionDate"]}
+            label={`Date ${motionOutcome}`}
+            rules={[{ required: true, message: "Decision date is required" }]}
+            preserve={false}>
+            <DatePicker
+              className="w-full"
+              format={DATE_FORMAT}
+              placeholder="DD/MM/YYYY"
+            />
+          </Form.Item>
+        </Col>
+      )}
+    </Row>
+  );
+};
+
+MotionDecisionFields.propTypes = {
+  processPath: PropTypes.arrayOf(
+    PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  ).isRequired,
+};
 
 const PartyMembersList = ({ fieldName, label }) => (
   <Form.List name={fieldName}>
@@ -108,11 +159,11 @@ const PartyMembersList = ({ fieldName, label }) => (
                       },
                       processIndex,
                     ) => (
-                      <Row
-                        gutter={[12, 4]}
-                        key={processKey}
-                        align="middle"
-                        className="rounded-md bg-slate-50 p-3">
+                      <Fragment key={processKey}>
+                        <Row
+                          gutter={[12, 4]}
+                          align="middle"
+                          className="rounded-md bg-slate-50 p-3">
                         <Col xs={24} md={10}>
                           <Form.Item
                             {...processRest}
@@ -165,7 +216,16 @@ const PartyMembersList = ({ fieldName, label }) => (
                             aria-label={`Remove process ${processIndex + 1}`}
                           />
                         </Col>
-                      </Row>
+                        </Row>
+                        <MotionDecisionFields
+                          processPath={[
+                            ...[].concat(fieldName),
+                            name,
+                            "processesFiled",
+                            processName,
+                          ]}
+                        />
+                      </Fragment>
                     ),
                   )}
                   <Button
@@ -562,7 +622,8 @@ const PartiesCard = memo(() => {
                                       Processes filed by this party
                                     </Divider>
                                     {processFields.map(({ key: processKey, name: processName, ...processRest }, processIndex) => (
-                                      <Row gutter={[12, 4]} key={processKey} align="middle">
+                                      <div key={processKey}>
+                                      <Row gutter={[12, 4]} align="middle">
                                         <Col xs={24} md={10}>
                                           <Form.Item {...processRest} name={[processName, "name"]} label={`Process ${processIndex + 1}`} rules={[{ required: true, message: "Process name is required" }]}>
                                             <Input placeholder="e.g., Motion for Joinder" />
@@ -586,6 +647,8 @@ const PartiesCard = memo(() => {
                                           <Button type="text" danger icon={<MinusCircleOutlined />} onClick={() => removeProcess(processName)} aria-label={`Remove process ${processIndex + 1}`} />
                                         </Col>
                                       </Row>
+                                      <MotionDecisionFields processPath={["otherParty", name, "name", subName, "processesFiled", processName]} />
+                                      </div>
                                     ))}
                                     <Button type="dashed" icon={<PlusOutlined />} onClick={() => addProcess({ status: "pending", filingDate: null })} block>
                                       Add process for this party

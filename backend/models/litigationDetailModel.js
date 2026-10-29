@@ -32,6 +32,16 @@ const partyProcessSchema = new mongoose.Schema(
       enum: ["pending", "filed", "served", "completed"],
       default: "pending",
     },
+    motionOutcome: {
+      type: String,
+      enum: ["granted", "refused"],
+    },
+    decisionDate: {
+      type: Date,
+      required: function () {
+        return Boolean(this.motionOutcome);
+      },
+    },
   },
   { _id: false },
 );

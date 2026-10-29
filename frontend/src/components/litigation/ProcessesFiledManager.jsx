@@ -30,17 +30,18 @@ import {
   deleteProcessFiled,
   selectActionLoading,
 } from "../../redux/features/litigation/litigationSlice";
-import { PROCESS_STATUS, DATE_FORMAT } from "../../utils/litigationConstants";
+import {
+  PROCESS_STATUS,
+  MOTION_OUTCOMES,
+  DATE_FORMAT,
+} from "../../utils/litigationConstants";
 
 const { Option } = Select;
 
 const getMemberName = (member) =>
   (typeof member === "string" ? member : member?.name || "").trim();
 
-const ProcessesFiledManager = ({
-  matterId,
-  litigationDetails,
-}) => {
+const ProcessesFiledManager = ({ matterId, litigationDetails }) => {
   const dispatch = useDispatch();
   const loading = useSelector(selectActionLoading);
 
@@ -48,6 +49,9 @@ const ProcessesFiledManager = ({
   const [editingProcess, setEditingProcess] = useState(null);
   const [selectedParty, setSelectedParty] = useState(null);
   const [form] = Form.useForm();
+  const watchedProcessName = Form.useWatch("name", form);
+  const watchedMotionOutcome = Form.useWatch("motionOutcome", form);
+  const isMotion = /motion/i.test(watchedProcessName || "");
 
   const getPartyTargets = () => {
     const targets = [];
@@ -91,7 +95,12 @@ const ProcessesFiledManager = ({
 
   const getAllProcesses = () => {
     const processes = [];
-    const addProcesses = (items, target, legacy = false, groupKey = target.key) => {
+    const addProcesses = (
+      items,
+      target,
+      legacy = false,
+      groupKey = target.key,
+    ) => {
       (items || []).forEach((process, processIndex) => {
         processes.push({
           ...process,
@@ -132,8 +141,7 @@ const ProcessesFiledManager = ({
     ].forEach(({ party, data, label, otherPartyIndex }) => {
       const membersForGroup = targets.filter(
         (target) =>
-          target.party === party &&
-          target.otherPartyIndex === otherPartyIndex,
+          target.party === party && target.otherPartyIndex === otherPartyIndex,
       );
       const inferredSingleMember =
         membersForGroup.length === 1 ? membersForGroup[0] : null;
@@ -145,13 +153,14 @@ const ProcessesFiledManager = ({
           partyDescription: inferredSingleMember
             ? `${label} — existing filing for the only named party`
             : `${label} — not linked to an individual party`,
-          label: inferredSingleMember?.label || `${label}: previously filed (unlinked)`,
+          label:
+            inferredSingleMember?.label ||
+            `${label}: previously filed (unlinked)`,
           key: `${party}:${otherPartyIndex ?? ""}:legacy`,
           otherPartyIndex,
         },
         true,
-        inferredSingleMember?.key ||
-          `${party}:${otherPartyIndex ?? ""}:legacy`,
+        inferredSingleMember?.key || `${party}:${otherPartyIndex ?? ""}:legacy`,
       );
     });
     return processes;
@@ -176,6 +185,8 @@ const ProcessesFiledManager = ({
       name: process.name,
       filingDate: process.filingDate ? dayjs(process.filingDate) : null,
       status: process.status || "pending",
+      motionOutcome: process.motionOutcome,
+      decisionDate: process.decisionDate ? dayjs(process.decisionDate) : null,
       partyTarget: process.key,
     });
     setIsModalVisible(true);
@@ -212,7 +223,22 @@ const ProcessesFiledManager = ({
       name: values.name,
       filingDate: values.filingDate ? values.filingDate.toISOString() : null,
       status: values.status || "pending",
+      motionOutcome: isMotion ? values.motionOutcome || undefined : undefined,
+      decisionDate:
+        isMotion && values.motionOutcome && values.decisionDate
+          ? values.decisionDate.toISOString()
+          : null,
     };
+
+    if (isMotion && values.motionOutcome && !values.decisionDate) {
+      form.setFields([
+        {
+          name: "decisionDate",
+          errors: ["Decision date is required"],
+        },
+      ]);
+      return;
+    }
 
     try {
       if (editingProcess) {
@@ -274,6 +300,31 @@ const ProcessesFiledManager = ({
       render: (status) => (
         <StatusTag status={status} configArray={PROCESS_STATUS} />
       ),
+    },
+    {
+      title: "Decision/Outcome",
+      dataIndex: "motionOutcome",
+      key: "motionOutcome",
+      width: 130,
+      render: (outcome) =>
+        outcome ? (
+          <Tag
+            color={
+              MOTION_OUTCOMES.find((item) => item.value === outcome)?.color
+            }>
+            {MOTION_OUTCOMES.find((item) => item.value === outcome)?.label ||
+              outcome}
+          </Tag>
+        ) : (
+          "-"
+        ),
+    },
+    {
+      title: "Decision Date",
+      dataIndex: "decisionDate",
+      key: "decisionDate",
+      width: 130,
+      render: (date) => (date ? formatDate(date) : "-"),
     },
     {
       title: "Actions",
@@ -364,7 +415,9 @@ const ProcessesFiledManager = ({
                 size="small"
                 title={
                   <div>
-                    <div className="font-semibold">{group.partyName || "Previously filed"}</div>
+                    <div className="font-semibold">
+                      {group.partyName || "Previously filed"}
+                    </div>
                     <div className="text-xs font-normal text-gray-500">
                       {group.partyDescription}
                     </div>
@@ -436,6 +489,38 @@ const ProcessesFiledManager = ({
             rules={[{ required: true, message: "Process name is required" }]}>
             <Input placeholder="e.g., Motion for Adjournment" size="large" />
           </Form.Item>
+
+          {isMotion && (
+            <Space align="start" className="w-full" size={16}>
+              <Form.Item
+                name="motionOutcome"
+                label="Motion outcome"
+                className="flex-1"
+                preserve={false}>
+                <Select allowClear placeholder="Select outcome">
+                  {MOTION_OUTCOMES.map((outcome) => (
+                    <Option key={outcome.value} value={outcome.value}>
+                      {outcome.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+              {watchedMotionOutcome && (
+                <Form.Item
+                  name="decisionDate"
+                  label={`Date ${watchedMotionOutcome}`}
+                  rules={[
+                    {
+                      required: true,
+                      message: "Decision date is required",
+                    },
+                  ]}
+                  preserve={false}>
+                  <DatePicker format={DATE_FORMAT} placeholder="DD/MM/YYYY" />
+                </Form.Item>
+              )}
+            </Space>
+          )}
 
           <Form.Item name="filingDate" label="Filing Date">
             <DatePicker

@@ -66,6 +66,11 @@ export const PROCESS_STATUS = [
   { value: "completed", label: "Completed", color: "success" },
 ];
 
+export const MOTION_OUTCOMES = [
+  { value: "granted", label: "Granted", color: "success" },
+  { value: "refused", label: "Refused", color: "error" },
+];
+
 // Compliance Status - Exactly matching model enum
 export const COMPLIANCE_STATUS = [
   { value: "pending", label: "Pending", color: "default" },
