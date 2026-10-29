@@ -4,17 +4,6 @@ const mongoose = require("mongoose");
 // SUB-SCHEMAS
 // ============================================
 
-const nameSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      trim: true,
-      maxlength: [2000, "Field should be less than 2000 characters long"],
-    },
-  },
-  { _id: false },
-);
-
 const judgeSchema = new mongoose.Schema(
   {
     name: {
@@ -43,6 +32,18 @@ const partyProcessSchema = new mongoose.Schema(
       enum: ["pending", "filed", "served", "completed"],
       default: "pending",
     },
+  },
+  { _id: false },
+);
+
+const partyMemberSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      trim: true,
+      maxlength: [2000, "Party name must be less than 2000 characters"],
+    },
+    processesFiled: [partyProcessSchema],
   },
   { _id: false },
 );
@@ -288,20 +289,20 @@ const litigationDetailSchema = new mongoose.Schema(
 
     firstParty: {
       description: String,
-      name: [nameSchema],
+      name: [partyMemberSchema],
       processesFiled: [partyProcessSchema],
     },
 
     secondParty: {
       description: String,
-      name: [nameSchema],
+      name: [partyMemberSchema],
       processesFiled: [partyProcessSchema],
     },
 
     otherParty: [
       {
         description: String,
-        name: [nameSchema],
+        name: [partyMemberSchema],
         processesFiled: [partyProcessSchema],
       },
     ],

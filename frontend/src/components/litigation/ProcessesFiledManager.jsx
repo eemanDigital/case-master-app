@@ -12,8 +12,8 @@ import {
   Tag,
   Empty,
   message,
-  Divider,
 } from "antd";
+import PropTypes from "prop-types";
 import {
   PlusOutlined,
   EditOutlined,
@@ -34,10 +34,12 @@ import { PROCESS_STATUS, DATE_FORMAT } from "../../utils/litigationConstants";
 
 const { Option } = Select;
 
+const getMemberName = (member) =>
+  (typeof member === "string" ? member : member?.name || "").trim();
+
 const ProcessesFiledManager = ({
   matterId,
   litigationDetails,
-  mode = "view",
 }) => {
   const dispatch = useDispatch();
   const loading = useSelector(selectActionLoading);
@@ -47,49 +49,134 @@ const ProcessesFiledManager = ({
   const [selectedParty, setSelectedParty] = useState(null);
   const [form] = Form.useForm();
 
+  const getPartyTargets = () => {
+    const targets = [];
+    const addMembers = (party, partyData, label, otherPartyIndex) => {
+      (partyData?.name || []).forEach((member, partyIndex) => {
+        const name = getMemberName(member);
+        if (!name) return;
+        const role = partyData.description || label;
+        targets.push({
+          key: `${party}:${otherPartyIndex ?? ""}:${partyIndex}`,
+          party,
+          partyIndex,
+          otherPartyIndex,
+          partyName: name,
+          partyDescription: role,
+          label: `${role}: ${name}`,
+        });
+      });
+    };
+
+    addMembers(
+      "firstParty",
+      litigationDetails?.firstParty,
+      "Plaintiff / Applicant / Claimant",
+    );
+    addMembers(
+      "secondParty",
+      litigationDetails?.secondParty,
+      "Defendant / Respondent",
+    );
+    (litigationDetails?.otherParty || []).forEach((party, otherPartyIndex) =>
+      addMembers(
+        "otherParty",
+        party,
+        party.description || `Other Party ${otherPartyIndex + 1}`,
+        otherPartyIndex,
+      ),
+    );
+    return targets;
+  };
+
   const getAllProcesses = () => {
     const processes = [];
-    if (litigationDetails?.firstParty?.processesFiled?.length > 0) {
-      litigationDetails.firstParty.processesFiled.forEach((process, index) => {
+    const addProcesses = (items, target, legacy = false, groupKey = target.key) => {
+      (items || []).forEach((process, processIndex) => {
         processes.push({
           ...process,
-          party: "firstParty",
-          partyName: "First Party",
-          partyDescription:
-            litigationDetails.firstParty.description || "Plaintiff/Claimant",
-          processIndex: index,
+          ...target,
+          groupKey,
+          processIndex,
+          legacy,
         });
       });
-    }
-    if (litigationDetails?.secondParty?.processesFiled?.length > 0) {
-      litigationDetails.secondParty.processesFiled.forEach((process, index) => {
-        processes.push({
-          ...process,
-          party: "secondParty",
-          partyName: "Second Party",
-          partyDescription:
-            litigationDetails.secondParty.description || "Defendant/Respondent",
-          processIndex: index,
-        });
-      });
-    }
+    };
+    const targets = getPartyTargets();
+    targets.forEach((target) => {
+      const members =
+        target.party === "otherParty"
+          ? litigationDetails.otherParty[target.otherPartyIndex]?.name
+          : litigationDetails[target.party]?.name;
+      const member = members?.[target.partyIndex];
+      addProcesses(member?.processesFiled, target);
+    });
+
+    [
+      {
+        party: "firstParty",
+        data: litigationDetails?.firstParty,
+        label: "Plaintiff / Applicant / Claimant",
+      },
+      {
+        party: "secondParty",
+        data: litigationDetails?.secondParty,
+        label: "Defendant / Respondent",
+      },
+      ...(litigationDetails?.otherParty || []).map((data, otherPartyIndex) => ({
+        party: "otherParty",
+        data,
+        label: data.description || `Other Party ${otherPartyIndex + 1}`,
+        otherPartyIndex,
+      })),
+    ].forEach(({ party, data, label, otherPartyIndex }) => {
+      const membersForGroup = targets.filter(
+        (target) =>
+          target.party === party &&
+          target.otherPartyIndex === otherPartyIndex,
+      );
+      const inferredSingleMember =
+        membersForGroup.length === 1 ? membersForGroup[0] : null;
+      addProcesses(
+        data?.processesFiled,
+        {
+          party,
+          partyName: inferredSingleMember?.partyName || "Previously filed",
+          partyDescription: inferredSingleMember
+            ? `${label} — existing filing for the only named party`
+            : `${label} — not linked to an individual party`,
+          label: inferredSingleMember?.label || `${label}: previously filed (unlinked)`,
+          key: `${party}:${otherPartyIndex ?? ""}:legacy`,
+          otherPartyIndex,
+        },
+        true,
+        inferredSingleMember?.key ||
+          `${party}:${otherPartyIndex ?? ""}:legacy`,
+      );
+    });
     return processes;
   };
 
-  const handleAddProcess = (party) => {
-    setSelectedParty(party);
+  const handleAddProcess = () => {
+    setSelectedParty(null);
     setEditingProcess(null);
     form.resetFields();
     setIsModalVisible(true);
   };
 
+  const handleAddProcessForParty = (party) => {
+    handleAddProcess();
+    form.setFieldValue("partyTarget", party.key);
+  };
+
   const handleEditProcess = (process) => {
-    setSelectedParty(process.party);
+    setSelectedParty(process);
     setEditingProcess(process);
     form.setFieldsValue({
       name: process.name,
       filingDate: process.filingDate ? dayjs(process.filingDate) : null,
       status: process.status || "pending",
+      partyTarget: process.key,
     });
     setIsModalVisible(true);
   };
@@ -100,6 +187,8 @@ const ProcessesFiledManager = ({
         deleteProcessFiled({
           matterId,
           party: process.party,
+          partyIndex: process.legacy ? undefined : process.partyIndex,
+          otherPartyIndex: process.otherPartyIndex,
           processIndex: process.processIndex,
         }),
       ).unwrap();
@@ -111,6 +200,14 @@ const ProcessesFiledManager = ({
   };
 
   const handleSubmit = async (values) => {
+    const target =
+      selectedParty ||
+      getPartyTargets().find((party) => party.key === values.partyTarget);
+    if (!target) {
+      message.error("Select the party who filed this process");
+      return;
+    }
+
     const processData = {
       name: values.name,
       filingDate: values.filingDate ? values.filingDate.toISOString() : null,
@@ -122,7 +219,9 @@ const ProcessesFiledManager = ({
         await dispatch(
           updateProcessFiled({
             matterId,
-            party: selectedParty,
+            party: target.party,
+            partyIndex: target.legacy ? undefined : target.partyIndex,
+            otherPartyIndex: target.otherPartyIndex,
             processIndex: editingProcess.processIndex,
             processData,
           }),
@@ -132,7 +231,9 @@ const ProcessesFiledManager = ({
         await dispatch(
           addProcessFiled({
             matterId,
-            party: selectedParty,
+            party: target.party,
+            partyIndex: target.partyIndex,
+            otherPartyIndex: target.otherPartyIndex,
             processData,
           }),
         ).unwrap();
@@ -147,18 +248,6 @@ const ProcessesFiledManager = ({
   };
 
   const columns = [
-    {
-      title: "Party",
-      dataIndex: "partyName",
-      key: "partyName",
-      width: 150,
-      render: (text, record) => (
-        <div>
-          <div className="font-medium">{text}</div>
-          <div className="text-xs text-gray-500">{record.partyDescription}</div>
-        </div>
-      ),
-    },
     {
       title: "Process Name",
       dataIndex: "name",
@@ -211,116 +300,30 @@ const ProcessesFiledManager = ({
   ];
 
   const allProcesses = getAllProcesses();
-
-  if (mode === "form") {
-    return (
-      <Card title="Processes to be Filed" className="mb-6">
-        <div className="space-y-4">
-          <Divider orientation="left" plain>
-            First Party Processes
-          </Divider>
-          <Form.List name={["firstParty", "processesFiled"]}>
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name, ...restField }) => (
-                  <Space
-                    key={key}
-                    style={{ display: "flex", marginBottom: 8 }}
-                    align="baseline">
-                    <Form.Item
-                      {...restField}
-                      name={[name, "name"]}
-                      rules={[
-                        { required: true, message: "Process name required" },
-                      ]}>
-                      <Input
-                        placeholder="Process name (e.g., Motion for Adjournment)"
-                        style={{ width: 300 }}
-                      />
-                    </Form.Item>
-                    <Form.Item
-                      {...restField}
-                      name={[name, "status"]}
-                      initialValue="pending">
-                      <Select placeholder="Status" style={{ width: 120 }}>
-                        {PROCESS_STATUS.map((s) => (
-                          <Option key={s.value} value={s.value}>
-                            {s.label}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                    <DeleteOutlined
-                      onClick={() => remove(name)}
-                      className="text-red-500"
-                    />
-                  </Space>
-                ))}
-                <Button
-                  type="dashed"
-                  onClick={() => add()}
-                  icon={<PlusOutlined />}
-                  block>
-                  Add First Party Process
-                </Button>
-              </>
-            )}
-          </Form.List>
-
-          <Divider orientation="left" plain>
-            Second Party Processes
-          </Divider>
-          <Form.List name={["secondParty", "processesFiled"]}>
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name, ...restField }) => (
-                  <Space
-                    key={key}
-                    style={{ display: "flex", marginBottom: 8 }}
-                    align="baseline">
-                    <Form.Item
-                      {...restField}
-                      name={[name, "name"]}
-                      rules={[
-                        { required: true, message: "Process name required" },
-                      ]}>
-                      <Input
-                        placeholder="Process name"
-                        style={{ width: 300 }}
-                      />
-                    </Form.Item>
-                    <Form.Item
-                      {...restField}
-                      name={[name, "status"]}
-                      initialValue="pending">
-                      <Select placeholder="Status" style={{ width: 120 }}>
-                        {PROCESS_STATUS.map((s) => (
-                          <Option key={s.value} value={s.value}>
-                            {s.label}
-                          </Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                    <DeleteOutlined
-                      onClick={() => remove(name)}
-                      className="text-red-500"
-                    />
-                  </Space>
-                ))}
-                <Button
-                  type="dashed"
-                  onClick={() => add()}
-                  icon={<PlusOutlined />}
-                  block>
-                  Add Second Party Process
-                </Button>
-              </>
-            )}
-          </Form.List>
-        </div>
-      </Card>
-    );
-  }
+  const partyTargets = getPartyTargets();
+  const partyGroups = partyTargets.map((party) => ({
+    ...party,
+    processes: allProcesses.filter((process) => process.groupKey === party.key),
+  }));
+  const groupedTargetKeys = new Set(partyTargets.map((party) => party.key));
+  const unassignedLegacyGroups = allProcesses
+    .filter(
+      (process) => process.legacy && !groupedTargetKeys.has(process.groupKey),
+    )
+    .reduce((groups, process) => {
+      let group = groups.find((item) => item.key === process.groupKey);
+      if (!group) {
+        group = {
+          key: process.groupKey,
+          label: process.label,
+          partyDescription: process.partyDescription,
+          processes: [],
+        };
+        groups.push(group);
+      }
+      group.processes.push(process);
+      return groups;
+    }, []);
 
   return (
     <>
@@ -330,52 +333,73 @@ const ProcessesFiledManager = ({
             <span className="text-lg font-semibold">
               Processes Filed ({allProcesses.length})
             </span>
-            <Space>
-              <Button
-                type="default"
-                icon={<PlusOutlined />}
-                onClick={() => handleAddProcess("firstParty")}
-                size="small">
-                Add for First Party
-              </Button>
-              <Button
-                type="default"
-                icon={<PlusOutlined />}
-                onClick={() => handleAddProcess("secondParty")}
-                size="small">
-                Add for Second Party
-              </Button>
-            </Space>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAddProcess}
+              size="small"
+              disabled={!partyTargets.length}>
+              Add Process
+            </Button>
           </div>
         }
         className="mb-6">
-        {allProcesses.length === 0 ? (
+        {!partyGroups.length && !unassignedLegacyGroups.length ? (
           <Empty
             description="No processes filed yet"
             image={Empty.PRESENTED_IMAGE_SIMPLE}>
-            <Space>
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={() => handleAddProcess("firstParty")}>
-                Add Process for First Party
-              </Button>
-              <Button
-                type="default"
-                icon={<PlusOutlined />}
-                onClick={() => handleAddProcess("secondParty")}>
-                Add Process for Second Party
-              </Button>
-            </Space>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleAddProcess}
+              disabled={!partyTargets.length}>
+              Add Process
+            </Button>
           </Empty>
         ) : (
-          <Table
-            columns={columns}
-            dataSource={allProcesses}
-            rowKey={(record) => `${record.party}-${record.processIndex}`}
-            pagination={{ pageSize: 10 }}
-            size="small"
-          />
+          <div className="space-y-4">
+            {[...partyGroups, ...unassignedLegacyGroups].map((group) => (
+              <Card
+                key={group.key}
+                size="small"
+                title={
+                  <div>
+                    <div className="font-semibold">{group.partyName || "Previously filed"}</div>
+                    <div className="text-xs font-normal text-gray-500">
+                      {group.partyDescription}
+                    </div>
+                  </div>
+                }
+                extra={
+                  group.partyName && (
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<PlusOutlined />}
+                      onClick={() => handleAddProcessForParty(group)}>
+                      Add Process
+                    </Button>
+                  )
+                }>
+                {group.processes.length ? (
+                  <Table
+                    columns={columns}
+                    dataSource={group.processes}
+                    rowKey={(record) =>
+                      `${record.groupKey}-${record.legacy ? "legacy" : "member"}-${record.processIndex}`
+                    }
+                    pagination={false}
+                    size="small"
+                  />
+                ) : (
+                  <Empty
+                    description="No processes filed for this party"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                )}
+              </Card>
+            ))}
+          </div>
         )}
       </Card>
 
@@ -386,6 +410,26 @@ const ProcessesFiledManager = ({
         footer={null}
         width={600}>
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          {editingProcess ? (
+            <Form.Item label="Party filing this process">
+              <Input value={selectedParty?.label} readOnly />
+            </Form.Item>
+          ) : (
+            <Form.Item
+              name="partyTarget"
+              label="Party filing this process"
+              rules={[{ required: true, message: "Select the filing party" }]}>
+              <Select
+                placeholder="Select the specific plaintiff or defendant"
+                options={partyTargets.map((party) => ({
+                  value: party.key,
+                  label: party.label,
+                }))}
+                showSearch
+                optionFilterProp="label"
+              />
+            </Form.Item>
+          )}
           <Form.Item
             name="name"
             label="Process Name"
@@ -423,6 +467,11 @@ const ProcessesFiledManager = ({
       </Modal>
     </>
   );
+};
+
+ProcessesFiledManager.propTypes = {
+  matterId: PropTypes.string.isRequired,
+  litigationDetails: PropTypes.object.isRequired,
 };
 
 export default ProcessesFiledManager;

@@ -148,16 +148,36 @@ export const updateProcessFiled = (
   party,
   processIndex,
   processData,
+  partyIndex,
+  otherPartyIndex,
 ) => {
+  const query = new URLSearchParams();
+  if (partyIndex !== undefined) query.set("partyIndex", partyIndex);
+  if (otherPartyIndex !== undefined) {
+    query.set("otherPartyIndex", otherPartyIndex);
+  }
+  const queryString = query.toString();
   return apiService.patch(
-    `/litigation/${matterId}/processes/${party}/${processIndex}`,
+    `/litigation/${matterId}/processes/${party}/${processIndex}${queryString ? `?${queryString}` : ""}`,
     processData,
   );
 };
 
-export const deleteProcessFiled = (matterId, party, processIndex) => {
+export const deleteProcessFiled = (
+  matterId,
+  party,
+  processIndex,
+  partyIndex,
+  otherPartyIndex,
+) => {
+  const query = new URLSearchParams();
+  if (partyIndex !== undefined) query.set("partyIndex", partyIndex);
+  if (otherPartyIndex !== undefined) {
+    query.set("otherPartyIndex", otherPartyIndex);
+  }
+  const queryString = query.toString();
   return apiService.delete(
-    `/litigation/${matterId}/processes/${party}/${processIndex}`,
+    `/litigation/${matterId}/processes/${party}/${processIndex}${queryString ? `?${queryString}` : ""}`,
   );
 };
 

@@ -224,25 +224,35 @@ exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
 
   // ── Parties ───────────────────────────────────────────────────────────────
   pdf.addSection("Parties");
+  const addPartyProcesses = (processes) => {
+    if (!processes?.length) return;
+    pdf.addDataTable(
+      ["Process", "Filing Date", "Status"],
+      processes.map((process) => [
+        process.name || "—",
+        fmtDate(process.filingDate),
+        titleCase(process.status || "pending"),
+      ]),
+      { widths: [2.4, 1.4, 1.2], statusColumns: [2] },
+    );
+  };
+
   [
     { title: "First Party (Claimant/Plaintiff)", p: d.firstParty },
     { title: "Second Party (Defendant/Respondent)", p: d.secondParty },
   ].forEach(({ title, p }) => {
     if (p?.name?.length) {
       pdf.addSubSection(title);
-      pdf.addField("Name", namesOf(p.name));
       if (p.description) pdf.addLongTextField("Description", p.description);
-      if (p.processesFiled?.length) {
-        pdf.addDataTable(
-          ["Process", "Filing Date", "Status"],
-          (p.processesFiled || []).map((pf) => [
-            pf.name || "—",
-            fmtDate(pf.filingDate),
-            titleCase(pf.status || "pending"),
-          ]),
-          { widths: [2.4, 1.4, 1.2], statusColumns: [2] },
-        );
-      }
+      p.name.forEach((member) => {
+        pdf.addField("Party", namesOf([member]));
+        addPartyProcesses(member.processesFiled);
+        if (p.name.length === 1) addPartyProcesses(p.processesFiled);
+      });
+    }
+    if (p?.processesFiled?.length && p.name?.length !== 1) {
+      pdf.addSubSection(`${title} — unassigned legacy filings`);
+      addPartyProcesses(p.processesFiled);
     }
   });
 
@@ -251,8 +261,16 @@ exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
     (d.otherParty || []).forEach((p) => {
       if (p?.name?.length) {
         pdf.addSubSection("Party");
-        pdf.addField("Name", namesOf(p.name));
         if (p.description) pdf.addLongTextField("Description", p.description);
+        p.name.forEach((member) => {
+          pdf.addField("Party", namesOf([member]));
+          addPartyProcesses(member.processesFiled);
+          if (p.name.length === 1) addPartyProcesses(p.processesFiled);
+        });
+      }
+      if (p.processesFiled?.length && p.name?.length !== 1) {
+        pdf.addSubSection("Unassigned legacy filings");
+        addPartyProcesses(p.processesFiled);
       }
     });
   }

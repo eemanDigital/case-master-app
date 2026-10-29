@@ -318,10 +318,15 @@ export const deleteCourtOrder = createAsyncThunk(
 
 export const addProcessFiled = createAsyncThunk(
   "litigation/addProcessFiled",
-  async ({ matterId, party, processData }, { rejectWithValue }) => {
+  async (
+    { matterId, party, partyIndex, otherPartyIndex, processData },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await litigationService.addProcessFiled(matterId, {
         party,
+        partyIndex,
+        otherPartyIndex,
         processData,
       });
       message.success("Process added successfully");
@@ -336,7 +341,7 @@ export const addProcessFiled = createAsyncThunk(
 export const updateProcessFiled = createAsyncThunk(
   "litigation/updateProcessFiled",
   async (
-    { matterId, party, processIndex, processData },
+    { matterId, party, partyIndex, otherPartyIndex, processIndex, processData },
     { rejectWithValue },
   ) => {
     try {
@@ -345,6 +350,8 @@ export const updateProcessFiled = createAsyncThunk(
         party,
         processIndex,
         processData,
+        partyIndex,
+        otherPartyIndex,
       );
       message.success("Process updated successfully");
       return response;
@@ -361,12 +368,17 @@ export const updateProcessFiled = createAsyncThunk(
 
 export const deleteProcessFiled = createAsyncThunk(
   "litigation/deleteProcessFiled",
-  async ({ matterId, party, processIndex }, { rejectWithValue }) => {
+  async (
+    { matterId, party, partyIndex, otherPartyIndex, processIndex },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await litigationService.deleteProcessFiled(
         matterId,
         party,
         processIndex,
+        partyIndex,
+        otherPartyIndex,
       );
       message.success("Process deleted successfully");
       return response;

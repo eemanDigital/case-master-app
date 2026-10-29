@@ -196,10 +196,6 @@ const LitigationDetails = () => {
     // Guard: if no data yet, return empty array (avoids null-access inside tabs)
     if (!litigationDetails) return [];
 
-    const firstPartyProcesses = litigationDetails.firstParty?.processesFiled || [];
-    const secondPartyProcesses = litigationDetails.secondParty?.processesFiled || [];
-    const processes = [...firstPartyProcesses, ...secondPartyProcesses];
-
     return [
       // Hearings ──────────────────────────────────────────────────────────────
       {

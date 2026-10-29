@@ -17,6 +17,7 @@ import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
 import { formatDate } from "../../utils/formatters";
 import StatusTag from "../common/StatusTag";
+import ExpandableText from "../common/ExpandableText";
 import {
   addCourtOrder,
   updateCourtOrder,
@@ -110,7 +111,9 @@ const CourtOrdersList = ({ matterId, courtOrders = [] }) => {
       title: "Description",
       dataIndex: "description",
       key: "description",
-      ellipsis: true,
+      render: (description) => (
+        <ExpandableText rows={2}>{description}</ExpandableText>
+      ),
     },
     {
       title: "Compliance Status",

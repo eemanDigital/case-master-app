@@ -24,6 +24,7 @@ import {
 import CreateEditStepModal from "./StepFormModal";
 import DeleteStepModal from "./DeleteStepModal";
 import UpdateStepStatusModal from "./UpdateStepStatusModal";
+import ExpandableText from "../common/ExpandableText";
 
 const STATUS_CONFIG = {
   pending: {
@@ -218,7 +219,8 @@ const LitigationSteps = ({ matterId }) => {
                       <span
                         style={{
                           textDecoration: isCompleted ? "line-through" : "none",
-                        }}>
+                        }}
+                        className="break-words whitespace-pre-wrap">
                         {step.title}
                       </span>
                       <Tag color={priorityConfig.color}>
@@ -229,7 +231,11 @@ const LitigationSteps = ({ matterId }) => {
                   }
                   description={
                     <Space direction="vertical" size={4}>
-                      {step.description && <span>{step.description}</span>}
+                      {step.description && (
+                        <ExpandableText rows={2}>
+                          {step.description}
+                        </ExpandableText>
+                      )}
                       {step.dueDate && (
                         <span
                           style={{ color: isOverdue ? "#ff4d4f" : "#8c8c8c" }}>
@@ -239,9 +245,12 @@ const LitigationSteps = ({ matterId }) => {
                         </span>
                       )}
                       {step.notes && (
-                        <span style={{ color: "#8c8c8c", fontSize: "12px" }}>
-                          Notes: {step.notes}
-                        </span>
+                        <div style={{ color: "#8c8c8c", fontSize: "12px" }}>
+                          <span>Notes: </span>
+                          <ExpandableText rows={2} className="text-xs">
+                            {step.notes}
+                          </ExpandableText>
+                        </div>
                       )}
                     </Space>
                   }

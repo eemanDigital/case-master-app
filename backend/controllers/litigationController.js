@@ -1435,28 +1435,73 @@ exports.deleteCourtOrder = catchAsync(async (req, res, next) => {
 // ADD PROCESS FILED BY PARTY
 // ============================================
 
+const getProcessCollection = (
+  litigationDetail,
+  party,
+  partyIndex,
+  otherPartyIndex,
+) => {
+  const numericPartyIndex =
+    partyIndex !== undefined ? Number(partyIndex) : undefined;
+  const numericOtherPartyIndex =
+    otherPartyIndex !== undefined ? Number(otherPartyIndex) : undefined;
+
+  if (
+    (numericPartyIndex !== undefined &&
+      (!Number.isInteger(numericPartyIndex) || numericPartyIndex < 0)) ||
+    (numericOtherPartyIndex !== undefined &&
+      (!Number.isInteger(numericOtherPartyIndex) ||
+        numericOtherPartyIndex < 0))
+  ) {
+    return null;
+  }
+
+  if (party === "otherParty") {
+    const partyGroup =
+      litigationDetail.otherParty?.[numericOtherPartyIndex ?? 0];
+    if (!partyGroup) return null;
+    if (numericPartyIndex === undefined) {
+      return partyGroup.processesFiled;
+    }
+    return partyGroup.name?.[numericPartyIndex]?.processesFiled;
+  }
+
+  const partyGroup = litigationDetail[party];
+  if (!partyGroup) return null;
+  if (numericPartyIndex === undefined) {
+    return partyGroup.processesFiled;
+  }
+  return partyGroup.name?.[numericPartyIndex]?.processesFiled;
+};
+
 exports.addProcessFiled = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
-  const { party, processData } = req.body;
+  const { party, partyIndex, otherPartyIndex, processData } = req.body;
 
   if (!["firstParty", "secondParty", "otherParty"].includes(party)) {
     return next(new AppError("Invalid party specified", 400));
   }
 
-  const updatePath =
-    party === "otherParty"
-      ? "otherParty.0.processesFiled"
-      : `${party}.processesFiled`;
-
-  const litigationDetail = await LitigationDetail.findOneAndUpdate(
-    { matterId, firmId: req.firmId },
-    { $push: { [updatePath]: processData } },
-    { new: true, runValidators: true },
-  );
+  const litigationDetail = await LitigationDetail.findOne({
+    matterId,
+    firmId: req.firmId,
+  });
 
   if (!litigationDetail) {
     return next(new AppError("Litigation details not found", 404));
   }
+
+  const processCollection = getProcessCollection(
+    litigationDetail,
+    party,
+    partyIndex,
+    otherPartyIndex,
+  );
+  if (!processCollection) {
+    return next(new AppError("Party not found for this process", 404));
+  }
+  processCollection.push(processData);
+  await litigationDetail.save();
 
   // Update matter last activity
   await Matter.findByIdAndUpdate(matterId, {
@@ -1475,6 +1520,7 @@ exports.addProcessFiled = catchAsync(async (req, res, next) => {
 
 exports.updateProcessFiled = catchAsync(async (req, res, next) => {
   const { matterId, party, processIndex } = req.params;
+  const { partyIndex, otherPartyIndex } = req.query;
   const processData = req.body;
 
   if (!["firstParty", "secondParty", "otherParty"].includes(party)) {
@@ -1490,19 +1536,23 @@ exports.updateProcessFiled = catchAsync(async (req, res, next) => {
     return next(new AppError("Litigation details not found", 404));
   }
 
-  let partyData;
-  if (party === "firstParty") partyData = litigationDetail.firstParty;
-  else if (party === "secondParty") partyData = litigationDetail.secondParty;
-  else partyData = litigationDetail.otherParty[0];
-
-  if (!partyData || processIndex >= partyData.processesFiled.length) {
+  const processCollection = getProcessCollection(
+    litigationDetail,
+    party,
+    partyIndex,
+    otherPartyIndex,
+  );
+  const numericProcessIndex = Number(processIndex);
+  if (
+    !processCollection ||
+    !Number.isInteger(numericProcessIndex) ||
+    numericProcessIndex < 0 ||
+    numericProcessIndex >= processCollection.length
+  ) {
     return next(new AppError("Process not found", 404));
   }
 
-  partyData.processesFiled[processIndex] = {
-    ...partyData.processesFiled[processIndex],
-    ...processData,
-  };
+  processCollection[numericProcessIndex].set(processData);
 
   await litigationDetail.save();
 
@@ -1523,6 +1573,7 @@ exports.updateProcessFiled = catchAsync(async (req, res, next) => {
 
 exports.deleteProcessFiled = catchAsync(async (req, res, next) => {
   const { matterId, party, processIndex } = req.params;
+  const { partyIndex, otherPartyIndex } = req.query;
 
   if (!["firstParty", "secondParty", "otherParty"].includes(party)) {
     return next(new AppError("Invalid party specified", 400));
@@ -1537,16 +1588,23 @@ exports.deleteProcessFiled = catchAsync(async (req, res, next) => {
     return next(new AppError("Litigation details not found", 404));
   }
 
-  let partyData;
-  if (party === "firstParty") partyData = litigationDetail.firstParty;
-  else if (party === "secondParty") partyData = litigationDetail.secondParty;
-  else partyData = litigationDetail.otherParty[0];
-
-  if (!partyData || processIndex >= partyData.processesFiled.length) {
+  const processCollection = getProcessCollection(
+    litigationDetail,
+    party,
+    partyIndex,
+    otherPartyIndex,
+  );
+  const numericProcessIndex = Number(processIndex);
+  if (
+    !processCollection ||
+    !Number.isInteger(numericProcessIndex) ||
+    numericProcessIndex < 0 ||
+    numericProcessIndex >= processCollection.length
+  ) {
     return next(new AppError("Process not found", 404));
   }
 
-  partyData.processesFiled.splice(processIndex, 1);
+  processCollection.splice(numericProcessIndex, 1);
 
   await litigationDetail.save();
 
@@ -2688,25 +2746,35 @@ exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
 
   // ── Parties ───────────────────────────────────────────────────────────────
   pdf.addSection("Parties");
+  const addPartyProcesses = (processes) => {
+    if (!processes?.length) return;
+    pdf.addDataTable(
+      ["Process", "Filing Date", "Status"],
+      processes.map((process) => [
+        process.name || "—",
+        fmtDate(process.filingDate),
+        titleCase(process.status || "pending"),
+      ]),
+      { widths: [2.4, 1.4, 1.2], statusColumns: [2] },
+    );
+  };
+
   [
     { title: "First Party (Claimant/Plaintiff)", p: d.firstParty },
     { title: "Second Party (Defendant/Respondent)", p: d.secondParty },
   ].forEach(({ title, p }) => {
     if (p?.name?.length) {
       pdf.addSubSection(title);
-      pdf.addField("Name", namesOf(p.name));
       if (p.description) pdf.addLongTextField("Description", p.description);
-      if (p.processesFiled?.length) {
-        pdf.addDataTable(
-          ["Process", "Filing Date", "Status"],
-          (p.processesFiled || []).map((pf) => [
-            pf.name || "—",
-            fmtDate(pf.filingDate),
-            titleCase(pf.status || "pending"),
-          ]),
-          { widths: [2.4, 1.4, 1.2], statusColumns: [2] },
-        );
-      }
+      p.name.forEach((member) => {
+        pdf.addField("Party", namesOf([member]));
+        addPartyProcesses(member.processesFiled);
+        if (p.name.length === 1) addPartyProcesses(p.processesFiled);
+      });
+    }
+    if (p?.processesFiled?.length && p.name?.length !== 1) {
+      pdf.addSubSection(`${title} — unassigned legacy filings`);
+      addPartyProcesses(p.processesFiled);
     }
   });
 
@@ -2715,8 +2783,16 @@ exports.generateLitigationReportPdf = catchAsync(async (req, res, next) => {
     (d.otherParty || []).forEach((p) => {
       if (p?.name?.length) {
         pdf.addSubSection("Party");
-        pdf.addField("Name", namesOf(p.name));
         if (p.description) pdf.addLongTextField("Description", p.description);
+        p.name.forEach((member) => {
+          pdf.addField("Party", namesOf([member]));
+          addPartyProcesses(member.processesFiled);
+          if (p.name.length === 1) addPartyProcesses(p.processesFiled);
+        });
+      }
+      if (p.processesFiled?.length && p.name?.length !== 1) {
+        pdf.addSubSection("Unassigned legacy filings");
+        addPartyProcesses(p.processesFiled);
       }
     });
   }

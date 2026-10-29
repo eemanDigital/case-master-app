@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card, Descriptions, Tag, Space, Button } from "antd";
 import {
   EditOutlined,
@@ -7,11 +8,44 @@ import {
 import { formatDate, formatName } from "../../utils/formatters";
 import PropTypes from "prop-types";
 import StatusTag from "../common/StatusTag";
+import ExpandableText from "../common/ExpandableText";
 import {
   MATTER_STATUS,
   CASE_STAGES,
   COURT_TYPES,
 } from "../../utils/litigationConstants";
+
+const PartyNameList = ({ names }) => {
+  const [expanded, setExpanded] = useState(false);
+  const visibleNames = expanded ? names : names.slice(0, 5);
+
+  return (
+    <>
+      <ul className="list-disc space-y-1 pl-5">
+        {visibleNames.map((name, index) => (
+          <li
+            key={`${name}-${index}`}
+            className="break-words font-medium whitespace-pre-wrap">
+            {name}
+          </li>
+        ))}
+      </ul>
+      {names.length > 5 && (
+        <Button
+          type="link"
+          size="small"
+          className="px-0"
+          onClick={() => setExpanded((value) => !value)}>
+          {expanded ? "Show less" : `Show ${names.length - 5} more`}
+        </Button>
+      )}
+    </>
+  );
+};
+
+PartyNameList.propTypes = {
+  names: PropTypes.arrayOf(PropTypes.string).isRequired,
+};
 
 const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
   const getCourtLabel = (courtName) => {
@@ -55,17 +89,13 @@ const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
       .filter(Boolean);
     return (
       <div>
-        <div className="text-sm text-gray-500 mb-1">
+        <ExpandableText
+          rows={2}
+          className="text-sm text-gray-500 mb-1">
           {party?.description || fallbackRole}
-        </div>
+        </ExpandableText>
         {names.length ? (
-          <ul className="list-disc pl-5 space-y-1">
-            {names.map((name, index) => (
-              <li key={`${name}-${index}`} className="font-medium">
-                {name}
-              </li>
-            ))}
-          </ul>
+          <PartyNameList names={names} />
         ) : (
           <span className="text-gray-400">No parties recorded</span>
         )}
@@ -102,7 +132,7 @@ const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
         </Descriptions.Item>
 
         <Descriptions.Item label="Matter Title" span={2}>
-          {matter?.title || "-"}
+          <ExpandableText rows={2}>{matter?.title}</ExpandableText>
         </Descriptions.Item>
 
         <Descriptions.Item label="Priority">
@@ -129,7 +159,7 @@ const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
         </Descriptions.Item>
 
         <Descriptions.Item label="Matter Description" span={3}>
-          {matter?.description || "-"}
+          <ExpandableText>{matter?.description}</ExpandableText>
         </Descriptions.Item>
 
         <Descriptions.Item label="Current Stage" span={2}>

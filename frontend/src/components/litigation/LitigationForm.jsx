@@ -6,8 +6,8 @@ import {
   MinusCircleOutlined,
   UserOutlined,
   FileTextOutlined,
-  BankOutlined,
 } from "@ant-design/icons";
+import PropTypes from "prop-types";
 import dayjs from "dayjs";
 import {
   COURT_TYPES,
@@ -16,10 +16,188 @@ import {
   NIGERIAN_STATES,
   DATE_FORMAT,
   MATTER_STATUS,
+  PROCESS_STATUS,
 } from "../../utils/litigationConstants";
 
 const { Option } = Select;
 const { TextArea } = Input;
+
+const formatProcessesForForm = (processes = []) =>
+  processes.map((process) => ({
+    ...process,
+    filingDate: process.filingDate ? dayjs(process.filingDate) : null,
+  }));
+
+const formatProcessesForSubmit = (processes = []) =>
+  processes.map((process) => ({
+    ...process,
+    filingDate: process.filingDate?.toISOString() || null,
+  }));
+
+const formatPartyForForm = (party) => {
+  if (!party) return undefined;
+  const members = (party.name || []).map((member) => ({
+    ...member,
+    processesFiled: formatProcessesForForm(member.processesFiled),
+  }));
+  let legacyProcesses = formatProcessesForForm(party.processesFiled);
+
+  if (
+    members.length === 1 &&
+    !members[0].processesFiled?.length &&
+    legacyProcesses.length
+  ) {
+    members[0].processesFiled = legacyProcesses;
+    legacyProcesses = [];
+  }
+
+  return {
+    ...party,
+    name: members,
+    processesFiled: legacyProcesses,
+  };
+};
+
+const formatPartyForSubmit = (party) => ({
+  ...party,
+  name: party.name?.map((member) => ({
+    ...member,
+    processesFiled: formatProcessesForSubmit(member.processesFiled),
+  })),
+  processesFiled: formatProcessesForSubmit(party.processesFiled),
+});
+
+const PartyMembersList = ({ fieldName, label }) => (
+  <Form.List name={fieldName}>
+    {(fields, { add, remove }) => (
+      <div className="space-y-4">
+        {fields.map(({ key, name, ...restField }, index) => (
+          <Card
+            key={key}
+            size="small"
+            title={`${label} ${index + 1}`}
+            extra={
+              <Button
+                type="text"
+                danger
+                icon={<MinusCircleOutlined />}
+                onClick={() => remove(name)}
+                aria-label={`Remove ${label.toLowerCase()} ${index + 1}`}
+              />
+            }>
+            <Form.Item
+              {...restField}
+              name={[name, "name"]}
+              label="Party name"
+              rules={[{ required: true, message: "Party name is required" }]}>
+              <Input placeholder={`Enter ${label.toLowerCase()} name`} />
+            </Form.Item>
+
+            <Form.List name={[name, "processesFiled"]}>
+              {(processFields, { add: addProcess, remove: removeProcess }) => (
+                <div className="space-y-3">
+                  <Divider orientation="left" plain>
+                    Processes filed by this party
+                  </Divider>
+                  {processFields.map(
+                    (
+                      {
+                        key: processKey,
+                        name: processName,
+                        ...processRest
+                      },
+                      processIndex,
+                    ) => (
+                      <Row
+                        gutter={[12, 4]}
+                        key={processKey}
+                        align="middle"
+                        className="rounded-md bg-slate-50 p-3">
+                        <Col xs={24} md={10}>
+                          <Form.Item
+                            {...processRest}
+                            name={[processName, "name"]}
+                            label={`Process ${processIndex + 1}`}
+                            rules={[
+                              {
+                                required: true,
+                                message: "Process name is required",
+                              },
+                            ]}>
+                            <Input placeholder="e.g., Statement of Claim" />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={24} md={6}>
+                          <Form.Item
+                            {...processRest}
+                            name={[processName, "filingDate"]}
+                            label="Filing date">
+                            <DatePicker
+                              className="w-full"
+                              format={DATE_FORMAT}
+                              placeholder="DD/MM/YYYY"
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col xs={20} md={6}>
+                          <Form.Item
+                            {...processRest}
+                            name={[processName, "status"]}
+                            label="Status"
+                            initialValue="pending">
+                            <Select>
+                              {PROCESS_STATUS.map((status) => (
+                                <Option
+                                  key={status.value}
+                                  value={status.value}>
+                                  {status.label}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                        <Col xs={4} md={2}>
+                          <Button
+                            type="text"
+                            danger
+                            icon={<MinusCircleOutlined />}
+                            onClick={() => removeProcess(processName)}
+                            aria-label={`Remove process ${processIndex + 1}`}
+                          />
+                        </Col>
+                      </Row>
+                    ),
+                  )}
+                  <Button
+                    type="dashed"
+                    icon={<PlusOutlined />}
+                    onClick={() =>
+                      addProcess({ status: "pending", filingDate: null })
+                    }
+                    block>
+                    Add process for this {label.toLowerCase()}
+                  </Button>
+                </div>
+              )}
+            </Form.List>
+          </Card>
+        ))}
+        <Button
+          type="dashed"
+          onClick={() => add({ processesFiled: [] })}
+          icon={<PlusOutlined />}
+          block>
+          Add {label}
+        </Button>
+      </div>
+    )}
+  </Form.List>
+);
+
+PartyMembersList.propTypes = {
+  fieldName: PropTypes.oneOfType([PropTypes.string, PropTypes.array]).isRequired,
+  label: PropTypes.string.isRequired,
+};
 
 const MatterContextCard = memo(({ matter }) => {
   const clientName = useMemo(() => {
@@ -328,27 +506,10 @@ const PartiesCard = memo(() => {
         <TextArea rows={2} placeholder="e.g., Plaintiff, Claimant, Appellant" maxLength={1000} showCount />
       </Form.Item>
 
-      <Form.List name={["firstParty", "name"]}>
-        {(fields, { add, remove }) => (
-          <>
-            {fields.map(({ key, name, ...restField }) => (
-              <Row gutter={16} key={key} align="middle">
-                <Col xs={22} md={20}>
-                  <Form.Item {...restField} name={[name, "name"]} label={fields.length > 1 ? `Name ${name + 1}` : "Name"} rules={[{ required: true, message: "Party name is required" }]}>
-                    <Input placeholder="Enter party name" />
-                  </Form.Item>
-                </Col>
-                <Col xs={2} md={4}>
-                  <MinusCircleOutlined className="text-red-500 cursor-pointer" onClick={() => remove(name)} />
-                </Col>
-              </Row>
-            ))}
-            <Form.Item>
-              <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />} block>Add First Party Name</Button>
-            </Form.Item>
-          </>
-        )}
-      </Form.List>
+      <PartyMembersList
+        fieldName={["firstParty", "name"]}
+        label="Plaintiff / Applicant"
+      />
 
       <Divider orientation="left" plain>Second Party (Defendant/Respondent)</Divider>
 
@@ -356,27 +517,10 @@ const PartiesCard = memo(() => {
         <TextArea rows={2} placeholder="e.g., Defendant, Respondent, Appellee" maxLength={1000} showCount />
       </Form.Item>
 
-      <Form.List name={["secondParty", "name"]}>
-        {(fields, { add, remove }) => (
-          <>
-            {fields.map(({ key, name, ...restField }) => (
-              <Row gutter={16} key={key} align="middle">
-                <Col xs={22} md={20}>
-                  <Form.Item {...restField} name={[name, "name"]} label={fields.length > 1 ? `Name ${name + 1}` : "Name"} rules={[{ required: true, message: "Party name is required" }]}>
-                    <Input placeholder="Enter party name" />
-                  </Form.Item>
-                </Col>
-                <Col xs={2} md={4}>
-                  <MinusCircleOutlined className="text-red-500 cursor-pointer" onClick={() => remove(name)} />
-                </Col>
-              </Row>
-            ))}
-            <Form.Item>
-              <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />} block>Add Second Party Name</Button>
-            </Form.Item>
-          </>
-        )}
-      </Form.List>
+      <PartyMembersList
+        fieldName={["secondParty", "name"]}
+        label="Defendant / Respondent"
+      />
 
       <Divider orientation="left" plain>Other Parties (if applicable)</Divider>
 
@@ -396,16 +540,60 @@ const PartiesCard = memo(() => {
                       {(subFields, { add: addName, remove: removeName }) => (
                         <>
                           {subFields.map(({ key: subKey, name: subName, ...subRest }) => (
-                            <Row gutter={16} key={subKey} align="middle">
-                              <Col xs={22}>
-                                <Form.Item {...subRest} name={[subName, "name"]}>
-                                  <Input placeholder="Enter name" />
-                                </Form.Item>
-                              </Col>
-                              <Col xs={2}>
-                                <MinusCircleOutlined className="text-red-500 cursor-pointer" onClick={() => removeName(subName)} />
-                              </Col>
-                            </Row>
+                            <Card
+                              key={subKey}
+                              size="small"
+                              title={`Other party ${subName + 1}`}
+                              className="mb-3">
+                              <Row gutter={16} align="middle">
+                                <Col xs={22}>
+                                  <Form.Item {...subRest} name={[subName, "name"]} label="Party name">
+                                    <Input placeholder="Enter name" />
+                                  </Form.Item>
+                                </Col>
+                                <Col xs={2}>
+                                  <MinusCircleOutlined className="text-red-500 cursor-pointer" onClick={() => removeName(subName)} />
+                                </Col>
+                              </Row>
+                              <Form.List name={[subName, "processesFiled"]}>
+                                {(processFields, { add: addProcess, remove: removeProcess }) => (
+                                  <div className="space-y-3">
+                                    <Divider orientation="left" plain>
+                                      Processes filed by this party
+                                    </Divider>
+                                    {processFields.map(({ key: processKey, name: processName, ...processRest }, processIndex) => (
+                                      <Row gutter={[12, 4]} key={processKey} align="middle">
+                                        <Col xs={24} md={10}>
+                                          <Form.Item {...processRest} name={[processName, "name"]} label={`Process ${processIndex + 1}`} rules={[{ required: true, message: "Process name is required" }]}>
+                                            <Input placeholder="e.g., Motion for Joinder" />
+                                          </Form.Item>
+                                        </Col>
+                                        <Col xs={24} md={6}>
+                                          <Form.Item {...processRest} name={[processName, "filingDate"]} label="Filing date">
+                                            <DatePicker className="w-full" format={DATE_FORMAT} placeholder="DD/MM/YYYY" />
+                                          </Form.Item>
+                                        </Col>
+                                        <Col xs={20} md={6}>
+                                          <Form.Item {...processRest} name={[processName, "status"]} label="Status" initialValue="pending">
+                                            <Select>
+                                              {PROCESS_STATUS.map((status) => (
+                                                <Option key={status.value} value={status.value}>{status.label}</Option>
+                                              ))}
+                                            </Select>
+                                          </Form.Item>
+                                        </Col>
+                                        <Col xs={4} md={2}>
+                                          <Button type="text" danger icon={<MinusCircleOutlined />} onClick={() => removeProcess(processName)} aria-label={`Remove process ${processIndex + 1}`} />
+                                        </Col>
+                                      </Row>
+                                    ))}
+                                    <Button type="dashed" icon={<PlusOutlined />} onClick={() => addProcess({ status: "pending", filingDate: null })} block>
+                                      Add process for this party
+                                    </Button>
+                                  </div>
+                                )}
+                              </Form.List>
+                            </Card>
                           ))}
                           <Button type="dashed" onClick={() => addName()} icon={<PlusOutlined />} size="small" block>Add Name</Button>
                         </>
@@ -429,88 +617,6 @@ const PartiesCard = memo(() => {
 });
 
 PartiesCard.displayName = "PartiesCard";
-
-const ProcessesCard = memo(() => (
-  <Card title="Processes to be Filed" className="mb-6">
-    <Divider orientation="left" plain>First Party Processes</Divider>
-    <Form.List name={["firstParty", "processesFiled"]}>
-      {(fields, { add, remove }) => (
-        <>
-          {fields.map(({ key, name, ...restField }) => (
-            <Row gutter={16} key={key} align="middle">
-              <Col xs={24} md={10}>
-                <Form.Item {...restField} name={[name, "name"]} label={fields.length > 1 ? `Process ${name + 1}` : "Process Name"} rules={[{ required: true, message: "Process name required" }]}>
-                  <Input placeholder="e.g., Motion for Adjournment" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={6}>
-                <Form.Item {...restField} name={[name, "filingDate"]} label="Filing Date">
-                  <DatePicker style={{ width: "100%" }} format={DATE_FORMAT} />
-                </Form.Item>
-              </Col>
-              <Col xs={22} md={6}>
-                <Form.Item {...restField} name={[name, "status"]} label="Status" initialValue="pending">
-                  <Select>
-                    <Option value="pending">Pending</Option>
-                    <Option value="filed">Filed</Option>
-                    <Option value="served">Served</Option>
-                    <Option value="completed">Completed</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={2} md={2}>
-                <MinusCircleOutlined className="text-red-500 cursor-pointer mt-2" onClick={() => remove(name)} />
-              </Col>
-            </Row>
-          ))}
-          <Form.Item>
-            <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />} block>Add First Party Process</Button>
-          </Form.Item>
-        </>
-      )}
-    </Form.List>
-
-    <Divider orientation="left" plain>Second Party Processes</Divider>
-    <Form.List name={["secondParty", "processesFiled"]}>
-      {(fields, { add, remove }) => (
-        <>
-          {fields.map(({ key, name, ...restField }) => (
-            <Row gutter={16} key={key} align="middle">
-              <Col xs={24} md={10}>
-                <Form.Item {...restField} name={[name, "name"]} label={fields.length > 1 ? `Process ${name + 1}` : "Process Name"} rules={[{ required: true, message: "Process name required" }]}>
-                  <Input placeholder="e.g., Counter-Affidavit" />
-                </Form.Item>
-              </Col>
-              <Col xs={24} md={6}>
-                <Form.Item {...restField} name={[name, "filingDate"]} label="Filing Date">
-                  <DatePicker style={{ width: "100%" }} format={DATE_FORMAT} />
-                </Form.Item>
-              </Col>
-              <Col xs={22} md={6}>
-                <Form.Item {...restField} name={[name, "status"]} label="Status" initialValue="pending">
-                  <Select>
-                    <Option value="pending">Pending</Option>
-                    <Option value="filed">Filed</Option>
-                    <Option value="served">Served</Option>
-                    <Option value="completed">Completed</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-              <Col xs={2} md={2}>
-                <MinusCircleOutlined className="text-red-500 cursor-pointer mt-2" onClick={() => remove(name)} />
-              </Col>
-            </Row>
-          ))}
-          <Form.Item>
-            <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />} block>Add Second Party Process</Button>
-          </Form.Item>
-        </>
-      )}
-    </Form.List>
-  </Card>
-));
-
-ProcessesCard.displayName = "ProcessesCard";
 
 const LitigationForm = ({
   initialValues,
@@ -542,20 +648,9 @@ const LitigationForm = ({
       serviceDate: initialValues.serviceDate ? dayjs(initialValues.serviceDate) : null,
       nextHearingDate: initialValues.nextHearingDate ? dayjs(initialValues.nextHearingDate) : null,
       lastHearingDate: initialValues.lastHearingDate ? dayjs(initialValues.lastHearingDate) : null,
-      firstParty: initialValues.firstParty ? {
-        ...initialValues.firstParty,
-        processesFiled: initialValues.firstParty.processesFiled?.map((p) => ({
-          ...p,
-          filingDate: p.filingDate ? dayjs(p.filingDate) : null,
-        })),
-      } : undefined,
-      secondParty: initialValues.secondParty ? {
-        ...initialValues.secondParty,
-        processesFiled: initialValues.secondParty.processesFiled?.map((p) => ({
-          ...p,
-          filingDate: p.filingDate ? dayjs(p.filingDate) : null,
-        })),
-      } : undefined,
+      firstParty: formatPartyForForm(initialValues.firstParty),
+      secondParty: formatPartyForForm(initialValues.secondParty),
+      otherParty: initialValues.otherParty?.map(formatPartyForForm),
     };
   }, [initialValues]);
 
@@ -566,20 +661,13 @@ const LitigationForm = ({
       serviceDate: values.serviceDate?.toISOString() || null,
       nextHearingDate: values.nextHearingDate?.toISOString() || null,
       lastHearingDate: values.lastHearingDate?.toISOString() || null,
-      firstParty: values.firstParty ? {
-        ...values.firstParty,
-        processesFiled: values.firstParty.processesFiled?.map((p) => ({
-          ...p,
-          filingDate: p.filingDate?.toISOString() || null,
-        })),
-      } : undefined,
-      secondParty: values.secondParty ? {
-        ...values.secondParty,
-        processesFiled: values.secondParty.processesFiled?.map((p) => ({
-          ...p,
-          filingDate: p.filingDate?.toISOString() || null,
-        })),
-      } : undefined,
+      firstParty: values.firstParty
+        ? formatPartyForSubmit(values.firstParty)
+        : undefined,
+      secondParty: values.secondParty
+        ? formatPartyForSubmit(values.secondParty)
+        : undefined,
+      otherParty: values.otherParty?.map(formatPartyForSubmit),
     };
     onSubmit(formattedValues);
   }, [onSubmit]);
@@ -602,8 +690,6 @@ const LitigationForm = ({
       <CourtCard form={form} showOtherCourt={showOtherCourt} setShowOtherCourt={setShowOtherCourt} />
       <CaseCommencementCard form={form} showOtherMode={showOtherMode} setShowOtherMode={setShowOtherMode} />
       <PartiesCard />
-      <ProcessesCard />
-
       <Card title="Legal Basis & Issues" className="mb-6">
         <Row gutter={16}>
           <Col xs={24} md={12}>
