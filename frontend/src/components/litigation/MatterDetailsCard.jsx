@@ -3,16 +3,15 @@ import {
   EditOutlined,
   CalendarOutlined,
   UserOutlined,
-  FileTextOutlined,
 } from "@ant-design/icons";
 import { formatDate, formatName } from "../../utils/formatters";
+import PropTypes from "prop-types";
 import StatusTag from "../common/StatusTag";
 import {
   MATTER_STATUS,
   CASE_STAGES,
   COURT_TYPES,
 } from "../../utils/litigationConstants";
-import MatterHearingsTimeline from "../calender/MatterHearingsTimeline";
 
 const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
   const getCourtLabel = (courtName) => {
@@ -20,28 +19,58 @@ const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
     return court?.label || courtName;
   };
 
-  const formatPartyNames = (party) => {
-    if (!party || !party.name || party.name.length === 0) return "-";
-    return party.name.map((n) => n.name).join(", ");
-  };
-
   const formatJudges = (judges) => {
     if (!judges || judges.length === 0) return "-";
-    return judges.map((j) => j.name).join(", ");
+    return judges.map((judge) => judge.name).filter(Boolean).join(", ") || "-";
   };
 
-  const formatAccountOfficers = () => {
-    if (!matter?.accountOfficer) return "-";
-    const officers = Array.isArray(matter.accountOfficer) 
-      ? matter.accountOfficer 
-      : [matter.accountOfficer];
-    if (officers.length === 0) return "-";
-    return officers.map((officer) => {
-      if (officer.firstName || officer.lastName) {
-        return `${officer.firstName || ""} ${officer.lastName || ""}`.trim();
-      }
-      return officer.label || officer.name || "Unknown";
-    }).join(", ");
+  const accountOfficers = (
+    Array.isArray(matter?.accountOfficer)
+      ? matter.accountOfficer
+      : matter?.accountOfficer
+        ? [matter.accountOfficer]
+        : []
+  )
+    .map((officer) => ({
+      id: officer?._id,
+      name:
+        [
+          officer?.firstName,
+          officer?.lastName,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .trim() ||
+        officer?.label ||
+        officer?.name ||
+        "",
+    }))
+    .filter((officer) => officer.name);
+
+  const renderParty = (party, fallbackRole) => {
+    const names = (Array.isArray(party?.name) ? party.name : [])
+      .map((entry) =>
+        typeof entry === "string" ? entry.trim() : entry?.name?.trim(),
+      )
+      .filter(Boolean);
+    return (
+      <div>
+        <div className="text-sm text-gray-500 mb-1">
+          {party?.description || fallbackRole}
+        </div>
+        {names.length ? (
+          <ul className="list-disc pl-5 space-y-1">
+            {names.map((name, index) => (
+              <li key={`${name}-${index}`} className="font-medium">
+                {name}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <span className="text-gray-400">No parties recorded</span>
+        )}
+      </div>
+    );
   };
 
   return (
@@ -69,7 +98,38 @@ const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
         </Descriptions.Item>
 
         <Descriptions.Item label="Matter Number">
-          {matter?.matterNumber}
+          {matter?.matterNumber || "-"}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Matter Title" span={2}>
+          {matter?.title || "-"}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Priority">
+          {matter?.priority ? (
+            <Tag
+              color={
+                matter.priority === "urgent"
+                  ? "red"
+                  : matter.priority === "high"
+                    ? "orange"
+                    : matter.priority === "medium"
+                      ? "blue"
+                      : "default"
+              }>
+              {matter.priority}
+            </Tag>
+          ) : (
+            "-"
+          )}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Date Opened">
+          {formatDate(matter?.dateOpened)}
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Matter Description" span={3}>
+          {matter?.description || "-"}
         </Descriptions.Item>
 
         <Descriptions.Item label="Current Stage" span={2}>
@@ -96,7 +156,7 @@ const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
           {litigation?.courtNo || "-"}
         </Descriptions.Item>
 
-        <Descriptions.Item label="State">{litigation?.state}</Descriptions.Item>
+        <Descriptions.Item label="State">{litigation?.state || "-"}</Descriptions.Item>
 
         <Descriptions.Item label="Location" span={2}>
           {litigation?.courtLocation || "-"}
@@ -135,52 +195,51 @@ const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
         )}
 
         <Descriptions.Item label="First Party" span={3}>
-          <div>
-            {litigation?.firstParty?.description && (
-              <div className="text-sm text-gray-500 mb-1">
-                {litigation?.firstParty?.description}
-              </div>
-            )}
-            <div className="font-medium">
-              {formatPartyNames(litigation?.firstParty)}
-            </div>
-          </div>
+          {renderParty(
+            litigation?.firstParty,
+            "Plaintiff(s) / Applicant(s) / Claimant(s)",
+          )}
         </Descriptions.Item>
 
         <Descriptions.Item label="Second Party" span={3}>
-          <div>
-            {litigation?.secondParty?.description && (
-              <div className="text-sm text-gray-500 mb-1">
-                {litigation?.secondParty?.description}
-              </div>
-            )}
-            <div className="font-medium">
-              {formatPartyNames(litigation?.secondParty)}
-            </div>
-          </div>
+          {renderParty(
+            litigation?.secondParty,
+            "Defendant(s) / Respondent(s)",
+          )}
         </Descriptions.Item>
 
-        {matter?.client && (
-          <Descriptions.Item label="Client" span={2}>
-            <Space>
-              <UserOutlined />
-              {matter?.client?.companyName ||
-                formatName(matter?.client?.firstName, matter?.client?.lastName)}
-            </Space>
+        {litigation?.otherParty?.map((party, index) => (
+          <Descriptions.Item
+            key={`other-party-${index}`}
+            label={`Other Party ${index + 1}`}
+            span={3}>
+            {renderParty(party, "Other Party")}
           </Descriptions.Item>
-        )}
+        ))}
 
-        {matter?.accountOfficer && (
-          <Descriptions.Item label="Account Officer">
-            <Space>
-              <UserOutlined />
-              {formatName(
-                matter?.accountOfficer.firstName,
-                matter?.accountOfficer.lastName,
-              )}
+        <Descriptions.Item label="Client" span={2}>
+          <Space>
+            <UserOutlined />
+            {matter?.client?.companyName ||
+              formatName(matter?.client?.firstName, matter?.client?.lastName) ||
+              "-"}
+          </Space>
+        </Descriptions.Item>
+
+        <Descriptions.Item label="Account Officer(s)" span={3}>
+          {accountOfficers.length ? (
+            <Space wrap>
+              {accountOfficers.map((officer, index) => (
+                <Tag key={officer.id || `${officer.name}-${index}`}>
+                  <UserOutlined className="mr-1" />
+                  {officer.name}
+                </Tag>
+              ))}
             </Space>
-          </Descriptions.Item>
-        )}
+          ) : (
+            <span className="text-gray-400">No account officers assigned</span>
+          )}
+        </Descriptions.Item>
 
         {litigation?.isLandmark && (
           <Descriptions.Item label="Landmark Case" span={3}>
@@ -220,6 +279,45 @@ const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
       </Descriptions>
     </Card>
   );
+};
+
+MatterDetailsCard.propTypes = {
+  litigation: PropTypes.shape({
+    suitNo: PropTypes.string,
+    currentStage: PropTypes.string,
+    courtName: PropTypes.string,
+    otherCourt: PropTypes.string,
+    courtNo: PropTypes.string,
+    state: PropTypes.string,
+    courtLocation: PropTypes.string,
+    division: PropTypes.string,
+    judge: PropTypes.arrayOf(PropTypes.shape({ name: PropTypes.string })),
+    modeOfCommencement: PropTypes.string,
+    otherModeOfCommencement: PropTypes.string,
+    filingDate: PropTypes.string,
+    serviceDate: PropTypes.string,
+    firstParty: PropTypes.object,
+    secondParty: PropTypes.object,
+    otherParty: PropTypes.arrayOf(PropTypes.object),
+    isLandmark: PropTypes.bool,
+    citationReference: PropTypes.string,
+    applicableLaws: PropTypes.arrayOf(PropTypes.string),
+    legalIssues: PropTypes.arrayOf(PropTypes.string),
+  }).isRequired,
+  matter: PropTypes.shape({
+    accountOfficer: PropTypes.oneOfType([
+      PropTypes.arrayOf(PropTypes.object),
+      PropTypes.object,
+    ]),
+    client: PropTypes.object,
+    status: PropTypes.string,
+    matterNumber: PropTypes.string,
+    title: PropTypes.string,
+    priority: PropTypes.string,
+    dateOpened: PropTypes.string,
+    description: PropTypes.string,
+  }),
+  onEdit: PropTypes.func.isRequired,
 };
 
 export default MatterDetailsCard;

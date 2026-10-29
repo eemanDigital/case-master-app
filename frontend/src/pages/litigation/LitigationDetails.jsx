@@ -17,6 +17,7 @@ import {
 } from "@ant-design/icons";
 
 import MatterDetailsCard from "../../components/litigation/MatterDetailsCard";
+import { formatLitigationTitle } from "../../utils/litigationDisplayUtils";
 import JudgmentRecordModal from "../../components/litigation/JudgmentRecordModal";
 import SettlementRecordModal from "../../components/litigation/SettlementRecordModal";
 import AppealFilingModal from "../../components/litigation/AppealFilingModal";
@@ -450,7 +451,7 @@ const LitigationDetails = () => {
                   className={`text-sm md:text-base font-bold text-gray-900 truncate leading-tight transition-opacity duration-300 ${
                     loading ? "opacity-60" : "opacity-100"
                   }`}>
-                  {matter?.title || "Litigation Matter"}
+                  {formatLitigationTitle(litigationDetails, matter?.title)}
                 </h1>
                 <p className="text-xs text-gray-400 font-mono mt-0.5 hidden sm:block">
                   Suit No: {litigationDetails.suitNo}
