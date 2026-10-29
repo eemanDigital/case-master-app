@@ -494,12 +494,13 @@ const authSlice = createSlice({
         state.message = action.payload;
         state.user = null;
         state.isLoggedIn = false;
-        notify.error(action.payload);
         if (
           action.payload?.includes("New Browser") ||
           action.payload?.includes("new browser")
         ) {
           state.twoFactor = true;
+        } else {
+          notify.error(action.payload);
         }
       })
 
@@ -835,13 +836,11 @@ const authSlice = createSlice({
         state.isLoading = false;
         state.isSuccess = true;
         state.message = action.payload;
-        notify.success(action.payload);
       })
       .addCase(sendLoginCode.rejected, (state, action) => {
         state.isLoading = false;
         state.isError = true;
         state.message = action.payload;
-        notify.error(action.payload);
       })
 
       // ── loginWithCode ─────────────────────────────

@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { afterEach, describe, it, expect, vi } from "vitest";
 import authReducer, {
   RESET,
   clearUsersCache,
@@ -6,7 +6,14 @@ import authReducer, {
   removeUserFromCache,
   updateCurrentUser,
   clearStatistics,
+  login,
+  sendLoginCode,
 } from "../../redux/features/auth/authSlice";
+import notify from "../../utils/notify";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe("authSlice reducers", () => {
   const initialState = {
@@ -170,6 +177,43 @@ describe("authSlice reducers", () => {
       expect(result.clientStatistics).toBeNull();
       expect(result.statusStatistics).toBeNull();
       expect(result.statisticsError).toBeNull();
+    });
+  });
+
+  describe("authentication notifications", () => {
+    it("does not alert for a new-browser login that moves into two-factor verification", () => {
+      const errorNotification = vi.spyOn(notify, "error");
+      const action = {
+        type: login.rejected.type,
+        payload: "New Browser detected",
+      };
+
+      const result = authReducer(initialState, action);
+
+      expect(result.twoFactor).toBe(true);
+      expect(errorNotification).not.toHaveBeenCalled();
+    });
+
+    it("leaves login-code resend notifications to the page that handles the request", () => {
+      const successNotification = vi.spyOn(notify, "success");
+      const errorNotification = vi.spyOn(notify, "error");
+
+      authReducer(
+        initialState,
+        sendLoginCode.fulfilled("A new code was sent", "request-id", "user@example.com"),
+      );
+      authReducer(
+        initialState,
+        sendLoginCode.rejected(
+          { message: "Rejected" },
+          "request-id",
+          "user@example.com",
+          "Unable to send a new code",
+        ),
+      );
+
+      expect(successNotification).not.toHaveBeenCalled();
+      expect(errorNotification).not.toHaveBeenCalled();
     });
   });
 });
