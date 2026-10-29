@@ -45,7 +45,6 @@ export const fetchNote = createAsyncThunk(
       return await notesService.getNote(id);
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Failed to fetch note";
-      notify.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -56,11 +55,9 @@ export const createNote = createAsyncThunk(
   async (noteData, thunkAPI) => {
     try {
       const response = await notesService.createNote(noteData);
-      notify.success("Note created successfully");
       return response;
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Failed to create note";
-      notify.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
@@ -71,11 +68,9 @@ export const updateNote = createAsyncThunk(
   async ({ id, noteData }, thunkAPI) => {
     try {
       const response = await notesService.updateNote(id, noteData);
-      notify.success("Note updated successfully");
       return response;
     } catch (error) {
       const message = error.response?.data?.message || error.message || "Failed to update note";
-      notify.error(message);
       return thunkAPI.rejectWithValue(message);
     }
   }
