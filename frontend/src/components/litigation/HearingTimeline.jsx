@@ -939,9 +939,17 @@ const HearingTimeline = ({
                   size={isMobile ? "middle" : "large"}
                   disabled={!canEditNextHearingDate}
                   status={modalPhase === "locked" && !isPrivileged ? "error" : ""}
-                  disabledDate={(current) =>
-                    current && current < dayjs().startOf("day")
-                  }
+                  disabledDate={(current) => {
+                    if (!current) return false;
+                    if (isHistoricalEntry) {
+                      const hearingDate = form.getFieldValue("date");
+                      return (
+                        current.isAfter(dayjs(), "day") ||
+                        (hearingDate && current.isBefore(hearingDate, "day"))
+                      );
+                    }
+                    return current.isBefore(dayjs(), "day");
+                  }}
                 />
               </Form.Item>
             )}
@@ -1079,9 +1087,18 @@ const HearingTimeline = ({
                               className="rounded-lg"
                               size="large"
                               disabled={isTBC}
-                              disabledDate={(current) =>
-                                current && current < dayjs().startOf("day")
-                              }
+                              disabledDate={(current) => {
+                                if (!current) return false;
+                                if (isHistoricalEntry) {
+                                  const hearingDate = form.getFieldValue("date");
+                                  return (
+                                    current.isAfter(dayjs(), "day") ||
+                                    (hearingDate &&
+                                      current.isBefore(hearingDate, "day"))
+                                  );
+                                }
+                                return current.isBefore(dayjs(), "day");
+                              }}
                             />
                           </Form.Item>
                         );

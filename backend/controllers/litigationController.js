@@ -724,9 +724,24 @@ exports.addHearing = catchAsync(async (req, res, next) => {
 
   if (hearingData.nextHearingDate) {
     const nextDate = dayjs(hearingData.nextHearingDate);
-    if (!nextDate.isValid() || !nextDate.isAfter(dayjs())) {
+    const hearingDate = dayjs(hearingData.date);
+    const isInvalidHistoricalNextDate =
+      isHistoricalEntry &&
+      (!nextDate.isBefore(dayjs()) || !nextDate.isAfter(hearingDate));
+    const isInvalidRegularNextDate =
+      !isHistoricalEntry && !nextDate.isAfter(dayjs());
+    if (
+      !nextDate.isValid() ||
+      isInvalidHistoricalNextDate ||
+      isInvalidRegularNextDate
+    ) {
       return next(
-        new AppError("Next hearing date must be in the future", 400),
+        new AppError(
+          isHistoricalEntry
+            ? "Historical adjourned date must be after the hearing date and in the past."
+            : "Next hearing date must be in the future",
+          400,
+        ),
       );
     }
   }
@@ -1194,8 +1209,24 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     effectiveNextHearingDate
   ) {
     const nextDate = dayjs(effectiveNextHearingDate);
-    if (!nextDate.isValid() || !nextDate.isAfter(now)) {
-      return next(new AppError("Next hearing date must be in the future", 400));
+    const isHistoricalNextDateInvalid =
+      hearing.historicalEntry &&
+      (!nextDate.isBefore(now) || !nextDate.isAfter(hearingDateTime));
+    const isRegularNextDateInvalid =
+      !hearing.historicalEntry && !nextDate.isAfter(now);
+    if (
+      !nextDate.isValid() ||
+      isHistoricalNextDateInvalid ||
+      isRegularNextDateInvalid
+    ) {
+      return next(
+        new AppError(
+          hearing.historicalEntry
+            ? "Historical adjourned date must be after the hearing date and in the past."
+            : "Next hearing date must be in the future",
+          400,
+        ),
+      );
     }
   }
 
@@ -1226,7 +1257,10 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
 
   let hearingBlockWarning = null;
 
-  if (Object.keys(datesToCheck).length > 0) {
+  if (
+    Object.keys(datesToCheck).length > 0 &&
+    !hearing.historicalEntry
+  ) {
     const blockCheck = await checkHearingDatesAgainstBlocks(
       req.firmId,
       req.user._id,
