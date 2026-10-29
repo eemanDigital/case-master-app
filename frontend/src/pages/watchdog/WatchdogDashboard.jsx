@@ -1,33 +1,7 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Row,
-  Col,
-  Card,
-  Statistic,
-  Table,
-  Button,
-  Tag,
-  Modal,
-  Form,
-  Input,
-  Select,
-  Typography,
-  Space,
-  Spin,
-  message,
-  Alert,
-  Badge,
-  Divider,
-  Empty,
-  Tooltip,
-  Switch,
-  Timeline,
-  Tabs,
-  DatePicker,
-  Descriptions,
-  Popconfirm,
-} from "antd";
+import { Row, Col, Card, Statistic, Table, Button, Tag, Modal, Form, Input, Select, Typography, Space, message, Alert, Badge, Divider, Empty, Tooltip, Switch, Timeline, Tabs, DatePicker, Descriptions, Popconfirm } from "antd";
 import {
   PlusOutlined,
   WarningOutlined,
@@ -1477,7 +1451,7 @@ const WatchdogDashboard = () => {
           }>
           {tableLoading ? (
             <div style={{ textAlign: "center", padding: 60 }}>
-              <Spin size="large" />
+              <LoadingSpinner fullScreen={false} size="large" />
             </div>
           ) : entities.length === 0 ? (
             <Empty

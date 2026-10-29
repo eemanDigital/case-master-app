@@ -1,18 +1,7 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
-import {
-  Card,
-  Typography,
-  Tag,
-  Button,
-  Spin,
-  Result,
-  Descriptions,
-  message,
-  Alert,
-  Steps,
-  Space,
-} from "antd";
+import { Card, Typography, Tag, Button, Result, Descriptions, message, Alert, Steps, Space } from "antd";
 import {
   FileProtectOutlined,
   DownloadOutlined,
@@ -134,7 +123,7 @@ const DocumentPreview = ({ previewUrl }) => {
   if (contentType === null && !probeError) {
     return (
       <div style={{ textAlign: "center", padding: 40 }}>
-        <Spin />
+        <LoadingSpinner fullScreen={false} />
         <div style={{ marginTop: 12 }}>
           <Text type="secondary">Loading preview...</Text>
         </div>
@@ -288,7 +277,7 @@ const PublicPreviewPage = () => {
           background: "#f8fafc",
         }}>
         <Space direction="vertical" align="center">
-          <Spin size="large" />
+          <LoadingSpinner fullScreen={false} size="large" />
           <Text type="secondary">Loading document...</Text>
         </Space>
       </div>

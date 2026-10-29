@@ -1,6 +1,7 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import React, { useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Card, Spin, Alert, Button } from "antd";
+import { Card, Alert, Button } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import MatterForm from "../../components/matters/MatterForm";
@@ -52,7 +53,7 @@ const EditMatterPage = () => {
   if (isLoading && !currentMatter) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Spin size="large" />
+        <LoadingSpinner fullScreen={false} size="large" />
       </div>
     );
   }

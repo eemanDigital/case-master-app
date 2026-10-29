@@ -1,8 +1,9 @@
+import LoadingSpinner from "./LoadingSpinner.jsx";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { getUser } from "../redux/features/auth/authSlice";
-import { Result, Button, Spin } from "antd";
+import { Result, Button } from "antd";
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_BASE_URL || "http://localhost:3000/api";
@@ -51,7 +52,7 @@ const VerifyAccount = () => {
   if (status === "loading") {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <Spin size="large" tip="Verifying your account..." />
+        <LoadingSpinner fullScreen={false} size="large" tip="Verifying your account..." />
       </div>
     );
   }

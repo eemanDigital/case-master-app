@@ -1,25 +1,8 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Card,
-  Row,
-  Col,
-  Tag,
-  Space,
-  Button,
-  Tabs,
-  Descriptions,
-  Statistic,
-  Progress,
-  Timeline,
-  Alert,
-  Spin,
-  Modal,
-  Typography,
-  Breadcrumb,
-  Empty,
-} from "antd";
+import { Card, Row, Col, Tag, Space, Button, Tabs, Descriptions, Statistic, Progress, Timeline, Alert, Modal, Typography, Breadcrumb, Empty } from "antd";
 import {
   ArrowLeftOutlined,
   EditOutlined,
@@ -156,7 +139,7 @@ const PropertyDetails = () => {
   if (detailsLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Spin size="large" tip="Loading property details..." />
+        <LoadingSpinner fullScreen={false} size="large" tip="Loading property details..." />
       </div>
     );
   }

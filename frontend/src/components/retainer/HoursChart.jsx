@@ -1,15 +1,6 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, { useState, useEffect } from "react";
-import {
-  Card,
-  Row,
-  Col,
-  Select,
-  Typography,
-  Statistic,
-  Progress,
-  Empty,
-  Spin,
-} from "antd";
+import { Card, Row, Col, Select, Typography, Statistic, Progress, Empty } from "antd";
 import {
   BarChart,
   Bar,
@@ -275,7 +266,7 @@ const HoursChart = ({ matterId }) => {
       {/* Charts Section */}
       {loading ? (
         <div style={{ textAlign: "center", padding: 40 }}>
-          <Spin size="large" />
+          <LoadingSpinner fullScreen={false} size="large" />
         </div>
       ) : !hasData ? (
         <Empty description="No service data available" />

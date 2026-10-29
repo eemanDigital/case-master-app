@@ -1,16 +1,7 @@
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import React, { useState, useEffect } from "react";
 import PropTypes from "prop-types";
-import {
-  Modal,
-  Button,
-  Form,
-  Select,
-  Spin,
-  Tag,
-  Avatar,
-  List,
-  Card,
-} from "antd";
+import { Modal, Button, Form, Select, Tag, Avatar, List, Card } from "antd";
 import {
   UserAddOutlined,
   TeamOutlined,
@@ -160,7 +151,7 @@ const LawyersInCourtForm = ({ reportId, onSuccess }) => {
         width={600}
         className="rounded-2xl [&_.ant-modal-content]:rounded-2xl [&_.ant-modal-header]:rounded-t-2xl"
         closeIcon={<XMarkIcon className="w-5 h-5 text-gray-400" />}>
-        <Spin spinning={loading} size="large">
+        <LoadingSpinner fullScreen={false} spinning={loading} size="large">
           <div className="space-y-6">
             {/* Current Assignment Preview */}
             {currentLawyers.length > 0 && (
@@ -288,7 +279,7 @@ const LawyersInCourtForm = ({ reportId, onSuccess }) => {
               </div>
             </div>
           </div>
-        </Spin>
+        </LoadingSpinner>
       </Modal>
     </div>
   );

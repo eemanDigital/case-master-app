@@ -1,22 +1,6 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  Card,
-  Button,
-  Space,
-  Table,
-  Tag,
-  Avatar,
-  Badge,
-  Typography,
-  Modal,
-  message,
-  Tooltip,
-  Pagination,
-  Spin,
-  Empty,
-  Grid,
-  Checkbox,
-} from "antd";
+import { Card, Button, Space, Table, Tag, Avatar, Badge, Typography, Modal, message, Tooltip, Pagination, Empty, Grid, Checkbox } from "antd";
 import {
   PlusOutlined,
   FolderOpenOutlined,
@@ -760,7 +744,7 @@ const MatterListView = () => {
         bodyStyle={{ padding: screens.xs ? "12px" : "20px" }}>
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
-            <Spin size="large" />
+            <LoadingSpinner fullScreen={false} size="large" />
           </div>
         ) : (
           <>

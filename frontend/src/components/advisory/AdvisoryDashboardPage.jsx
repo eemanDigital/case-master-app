@@ -1,7 +1,8 @@
 // pages/dashboard/advisory/AdvisoryDashboardPage.jsx
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Tabs, Spin, Alert, Empty, Button } from "antd";
+import { Tabs, Alert, Empty, Button } from "antd";
 import {
   ReloadOutlined,
   AppstoreOutlined,
@@ -155,7 +156,7 @@ const AdvisoryDashboardPage = () => {
           <div className="relative">
             {loadingStates.matters && (
               <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center">
-                <Spin size="large" tip="Loading matters..." />
+                <LoadingSpinner fullScreen={false} size="large" tip="Loading matters..." />
               </div>
             )}
 

@@ -1,6 +1,7 @@
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { Card, Typography, Tag, Space, Button, Spin, Divider, Empty } from "antd";
+import { Card, Typography, Tag, Space, Button, Divider, Empty } from "antd";
 import { 
   EditOutlined, ArrowLeftOutlined, PushpinFilled, 
   StarFilled, CalendarOutlined 
@@ -79,7 +80,7 @@ const NoteDetail = () => {
   if (isLoadingNote || isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Spin size="large" />
+        <LoadingSpinner fullScreen={false} size="large" />
       </div>
     );
   }

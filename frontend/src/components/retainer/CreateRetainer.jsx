@@ -1,26 +1,6 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, { useState, useEffect } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  DatePicker,
-  Select,
-  InputNumber,
-  Row,
-  Col,
-  Card,
-  Typography,
-  Steps,
-  Button,
-  Space,
-  Divider,
-  message,
-  Alert,
-  Tag,
-  Switch,
-  Descriptions,
-  Spin,
-} from "antd";
+import { Modal, Form, Input, DatePicker, Select, InputNumber, Row, Col, Card, Typography, Steps, Button, Space, Divider, message, Alert, Tag, Switch, Descriptions } from "antd";
 import {
   ArrowLeftOutlined,
   ArrowRightOutlined,
@@ -1181,7 +1161,7 @@ const CreateRetainer = ({ visible, onCancel, onSuccess, matterId }) => {
       footer={null}
       width={900}
       className="retainer-create-modal">
-      <Spin spinning={matterLoading}>
+      <LoadingSpinner fullScreen={false} spinning={matterLoading}>
         <div className="p-6">
           {currentMatter && <MatterContextCard matter={currentMatter} />}
           
@@ -1262,7 +1242,7 @@ const CreateRetainer = ({ visible, onCancel, onSuccess, matterId }) => {
           </div>
         </Form>
         </div>
-      </Spin>
+      </LoadingSpinner>
     </Modal>
   );
 };

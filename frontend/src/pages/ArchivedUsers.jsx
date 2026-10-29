@@ -1,21 +1,8 @@
 // pages/ArchivedUsers.jsx
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  Table,
-  Button,
-  Modal,
-  Tag,
-  Space,
-  Tooltip,
-  Typography,
-  Card,
-  Row,
-  Col,
-  Spin,
-  Empty,
-  message,
-} from "antd";
+import { Table, Button, Modal, Tag, Space, Tooltip, Typography, Card, Row, Col, Empty, message } from "antd";
 import {
   DeleteOutlined,
   RollbackOutlined,
@@ -203,7 +190,7 @@ const ArchivedUsers = () => {
       <Card>
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
-            <Spin size="large" />
+            <LoadingSpinner fullScreen={false} size="large" />
           </div>
         ) : data.length === 0 ? (
           <Empty

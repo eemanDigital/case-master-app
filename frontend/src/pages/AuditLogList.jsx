@@ -1,24 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Card,
-  Table,
-  Tag,
-  Button,
-  Space,
-  Input,
-  Select,
-  DatePicker,
-  Modal,
-  Descriptions,
-  Spin,
-  message,
-  Typography,
-  Row,
-  Col,
-  Statistic,
-  Tabs,
-} from "antd";
+import { Card, Table, Tag, Button, Space, Input, Select, DatePicker, Modal, Descriptions, message, Typography, Row, Col, Statistic, Tabs } from "antd";
 import {
   EyeOutlined,
   FilterOutlined,

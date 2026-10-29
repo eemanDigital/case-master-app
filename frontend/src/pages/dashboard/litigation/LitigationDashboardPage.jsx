@@ -1,8 +1,9 @@
 // pages/dashboard/litigation/LitigationDashboardPage.jsx
+import LoadingSpinner from "../../../components/LoadingSpinner.jsx";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { Tabs, Spin, Alert, Button, Row, Col, Card, Typography } from "antd";
+import { Tabs, Alert, Button, Row, Col, Card, Typography } from "antd";
 import {
   ReloadOutlined,
   AppstoreOutlined,
@@ -197,7 +198,7 @@ const LitigationDashboardPage = () => {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
-          <Spin size="large" className="mb-4" />
+          <LoadingSpinner fullScreen={false} size="large" className="mb-4" />
           <div className="text-slate-600">Loading litigation dashboard...</div>
         </div>
       </div>
@@ -421,7 +422,7 @@ const LitigationDashboardPage = () => {
           <div className="relative">
             {loading && (
               <div className="absolute inset-0 bg-white/80 z-10 flex items-center justify-center py-12">
-                <Spin tip="Loading matters..." />
+                <LoadingSpinner fullScreen={false} tip="Loading matters..." />
               </div>
             )}
 

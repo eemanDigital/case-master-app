@@ -1,19 +1,10 @@
 // components/TaskAttachmentsCard.js
+import LoadingSpinner from "./LoadingSpinner.jsx";
 import PropTypes from "prop-types";
 import { RiDeleteBin2Line } from "react-icons/ri";
 import { FaDownload, FaPaperclip, FaReply } from "react-icons/fa";
 
-import {
-  Modal,
-  Button,
-  Card,
-  Tag,
-  Space,
-  Divider,
-  Empty,
-  Tooltip,
-  Spin,
-} from "antd";
+import { Modal, Button, Card, Tag, Space, Divider, Empty, Tooltip } from "antd";
 import { formatDate } from "../utils/formatDate";
 
 const TaskAttachmentsCard = ({
@@ -86,7 +77,7 @@ const TaskAttachmentsCard = ({
     return (
       <Card className="mb-8 mt-3 shadow-sm">
         <div className="text-center py-8">
-          <Spin size="large" />
+          <LoadingSpinner fullScreen={false} size="large" />
           <p className="text-gray-500 mt-2">Loading documents...</p>
         </div>
       </Card>

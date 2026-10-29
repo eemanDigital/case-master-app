@@ -1,19 +1,6 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, { useState } from "react";
-import {
-  Card,
-  Descriptions,
-  Typography,
-  Divider,
-  Space,
-  Button,
-  Statistic,
-  Row,
-  Col,
-  Table,
-  Tag,
-  message,
-  Spin,
-} from "antd";
+import { Card, Descriptions, Typography, Divider, Space, Button, Statistic, Row, Col, Table, Tag, message } from "antd";
 import {
   DownloadOutlined,
   PrinterOutlined,
@@ -54,7 +41,7 @@ const RetainerSummaryReport = ({ matterId }) => {
     return (
       <Card className="shadow-lg">
         <div className="flex justify-center items-center p-10">
-          <Spin size="large" />
+          <LoadingSpinner fullScreen={false} size="large" />
         </div>
       </Card>
     );

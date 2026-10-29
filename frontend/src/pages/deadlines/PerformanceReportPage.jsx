@@ -1,20 +1,7 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Row,
-  Col,
-  Card,
-  Statistic,
-  Table,
-  Select,
-  DatePicker,
-  Button,
-  Typography,
-  Spin,
-  Tag,
-  Progress,
-  Space,
-} from "antd";
+import { Row, Col, Card, Statistic, Table, Select, DatePicker, Button, Typography, Tag, Progress, Space } from "antd";
 import {
   CheckCircleOutlined,
   ClockCircleOutlined,
@@ -119,7 +106,7 @@ const PerformanceReportPage = () => {
 
         <Card bordered={false} style={{ borderRadius: 12 }} title="User Performance">
           {loading ? (
-            <div style={{ textAlign: "center", padding: 40 }}><Spin size="large" /></div>
+            <div style={{ textAlign: "center", padding: 40 }}><LoadingSpinner fullScreen={false} size="large" /></div>
           ) : (
             <Table
               dataSource={report?.byUser || []}

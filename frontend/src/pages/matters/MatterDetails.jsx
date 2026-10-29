@@ -1,26 +1,6 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import React, { useEffect, useState } from "react";
-import {
-  Card,
-  Row,
-  Col,
-  Tag,
-  Button,
-  Space,
-  Descriptions,
-  Tabs,
-  Timeline,
-  Avatar,
-  Typography,
-  Divider,
-  Badge,
-  Spin,
-  Alert,
-  Modal,
-  Grid,
-  Input,
-  Statistic,
-  Progress,
-} from "antd";
+import { Card, Row, Col, Tag, Button, Space, Descriptions, Tabs, Timeline, Avatar, Typography, Divider, Badge, Alert, Modal, Grid, Input, Statistic, Progress } from "antd";
 import {
   ArrowLeftOutlined,
   EditOutlined,
@@ -128,7 +108,7 @@ const MatterDetails = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-[400px]">
-        <Spin size="large" />
+        <LoadingSpinner fullScreen={false} size="large" />
       </div>
     );
   }

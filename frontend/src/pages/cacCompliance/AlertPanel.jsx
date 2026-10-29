@@ -1,7 +1,8 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Card, Button, Empty, Spin, Badge, Space, Divider, Typography } from 'antd';
+import { Card, Button, Empty, Badge, Space, Divider, Typography } from 'antd';
 import {
   BellOutlined,
   CloseOutlined,
@@ -124,7 +125,7 @@ const AlertPanel = ({ isOpen, onClose }) => {
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
               <div className="flex items-center justify-center h-40">
-                <Spin />
+                <LoadingSpinner fullScreen={false} />
               </div>
             ) : alerts && alerts.length > 0 ? (
               <div className="p-4 space-y-3">

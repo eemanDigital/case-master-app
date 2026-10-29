@@ -1,18 +1,7 @@
+import LoadingSpinner from "./LoadingSpinner.jsx";
 import React, { useState, useCallback, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Card,
-  Row,
-  Col,
-  Select,
-  DatePicker,
-  Input,
-  Button,
-  Space,
-  Tag,
-  Collapse,
-  Spin,
-} from "antd";
+import { Card, Row, Col, Select, DatePicker, Input, Button, Space, Tag, Collapse } from "antd";
 import {
   FilterOutlined,
   SearchOutlined,
@@ -274,7 +263,7 @@ const TaskFilters = ({ onFilterChange, showAdvanced = true }) => {
               dropdownRender={(menu) =>
                 matterSearchLoading ? (
                   <div className="p-4 text-center">
-                    <Spin size="small" />
+                    <LoadingSpinner fullScreen={false} size="small" />
                   </div>
                 ) : (
                   menu

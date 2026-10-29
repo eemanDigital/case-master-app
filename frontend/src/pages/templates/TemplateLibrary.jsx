@@ -1,24 +1,7 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Card,
-  Input,
-  Select,
-  Radio,
-  Button,
-  Tag,
-  Empty,
-  Pagination,
-  Spin,
-  Row,
-  Col,
-  Space,
-  Typography,
-  Badge,
-  Tooltip,
-  Alert,
-  Steps,
-} from "antd";
+import { Card, Input, Select, Radio, Button, Tag, Empty, Pagination, Row, Col, Space, Typography, Badge, Tooltip, Alert, Steps } from "antd";
 import {
   FileProtectOutlined,
   AuditOutlined,
@@ -490,7 +473,7 @@ const TemplateLibrary = () => {
             }>
             {loading ? (
               <div style={{ textAlign: "center", padding: 48 }}>
-                <Spin size="large" />
+                <LoadingSpinner fullScreen={false} size="large" />
               </div>
             ) : templates?.length === 0 ? (
               <Empty description="No templates found" />

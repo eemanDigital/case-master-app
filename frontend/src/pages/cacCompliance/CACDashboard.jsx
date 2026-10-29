@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import { Card, Row, Col, Empty, Spin, Button, Skeleton, Badge, Progress, Tooltip, Statistic } from 'antd';
+import { Card, Row, Col, Empty, Button, Skeleton, Badge, Progress, Tooltip, Statistic } from 'antd';
 import {
   TeamOutlined,
   WarningOutlined,

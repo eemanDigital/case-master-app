@@ -1,17 +1,6 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import { useState, useEffect } from "react";
-import {
-  Card,
-  Button,
-  Space,
-  Tag,
-  List,
-  Dropdown,
-  Menu,
-  Empty,
-  Spin,
-  Tooltip,
-  message,
-} from "antd";
+import { Card, Button, Space, Tag, List, Dropdown, Menu, Empty, Tooltip, message } from "antd";
 import {
   PlusOutlined,
   EditOutlined,
@@ -149,7 +138,7 @@ const LitigationSteps = ({ matterId }) => {
       }>
       {stepsLoading ? (
         <div style={{ textAlign: "center", padding: "40px" }}>
-          <Spin size="large" />
+          <LoadingSpinner fullScreen={false} size="large" />
         </div>
       ) : sortedSteps.length === 0 ? (
         <Empty

@@ -1,20 +1,7 @@
 // components/AdvancedLeaveNotification.jsx
+import LoadingSpinner from "./LoadingSpinner.jsx";
 import { useEffect, useMemo, useState } from "react";
-import {
-  Badge,
-  Popover,
-  List,
-  Button,
-  Tooltip,
-  Empty,
-  Tag,
-  Space,
-  Divider,
-  Spin,
-  Tabs,
-  Avatar,
-  Segmented,
-} from "antd";
+import { Badge, Popover, List, Button, Tooltip, Empty, Tag, Space, Divider, Tabs, Avatar, Segmented } from "antd";
 import {
   BellOutlined,
   ClockCircleOutlined,
@@ -349,7 +336,7 @@ const LeaveNotification = () => {
       <div className="mt-3">
         {loadingLeaveApp.leaveApps ? (
           <div className="text-center py-12">
-            <Spin size="large" />
+            <LoadingSpinner fullScreen={false} size="large" />
             <p className="text-gray-500 mt-3">Loading applications...</p>
           </div>
         ) : errorLeaveApp.leaveApps ? (

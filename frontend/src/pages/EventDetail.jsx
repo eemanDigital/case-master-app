@@ -1,7 +1,8 @@
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import PropTypes from "prop-types";
 import { useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Card, Typography, Spin, Alert } from "antd";
+import { Card, Typography, Alert } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
 import GoBackButton from "../components/GoBackButton";
@@ -23,7 +24,7 @@ const EventDetail = () => {
   if (loading || !data) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Spin size="large" />
+        <LoadingSpinner fullScreen={false} size="large" />
       </div>
     );
   }

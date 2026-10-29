@@ -1,27 +1,6 @@
+import LoadingSpinner from "./LoadingSpinner.jsx";
 import React, { useState, useEffect } from "react";
-import {
-  Tabs,
-  Table,
-  Card,
-  Button,
-  Form,
-  Input,
-  Select,
-  Modal,
-  Drawer,
-  Tag,
-  Badge,
-  Spin,
-  message,
-  Alert,
-  Popconfirm,
-  Typography,
-  Space,
-  Empty,
-  Statistic,
-  Row,
-  Col,
-} from "antd";
+import { Tabs, Table, Card, Button, Form, Input, Select, Modal, Drawer, Tag, Badge, message, Alert, Popconfirm, Typography, Space, Empty, Statistic, Row, Col } from "antd";
 import {
   CheckOutlined,
   CloseOutlined,
@@ -528,7 +507,7 @@ const PlatformAdminPanel = () => {
                     Refresh
                   </Button>
                 </div>
-                <Spin spinning={pendingLoading}>
+                <LoadingSpinner fullScreen={false} spinning={pendingLoading}>
                   {pendingFirms.length === 0 ? (
                     <Empty description="No firms awaiting approval" />
                   ) : (
@@ -538,7 +517,7 @@ const PlatformAdminPanel = () => {
                       rowKey="_id"
                     />
                   )}
-                </Spin>
+                </LoadingSpinner>
               </Card>
             ),
           },
@@ -582,7 +561,7 @@ const PlatformAdminPanel = () => {
                     Refresh
                   </Button>
                 </div>
-                <Spin spinning={firmsLoading}>
+                <LoadingSpinner fullScreen={false} spinning={firmsLoading}>
                   <Table
                     columns={allFirmsColumns}
                     dataSource={allFirms}
@@ -594,7 +573,7 @@ const PlatformAdminPanel = () => {
                       onChange: (page) => fetchAllFirms(page),
                     }}
                   />
-                </Spin>
+                </LoadingSpinner>
               </Card>
             ),
           },
@@ -761,7 +740,7 @@ const PlatformAdminPanel = () => {
             label: "Platform Stats",
             children: (
               <Card>
-                <Spin spinning={statsLoading}>
+                <LoadingSpinner fullScreen={false} spinning={statsLoading}>
                   {stats && (
                     <>
                       <Row gutter={[16, 16]}>
@@ -840,7 +819,7 @@ const PlatformAdminPanel = () => {
                       </Card>
                     </>
                   )}
-                </Spin>
+                </LoadingSpinner>
               </Card>
             ),
           },

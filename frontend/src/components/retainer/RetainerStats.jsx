@@ -1,5 +1,6 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, { useEffect } from "react";
-import { Card, Row, Col, Statistic, Spin, Typography } from "antd";
+import { Card, Row, Col, Statistic, Typography } from "antd";
 import {
   FileTextOutlined,
   CheckCircleOutlined,
@@ -29,7 +30,7 @@ const RetainerStats = () => {
         <div
           className="flex justify-center items-center"
           style={{ minHeight: 150 }}>
-          <Spin size="large" />
+          <LoadingSpinner fullScreen={false} size="large" />
         </div>
       </Card>
     );

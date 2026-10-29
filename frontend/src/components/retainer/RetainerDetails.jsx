@@ -1,29 +1,6 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  Card,
-  Row,
-  Col,
-  Tabs,
-  Typography,
-  Tag,
-  Statistic,
-  Button,
-  Space,
-  Descriptions,
-  Divider,
-  Alert,
-  Progress,
-  Modal,
-  Avatar,
-  Badge,
-  Timeline,
-  Spin,
-  message,
-  Form,
-  Input,
-  Select,
-  DatePicker,
-} from "antd";
+import { Card, Row, Col, Tabs, Typography, Tag, Statistic, Button, Space, Descriptions, Divider, Alert, Progress, Modal, Avatar, Badge, Timeline, message, Form, Input, Select, DatePicker } from "antd";
 import {
   EditOutlined,
   DollarOutlined,
@@ -796,7 +773,7 @@ const RetainerDetails = ({ matterId, onClose }) => {
   if (detailsLoading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh] flex-col">
-        <Spin size="large" />
+        <LoadingSpinner fullScreen={false} size="large" />
         <Text className="mt-4 text-gray-600">Loading retainer details...</Text>
       </div>
     );

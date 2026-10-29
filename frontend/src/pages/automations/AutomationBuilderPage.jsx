@@ -1,27 +1,7 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Row,
-  Col,
-  Card,
-  Table,
-  Button,
-  Tag,
-  Modal,
-  Form,
-  Input,
-  Select,
-  Typography,
-  Space,
-  Spin,
-  message,
-  Switch,
-  Divider,
-  Empty,
-  Tooltip,
-  Statistic,
-  Alert,
-} from "antd";
+import { Row, Col, Card, Table, Button, Tag, Modal, Form, Input, Select, Typography, Space, message, Switch, Divider, Empty, Tooltip, Statistic, Alert } from "antd";
 import {
   PlusOutlined,
   PlayCircleOutlined,
@@ -387,7 +367,7 @@ const AutomationBuilderPage = () => {
 
       <Card title="Your Automations">
         {loading ? (
-          <div style={{ textAlign: "center", padding: 40 }}><Spin size="large" /></div>
+          <div style={{ textAlign: "center", padding: 40 }}><LoadingSpinner fullScreen={false} size="large" /></div>
         ) : automations.length === 0 ? (
           <Empty description="No automations yet">
             <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>

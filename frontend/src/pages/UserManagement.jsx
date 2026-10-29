@@ -1,25 +1,7 @@
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import React, { useState, useMemo, useCallback, useEffect } from "react";
 import PropTypes from "prop-types";
-import {
-  Card,
-  Table,
-  Tag,
-  Space,
-  Button,
-  Row,
-  Col,
-  Statistic,
-  Select,
-  Input,
-  Pagination,
-  Spin,
-  Alert,
-  Tabs,
-  Modal,
-  Tooltip,
-  message,
-  Dropdown,
-} from "antd";
+import { Card, Table, Tag, Space, Button, Row, Col, Statistic, Select, Input, Pagination, Alert, Tabs, Modal, Tooltip, message, Dropdown } from "antd";
 import {
   TeamOutlined,
   UserOutlined,
@@ -766,7 +748,7 @@ const UserManagement = ({
               }>
               {loading ? (
                 <div className="text-center py-12">
-                  <Spin size="large" tip={`Loading ${getTitle}...`} />
+                  <LoadingSpinner fullScreen={false} size="large" tip={`Loading ${getTitle}...`} />
                 </div>
               ) : (
                 <>

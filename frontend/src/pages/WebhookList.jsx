@@ -1,25 +1,6 @@
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import { useState, useEffect } from "react";
-import {
-  Card,
-  Table,
-  Button,
-  Space,
-  Tag,
-  Modal,
-  Form,
-  Input,
-  Select,
-  Switch,
-  message,
-  Typography,
-  Popconfirm,
-  Spin,
-  Badge,
-  Descriptions,
-  Tabs,
-  Divider,
-  Alert,
-} from "antd";
+import { Card, Table, Button, Space, Tag, Modal, Form, Input, Select, Switch, message, Typography, Popconfirm, Badge, Descriptions, Tabs, Divider, Alert } from "antd";
 import {
   PlusOutlined,
   EditOutlined,
@@ -518,14 +499,14 @@ const WebhookList = () => {
           </Button>
         }
         width={900}>
-        <Spin spinning={deliveriesLoading}>
+        <LoadingSpinner fullScreen={false} spinning={deliveriesLoading}>
           <Table
             columns={deliveryColumns}
             dataSource={deliveries}
             rowKey="_id"
             pagination={{ pageSize: 10 }}
           />
-        </Spin>
+        </LoadingSpinner>
       </Modal>
 
       <Modal

@@ -1,24 +1,9 @@
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 
-import {
-  List,
-  Card,
-  Modal,
-  Tooltip,
-  Pagination,
-  Input,
-  Select,
-  Button,
-  Tag,
-  Empty,
-  Spin,
-  Space,
-  Segmented,
-  Badge,
-  Typography,
-} from "antd";
+import { List, Card, Modal, Tooltip, Pagination, Input, Select, Button, Tag, Empty, Space, Segmented, Badge, Typography } from "antd";
 import {
   DeleteOutlined,
   EditOutlined,
@@ -505,7 +490,7 @@ const NoteList = () => {
 
       {isLoading ? (
         <div className="flex justify-center items-center py-20">
-          <Spin size="large" />
+          <LoadingSpinner fullScreen={false} size="large" />
         </div>
       ) : userNotes.length === 0 ? (
         <div className="py-20">{renderEmptyState()}</div>

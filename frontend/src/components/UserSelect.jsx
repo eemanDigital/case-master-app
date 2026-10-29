@@ -1,5 +1,6 @@
+import LoadingSpinner from "./LoadingSpinner.jsx";
 import React, { useState, useEffect, useCallback } from "react";
-import { Select, Spin, Empty, Avatar, Tag } from "antd";
+import { Select, Empty, Avatar, Tag } from "antd";
 import {
   UserOutlined,
   TeamOutlined,
@@ -215,7 +216,7 @@ const UserSelect = ({
     if (loading) {
       return (
         <div className="flex justify-center py-4">
-          <Spin size="small" />
+          <LoadingSpinner fullScreen={false} size="small" />
         </div>
       );
     }

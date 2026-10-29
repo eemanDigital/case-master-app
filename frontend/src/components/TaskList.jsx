@@ -1,3 +1,4 @@
+import LoadingSpinner from "./LoadingSpinner.jsx";
 import {
   useState,
   useEffect,
@@ -11,33 +12,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { formatDate } from "../utils/formatDate";
 import { useAdminHook } from "../hooks/useAdminHook";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
-import {
-  Table,
-  Modal,
-  Space,
-  Tooltip,
-  Button,
-  Card,
-  Tag,
-  Dropdown,
-  Input,
-  Select,
-  Badge,
-  Row,
-  Col,
-  Statistic,
-  Drawer,
-  Empty,
-  Collapse,
-  Avatar,
-  Typography,
-  Divider,
-  Progress,
-  Alert,
-  Spin,
-  Result,
-  message,
-} from "antd";
+import { Table, Modal, Space, Tooltip, Button, Card, Tag, Dropdown, Input, Select, Badge, Row, Col, Statistic, Drawer, Empty, Collapse, Avatar, Typography, Divider, Progress, Alert, Result, message } from "antd";
 import {
   DeleteOutlined,
   EditOutlined,
@@ -902,7 +877,7 @@ const TaskList = () => {
                   key: "status",
                   label: <Text type="secondary">Status Management</Text>,
                   children: (
-                    <Suspense fallback={<Spin size="small" />}>
+                    <Suspense fallback={<LoadingSpinner fullScreen={false} size="small" />}>
                       <TaskStatusFlow
                         task={task}
                         userId={user?.data?._id}
@@ -1074,9 +1049,9 @@ const TaskList = () => {
   if (loading && !tasks.length) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Spin size="large" tip="Loading tasks...">
+        <LoadingSpinner fullScreen={false} size="large" tip="Loading tasks...">
           <div className="p-12" />
-        </Spin>
+        </LoadingSpinner>
       </div>
     );
   }

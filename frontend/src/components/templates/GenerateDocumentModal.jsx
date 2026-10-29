@@ -1,24 +1,6 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Modal,
-  Steps,
-  Form,
-  Input,
-  Select,
-  DatePicker,
-  InputNumber,
-  Button,
-  Space,
-  Typography,
-  Card,
-  Tag,
-  message,
-  Spin,
-  Alert,
-  Row,
-  Col,
-} from "antd";
+import { Modal, Steps, Form, Input, Select, DatePicker, InputNumber, Button, Space, Typography, Card, Tag, message, Alert, Row, Col } from "antd";
 import {
   FileTextOutlined,
   CheckCircleOutlined,

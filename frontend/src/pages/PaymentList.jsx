@@ -82,7 +82,9 @@ const PaymentList = () => {
   );
 
   // Custom loader
-  const customLoader = <LoadingSpinner />;
+  const customLoader = (
+    <LoadingSpinner fullScreen={false} size="small" tip={null} />
+  );
 
   const columns = [
     {

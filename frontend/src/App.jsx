@@ -9,7 +9,7 @@ import {
   useNavigate,
   Navigate,
 } from "react-router-dom";
-import { ConfigProvider, Spin, Result, Button, App as AntdApp } from "antd";
+import { ConfigProvider, Result, Button, App as AntdApp } from "antd";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { useDispatch, useSelector } from "react-redux";
@@ -25,6 +25,7 @@ import Dashboard from "./components/Dashboard.jsx";
 import Error from "./components/Error.jsx";
 import ProtectedRoute from "./components/ProtectedRoute.jsx";
 import NotificationHost from "./components/NotificationHost.jsx";
+import LoadingSpinner from "./components/LoadingSpinner.jsx";
 import {
   ShowOnlyVerifiedUser,
   ShowStaff,
@@ -346,21 +347,12 @@ const getAntdTheme = (isDarkMode) => ({
 // LOADING COMPONENTS
 // ============================================
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
-    <Spin size="large" tip="Loading page..." />
-  </div>
+  <LoadingSpinner fullScreen tip="Loading page..." />
 );
 
 // Full-screen initial boot loader — only shown ONCE on first load
 const AppBootLoader = () => (
-  <div className="fixed inset-0 flex flex-col items-center justify-center bg-white dark:bg-gray-900 z-50 gap-4">
-    <Spin size="large" />
-    <p
-      className="text-gray-500 text-sm font-medium"
-      style={{ fontFamily: "'Poppins', sans-serif" }}>
-      Loading LawMaster...
-    </p>
-  </div>
+  <LoadingSpinner fullScreen tip="Loading LawMaster..." />
 );
 
 // ============================================

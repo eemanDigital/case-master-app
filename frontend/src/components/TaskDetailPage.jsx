@@ -1,27 +1,8 @@
+import LoadingSpinner from "./LoadingSpinner.jsx";
 import React, { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Card,
-  Row,
-  Col,
-  Tag,
-  Avatar,
-  Button,
-  Space,
-  Divider,
-  Typography,
-  Spin,
-  Timeline,
-  Descriptions,
-  Tabs,
-  List,
-  Progress,
-  message,
-  Dropdown,
-  Menu,
-  Empty,
-} from "antd";
+import { Card, Row, Col, Tag, Avatar, Button, Space, Divider, Typography, Timeline, Descriptions, Tabs, List, Progress, message, Dropdown, Menu, Empty } from "antd";
 import {
   ArrowLeftOutlined,
   EditOutlined,
@@ -148,7 +129,7 @@ const TaskDetailPage = () => {
   if (loading || !task) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Spin size="large" />
+        <LoadingSpinner fullScreen={false} size="large" />
       </div>
     );
   }

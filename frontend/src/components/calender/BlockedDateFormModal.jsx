@@ -1,18 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  Select,
-  DatePicker,
-  TimePicker,
-  Switch,
-  Tabs,
-  Alert,
-  Row,
-  Col,
-  Spin,
-} from "antd";
+import { Modal, Form, Input, Select, DatePicker, TimePicker, Switch, Tabs, Alert, Row, Col } from "antd";
 import {
   PlusOutlined,
   MinusCircleOutlined,

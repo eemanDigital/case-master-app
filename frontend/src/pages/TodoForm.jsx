@@ -1,7 +1,7 @@
 import PropTypes from "prop-types";
 import { useCallback } from "react";
 import { todoPriority } from "./../data/options";
-import { Button, Input, Form, Modal, Spin, Select, DatePicker } from "antd";
+import { Button, Input, Form, Modal, Select, DatePicker } from "antd";
 import useModal from "../hooks/useModal";
 import { v4 as uuidv4 } from "uuid"; // For generating unique IDs for new todos
 import { useDataFetch } from "../hooks/useDataFetch";
@@ -84,7 +84,6 @@ const TodoForm = ({ addOptimisticTodo, removeOptimisticTodo }) => {
             ]}>
             <Select
               placeholder="Select a priority"
-              // notFoundContent={loading ? <Spin size="small" /> : null}
               options={todoPriority}
               allowClear
             />

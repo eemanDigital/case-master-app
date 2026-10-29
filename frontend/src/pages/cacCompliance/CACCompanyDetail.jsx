@@ -1,30 +1,8 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import {
-  Card,
-  Tabs,
-  Tag,
-  Button,
-  Table,
-  Modal,
-  Form,
-  Input,
-  Select,
-  message,
-  Spin,
-  Skeleton,
-  Divider,
-  Space,
-  Popconfirm,
-  Empty,
-  Row,
-  Col,
-  Statistic,
-  Tooltip,
-  Typography,
-  Collapse,
-} from 'antd';
+import { Card, Tabs, Tag, Button, Table, Modal, Form, Input, Select, message, Skeleton, Divider, Space, Popconfirm, Empty, Row, Col, Statistic, Tooltip, Typography, Collapse } from 'antd';
 import {
   ArrowLeftOutlined,
   SyncOutlined,
@@ -516,7 +494,7 @@ const CACCompanyDetail = () => {
   if (isLoading && !currentCompany) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <Spin size="large" tip="Loading company details..." />
+        <LoadingSpinner fullScreen={false} size="large" tip="Loading company details..." />
       </div>
     );
   }

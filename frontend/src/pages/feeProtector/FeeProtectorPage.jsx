@@ -1,30 +1,7 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Row,
-  Col,
-  Card,
-  Table,
-  Button,
-  Tag,
-  Modal,
-  Upload,
-  Typography,
-  Space,
-  Spin,
-  message,
-  Descriptions,
-  Divider,
-  Statistic,
-  Alert,
-  Input,
-  InputNumber,
-  Select,
-  Form,
-  Popconfirm,
-  Tooltip,
-  Badge,
-} from "antd";
+import { Row, Col, Card, Table, Button, Tag, Modal, Upload, Typography, Space, message, Descriptions, Divider, Statistic, Alert, Input, InputNumber, Select, Form, Popconfirm, Tooltip, Badge } from "antd";
 import {
   UploadOutlined,
   FileProtectOutlined,
@@ -876,7 +853,7 @@ const FeeProtectorPage = () => {
         }>
         {loading ? (
           <div style={{ textAlign: "center", padding: 60 }}>
-            <Spin size="large" />
+            <LoadingSpinner fullScreen={false} size="large" />
           </div>
         ) : documents.length === 0 ? (
           <div style={{ textAlign: "center", padding: 60 }}>

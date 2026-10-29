@@ -1,5 +1,6 @@
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Form, Input, Button, Card, Select, Space, Typography, message, Tooltip, Spin } from "antd";
+import { Form, Input, Button, Card, Select, Space, Typography, message, Tooltip } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate, useParams } from "react-router-dom";
 import ReactQuill from "react-quill";
@@ -216,7 +217,7 @@ const UpdateNote = () => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Spin size="large" />
+        <LoadingSpinner fullScreen={false} size="large" />
       </div>
     );
   }

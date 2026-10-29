@@ -1,4 +1,5 @@
 // pages/advisory/AdvisoryDetailPage.jsx
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import React, {
   useEffect,
   useMemo,
@@ -9,21 +10,7 @@ import React, {
 } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Card,
-  Button,
-  Tabs,
-  Spin,
-  Alert,
-  Space,
-  Typography,
-  Statistic,
-  Descriptions,
-  Breadcrumb,
-  message,
-  Skeleton,
-  Tag,
-} from "antd";
+import { Card, Button, Tabs, Alert, Space, Typography, Statistic, Descriptions, Breadcrumb, message, Skeleton, Tag } from "antd";
 import {
   EditOutlined,
   DeleteOutlined,
@@ -752,7 +739,7 @@ const AdvisoryDetailPage = () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <Spin size="large" className="mb-4" />
+          <LoadingSpinner fullScreen={false} size="large" className="mb-4" />
           <div className="text-gray-600">Loading advisory details...</div>
         </div>
       </div>

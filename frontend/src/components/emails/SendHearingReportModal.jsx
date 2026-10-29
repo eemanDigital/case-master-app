@@ -1,14 +1,6 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, { useState, useCallback, useMemo } from "react";
-import {
-  Modal,
-  Form,
-  Select,
-  Button,
-  message,
-  Spin,
-  Alert,
-  Divider,
-} from "antd";
+import { Modal, Form, Select, Button, message, Alert, Divider } from "antd";
 import {
   MailOutlined,
   SendOutlined,
@@ -193,7 +185,7 @@ Legal Team`.trim();
             dropdownRender={(menu) =>
               clientsLoading ? (
                 <div className="p-4 text-center">
-                  <Spin size="small" />
+                  <LoadingSpinner fullScreen={false} size="small" />
                 </div>
               ) : (
                 menu

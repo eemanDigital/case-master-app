@@ -1,19 +1,7 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Modal,
-  Typography,
-  Button,
-  Space,
-  Tag,
-  Dropdown,
-  Card,
-  Descriptions,
-  Divider,
-  message,
-  Spin,
-  Input,
-} from "antd";
+import { Modal, Typography, Button, Space, Tag, Dropdown, Card, Descriptions, Divider, message, Input } from "antd";
 import {
   ArrowLeftOutlined,
   DownloadOutlined,
@@ -154,7 +142,7 @@ const DocumentViewer = ({ visible, document, onClose }) => {
     return (
       <Modal open={visible} onCancel={onClose} footer={null} width="90%" title="Document Viewer">
         <div style={{ textAlign: "center", padding: 48 }}>
-          <Spin size="large" />
+          <LoadingSpinner fullScreen={false} size="large" />
         </div>
       </Modal>
     );

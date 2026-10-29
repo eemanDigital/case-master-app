@@ -1,3 +1,4 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, {
   useState,
   useEffect,
@@ -5,25 +6,7 @@ import React, {
   useMemo,
   useRef,
 } from "react";
-import {
-  Form,
-  Input,
-  Select,
-  DatePicker,
-  Button,
-  Card,
-  Row,
-  Col,
-  Typography,
-  Divider,
-  Space,
-  Spin,
-  Tabs,
-  message,
-  Tooltip,
-  Badge,
-  Tag,
-} from "antd";
+import { Form, Input, Select, DatePicker, Button, Card, Row, Col, Typography, Divider, Space, Tabs, message, Tooltip, Badge, Tag } from "antd";
 import {
   SaveOutlined,
   InfoCircleOutlined,
@@ -548,7 +531,7 @@ const AdvisoryDetailForm = ({
 
   return (
     <div className="advisory-detail-form" style={{ padding: "24px" }}>
-      <Spin spinning={loading}>
+      <LoadingSpinner fullScreen={false} spinning={loading}>
         {matterData && <MatterContextCard matter={matterData} />}
         <Form
           form={form}
@@ -879,7 +862,7 @@ const AdvisoryDetailForm = ({
             </div>
           </Card>
         </Form>
-      </Spin>
+      </LoadingSpinner>
     </div>
   );
 };

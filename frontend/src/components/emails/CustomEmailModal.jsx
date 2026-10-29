@@ -1,16 +1,6 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, { useState, useCallback, useMemo } from "react";
-import {
-  Modal,
-  Form,
-  Input,
-  Select,
-  Button,
-  Upload,
-  message,
-  Divider,
-  Tabs,
-  Spin,
-} from "antd";
+import { Modal, Form, Input, Select, Button, Upload, message, Divider, Tabs } from "antd";
 import {
   MailOutlined,
   PaperClipOutlined,
@@ -339,7 +329,7 @@ const CustomEmailModal = ({
             dropdownRender={(menu) => (
               usersLoading ? (
                 <div className="p-4 text-center">
-                  <Spin size="small" />
+                  <LoadingSpinner fullScreen={false} size="small" />
                   <p className="text-xs text-slate-500 mt-2">Loading contacts...</p>
                 </div>
               ) : menu

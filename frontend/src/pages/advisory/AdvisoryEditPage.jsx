@@ -1,8 +1,9 @@
 // pages/advisory/AdvisoryEditPage.jsx
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import React, { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { message, Spin } from "antd";
+import { message } from "antd";
 
 import AdvisoryDetailForm from "../../components/advisory/AdvisoryDetailForm";
 import {
@@ -51,7 +52,7 @@ const AdvisoryEditPage = () => {
     return (
       <div
         style={{ display: "flex", justifyContent: "center", padding: "50px" }}>
-        <Spin size="large" />
+        <LoadingSpinner fullScreen={false} size="large" />
       </div>
     );
   }

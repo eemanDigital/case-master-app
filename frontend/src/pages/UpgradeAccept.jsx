@@ -1,6 +1,7 @@
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import React, { useState, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { Card, Result, Button, Spin, Alert, Typography } from "antd";
+import { Card, Result, Button, Alert, Typography } from "antd";
 import axios from "axios";
 import CheckCircleOutlined from "@ant-design/icons";
 
@@ -53,7 +54,7 @@ const UpgradeAcceptPage = () => {
           minHeight: "100vh",
         }}>
         <Card>
-          <Spin size="large" />
+          <LoadingSpinner fullScreen={false} size="large" />
           <div style={{ marginTop: 16, textAlign: "center" }}>
             <Text>Processing your upgrade...</Text>
           </div>

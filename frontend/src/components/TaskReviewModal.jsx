@@ -1,26 +1,8 @@
+import LoadingSpinner from "./LoadingSpinner.jsx";
 import notify from "../utils/notify";
 import React, { useEffect, useState, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Modal,
-  Form,
-  Input,
-  Rate,
-  Button,
-  Card,
-  Space,
-  Tag,
-  Typography,
-  Divider,
-  List,
-  Avatar,
-  Badge,
-  Row,
-  Col,
-  Spin,
-  Alert,
-  Select,
-} from "antd";
+import { Modal, Form, Input, Rate, Button, Card, Space, Tag, Typography, Divider, List, Avatar, Badge, Row, Col, Alert, Select } from "antd";
 const { Option } = Select;
 
 import {
@@ -726,7 +708,7 @@ const TaskReviewModal = ({
         <div style={{ height: "60vh" }}>
           {previewLoading ? (
             <div className="flex items-center justify-center h-full">
-              <Spin tip="Loading preview..." />
+              <LoadingSpinner fullScreen={false} tip="Loading preview..." />
             </div>
           ) : (
             <>

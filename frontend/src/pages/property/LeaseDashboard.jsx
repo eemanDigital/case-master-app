@@ -1,21 +1,8 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import {
-  Card,
-  Row,
-  Col,
-  Table,
-  Tag,
-  Space,
-  Button,
-  Select,
-  Statistic,
-  Tooltip,
-  Empty,
-  Spin,
-  Progress,
-} from "antd";
+import { Card, Row, Col, Table, Tag, Space, Button, Select, Statistic, Tooltip, Empty, Progress } from "antd";
 import {
   ClockCircleOutlined,
   WarningOutlined,
@@ -354,7 +341,7 @@ const LeaseDashboard = () => {
       >
         {loading ? (
           <div className="flex justify-center items-center py-12">
-            <Spin size="large" />
+            <LoadingSpinner fullScreen={false} size="large" />
           </div>
         ) : expiringLeases.length === 0 ? (
           <Empty description="No expiring leases found" />

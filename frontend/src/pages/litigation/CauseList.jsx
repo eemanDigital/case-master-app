@@ -1,19 +1,7 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import {
-  Card,
-  Row,
-  Col,
-  Table,
-  Tag,
-  Button,
-  Select,
-  Typography,
-  Empty,
-  Spin,
-  Badge,
-  Modal,
-} from "antd";
+import { Card, Row, Col, Table, Tag, Button, Select, Typography, Empty, Badge, Modal } from "antd";
 import {
   CalendarOutlined,
   LeftOutlined,
@@ -208,7 +196,7 @@ const CauseList = () => {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Spin size="large" tip="Loading cause list..." />
+        <LoadingSpinner fullScreen={false} size="large" tip="Loading cause list..." />
       </div>
     );
   }
@@ -336,7 +324,7 @@ const CauseList = () => {
         footer={null}>
         {calendarLoading ? (
           <div className="flex justify-center py-8">
-            <Spin />
+            <LoadingSpinner fullScreen={false} />
           </div>
         ) : calendarData?.events?.length > 0 ? (
           <div className="space-y-2">

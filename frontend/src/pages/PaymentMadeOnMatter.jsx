@@ -1,6 +1,7 @@
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { Descriptions, Button, Card, Spin, Alert } from "antd";
+import { Descriptions, Button, Card, Alert } from "antd";
 import { useDataFetch } from "../hooks/useDataFetch";
 import { useDataGetterHook } from "../hooks/useDataGetterHook";
 import useRedirectLogoutUser from "../hooks/useRedirectLogoutUser";
@@ -21,7 +22,7 @@ const PaymentMadeOnMatter = () => {
 
   if (loading) {
     return (
-      <Spin
+      <LoadingSpinner fullScreen={false}
         tip="Loading..."
         size="large"
         style={{

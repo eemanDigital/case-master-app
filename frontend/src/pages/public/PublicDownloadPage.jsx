@@ -1,6 +1,7 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { Card, Typography, Space, Tag, Button, Spin, Result, Descriptions, message, Alert, Divider } from "antd";
+import { Card, Typography, Space, Tag, Button, Result, Descriptions, message, Alert, Divider } from "antd";
 import {
   FileProtectOutlined,
   DownloadOutlined,
@@ -71,7 +72,7 @@ const PublicDownloadPage = () => {
         minHeight: "100vh",
         background: "#f1f5f9"
       }}>
-        <Spin size="large" />
+        <LoadingSpinner fullScreen={false} size="large" />
       </div>
     );
   }

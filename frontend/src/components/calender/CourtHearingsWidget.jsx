@@ -1,3 +1,4 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, {
   useState,
   useMemo,
@@ -6,21 +7,7 @@ import React, {
   useRef,
 } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import {
-  Modal,
-  Form,
-  Input,
-  Select,
-  Tag,
-  Empty,
-  Button,
-  Avatar,
-  Tooltip,
-  Spin,
-  DatePicker,
-  message,
-  Alert,
-} from "antd";
+import { Modal, Form, Input, Select, Tag, Empty, Button, Avatar, Tooltip, DatePicker, message, Alert } from "antd";
 import {
   CalendarOutlined,
   ClockCircleOutlined,
@@ -1311,7 +1298,7 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
           <div className="max-h-[460px] overflow-y-auto pr-1">
             {loading && hearings.length === 0 ? (
               <div className="py-14 flex items-center justify-center">
-                <Spin />
+                <LoadingSpinner fullScreen={false} />
               </div>
             ) : error ? (
               <div className="py-14 text-center">

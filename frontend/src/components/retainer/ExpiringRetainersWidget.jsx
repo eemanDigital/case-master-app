@@ -1,15 +1,6 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, { useEffect } from "react";
-import {
-  Card,
-  List,
-  Typography,
-  Badge,
-  Space,
-  Button,
-  Empty,
-  Spin,
-  Tag,
-} from "antd";
+import { Card, List, Typography, Badge, Space, Button, Empty, Tag } from "antd";
 import {
   WarningOutlined,
   CalendarOutlined,
@@ -91,7 +82,7 @@ const ExpiringRetainersWidget = () => {
         <div
           className="flex justify-center items-center"
           style={{ minHeight: 200 }}>
-          <Spin />
+          <LoadingSpinner fullScreen={false} />
         </div>
       ) : !expiringRetainers || expiringRetainers.length === 0 ? (
         <Empty

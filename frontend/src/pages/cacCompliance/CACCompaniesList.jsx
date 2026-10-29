@@ -1,26 +1,8 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  Card,
-  Table,
-  Tag,
-  Button,
-  Input,
-  Select,
-  Space,
-  Modal,
-  Form,
-  message,
-  Spin,
-  Popconfirm,
-  Tooltip,
-  Dropdown,
-  Avatar,
-  Typography,
-  Row,
-  Col,
-} from 'antd';
+import { Card, Table, Tag, Button, Input, Select, Space, Modal, Form, message, Popconfirm, Tooltip, Dropdown, Avatar, Typography, Row, Col } from 'antd';
 import {
   PlusOutlined,
   SearchOutlined,
@@ -463,7 +445,7 @@ const CACCompaniesList = () => {
         </Row>
 
         <Card className="shadow-sm">
-          <Spin spinning={isLoading} tip="Loading companies...">
+          <LoadingSpinner fullScreen={false} spinning={isLoading} tip="Loading companies...">
             <Table
               dataSource={companies}
               columns={columns}
@@ -482,7 +464,7 @@ const CACCompaniesList = () => {
                 onClick: () => navigate(`/dashboard/cac-compliance/companies/${record._id}`),
               })}
             />
-          </Spin>
+          </LoadingSpinner>
         </Card>
 
         <Modal

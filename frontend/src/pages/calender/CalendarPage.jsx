@@ -1,6 +1,7 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
-import { Layout, message, Spin } from "antd";
+import { Layout, message } from "antd";
 import { LoadingOutlined } from "@ant-design/icons";
 import CalendarHeader from "../../components/calender/CalendarHeader";
 import MonthView from "../../components/calender/MonthView";
@@ -277,12 +278,12 @@ const CalendarPage = () => {
         </div>
 
         {/* Calendar View */}
-        <Spin
+        <LoadingSpinner fullScreen={false}
           spinning={loading}
           indicator={<LoadingOutlined style={{ fontSize: 48 }} spin />}
           tip="Loading events...">
           {renderCalendarView()}
-        </Spin>
+        </LoadingSpinner>
       </Content>
 
       {/* Modals */}

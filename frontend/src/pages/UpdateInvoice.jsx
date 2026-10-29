@@ -1,20 +1,7 @@
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useMemo } from "react";
-import {
-  Alert,
-  Button,
-  Input,
-  Form,
-  Divider,
-  Typography,
-  Card,
-  Select,
-  InputNumber,
-  DatePicker,
-  Row,
-  Col,
-  Spin,
-} from "antd";
+import { Alert, Button, Input, Form, Divider, Typography, Card, Select, InputNumber, DatePicker, Row, Col } from "antd";
 import { invoiceOptions } from "../data/options";
 import useMattersSelectOptions from "../hooks/useMattersSelectOptions";
 import dayjs from "dayjs";
@@ -155,7 +142,7 @@ const UpdateInvoice = () => {
   if (invoiceLoading || mattersLoading || clientsLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <Spin size="large" tip="Loading invoice data..." />
+        <LoadingSpinner fullScreen={false} size="large" tip="Loading invoice data..." />
       </div>
     );
   }

@@ -1,28 +1,8 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Row,
-  Col,
-  Card,
-  Statistic,
-  Table,
-  Button,
-  Tag,
-  Modal,
-  Form,
-  Input,
-  Select,
-  DatePicker,
-  Typography,
-  Space,
-  Spin,
-  message,
-  Tooltip,
-  Alert,
-  Divider,
-  Empty,
-} from "antd";
+import { Row, Col, Card, Statistic, Table, Button, Tag, Modal, Form, Input, Select, DatePicker, Typography, Space, message, Tooltip, Alert, Divider, Empty } from "antd";
 import {
   PlusOutlined,
   SafetyCertificateOutlined,
@@ -863,7 +843,7 @@ const ComplianceTrackerPage = () => {
         <Card bordered={false} style={{ borderRadius: 12 }} title="Tracked Entities">
           {tableLoading ? (
             <div style={{ textAlign: "center", padding: 60 }}>
-              <Spin size="large" />
+              <LoadingSpinner fullScreen={false} size="large" />
             </div>
           ) : entities.length === 0 ? (
             <Empty

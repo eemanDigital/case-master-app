@@ -1,22 +1,7 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Tag,
-  Button,
-  Space,
-  Input,
-  Select,
-  DatePicker,
-  Typography,
-  Dropdown,
-  message,
-  Modal,
-  Spin,
-  Empty,
-  Grid,
-  Tooltip,
-  Badge,
-} from "antd";
+import { Tag, Button, Space, Input, Select, DatePicker, Typography, Dropdown, message, Modal, Empty, Grid, Tooltip, Badge } from "antd";
 import {
   DownloadOutlined,
   EyeOutlined,
@@ -890,7 +875,7 @@ const GeneratedDocumentsList = () => {
                 padding: 80,
                 gap: 16,
               }}>
-              <Spin size="large" />
+              <LoadingSpinner fullScreen={false} size="large" />
               <div
                 style={{
                   color: "#94a3b8",

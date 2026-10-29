@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { Card, Spin, message, Button, Space } from "antd";
+import { Card, message, Button, Space } from "antd";
 import { ArrowLeftOutlined } from "@ant-design/icons";
 import PropertyForm from "../../components/property/PropertyForm";
 import LoadingScreen from "../../components/common/LoadingScreen";

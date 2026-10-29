@@ -1,24 +1,6 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import {
-  Card,
-  Row,
-  Col,
-  Tabs,
-  Typography,
-  Tag,
-  Statistic,
-  Button,
-  Space,
-  Descriptions,
-  Alert,
-  Modal,
-  Avatar,
-  Spin,
-  message,
-  Dropdown,
-  Menu,
-  Divider,
-} from "antd";
+import { Card, Row, Col, Tabs, Typography, Tag, Statistic, Button, Space, Descriptions, Alert, Modal, Avatar, message, Dropdown, Menu, Divider } from "antd";
 import {
   EditOutlined,
   DollarOutlined,
@@ -610,7 +592,7 @@ const GeneralDetails = () => {
   if (detailsLoading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh] flex-col">
-        <Spin size="large" />
+        <LoadingSpinner fullScreen={false} size="large" />
         <Text className="mt-4 text-gray-600">
           Loading general matter details...
         </Text>

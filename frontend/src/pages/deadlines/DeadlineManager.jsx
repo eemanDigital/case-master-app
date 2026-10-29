@@ -1,25 +1,7 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  Button,
-  Input,
-  Select,
-  DatePicker,
-  Tag,
-  Modal,
-  Form,
-  message,
-  Spin,
-  Empty,
-  Grid,
-  Tooltip,
-  Dropdown,
-  Space,
-  Typography,
-  Badge,
-  Card,
-  Divider,
-} from "antd";
+import { Button, Input, Select, DatePicker, Tag, Modal, Form, message, Empty, Grid, Tooltip, Dropdown, Space, Typography, Badge, Card, Divider } from "antd";
 import {
   PlusOutlined,
   ClockCircleOutlined,
@@ -911,7 +893,7 @@ const DeadlineManager = () => {
                 justifyContent: "center",
                 padding: 60,
               }}>
-              <Spin size="large" />
+              <LoadingSpinner fullScreen={false} size="large" />
             </div>
           ) : deadlines.length === 0 ? (
             <Empty

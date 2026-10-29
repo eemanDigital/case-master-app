@@ -1,6 +1,7 @@
+import LoadingSpinner from "./LoadingSpinner.jsx";
 import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import { Card, Row, Col, Statistic, Progress, Tag, Spin, Alert } from "antd";
+import { Card, Row, Col, Statistic, Progress, Tag, Alert } from "antd";
 import {
   CalendarOutlined,
   MedicineBoxOutlined,
@@ -42,7 +43,7 @@ const LeaveSummaryCard = ({ id, showApplyButton = false }) => {
     return (
       <Card>
         <div className="text-center py-8">
-          <Spin size="large" />
+          <LoadingSpinner fullScreen={false} size="large" />
         </div>
       </Card>
     );

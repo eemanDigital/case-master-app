@@ -1,18 +1,7 @@
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import {
-  Card,
-  Form,
-  Input,
-  Button,
-  Select,
-  Steps,
-  Typography,
-  Divider,
-  message,
-  Alert,
-  Spin,
-} from "antd";
+import { Card, Form, Input, Button, Select, Steps, Typography, Divider, message, Alert } from "antd";
 import {
   MailOutlined,
   LockOutlined,
@@ -176,7 +165,7 @@ const Register = () => {
   if (validatingToken) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
-        <Spin size="large" />
+        <LoadingSpinner fullScreen={false} size="large" />
       </div>
     );
   }

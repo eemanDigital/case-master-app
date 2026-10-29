@@ -1,23 +1,6 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, { useState, useMemo, useCallback, useEffect } from "react";
-import {
-  Card,
-  Button,
-  Modal,
-  Form,
-  Input,
-  DatePicker,
-  Select,
-  Space,
-  Empty,
-  Divider,
-  message,
-  Checkbox,
-  Alert,
-  Tag,
-  Tooltip,
-  Progress,
-  Spin,
-} from "antd";
+import { Card, Button, Modal, Form, Input, DatePicker, Select, Space, Empty, Divider, message, Checkbox, Alert, Tag, Tooltip, Progress } from "antd";
 import {
   PlusOutlined,
   CalendarOutlined,
@@ -835,7 +818,7 @@ const HearingTimeline = ({
                   maxTagCount="responsive"
                   notFoundContent={
                     usersLoading ? (
-                      <Spin size="small" />
+                      <LoadingSpinner fullScreen={false} size="small" />
                     ) : (
                       <span className="text-xs text-slate-400 px-2">
                         No lawyers available

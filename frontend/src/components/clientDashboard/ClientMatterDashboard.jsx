@@ -1,31 +1,8 @@
 /* eslint-disable react/prop-types */
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useSelector } from "react-redux";
-import {
-  Card,
-  Row,
-  Col,
-  Tabs,
-  Badge,
-  Statistic,
-  Space,
-  Button,
-  Tag,
-  List,
-  Typography,
-  Empty,
-  Spin,
-  Modal,
-  Descriptions,
-  Avatar,
-  Divider,
-  Input,
-  Timeline,
-  message,
-  Alert,
-  Form,
-  Select,
-} from "antd";
+import { Card, Row, Col, Tabs, Badge, Statistic, Space, Button, Tag, List, Typography, Empty, Modal, Descriptions, Avatar, Divider, Input, Timeline, message, Alert, Form, Select } from "antd";
 import {
   CalendarOutlined,
   FileTextOutlined,
@@ -495,7 +472,7 @@ const ClientMatterDashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Spin size="large" tip="Loading your dashboard..." />
+        <LoadingSpinner fullScreen={false} size="large" tip="Loading your dashboard..." />
       </div>
     );
   }

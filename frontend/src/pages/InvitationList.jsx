@@ -1,22 +1,6 @@
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import React, { useState, useEffect } from "react";
-import {
-  Card,
-  Table,
-  Button,
-  Tag,
-  Space,
-  Input,
-  Select,
-  Modal,
-  Form,
-  message,
-  Tooltip,
-  Popconfirm,
-  Typography,
-  Empty,
-  Spin,
-  Alert,
-} from "antd";
+import { Card, Table, Button, Tag, Space, Input, Select, Modal, Form, message, Tooltip, Popconfirm, Typography, Empty, Alert } from "antd";
 import {
   PlusOutlined,
   ReloadOutlined,
@@ -418,7 +402,7 @@ const InvitationList = () => {
       </Card>
 
       <Card>
-        <Spin spinning={loading}>
+        <LoadingSpinner fullScreen={false} spinning={loading}>
           {invitations.length === 0 ? (
             <Empty
               image={Empty.PRESENTED_IMAGE_SIMPLE}
@@ -445,7 +429,7 @@ const InvitationList = () => {
               />
             </div>
           )}
-        </Spin>
+        </LoadingSpinner>
       </Card>
 
       <Modal

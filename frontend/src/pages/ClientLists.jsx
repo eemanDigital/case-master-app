@@ -1,18 +1,8 @@
 // pages/ClientList.jsx
+import LoadingSpinner from "../components/LoadingSpinner.jsx";
 import { memo, useCallback } from "react";
 import { Link } from "react-router-dom";
-import {
-  Pagination,
-  Row,
-  Card,
-  Empty,
-  Statistic,
-  Col,
-  Spin,
-  Tag,
-  Space,
-  Button,
-} from "antd";
+import { Pagination, Row, Card, Empty, Statistic, Col, Tag, Space, Button } from "antd";
 import {
   PlusOutlined,
   UserOutlined,
@@ -280,7 +270,7 @@ const ClientList = memo(() => {
           {/* Loading Overlay */}
           {loading && (
             <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded-lg">
-              <Spin size="large" tip="Loading..." />
+              <LoadingSpinner fullScreen={false} size="large" tip="Loading..." />
             </div>
           )}
 

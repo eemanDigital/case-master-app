@@ -1,28 +1,8 @@
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
-import {
-  Card,
-  Table,
-  Tag,
-  Button,
-  Select,
-  Space,
-  Modal,
-  Form,
-  Input,
-  message,
-  Spin,
-  Popconfirm,
-  Row,
-  Col,
-  Badge,
-  Empty,
-  Statistic,
-  Typography,
-  Tooltip,
-  Avatar,
-} from 'antd';
+import { Card, Table, Tag, Button, Select, Space, Modal, Form, Input, message, Popconfirm, Row, Col, Badge, Empty, Statistic, Typography, Tooltip, Avatar } from 'antd';
 import {
   PlusOutlined,
   WarningOutlined,
@@ -668,7 +648,7 @@ const CACTasksPage = () => {
               </div>
             </div>
           ) : (
-            <Spin spinning={isLoading}>
+            <LoadingSpinner fullScreen={false} spinning={isLoading}>
               <Table
                 dataSource={filteredTasks}
                 columns={columns}
@@ -684,7 +664,7 @@ const CACTasksPage = () => {
                 }}
                 locale={{ emptyText: <Empty description="No tasks found" /> }}
               />
-            </Spin>
+            </LoadingSpinner>
           )}
         </Card>
 

@@ -1,18 +1,6 @@
+import LoadingSpinner from "../LoadingSpinner.jsx";
 import React, { useCallback, useState, useEffect, useMemo } from "react";
-import {
-  Tag,
-  Button,
-  Tooltip,
-  Space,
-  Divider,
-  Avatar,
-  Progress,
-  Modal,
-  DatePicker,
-  Select,
-  message,
-  Spin,
-} from "antd";
+import { Tag, Button, Tooltip, Space, Divider, Avatar, Progress, Modal, DatePicker, Select, message } from "antd";
 import {
   CheckCircleOutlined,
   CalendarOutlined,
@@ -312,7 +300,7 @@ const NextHearingEditModal = React.memo(({
             notFoundContent={
               usersLoading ? (
                 <div className="flex justify-center py-2">
-                  <Spin size="small" />
+                  <LoadingSpinner fullScreen={false} size="small" />
                 </div>
               ) : (
                 <span className="text-xs text-slate-400 px-2">No lawyers available</span>
