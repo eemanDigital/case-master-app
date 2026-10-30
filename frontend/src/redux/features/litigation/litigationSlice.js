@@ -35,6 +35,9 @@ const initialState = {
   },
   litigationSteps: [],
   stepsLoading: false,
+  myLitigationSteps: [],
+  myLitigationStepsLoading: false,
+  myLitigationStepsError: null,
   loading: false,
   detailsLoading: false,
   statsLoading: false,
@@ -528,6 +531,20 @@ export const fetchLitigationSteps = createAsyncThunk(
     } catch (error) {
       return rejectWithValue(
         error.response?.data || "Failed to fetch litigation steps",
+      );
+    }
+  },
+);
+
+export const fetchMyLitigationSteps = createAsyncThunk(
+  "litigation/fetchMySteps",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await litigationService.getMyLitigationSteps();
+      return response.data?.data || [];
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch assigned litigation steps",
       );
     }
   },
@@ -1171,7 +1188,20 @@ const litigationSlice = createSlice({
       .addCase(fetchLitigationSteps.rejected, (state, action) => {
         state.stepsLoading = false;
         state.error = action.payload;
-        state.litigationSteps = [];
+      });
+
+    builder
+      .addCase(fetchMyLitigationSteps.pending, (state) => {
+        state.myLitigationStepsLoading = true;
+        state.myLitigationStepsError = null;
+      })
+      .addCase(fetchMyLitigationSteps.fulfilled, (state, action) => {
+        state.myLitigationStepsLoading = false;
+        state.myLitigationSteps = action.payload;
+      })
+      .addCase(fetchMyLitigationSteps.rejected, (state, action) => {
+        state.myLitigationStepsLoading = false;
+        state.myLitigationStepsError = action.payload;
       })
       .addCase(addLitigationStep.pending, (state) => {
         state.actionLoading = true;
@@ -1292,6 +1322,12 @@ export const selectLitigationError = (state) => state.litigation.error;
 export const selectSearchMode = (state) => state.litigation.searchMode;
 export const selectLitigationSteps = (state) => state.litigation.litigationSteps || [];
 export const selectStepsLoading = (state) => state.litigation.stepsLoading;
+export const selectMyLitigationSteps = (state) =>
+  state.litigation.myLitigationSteps || [];
+export const selectMyLitigationStepsLoading = (state) =>
+  state.litigation.myLitigationStepsLoading;
+export const selectMyLitigationStepsError = (state) =>
+  state.litigation.myLitigationStepsError;
 
 // ── Derived selectors ──────────────────────────────────────────────────────
 

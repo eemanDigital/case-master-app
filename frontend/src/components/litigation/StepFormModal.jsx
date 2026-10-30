@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import PropTypes from "prop-types";
 import {
   Modal,
   Form,
@@ -17,6 +18,7 @@ import {
   selectActionLoading,
 } from "../../redux/features/litigation/litigationSlice";
 import { PRIORITY_LEVELS, DATE_FORMAT } from "../../utils/litigationConstants";
+import useUserSelectOptions from "../../hooks/useUserSelectOptions";
 
 const { TextArea } = Input;
 const { Option } = Select;
@@ -38,6 +40,11 @@ const CreateEditStepModal = ({
   const [form] = Form.useForm();
   const dispatch = useDispatch();
   const actionLoading = useSelector(selectActionLoading);
+  const {
+    data: staffOptions,
+    loading: staffLoading,
+    error: staffError,
+  } = useUserSelectOptions({ type: "staff", autoFetch: visible });
 
   useEffect(() => {
     if (visible) {
@@ -45,12 +52,15 @@ const CreateEditStepModal = ({
         form.setFieldsValue({
           ...editingStep,
           dueDate: editingStep.dueDate ? dayjs(editingStep.dueDate) : null,
+          assignedTo:
+            editingStep.assignedTo?._id || editingStep.assignedTo || undefined,
         });
       } else {
         form.resetFields();
         form.setFieldsValue({
           priority: "medium",
           status: "pending",
+          assignedTo: undefined,
         });
       }
     }
@@ -116,6 +126,26 @@ const CreateEditStepModal = ({
           <TextArea rows={3} placeholder="Enter step description" />
         </Form.Item>
 
+        <Form.Item
+          name="assignedTo"
+          label="Assigned to"
+          rules={[{ required: true, message: "Please select the responsible officer" }]}
+          validateStatus={staffError ? "error" : undefined}
+          help={
+            staffError
+              ? "Unable to load staff accounts. Close and reopen this form to retry."
+              : undefined
+          }
+        >
+          <Select
+            showSearch
+            optionFilterProp="label"
+            loading={staffLoading}
+            options={staffOptions}
+            placeholder="Select the officer responsible for this step"
+          />
+        </Form.Item>
+
         <Form.Item name="priority" label="Priority">
           <Select placeholder="Select priority">
             {PRIORITY_LEVELS.map((priority) => (
@@ -177,6 +207,24 @@ const CreateEditStepModal = ({
       </Form>
     </Modal>
   );
+};
+
+CreateEditStepModal.propTypes = {
+  visible: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func,
+  matterId: PropTypes.string.isRequired,
+  editingStep: PropTypes.shape({
+    _id: PropTypes.string,
+    dueDate: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.instanceOf(Date),
+    ]),
+    assignedTo: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.shape({ _id: PropTypes.string }),
+    ]),
+  }),
 };
 
 export default CreateEditStepModal;

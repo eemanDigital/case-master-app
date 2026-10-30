@@ -12,6 +12,7 @@ import litigationReducer, {
   updateHearingInList,
   removeHearingFromList,
   clearMatterHearings,
+  fetchMyLitigationSteps,
 } from "../../redux/features/litigation/litigationSlice";
 
 describe("litigationSlice reducers", () => {
@@ -37,6 +38,9 @@ describe("litigationSlice reducers", () => {
     matterHearingsStats: { total: 0, past: 0, today: 0, upcoming: 0, completed: 0, pending: 0 },
     litigationSteps: [],
     stepsLoading: false,
+    myLitigationSteps: [],
+    myLitigationStepsLoading: false,
+    myLitigationStepsError: null,
     loading: false,
     detailsLoading: false,
     statsLoading: false,
@@ -217,6 +221,42 @@ describe("litigationSlice reducers", () => {
       expect(result.matterHearings).toEqual([]);
       expect(result.matterHearingsStats.total).toBe(0);
       expect(result.matterHearingsStats.upcoming).toBe(0);
+    });
+  });
+
+  describe("assigned litigation step reminders", () => {
+    it("stores the current user's open litigation steps", () => {
+      const steps = [{ _id: "step-1", title: "File response" }];
+      const result = litigationReducer(
+        initialState,
+        fetchMyLitigationSteps.fulfilled(steps, "request-1"),
+      );
+
+      expect(result.myLitigationSteps).toEqual(steps);
+      expect(result.myLitigationStepsLoading).toBe(false);
+      expect(result.myLitigationStepsError).toBeNull();
+    });
+
+    it("retains and reports reminder loading failures", () => {
+      const pendingState = litigationReducer(
+        initialState,
+        fetchMyLitigationSteps.pending("request-1"),
+      );
+      const result = litigationReducer(
+        pendingState,
+        fetchMyLitigationSteps.rejected(
+          new Error("Request failed"),
+          "request-1",
+          undefined,
+          "Failed to fetch assigned litigation steps",
+        ),
+      );
+
+      expect(pendingState.myLitigationStepsLoading).toBe(true);
+      expect(result.myLitigationStepsLoading).toBe(false);
+      expect(result.myLitigationStepsError).toBe(
+        "Failed to fetch assigned litigation steps",
+      );
     });
   });
 });

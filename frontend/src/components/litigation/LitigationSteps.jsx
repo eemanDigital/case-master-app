@@ -162,6 +162,10 @@ const LitigationSteps = ({ matterId }) => {
               step.dueDate &&
               !isCompleted &&
               dayjs(step.dueDate).isBefore(dayjs(), "day");
+            const assigneeName =
+              step.assignedTo && typeof step.assignedTo === "object"
+                ? `${step.assignedTo.firstName || ""} ${step.assignedTo.lastName || ""}`.trim()
+                : "";
 
             return (
               <List.Item
@@ -235,6 +239,11 @@ const LitigationSteps = ({ matterId }) => {
                         <ExpandableText rows={2}>
                           {step.description}
                         </ExpandableText>
+                      )}
+                      {assigneeName && (
+                        <span style={{ color: "#8c8c8c" }}>
+                          Assigned to: {assigneeName}
+                        </span>
                       )}
                       {step.dueDate && (
                         <span

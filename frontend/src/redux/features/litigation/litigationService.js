@@ -322,6 +322,10 @@ export const getLitigationSteps = (matterId) => {
   return apiService.get(`/litigation/${matterId}/steps`);
 };
 
+export const getMyLitigationSteps = () => {
+  return apiService.get("/litigation/my-steps");
+};
+
 export const addLitigationStep = (matterId, stepData) => {
   return apiService.post(`/litigation/${matterId}/steps`, stepData);
 };
@@ -408,6 +412,7 @@ const litigationService = {
 
   // Litigation Steps
   getLitigationSteps,
+  getMyLitigationSteps,
   addLitigationStep,
   updateLitigationStep,
   deleteLitigationStep,

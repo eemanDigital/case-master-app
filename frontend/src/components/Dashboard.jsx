@@ -5,6 +5,7 @@ import {
   RightOutlined,
   CalendarOutlined,
   ClockCircleOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import {
   FaBriefcase,
@@ -24,7 +25,13 @@ import {
   getMatterStats,
   getMyMattersSummary,
 } from "../redux/features/matter/matterSlice";
-import { fetchUpcomingHearings } from "../redux/features/litigation/litigationSlice";
+import {
+  fetchMyLitigationSteps,
+  fetchUpcomingHearings,
+  selectMyLitigationSteps,
+  selectMyLitigationStepsError,
+  selectMyLitigationStepsLoading,
+} from "../redux/features/litigation/litigationSlice";
 import dayjs from "dayjs";
 import { Link } from "react-router-dom";
 
@@ -153,6 +160,44 @@ const CompactTaskRow = React.memo(({ task }) => {
   );
 });
 
+const CompactLitigationStepRow = React.memo(({ step }) => {
+  const overdue =
+    step.dueDate && dayjs(step.dueDate).isBefore(now, "day");
+
+  return (
+    <Link
+      to={`/dashboard/matters/litigation/${step.matterId}`}
+      className="block p-3 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all hover:shadow-md">
+      <div className="flex items-center gap-3">
+        <FileTextOutlined
+          className={`text-base ${overdue ? "text-red-500" : "text-violet-500"}`}
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-900 truncate">
+            {step.title}
+          </p>
+          <p className="text-xs text-gray-500 truncate">
+            {step.matter?.matterNumber || step.suitNo || "Litigation matter"}
+            {step.matter?.title ? ` · ${step.matter.title}` : ""}
+          </p>
+        </div>
+        <span
+          className={`text-xs font-medium whitespace-nowrap ${
+            overdue ? "text-red-600" : "text-gray-500"
+          }`}>
+          {step.dueDate
+            ? overdue
+              ? `Overdue · ${dayjs(step.dueDate).format("MMM D")}`
+              : `Due ${dayjs(step.dueDate).format("MMM D")}`
+            : step.status === "in-progress"
+              ? "In progress"
+              : "Pending"}
+        </span>
+      </div>
+    </Link>
+  );
+});
+
 const MatterStatusBadge = React.memo(({ status }) => {
   const colorMap = {
     active: "bg-emerald-100 text-emerald-700",
@@ -185,6 +230,9 @@ const Dashboard = () => {
 
   const hearings = litigationState?.upcomingHearings ?? [];
   const hearingsLoading = litigationState?.statsLoading ?? false;
+  const myLitigationSteps = useSelector(selectMyLitigationSteps);
+  const myLitigationStepsLoading = useSelector(selectMyLitigationStepsLoading);
+  const myLitigationStepsError = useSelector(selectMyLitigationStepsError);
 
   const { isStaff, isClient, isVerified } = useAdminHook();
 
@@ -203,6 +251,10 @@ const Dashboard = () => {
         dispatch(fetchUpcomingHearings({ range: "all", limit: 50 }));
     }
   }, [dispatch, isClient, matterStats, myMattersSummary]);
+
+  useEffect(() => {
+    if (!isClient) dispatch(fetchMyLitigationSteps());
+  }, [dispatch, isClient]);
 
   const tasksData = useMemo(
     () => (taskEntities ? Object.values(taskEntities) : []),
@@ -348,6 +400,43 @@ const Dashboard = () => {
                     )}
                   </Card>
                 </div>
+
+                <Card
+                  className="shadow-lg border-border rounded-2xl mb-8"
+                  bordered={false}
+                  title={
+                    <CardHeader
+                      icon={<FileTextOutlined className="text-violet-500" />}
+                      title="My Litigation Steps"
+                      viewAllTo="/dashboard/matters/litigation"
+                    />
+                  }>
+                  {myLitigationStepsLoading ? (
+                    <Skeleton active paragraph={{ rows: 3 }} />
+                  ) : myLitigationStepsError ? (
+                    <Alert
+                      type="error"
+                      showIcon
+                      message="Could not load assigned litigation steps"
+                      description={
+                        typeof myLitigationStepsError === "string"
+                          ? myLitigationStepsError
+                          : "An error occurred while loading your reminders."
+                      }
+                    />
+                  ) : myLitigationSteps.length > 0 ? (
+                    <div className="space-y-2">
+                      {myLitigationSteps.slice(0, 5).map((step) => (
+                        <CompactLitigationStepRow key={step._id} step={step} />
+                      ))}
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={FileTextOutlined}
+                      text="No open litigation steps assigned to you"
+                    />
+                  )}
+                </Card>
 
                 <Card
                   className="shadow-lg border-border rounded-2xl mb-8"

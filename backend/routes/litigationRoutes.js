@@ -13,6 +13,7 @@ litigationRouter.use(protect);
 
 litigationRouter.get("/stats", litigationController.getLitigationStats);
 litigationRouter.get("/dashboard", litigationController.getLitigationDashboard); // ✅
+litigationRouter.get("/my-steps", litigationController.getMyLitigationSteps);
 
 litigationRouter.get(
   "/upcoming-hearings",

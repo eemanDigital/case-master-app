@@ -1,5 +1,6 @@
 const Matter = require("../models/matterModel");
 const LitigationDetail = require("../models/litigationDetailModel");
+const User = require("../models/userModel");
 const BlockedDate = require("../models/blockedDateModel");
 const mongoose = require("mongoose");
 const catchAsync = require("../utils/catchAsync");
@@ -74,6 +75,27 @@ const isPrivilegedHearingUser = (user) =>
         "super-admin",
       ].includes(user?.role),
   );
+
+const validateLitigationStepAssignee = async (assignedTo, firmId) => {
+  if (!assignedTo || !mongoose.Types.ObjectId.isValid(assignedTo)) {
+    throw new AppError("Select an officer to assign this step to", 400);
+  }
+
+  const assigneeExists = await User.exists({
+    _id: assignedTo,
+    firmId,
+    userType: "staff",
+    isActive: true,
+    isDeleted: { $ne: true },
+  });
+
+  if (!assigneeExists) {
+    throw new AppError(
+      "The selected officer is not an active staff member of this firm",
+      400,
+    );
+  }
+};
 
 // ============================================
 // HEARING DATE BLOCK CHECKER
@@ -2299,9 +2321,68 @@ exports.downloadUpcomingHearingsPdf = catchAsync(async (req, res, next) => {
 // ADD LITIGATION STEP
 // ============================================
 
+exports.getMyLitigationSteps = catchAsync(async (req, res) => {
+  const litigationDetails = await LitigationDetail.find({
+    firmId: req.firmId,
+    isDeleted: { $ne: true },
+    litigationSteps: {
+      $elemMatch: {
+        assignedTo: req.user._id,
+        status: { $in: ["pending", "in-progress"] },
+      },
+    },
+  })
+    .select("matterId suitNo litigationSteps")
+    .populate({
+      path: "matter",
+      select: "matterNumber title",
+      match: { firmId: req.firmId, isDeleted: { $ne: true } },
+    })
+    .populate({
+      path: "litigationSteps.assignedTo",
+      select: "firstName lastName",
+    })
+    .lean();
+
+  const steps = litigationDetails.flatMap((detail) => {
+    if (!detail.matter) return [];
+
+    return (detail.litigationSteps || [])
+      .filter(
+        (step) =>
+          String(step.assignedTo?._id || step.assignedTo) ===
+            String(req.user._id) &&
+          ["pending", "in-progress"].includes(step.status),
+      )
+      .map((step) => ({
+        ...step,
+        matterId: detail.matterId,
+        matter: detail.matter,
+        suitNo: detail.suitNo,
+      }));
+  });
+
+  steps.sort((left, right) => {
+    const leftDueDate = left.dueDate
+      ? new Date(left.dueDate).getTime()
+      : Number.POSITIVE_INFINITY;
+    const rightDueDate = right.dueDate
+      ? new Date(right.dueDate).getTime()
+      : Number.POSITIVE_INFINITY;
+    return leftDueDate - rightDueDate;
+  });
+
+  res.status(200).json({
+    status: "success",
+    results: steps.length,
+    data: steps,
+  });
+});
+
 exports.addLitigationStep = catchAsync(async (req, res, next) => {
   const { matterId } = req.params;
   const stepData = req.body;
+  await validateLitigationStepAssignee(stepData.assignedTo, req.firmId);
 
   const matter = await Matter.findOne({
     _id: matterId,
@@ -2341,13 +2422,19 @@ exports.addLitigationStep = catchAsync(async (req, res, next) => {
     litigationDetail.litigationSteps[
       litigationDetail.litigationSteps.length - 1
     ];
+  await litigationDetail.populate({
+    path: "litigationSteps.assignedTo",
+    select: "firstName lastName",
+  });
 
   matter.lastActivityDate = new Date();
   await matter.save();
 
   res.status(201).json({
     status: "success",
-    data: addedStep,
+    data: litigationDetail.litigationSteps.find(
+      (step) => step._id.toString() === addedStep._id.toString(),
+    ),
   });
 });
 
@@ -2378,6 +2465,10 @@ exports.getLitigationSteps = catchAsync(async (req, res, next) => {
     return next(new AppError("Litigation details not found", 404));
   }
 
+  await litigationDetail.populate({
+    path: "litigationSteps.assignedTo",
+    select: "firstName lastName",
+  });
   const steps = litigationDetail.litigationSteps || [];
 
   const sortedSteps = [...steps].sort((a, b) => a.order - b.order);
@@ -2435,6 +2526,10 @@ exports.updateLitigationStep = catchAsync(async (req, res, next) => {
     "order",
   ];
 
+  if (hasOwn(updateData, "assignedTo")) {
+    await validateLitigationStepAssignee(updateData.assignedTo, req.firmId);
+  }
+
   allowedUpdates.forEach((field) => {
     if (updateData[field] !== undefined) {
       litigationDetail.litigationSteps[stepIndex][field] = updateData[field];
@@ -2442,6 +2537,10 @@ exports.updateLitigationStep = catchAsync(async (req, res, next) => {
   });
 
   await litigationDetail.save();
+  await litigationDetail.populate({
+    path: "litigationSteps.assignedTo",
+    select: "firstName lastName",
+  });
 
   matter.lastActivityDate = new Date();
   await matter.save();
@@ -2549,6 +2648,10 @@ exports.updateLitigationStepStatus = catchAsync(async (req, res, next) => {
   }
 
   await litigationDetail.save();
+  await litigationDetail.populate({
+    path: "litigationSteps.assignedTo",
+    select: "firstName lastName",
+  });
 
   matter.lastActivityDate = new Date();
   await matter.save();
