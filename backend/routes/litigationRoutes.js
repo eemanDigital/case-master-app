@@ -148,6 +148,10 @@ litigationRouter.get(
   litigationController.getLitigationSteps,
 );
 litigationRouter.patch(
+  "/:matterId/steps/reorder",
+  litigationController.reorderLitigationSteps,
+);
+litigationRouter.patch(
   "/:matterId/steps/:stepId",
   litigationController.updateLitigationStep,
 );
@@ -158,10 +162,6 @@ litigationRouter.delete(
 litigationRouter.patch(
   "/:matterId/steps/:stepId/status",
   litigationController.updateLitigationStepStatus,
-);
-litigationRouter.patch(
-  "/:matterId/steps/reorder",
-  litigationController.reorderLitigationSteps,
 );
 
 module.exports = litigationRouter;
