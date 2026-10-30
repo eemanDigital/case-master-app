@@ -8,6 +8,7 @@ import {
   Select,
   Space,
   Button,
+  Alert,
   message,
 } from "antd";
 import { useDispatch, useSelector } from "react-redux";
@@ -114,6 +115,13 @@ const CreateEditStepModal = ({
           status: "pending",
         }}
       >
+        <Alert
+          className="mb-4"
+          type="info"
+          showIcon
+          message="Assign an officer so this step appears on their dashboard until it is completed."
+        />
+
         <Form.Item
           name="title"
           label="Title"
@@ -128,21 +136,29 @@ const CreateEditStepModal = ({
 
         <Form.Item
           name="assignedTo"
-          label="Assigned to"
+          label="Officer responsible"
           rules={[{ required: true, message: "Please select the responsible officer" }]}
           validateStatus={staffError ? "error" : undefined}
           help={
             staffError
               ? "Unable to load staff accounts. Close and reopen this form to retry."
-              : undefined
+              : "This officer will see the step as a reminder on their dashboard."
           }
         >
           <Select
             showSearch
             optionFilterProp="label"
             loading={staffLoading}
+            disabled={Boolean(staffError) || staffOptions.length === 0}
             options={staffOptions}
-            placeholder="Select the officer responsible for this step"
+            notFoundContent={
+              staffError
+                ? "Staff accounts could not be loaded"
+                : staffLoading
+                  ? "Loading staff..."
+                  : "No active staff accounts found"
+            }
+            placeholder="Select the staff member who should act"
           />
         </Form.Item>
 
@@ -184,7 +200,11 @@ const CreateEditStepModal = ({
           </Select>
         </Form.Item>
 
-        <Form.Item name="dueDate" label="Due Date">
+        <Form.Item
+          name="dueDate"
+          label="Reminder due date"
+          help="Optional. The assigned officer will see this date with the reminder."
+        >
           <DatePicker
             style={{ width: "100%" }}
             format={DATE_FORMAT}
