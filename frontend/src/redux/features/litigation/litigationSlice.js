@@ -527,7 +527,9 @@ export const fetchLitigationSteps = createAsyncThunk(
   async (matterId, { rejectWithValue }) => {
     try {
       const response = await litigationService.getLitigationSteps(matterId);
-      return { matterId, steps: response.data?.data || [] };
+      const payload = response?.data;
+      const steps = Array.isArray(payload) ? payload : payload?.data || [];
+      return { matterId, steps };
     } catch (error) {
       return rejectWithValue(
         error.response?.data || "Failed to fetch litigation steps",
@@ -541,7 +543,8 @@ export const fetchMyLitigationSteps = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await litigationService.getMyLitigationSteps();
-      return response.data?.data || [];
+      const payload = response?.data;
+      return Array.isArray(payload) ? payload : payload?.data || [];
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to fetch assigned litigation steps",
@@ -559,7 +562,9 @@ export const addLitigationStep = createAsyncThunk(
         stepData,
       );
       message.success("Step added successfully");
-      return { matterId, step: response.data };
+      const payload = response?.data;
+      const step = payload?.data ?? payload;
+      return { matterId, step };
     } catch (error) {
       message.error(error.response?.data?.message || "Failed to add step");
       return rejectWithValue(error.response?.data || "Failed to add step");
@@ -577,7 +582,9 @@ export const updateLitigationStep = createAsyncThunk(
         stepData,
       );
       message.success("Step updated successfully");
-      return { matterId, step: response.data };
+      const payload = response?.data;
+      const step = payload?.data ?? payload;
+      return { matterId, step };
     } catch (error) {
       message.error(error.response?.data?.message || "Failed to update step");
       return rejectWithValue(error.response?.data || "Failed to update step");
@@ -609,7 +616,9 @@ export const updateLitigationStepStatus = createAsyncThunk(
         status,
       );
       message.success(`Step marked as ${status}`);
-      return { matterId, step: response.data };
+      const payload = response?.data;
+      const step = payload?.data ?? payload;
+      return { matterId, step };
     } catch (error) {
       message.error(error.response?.data?.message || "Failed to update status");
       return rejectWithValue(error.response?.data || "Failed to update status");
@@ -626,7 +635,9 @@ export const reorderLitigationSteps = createAsyncThunk(
         stepIds,
       );
       message.success("Steps reordered successfully");
-      return { matterId, steps: response.data?.data || [] };
+      const payload = response?.data;
+      const steps = Array.isArray(payload) ? payload : payload?.data || [];
+      return { matterId, steps };
     } catch (error) {
       message.error(error.response?.data?.message || "Failed to reorder steps");
       return rejectWithValue(error.response?.data || "Failed to reorder steps");
