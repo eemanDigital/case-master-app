@@ -2704,6 +2704,10 @@ exports.reorderLitigationSteps = catchAsync(async (req, res, next) => {
   });
 
   await litigationDetail.save();
+  await litigationDetail.populate({
+    path: "litigationSteps.assignedTo",
+    select: "firstName lastName",
+  });
 
   const sortedSteps = [...litigationDetail.litigationSteps].sort(
     (a, b) => a.order - b.order,

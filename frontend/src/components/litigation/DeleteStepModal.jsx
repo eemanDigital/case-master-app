@@ -1,5 +1,6 @@
-import { Modal, message, Space } from "antd";
+import { Modal, Space } from "antd";
 import { ExclamationCircleOutlined } from "@ant-design/icons";
+import PropTypes from "prop-types";
 import { useDispatch, useSelector } from "react-redux";
 import {
   deleteLitigationStep,
@@ -18,10 +19,9 @@ const DeleteStepModal = ({ visible, onCancel, onSuccess, matterId, step }) => {
           stepId: step?._id,
         }),
       ).unwrap();
-      message.success("Step deleted successfully");
       onSuccess?.();
-    } catch (error) {
-      message.error(error?.message || "Failed to delete step");
+    } catch {
+      // Errors are surfaced by the thunk.
     }
   };
 
@@ -42,13 +42,24 @@ const DeleteStepModal = ({ visible, onCancel, onSuccess, matterId, step }) => {
       destroyOnClose>
       <p>
         Are you sure you want to delete the step{" "}
-        <strong>"{step?.title}"</strong>?
+        <strong>{`"${step?.title || ""}"`}</strong>?
       </p>
       <p style={{ color: "#8c8c8c", fontSize: "12px" }}>
         This action cannot be undone.
       </p>
     </Modal>
   );
+};
+
+DeleteStepModal.propTypes = {
+  visible: PropTypes.bool.isRequired,
+  onCancel: PropTypes.func.isRequired,
+  onSuccess: PropTypes.func,
+  matterId: PropTypes.string.isRequired,
+  step: PropTypes.shape({
+    _id: PropTypes.string,
+    title: PropTypes.string,
+  }),
 };
 
 export default DeleteStepModal;

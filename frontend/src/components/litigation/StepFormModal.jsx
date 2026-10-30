@@ -9,7 +9,6 @@ import {
   Space,
   Button,
   Alert,
-  message,
 } from "antd";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
@@ -68,12 +67,17 @@ const CreateEditStepModal = ({
   }, [visible, editingStep, form]);
 
   const handleSubmit = async (values) => {
-    try {
-      const stepData = {
-        ...values,
-        dueDate: values.dueDate ? values.dueDate.toISOString() : undefined,
-      };
+    const stepData = {
+      title: values.title?.trim(),
+      description: values.description?.trim() || "",
+      status: values.status || "pending",
+      priority: values.priority || "medium",
+      assignedTo: values.assignedTo,
+      dueDate: values.dueDate ? values.dueDate.toISOString() : null,
+      notes: values.notes?.trim() || "",
+    };
 
+    try {
       if (editingStep) {
         await dispatch(
           updateLitigationStep({
@@ -82,18 +86,16 @@ const CreateEditStepModal = ({
             stepData,
           })
         ).unwrap();
-        message.success("Step updated successfully");
       } else {
         await dispatch(
           addLitigationStep({ matterId, stepData })
         ).unwrap();
-        message.success("Step added successfully");
       }
 
       form.resetFields();
       onSuccess?.();
-    } catch (error) {
-      message.error(error?.message || "Failed to save step");
+    } catch {
+      // Errors are surfaced by the thunks.
     }
   };
 
@@ -236,13 +238,27 @@ CreateEditStepModal.propTypes = {
   matterId: PropTypes.string.isRequired,
   editingStep: PropTypes.shape({
     _id: PropTypes.string,
+    title: PropTypes.string,
+    description: PropTypes.string,
+    status: PropTypes.string,
+    priority: PropTypes.string,
+    notes: PropTypes.string,
+    order: PropTypes.number,
     dueDate: PropTypes.oneOfType([
+      PropTypes.string,
+      PropTypes.instanceOf(Date),
+    ]),
+    completedDate: PropTypes.oneOfType([
       PropTypes.string,
       PropTypes.instanceOf(Date),
     ]),
     assignedTo: PropTypes.oneOfType([
       PropTypes.string,
-      PropTypes.shape({ _id: PropTypes.string }),
+      PropTypes.shape({
+        _id: PropTypes.string,
+        firstName: PropTypes.string,
+        lastName: PropTypes.string,
+      }),
     ]),
   }),
 };

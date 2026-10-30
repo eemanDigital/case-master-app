@@ -1191,10 +1191,13 @@ const litigationSlice = createSlice({
       .addCase(fetchLitigationSteps.pending, (state) => {
         state.stepsLoading = true;
         state.error = null;
+        state.litigationSteps = [];
       })
       .addCase(fetchLitigationSteps.fulfilled, (state, action) => {
         state.stepsLoading = false;
-        state.litigationSteps = action.payload.steps;
+        state.litigationSteps = Array.isArray(action.payload.steps)
+          ? action.payload.steps
+          : [];
       })
       .addCase(fetchLitigationSteps.rejected, (state, action) => {
         state.stepsLoading = false;
@@ -1219,7 +1222,10 @@ const litigationSlice = createSlice({
       })
       .addCase(addLitigationStep.fulfilled, (state, action) => {
         state.actionLoading = false;
-        state.litigationSteps.push(action.payload.step);
+        const step = action.payload.step;
+        if (step?._id) {
+          state.litigationSteps.push(step);
+        }
       })
       .addCase(addLitigationStep.rejected, (state, action) => {
         state.actionLoading = false;
@@ -1230,11 +1236,13 @@ const litigationSlice = createSlice({
       })
       .addCase(updateLitigationStep.fulfilled, (state, action) => {
         state.actionLoading = false;
+        const step = action.payload.step;
+        if (!step?._id) return;
         const index = state.litigationSteps.findIndex(
-          (s) => s._id === action.payload.step._id,
+          (s) => s._id === step._id,
         );
         if (index !== -1) {
-          state.litigationSteps[index] = action.payload.step;
+          state.litigationSteps[index] = step;
         }
       })
       .addCase(updateLitigationStep.rejected, (state, action) => {
@@ -1259,11 +1267,13 @@ const litigationSlice = createSlice({
       })
       .addCase(updateLitigationStepStatus.fulfilled, (state, action) => {
         state.actionLoading = false;
+        const step = action.payload.step;
+        if (!step?._id) return;
         const index = state.litigationSteps.findIndex(
-          (s) => s._id === action.payload.step._id,
+          (s) => s._id === step._id,
         );
         if (index !== -1) {
-          state.litigationSteps[index] = action.payload.step;
+          state.litigationSteps[index] = step;
         }
       })
       .addCase(updateLitigationStepStatus.rejected, (state, action) => {
@@ -1275,7 +1285,9 @@ const litigationSlice = createSlice({
       })
       .addCase(reorderLitigationSteps.fulfilled, (state, action) => {
         state.actionLoading = false;
-        state.litigationSteps = action.payload.steps;
+        state.litigationSteps = Array.isArray(action.payload.steps)
+          ? action.payload.steps
+          : state.litigationSteps;
       })
       .addCase(reorderLitigationSteps.rejected, (state, action) => {
         state.actionLoading = false;

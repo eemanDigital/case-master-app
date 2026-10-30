@@ -189,8 +189,6 @@ const LitigationDetails = () => {
   const settlement = litigationDetails?.settlement;
   const precedents = litigationDetails?.precedents;
 
-  console.log("Litigation details:", litigationDetails);
-
   // ── Tab items — memoized; must be computed BEFORE any early return ─────────
   const tabItems = useMemo(() => {
     // Guard: if no data yet, return empty array (avoids null-access inside tabs)
@@ -504,10 +502,7 @@ const LitigationDetails = () => {
       </div>
 
       {/* Litigation progress steps */}
-      <LitigationSteps
-        steps={litigationDetails.steps || []}
-        matterId={matterId}
-      />
+      <LitigationSteps matterId={matterId} />
 
       {/* Modals */}
       <JudgmentRecordModal

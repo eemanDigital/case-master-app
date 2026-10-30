@@ -1,6 +1,16 @@
 import LoadingSpinner from "../LoadingSpinner.jsx";
-import { useState, useEffect } from "react";
-import { Card, Button, Space, Tag, List, Dropdown, Menu, Empty, Tooltip, message } from "antd";
+import { useEffect, useMemo, useState } from "react";
+import PropTypes from "prop-types";
+import {
+  Card,
+  Button,
+  Space,
+  Tag,
+  List,
+  Dropdown,
+  Empty,
+  Tooltip,
+} from "antd";
 import {
   PlusOutlined,
   EditOutlined,
@@ -9,13 +19,15 @@ import {
   ClockCircleOutlined,
   SyncOutlined,
   CloseCircleOutlined,
+  ArrowUpOutlined,
+  ArrowDownOutlined,
 } from "@ant-design/icons";
 import { useDispatch, useSelector } from "react-redux";
 import dayjs from "dayjs";
 import {
   fetchLitigationSteps,
-  deleteLitigationStep,
   updateLitigationStepStatus,
+  reorderLitigationSteps,
   selectLitigationSteps,
   selectStepsLoading,
   selectActionLoading,
@@ -23,7 +35,6 @@ import {
 
 import CreateEditStepModal from "./StepFormModal";
 import DeleteStepModal from "./DeleteStepModal";
-import UpdateStepStatusModal from "./UpdateStepStatusModal";
 import ExpandableText from "../common/ExpandableText";
 
 const STATUS_CONFIG = {
@@ -65,7 +76,6 @@ const LitigationSteps = ({ matterId }) => {
   const [isCreateModalVisible, setIsCreateModalVisible] = useState(false);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
-  const [isStatusModalVisible, setIsStatusModalVisible] = useState(false);
   const [editingStep, setEditingStep] = useState(null);
 
   useEffect(() => {
@@ -73,6 +83,14 @@ const LitigationSteps = ({ matterId }) => {
       dispatch(fetchLitigationSteps(matterId));
     }
   }, [dispatch, matterId]);
+
+  const sortedSteps = useMemo(
+    () =>
+      [...(steps || [])].sort(
+        (a, b) => (a.order ?? 0) - (b.order ?? 0),
+      ),
+    [steps],
+  );
 
   const handleAddStep = () => {
     setEditingStep(null);
@@ -89,39 +107,58 @@ const LitigationSteps = ({ matterId }) => {
     setIsDeleteModalVisible(true);
   };
 
-  const handleStatusClick = (step) => {
-    setEditingStep(step);
-    setIsStatusModalVisible(true);
+  const handleStatusChange = (step, status) => {
+    if (!matterId || !step?._id || step.status === status) return;
+
+    dispatch(
+      updateLitigationStepStatus({
+        matterId,
+        stepId: step._id,
+        status,
+      }),
+    );
   };
 
-  const getStatusMenu = (step) => (
-    <Menu
-      onClick={({ key }) => {
-        setEditingStep(step);
-        dispatch(
-          updateLitigationStepStatus({
-            matterId,
-            stepId: step._id,
-            status: key,
-          }),
-        )
-          .unwrap()
-          .then(() => {
-            message.success(`Status updated to ${STATUS_CONFIG[key]?.label}`);
-          });
-      }}
-      selectedKeys={[step.status]}>
-      {Object.entries(STATUS_CONFIG).map(([key, config]) => (
-        <Menu.Item key={key} icon={config.icon}>
-          {config.label}
-        </Menu.Item>
-      ))}
-    </Menu>
-  );
+  const handleMoveStep = (step, direction) => {
+    if (!matterId || actionLoading) return;
 
-  const sortedSteps = [...steps].sort(
-    (a, b) => (a.order || 0) - (b.order || 0),
-  );
+    const currentIndex = sortedSteps.findIndex((s) => s._id === step._id);
+    const targetIndex = currentIndex + direction;
+
+    if (
+      currentIndex === -1 ||
+      targetIndex < 0 ||
+      targetIndex >= sortedSteps.length
+    ) {
+      return;
+    }
+
+    const reordered = [...sortedSteps];
+    [reordered[currentIndex], reordered[targetIndex]] = [
+      reordered[targetIndex],
+      reordered[currentIndex],
+    ];
+
+    dispatch(
+      reorderLitigationSteps({
+        matterId,
+        stepIds: reordered.map((s) => s._id),
+      }),
+    )
+      .unwrap()
+      .catch(() => {});
+  };
+
+  const getStatusMenu = (step) => ({
+    selectable: true,
+    selectedKeys: [step.status],
+    onClick: ({ key }) => handleStatusChange(step, key),
+    items: Object.entries(STATUS_CONFIG).map(([key, config]) => ({
+      key,
+      icon: config.icon,
+      label: config.label,
+    })),
+  });
 
   return (
     <Card
@@ -133,7 +170,12 @@ const LitigationSteps = ({ matterId }) => {
         </Space>
       }
       extra={
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddStep} size="small">
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleAddStep}
+          size="small"
+          disabled={!matterId}>
           Add Step
         </Button>
       }>
@@ -145,13 +187,14 @@ const LitigationSteps = ({ matterId }) => {
         <Empty
           description="No steps added yet"
           image={Empty.PRESENTED_IMAGE_SIMPLE}>
-          <Button type="primary" onClick={handleAddStep}>
+          <Button type="primary" onClick={handleAddStep} disabled={!matterId}>
             Add First Step
           </Button>
         </Empty>
       ) : (
         <List
           dataSource={sortedSteps}
+          rowKey="_id"
           renderItem={(step, index) => {
             const statusConfig =
               STATUS_CONFIG[step.status] || STATUS_CONFIG.pending;
@@ -167,6 +210,63 @@ const LitigationSteps = ({ matterId }) => {
                 ? `${step.assignedTo.firstName || ""} ${step.assignedTo.lastName || ""}`.trim()
                 : "";
 
+            const actions = [
+              <Dropdown
+                key="status"
+                menu={getStatusMenu(step)}
+                trigger={["click"]}
+                disabled={actionLoading}>
+                <Button type="text" size="small">
+                  <Tag color={statusConfig.color} icon={statusConfig.icon}>
+                    {statusConfig.label}
+                  </Tag>
+                </Button>
+              </Dropdown>,
+            ];
+
+            if (sortedSteps.length > 1) {
+              actions.push(
+                <Tooltip key="move-up" title="Move up">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<ArrowUpOutlined />}
+                    disabled={actionLoading || index === 0}
+                    onClick={() => handleMoveStep(step, -1)}
+                  />
+                </Tooltip>,
+                <Tooltip key="move-down" title="Move down">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<ArrowDownOutlined />}
+                    disabled={actionLoading || index === sortedSteps.length - 1}
+                    onClick={() => handleMoveStep(step, 1)}
+                  />
+                </Tooltip>,
+              );
+            }
+
+            actions.push(
+              <Tooltip key="edit" title="Edit">
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  disabled={actionLoading}
+                  onClick={() => handleEditStep(step)}
+                />
+              </Tooltip>,
+              <Tooltip key="delete" title="Delete">
+                <Button
+                  type="text"
+                  danger
+                  icon={<DeleteOutlined />}
+                  disabled={actionLoading}
+                  onClick={() => handleDeleteStep(step)}
+                />
+              </Tooltip>,
+            );
+
             return (
               <List.Item
                 style={{
@@ -177,30 +277,7 @@ const LitigationSteps = ({ matterId }) => {
                   padding: "16px",
                   border: "1px solid #f0f0f0",
                 }}
-                actions={[
-                  <Dropdown overlay={getStatusMenu(step)} trigger={["click"]}>
-                    <Button type="text" size="small">
-                      <Tag color={statusConfig.color} icon={statusConfig.icon}>
-                        {statusConfig.label}
-                      </Tag>
-                    </Button>
-                  </Dropdown>,
-                  <Tooltip title="Edit">
-                    <Button
-                      type="text"
-                      icon={<EditOutlined />}
-                      onClick={() => handleEditStep(step)}
-                    />
-                  </Tooltip>,
-                  <Tooltip title="Delete">
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => handleDeleteStep(step)}
-                    />
-                  </Tooltip>,
-                ]}>
+                actions={actions}>
                 <List.Item.Meta
                   avatar={
                     <div
@@ -219,7 +296,7 @@ const LitigationSteps = ({ matterId }) => {
                     </div>
                   }
                   title={
-                    <Space>
+                    <Space wrap>
                       <span
                         style={{
                           textDecoration: isCompleted ? "line-through" : "none",
@@ -234,7 +311,7 @@ const LitigationSteps = ({ matterId }) => {
                     </Space>
                   }
                   description={
-                    <Space direction="vertical" size={4}>
+                    <Space direction="vertical" size={4} style={{ width: "100%" }}>
                       {step.description && (
                         <ExpandableText rows={2}>
                           {step.description}
@@ -293,16 +370,12 @@ const LitigationSteps = ({ matterId }) => {
         matterId={matterId}
         step={editingStep}
       />
-
-      <UpdateStepStatusModal
-        visible={isStatusModalVisible}
-        onCancel={() => setIsStatusModalVisible(false)}
-        onSuccess={() => setIsStatusModalVisible(false)}
-        matterId={matterId}
-        step={editingStep}
-      />
     </Card>
   );
+};
+
+LitigationSteps.propTypes = {
+  matterId: PropTypes.string.isRequired,
 };
 
 export default LitigationSteps;
