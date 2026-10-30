@@ -38,8 +38,10 @@ import {
 
 const { Option } = Select;
 
-const getMemberName = (member) =>
-  (typeof member === "string" ? member : member?.name || "").trim();
+const getMemberName = (member) => {
+  const name = typeof member === "string" ? member : member?.name;
+  return typeof name === "string" ? name.trim() : "";
+};
 
 const ProcessesFiledManager = ({ matterId, litigationDetails }) => {
   const dispatch = useDispatch();
@@ -56,20 +58,23 @@ const ProcessesFiledManager = ({ matterId, litigationDetails }) => {
   const getPartyTargets = () => {
     const targets = [];
     const addMembers = (party, partyData, label, otherPartyIndex) => {
-      (partyData?.name || []).forEach((member, partyIndex) => {
-        const name = getMemberName(member);
-        if (!name) return;
-        const role = partyData.description || label;
-        targets.push({
-          key: `${party}:${otherPartyIndex ?? ""}:${partyIndex}`,
-          party,
-          partyIndex,
-          otherPartyIndex,
-          partyName: name,
-          partyDescription: role,
-          label: `${role}: ${name}`,
-        });
-      });
+      (Array.isArray(partyData?.name) ? partyData.name : []).forEach(
+        (member, partyIndex) => {
+          if (!member) return;
+          const name = getMemberName(member);
+          if (!name) return;
+          const role = partyData?.description || label;
+          targets.push({
+            key: `${party}:${otherPartyIndex ?? ""}:${partyIndex}`,
+            party,
+            partyIndex,
+            otherPartyIndex,
+            partyName: name,
+            partyDescription: role,
+            label: `${role}: ${name}`,
+          });
+        },
+      );
     };
 
     addMembers(
@@ -82,11 +87,14 @@ const ProcessesFiledManager = ({ matterId, litigationDetails }) => {
       litigationDetails?.secondParty,
       "Defendant / Respondent",
     );
-    (litigationDetails?.otherParty || []).forEach((party, otherPartyIndex) =>
+    (Array.isArray(litigationDetails?.otherParty)
+      ? litigationDetails.otherParty
+      : []
+    ).forEach((party, otherPartyIndex) =>
       addMembers(
         "otherParty",
         party,
-        party.description || `Other Party ${otherPartyIndex + 1}`,
+        party?.description || `Other Party ${otherPartyIndex + 1}`,
         otherPartyIndex,
       ),
     );
@@ -101,7 +109,8 @@ const ProcessesFiledManager = ({ matterId, litigationDetails }) => {
       legacy = false,
       groupKey = target.key,
     ) => {
-      (items || []).forEach((process, processIndex) => {
+      (Array.isArray(items) ? items : []).forEach((process, processIndex) => {
+        if (!process || typeof process !== "object") return;
         processes.push({
           ...process,
           ...target,
@@ -113,10 +122,11 @@ const ProcessesFiledManager = ({ matterId, litigationDetails }) => {
     };
     const targets = getPartyTargets();
     targets.forEach((target) => {
-      const members =
+      const partyData =
         target.party === "otherParty"
-          ? litigationDetails.otherParty[target.otherPartyIndex]?.name
-          : litigationDetails[target.party]?.name;
+          ? litigationDetails?.otherParty?.[target.otherPartyIndex]
+          : litigationDetails?.[target.party];
+      const members = Array.isArray(partyData?.name) ? partyData.name : [];
       const member = members?.[target.partyIndex];
       addProcesses(member?.processesFiled, target);
     });
@@ -132,10 +142,14 @@ const ProcessesFiledManager = ({ matterId, litigationDetails }) => {
         data: litigationDetails?.secondParty,
         label: "Defendant / Respondent",
       },
-      ...(litigationDetails?.otherParty || []).map((data, otherPartyIndex) => ({
+      ...(Array.isArray(litigationDetails?.otherParty)
+        ? litigationDetails.otherParty
+        : []
+      ).map((data, otherPartyIndex) => ({
         party: "otherParty",
         data,
-        label: data.description || `Other Party ${otherPartyIndex + 1}`,
+        label:
+          data?.description || `Other Party ${otherPartyIndex + 1}`,
         otherPartyIndex,
       })),
     ].forEach(({ party, data, label, otherPartyIndex }) => {
