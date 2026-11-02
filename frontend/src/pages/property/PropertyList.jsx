@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { Row, Col, Select, DatePicker, Tag, Button, Input, Alert, Modal } from "antd";
+import LoadingSpinner from "../../components/LoadingSpinner.jsx";
 import {
   PlusOutlined,
   HomeOutlined,
@@ -70,6 +71,8 @@ const PropertyList = () => {
   const loading = useSelector(selectPropertyLoading);
   const error = useSelector(selectPropertyError);
   const stats = useSelector(selectPropertyStats);
+  const currentPage = pagination.page || 1;
+  const pageSize = pagination.limit || 20;
 
   const [searchText, setSearchText] = useState("");
   const [showFilters, setShowFilters] = useState(false);
@@ -85,14 +88,15 @@ const PropertyList = () => {
     dispatch(
       fetchPropertyMatters({
         ...filters,
-        page: pagination.currentPage || pagination.current || 1,
-        limit: pagination.limit || 20,
+        page: currentPage,
+        limit: pageSize,
       }),
     );
     loadStats();
   }, [
     dispatch,
-    pagination,
+    currentPage,
+    pageSize,
     filters,
     loadStats,
   ]);
@@ -102,12 +106,12 @@ const PropertyList = () => {
       dispatch(
         searchPropertyMatters({
           criteria: { $text: { $search: value } },
-          params: { page: 1, limit: pagination.limit },
+          params: { page: 1, limit: pageSize },
         }),
       );
     } else {
       dispatch(
-        fetchPropertyMatters({ ...filters, page: 1, limit: pagination.limit }),
+        fetchPropertyMatters({ ...filters, page: 1, limit: pageSize }),
       );
     }
   };
@@ -258,7 +262,7 @@ const PropertyList = () => {
 
   const handleTableChange = (newPagination) => {
     dispatch(setCurrentPage(newPagination.current));
-    if (newPagination.pageSize !== pagination.limit) {
+    if (newPagination.pageSize !== pageSize) {
       dispatch(setPageSize(newPagination.pageSize));
     }
   };
@@ -296,7 +300,7 @@ const PropertyList = () => {
         icon={<HomeOutlined />}
         title="Property Matters"
         subtitle="Manage all property transactions and real estate matters"
-        count={pagination.totalRecords || pagination.count || 0}
+        count={pagination.total}
         actions={
           <>
             <Button
@@ -438,13 +442,18 @@ const PropertyList = () => {
           columns={columns}
           dataSource={matters}
           rowKey="_id"
-          loading={loading}
+          loading={{
+            spinning: loading,
+            indicator: (
+              <LoadingSpinner fullScreen={false} size="default" />
+            ),
+          }}
           onChange={handleTableChange}
           onRowClick={handleViewDetails}
           pagination={{
-            current: pagination.currentPage || pagination.current || 1,
-            pageSize: pagination.limit || 20,
-            total: pagination.totalRecords || pagination.count || 0,
+            current: currentPage,
+            pageSize,
+            total: pagination.total,
             showSizeChanger: true,
             showQuickJumper: true,
             showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} matters`,
