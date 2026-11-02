@@ -254,6 +254,21 @@ async function generatePdf(data, res, outputPath) {
   if (propertyDetails?.purchasePrice?.amount) {
     addMoneyField("Purchase Price", propertyDetails.purchasePrice.amount, "₦");
   }
+
+  if (propertyDetails?.mortgageFacility?.amount) {
+    const currencySymbols = {
+      NGN: "₦",
+      USD: "$",
+      GBP: "£",
+      EUR: "€",
+    };
+    addMoneyField(
+      "Mortgage Facility Amount",
+      propertyDetails.mortgageFacility.amount,
+      currencySymbols[propertyDetails.mortgageFacility.currency] ||
+        `${propertyDetails.mortgageFacility.currency || ""} `,
+    );
+  }
   
   if (propertyDetails?.rentAmount?.amount) {
     const freq = propertyDetails.rentAmount.frequency || "";
@@ -391,14 +406,27 @@ async function generatePdf(data, res, outputPath) {
     if (propertyDetails.tenant.email) addField("Tenant Email", propertyDetails.tenant.email);
   }
   
-  if (propertyDetails?.vendor?.name) {
-    addField("Vendor Name", propertyDetails.vendor.name);
-    if (propertyDetails.vendor.contact) addField("Vendor Contact", propertyDetails.vendor.contact);
-  }
-  
-  if (propertyDetails?.purchaser?.name) {
-    addField("Purchaser Name", propertyDetails.purchaser.name);
-    if (propertyDetails.purchaser.contact) addField("Purchaser Contact", propertyDetails.purchaser.contact);
+  if (propertyDetails?.transactionType === "mortgage") {
+    const borrower = propertyDetails.borrower || propertyDetails.vendor;
+    const lender = propertyDetails.lender || propertyDetails.purchaser;
+    if (borrower?.name) {
+      addField("Borrower / Mortgagor", borrower.name);
+      if (borrower.contact) addField("Borrower Contact", borrower.contact);
+    }
+    if (lender?.name) {
+      addField("Lender / Mortgagee", lender.name);
+      if (lender.contact) addField("Lender Contact", lender.contact);
+    }
+  } else {
+    if (propertyDetails?.vendor?.name) {
+      addField("Vendor Name", propertyDetails.vendor.name);
+      if (propertyDetails.vendor.contact) addField("Vendor Contact", propertyDetails.vendor.contact);
+    }
+
+    if (propertyDetails?.purchaser?.name) {
+      addField("Purchaser Name", propertyDetails.purchaser.name);
+      if (propertyDetails.purchaser.contact) addField("Purchaser Contact", propertyDetails.purchaser.contact);
+    }
   }
 
   // Property Information Section

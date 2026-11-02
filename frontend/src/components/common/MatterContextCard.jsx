@@ -36,6 +36,14 @@ const MatterContextCard = memo(({ matter }) => {
             <Tag color="blue">{matter?.matterNumber || "-"}</Tag>
           </Descriptions.Item>
           <Descriptions.Item label="Title">{matter?.title || "-"}</Descriptions.Item>
+          {matter?.natureOfMatter && (
+            <Descriptions.Item label="Nature of matter">
+              {matter.natureOfMatter.replace(
+                /(^|\s)\S/g,
+                (letter) => letter.toUpperCase(),
+              )}
+            </Descriptions.Item>
+          )}
           <Descriptions.Item label="Client">
             <Space>
               <UserOutlined />

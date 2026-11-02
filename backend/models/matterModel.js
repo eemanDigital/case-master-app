@@ -162,11 +162,22 @@ const matterSchema = new mongoose.Schema(
 
           // Property
           "property acquisition",
+          "land acquisition",
           "property sale",
           "lease agreement",
+          "sublease",
+          "tenancy matter",
+          "property management",
           "property development",
+          "title perfection",
+          "mortgage",
           "land use",
           "real estate finance",
+          "boundary dispute",
+          "partition",
+          "right of way",
+          "easement",
+          "foreclosure",
 
           // Advisory
           "legal opinion",

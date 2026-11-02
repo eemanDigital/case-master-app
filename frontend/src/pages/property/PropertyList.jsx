@@ -35,7 +35,9 @@ import {
   NIGERIAN_STATES,
   formatCurrency,
   getTransactionTypeLabel,
+  getTransactionTypeForMatterNature,
   getPropertyTypeLabel,
+  getNigerianStateLabel,
 } from "../../utils/propertyConstants";
 import {
   MatterPageHeader,
@@ -179,18 +181,35 @@ const PropertyList = () => {
       key: "transactionType",
       width: 150,
       render: (_, record) => {
-        if (!record.propertyDetail) return <Tag color="default" className="m-0">Not Started</Tag>;
         const transactionType = record.propertyDetail?.transactionType;
-        if (!transactionType) return <Tag color="default" className="m-0">Not Set</Tag>;
+        if (transactionType) {
+          return (
+            <Tag color="blue" className="capitalize m-0">
+              {getTransactionTypeLabel(transactionType)}
+            </Tag>
+          );
+        }
+
+        const suggestedType = getTransactionTypeForMatterNature(
+          record.natureOfMatter,
+        );
+        if (suggestedType) {
+          return (
+            <Tag color="processing" className="capitalize m-0">
+              {getTransactionTypeLabel(suggestedType)} · Suggested
+            </Tag>
+          );
+        }
+
         return (
-          <Tag color="blue" className="capitalize m-0">
-            {getTransactionTypeLabel(transactionType)}
+          <Tag color="default" className="m-0">
+            {record.propertyDetail ? "Not Set" : "Not Started"}
           </Tag>
         );
       },
     },
     {
-      title: "Property Type",
+      title: "Asset class",
       key: "propertyType",
       width: 140,
       render: (_, record) => {
@@ -211,7 +230,13 @@ const PropertyList = () => {
         const properties = record.propertyDetail?.properties;
         if (!properties || properties.length === 0) return "-";
         const prop = properties[0];
-        return prop.address || prop.state || prop.city || "-";
+        return (
+          prop.address ||
+          [getNigerianStateLabel(prop.state), prop.lga, prop.city]
+            .filter(Boolean)
+            .join(", ") ||
+          "-"
+        );
       },
     },
     {
@@ -352,7 +377,7 @@ const PropertyList = () => {
 
               <Col xs={24} md={8}>
                 <Select
-                  placeholder="Property Type"
+                  placeholder="Property use / asset class"
                   style={{ width: "100%" }}
                   value={filters.propertyType || undefined}
                   onChange={(value) => handleFilterChange("propertyType", value)}
@@ -373,7 +398,7 @@ const PropertyList = () => {
                   onChange={(value) => handleFilterChange("state", value)}
                   allowClear>
                   {NIGERIAN_STATES.map((state) => (
-                    <Option key={state.value} value={state.value}>
+                    <Option key={state.value} value={state.label}>
                       {state.label}
                     </Option>
                   ))}

@@ -7,6 +7,7 @@ import {
   InputNumber,
   Button,
   Card,
+  Collapse,
   Row,
   Col,
   Divider,
@@ -36,12 +37,15 @@ import {
   TRANSACTION_TYPES,
   PROPERTY_TYPES,
   TITLE_DOCUMENTS,
+  LAND_TENURE_TYPES,
   LAND_SIZE_UNITS,
   PAYMENT_TERMS,
   CURRENCIES,
   RENT_FREQUENCIES,
   NIGERIAN_STATES,
+  getNigerianStateLabel,
   DATE_FORMAT,
+  getTransactionTypeForMatterNature,
 } from "../../utils/propertyConstants";
 
 const { Option } = Select;
@@ -61,32 +65,36 @@ const FAMILY_CONFIG = {
     color: "blue",
     description:
       "Buying, selling, transferring or perfecting title to a property.",
-    needs:
-      "Property details, vendor & purchaser, consideration, contract of sale, deed of assignment and Governor's consent.",
   },
   leasing: {
     label: "Leasing & Tenancy",
     color: "purple",
     description:
       "Granting or taking a lease, tenancy or managing a property for another party.",
-    needs:
-      "Property details, landlord & tenant, rent & deposit, lease terms and renewal tracking.",
   },
   development: {
     label: "Property Development",
     color: "magenta",
     description:
       "Developing or redeveloping land, including planning and construction.",
-    needs:
-      "Land details, landowner & developer, estimated cost, planning and building permits.",
   },
   dispute: {
     label: "Disputes & Encumbrances",
     color: "red",
     description:
       "Contentious property matters such as boundary disputes, partition, easements, rights of way and foreclosure.",
-    needs:
-      "Property details, the parties, title search findings and the nature of the dispute.",
+  },
+  financing: {
+    label: "Property Finance",
+    color: "cyan",
+    description:
+      "Securing a property-backed loan or documenting a mortgage transaction.",
+  },
+  perfection: {
+    label: "Title Perfection",
+    color: "gold",
+    description:
+      "Registering or perfecting an existing interest in land, including required title documents and approvals.",
   },
 };
 
@@ -96,13 +104,30 @@ const TRANSACTION_META = {
   purchase: { family: "acquisition", pricing: "purchase", parties: ["vendor", "purchaser"], contractOfSale: true, deed: true, consent: true },
   sale: { family: "acquisition", pricing: "purchase", parties: ["vendor", "purchaser"], contractOfSale: true, deed: true, consent: true },
   land_acquisition: { family: "acquisition", pricing: "purchase", parties: ["vendor", "purchaser"], contractOfSale: true, deed: true, consent: true, survey: true },
-  title_perfection: { family: "acquisition", pricing: "purchase", parties: ["vendor", "purchaser"], deed: true, consent: true, survey: true },
-  mortgage: { family: "acquisition", pricing: "purchase", parties: ["vendor", "purchaser"], deed: true },
+  title_perfection: {
+    family: "perfection",
+    pricing: "none",
+    parties: ["vendor", "purchaser"],
+    deed: true,
+    consent: true,
+    survey: true,
+  },
+  mortgage: {
+    family: "financing",
+    pricing: "facility",
+    parties: ["borrower", "lender"],
+  },
   lease: { family: "leasing", pricing: "rent", parties: ["landlord", "tenant"], lease: true },
   sublease: { family: "leasing", pricing: "rent", parties: ["landlord", "tenant"], lease: true },
   tenancy_matter: { family: "leasing", pricing: "rent", parties: ["landlord", "tenant"], lease: true },
   property_management: { family: "leasing", pricing: "rent", parties: ["landlord", "tenant"], lease: true },
-  property_development: { family: "development", pricing: "purchase", parties: ["vendor", "purchaser"], contractOfSale: true, consent: true, development: true },
+  property_development: {
+    family: "development",
+    pricing: "none",
+    parties: ["vendor", "purchaser"],
+    survey: true,
+    development: true,
+  },
   boundary_dispute: { family: "dispute", pricing: "none", parties: ["vendor", "purchaser"], survey: true },
   partition: { family: "dispute", pricing: "none", parties: ["vendor", "purchaser"], survey: true },
   right_of_way: { family: "dispute", pricing: "none", parties: ["vendor", "purchaser"], survey: true },
@@ -115,8 +140,9 @@ const DEFAULT_META = TRANSACTION_META.other;
 
 // Grouped options make the transaction picker scannable by family
 const TRANSACTION_GROUPS = [
-  { label: "Acquisition & Transfer", types: ["purchase", "sale", "land_acquisition", "title_perfection", "mortgage"] },
+  { label: "Acquisition & Transfer", types: ["purchase", "sale", "land_acquisition", "title_perfection"] },
   { label: "Leasing & Tenancy", types: ["lease", "sublease", "tenancy_matter", "property_management"] },
+  { label: "Property Finance", types: ["mortgage"] },
   { label: "Property Development", types: ["property_development"] },
   { label: "Disputes & Encumbrances", types: ["boundary_dispute", "partition", "right_of_way", "easement", "foreclosure"] },
   { label: "Other", types: ["other"] },
@@ -148,6 +174,14 @@ const PARTY_LABELS = {
     landlord: { name: "Landlord / Lessor", contact: "Landlord contact (phone, email or address)" },
     tenant: { name: "Tenant / Lessee", contact: "Tenant contact (phone, email or address)" },
   },
+  financing: {
+    borrower: { name: "Borrower / Mortgagor", contact: "Borrower contact" },
+    lender: { name: "Lender / Mortgagee", contact: "Lender contact" },
+  },
+  perfection: {
+    vendor: { name: "Current holder / applicant", contact: "Applicant contact" },
+    purchaser: { name: "Transferor / other party", contact: "Other party contact" },
+  },
 };
 
 const getPartyLabel = (family, key) =>
@@ -164,6 +198,9 @@ const clean = (obj) => {
   Object.keys(out).forEach((k) => out[k] === undefined && delete out[k]);
   return out;
 };
+
+const titleCase = (value) =>
+  value.replace(/(^|\s)\S/g, (letter) => letter.toUpperCase());
 
 const mapInitialValues = (initialValues) => {
   const property = initialValues.properties?.[0] || {};
@@ -184,8 +221,9 @@ const mapInitialValues = (initialValues) => {
 
     // Property information
     propertyType: property.propertyType,
+    landTenure: property.landTenure,
     propertyAddress: property.address,
-    propertyState: property.state,
+    propertyState: getNigerianStateLabel(property.state),
     propertyLga: property.lga,
     landSizeValue: property.landSize?.value,
     landSizeUnit: property.landSize?.unit,
@@ -201,10 +239,33 @@ const mapInitialValues = (initialValues) => {
     landlordContact: initialValues.landlord?.contact,
     tenantName: initialValues.tenant?.name,
     tenantContact: initialValues.tenant?.contact,
+    borrowerName:
+      initialValues.borrower?.name ||
+      (initialValues.transactionType === "mortgage"
+        ? initialValues.vendor?.name
+        : undefined),
+    borrowerContact:
+      initialValues.borrower?.contact ||
+      (initialValues.transactionType === "mortgage"
+        ? initialValues.vendor?.contact
+        : undefined),
+    lenderName:
+      initialValues.lender?.name ||
+      (initialValues.transactionType === "mortgage"
+        ? initialValues.purchaser?.name
+        : undefined),
+    lenderContact:
+      initialValues.lender?.contact ||
+      (initialValues.transactionType === "mortgage"
+        ? initialValues.purchaser?.contact
+        : undefined),
 
     // Financials
     purchasePriceAmount: initialValues.purchasePrice?.amount,
     purchasePriceCurrency: initialValues.purchasePrice?.currency || "NGN",
+    mortgageFacilityAmount: initialValues.mortgageFacility?.amount,
+    mortgageFacilityCurrency:
+      initialValues.mortgageFacility?.currency || "NGN",
     rentAmountAmount: initialValues.rentAmount?.amount,
     rentAmountCurrency: initialValues.rentAmount?.currency || "NGN",
     rentAmountFrequency: initialValues.rentAmount?.frequency,
@@ -313,6 +374,9 @@ const PropertyForm = memo(
     const developmentApplicable = Form.useWatch("developmentApplicable", form);
     const transactionType =
       watchedType ?? initialValues?.transactionType ?? undefined;
+    const matterNature = (matterData || initialValues?.matterId)?.natureOfMatter;
+    const suggestedTransactionType =
+      getTransactionTypeForMatterNature(matterNature);
 
     const meta = useMemo(
       () => TRANSACTION_META[transactionType] || DEFAULT_META,
@@ -324,11 +388,19 @@ const PropertyForm = memo(
     // Hydrate the form when editing
     useEffect(() => {
       if (initialValues) {
-        form.setFieldsValue(mapInitialValues(initialValues));
+        const values = mapInitialValues(initialValues);
+        form.setFieldsValue({
+          ...values,
+          transactionType:
+            values.transactionType || suggestedTransactionType,
+        });
       } else {
         form.resetFields();
+        if (suggestedTransactionType) {
+          form.setFieldValue("transactionType", suggestedTransactionType);
+        }
       }
-    }, [initialValues, form]);
+    }, [initialValues, matterData, form]);
 
     // If the selected transaction makes the current tab irrelevant, return home
     useEffect(() => {
@@ -347,9 +419,17 @@ const PropertyForm = memo(
 
     const handleReset = () => {
       if (initialValues) {
-        form.setFieldsValue(mapInitialValues(initialValues));
+        const values = mapInitialValues(initialValues);
+        form.setFieldsValue({
+          ...values,
+          transactionType:
+            values.transactionType || suggestedTransactionType,
+        });
       } else {
         form.resetFields();
+        if (suggestedTransactionType) {
+          form.setFieldValue("transactionType", suggestedTransactionType);
+        }
       }
       setActiveTab("transaction");
     };
@@ -359,6 +439,7 @@ const PropertyForm = memo(
 
       const propertyInfo = clean({
         propertyType: values.propertyType,
+        landTenure: values.landTenure,
         address: values.propertyAddress,
         state: values.propertyState,
         lga: values.propertyLga,
@@ -381,27 +462,65 @@ const PropertyForm = memo(
         ...(Object.keys(propertyInfo).length > 0 && { properties: [propertyInfo] }),
 
         // Parties
-        ...(values.vendorName || values.vendorContact
+        ...(typeMeta.parties.includes("vendor") &&
+        (values.vendorName || values.vendorContact)
           ? { vendor: { name: values.vendorName, contact: values.vendorContact } }
           : {}),
-        ...(values.purchaserName || values.purchaserContact
+        ...(typeMeta.parties.includes("purchaser") &&
+        (values.purchaserName || values.purchaserContact)
           ? { purchaser: { name: values.purchaserName, contact: values.purchaserContact } }
           : {}),
-        ...(values.landlordName || values.landlordContact
+        ...(typeMeta.parties.includes("landlord") &&
+        (values.landlordName || values.landlordContact)
           ? { landlord: { name: values.landlordName, contact: values.landlordContact } }
           : {}),
-        ...(values.tenantName || values.tenantContact
+        ...(typeMeta.parties.includes("tenant") &&
+        (values.tenantName || values.tenantContact)
           ? { tenant: { name: values.tenantName, contact: values.tenantContact } }
+          : {}),
+        ...(typeMeta.parties.includes("borrower") &&
+        (values.borrowerName || values.borrowerContact)
+          ? {
+              borrower: {
+                name: values.borrowerName,
+                contact: values.borrowerContact,
+              },
+            }
+          : {}),
+        ...(typeMeta.parties.includes("lender") &&
+        (values.lenderName || values.lenderContact)
+          ? {
+              lender: {
+                name: values.lenderName,
+                contact: values.lenderContact,
+              },
+            }
           : {}),
 
         // Financials
-        ...(values.purchasePriceAmount !== undefined && values.purchasePriceAmount !== null
+        ...(typeMeta.pricing === "purchase" &&
+        values.purchasePriceAmount !== undefined &&
+        values.purchasePriceAmount !== null
           ? { purchasePrice: { amount: values.purchasePriceAmount, currency: values.purchasePriceCurrency || "NGN" } }
           : {}),
-        ...(values.rentAmountAmount !== undefined && values.rentAmountAmount !== null
+        ...(typeMeta.pricing === "facility" &&
+        values.mortgageFacilityAmount !== undefined &&
+        values.mortgageFacilityAmount !== null
+          ? {
+              mortgageFacility: {
+                amount: values.mortgageFacilityAmount,
+                currency: values.mortgageFacilityCurrency || "NGN",
+              },
+            }
+          : {}),
+        ...(typeMeta.pricing === "rent" &&
+        values.rentAmountAmount !== undefined &&
+        values.rentAmountAmount !== null
           ? { rentAmount: { amount: values.rentAmountAmount, currency: values.rentAmountCurrency || "NGN", frequency: values.rentAmountFrequency } }
           : {}),
-        ...(values.securityDepositAmount !== undefined && values.securityDepositAmount !== null
+        ...(typeMeta.pricing === "rent" &&
+        values.securityDepositAmount !== undefined &&
+        values.securityDepositAmount !== null
           ? { securityDeposit: { amount: values.securityDepositAmount, currency: values.securityDepositCurrency || "NGN" } }
           : {}),
 
@@ -565,23 +684,30 @@ const PropertyForm = memo(
           showIcon
           icon={<InfoCircleOutlined />}
           className="mb-4"
-          message={`${familyConfig.label} transaction`}
+          message={
+            transactionType
+              ? `${familyConfig.label} workflow`
+              : "Choose the property transaction"
+          }
           description={
-            <div className="space-y-1">
-              <div>{familyConfig.description}</div>
-              <div>
-                <Text strong>You will be asked for: </Text>
-                {familyConfig.needs}
-              </div>
-            </div>
+            transactionType
+              ? familyConfig.description
+              : "The matter's legal nature can suggest a workflow. Property use (for example, residential or mixed-use) is recorded separately."
           }
         />
-        <Card title="Transaction Type">
+        <Card title="Transaction workflow">
           <Row gutter={16}>
             <Col xs={24} md={12}>
               <Form.Item
                 name="transactionType"
-                label="What type of property transaction is this?"
+                label="Transaction workflow"
+                extra={
+                  suggestedTransactionType
+                    ? `Suggested from the matter's legal nature (${titleCase(matterNature)} → ${TRANSACTION_TYPES.find((type) => type.value === suggestedTransactionType)?.label}); change it if this differs.`
+                    : matterNature
+                      ? `The matter nature is ${titleCase(matterNature)}; select the specific transaction workflow.`
+                      : "This is the transaction being handled, not the property's physical use."
+                }
                 rules={[{ required: true, message: "Transaction type is required" }]}>
                 <Select
                   placeholder="Select transaction type"
@@ -604,7 +730,7 @@ const PropertyForm = memo(
             )}
           </Row>
           <Text type="secondary">
-            Changing the transaction type updates the sections and fields shown in this form.
+            Changing this workflow updates the sections and fields shown in the form.
           </Text>
         </Card>
       </>
@@ -615,11 +741,28 @@ const PropertyForm = memo(
       <Card title="Property Information">
         <Row gutter={16}>
           <Col xs={24} md={8}>
-            <Form.Item name="propertyType" label="Property Type">
+            <Form.Item
+              name="propertyType"
+              label="Property use / asset class"
+              extra="Classify what the property is used for. This is separate from the transaction workflow.">
               <Select placeholder="Select property type" size="large">
                 {PROPERTY_TYPES.map((p) => (
                   <Option key={p.value} value={p.value}>
                     {p.icon} {p.label}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={8}>
+            <Form.Item
+              name="landTenure"
+              label="Land tenure (if known)"
+              extra="Record the stated tenure; confirm title through the appropriate searches.">
+              <Select placeholder="Select tenure or leave blank" size="large">
+                {LAND_TENURE_TYPES.map((tenure) => (
+                  <Option key={tenure.value} value={tenure.value}>
+                    {tenure.label}
                   </Option>
                 ))}
               </Select>
@@ -663,7 +806,10 @@ const PropertyForm = memo(
             </Form.Item>
           </Col>
           <Col xs={24} md={8}>
-            <Form.Item name="titleDocument" label="Title Document">
+            <Form.Item
+              name="titleDocument"
+              label="Title / root-of-title evidence"
+              extra="Choose the principal document available. Record survey details separately below.">
               <Select placeholder="Select title document" size="large">
                 {TITLE_DOCUMENTS.map((d) => (
                   <Option key={d.value} value={d.value}>
@@ -761,8 +907,32 @@ const PropertyForm = memo(
             </Card>
           </>
         )}
-        <Card title="Payment Terms">
-          <Form.Item name="paymentTerms" label="Payment terms">
+        {meta.pricing === "facility" && (
+          <Card title="Mortgage facility" className="mb-6">
+            <Row gutter={16}>
+              <Col xs={24} md={16}>
+                {amountField("mortgageFacilityAmount", "Facility amount")}
+              </Col>
+              <Col xs={24} md={8}>
+                <Form.Item
+                  name="mortgageFacilityCurrency"
+                  label="Currency"
+                  initialValue="NGN">
+                  <Select size="large">{currencyOptions}</Select>
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+        )}
+        <Card
+          title={
+            transactionType === "mortgage" ? "Facility terms" : "Payment terms"
+          }>
+          <Form.Item
+            name="paymentTerms"
+            label={
+              transactionType === "mortgage" ? "Facility terms" : "Payment terms"
+            }>
             <Select placeholder="Select payment terms" size="large">
               {PAYMENT_TERMS.map((term) => (
                 <Option key={term.value} value={term.value}>
@@ -881,7 +1051,7 @@ const PropertyForm = memo(
       </>
     );
 
-    // ---- Tab: Compliance & Due Diligence ----
+    // ---- Tab: Title checks & due diligence ----
     const complianceTab = (
       <>
         {meta.consent && (
@@ -943,52 +1113,90 @@ const PropertyForm = memo(
           </Card>
         )}
 
-        <Card title="Title Search" className="mb-6">
-          <Row gutter={16}>
-            <Col xs={24} md={6}>
-              <Form.Item name="titleSearchCompleted" label="Completed" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={6}>
-              <Form.Item name="titleSearchDate" label="Search date">
-                <DatePicker style={{ width: "100%" }} format={DATE_FORMAT} size="large" />
-              </Form.Item>
-            </Col>
-            <Col xs={24}>
-              <Form.Item name="titleSearchFindings" label="Findings">
-                <TextArea rows={3} placeholder="Enter findings from the title search" />
-              </Form.Item>
-            </Col>
-            <Col xs={24}>
-              <Form.Item
-                name="titleSearchEncumbrances"
-                label="Encumbrances (comma separated)">
-                <Input placeholder="e.g., Mortgage, Lien, Easement" />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Card>
+        <Collapse
+          items={[
+            {
+              key: "due-diligence",
+              label: "Optional title search and site inspection",
+              children: (
+                <>
+                  <Card title="Title Search" className="mb-6">
+                    <Row gutter={16}>
+                      <Col xs={24} md={6}>
+                        <Form.Item
+                          name="titleSearchCompleted"
+                          label="Completed"
+                          valuePropName="checked">
+                          <Switch />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={6}>
+                        <Form.Item name="titleSearchDate" label="Search date">
+                          <DatePicker
+                            style={{ width: "100%" }}
+                            format={DATE_FORMAT}
+                            size="large"
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24}>
+                        <Form.Item
+                          name="titleSearchFindings"
+                          label="Findings">
+                          <TextArea
+                            rows={3}
+                            placeholder="Enter findings from the title search"
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24}>
+                        <Form.Item
+                          name="titleSearchEncumbrances"
+                          label="Encumbrances (comma separated)">
+                          <Input placeholder="e.g., Mortgage, Lien, Easement" />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </Card>
 
-        <Card title="Physical Inspection">
-          <Row gutter={16}>
-            <Col xs={24} md={6}>
-              <Form.Item name="inspectionCompleted" label="Completed" valuePropName="checked">
-                <Switch />
-              </Form.Item>
-            </Col>
-            <Col xs={24} md={6}>
-              <Form.Item name="inspectionDate" label="Inspection date">
-                <DatePicker style={{ width: "100%" }} format={DATE_FORMAT} size="large" />
-              </Form.Item>
-            </Col>
-            <Col xs={24}>
-              <Form.Item name="inspectionFindings" label="Findings">
-                <TextArea rows={3} placeholder="Enter findings from the physical inspection" />
-              </Form.Item>
-            </Col>
-          </Row>
-        </Card>
+                  <Card title="Physical Inspection">
+                    <Row gutter={16}>
+                      <Col xs={24} md={6}>
+                        <Form.Item
+                          name="inspectionCompleted"
+                          label="Completed"
+                          valuePropName="checked">
+                          <Switch />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24} md={6}>
+                        <Form.Item
+                          name="inspectionDate"
+                          label="Inspection date">
+                          <DatePicker
+                            style={{ width: "100%" }}
+                            format={DATE_FORMAT}
+                            size="large"
+                          />
+                        </Form.Item>
+                      </Col>
+                      <Col xs={24}>
+                        <Form.Item
+                          name="inspectionFindings"
+                          label="Findings">
+                          <TextArea
+                            rows={3}
+                            placeholder="Enter findings from the physical inspection"
+                          />
+                        </Form.Item>
+                      </Col>
+                    </Row>
+                  </Card>
+                </>
+              ),
+            },
+          ]}
+        />
       </>
     );
 
@@ -1227,7 +1435,7 @@ const PropertyForm = memo(
       },
       {
         key: "compliance",
-        label: "Compliance & Diligence",
+        label: "Title checks",
         icon: <SafetyCertificateOutlined />,
         children: complianceTab,
       },

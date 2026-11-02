@@ -17,7 +17,7 @@ const getAlertConfig = (matterType) => {
     property: {
       icon: <HomeOutlined />,
       message: "Property Details",
-      description: "All property information (property address, title documents, transaction details, parties, etc.) will be captured in the Property Details form after creating this matter.",
+      description: "The matter nature records the legal work (such as acquisition, sale, lease or development). The Property Details form uses it to suggest a transaction workflow, then records the property's use, location, tenure and title evidence separately.",
     },
     advisory: {
       icon: <BulbOutlined />,

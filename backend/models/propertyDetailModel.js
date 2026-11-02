@@ -12,7 +12,12 @@ const propertyDetailsSchema = new mongoose.Schema(
         "agricultural",
         "mixed-use",
         "land",
+        "other",
       ],
+    },
+    landTenure: {
+      type: String,
+      enum: ["statutory", "customary", "family-community", "unknown", "other"],
     },
     address: {
       type: String,
@@ -38,7 +43,11 @@ const propertyDetailsSchema = new mongoose.Schema(
       enum: [
         "c-of-o",
         "deed-of-assignment",
+        "deed-of-conveyance",
         "governors-consent",
+        "allocation-letter",
+        "gazette-excision",
+        "probate-letters",
         "survey-plan",
         "other",
       ],
@@ -182,10 +191,43 @@ const propertyDetailSchema = new mongoose.Schema(
       },
     },
 
+    borrower: {
+      name: {
+        type: String,
+        trim: true,
+      },
+      contact: {
+        type: String,
+        trim: true,
+      },
+    },
+
+    lender: {
+      name: {
+        type: String,
+        trim: true,
+      },
+      contact: {
+        type: String,
+        trim: true,
+      },
+    },
+
     // ============================================
     // FINANCIAL DETAILS
     // ============================================
     purchasePrice: {
+      amount: {
+        type: Number,
+        min: 0,
+      },
+      currency: {
+        type: String,
+        default: "NGN",
+      },
+    },
+
+    mortgageFacility: {
       amount: {
         type: Number,
         min: 0,

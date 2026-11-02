@@ -123,11 +123,21 @@ export const MATTER_CONFIG = {
     // PROPERTY - Must match backend enum exactly
     property: [
       { value: "property acquisition", label: "Property Acquisition" },
+      { value: "land acquisition", label: "Land Acquisition" },
       { value: "property sale", label: "Property Sale" },
       { value: "lease agreement", label: "Lease Agreement" },
+      { value: "sublease", label: "Sublease" },
+      { value: "tenancy matter", label: "Tenancy Matter" },
+      { value: "property management", label: "Property Management" },
       { value: "property development", label: "Property Development" },
+      { value: "title perfection", label: "Title Perfection" },
+      { value: "mortgage", label: "Mortgage / Real Estate Finance" },
       { value: "land use", label: "Land Use" },
-      { value: "real estate finance", label: "Real Estate Finance" },
+      { value: "boundary dispute", label: "Boundary Dispute" },
+      { value: "partition", label: "Partition" },
+      { value: "right of way", label: "Right of Way" },
+      { value: "easement", label: "Easement" },
+      { value: "foreclosure", label: "Foreclosure" },
       { value: "other", label: "Other" },
     ],
 

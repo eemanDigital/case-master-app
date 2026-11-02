@@ -8,6 +8,9 @@ const AppError = require("../utils/appError");
 const { GenericPdfGenerator, getStatusColor, getStatusBg, formatCurrency, formatDate } = require("../utils/generateGenericPdf");
 const path = require("path");
 
+const escapeRegex = (value) =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 // Initialize pagination services
 const matterPaginationService = PaginationServiceFactory.createService(
   Matter,
@@ -42,6 +45,36 @@ exports.getAllPropertyMatters = catchAsync(async (req, res, next) => {
   } = req.query;
 
   const customFilter = { matterType: "property" };
+  const propertyDetailFilter = { firmId: req.firmId };
+  let hasPropertyDetailFilter = false;
+
+  if (typeof transactionType === "string" && transactionType.trim()) {
+    propertyDetailFilter.transactionType = transactionType.trim();
+    hasPropertyDetailFilter = true;
+  }
+  if (typeof propertyType === "string" && propertyType.trim()) {
+    propertyDetailFilter["properties.propertyType"] = propertyType.trim();
+    hasPropertyDetailFilter = true;
+  }
+  if (typeof state === "string" && state.trim()) {
+    const requestedState = state.trim();
+    const stateNames = ["fct", "federal capital territory"].includes(
+      requestedState.toLowerCase(),
+    )
+      ? ["FCT", "Federal Capital Territory"]
+      : [requestedState];
+    propertyDetailFilter["properties.state"] = {
+      $regex: `^(?:${stateNames.map(escapeRegex).join("|")})$`,
+      $options: "i",
+    };
+    hasPropertyDetailFilter = true;
+  }
+
+  if (hasPropertyDetailFilter) {
+    const matchingMatterIds =
+      await PropertyDetail.find(propertyDetailFilter).distinct("matterId");
+    customFilter._id = { $in: matchingMatterIds };
+  }
 
   const result = await matterPaginationService.paginate(
     {
@@ -56,9 +89,6 @@ exports.getAllPropertyMatters = catchAsync(async (req, res, next) => {
       search,
       includeDeleted,
       onlyDeleted,
-      transactionType,
-      state,
-      propertyType,
     },
     customFilter,
     req.firmId,
@@ -160,7 +190,8 @@ exports.createPropertyDetails = catchAsync(async (req, res, next) => {
       propertyDetail._id,
     ).populate({
       path: "matterId",
-      select: "matterNumber title client accountOfficer status priority",
+      select:
+        "matterNumber title natureOfMatter client accountOfficer status priority",
       populate: [
         { path: "client", select: "firstName lastName email phone" },
         { path: "accountOfficer", select: "firstName lastName email photo" },
@@ -186,7 +217,7 @@ exports.getPropertyDetails = catchAsync(async (req, res, next) => {
     .populate({
       path: "matterId",
       select:
-        "matterNumber title client accountOfficer status priority dateOpened",
+        "matterNumber title natureOfMatter client accountOfficer status priority dateOpened",
       populate: [
         { path: "client", select: "firstName lastName email phone address" },
         {
@@ -214,7 +245,7 @@ exports.updatePropertyDetails = catchAsync(async (req, res, next) => {
     { new: true, runValidators: true },
   ).populate({
     path: "matterId",
-    select: "matterNumber title client accountOfficer",
+    select: "matterNumber title natureOfMatter client accountOfficer",
     populate: [
       { path: "client", select: "firstName lastName email" },
       { path: "accountOfficer", select: "firstName lastName email" },
@@ -1553,12 +1584,20 @@ exports.generatePropertyReportPdf = catchAsync(async (req, res, next) => {
     other: "Other",
   };
   const PROPERTY_TYPE_LABELS = {
-    residential: "Residential",
-    commercial: "Commercial",
-    industrial: "Industrial",
-    agricultural: "Agricultural",
-    "mixed-use": "Mixed Use",
-    land: "Land",
+    residential: "Residential property",
+    commercial: "Commercial premises",
+    industrial: "Industrial property",
+    agricultural: "Agricultural land",
+    "mixed-use": "Mixed-use property",
+    land: "Land (vacant / undeveloped)",
+    other: "Other / not classified",
+  };
+  const LAND_TENURE_LABELS = {
+    statutory: "Statutory right of occupancy",
+    customary: "Customary right of occupancy",
+    "family-community": "Family / community land",
+    unknown: "Not yet confirmed",
+    other: "Other",
   };
   const STATUS_LABELS = {
     pending: "Pending",
@@ -1659,6 +1698,15 @@ exports.generatePropertyReportPdf = catchAsync(async (req, res, next) => {
       },
       { label: "Other Type", value: h(d.otherTransactionType) },
       { label: "Purchase Price", value: money(d.purchasePrice), bold: true },
+      ...(d.transactionType === "mortgage"
+        ? [
+            {
+              label: "Mortgage Facility",
+              value: money(d.mortgageFacility),
+              bold: true,
+            },
+          ]
+        : []),
       {
         label: "Rent Amount",
         value:
@@ -1682,7 +1730,8 @@ exports.generatePropertyReportPdf = catchAsync(async (req, res, next) => {
   pdf.addSection("Properties");
   pdf.addKeyValueGrid(
     (d.properties || []).flatMap((p) => [
-      { label: "Property Type", value: enumLabel(PROPERTY_TYPE_LABELS, p.propertyType), bold: true },
+      { label: "Asset Class", value: enumLabel(PROPERTY_TYPE_LABELS, p.propertyType), bold: true },
+      { label: "Land Tenure", value: enumLabel(LAND_TENURE_LABELS, p.landTenure) },
       { label: "Address", value: h(p.address) },
       { label: "Location", value: [p.state, p.lga].filter(Boolean).join(", ") || "—" },
       {
@@ -1706,15 +1755,32 @@ exports.generatePropertyReportPdf = catchAsync(async (req, res, next) => {
   pdf.addSection("Parties");
   pdf.addKeyValueGrid(
     [
-      partyRow("Vendor", d.vendor),
-      partyRow("Purchaser", d.purchaser),
+      ...(d.transactionType === "mortgage"
+        ? [
+            partyRow("Borrower / Mortgagor", d.borrower || d.vendor),
+            partyRow("Lender / Mortgagee", d.lender || d.purchaser),
+          ]
+        : [partyRow("Vendor", d.vendor), partyRow("Purchaser", d.purchaser)]),
       partyRow("Landlord", d.landlord),
       partyRow("Tenant", d.tenant),
     ]
       .filter(Boolean)
       .concat([
-        { label: "Vendor Contact", value: h(d.vendor?.contact) },
-        { label: "Purchaser Contact", value: h(d.purchaser?.contact) },
+        ...(d.transactionType === "mortgage"
+          ? [
+              {
+                label: "Borrower Contact",
+                value: h((d.borrower || d.vendor)?.contact),
+              },
+              {
+                label: "Lender Contact",
+                value: h((d.lender || d.purchaser)?.contact),
+              },
+            ]
+          : [
+              { label: "Vendor Contact", value: h(d.vendor?.contact) },
+              { label: "Purchaser Contact", value: h(d.purchaser?.contact) },
+            ]),
         { label: "Landlord Contact", value: h(d.landlord?.contact) },
         { label: "Tenant Contact", value: h(d.tenant?.contact) },
       ]),

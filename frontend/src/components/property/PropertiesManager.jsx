@@ -38,9 +38,12 @@ import {
 import {
   PROPERTY_TYPES,
   TITLE_DOCUMENTS,
+  LAND_TENURE_TYPES,
   LAND_SIZE_UNITS,
   NIGERIAN_STATES,
+  getNigerianStateLabel,
   getPropertyTypeLabel,
+  getLandTenureLabel,
   getTitleDocumentLabel,
   formatLandSize,
 } from "../../utils/propertyConstants";
@@ -62,6 +65,7 @@ const PropertiesManager = ({ matterId, properties = [] }) => {
     if (property) {
       form.setFieldsValue({
         ...property,
+        state: getNigerianStateLabel(property.state),
         landSizeValue: property.landSize?.value,
         landSizeUnit: property.landSize?.unit,
       });
@@ -177,7 +181,7 @@ const PropertiesManager = ({ matterId, properties = [] }) => {
           {record.state && (
             <div className="flex items-center">
               <EnvironmentOutlined className="mr-1 text-gray-400" />
-              <span>{record.state}</span>
+              <span>{getNigerianStateLabel(record.state)}</span>
               {record.lga && <span className="ml-1">, {record.lga}</span>}
             </div>
           )}
@@ -185,7 +189,7 @@ const PropertiesManager = ({ matterId, properties = [] }) => {
       ),
     },
     {
-      title: "Title Document",
+      title: "Title / root-of-title evidence",
       dataIndex: "titleDocument",
       key: "titleDocument",
       render: (document) =>
@@ -289,8 +293,13 @@ const PropertiesManager = ({ matterId, properties = [] }) => {
         <Card className="mb-6">
           <Descriptions title="Property Details" column={2} bordered>
             {properties[0].propertyType && (
-              <Descriptions.Item label="Property Type">
+              <Descriptions.Item label="Asset class">
                 {getPropertyTypeLabel(properties[0].propertyType)}
+              </Descriptions.Item>
+            )}
+            {properties[0].landTenure && (
+              <Descriptions.Item label="Land tenure">
+                {getLandTenureLabel(properties[0].landTenure)}
               </Descriptions.Item>
             )}
             {properties[0].address && (
@@ -378,14 +387,22 @@ const PropertiesManager = ({ matterId, properties = [] }) => {
         <Form form={form} layout="vertical" onFinish={handleSubmit}>
           <Form.Item
             name="propertyType"
-            label="Property Type"
-            rules={[
-              { required: true, message: "Please select property type" },
-            ]}>
-            <Select placeholder="Select property type">
+            label="Property use / asset class"
+            extra="Optional. Classify the property separately from the transaction workflow.">
+            <Select placeholder="Select use or leave blank">
               {PROPERTY_TYPES.map((type) => (
                 <Option key={type.value} value={type.value}>
                   {type.icon} {type.label}
+                </Option>
+              ))}
+            </Select>
+          </Form.Item>
+
+          <Form.Item name="landTenure" label="Land tenure (if known)">
+            <Select placeholder="Select tenure or leave blank">
+              {LAND_TENURE_TYPES.map((tenure) => (
+                <Option key={tenure.value} value={tenure.value}>
+                  {tenure.label}
                 </Option>
               ))}
             </Select>
@@ -405,7 +422,7 @@ const PropertiesManager = ({ matterId, properties = [] }) => {
               <Form.Item name="state" label="State">
                 <Select placeholder="Select state" showSearch>
                   {NIGERIAN_STATES.map((state) => (
-                    <Option key={state.value} value={state.value}>
+                    <Option key={state.value} value={state.label}>
                       {state.label}
                     </Option>
                   ))}
@@ -419,7 +436,9 @@ const PropertiesManager = ({ matterId, properties = [] }) => {
             </Col>
           </Row>
 
-          <Form.Item name="titleDocument" label="Title Document">
+          <Form.Item
+            name="titleDocument"
+            label="Title / root-of-title evidence">
             <Select placeholder="Select title document">
               {TITLE_DOCUMENTS.map((doc) => (
                 <Option key={doc.value} value={doc.value}>

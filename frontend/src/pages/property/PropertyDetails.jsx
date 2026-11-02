@@ -37,6 +37,7 @@ import {
   selectDetailsLoading,
   selectActionLoading,
 } from "../../redux/features/property/propertySlice";
+import { getMatter } from "../../redux/features/matter/matterSlice";
 
 // Component imports
 import PropertyForm from "../../components/property/PropertyForm";
@@ -56,6 +57,8 @@ import {
   formatCurrency,
   getTransactionTypeLabel,
   getPropertyTypeLabel,
+  getLandTenureLabel,
+  getNigerianStateLabel,
   getTitleDocumentLabel,
   isOverdue,
 } from "../../utils/propertyConstants";
@@ -73,8 +76,7 @@ const PropertyDetails = () => {
   const propertyDetails = useSelector(selectSelectedDetails);
   const detailsLoading = useSelector(selectDetailsLoading);
   const actionLoading = useSelector(selectActionLoading);
-
-  console.log(propertyDetails);
+  const { currentMatter } = useSelector((state) => state.matter);
 
   // Local state
   const [editMode, setEditMode] = useState(false);
@@ -85,6 +87,7 @@ const PropertyDetails = () => {
   useEffect(() => {
     if (matterId) {
       dispatch(fetchPropertyDetails(matterId));
+      dispatch(getMatter(matterId));
     }
   }, [dispatch, matterId]);
 
@@ -148,6 +151,7 @@ const PropertyDetails = () => {
   const {
     transactionType,
     purchasePrice,
+    mortgageFacility,
     rentAmount,
     securityDeposit,
     paymentTerms,
@@ -164,6 +168,8 @@ const PropertyDetails = () => {
     development = {},
     vendor = {},
     purchaser = {},
+    borrower = {},
+    lender = {},
     landlord = {},
     tenant = {},
     properties = [],
@@ -177,6 +183,56 @@ const PropertyDetails = () => {
     (t) => t.value === transactionType,
   );
   const primaryProperty = properties?.[0];
+  const isRentTransaction = [
+    "lease",
+    "sublease",
+    "tenancy_matter",
+    "property_management",
+  ].includes(transactionType);
+  const isPurchaseTransaction = [
+    "purchase",
+    "sale",
+    "land_acquisition",
+    "foreclosure",
+    "other",
+  ].includes(transactionType);
+  const firstTransactionParty =
+    transactionType === "mortgage" ? borrower?.name ? borrower : vendor : vendor;
+  const secondTransactionParty =
+    transactionType === "mortgage" ? lender?.name ? lender : purchaser : purchaser;
+  const firstTransactionPartyLabel =
+    transactionType === "mortgage"
+      ? "Borrower / Mortgagor"
+      : transactionType === "title_perfection"
+        ? "Current holder / applicant"
+        : "Vendor / Owner";
+  const secondTransactionPartyLabel =
+    transactionType === "mortgage"
+      ? "Lender / Mortgagee"
+      : transactionType === "title_perfection"
+        ? "Transferor / other party"
+        : "Purchaser / Buyer";
+  const financialAmount =
+    transactionType === "mortgage"
+      ? mortgageFacility
+      : isRentTransaction
+        ? rentAmount
+        : isPurchaseTransaction
+          ? purchasePrice
+          : undefined;
+  const financialAmountLabel =
+    transactionType === "mortgage"
+      ? "Facility Amount"
+      : isRentTransaction
+        ? "Rent Amount"
+        : "Property Value";
+  const linkedMatter =
+    propertyDetails?.matterId && typeof propertyDetails.matterId === "object"
+      ? propertyDetails.matterId
+      : undefined;
+  const matterContext =
+    linkedMatter ||
+    (currentMatter?._id === matterId ? currentMatter : undefined);
 
   // Calculate metrics
   const totalProperties = properties?.length || 0;
@@ -196,7 +252,7 @@ const PropertyDetails = () => {
       ?.length || 0;
 
   // Lease-specific metrics
-  const isLeaseTransaction = ["lease", "sublease", "tenancy_matter"].includes(transactionType);
+  const isLeaseTransaction = isRentTransaction;
   const pendingMilestones = leaseMilestones?.filter((m) => m.status === "pending")?.length || 0;
   const completedMilestones = leaseMilestones?.filter((m) => m.status === "completed")?.length || 0;
 
@@ -290,6 +346,15 @@ const PropertyDetails = () => {
                   {getTransactionTypeLabel(transactionType)}
                 </Tag>
               )}
+              {matterContext?.natureOfMatter && (
+                <Tag color="blue" className="ml-2">
+                  Matter:{" "}
+                  {matterContext.natureOfMatter.replace(
+                    /(^|\s)\S/g,
+                    (letter) => letter.toUpperCase(),
+                  )}
+                </Tag>
+              )}
             </Title>
             <Space wrap className="max-w-full">
               {primaryProperty?.propertyType && (
@@ -298,9 +363,16 @@ const PropertyDetails = () => {
                   {getPropertyTypeLabel(primaryProperty.propertyType)}
                 </Text>
               )}
+              {primaryProperty?.landTenure && (
+                <Text type="secondary">
+                  <FileTextOutlined />{" "}
+                  {getLandTenureLabel(primaryProperty.landTenure)}
+                </Text>
+              )}
               {primaryProperty?.state && (
                 <Text type="secondary">
-                  <EnvironmentOutlined /> {primaryProperty.state}
+                  <EnvironmentOutlined />{" "}
+                  {getNigerianStateLabel(primaryProperty.state)}
                   {primaryProperty.lga && `, ${primaryProperty.lga}`}
                 </Text>
               )}
@@ -372,6 +444,7 @@ const PropertyDetails = () => {
             onSubmit={handleSubmit}
             loading={actionLoading}
             mode={propertyDetails ? "edit" : "create"}
+            matterData={matterContext}
           />
         </Card>
       )}
@@ -384,15 +457,12 @@ const PropertyDetails = () => {
             <Col xs={24} sm={12} md={6}>
               <Card>
                 <Statistic
-                  title="Property Value"
-                  value={purchasePrice?.amount || rentAmount?.amount || 0}
+                  title={financialAmountLabel}
+                  value={financialAmount?.amount || 0}
                   prefix={<DollarOutlined />}
                   valueStyle={{ color: "#722ed1" }}
                   formatter={(value) =>
-                    formatCurrency(
-                      value,
-                      purchasePrice?.currency || rentAmount?.currency || "NGN",
-                    )
+                    formatCurrency(value, financialAmount?.currency || "NGN")
                   }
                 />
               </Card>
@@ -464,30 +534,61 @@ const PropertyDetails = () => {
                           ? paymentTerms.replace("-", " ").toUpperCase()
                           : "Not specified"}
                       </Descriptions.Item>
-                      <Descriptions.Item label="Purchase Price">
-                        {purchasePrice?.amount ? (
-                          <span className="font-semibold">
-                            {formatCurrency(purchasePrice.amount, purchasePrice.currency)}
-                          </span>
-                        ) : "Not applicable"}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Rent Amount">
-                        {rentAmount?.amount ? (
-                          <Space>
+                      {isPurchaseTransaction && (
+                        <Descriptions.Item label="Purchase Price">
+                          {purchasePrice?.amount ? (
                             <span className="font-semibold">
-                              {formatCurrency(rentAmount.amount, rentAmount.currency)}
+                              {formatCurrency(
+                                purchasePrice.amount,
+                                purchasePrice.currency,
+                              )}
                             </span>
-                            {rentAmount.frequency && (
-                              <Tag color="blue">/{rentAmount.frequency}</Tag>
+                          ) : (
+                            "Not specified"
+                          )}
+                        </Descriptions.Item>
+                      )}
+                      {transactionType === "mortgage" && (
+                        <Descriptions.Item label="Mortgage Facility Amount">
+                          {mortgageFacility?.amount
+                            ? formatCurrency(
+                                mortgageFacility.amount,
+                                mortgageFacility.currency,
+                              )
+                            : "Not specified"}
+                        </Descriptions.Item>
+                      )}
+                      {isRentTransaction && (
+                        <>
+                          <Descriptions.Item label="Rent Amount">
+                            {rentAmount?.amount ? (
+                              <Space>
+                                <span className="font-semibold">
+                                  {formatCurrency(
+                                    rentAmount.amount,
+                                    rentAmount.currency,
+                                  )}
+                                </span>
+                                {rentAmount.frequency && (
+                                  <Tag color="blue">
+                                    /{rentAmount.frequency}
+                                  </Tag>
+                                )}
+                              </Space>
+                            ) : (
+                              "Not specified"
                             )}
-                          </Space>
-                        ) : "Not applicable"}
-                      </Descriptions.Item>
-                      <Descriptions.Item label="Security Deposit">
-                        {securityDeposit?.amount
-                          ? formatCurrency(securityDeposit.amount, securityDeposit.currency)
-                          : "Not specified"}
-                      </Descriptions.Item>
+                          </Descriptions.Item>
+                          <Descriptions.Item label="Security Deposit">
+                            {securityDeposit?.amount
+                              ? formatCurrency(
+                                  securityDeposit.amount,
+                                  securityDeposit.currency,
+                                )
+                              : "Not specified"}
+                          </Descriptions.Item>
+                        </>
+                      )}
                     </Descriptions>
                   </Card>
 
@@ -694,30 +795,31 @@ const PropertyDetails = () => {
                   {/* Parties Information */}
                   <Card title="Parties Involved" className="mb-6">
                     <Row gutter={16}>
-                      {(vendor?.name || purchaser?.name) && (
+                      {(firstTransactionParty?.name ||
+                        secondTransactionParty?.name) && (
                         <>
-                          {vendor?.name && (
+                          {firstTransactionParty?.name && (
                             <Col xs={24} md={12}>
-                              <Card size="small" title="Vendor/Owner">
+                              <Card size="small" title={firstTransactionPartyLabel}>
                                 <div>
-                                  <Text strong>{vendor.name}</Text>
-                                  {vendor.contact && (
+                                  <Text strong>{firstTransactionParty.name}</Text>
+                                  {firstTransactionParty.contact && (
                                     <div className="text-gray-600 text-sm">
-                                      {vendor.contact}
+                                      {firstTransactionParty.contact}
                                     </div>
                                   )}
                                 </div>
                               </Card>
                             </Col>
                           )}
-                          {purchaser?.name && (
+                          {secondTransactionParty?.name && (
                             <Col xs={24} md={12}>
-                              <Card size="small" title="Purchaser/Buyer">
+                              <Card size="small" title={secondTransactionPartyLabel}>
                                 <div>
-                                  <Text strong>{purchaser.name}</Text>
-                                  {purchaser.contact && (
+                                  <Text strong>{secondTransactionParty.name}</Text>
+                                  {secondTransactionParty.contact && (
                                     <div className="text-gray-600 text-sm">
-                                      {purchaser.contact}
+                                      {secondTransactionParty.contact}
                                     </div>
                                   )}
                                 </div>

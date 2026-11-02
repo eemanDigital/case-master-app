@@ -106,53 +106,71 @@ export const TRANSACTION_TYPES = [
 export const PROPERTY_TYPES = [
   {
     value: "residential",
-    label: "Residential",
+    label: "Residential property",
     icon: "🏡",
     color: "blue",
   },
   {
     value: "commercial",
-    label: "Commercial",
+    label: "Commercial premises",
     icon: "🏢",
     color: "green",
   },
   {
     value: "industrial",
-    label: "Industrial",
+    label: "Industrial property",
     icon: "🏭",
     color: "orange",
   },
   {
     value: "agricultural",
-    label: "Agricultural",
+    label: "Agricultural land",
     icon: "🌾",
     color: "brown",
   },
   {
     value: "mixed-use",
-    label: "Mixed Use",
+    label: "Mixed-use property",
     icon: "🏘️",
     color: "purple",
   },
   {
     value: "land",
-    label: "Land",
+    label: "Land (vacant / undeveloped)",
     icon: "🌍",
     color: "geekblue",
   },
+  {
+    value: "other",
+    label: "Other / not classified",
+    icon: "📋",
+    color: "default",
+  },
 ];
 
-// Title Documents
+// Title evidence commonly encountered in Nigerian property transactions.
 export const TITLE_DOCUMENTS = [
   { value: "c-of-o", label: "Certificate of Occupancy", short: "C of O" },
   { value: "deed-of-assignment", label: "Deed of Assignment", short: "Deed" },
+  { value: "deed-of-conveyance", label: "Deed of Conveyance", short: "Conveyance" },
   {
     value: "governors-consent",
     label: "Governor's Consent",
     short: "Gov Consent",
   },
+  { value: "allocation-letter", label: "Allocation Letter", short: "Allocation" },
+  { value: "gazette-excision", label: "Gazette / Excision Record", short: "Gazette / Excision" },
+  { value: "probate-letters", label: "Probate / Letters of Administration", short: "Probate / Letters" },
   { value: "survey-plan", label: "Survey Plan", short: "Survey" },
   { value: "other", label: "Other Document", short: "Other" },
+];
+
+export const LAND_TENURE_TYPES = [
+  { value: "statutory", label: "Statutory right of occupancy" },
+  { value: "customary", label: "Customary right of occupancy" },
+  { value: "family-community", label: "Family / community land" },
+  { value: "unknown", label: "Not yet confirmed" },
+  { value: "other", label: "Other" },
 ];
 
 // Payment Terms
@@ -221,6 +239,21 @@ export const NIGERIAN_STATES = [
   { value: "zamfara", label: "Zamfara" },
 ];
 
+export const getNigerianStateLabel = (value) => {
+  if (!value) return value;
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === "fct" || normalized === "federal capital territory") {
+    return "Federal Capital Territory";
+  }
+  return (
+    NIGERIAN_STATES.find(
+      (state) =>
+        state.value.toLowerCase() === normalized ||
+        state.label.toLowerCase() === normalized,
+    )?.label || value
+  );
+};
+
 // Currencies
 export const CURRENCIES = [
   { value: "NGN", label: "Nigerian Naira (₦)", symbol: "₦" },
@@ -279,6 +312,33 @@ export const getPropertyTypeLabel = (value) => {
 
 export const getTitleDocumentLabel = (value) => {
   return TITLE_DOCUMENTS.find((d) => d.value === value)?.label || value;
+};
+
+export const getLandTenureLabel = (value) => {
+  return LAND_TENURE_TYPES.find((type) => type.value === value)?.label || value;
+};
+
+export const getTransactionTypeForMatterNature = (natureOfMatter) => {
+  const matterNatureToTransaction = {
+    "property acquisition": "purchase",
+    "land acquisition": "land_acquisition",
+    "property sale": "sale",
+    "lease agreement": "lease",
+    sublease: "sublease",
+    "tenancy matter": "tenancy_matter",
+    "property management": "property_management",
+    "property development": "property_development",
+    "title perfection": "title_perfection",
+    mortgage: "mortgage",
+    "real estate finance": "mortgage",
+    "boundary dispute": "boundary_dispute",
+    partition: "partition",
+    "right of way": "right_of_way",
+    easement: "easement",
+    foreclosure: "foreclosure",
+  };
+
+  return matterNatureToTransaction[natureOfMatter] || undefined;
 };
 
 export const getPaymentTermLabel = (value) => {
