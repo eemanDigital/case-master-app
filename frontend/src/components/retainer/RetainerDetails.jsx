@@ -943,7 +943,7 @@ const RetainerDetails = ({ matterId, onClose }) => {
   );
 
   return (
-    <div className="p-4 md:p-6 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
+    <div className="matter-responsive-details p-4 md:p-6 bg-gradient-to-br from-gray-50 to-blue-50 min-h-screen">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">

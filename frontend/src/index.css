@@ -589,6 +589,14 @@ body {
   overflow-wrap: anywhere;
 }
 
+.matter-responsive-details,
+.matter-responsive-details .ant-card,
+.matter-responsive-details .ant-tabs,
+.matter-responsive-details .ant-row,
+.matter-responsive-details .ant-col {
+  min-width: 0;
+}
+
 @layer utilities {
   /* Text Utilities */
   .text-balance {
@@ -1208,6 +1216,52 @@ body {
 
   .property-details .ant-tabs-tab {
     padding: 8px 12px;
+  }
+}
+
+@media (max-width: 575px) {
+  .matter-responsive-details .ant-descriptions-view,
+  .matter-responsive-details .ant-descriptions-view table {
+    width: 100%;
+  }
+
+  .matter-responsive-details .ant-descriptions-row {
+    display: block;
+  }
+
+  .matter-responsive-details .ant-descriptions-item {
+    display: block;
+    width: 100% !important;
+    max-width: 100%;
+  }
+
+  .matter-responsive-details .ant-descriptions-item-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .matter-responsive-details .ant-descriptions-item-label,
+  .matter-responsive-details .ant-descriptions-item-content {
+    display: block;
+    width: 100% !important;
+    max-width: 100%;
+    min-width: 0;
+    padding: 6px 10px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .matter-responsive-details .ant-descriptions-item-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .matter-responsive-details .ant-descriptions-item-content {
+    padding-top: 2px;
+    padding-bottom: 12px;
   }
 }
 

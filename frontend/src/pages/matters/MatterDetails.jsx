@@ -244,7 +244,8 @@ const MatterDetails = () => {
   };
 
   return (
-    <div className={`p-2 sm:p-4 md:p-6 ${isDarkMode ? "dark" : ""}`}>
+    <div
+      className={`matter-responsive-details p-2 sm:p-4 md:p-6 ${isDarkMode ? "dark" : ""}`}>
       {/* Header with Actions - Mobile Optimized */}
       <Card
         className={`mb-4 sm:mb-6 ${

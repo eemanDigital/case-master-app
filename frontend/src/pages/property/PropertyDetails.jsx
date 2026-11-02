@@ -219,7 +219,7 @@ const PropertyDetails = () => {
   // No data state - show create form
   if (!propertyDetails && !editMode) {
     return (
-      <div className="property-details">
+      <div className="matter-responsive-details property-details">
         <div className="mb-6">
           <Breadcrumb>
             <Breadcrumb.Item>
@@ -266,7 +266,7 @@ const PropertyDetails = () => {
   }
 
   return (
-    <div className="property-details">
+    <div className="matter-responsive-details property-details">
       {/* Header */}
       <div className="mb-6">
         <Breadcrumb>
