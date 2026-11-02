@@ -159,18 +159,12 @@ const GeneralForm = ({ generalDetails, onCancel, onSuccess }) => {
       form={form}
       layout="vertical"
       onFinish={handleSubmit}
-      style={{ maxWidth: 1200, margin: "0 auto" }}>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 24,
-        }}>
-        <Title level={4} style={{ margin: 0 }}>
+      className="matter-form-responsive mx-auto w-full max-w-5xl">
+      <div className="matter-form-header mb-6 flex flex-wrap items-center justify-between gap-3">
+        <Title level={4} className="!mb-0">
           Edit General Matter
         </Title>
-        <Space>
+        <Space wrap>
           <Button onClick={() => form.resetFields()} icon={<UndoOutlined />}>
             Reset
           </Button>

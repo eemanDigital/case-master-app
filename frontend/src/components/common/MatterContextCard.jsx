@@ -28,7 +28,10 @@ const MatterContextCard = memo(({ matter }) => {
       icon={<FileTextOutlined />}
       message="Matter Information"
       description={
-        <Descriptions size="small" column={4} className="mt-2">
+        <Descriptions
+          size="small"
+          column={{ xs: 1, sm: 2, lg: 4 }}
+          className="mt-2 matter-context-descriptions">
           <Descriptions.Item label="Matter Number">
             <Tag color="blue">{matter?.matterNumber || "-"}</Tag>
           </Descriptions.Item>

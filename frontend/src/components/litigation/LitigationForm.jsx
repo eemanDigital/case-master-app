@@ -747,7 +747,7 @@ const LitigationForm = ({
       onFinish={handleSubmit}
       initialValues={{ currentStage: "pre-filing", ...formattedInitialValues }}
       scrollToFirstError
-      className="litigation-form">
+      className="matter-form-responsive litigation-form">
       {matterData && <MatterContextCard matter={matterData} />}
 
       <CourtCard form={form} showOtherCourt={showOtherCourt} setShowOtherCourt={setShowOtherCourt} />
@@ -839,7 +839,7 @@ const LitigationForm = ({
         </Form.List>
       </Card>
 
-      <div className="flex justify-end gap-4 mt-6">
+      <div className="matter-form-actions mt-6 flex flex-wrap justify-end gap-2 sm:gap-4">
         <Button size="large" onClick={handleReset}>Reset</Button>
         <Button type="primary" size="large" htmlType="submit" loading={loading} icon={<SaveOutlined />}>
           {mode === "create" ? "Create Litigation Details" : "Update Litigation Details"}

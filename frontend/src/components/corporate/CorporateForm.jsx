@@ -53,7 +53,10 @@ const MatterContextCard = memo(({ matter }) => {
       icon={<FileTextOutlined />}
       message="Matter Information"
       description={
-        <Descriptions size="small" column={4} className="mt-2">
+        <Descriptions
+          size="small"
+          column={{ xs: 1, sm: 2, lg: 4 }}
+          className="mt-2 matter-context-descriptions">
           <Descriptions.Item label="Matter Number">
             <Tag color="blue">{matter?.matterNumber || "-"}</Tag>
           </Descriptions.Item>
@@ -178,7 +181,7 @@ const CorporateForm = ({
   }, [form]);
 
   return (
-    <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={formattedInitialValues} scrollToFirstError className="corporate-form">
+    <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={formattedInitialValues} scrollToFirstError className="matter-form-responsive corporate-form">
       {matterData && <MatterContextCard matter={matterData} />}
 
       {/* TRANSACTION INFORMATION */}
@@ -528,7 +531,7 @@ const CorporateForm = ({
       </Card>
 
       {/* FORM ACTIONS */}
-      <div className="flex justify-end gap-4 mt-6">
+      <div className="matter-form-actions mt-6 flex flex-wrap justify-end gap-2 sm:gap-4">
         <Button size="large" onClick={handleReset}>Reset</Button>
         <Button type="primary" size="large" htmlType="submit" loading={loading} icon={<SaveOutlined />}>
           {mode === "create" ? "Create Corporate Details" : "Update Corporate Details"}

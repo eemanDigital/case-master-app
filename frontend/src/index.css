@@ -597,6 +597,33 @@ body {
   min-width: 0;
 }
 
+.matter-form-responsive,
+.matter-form-responsive .ant-card,
+.matter-form-responsive .ant-row,
+.matter-form-responsive .ant-col,
+.matter-form-responsive .ant-form-item,
+.matter-form-responsive .ant-tabs {
+  min-width: 0;
+}
+
+.matter-form-responsive .ant-select,
+.matter-form-responsive .ant-picker,
+.matter-form-responsive .ant-input-number {
+  width: 100%;
+  max-width: 100%;
+}
+
+.matter-form-responsive .ant-select-selector,
+.matter-form-responsive .ant-input,
+.matter-form-responsive textarea {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.matter-form-responsive .ant-tabs-nav {
+  max-width: 100%;
+}
+
 @layer utilities {
   /* Text Utilities */
   .text-balance {
@@ -1220,6 +1247,35 @@ body {
 }
 
 @media (max-width: 575px) {
+  .matter-form-responsive .ant-col-12,
+  .matter-form-responsive .ant-col-8,
+  .matter-form-responsive .ant-col-6 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  .matter-form-responsive .ant-tabs-tabpane {
+    padding: 12px !important;
+  }
+
+  .matter-form-responsive .ant-card-head-wrapper {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .matter-form-responsive .ant-card-extra {
+    margin-inline-start: 0;
+    max-width: 100%;
+  }
+
+  .matter-form-responsive .ant-card-extra .ant-space {
+    flex-wrap: wrap;
+  }
+
+  .matter-form-responsive .matter-form-actions > .ant-btn {
+    flex: 1 1 100%;
+  }
+
   .matter-responsive-details .ant-descriptions-view,
   .matter-responsive-details .ant-descriptions-view table {
     width: 100%;

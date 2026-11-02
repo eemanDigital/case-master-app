@@ -1255,7 +1255,7 @@ const PropertyForm = memo(
           layout="vertical"
           onFinish={handleSubmit}
           scrollToFirstError
-          className="property-form">
+          className="matter-form-responsive property-form">
           {mode === "edit" && (
             <Alert
               message="Editing Property Details"
@@ -1267,9 +1267,14 @@ const PropertyForm = memo(
             />
           )}
 
-          <Tabs activeKey={activeTab} onChange={setActiveTab} items={tabItems} className="mb-6" />
+          <Tabs
+            activeKey={activeTab}
+            onChange={setActiveTab}
+            items={tabItems}
+            className="mb-6 [&_.ant-tabs-nav]:overflow-x-auto [&_.ant-tabs-nav-list]:flex-nowrap"
+          />
 
-          <div className="flex justify-end gap-4 mt-6">
+          <div className="matter-form-actions mt-6 flex flex-wrap justify-end gap-2 sm:gap-4">
             <Button size="large" onClick={handleReset}>
               Reset
             </Button>

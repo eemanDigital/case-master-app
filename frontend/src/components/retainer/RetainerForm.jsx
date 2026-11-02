@@ -244,10 +244,10 @@ const RetainerForm = ({ retainerDetails, onCancel, onSuccess }) => {
   };
 
   return (
-    <div className="bg-gray-50 min-h-screen p-4 md:p-6">
+    <div className="matter-form-responsive bg-gray-50 min-h-screen p-3 sm:p-4 md:p-6">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div className="bg-white rounded-lg shadow-md p-3 sm:p-6 mb-6">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
             <div>
               <Title level={3} className="!mb-2">
@@ -257,7 +257,7 @@ const RetainerForm = ({ retainerDetails, onCancel, onSuccess }) => {
                 Update retainer agreement information
               </Text>
             </div>
-            <Space className="mt-4 md:mt-0">
+            <Space wrap className="mt-4 md:mt-0">
               <Button
                 onClick={handleReset}
                 icon={<UndoOutlined />}
@@ -291,11 +291,11 @@ const RetainerForm = ({ retainerDetails, onCancel, onSuccess }) => {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
-          className="space-y-6">
+          className="matter-form-fields space-y-6">
           <Tabs
             defaultActiveKey="1"
             size="large"
-            className="bg-white rounded-lg shadow-md">
+            className="bg-white rounded-lg shadow-md [&_.ant-tabs-nav]:overflow-x-auto [&_.ant-tabs-nav-list]:flex-nowrap">
             {/* Basic Information */}
             <TabPane tab="Basic Information" key="1" className="p-6">
               <Row gutter={[24, 16]}>

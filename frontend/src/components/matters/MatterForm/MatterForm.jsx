@@ -14,6 +14,7 @@ import {
   Steps,
   message,
   Typography,
+  Grid,
 } from "antd";
 import {
   SaveOutlined,
@@ -33,6 +34,7 @@ import PropTypes from "prop-types";
 const { TextArea } = Input;
 const { Title, Text } = Typography;
 const { Step } = Steps;
+const { useBreakpoint } = Grid;
 
 const MatterForm = memo(
   ({
@@ -51,6 +53,7 @@ const MatterForm = memo(
     presetMatterType = null,
   }) => {
     const [form] = Form.useForm();
+    const screens = useBreakpoint();
     const [currentStep, setCurrentStep] = useState(0);
     const [selectedMatterType, setSelectedMatterType] = useState(
       initialValues.matterType || presetMatterType,
@@ -905,7 +908,7 @@ const MatterForm = memo(
     }, [hasUnsavedChanges]);
 
     return (
-      <div className="max-w-6xl mx-auto p-4">
+      <div className="matter-form-responsive mx-auto w-full max-w-6xl p-3 sm:p-4">
         <div className="mb-8">
           <Title level={2}>
             {mode === "create" ? "Create New Matter" : "Edit Matter"}
@@ -918,7 +921,11 @@ const MatterForm = memo(
         </div>
 
         {!disableSteps && (
-          <Steps current={currentStep} className="mb-8">
+          <Steps
+            current={currentStep}
+            direction={screens.xs ? "vertical" : "horizontal"}
+            size={screens.xs ? "small" : "default"}
+            className="mb-6 sm:mb-8">
             {steps.map((step) => (
               <Step key={step.title} title={step.title} />
             ))}
@@ -947,7 +954,7 @@ const MatterForm = memo(
             category: "n/a",
             ...initialValues,
           }}
-          className="space-y-6">
+          className="matter-form-fields space-y-6">
           {disableSteps ? (
             <div className="space-y-6">
               {steps.map((step, index) => (
@@ -963,8 +970,8 @@ const MatterForm = memo(
             steps[currentStep].content
           )}
 
-          <div className="flex justify-between pt-6 border-t border-gray-200">
-            <div className="space-x-4">
+          <div className="matter-form-actions flex flex-wrap items-center justify-between gap-3 border-t border-gray-200 pt-6">
+            <div className="flex flex-wrap gap-2">
               {showCancelButton && onCancel && (
                 <Button
                   onClick={onCancel}
@@ -981,7 +988,7 @@ const MatterForm = memo(
               )}
             </div>
 
-            <div className="space-x-4">
+            <div className="flex flex-wrap gap-2">
               {!disableSteps && currentStep < steps.length - 1 && (
                 <Button type="primary" onClick={next} disabled={loading}>
                   Next

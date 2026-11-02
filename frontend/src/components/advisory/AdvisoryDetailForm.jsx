@@ -530,7 +530,7 @@ const AdvisoryDetailForm = ({
   );
 
   return (
-    <div className="advisory-detail-form" style={{ padding: "24px" }}>
+    <div className="matter-form-responsive advisory-detail-form p-3 sm:p-6">
       <LoadingSpinner fullScreen={false} spinning={loading}>
         {matterData && <MatterContextCard matter={matterData} />}
         <Form
@@ -539,6 +539,7 @@ const AdvisoryDetailForm = ({
           size="large"
           preserve={true}
           onValuesChange={handleFormChange}
+          className="matter-form-fields"
           initialValues={{
             advisoryType: "legal_opinion",
             requestDate: dayjs(),
@@ -568,7 +569,7 @@ const AdvisoryDetailForm = ({
               </Space>
             }
             extra={
-              <Space>
+              <Space wrap>
                 <Button
                   icon={<LeftOutlined />}
                   onClick={() => {
@@ -598,9 +599,10 @@ const AdvisoryDetailForm = ({
               type="card"
               size="large"
               style={{ marginTop: "16px" }}
+              className="[&_.ant-tabs-nav]:overflow-x-auto [&_.ant-tabs-nav-list]:flex-nowrap"
             />
 
-            <div style={{ padding: "24px 0" }}>
+            <div className="py-4 sm:py-6">
               {/* ── BASIC INFO ─────────────────────────────────────────── */}
               {activeTab === "basic" && (
                 <>
@@ -790,7 +792,7 @@ const AdvisoryDetailForm = ({
                         />
                       </Form.Item>
                     </Col>
-                    <Col span={8}>
+                    <Col xs={24} md={8}>
                       <Form.Item
                         name={["opinion", "confidence"]}
                         label="Confidence">
@@ -836,7 +838,7 @@ const AdvisoryDetailForm = ({
               {activeTab === "risk" && (
                 <>
                   <Row gutter={24}>
-                    <Col span={8}>
+                    <Col xs={24} md={8}>
                       <Form.Item
                         name={["riskAssessment", "overallRisk"]}
                         label="Overall Risk Level">
