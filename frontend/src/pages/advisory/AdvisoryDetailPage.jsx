@@ -157,11 +157,11 @@ const PanelLoadingFallback = () => (
 
 const AdvisoryHeader = React.memo(
   ({ advisory, onEdit, onDelete, onDuplicate, onExport, onDownloadPdf, isDeleted }) => (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+    <div className="mb-6 rounded-lg border border-gray-200 bg-white p-3 shadow-sm sm:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-2">
-            <Title level={2} className="!mb-0 !text-gray-900 truncate">
+          <div className="mb-2 flex flex-wrap items-center gap-2 sm:gap-3">
+            <Title level={2} className="!mb-0 !min-w-0 !text-gray-900 break-words">
               {advisory.matter?.title || "Untitled Advisory"}
             </Title>
             <StatusBadge status={advisory.status} />
@@ -171,7 +171,7 @@ const AdvisoryHeader = React.memo(
               </span>
             )}
           </div>
-          <div className="flex items-center gap-4 text-sm text-gray-500">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-gray-500">
             <span>Matter #{advisory.matter?.matterNumber || "N/A"}</span>
             <span>•</span>
             <span>
@@ -192,7 +192,7 @@ const AdvisoryHeader = React.memo(
           </div>
         </div>
 
-        <Space className="flex-shrink-0">
+        <Space wrap className="max-w-full flex-shrink-0">
           <Button
             type="primary"
             icon={<EditOutlined />}
@@ -821,7 +821,7 @@ const AdvisoryDetailPage = () => {
           onChange={setActiveTab}
           type="card"
           size="large"
-          className="px-6 pt-4"
+          className="px-2 pt-2 sm:px-6 sm:pt-4 [&_.ant-tabs-nav]:overflow-x-auto [&_.ant-tabs-nav-list]:flex-nowrap"
           items={tabItems}
           destroyInactiveTabPane={false}
         />

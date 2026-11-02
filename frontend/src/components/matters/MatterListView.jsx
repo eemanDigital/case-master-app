@@ -780,7 +780,7 @@ const MatterListView = () => {
                 ))}
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="matter-table-card overflow-x-auto">
                 <Table
                   columns={columns}
                   dataSource={paginatedMatters}

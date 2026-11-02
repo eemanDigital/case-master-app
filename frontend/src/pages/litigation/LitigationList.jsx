@@ -296,7 +296,7 @@ const LitigationList = () => {
         ]}
       />
 
-      <div className="p-6">
+      <div className="p-3 sm:p-4 md:p-6">
         {/* Filters */}
         <LitigationFilters
           onFilter={handleFilter}
@@ -326,7 +326,7 @@ const LitigationList = () => {
         {loading && matters.length === 0 ? (
           <LoadingScreen tip="Loading litigation matters..." />
         ) : matters.length === 0 ? (
-          <div className="bg-white rounded-lg border border-gray-200">
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
             <EmptyState
               title="No litigation matters found"
               description={

@@ -43,7 +43,7 @@ const LitigationFilters = ({
   ).length;
 
   const filterContent = (
-    <div className="w-[320px] sm:w-[400px]">
+    <div className="w-[min(320px,calc(100vw-32px))] sm:w-[400px]">
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
         <span className="font-semibold text-slate-800">Filter Matters</span>
         {activeFilterCount > 0 && (
@@ -217,7 +217,7 @@ const LitigationFilters = ({
                 onClear();
               }
             }}
-            className="w-[200px] lg:w-[280px] rounded-lg"
+            className="w-[min(200px,calc(100vw-112px))] sm:w-[200px] lg:w-[280px] rounded-lg"
             size="large"
           />
         </Form.Item>

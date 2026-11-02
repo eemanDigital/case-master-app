@@ -118,7 +118,10 @@ const MatterDetailsCard = ({ litigation, matter, onEdit }) => {
         </div>
       }
       className="mb-6">
-      <Descriptions column={{ xs: 1, sm: 2, md: 3 }} bordered>
+      <Descriptions
+        column={{ xs: 1, sm: 2, md: 3 }}
+        bordered
+        className="litigation-details-descriptions">
         <Descriptions.Item label="Suit Number" span={2}>
           <span className="font-semibold text-lg">{litigation.suitNo}</span>
         </Descriptions.Item>

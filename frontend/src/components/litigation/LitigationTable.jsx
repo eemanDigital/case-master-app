@@ -1,5 +1,16 @@
 // components/litigation/LitigationTable.jsx
-import { Table, Button, Dropdown, Tag, Tooltip, Avatar } from "antd";
+import {
+  Table,
+  Button,
+  Dropdown,
+  Tag,
+  Tooltip,
+  Avatar,
+  Card,
+  Checkbox,
+  Grid,
+  Pagination,
+} from "antd";
 import {
   EyeOutlined,
   EditOutlined,
@@ -35,6 +46,7 @@ const LitigationTable = ({
   rowSelection,
 }) => {
   const navigate = useNavigate();
+  const screens = Grid.useBreakpoint();
 
   const getCourtLabel = (courtName) => {
     const court = COURT_TYPES.find((c) => c.value === courtName);
@@ -89,6 +101,127 @@ const LitigationTable = ({
 
     return items;
   };
+
+  if (screens.xs) {
+    const selectedKeys = rowSelection?.selectedRowKeys || [];
+
+    return (
+      <div className="space-y-3 p-3">
+        {data.map((record) => {
+          const detail = record.litigationDetail;
+          const suitNo = detail?.suitNo || "Suit number not set";
+          const clientName = record.client
+            ? formatName(record.client.firstName, record.client.lastName)
+            : "No client assigned";
+          const nextHearing = detail?.nextHearingDate;
+
+          return (
+            <Card
+              key={record._id}
+              size="small"
+              className="min-w-0"
+              styles={{ body: { padding: 12 } }}>
+              <div className="flex items-start gap-2">
+                {rowSelection && (
+                  <Checkbox
+                    checked={selectedKeys.includes(record._id)}
+                    onChange={(event) => {
+                      const nextKeys = new Set(selectedKeys);
+                      if (event.target.checked) {
+                        nextKeys.add(record._id);
+                      } else {
+                        nextKeys.delete(record._id);
+                      }
+                      rowSelection.onChange(
+                        Array.from(nextKeys),
+                        data.filter((matter) => nextKeys.has(matter._id)),
+                      );
+                    }}
+                    aria-label={`Select ${record.title || suitNo}`}
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => onView(record)}
+                  className="min-w-0 flex-1 text-left">
+                  <span className="block truncate font-mono text-xs text-gray-500">
+                    {record.matterNumber || "Matter number not set"}
+                  </span>
+                  <span className="mt-1 block break-words font-semibold text-indigo-600">
+                    {suitNo}
+                  </span>
+                  <span className="mt-1 block break-words text-sm text-gray-600">
+                    {record.title}
+                  </span>
+                </button>
+                <Dropdown
+                  menu={{ items: getActionItems(record) }}
+                  trigger={["click"]}
+                  placement="bottomRight">
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<MoreOutlined />}
+                    aria-label={`Actions for ${record.title || suitNo}`}
+                  />
+                </Dropdown>
+              </div>
+
+              <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2 border-t pt-3 text-sm">
+                <div className="min-w-0">
+                  <span className="block text-xs text-gray-500">Client</span>
+                  <span className="block break-words font-medium">{clientName}</span>
+                </div>
+                <div className="min-w-0">
+                  <span className="block text-xs text-gray-500">Court</span>
+                  <span className="block break-words font-medium">
+                    {getCourtLabel(detail?.courtName)}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-xs text-gray-500">Status</span>
+                  <StatusTag status={record.status} configArray={MATTER_STATUS} />
+                </div>
+                <div>
+                  <span className="block text-xs text-gray-500">Stage</span>
+                  {detail?.currentStage ? (
+                    <StatusTag
+                      status={detail.currentStage}
+                      configArray={CASE_STAGES}
+                    />
+                  ) : (
+                    <span className="text-gray-400">Not set</span>
+                  )}
+                </div>
+                <div className="col-span-2">
+                  <span className="block text-xs text-gray-500">Next hearing</span>
+                  <span className="font-medium">
+                    {nextHearing ? formatDate(nextHearing) : "Not scheduled"}
+                  </span>
+                </div>
+              </div>
+            </Card>
+          );
+        })}
+
+        {pagination && (
+          <div className="flex justify-center overflow-x-auto pt-2">
+            <Pagination
+              current={pagination.current}
+              pageSize={pagination.pageSize}
+              total={pagination.total}
+              onChange={pagination.onChange}
+              size="small"
+              responsive
+              showSizeChanger={false}
+              showQuickJumper={false}
+              showTotal={(total, range) => `${range[0]}-${range[1]} of ${total}`}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
 
   const columns = [
     {

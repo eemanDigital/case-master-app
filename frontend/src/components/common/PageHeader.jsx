@@ -26,10 +26,14 @@ const PageHeader = ({
 
   return (
     <div className={`bg-white border-b border-gray-200 ${className}`}>
-      <div className="px-6 py-4">
+      <div className="px-3 py-4 sm:px-6">
         <Flex vertical gap="middle">
-          <Flex justify="space-between" align="center">
-            <Flex align="center" gap="middle">
+          <Flex
+            justify="space-between"
+            align="center"
+            wrap
+            gap="small">
+            <Flex align="center" gap="middle" className="min-w-0 flex-1">
               {showBack && (
                 <Button
                   type="text"
@@ -38,15 +42,23 @@ const PageHeader = ({
                   size="large"
                 />
               )}
-              <Flex vertical>
-                <Title level={3} className="!mb-0">
+              <Flex vertical className="min-w-0">
+                <Title level={3} className="!mb-0 !text-xl sm:!text-2xl">
                   {title}
                 </Title>
-                {subtitle && <Text type="secondary">{subtitle}</Text>}
+                {subtitle && (
+                  <Text type="secondary" className="text-xs sm:text-sm">
+                    {subtitle}
+                  </Text>
+                )}
               </Flex>
             </Flex>
 
-            {extra && <Space size="middle">{extra}</Space>}
+            {extra && (
+              <Space size="small" wrap className="max-w-full">
+                {extra}
+              </Space>
+            )}
           </Flex>
 
           {children && <div>{children}</div>}

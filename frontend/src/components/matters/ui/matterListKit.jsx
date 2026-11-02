@@ -249,7 +249,7 @@ export const MatterTableCard = ({
   extra,
 }) => {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="matter-table-card bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       {extra}
       <Table
         columns={columns}

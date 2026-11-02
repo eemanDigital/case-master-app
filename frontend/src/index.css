@@ -580,6 +580,15 @@ body {
   color: var(--color-gray-400, #9ca3af);
 }
 
+.litigation-details-descriptions .ant-descriptions-item-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.litigation-details-descriptions .ant-descriptions-item-label {
+  overflow-wrap: anywhere;
+}
+
 @layer utilities {
   /* Text Utilities */
   .text-balance {
@@ -1035,6 +1044,7 @@ body {
 /* Corporate Details Styles */
 .corporate-details .ant-tabs-nav {
   margin-bottom: 24px;
+  max-width: 100%;
 }
 
 .corporate-details .ant-descriptions-item-label {
@@ -1046,6 +1056,31 @@ body {
   padding-bottom: 16px;
 }
 
+.corporate-details .ant-descriptions-item-label,
+.corporate-details .ant-descriptions-item-content,
+.property-details .ant-descriptions-item-label,
+.property-details .ant-descriptions-item-content,
+.matter-detail-descriptions .ant-descriptions-item-label,
+.matter-detail-descriptions .ant-descriptions-item-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.matter-table-card {
+  min-width: 0;
+}
+
+.ant-descriptions-item-content {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+  .matter-table-card .ant-table-content {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .corporate-list .ant-card-body {
@@ -1053,12 +1088,20 @@ body {
   }
 
   .corporate-details .ant-tabs-nav {
-    flex-direction: column;
+    overflow-x: auto;
+  }
+
+  .corporate-details .ant-tabs-nav-list {
+    flex-wrap: nowrap;
   }
 
   .corporate-details .ant-descriptions-item {
     display: block;
     width: 100%;
+  }
+
+  .corporate-details .ant-descriptions-item-label {
+    width: auto;
   }
 }
 
@@ -1113,6 +1156,7 @@ body {
 /* Property Details Styles */
 .property-details .ant-tabs-nav {
   margin-bottom: 24px;
+  max-width: 100%;
 }
 
 .property-details .ant-descriptions-item-label {
@@ -1130,12 +1174,20 @@ body {
   }
 
   .property-details .ant-tabs-nav {
-    flex-direction: column;
+    overflow-x: auto;
+  }
+
+  .property-details .ant-tabs-nav-list {
+    flex-wrap: nowrap;
   }
 
   .property-details .ant-descriptions-item {
     display: block;
     width: 100%;
+  }
+
+  .property-details .ant-descriptions-item-label {
+    width: auto;
   }
 
   .property-form .ant-tabs-nav {

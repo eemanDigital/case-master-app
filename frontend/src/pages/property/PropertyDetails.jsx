@@ -280,9 +280,9 @@ const PropertyDetails = () => {
           </Breadcrumb.Item>
         </Breadcrumb>
 
-        <div className="flex justify-between items-start mt-4">
-          <div>
-            <Title level={2} className="mb-2">
+        <div className="mt-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 flex-1">
+            <Title level={2} className="mb-2 break-words">
               {primaryProperty?.address || "Property Transaction"}
               {transactionTypeConfig && (
                 <Tag color={transactionTypeConfig.color} className="ml-2">
@@ -291,7 +291,7 @@ const PropertyDetails = () => {
                 </Tag>
               )}
             </Title>
-            <Space>
+            <Space wrap className="max-w-full">
               {primaryProperty?.propertyType && (
                 <Text type="secondary">
                   <HomeOutlined />{" "}
@@ -313,7 +313,7 @@ const PropertyDetails = () => {
             </Space>
           </div>
 
-          <Space>
+          <Space wrap className="max-w-full">
             {deedOfAssignment?.status === "registered" ? (
               <Tag color="success" icon={<CheckCircleOutlined />}>
                 Transaction Completed
@@ -349,7 +349,7 @@ const PropertyDetails = () => {
       {/* Edit Mode - Show Form */}
       {editMode && (
         <Card className="mb-6">
-          <div className="flex justify-between items-center mb-6">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Title level={4}>
               {propertyDetails
                 ? "Edit Property Details"
@@ -448,7 +448,11 @@ const PropertyDetails = () => {
                 {/* Left Column - Basic Info */}
                 <Col xs={24} lg={16}>
                   <Card title="Transaction Details" className="mb-6">
-                    <Descriptions column={2} bordered size="small">
+                    <Descriptions
+                      column={{ xs: 1, sm: 2 }}
+                      bordered
+                      size="small"
+                      className="matter-detail-descriptions">
                       <Descriptions.Item label="Transaction Type" span={2}>
                         <Tag color={transactionTypeConfig?.color}>
                           {transactionTypeConfig?.icon}{" "}
@@ -509,7 +513,11 @@ const PropertyDetails = () => {
                       className="mb-6"
                       style={leaseUrgency?.level === "critical" ? { borderColor: "#ff4d4f" } : {}}
                     >
-                      <Descriptions column={2} bordered size="small">
+                      <Descriptions
+                        column={{ xs: 1, sm: 2 }}
+                        bordered
+                        size="small"
+                        className="matter-detail-descriptions">
                         <Descriptions.Item label="Lease Status">
                           <Tag
                             color={
@@ -1419,7 +1427,10 @@ const PropertyDetails = () => {
 
                 {/* Lease Agreement Edit Form */}
                 <Card title="Lease Agreement Details" className="mt-4">
-                  <Descriptions column={2} bordered>
+                  <Descriptions
+                    column={{ xs: 1, sm: 2 }}
+                    bordered
+                    className="matter-detail-descriptions">
                     <Descriptions.Item label="Status">
                       <Tag
                         color={

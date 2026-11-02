@@ -82,7 +82,7 @@ const TabPane = ({ children }) => (
 );
 
 const DetailsSkeleton = () => (
-  <div className="min-h-screen bg-[#f5f6fa] p-6 space-y-4">
+  <div className="min-h-screen space-y-4 bg-[#f5f6fa] p-3 sm:p-6">
     <Skeleton active paragraph={{ rows: 2 }} />
     <Skeleton active paragraph={{ rows: 6 }} />
     <Skeleton active paragraph={{ rows: 10 }} />
@@ -199,7 +199,10 @@ const LitigationDetails = () => {
       {
         key: "hearings",
         label: (
-          <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+          <span
+            className="flex items-center gap-1.5 text-xs font-semibold tracking-wide"
+            aria-label="Hearings"
+            title="Hearings">
             <CalendarOutlined />
             <span className="hidden sm:inline">Hearings</span>
           </span>
@@ -215,7 +218,10 @@ const LitigationDetails = () => {
       {
         key: "processes",
         label: (
-          <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+          <span
+            className="flex items-center gap-1.5 text-xs font-semibold tracking-wide"
+            aria-label="Processes"
+            title="Processes">
             <FileTextOutlined />
             <span className="hidden sm:inline">Processes</span>
           </span>
@@ -234,7 +240,10 @@ const LitigationDetails = () => {
       {
         key: "orders",
         label: (
-          <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+          <span
+            className="flex items-center gap-1.5 text-xs font-semibold tracking-wide"
+            aria-label="Court Orders"
+            title="Court Orders">
             <TeamOutlined />
             <span className="hidden sm:inline">Court Orders</span>
           </span>
@@ -250,7 +259,10 @@ const LitigationDetails = () => {
       {
         key: "judgment",
         label: (
-          <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+          <span
+            className="flex items-center gap-1.5 text-xs font-semibold tracking-wide"
+            aria-label="Judgment"
+            title="Judgment">
             <AuditOutlined />
             <span className="hidden sm:inline">Judgment</span>
           </span>
@@ -295,7 +307,10 @@ const LitigationDetails = () => {
       {
         key: "appeal",
         label: (
-          <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+          <span
+            className="flex items-center gap-1.5 text-xs font-semibold tracking-wide"
+            aria-label="Appeal"
+            title="Appeal">
             <TrophyOutlined />
             <span className="hidden sm:inline">Appeal</span>
           </span>
@@ -334,7 +349,10 @@ const LitigationDetails = () => {
       {
         key: "settlement",
         label: (
-          <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+          <span
+            className="flex items-center gap-1.5 text-xs font-semibold tracking-wide"
+            aria-label="Settlement"
+            title="Settlement">
             <CheckCircleOutlined />
             <span className="hidden sm:inline">Settlement</span>
           </span>
@@ -373,7 +391,10 @@ const LitigationDetails = () => {
             {
               key: "precedents",
               label: (
-                <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wide">
+                <span
+                  className="flex items-center gap-1.5 text-xs font-semibold tracking-wide"
+                  aria-label="Precedents"
+                  title="Precedents">
                   <SnippetsOutlined />
                   <span className="hidden sm:inline">Precedents</span>
                 </span>
@@ -537,9 +558,10 @@ const LitigationDetails = () => {
           <Tabs
             activeKey={activeTab}
             onChange={setActiveTab}
+            className="[&_.ant-tabs-nav]:overflow-x-auto [&_.ant-tabs-nav-list]:flex-nowrap"
             tabBarStyle={{
               margin: 0,
-              padding: "0 12px",
+              padding: "0 8px",
               borderBottom: "1px solid #f0f0f0",
               background: "#fafafa",
               overflowX: "auto",
