@@ -520,8 +520,18 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
     if (!litigation || !litigation.hearings) return;
 
     litigation.hearings.forEach((hearing) => {
+      const nextDateWasHeard =
+        hearing.nextHearingDate &&
+        litigation.hearings.some(
+          (recordedHearing) =>
+            recordedHearing.date &&
+            dayjs(recordedHearing.date).isSame(hearing.nextHearingDate, "day"),
+        );
+      if (nextDateWasHeard) return;
+
       const hearingIsToday = dayjs(hearing.date).isSame(today, "day");
-      const candidateDate = hearingIsToday
+      const reportDueToday = hearingIsToday && !hearing.outcome;
+      const candidateDate = reportDueToday
         ? hearing.date
         : hearing.nextHearingDate || hearing.date;
       if (!candidateDate) return;
@@ -543,11 +553,7 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
           Boolean(hearing.outcome) &&
           dayjs(hearing.date).isSame(hearingDate),
         reportDueToday:
-          hearingDate.isSame(today, "day") &&
-          !(
-            Boolean(hearing.outcome) &&
-            dayjs(hearing.date).isSame(hearingDate)
-          ),
+          reportDueToday && hearingDate.isSame(today, "day"),
         hearingNoticeServed: hearing.hearingNoticeServed,
         hearingNoticeRequired: hearing.hearingNoticeRequired,
         lawyerPresent: hearing.lawyerPresent,

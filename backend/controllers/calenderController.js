@@ -285,10 +285,20 @@ async function injectHearingEvents(firmId, userId, { startDate, endDate, matter 
     const courtLabel = detail.courtName
       ? `${detail.courtName}${detail.courtLocation ? ` - ${detail.courtLocation}` : ""}`
       : "";
-
     for (const hearing of detail.hearings) {
-      // Determine which date to use: nextHearingDate (if future) or original date
-      const useNextDate = hearing.nextHearingDate && new Date(hearing.nextHearingDate) > now;
+      const nextDateWasHeard =
+        hearing.nextHearingDate &&
+        detail.hearings.some(
+          (recordedHearing) =>
+            recordedHearing.date &&
+            dayjs(recordedHearing.date).isSame(hearing.nextHearingDate, "day"),
+        );
+      const nextDateIsCurrentOrFuture =
+        hearing.nextHearingDate &&
+        !dayjs(hearing.nextHearingDate).isBefore(dayjs(now), "day");
+      const useNextDate =
+        nextDateIsCurrentOrFuture &&
+        !nextDateWasHeard;
       const eventDate = useNextDate
         ? new Date(hearing.nextHearingDate)
         : hearing.date
@@ -306,7 +316,7 @@ async function injectHearingEvents(firmId, userId, { startDate, endDate, matter 
       const endDT = new Date(eventDate);
       endDT.setHours(11, 0, 0, 0);
 
-      const isCompleted = !!hearing.outcome;
+      const isCompleted = Boolean(hearing.outcome) && !useNextDate;
       const title = matterName;
 
       events.push({
