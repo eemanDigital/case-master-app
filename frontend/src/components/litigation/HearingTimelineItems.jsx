@@ -1,6 +1,6 @@
 import LoadingSpinner from "../LoadingSpinner.jsx";
-import React, { useCallback, useState, useEffect, useMemo } from "react";
-import { Tag, Button, Tooltip, Space, Divider, Avatar, Progress, Modal, DatePicker, Select, message } from "antd";
+import React, { useCallback, useState, useEffect } from "react";
+import { Tag, Button, Tooltip, Space, Divider, Avatar, Progress, Modal, DatePicker, Select, Input, Checkbox, message } from "antd";
 import {
   CheckCircleOutlined,
   CalendarOutlined,
@@ -11,9 +11,8 @@ import {
   ExclamationCircleOutlined,
   ThunderboltOutlined,
   BellOutlined,
-  LockOutlined,
   WarningOutlined,
-  UserOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { formatDate, formatName } from "../../utils/formatters";
@@ -195,9 +194,19 @@ const NextHearingEditModal = React.memo(({
   usersLoading,
 }) => {
   const [date, setDate] = useState(null);
+  const [dateToBeCommunicated, setDateToBeCommunicated] = useState(false);
   const [lawyers, setLawyers] = useState([]);
+  const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const dateChanged = Boolean(
+    hearing &&
+      (Boolean(hearing.dateToBeCommunicated) !== dateToBeCommunicated ||
+        (hearing.nextHearingDate
+          ? dayjs(hearing.nextHearingDate).valueOf() !== date?.valueOf()
+          : Boolean(date))),
+  );
+  const requiresDateChangeReason = dateChanged && Boolean(hearing?.outcome);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -209,22 +218,32 @@ const NextHearingEditModal = React.memo(({
   useEffect(() => {
     if (visible && hearing) {
       setDate(hearing.nextHearingDate ? dayjs(hearing.nextHearingDate) : null);
+      setDateToBeCommunicated(Boolean(hearing.dateToBeCommunicated));
       setLawyers((hearing.lawyerPresent || []).map((l) =>
         typeof l === "object" ? l._id || l.id : l
       ));
+      setReason("");
     }
   }, [visible, hearing]);
 
   const handleSave = async () => {
-    if (!date) {
-      message.error("Please select a date");
+    if (!date && !dateToBeCommunicated) {
+      message.error("Please select a date or mark it as to be communicated");
+      return;
+    }
+    if (requiresDateChangeReason && !reason.trim()) {
+      message.error("Please provide a reason for changing the adjourned date");
       return;
     }
     setLoading(true);
     try {
       await onUpdate(hearing._id, {
-        nextHearingDate: date.toISOString(),
+        nextHearingDate: dateToBeCommunicated ? null : date.toISOString(),
+        dateToBeCommunicated,
         lawyerPresent: lawyers,
+        ...(requiresDateChangeReason
+          ? { nextHearingDateReason: reason.trim() }
+          : {}),
       });
       onClose();
     } catch (err) {
@@ -239,7 +258,7 @@ const NextHearingEditModal = React.memo(({
       title={
         <div className="flex items-center gap-2">
           <CalendarOutlined className="text-blue-600" />
-          <span className={isMobile ? "text-sm" : ""}>Update Adjourned Date</span>
+          <span className={isMobile ? "text-sm" : ""}>Manage Next Hearing</span>
         </div>
       }
       open={visible}
@@ -263,6 +282,16 @@ const NextHearingEditModal = React.memo(({
       className="next-hearing-edit-modal">
       <div className="py-3 sm:py-4 space-y-4">
         <div>
+          <Checkbox
+            checked={dateToBeCommunicated}
+            onChange={(event) => {
+              setDateToBeCommunicated(event.target.checked);
+              if (event.target.checked) setDate(null);
+            }}>
+            Date to be communicated later
+          </Checkbox>
+        </div>
+        <div>
           <label className="block text-xs font-medium text-slate-600 mb-1.5">
             <CalendarOutlined className="mr-1" />
             Next Hearing Date
@@ -274,6 +303,7 @@ const NextHearingEditModal = React.memo(({
             format="DD/MM/YYYY HH:mm"
             style={{ width: "100%" }}
             size={isMobile ? "middle" : "large"}
+            disabled={dateToBeCommunicated}
             disabledDate={(current) => current && current < dayjs().startOf("day")}
             placeholder="Select new hearing date"
           />
@@ -308,12 +338,27 @@ const NextHearingEditModal = React.memo(({
             }
           />
         </div>
+        {requiresDateChangeReason && (
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1.5">
+              Reason for changing the adjourned date
+            </label>
+            <Input.TextArea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              rows={3}
+              maxLength={1000}
+              placeholder="Explain why the next court date is changing"
+            />
+          </div>
+        )}
       </div>
     </Modal>
   );
 });
 
 NextHearingEditModal.displayName = "NextHearingEditModal";
+export { NextHearingEditModal };
 
 // ─── MAIN COMPONENT ─────────────────────────────────────────────────────────
 
@@ -322,6 +367,7 @@ const HearingTimelineItem = React.memo(({
   onEdit,
   onDelete,
   onUpdateNextHearing,
+  canEditLockedHearing = false,
   lawyersOptions = [],
   usersLoading = false,
 }) => {
@@ -340,11 +386,9 @@ const HearingTimelineItem = React.memo(({
   }, []);
 
   const isLocked = phase === "locked";
-  const isUpcoming = phase === "schedule";
   const needsReport = phase === "report";
-  const canEditReport = phase === "report" || phase === "edit";
   const canDelete = !hearing.outcome;
-  const canEditNextHearing = !isLocked;
+  const canEditNextHearing = !isLocked || canEditLockedHearing;
 
   const handleEdit = useCallback(() => onEdit(hearing), [onEdit, hearing]);
   const handleDelete = useCallback(
@@ -375,15 +419,25 @@ const HearingTimelineItem = React.memo(({
               <Tag color={config.color} className="!m-0 !rounded-full !px-2 !text-[10px]">
                 {config.badgeProps.text}
               </Tag>
-              <Tooltip title={isLocked ? "View hearing" : "Edit hearing"}>
+              {needsReport ? (
                 <Button
-                  type="text"
+                  type="primary"
                   size="small"
-                  icon={<EditOutlined />}
-                  onClick={handleEdit}
-                  className="text-slate-500"
-                />
-              </Tooltip>
+                  icon={<FileTextOutlined />}
+                  onClick={handleEdit}>
+                  File report
+                </Button>
+              ) : (
+                <Tooltip title={isLocked ? "View hearing" : "Edit hearing"}>
+                  <Button
+                    type="text"
+                    size="small"
+                    icon={<EditOutlined />}
+                    onClick={handleEdit}
+                    className="text-slate-500"
+                  />
+                </Tooltip>
+              )}
               {canDelete && (
                 <Tooltip title="Delete hearing">
                   <Button
@@ -562,15 +616,25 @@ const HearingTimelineItem = React.memo(({
 
               {/* ACTION BUTTONS */}
               <Space size={2} className="shrink-0">
-                <Tooltip title={isLocked ? "View only" : "Edit hearing"}>
+                {needsReport ? (
                   <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    onClick={handleEdit}
+                    type="primary"
                     size="small"
-                    className={`hover:bg-blue-50 ${isLocked ? "text-slate-300" : "text-slate-500 hover:text-blue-600"}`}
-                  />
-                </Tooltip>
+                    icon={<FileTextOutlined />}
+                    onClick={handleEdit}>
+                    File report
+                  </Button>
+                ) : (
+                  <Tooltip title={isLocked ? "View only" : "Edit hearing"}>
+                    <Button
+                      type="text"
+                      icon={<EditOutlined />}
+                      onClick={handleEdit}
+                      size="small"
+                      className={`hover:bg-blue-50 ${isLocked ? "text-slate-300" : "text-slate-500 hover:text-blue-600"}`}
+                    />
+                  </Tooltip>
+                )}
                 {canDelete && (
                   <Tooltip title="Delete hearing">
                     <Button
@@ -680,7 +744,7 @@ const HearingTimelineItem = React.memo(({
                 <div className="space-y-1">
                   {hearing.auditTrail.slice(-3).map((entry, idx) => (
                     <div key={idx} className="text-xs leading-relaxed text-slate-600">
-                      <span className="font-semibold capitalize">{entry.action?.replace("_", " ")}</span>
+                      <span className="font-semibold capitalize">{entry.action?.replace(/_/g, " ")}</span>
                       {entry.by ? ` by ${entry.by.firstName} ${entry.by.lastName}` : ""}
                       {entry.at ? ` • ${formatDate(entry.at, "DD MMM YYYY HH:mm")}` : ""}
                       {entry.reason ? ` — ${entry.reason}` : ""}

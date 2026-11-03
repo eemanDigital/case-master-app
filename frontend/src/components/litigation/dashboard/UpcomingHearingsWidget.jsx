@@ -11,7 +11,12 @@ import {
 } from "@ant-design/icons";
 import { getRelativeTime, formatName } from "../../../utils/formatters";
 
-const UpcomingHearingsWidget = ({ hearings = [], loading, onViewAll }) => {
+const UpcomingHearingsWidget = ({
+  hearings = [],
+  loading,
+  onViewAll,
+  onFileReport,
+}) => {
   // Process hearings - supports both old format (nested) and new format (flat)
   const processUpcomingHearings = () => {
     const upcoming = [];
@@ -26,7 +31,11 @@ const UpcomingHearingsWidget = ({ hearings = [], loading, onViewAll }) => {
 
       if (isNewFormat) {
         // New flat format from getUpcomingHearings API
-        const displayDate = item.nextHearingDate || item.date;
+        const displayDate =
+          item.displayDate ||
+          item.hearingDate ||
+          item.nextHearingDate ||
+          item.date;
         if (!displayDate) return;
 
         const displayDateObj = new Date(displayDate);
@@ -56,6 +65,8 @@ const UpcomingHearingsWidget = ({ hearings = [], loading, onViewAll }) => {
             lawyersPresent: item.lawyerPresent || [],
             purpose: item.purpose || "",
             outcome: item.outcome || null,
+            reportDueToday: Boolean(item.reportDueToday),
+            reportFiledForDate: Boolean(item.reportFiledForDate),
           });
         }
       } else {
@@ -98,6 +109,20 @@ const UpcomingHearingsWidget = ({ hearings = [], loading, onViewAll }) => {
             priority: matterDetails.priority || "medium",
             lawyersPresent: hearingWithNextDate?.lawyerPresent || [],
             purpose: hearingWithNextDate?.purpose || "",
+            reportDueToday:
+              dayjs(litigationDetail.nextHearingDate).isSame(today, "day") &&
+              !(
+                hearingWithNextDate?.outcome &&
+                dayjs(hearingWithNextDate.date).isSame(
+                  litigationDetail.nextHearingDate,
+                )
+              ),
+            reportFiledForDate: Boolean(
+              hearingWithNextDate?.outcome &&
+                dayjs(hearingWithNextDate.date).isSame(
+                  litigationDetail.nextHearingDate,
+                ),
+            ),
             latestHearing:
               hearingsList.length > 0
                 ? {
@@ -398,6 +423,31 @@ const UpcomingHearingsWidget = ({ hearings = [], loading, onViewAll }) => {
                                 No lawyers assigned
                               </span>
                             </div>
+                          )}
+
+                          {hearing.reportDueToday && (
+                            <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-2 py-1.5">
+                              <Tag color="orange" className="!m-0">
+                                Report due today
+                              </Tag>
+                              {onFileReport && (
+                                <Button
+                                  type="primary"
+                                  size="small"
+                                  disabled={dayjs(
+                                    hearing.nextHearingDate,
+                                  ).isAfter(dayjs())}
+                                  title="Available after the hearing time"
+                                  onClick={() => onFileReport(hearing)}>
+                                  File report
+                                </Button>
+                              )}
+                            </div>
+                          )}
+                          {hearing.reportFiledForDate && (
+                            <Tag color="green" className="!mt-2">
+                              Report filed
+                            </Tag>
                           )}
                         </div>
 

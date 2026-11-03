@@ -137,7 +137,13 @@ const hearingSchema = new mongoose.Schema(
       {
         action: {
           type: String,
-          enum: ["filed", "edited", "late_filed", "historical_entry"],
+          enum: [
+            "filed",
+            "edited",
+            "late_filed",
+            "historical_entry",
+            "adjourned_date_changed",
+          ],
         },
         by: {
           type: mongoose.Schema.Types.ObjectId,

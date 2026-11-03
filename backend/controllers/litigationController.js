@@ -520,7 +520,10 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
     if (!litigation || !litigation.hearings) return;
 
     litigation.hearings.forEach((hearing) => {
-      const candidateDate = hearing.nextHearingDate || hearing.date;
+      const hearingIsToday = dayjs(hearing.date).isSame(today, "day");
+      const candidateDate = hearingIsToday
+        ? hearing.date
+        : hearing.nextHearingDate || hearing.date;
       if (!candidateDate) return;
 
       const hearingDate = dayjs(candidateDate);
@@ -536,6 +539,15 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
         outcome: hearing.outcome,
         notes: hearing.notes,
         nextHearingDate: hearing.nextHearingDate || candidateDate,
+        reportFiledForDate:
+          Boolean(hearing.outcome) &&
+          dayjs(hearing.date).isSame(hearingDate),
+        reportDueToday:
+          hearingDate.isSame(today, "day") &&
+          !(
+            Boolean(hearing.outcome) &&
+            dayjs(hearing.date).isSame(hearingDate)
+          ),
         hearingNoticeServed: hearing.hearingNoticeServed,
         hearingNoticeRequired: hearing.hearingNoticeRequired,
         lawyerPresent: hearing.lawyerPresent,
@@ -585,7 +597,21 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
       deduped.push(h);
     } else {
       const existing = seen.get(key);
-      if (new Date(h.displayDate) < new Date(existing.displayDate)) {
+      const isSameDisplayDay = dayjs(h.displayDate).isSame(
+        existing.displayDate,
+        "day",
+      );
+      const isActualSession = dayjs(h.date).isSame(h.displayDate);
+      const existingIsActualSession = dayjs(existing.date).isSame(
+        existing.displayDate,
+      );
+      if (
+        (isSameDisplayDay &&
+          isActualSession &&
+          !existingIsActualSession) ||
+        (!isSameDisplayDay &&
+          new Date(h.displayDate) < new Date(existing.displayDate))
+      ) {
         const idx = deduped.findIndex((x) => x.matterId?.toString() === key);
         if (idx >= 0) deduped[idx] = h;
         seen.set(key, h);
@@ -636,8 +662,8 @@ exports.getUpcomingHearings = catchAsync(async (req, res, next) => {
       const d = dayjs(h.displayDate);
       return d.isSameOrAfter(thisMonthStart) && d.isSameOrBefore(thisMonthEnd);
     }).length,
-    pending: limitedHearings.filter((h) => !h.outcome).length,
-    completed: limitedHearings.filter((h) => !!h.outcome).length,
+    pending: limitedHearings.filter((h) => !h.reportFiledForDate).length,
+    completed: limitedHearings.filter((h) => h.reportFiledForDate).length,
   };
 
   res.status(200).json({
@@ -666,6 +692,7 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     "hearingNoticeRequired",
     "lawyerPresent",
     "historicalEntry",
+    "lateReason",
   ]);
   const invalidFields = Object.keys(hearingData).filter(
     (field) => !allowedFields.has(field),
@@ -685,18 +712,6 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     typeof hearingData.historicalEntry !== "boolean"
   ) {
     return next(new AppError("Historical entry flag must be a boolean.", 400));
-  }
-
-  if (
-    !isHistoricalEntry &&
-    (hasOwn(hearingData, "outcome") || hasOwn(hearingData, "notes"))
-  ) {
-    return next(
-      new AppError(
-        "Outcome and notes can only be recorded using historical entry.",
-        400,
-      ),
-    );
   }
 
   const matter = await Matter.findOne({
@@ -724,6 +739,84 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     return next(
       new AppError(
         "Historical hearing date must be in the past. Use Add hearing for today or future dates.",
+        400,
+      ),
+    );
+  }
+
+  const isFilingReport =
+    hasOwn(hearingData, "outcome") || hasOwn(hearingData, "notes");
+  let isLateReport = false;
+  if (isFilingReport && !isHistoricalEntry) {
+    if (
+      typeof hearingData.outcome !== "string" ||
+      !hearingData.outcome.trim() ||
+      typeof hearingData.notes !== "string" ||
+      !hearingData.notes.trim()
+    ) {
+      return next(
+        new AppError(
+          "An outcome and court notes are required to file a report.",
+          400,
+        ),
+      );
+    }
+
+    const reportPhase = getHearingPhaseInfo(
+      hearingData.date,
+      false,
+      hearingData.nextHearingDate,
+    );
+    if (reportPhase.isBeforeHearing) {
+      return next(
+        new AppError(
+          "Cannot file a report before the scheduled hearing date and time.",
+          403,
+        ),
+      );
+    }
+
+    if (reportPhase.isAfterGracePeriod) {
+      if (!isPrivilegedHearingUser(req.user)) {
+        return next(
+          new AppError(
+            "Report filing window has closed. Only Admin/Managing Partner can log a late report with justification.",
+            403,
+          ),
+        );
+      }
+      if (
+        typeof hearingData.lateReason !== "string" ||
+        !hearingData.lateReason.trim()
+      ) {
+        return next(
+          new AppError("A justification is required to log a late report.", 400),
+        );
+      }
+      isLateReport = true;
+    }
+
+    if (
+      hearingData.outcome === "adjourned" &&
+      !hearingData.nextHearingDate &&
+      !hearingData.dateToBeCommunicated
+    ) {
+      return next(
+        new AppError(
+          'Next hearing date is required when outcome is "Adjourned" or mark as TBC',
+          400,
+        ),
+      );
+    }
+  }
+
+  if (
+    hearingData.dateToBeCommunicated === true &&
+    hearingData.nextHearingDate
+  ) {
+    return next(
+      new AppError(
+        "A next hearing date cannot be set while the date is marked TBC.",
         400,
       ),
     );
@@ -805,10 +898,47 @@ exports.addHearing = catchAsync(async (req, res, next) => {
     });
   }
 
+  if (
+    isFilingReport &&
+    !isHistoricalEntry &&
+    litigationDetail.hearings.some((existingHearing) =>
+      dayjs(existingHearing.date).isSame(dayjs(hearingData.date)),
+    )
+  ) {
+    return next(
+      new AppError(
+        "A hearing record already exists for this date. File the report on that record.",
+        409,
+      ),
+    );
+  }
+
   const hearingWithUser = {
     ...hearingData,
     preparedBy: req.user.id,
   };
+
+  if (isFilingReport && !isHistoricalEntry) {
+    const reportFiledAt = new Date();
+    hearingWithUser.lateReport = isLateReport;
+    hearingWithUser.reportFiledAt = reportFiledAt;
+    hearingWithUser.reportFiledBy = req.user.id;
+    if (isLateReport) {
+      hearingWithUser.lateReason = hearingData.lateReason.trim();
+    }
+    hearingWithUser.auditTrail = [
+      {
+        action: isLateReport ? "late_filed" : "filed",
+        by: req.user.id,
+        at: reportFiledAt,
+        reason: isLateReport ? hearingData.lateReason.trim() : null,
+        diff: {
+          outcome: { from: null, to: hearingData.outcome },
+          notes: { from: null, to: hearingData.notes },
+        },
+      },
+    ];
+  }
 
   if (isHistoricalEntry) {
     hearingWithUser.historicalEntry = true;
@@ -827,8 +957,10 @@ exports.addHearing = catchAsync(async (req, res, next) => {
 
   litigationDetail.hearings.push(hearingWithUser);
 
-  if (hearingData.nextHearingDate) {
+  if (hasOwn(hearingData, "nextHearingDate")) {
     litigationDetail.nextHearingDate = hearingData.nextHearingDate;
+  } else if (hearingData.dateToBeCommunicated) {
+    litigationDetail.nextHearingDate = null;
   }
 
   // Save the litigation detail
@@ -848,6 +980,8 @@ exports.addHearing = catchAsync(async (req, res, next) => {
       path: "hearings.lawyerPresent",
       select: "firstName lastName email photo",
     },
+    { path: "hearings.reportFiledBy", select: "firstName lastName email photo" },
+    { path: "hearings.auditTrail.by", select: "firstName lastName email photo" },
   ]);
 
   res.status(200).json({
@@ -1032,6 +1166,7 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     "lateReason",
     "editReason",
     "reason",
+    "nextHearingDateReason",
   ]);
   const invalidFields = Object.keys(updateData).filter(
     (field) => !allowedFields.has(field),
@@ -1082,9 +1217,30 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   const reportFields = ["outcome", "notes"];
   const changedFields = Object.keys(updateData).filter(
     (field) =>
-      !["lateReason", "editReason", "reason"].includes(field) &&
+      ![
+        "lateReason",
+        "editReason",
+        "reason",
+        "nextHearingDateReason",
+      ].includes(field) &&
       !sameHearingValue(hearing[field], updateData[field], field),
   );
+  const changedAdjournmentFields = [
+    "nextHearingDate",
+    "dateToBeCommunicated",
+  ].filter((field) => changedFields.includes(field));
+  if (
+    hearing.outcome &&
+    changedAdjournmentFields.length > 0 &&
+    !(
+      typeof updateData.nextHearingDateReason === "string" &&
+      updateData.nextHearingDateReason.trim()
+    )
+  ) {
+    return next(
+      new AppError("A reason is required to change the adjourned date.", 400),
+    );
+  }
   const changedReportFields = reportFields.filter((field) =>
     changedFields.includes(field),
   );
@@ -1334,8 +1490,34 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
     });
   }
 
+  if (hearing.outcome && changedAdjournmentFields.length > 0) {
+    if (!Array.isArray(hearing.auditTrail)) {
+      hearing.auditTrail = [];
+    }
+    hearing.auditTrail.push({
+      action: "adjourned_date_changed",
+      by: user._id,
+      at: new Date(),
+      reason: updateData.nextHearingDateReason.trim(),
+      diff: Object.fromEntries(
+        changedAdjournmentFields.map((field) => [
+          field,
+          {
+            from: hearing[field] ?? null,
+            to: updateData[field] ?? null,
+          },
+        ]),
+      ),
+    });
+  }
+
   Object.keys(updateData).forEach((key) => {
-    if (key === "lateReason" || key === "editReason" || key === "reason") {
+    if (
+      key === "lateReason" ||
+      key === "editReason" ||
+      key === "reason" ||
+      key === "nextHearingDateReason"
+    ) {
       return;
     }
     hearing[key] = updateData[key];
@@ -1356,7 +1538,7 @@ exports.updateHearing = catchAsync(async (req, res, next) => {
   }
 
   // Sync matter-level nextHearingDate with hearing's nextHearingDate
-  if (updateData.nextHearingDate) {
+  if (hasOwn(updateData, "nextHearingDate")) {
     litigationDetail.nextHearingDate = updateData.nextHearingDate;
   }
 

@@ -3,7 +3,7 @@ import LoadingSpinner from "../../../components/LoadingSpinner.jsx";
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { Tabs, Alert, Button, Row, Col, Card, Typography } from "antd";
+import { Tabs, Alert, Button, Row, Col, Card, Typography, message } from "antd";
 import {
   ReloadOutlined,
   AppstoreOutlined,
@@ -144,6 +144,19 @@ const LitigationDashboardPage = () => {
       }),
     );
   }, [loadMatters, dispatch]);
+
+  const handleFileReport = useCallback(
+    (hearing) => {
+      if (!hearing?.matterId || !hearing?.id) {
+        message.error("Unable to open the report form for this hearing.");
+        return;
+      }
+      navigate(`/dashboard/matters/litigation/${hearing.matterId}`, {
+        state: { reportNextSessionId: hearing.id },
+      });
+    },
+    [navigate],
+  );
 
   // Handle filter submission
   const handleFilter = useCallback(
@@ -316,6 +329,7 @@ const LitigationDashboardPage = () => {
               <UpcomingHearingsWidget
                 hearings={upcomingHearings}
                 loading={loading}
+                onFileReport={handleFileReport}
                 onViewAll={() => navigate("#dashboard/calendar")}
               />
             </Card>

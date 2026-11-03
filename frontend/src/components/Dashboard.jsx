@@ -78,11 +78,26 @@ const EmptyState = ({ icon: Icon, text }) => (
 );
 
 const CompactHearingRow = React.memo(({ hearing }) => {
-  const d = dayjs(hearing.nextHearingDate || hearing.date);
-  const isToday = d.isSame(now, "day");
+  const d = dayjs(
+    hearing.displayDate ||
+      hearing.hearingDate ||
+      hearing.nextHearingDate ||
+      hearing.date,
+  );
+  const isToday = d.isSame(dayjs(), "day");
+  const reportStatus = hearing.reportDueToday
+    ? "REPORT DUE · OPEN TO FILE"
+    : hearing.reportFiledForDate
+      ? "REPORT FILED"
+      : null;
   return (
     <Link
-      to={`/dashboard/matters/litigation/${hearing.matterId}`}
+      to={{
+        pathname: `/dashboard/matters/litigation/${hearing.matterId}`,
+        state: hearing.reportDueToday
+          ? { reportNextSessionId: hearing._id }
+          : null,
+      }}
       className={`block p-3 rounded-xl border transition-all hover:shadow-md ${
         isToday
           ? "border-emerald-200 bg-emerald-50/50"
@@ -105,6 +120,14 @@ const CompactHearingRow = React.memo(({ hearing }) => {
           <p className="text-xs text-gray-500 truncate">
             {hearing.courtName || "Court"} · {hearing.purpose || "Hearing"}
           </p>
+          {reportStatus && (
+            <p
+              className={`mt-1 text-[10px] font-bold ${
+                hearing.reportDueToday ? "text-amber-700" : "text-emerald-700"
+              }`}>
+              {reportStatus}
+            </p>
+          )}
         </div>
         <span
           className={`text-xs font-medium whitespace-nowrap ${

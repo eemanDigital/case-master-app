@@ -1,5 +1,5 @@
 import LoadingSpinner from "../LoadingSpinner.jsx";
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Card, Button, Modal, Form, Input, DatePicker, Select, Space, Empty, Divider, message, Checkbox, Alert, Tag, Tooltip, Progress } from "antd";
 import {
   PlusOutlined,
@@ -27,12 +27,15 @@ import {
   deleteHearing,
   selectActionLoading,
   fetchMatterHearings,
+  fetchUpcomingHearings,
   clearMatterHearings,
   selectMatterHearings,
 } from "../../redux/features/litigation/litigationSlice";
 import { getAllEvents } from "../../redux/features/calender/calenderSlice";
 import { selectUser } from "../../redux/features/auth/authSlice";
-import HearingTimelineItem from "./HearingTimelineItems";
+import HearingTimelineItem, {
+  NextHearingEditModal,
+} from "./HearingTimelineItems";
 import HearingHeader from "./HearingHeader";
 import { SendHearingReportModal } from "../emails";
 import useUserSelectOptions from "../../hooks/useUserSelectOptions";
@@ -221,7 +224,7 @@ const PhaseBanner = React.memo(({ phaseInfo, hasOutcome }) => {
             {canAssignLawyers && (
               <div className="text-xs text-blue-600 bg-blue-50 rounded p-2 flex items-center gap-1.5 mt-1">
                 <TeamOutlined />
-                Lawyer assignment for the next session is still available.
+                Use the next hearing panel to manage lawyer assignments.
               </div>
             )}
           </div>
@@ -278,6 +281,8 @@ const HearingTimeline = ({
   matterId,
   hearings: propsHearings = [],
   matterDetails = null,
+  reportForNextSessionId,
+  onReportRequestHandled,
 }) => {
   const dispatch = useDispatch();
   const loading = useSelector(selectActionLoading);
@@ -299,15 +304,22 @@ const HearingTimeline = ({
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingHearing, setEditingHearing] = useState(null);
+  const [reportingScheduledHearing, setReportingScheduledHearing] =
+    useState(null);
   const [isHistoricalEntry, setIsHistoricalEntry] = useState(false);
   const [selectedOutcome, setSelectedOutcome] = useState(null);
   const [modalPhase, setModalPhase] = useState("schedule");
   const [showSendReportModal, setShowSendReportModal] = useState(false);
+  const [isNextSessionModalVisible, setIsNextSessionModalVisible] =
+    useState(false);
+  const [selectedNextSessionHearing, setSelectedNextSessionHearing] =
+    useState(null);
   const [, setDateToBeCommunicated] = useState(false);
   const [form] = Form.useForm();
+  const handledReportRequestRef = useRef(null);
   const { data: lawyersOptions, loading: usersLoading } = useUserSelectOptions({
     type: "lawyers",
-    autoFetch: isModalVisible,
+    autoFetch: isModalVisible || isNextSessionModalVisible,
   });
 
   const stableMatterId = useMemo(() => String(matterId || ""), [matterId]);
@@ -349,6 +361,25 @@ const HearingTimeline = ({
     );
   }, [hearings]);
 
+  const pendingNextSession = useMemo(() => {
+    const now = dayjs();
+    return (
+      hearings.find((hearing) => {
+        if (
+          !hearing.nextHearingDate ||
+          dayjs(hearing.date).isSame(now, "day") ||
+          !dayjs(hearing.nextHearingDate).isSame(now, "day") ||
+          dayjs(hearing.nextHearingDate).isAfter(now)
+        ) {
+          return false;
+        }
+        return !hearings.some((candidate) =>
+          dayjs(candidate.date).isSame(hearing.nextHearingDate),
+        );
+      }) ?? null
+    );
+  }, [hearings]);
+
   const stats = useMemo(() => {
     const acc = { today: 0, upcoming: 0, pending: 0, completed: 0, overdue: 0 };
     for (const h of sortedHearingsWithPhase) {
@@ -362,6 +393,7 @@ const HearingTimeline = ({
 
   const handleAddHearing = useCallback(() => {
     setEditingHearing(null);
+    setReportingScheduledHearing(null);
     setIsHistoricalEntry(false);
     setSelectedOutcome(null);
     setModalPhase("schedule");
@@ -371,6 +403,7 @@ const HearingTimeline = ({
 
   const handleAddHistoricalHearing = useCallback(() => {
     setEditingHearing(null);
+    setReportingScheduledHearing(null);
     setIsHistoricalEntry(true);
     setSelectedOutcome(null);
     setModalPhase("historical");
@@ -386,6 +419,7 @@ const HearingTimeline = ({
   const handleEditHearing = useCallback(
     (hearing) => {
       setIsHistoricalEntry(false);
+      setReportingScheduledHearing(null);
       // KEY FIX: Pass nextHearingDate so canAssignLawyers reflects reality
       const phaseInfo = getPhaseInfo(
         hearing.date,
@@ -421,6 +455,86 @@ const HearingTimeline = ({
     [form],
   );
 
+  const handleReportScheduledSession = useCallback(
+    (hearing) => {
+      const scheduledDate = dayjs(hearing.nextHearingDate);
+      if (!scheduledDate.isValid() || scheduledDate.isAfter(dayjs())) {
+        message.warning(
+          "The report can be filed after the scheduled hearing time.",
+        );
+        return;
+      }
+      if (
+        hearings.some((candidate) =>
+          dayjs(candidate.date).isSame(scheduledDate, "day"),
+        )
+      ) {
+        message.info("A hearing report for this date already exists.");
+        return;
+      }
+
+      setEditingHearing(null);
+      setReportingScheduledHearing(hearing);
+      setIsHistoricalEntry(false);
+      setSelectedOutcome(null);
+      setModalPhase(getPhaseInfo(scheduledDate, false, null).phase);
+      form.resetFields();
+      form.setFieldsValue({
+        date: scheduledDate,
+        purpose: hearing.purpose,
+        hearingNoticeRequired: false,
+        lawyerPresent: (hearing.lawyerPresent || []).map((lawyer) =>
+          typeof lawyer === "object" ? lawyer._id || lawyer.id : lawyer,
+        ),
+        dateToBeCommunicated: false,
+      });
+      setIsModalVisible(true);
+    },
+    [form, hearings],
+  );
+
+  useEffect(() => {
+    const requestId = reportForNextSessionId
+      ? String(reportForNextSessionId)
+      : null;
+    if (!requestId) {
+      handledReportRequestRef.current = null;
+      return;
+    }
+    if (handledReportRequestRef.current === requestId || hearings.length === 0) {
+      return;
+    }
+
+    const scheduledHearing = hearings.find(
+      (hearing) => String(hearing._id) === requestId,
+    );
+    if (!scheduledHearing) return;
+
+    handledReportRequestRef.current = requestId;
+
+    const isNextSessionDue =
+      scheduledHearing.nextHearingDate &&
+      !dayjs(scheduledHearing.date).isSame(dayjs(), "day");
+    const reportDate = isNextSessionDue
+      ? scheduledHearing.nextHearingDate
+      : scheduledHearing.date;
+    if (!reportDate || !dayjs(reportDate).isSame(dayjs(), "day")) {
+      message.warning("This hearing is no longer due today.");
+    } else if (isNextSessionDue) {
+      handleReportScheduledSession(scheduledHearing);
+    } else {
+      handleEditHearing(scheduledHearing);
+    }
+
+    onReportRequestHandled?.();
+  }, [
+    reportForNextSessionId,
+    hearings,
+    handleReportScheduledSession,
+    handleEditHearing,
+    onReportRequestHandled,
+  ]);
+
   const handleDeleteHearing = useCallback(
     (hearingId) => {
       confirm({
@@ -447,7 +561,10 @@ const HearingTimeline = ({
   );
 
   const isFirstTimeFiling =
-    editingHearing && !editingHearing.outcome && modalPhase !== "schedule";
+    (editingHearing &&
+      !editingHearing.outcome &&
+      modalPhase !== "schedule") ||
+    (reportingScheduledHearing && modalPhase !== "schedule");
   const isEditingExistingReport =
     editingHearing && !!editingHearing.outcome && modalPhase !== "schedule";
 
@@ -497,8 +614,10 @@ const HearingTimeline = ({
           ).unwrap();
         }
         dispatch(getAllEvents({}));
+        dispatch(fetchUpcomingHearings({ range: "all", limit: 50 }));
         setIsModalVisible(false);
         setEditingHearing(null);
+        setReportingScheduledHearing(null);
         setIsHistoricalEntry(false);
         setSelectedOutcome(null);
         form.resetFields();
@@ -513,6 +632,7 @@ const HearingTimeline = ({
   const handleModalClose = useCallback(() => {
     setIsModalVisible(false);
     setEditingHearing(null);
+    setReportingScheduledHearing(null);
     setIsHistoricalEntry(false);
     setSelectedOutcome(null);
     setDateToBeCommunicated(false);
@@ -524,14 +644,20 @@ const HearingTimeline = ({
   // KEY FIX: Pass nextHearingDate as third arg
   const currentPhaseInfo = useMemo(
     () =>
-      editingHearing
+      reportingScheduledHearing
+        ? getPhaseInfo(
+            reportingScheduledHearing.nextHearingDate,
+            false,
+            null,
+          )
+        : editingHearing
         ? getPhaseInfo(
             editingHearing.date,
             !!editingHearing.outcome,
             editingHearing.nextHearingDate,
           )
         : getPhaseInfo(new Date(), false, null),
-    [editingHearing],
+    [editingHearing, reportingScheduledHearing],
   );
 
   const isModalLocked = modalPhase === "locked";
@@ -612,6 +738,7 @@ const HearingTimeline = ({
         ).unwrap();
         message.success("Updated successfully");
         dispatch(getAllEvents({}));
+        dispatch(fetchUpcomingHearings({ range: "all", limit: 50 }));
       } catch (err) {
         message.error(err?.message ?? "Failed to update");
         throw err;
@@ -619,6 +746,11 @@ const HearingTimeline = ({
     },
     [dispatch, stableMatterId],
   );
+
+  const handleAssignNextSessionLawyers = useCallback((hearing) => {
+    setSelectedNextSessionHearing(hearing);
+    setIsNextSessionModalVisible(true);
+  }, []);
 
   return (
     <div className="space-y-3 sm:space-y-5">
@@ -630,12 +762,40 @@ const HearingTimeline = ({
       </div>
 
       {/* ── NEXT HEARING HEADER ────────────────────────────── */}
+      {pendingNextSession && (
+        <Alert
+          type="warning"
+          showIcon
+          message="Today's hearing report is pending"
+          description="File the report for the hearing that took place today."
+          action={
+            <Button
+              type="primary"
+              size="small"
+              icon={<FileTextOutlined />}
+              onClick={() =>
+                handleReportScheduledSession(pendingNextSession)
+              }>
+              File report
+            </Button>
+          }
+        />
+      )}
       {nextHearing && (
         <HearingHeader
           nextHearing={nextHearing}
-          onAssignLawyers={handleEditHearing}
+          onAssignLawyers={handleAssignNextSessionLawyers}
+          onFileReport={handleEditHearing}
         />
       )}
+      <NextHearingEditModal
+        visible={isNextSessionModalVisible}
+        hearing={selectedNextSessionHearing}
+        onClose={() => setIsNextSessionModalVisible(false)}
+        onUpdate={handleUpdateNextHearing}
+        lawyersOptions={lawyersOptions}
+        usersLoading={usersLoading}
+      />
 
       {/* ── TIMELINE ───────────────────────────────────────── */}
         <Card
@@ -716,6 +876,7 @@ const HearingTimeline = ({
                   onEdit={handleEditHearing}
                   onDelete={handleDeleteHearing}
                   onUpdateNextHearing={handleUpdateNextHearing}
+                  canEditLockedHearing={isPrivileged}
                   lawyersOptions={lawyersOptions}
                   usersLoading={usersLoading}
                 />
@@ -734,13 +895,17 @@ const HearingTimeline = ({
             </div>
             <div>
               <p className={`font-bold text-slate-800 leading-none mb-0.5 ${isMobile ? "text-xs" : "text-sm"}`}>
-                {isHistoricalEntry
+                {reportingScheduledHearing
+                  ? "File Hearing Report"
+                  : isHistoricalEntry
                   ? "Add Historical Hearing"
                   : editingHearing
                     ? "Edit Hearing"
                     : "Add New Hearing"}
               </p>
-              {editingHearing && currentPhaseInfo && !isMobile && (
+              {(editingHearing || reportingScheduledHearing) &&
+                currentPhaseInfo &&
+                !isMobile && (
                 <p className="text-[11px] font-medium text-slate-400">
                   {
                     {
@@ -770,10 +935,11 @@ const HearingTimeline = ({
             description="Add a hearing that took place before this matter was entered into the app. It will be recorded as historical data, not a late report."
           />
         )}
-        {editingHearing && currentPhaseInfo && (
+        {(editingHearing || reportingScheduledHearing) &&
+          currentPhaseInfo && (
           <PhaseBanner
             phaseInfo={currentPhaseInfo}
-            hasOutcome={!!editingHearing.outcome}
+            hasOutcome={!!editingHearing?.outcome}
           />
         )}
 
@@ -803,7 +969,7 @@ const HearingTimeline = ({
                   showTime
                   style={{ width: "100%" }}
                   format="DD/MM/YYYY HH:mm"
-                  disabled={!!editingHearing}
+                  disabled={!!editingHearing || !!reportingScheduledHearing}
                   disabledDate={
                     isHistoricalEntry
                       ? (current) => current && current.isAfter(dayjs(), "day")
@@ -824,63 +990,58 @@ const HearingTimeline = ({
                 />
               </Form.Item>
 
-              {/* ── LAWYERS ──────────────────────────────────────────────
-                  canAssignLawyers = true when:
-                  - hearing.date is in future (schedule phase), OR
-                  - nextHearingDate is in future (next session exists)
-                  This means for your March 28 hearing with April 29 nextHearingDate,
-                  lawyers CAN be assigned even though March 28 has passed.
-              ── */}
-              <Form.Item
-                name="lawyerPresent"
-                label={
-                  <span className="flex items-center gap-1">
-                    <UserOutlined className="text-xs text-slate-400" />
-                    Counsel
-                    {canAssignLawyers &&
-                      currentPhaseInfo?.hasUpcomingNextSession && (
-                        <Tag
-                          color="blue"
-                          className="!text-[10px] !px-1 !py-0 ml-1">
-                          Next session
-                        </Tag>
+              {!isEditingExistingReport && !reportingScheduledHearing && (
+                <Form.Item
+                  name="lawyerPresent"
+                  label={
+                    <span className="flex items-center gap-1">
+                      <UserOutlined className="text-xs text-slate-400" />
+                      Counsel
+                      {canAssignLawyers &&
+                        currentPhaseInfo?.hasUpcomingNextSession && (
+                          <Tag
+                            color="blue"
+                            className="!text-[10px] !px-1 !py-0 ml-1">
+                            Next session
+                          </Tag>
+                        )}
+                      {!canAssignLawyers && (
+                        <Tooltip title="No upcoming sessions">
+                          <LockOutlined className="text-slate-400 text-xs ml-1" />
+                        </Tooltip>
                       )}
-                    {!canAssignLawyers && (
-                      <Tooltip title="No upcoming sessions">
-                        <LockOutlined className="text-slate-400 text-xs ml-1" />
-                      </Tooltip>
-                    )}
-                  </span>
-                }>
-                <Select
-                  mode="multiple"
-                  placeholder={
-                    usersLoading
-                      ? "Loading…"
-                      : !canAssignLawyers
-                        ? "Locked"
-                        : lawyersOptions.length === 0
-                          ? "No lawyers"
-                          : "Select lawyers"
-                  }
-                  options={lawyersOptions}
-                  loading={usersLoading}
-                  disabled={!canAssignLawyers}
-                  showSearch
-                  optionFilterProp="label"
-                  size={isMobile ? "middle" : "large"}
-                  maxTagCount="responsive"
-                  notFoundContent={
-                    usersLoading ? (
-                      <LoadingSpinner fullScreen={false} size="small" />
-                    ) : (
-                      <span className="text-xs text-slate-400 px-2">
-                        No lawyers available
-                      </span>
-                    )
-                  }
-                />
-              </Form.Item>
+                    </span>
+                  }>
+                  <Select
+                    mode="multiple"
+                    placeholder={
+                      usersLoading
+                        ? "Loading…"
+                        : !canAssignLawyers
+                          ? "Locked"
+                          : lawyersOptions.length === 0
+                            ? "No lawyers"
+                            : "Select lawyers"
+                    }
+                    options={lawyersOptions}
+                    loading={usersLoading}
+                    disabled={!canAssignLawyers}
+                    showSearch
+                    optionFilterProp="label"
+                    size={isMobile ? "middle" : "large"}
+                    maxTagCount="responsive"
+                    notFoundContent={
+                      usersLoading ? (
+                        <LoadingSpinner fullScreen={false} size="small" />
+                      ) : (
+                        <span className="text-xs text-slate-400 px-2">
+                          No lawyers available
+                        </span>
+                      )
+                    }
+                  />
+                </Form.Item>
+              )}
             </div>
 
             <Form.Item
@@ -1009,7 +1170,12 @@ const HearingTimeline = ({
                   }
                   rules={[
                     {
-                      required: modalPhase === "report" || isHistoricalEntry,
+                      required:
+                        modalPhase === "report" ||
+                        isHistoricalEntry ||
+                        (modalPhase === "locked" &&
+                          isPrivileged &&
+                          isFirstTimeFiling),
                       message: "Outcome is required when filing report",
                     },
                   ]}>
@@ -1107,6 +1273,52 @@ const HearingTimeline = ({
                   </>
                 )}
 
+                {isEditingExistingReport && (
+                  <Form.Item
+                    noStyle
+                    shouldUpdate={(previous, current) =>
+                      previous.nextHearingDate !== current.nextHearingDate ||
+                      previous.dateToBeCommunicated !==
+                        current.dateToBeCommunicated
+                    }>
+                    {({ getFieldValue }) => {
+                      const originalDate = editingHearing.nextHearingDate
+                        ? dayjs(editingHearing.nextHearingDate)
+                        : null;
+                      const currentDate = getFieldValue("nextHearingDate");
+                      const dateChanged = originalDate
+                        ? !currentDate ||
+                          !originalDate.isSame(currentDate, "millisecond")
+                        : Boolean(currentDate);
+                      const dateToBeCommunicatedChanged =
+                        Boolean(editingHearing.dateToBeCommunicated) !==
+                        Boolean(getFieldValue("dateToBeCommunicated"));
+                      if (!dateChanged && !dateToBeCommunicatedChanged) {
+                        return null;
+                      }
+
+                      return (
+                        <Form.Item
+                          name="nextHearingDateReason"
+                          label="Reason for changing the adjourned date"
+                          rules={[
+                            {
+                              required: true,
+                              message:
+                                "Please provide a reason for changing the adjourned date",
+                            },
+                          ]}>
+                          <TextArea
+                            rows={3}
+                            maxLength={1000}
+                            placeholder="Explain why the next court date is changing..."
+                          />
+                        </Form.Item>
+                      );
+                    }}
+                  </Form.Item>
+                )}
+
                 {(modalPhase === "locked") && isPrivileged && isFirstTimeFiling && (
                   <Form.Item
                     label={
@@ -1157,7 +1369,11 @@ const HearingTimeline = ({
                   rules={[
                     {
                       required:
-                        (modalPhase === "report" || isHistoricalEntry) &&
+                        (modalPhase === "report" ||
+                          isHistoricalEntry ||
+                          (modalPhase === "locked" &&
+                            isPrivileged &&
+                            isFirstTimeFiling)) &&
                         canEditReportFields,
                       message: "Court notes are required",
                     },

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Tabs, Tag, message, Skeleton, Descriptions } from "antd";
 import {
@@ -112,9 +112,11 @@ const DetailsNotFound = ({ onBack }) => (
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const LitigationDetails = () => {
+  const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { matterId } = useParams();
+  const reportForNextSessionId = location.state?.reportNextSessionId;
 
   // ── State — ALL hooks must come before any conditional return ─────────────
   const [showJudgmentModal, setShowJudgmentModal] = useState(false);
@@ -154,6 +156,11 @@ const LitigationDetails = () => {
     [],
   );
   const closeAppealModal = useCallback(() => setShowAppealModal(false), []);
+  const handleReportRequestHandled = useCallback(() => {
+    if (location.state?.reportNextSessionId) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, [location.pathname, location.state, navigate]);
 
   // ── Navigation / export handlers ─────────────────────────────────────────
   const handleEdit = useCallback(() => {
@@ -209,7 +216,12 @@ const LitigationDetails = () => {
         ),
         children: (
           <TabPane>
-            <HearingTimeline matterId={matterId} hearings={stableHearings} />
+            <HearingTimeline
+              matterId={matterId}
+              hearings={stableHearings}
+              reportForNextSessionId={reportForNextSessionId}
+              onReportRequestHandled={handleReportRequestHandled}
+            />
           </TabPane>
         ),
       },
@@ -436,6 +448,8 @@ const LitigationDetails = () => {
     appeal,
     settlement,
     precedents,
+    handleReportRequestHandled,
+    reportForNextSessionId,
   ]);
 
   // ── Early returns — AFTER every hook ─────────────────────────────────────

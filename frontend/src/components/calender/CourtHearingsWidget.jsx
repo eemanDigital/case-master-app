@@ -26,10 +26,10 @@ import {
   selectHearingsStats,
   selectLitigationLoading,
   selectLitigationError,
+  addHearing,
   updateHearing,
 } from "../../redux/features/litigation/litigationSlice";
 import { getAllEvents } from "../../redux/features/calender/calenderSlice";
-import useUserSelectOptions from "../../hooks/useUserSelectOptions";
 import { formatName } from "../../utils/formatters";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
@@ -88,12 +88,19 @@ const getRelative = (date) => {
   return d.from(now);
 };
 
-const getEditPermissions = (hearing) => {
+const getEditPermissions = (hearing, displayedDate) => {
   if (!hearing) return { canEditOutcome: false, canEditNotes: false };
   const now = dayjs().startOf("day");
-  const displayDate = hearing.nextHearingDate || hearing.date;
+  const displayDate =
+    displayedDate ||
+    hearing.displayDate ||
+    hearing.hearingDate ||
+    hearing.nextHearingDate ||
+    hearing.date;
   const hearingDate = dayjs(displayDate).startOf("day");
-  if (hearingDate.isSame(now)) {
+  if (dayjs(displayDate).isAfter(dayjs())) {
+    return { canEditOutcome: false, canEditNotes: false, isFuture: true };
+  } else if (hearingDate.isSame(now)) {
     return { canEditOutcome: true, canEditNotes: true, isToday: true };
   } else if (hearingDate.isAfter(now)) {
     return { canEditOutcome: false, canEditNotes: false, isFuture: true };
@@ -169,7 +176,11 @@ const VirtualizedList = ({ items, renderItem, height = 400 }) => {
 // ─── SIMPLE HEARING CARD ─────────────────────────────────────────────────────
 
 const SimpleHearingCard = React.memo(({ hearing, onClick }) => {
-  const displayDate = hearing.nextHearingDate || hearing.date;
+  const displayDate =
+    hearing.displayDate ||
+    hearing.hearingDate ||
+    hearing.nextHearingDate ||
+    hearing.date;
   const isToday = useMemo(
     () => dayjs(displayDate).isSame(dayjs(), "day"),
     [displayDate],
@@ -255,7 +266,18 @@ SimpleHearingCard.displayName = "SimpleHearingCard";
 // ─── DETAILED HEARING CARD ───────────────────────────────────────────────────
 
 const DetailedHearingCard = React.memo(({ hearing, onClick }) => {
-  const hasReport = !!hearing.outcome;
+  const displayDate =
+    hearing.displayDate ||
+    hearing.hearingDate ||
+    hearing.nextHearingDate ||
+    hearing.date;
+  const hasReport =
+    typeof hearing.reportFiledForDate === "boolean"
+      ? hearing.reportFiledForDate
+      : Boolean(
+          hearing.outcome &&
+            dayjs(hearing.date).isSame(displayDate),
+        );
 
   const lawyers = useMemo(() => buildLawyerList(hearing), [hearing]);
 
@@ -268,7 +290,6 @@ const DetailedHearingCard = React.memo(({ hearing, onClick }) => {
     [hearing],
   );
 
-  const displayDate = hearing.nextHearingDate || hearing.date;
   const isToday = useMemo(
     () => dayjs(displayDate).isSame(dayjs(), "day"),
     [displayDate],
@@ -349,7 +370,7 @@ const DetailedHearingCard = React.memo(({ hearing, onClick }) => {
           )}
         </div>
 
-        {hearing.outcome && (
+        {hearing.outcome && hasReport && (
           <div className="mb-2">
             <Tag color="green" className="!text-[10px] !px-2 !py-0.5">
               {hearing.outcome.replace(/_/g, " ")}
@@ -485,27 +506,32 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
   const actionLoading = useSelector(
     (s) => s.litigation?.actionLoading ?? false,
   );
+  const reportDisplayDate =
+    hearing?.displayDate ||
+    hearing?.hearingDate ||
+    hearing?.nextHearingDate ||
+    hearing?.date;
+  const reportFiledForDisplayedDate =
+    typeof hearing?.reportFiledForDate === "boolean"
+      ? hearing.reportFiledForDate
+      : Boolean(
+          hearing?.outcome &&
+            dayjs(hearing.date).isSame(reportDisplayDate),
+        );
 
   const [activePanel, setActivePanel] = useState("none");
   // FIX 5: Initialise selectedOutcome from the hearing's existing outcome so
   // the "Adjourned To" date picker appears correctly when updating a report
   // that was previously set to "adjourned".
   const [selectedOutcome, setSelectedOutcome] = useState(
-    hearing?.outcome ?? null,
+    reportFiledForDisplayedDate ? hearing?.outcome ?? null : null,
   );
   const [reportForm] = Form.useForm();
+  const adjournedDateValue = Form.useWatch("adjournedDate", reportForm);
 
   // FIX 6: `autoFetch` was previously wired to `open` (a boolean), which is
   // correct, but the hook is also called unconditionally — good. No change
   // needed here, just confirming it is correct.
-  const { data: lawyerOptions, loading: lawyersLoading } = useUserSelectOptions(
-    {
-      type: "lawyers",
-      lawyerOnly: true,
-      autoFetch: open,
-    },
-  );
-
   const lawyers = useMemo(() => buildLawyerList(hearing), [hearing]);
 
   const caseTitle = useMemo(() => {
@@ -519,8 +545,8 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
   }, [hearing]);
 
   const displayDate = useMemo(
-    () => hearing?.nextHearingDate || hearing?.date || null,
-    [hearing],
+    () => reportDisplayDate || null,
+    [hearing, reportDisplayDate],
   );
 
   const isToday = useMemo(
@@ -528,9 +554,31 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
     [displayDate],
   );
 
-  const hasReport = useMemo(() => !!hearing?.outcome, [hearing]);
+  const hasReport = useMemo(
+    () => reportFiledForDisplayedDate,
+    [reportFiledForDisplayedDate],
+  );
 
-  const editPerms = useMemo(() => getEditPermissions(hearing), [hearing]);
+  const editPerms = useMemo(
+    () => getEditPermissions(hearing, displayDate),
+    [hearing, displayDate],
+  );
+  const isNextSession = useMemo(
+    () =>
+      Boolean(
+        hearing?.nextHearingDate &&
+        !dayjs(hearing.date).isSame(displayDate),
+      ),
+    [hearing, displayDate],
+  );
+  const hasChangedAdjournedDate = Boolean(
+    hasReport &&
+      hearing?.outcome &&
+      (hearing.nextHearingDate
+        ? !adjournedDateValue ||
+          !dayjs(hearing.nextHearingDate).isSame(adjournedDateValue)
+        : Boolean(adjournedDateValue)),
+  );
 
   const requiresAdjournedDate = selectedOutcome === REQUIRES_ADJOURNED_DATE;
 
@@ -540,10 +588,14 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
   // already has an "adjourned" outcome.
   useEffect(() => {
     if (open && hearing) {
-      setSelectedOutcome(hearing.outcome ?? null);
+      setSelectedOutcome(hasReport ? hearing.outcome ?? null : null);
       reportForm.setFieldsValue({
-        outcome: hearing.outcome ?? undefined,
-        notes: hearing.notes ?? undefined,
+        outcome: hasReport ? hearing.outcome ?? undefined : undefined,
+        notes: hasReport ? hearing.notes ?? undefined : undefined,
+        adjournedDate:
+          hasReport && hearing.nextHearingDate
+            ? dayjs(hearing.nextHearingDate)
+            : undefined,
       });
     }
     if (!open) {
@@ -551,7 +603,7 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
       setSelectedOutcome(null);
       reportForm.resetFields();
     }
-  }, [open, hearing, reportForm]);
+  }, [open, hearing, hasReport, reportForm]);
 
   if (!hearing || !displayDate) return null;
 
@@ -563,25 +615,47 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
     const hearingData = {
       outcome: values.outcome,
       notes: values.notes || "",
+      ...(isNextSession
+        ? {
+            date: dayjs(displayDate).toISOString(),
+            purpose: hearing.purpose,
+            lawyerPresent: (hearing.lawyerPresent || []).map((lawyer) =>
+              typeof lawyer === "object"
+                ? lawyer._id || lawyer.id
+                : lawyer,
+            ),
+          }
+        : {}),
       ...(values.outcome === REQUIRES_ADJOURNED_DATE && values.adjournedDate
         ? { nextHearingDate: values.adjournedDate.toISOString() }
         : {}),
+      ...(hasChangedAdjournedDate
+        ? { nextHearingDateReason: values.nextHearingDateReason }
+        : {}),
     };
     try {
-      await dispatch(
-        updateHearing({
-          matterId: hearing.matterId,
-          hearingId: hearing._id,
-          hearingData,
-        }),
-      ).unwrap();
+      if (isNextSession) {
+        await dispatch(
+          addHearing({ matterId: hearing.matterId, hearingData }),
+        ).unwrap();
+      } else {
+        await dispatch(
+          updateHearing({
+            matterId: hearing.matterId,
+            hearingId: hearing._id,
+            hearingData,
+          }),
+        ).unwrap();
+      }
       message.success("Hearing report filed and calendar synced");
       dispatch(fetchUpcomingHearings({ range: "all", limit: 50 }));
       dispatch(getAllEvents({}));
       setActivePanel("none");
       onClose();
-    } catch {
-      message.error("Failed to file report");
+    } catch (error) {
+      message.error(
+        error?.message || error?.response?.data?.message || "Failed to file report",
+      );
     }
   };
 
@@ -765,7 +839,7 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
                 </p>
               </div>
               <div className="p-4 space-y-2">
-                {hearing.outcome && (
+                {hasReport && hearing.outcome && (
                   <div>
                     <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide mb-1">
                       Outcome
@@ -908,6 +982,25 @@ const HearingDetailModal = React.memo(({ hearing, open, onClose }) => {
                     </Form.Item>
                   )}
 
+                  {hasChangedAdjournedDate && (
+                    <Form.Item
+                      name="nextHearingDateReason"
+                      label="Reason for changing the adjourned date"
+                      rules={[
+                        {
+                          required: true,
+                          message:
+                            "Please provide a reason for changing the adjourned date",
+                        },
+                      ]}>
+                      <TextArea
+                        rows={3}
+                        maxLength={1000}
+                        placeholder="Explain why the next court date is changing"
+                      />
+                    </Form.Item>
+                  )}
+
                   <Form.Item name="notes" label="Court Notes">
                     <TextArea
                       rows={4}
@@ -1021,10 +1114,16 @@ const CourtHearingsWidget = ({ limit = 5 }) => {
         tomorrowList = [];
 
       hearings.forEach((h) => {
-        // Use hearingDate (which is nextHearingDate from backend)
-        const displayDate = h.hearingDate;
+        const displayDate =
+          h.displayDate ||
+          h.hearingDate ||
+          h.nextHearingDate ||
+          h.date;
         const d = dayjs(displayDate);
-        const hasReport = !!h.outcome;
+        const hasReport =
+          typeof h.reportFiledForDate === "boolean"
+            ? h.reportFiledForDate
+            : Boolean(h.outcome && dayjs(h.date).isSame(displayDate));
         const needsNotice = !!h.hearingNoticeRequired;
 
         // Check if hearing is today

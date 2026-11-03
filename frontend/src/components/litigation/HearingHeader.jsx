@@ -24,7 +24,7 @@ import { getPhaseInfo } from "../../utils/hearingPhase";
 // The "Assign Lawyers" button uses canAssignLawyers from phaseInfo, which is
 // true whenever nextHearingDate is in the future.
 
-const HearingHeader = ({ nextHearing, onAssignLawyers }) => {
+const HearingHeader = ({ nextHearing, onAssignLawyers, onFileReport }) => {
   if (!nextHearing) return null;
 
   // Phase is based on hearing.date (when held), but canAssignLawyers also
@@ -81,7 +81,9 @@ const HearingHeader = ({ nextHearing, onAssignLawyers }) => {
               icon={<TeamOutlined />}
               onClick={handleAssign}
               className="w-full bg-blue-700 font-medium hover:bg-blue-800 sm:w-auto">
-              Assign lawyers
+              {nextHearing.lawyerPresent?.length
+                ? "Manage lawyers"
+                : "Assign lawyers"}
             </Button>
           ) : (
             <Tag color="default" icon={<LockOutlined />} className="!m-0 !w-fit !rounded-full !px-3 !py-1">
@@ -113,7 +115,7 @@ const HearingHeader = ({ nextHearing, onAssignLawyers }) => {
                 <Button
                   size="small"
                   type="link"
-                  onClick={() => onAssignLawyers?.(nextHearing)}>
+                  onClick={() => onFileReport?.(nextHearing)}>
                   File Now
                 </Button>
               )
